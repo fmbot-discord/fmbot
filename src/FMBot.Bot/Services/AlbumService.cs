@@ -443,7 +443,7 @@ public class AlbumService
         }
         catch (Exception e)
         {
-            Log.Error("Error in GetRecentTopArtists", e);
+            Log.Error($"Error in {nameof(GetRecentTopAlbums)}", e);
             throw;
         }
     }

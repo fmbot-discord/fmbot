@@ -47,6 +47,21 @@ public class TrackBuilders
         this._puppeteerService = puppeteerService;
     }
 
+    public async Task<ResponseModel> TrackAsync(
+        ContextModel context,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+
+
+
+        return response;
+    }
+
     public async Task<ResponseModel> GuildTracksAsync(
         ContextModel context,
         Guild guild,
@@ -323,5 +338,7 @@ public class TrackBuilders
 
         return response;
     }
+
+
 }
 

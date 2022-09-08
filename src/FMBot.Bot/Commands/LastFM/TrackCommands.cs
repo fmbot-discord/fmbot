@@ -54,7 +54,6 @@ public class TrackCommands : BaseCommandModule
 
     private InteractiveService Interactivity { get; }
 
-
     private static readonly List<DateTimeOffset> StackCooldownTimer = new();
     private static readonly List<SocketUser> StackCooldownTarget = new();
 
@@ -1098,7 +1097,7 @@ public class TrackCommands : BaseCommandModule
                 Response<TrackInfo> trackInfo;
                 if (useCachedTracks)
                 {
-                    trackInfo = await GetCachedTrack(trackArtist, trackName, lastFmUserName, userId);
+                    trackInfo = await this._trackService.GetCachedTrack(trackArtist, trackName, lastFmUserName, userId);
                 }
                 else
                 {
@@ -1142,7 +1141,7 @@ public class TrackCommands : BaseCommandModule
             Response<TrackInfo> trackInfo;
             if (useCachedTracks)
             {
-                trackInfo = await GetCachedTrack(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, lastFmUserName, userId);
+                trackInfo = await this._trackService.GetCachedTrack(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, lastFmUserName, userId);
             }
             else
             {
@@ -1175,7 +1174,7 @@ public class TrackCommands : BaseCommandModule
             Response<TrackInfo> trackInfo;
             if (useCachedTracks)
             {
-                trackInfo = await GetCachedTrack(result.Content.ArtistName, result.Content.TrackName, lastFmUserName, userId);
+                trackInfo = await this._trackService.GetCachedTrack(result.Content.ArtistName, result.Content.TrackName, lastFmUserName, userId);
             }
             else
             {
@@ -1208,41 +1207,5 @@ public class TrackCommands : BaseCommandModule
         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         this.Context.LogCommandUsed(CommandResponse.LastFmError);
         return null;
-    }
-
-    private async Task<Response<TrackInfo>> GetCachedTrack(string artistName, string trackName, string lastFmUserName, int? userId = null)
-    {
-        Response<TrackInfo> trackInfo;
-        var cachedTrack = await this._trackService.GetTrackFromDatabase(artistName, trackName);
-        if (cachedTrack != null)
-        {
-            trackInfo = new Response<TrackInfo>
-            {
-                Content = this._trackService.CachedTrackToTrackInfo(cachedTrack),
-                Success = true
-            };
-
-            if (userId.HasValue)
-            {
-                var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(cachedTrack.ArtistName,
-                    cachedTrack.Name, userId.Value);
-                trackInfo.Content.UserPlaycount = userPlaycount;
-            }
-
-            var cachedAlbum = await this._albumService.GetAlbumFromDatabase(cachedTrack.ArtistName, cachedTrack.AlbumName);
-            if (cachedAlbum != null)
-            {
-                trackInfo.Content.AlbumCoverUrl = cachedAlbum.SpotifyImageUrl ?? cachedAlbum.SpotifyImageUrl;
-                trackInfo.Content.AlbumUrl = cachedAlbum.LastFmUrl;
-                trackInfo.Content.TrackUrl = cachedAlbum.LastFmUrl;
-            }
-        }
-        else
-        {
-            trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackName, artistName,
-                lastFmUserName);
-        }
-
-        return trackInfo;
     }
 }

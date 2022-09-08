@@ -3,19 +3,26 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dapper;
+using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Enums;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -31,8 +38,12 @@ namespace FMBot.Bot.Services
         private readonly BotSettings _botSettings;
         private readonly IMemoryCache _cache;
         private readonly TrackRepository _trackRepository;
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly TimerService _timer;
+        private readonly AlbumService _albumService;
+        private readonly WhoKnowsTrackService _whoKnowsTrackService;
 
-        public TrackService(HttpClient httpClient, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, SpotifyService spotifyService, IMemoryCache memoryCache, TrackRepository trackRepository)
+        public TrackService(HttpClient httpClient, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, SpotifyService spotifyService, IMemoryCache memoryCache, TrackRepository trackRepository, IDbContextFactory<FMBotDbContext> contextFactory, TimerService timer, AlbumService albumService, WhoKnowsTrackService whoKnowsTrackService)
         {
             this._lastFmRepository = lastFmRepository;
             this._spotifyService = spotifyService;
@@ -40,6 +51,194 @@ namespace FMBot.Bot.Services
             this._trackRepository = trackRepository;
             this._client = httpClient;
             this._botSettings = botSettings.Value;
+            this._contextFactory = contextFactory;
+            this._timer = timer;
+            this._albumService = albumService;
+            this._whoKnowsTrackService = whoKnowsTrackService;
+        }
+
+        public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string albumValues,
+            string lastFmUserName, string sessionKey = null,
+            string otherUserUsername = null, bool useCachedTracks = false, int? userId = null)
+        {
+            string searchValue;
+            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.Length != 0)
+            {
+                searchValue = albumValues;
+
+                if (searchValue.ToLower() == "featured" && this._timer._currentFeatured.TrackName != null)
+                {
+                    searchValue =
+                        $"{this._timer._currentFeatured.ArtistName} | {this._timer._currentFeatured.TrackName}";
+                }
+
+                if (searchValue.Contains(" | "))
+                {
+                    if (otherUserUsername != null)
+                    {
+                        lastFmUserName = otherUserUsername;
+                    }
+
+                    var trackName = searchValue.Split(" | ")[1];
+                    var trackArtist = searchValue.Split(" | ")[0];
+
+                    Response<TrackInfo> trackInfo;
+                    if (useCachedTracks)
+                    {
+                        trackInfo = await GetCachedTrack(trackArtist, trackName, lastFmUserName, userId);
+                    }
+                    else
+                    {
+                        trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackName, trackArtist,
+                            lastFmUserName);
+                    }
+
+                    if (!trackInfo.Success && trackInfo.Error == ResponseStatus.MissingParameters)
+                    {
+                        response.Embed.WithDescription(
+                            $"Track `{trackName}` by `{trackArtist}` could not be found, please check your search values and try again.");
+                        response.CommandResponse = CommandResponse.NotFound;
+                        response.ResponseType = ResponseType.Embed;
+                        return new TrackSearch(null, response);
+                    }
+                    if (!trackInfo.Success || trackInfo.Content == null)
+                    {
+                        response.Embed.ErrorResponse(trackInfo.Error, trackInfo.Message, null, discordUser, "album");
+                        response.CommandResponse = CommandResponse.LastFmError;
+                        response.ResponseType = ResponseType.Embed;
+                        return new TrackSearch(null, response);
+                    }
+
+                    return new TrackSearch(trackInfo.Content, response);
+                }
+            }
+            else
+            {
+                var recentScrobbles =
+                    await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+
+                if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
+                {
+                    response.Embed =
+                        GenericEmbedService.RecentScrobbleCallFailedBuilder(recentScrobbles, lastFmUserName);
+                    response.ResponseType = ResponseType.Embed;
+                    return new TrackSearch(null, response);
+                }
+
+                if (otherUserUsername != null)
+                {
+                    lastFmUserName = otherUserUsername;
+                }
+
+                var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
+
+                Response<TrackInfo> trackInfo;
+                if (useCachedTracks)
+                {
+                    trackInfo = await GetCachedTrack(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, lastFmUserName, userId);
+                }
+                else
+                {
+                    trackInfo = await this._lastFmRepository.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
+                        lastFmUserName);
+                }
+
+                if (trackInfo?.Content == null || !trackInfo.Success)
+                {
+                    response.Embed.WithDescription(
+                        $"Last.fm did not return a result for **{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**.\n\n" +
+                        $"This usually happens on recently released tracks. Please try again later.");
+
+                    response.CommandResponse = CommandResponse.NotFound;
+                    response.ResponseType = ResponseType.Embed;
+                    return new TrackSearch(null, response);
+                }
+
+                return new TrackSearch(trackInfo.Content, response);
+            }
+
+            var result = await this._lastFmRepository.SearchTrackAsync(searchValue);
+            if (result.Success && result.Content != null)
+            {
+                if (otherUserUsername != null)
+                {
+                    lastFmUserName = otherUserUsername;
+                }
+
+                Response<TrackInfo> trackInfo;
+                if (useCachedTracks)
+                {
+                    trackInfo = await GetCachedTrack(result.Content.ArtistName, result.Content.TrackName, lastFmUserName, userId);
+                }
+                else
+                {
+                    trackInfo = await this._lastFmRepository.GetTrackInfoAsync(result.Content.TrackName, result.Content.ArtistName,
+                        lastFmUserName);
+                }
+
+                if (trackInfo?.Content == null || !trackInfo.Success)
+                {
+                    response.Embed.WithDescription(
+                        $"Last.fm did not return a result for **{result.Content.TrackName}** by **{result.Content.ArtistName}**.\n\n" +
+                        $"This usually happens on recently released tracks. Please try again later.");
+
+                    response.CommandResponse = CommandResponse.NotFound;
+                    response.ResponseType = ResponseType.Embed;
+                    return new TrackSearch(null, response);
+                }
+
+                return new TrackSearch(trackInfo.Content, response);
+            }
+
+            if (result.Success)
+            {
+                response.Embed.WithDescription($"Track could not be found, please check your search values and try again.");
+                response.CommandResponse = CommandResponse.LastFmError;
+                response.ResponseType = ResponseType.Embed;
+                return new TrackSearch(null, response);
+            }
+
+            response.Embed.WithDescription($"Last.fm returned an error: {result.Error}");
+            response.CommandResponse = CommandResponse.LastFmError;
+            response.ResponseType = ResponseType.Embed;
+            return new TrackSearch(null, response);
+        }
+
+
+        public async Task<Response<TrackInfo>> GetCachedTrack(string artistName, string trackName, string lastFmUserName, int? userId = null)
+        {
+            Response<TrackInfo> trackInfo;
+            var cachedTrack = await GetTrackFromDatabase(artistName, trackName);
+            if (cachedTrack != null)
+            {
+                trackInfo = new Response<TrackInfo>
+                {
+                    Content = CachedTrackToTrackInfo(cachedTrack),
+                    Success = true
+                };
+
+                if (userId.HasValue)
+                {
+                    var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(cachedTrack.ArtistName,
+                        cachedTrack.Name, userId.Value);
+                    trackInfo.Content.UserPlaycount = userPlaycount;
+                }
+
+                var cachedAlbum = await this._albumService.GetAlbumFromDatabase(cachedTrack.ArtistName, cachedTrack.AlbumName);
+                if (cachedAlbum != null)
+                {
+                    trackInfo.Content.AlbumCoverUrl = cachedAlbum.SpotifyImageUrl ?? cachedAlbum.SpotifyImageUrl;
+                    trackInfo.Content.AlbumUrl = cachedAlbum.LastFmUrl;
+                    trackInfo.Content.TrackUrl = cachedAlbum.LastFmUrl;
+                }
+            }
+            else
+            {
+                trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackName, artistName,
+                    lastFmUserName);
+            }
+
+            return trackInfo;
         }
 
         public async Task<TrackSearchResult> GetTrackFromLink(string description, bool possiblyContainsLinks = true)
@@ -368,6 +567,155 @@ namespace FMBot.Bot.Services
                 TrackName = track.Name,
                 Mbid = track.Mbid
             };
+        }
+
+        public async Task<List<TrackAutoCompleteSearchModel>> GetLatestTracks(ulong discordUserId, bool cacheEnabled = true)
+        {
+            try
+            {
+                var cacheKey = $"user-recent-albums-{discordUserId}";
+
+                var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<TrackAutoCompleteSearchModel> userArtists);
+                if (cacheAvailable && cacheEnabled)
+                {
+                    return userArtists;
+                }
+
+                await using var db = await this._contextFactory.CreateDbContextAsync();
+                var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+                if (user == null)
+                {
+                    return new List<TrackAutoCompleteSearchModel> { new("Start typing to search through albums...") };
+                }
+
+                const string sql = "SELECT * " +
+                                   "FROM public.user_plays " +
+                                   "WHERE user_id = @userId AND album_name IS NOT NULL " +
+                                   "ORDER BY time_played desc " +
+                                   "LIMIT 100 ";
+
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
+
+                var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
+                {
+                    userId = user.UserId
+                })).ToList();
+
+                var tracks = userPlays
+                    .OrderByDescending(o => o.TimePlayed)
+                    .Select(s => new TrackAutoCompleteSearchModel(s.ArtistName, s.TrackName))
+                    .Distinct()
+                    .ToList();
+
+                this._cache.Set(cacheKey, tracks, TimeSpan.FromSeconds(30));
+
+                return tracks;
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Error in {nameof(GetLatestTracks)}", e);
+                throw;
+            }
+        }
+
+        public async Task<List<TrackAutoCompleteSearchModel>> GetRecentTopTracks(ulong discordUserId, bool cacheEnabled = true)
+        {
+            try
+            {
+                var cacheKey = $"user-recent-top-tracks-{discordUserId}";
+
+                var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<TrackAutoCompleteSearchModel> userAlbums);
+                if (cacheAvailable && cacheEnabled)
+                {
+                    return userAlbums;
+                }
+
+                await using var db = await this._contextFactory.CreateDbContextAsync();
+                var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+                if (user == null)
+                {
+                    return new List<TrackAutoCompleteSearchModel> { new("Login to the bot first") };
+                }
+
+                const string sql = "SELECT * " +
+                                   "FROM public.user_plays " +
+                                   "WHERE user_id = @userId AND track_name IS NOT NULL " +
+                                   "ORDER BY time_played desc " +
+                                   "LIMIT 1500 ";
+
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
+
+                var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
+                {
+                    userId = user.UserId
+                })).ToList();
+
+                var tracks = userPlays
+                    .GroupBy(g => new TrackAutoCompleteSearchModel(g.ArtistName, g.TrackName))
+                    .OrderByDescending(o => o.Count())
+                    .Select(s => s.Key)
+                    .ToList();
+
+                this._cache.Set(cacheKey, tracks, TimeSpan.FromSeconds(120));
+
+                return tracks;
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Error in {nameof(GetRecentTopTracks)}", e);
+                throw;
+            }
+        }
+
+        public async Task<List<TrackAutoCompleteSearchModel>> SearchThroughTracks(string searchValue, bool cacheEnabled = true)
+        {
+            try
+            {
+                const string cacheKey = "tracks-all";
+
+                var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<TrackAutoCompleteSearchModel> tracks);
+                if (!cacheAvailable && cacheEnabled)
+                {
+                    const string sql = "SELECT * " +
+                                       "FROM public.tracks " +
+                                       "WHERE popularity is not null AND popularity > 5 ";
+
+                    DefaultTypeMap.MatchNamesWithUnderscores = true;
+                    await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                    await connection.OpenAsync();
+
+                    var trackQuery = (await connection.QueryAsync<Track>(sql)).ToList();
+
+                    tracks = trackQuery
+                        .Select(s => new TrackAutoCompleteSearchModel(s.ArtistName, s.Name, s.Popularity))
+                        .ToList();
+
+                    this._cache.Set(cacheKey, tracks, TimeSpan.FromMinutes(15));
+                }
+
+                searchValue = searchValue.ToLower();
+
+                var results = tracks.Where(w =>
+                        w.Name.ToLower().StartsWith(searchValue) ||
+                        w.Artist.ToLower().StartsWith(searchValue) ||
+                        w.Name.ToLower().Contains(searchValue) ||
+                        w.Artist.ToLower().Contains(searchValue))
+                    .OrderByDescending(o => o.Popularity)
+                    .ToList();
+
+                return results;
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Error in {nameof(SearchThroughTracks)}", e);
+                throw;
+            }
         }
     }
 }
