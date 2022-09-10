@@ -34,8 +34,17 @@ public class AlbumService
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly UpdateRepository _updateRepository;
+    private readonly ArtistsService _artistsService;
 
-    public AlbumService(IMemoryCache cache, IOptions<BotSettings> botSettings, AlbumRepository albumRepository, LastFmRepository lastFmRepository, TimerService timer, WhoKnowsAlbumService whoKnowsAlbumService, IDbContextFactory<FMBotDbContext> contextFactory, UpdateRepository updateRepository)
+    public AlbumService(IMemoryCache cache,
+        IOptions<BotSettings> botSettings,
+        AlbumRepository albumRepository,
+        LastFmRepository lastFmRepository,
+        TimerService timer,
+        WhoKnowsAlbumService whoKnowsAlbumService,
+        IDbContextFactory<FMBotDbContext> contextFactory,
+        UpdateRepository updateRepository,
+        ArtistsService artistsService)
     {
         this._cache = cache;
         this._albumRepository = albumRepository;
@@ -44,6 +53,7 @@ public class AlbumService
         this._whoKnowsAlbumService = whoKnowsAlbumService;
         this._contextFactory = contextFactory;
         this._updateRepository = updateRepository;
+        this._artistsService = artistsService;
         this._botSettings = botSettings.Value;
     }
 
@@ -307,10 +317,12 @@ public class AlbumService
             return null;
         }
 
+        var correctedArtistName = await this._artistsService.GetCorrectedArtistName(artistName);
+
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var album = await this._albumRepository.GetAlbumForName(artistName, albumName, connection);
+        var album = await this._albumRepository.GetAlbumForName(correctedArtistName, albumName, connection);
 
         await connection.CloseAsync();
 

@@ -45,6 +45,7 @@ namespace FMBot.Bot.Services
         private readonly AlbumService _albumService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
         private readonly UpdateRepository _updateRepository;
+        private readonly ArtistsService _artistsService;
 
         public TrackService(HttpClient httpClient,
             LastFmRepository lastFmRepository,
@@ -56,7 +57,8 @@ namespace FMBot.Bot.Services
             TimerService timer,
             AlbumService albumService,
             WhoKnowsTrackService whoKnowsTrackService,
-            UpdateRepository updateRepository)
+            UpdateRepository updateRepository,
+            ArtistsService artistsService)
         {
             this._lastFmRepository = lastFmRepository;
             this._spotifyService = spotifyService;
@@ -69,6 +71,7 @@ namespace FMBot.Bot.Services
             this._albumService = albumService;
             this._whoKnowsTrackService = whoKnowsTrackService;
             this._updateRepository = updateRepository;
+            this._artistsService = artistsService;
         }
 
         public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string trackValues,
@@ -226,7 +229,6 @@ namespace FMBot.Bot.Services
             response.ResponseType = ResponseType.Embed;
             return new TrackSearch(null, response);
         }
-
 
         public async Task<Response<TrackInfo>> GetCachedTrack(string artistName, string trackName, string lastFmUserName, int? userId = null)
         {
@@ -571,10 +573,12 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
+            var correctedArtistName = await this._artistsService.GetCorrectedArtistName(artistName);
+
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var album = await this._trackRepository.GetTrackForName(artistName, trackName, connection);
+            var album = await this._trackRepository.GetTrackForName(correctedArtistName, trackName, connection);
 
             await connection.CloseAsync();
 

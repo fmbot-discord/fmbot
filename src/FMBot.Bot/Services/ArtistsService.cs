@@ -432,6 +432,17 @@ namespace FMBot.Bot.Services
             return tasteSettings;
         }
 
+        public async Task<string> GetCorrectedArtistName(string artistName)
+        {
+            var cachedArtistAliases = await GetCachedArtistAliases();
+            var alias = cachedArtistAliases
+                .FirstOrDefault(f => f.Alias.ToLower() == artistName.ToLower());
+
+            var correctedArtistName = alias != null ? alias.Artist.Name : artistName;
+
+            return correctedArtistName;
+        }
+
         public async Task<Artist> GetArtistFromDatabase(string artistName)
         {
             if (string.IsNullOrWhiteSpace(artistName))
@@ -439,11 +450,7 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            var cachedArtistAliases = await GetCachedArtistAliases();
-            var alias = cachedArtistAliases
-                .FirstOrDefault(f => f.Alias.ToLower() == artistName.ToLower());
-
-            var correctedArtistName = alias != null ? alias.Artist.Name : artistName;
+            var correctedArtistName = await GetCorrectedArtistName(artistName);
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
