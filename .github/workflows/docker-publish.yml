@@ -2,7 +2,7 @@ name: Publish docker container
 
 on:
   push:
-    branches: [ main, dev, feature/* ]
+    branches: [ main, dev ]
     tags: [ 'v*.*.*' ]
 
 
