@@ -59,7 +59,7 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -184,7 +184,7 @@ public class TrackBuilders
             ResponseType = ResponseType.Text,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -192,12 +192,12 @@ public class TrackBuilders
 
         var reply =
             $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} " +
-            $"for **{trackSearch.Track.AlbumName.FilterOutMentions()}** by **{trackSearch.Track.ArtistName.FilterOutMentions()}**";
+            $"for **{trackSearch.Track.TrackName.FilterOutMentions()}** by **{trackSearch.Track.ArtistName.FilterOutMentions()}**";
 
         if (trackSearch.Track.UserPlaycount.HasValue && !userSettings.DifferentUser)
         {
-            await this._updateService.CorrectUserAlbumPlaycount(context.ContextUser.UserId, trackSearch.Track.ArtistName,
-                trackSearch.Track.AlbumName, trackSearch.Track.UserPlaycount.Value);
+            await this._updateService.CorrectUserTrackPlaycount(context.ContextUser.UserId, trackSearch.Track.ArtistName,
+                trackSearch.Track.TrackName, trackSearch.Track.UserPlaycount.Value);
         }
 
         if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
@@ -224,7 +224,7 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -267,7 +267,7 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -482,7 +482,7 @@ public class TrackBuilders
 
                 if (topListSettings.Billboard && previousTopTracks.Any())
                 {
-                    var previousTopTrack = previousTopTracks.FirstOrDefault(f => f.ArtistName == track.ArtistName && f.AlbumName == track.AlbumName);
+                    var previousTopTrack = previousTopTracks.FirstOrDefault(f => f.ArtistName == track.ArtistName && f.TrackName == track.TrackName);
                     int? previousPosition = previousTopTrack == null ? null : previousTopTracks.IndexOf(previousTopTrack);
 
                     trackPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);

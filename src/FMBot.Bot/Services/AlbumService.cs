@@ -33,8 +33,9 @@ public class AlbumService
     private readonly TimerService _timer;
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+    private readonly UpdateRepository _updateRepository;
 
-    public AlbumService(IMemoryCache cache, IOptions<BotSettings> botSettings, AlbumRepository albumRepository, LastFmRepository lastFmRepository, TimerService timer, WhoKnowsAlbumService whoKnowsAlbumService, IDbContextFactory<FMBotDbContext> contextFactory)
+    public AlbumService(IMemoryCache cache, IOptions<BotSettings> botSettings, AlbumRepository albumRepository, LastFmRepository lastFmRepository, TimerService timer, WhoKnowsAlbumService whoKnowsAlbumService, IDbContextFactory<FMBotDbContext> contextFactory, UpdateRepository updateRepository)
     {
         this._cache = cache;
         this._albumRepository = albumRepository;
@@ -42,6 +43,7 @@ public class AlbumService
         this._timer = timer;
         this._whoKnowsAlbumService = whoKnowsAlbumService;
         this._contextFactory = contextFactory;
+        this._updateRepository = updateRepository;
         this._botSettings = botSettings.Value;
     }
 
@@ -116,7 +118,16 @@ public class AlbumService
         }
         else
         {
-            var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+            Response<RecentTrackList> recentScrobbles;
+
+            if (userId.HasValue && otherUserUsername == null)
+            {
+                recentScrobbles = await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId.Value));
+            }
+            else
+            {
+                recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+            }
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
             {

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
@@ -43,8 +44,19 @@ namespace FMBot.Bot.Services
         private readonly TimerService _timer;
         private readonly AlbumService _albumService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
+        private readonly UpdateRepository _updateRepository;
 
-        public TrackService(HttpClient httpClient, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, SpotifyService spotifyService, IMemoryCache memoryCache, TrackRepository trackRepository, IDbContextFactory<FMBotDbContext> contextFactory, TimerService timer, AlbumService albumService, WhoKnowsTrackService whoKnowsTrackService)
+        public TrackService(HttpClient httpClient,
+            LastFmRepository lastFmRepository,
+            IOptions<BotSettings> botSettings,
+            SpotifyService spotifyService,
+            IMemoryCache memoryCache,
+            TrackRepository trackRepository,
+            IDbContextFactory<FMBotDbContext> contextFactory,
+            TimerService timer,
+            AlbumService albumService,
+            WhoKnowsTrackService whoKnowsTrackService,
+            UpdateRepository updateRepository)
         {
             this._lastFmRepository = lastFmRepository;
             this._spotifyService = spotifyService;
@@ -56,16 +68,17 @@ namespace FMBot.Bot.Services
             this._timer = timer;
             this._albumService = albumService;
             this._whoKnowsTrackService = whoKnowsTrackService;
+            this._updateRepository = updateRepository;
         }
 
-        public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string albumValues,
+        public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string trackValues,
             string lastFmUserName, string sessionKey = null,
             string otherUserUsername = null, bool useCachedTracks = false, int? userId = null)
         {
             string searchValue;
-            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.Length != 0)
+            if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.Length != 0)
             {
-                searchValue = albumValues;
+                searchValue = trackValues;
 
                 if (searchValue.ToLower() == "featured" && this._timer._currentFeatured.TrackName != null)
                 {
@@ -115,8 +128,16 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                var recentScrobbles =
-                    await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                Response<RecentTrackList> recentScrobbles;
+
+                if (userId.HasValue && otherUserUsername == null)
+                {
+                    recentScrobbles = await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId.Value));
+                }
+                else
+                {
+                    recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                }
 
                 if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
                 {
