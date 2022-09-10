@@ -390,22 +390,12 @@ public class AlbumService
                 return new List<AlbumAutoCompleteSearchModel> { new(Constants.AutoCompleteLoginRequired) };
             }
 
-            const string sql = "SELECT * " +
-                               "FROM public.user_plays " +
-                               "WHERE user_id = @userId AND album_name IS NOT NULL " +
-                               "ORDER BY time_played desc " +
-                               "LIMIT 100 ";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
-            {
-                userId = user.UserId
-            })).ToList();
+            var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 100);
 
-            var albums = userPlays
+            var albums = plays
                 .OrderByDescending(o => o.TimePlayed)
                 .Select(s => new AlbumAutoCompleteSearchModel(s.ArtistName, s.AlbumName))
                 .Distinct()
@@ -442,22 +432,12 @@ public class AlbumService
                 return new List<AlbumAutoCompleteSearchModel> { new(Constants.AutoCompleteLoginRequired) };
             }
 
-            const string sql = "SELECT * " +
-                               "FROM public.user_plays " +
-                               "WHERE user_id = @userId AND album_name IS NOT NULL " +
-                               "ORDER BY time_played desc " +
-                               "LIMIT 1500 ";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
-            {
-                userId = user.UserId
-            })).ToList();
+            var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 1500);
 
-            var albums = userPlays
+            var albums = plays
                 .GroupBy(g => new AlbumAutoCompleteSearchModel(g.ArtistName, g.AlbumName))
                 .OrderByDescending(o => o.Count())
                 .Select(s => s.Key)
@@ -497,7 +477,7 @@ public class AlbumService
                     .Select(s => new AlbumAutoCompleteSearchModel(s.ArtistName, s.Name, s.Popularity))
                     .ToList();
 
-                this._cache.Set(cacheKey, albums, TimeSpan.FromMinutes(15));
+                this._cache.Set(cacheKey, albums, TimeSpan.FromHours(2));
             }
 
             searchValue = searchValue.ToLower();

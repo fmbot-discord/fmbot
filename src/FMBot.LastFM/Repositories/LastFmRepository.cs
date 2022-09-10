@@ -84,7 +84,7 @@ namespace FMBot.LastFM.Repositories
                 else
                 {
                     recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks, authorizedCall);
-                    if (recentTracksCall.Success && recentTracksCall.Content.RecentTracks.Track.Count > 998)
+                    if (recentTracksCall.Success && recentTracksCall.Content.RecentTracks.Track.Count >= (count - 2))
                     {
                         for (var i = 1; i < amountOfPages; i++)
                         {

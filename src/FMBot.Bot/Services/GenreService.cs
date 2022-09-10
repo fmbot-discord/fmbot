@@ -139,7 +139,7 @@ public class GenreService
 
                 genres = (await connection.QueryAsync<string>(sql)).ToList();
 
-                this._cache.Set(cacheKey, genres, TimeSpan.FromMinutes(15));
+                this._cache.Set(cacheKey, genres, TimeSpan.FromHours(2));
             }
 
             searchValue = searchValue.ToLower();
@@ -349,7 +349,7 @@ public class GenreService
         return foundGenres;
     }
 
-    public async Task<List<string>> GetTopGenresForPlays(IEnumerable<UserPlay> plays)
+    public async Task<List<string>> GetTopGenresForPlays(IEnumerable<UserPlayTs> plays)
     {
         var artists = plays
             .GroupBy(x => new { x.ArtistName })

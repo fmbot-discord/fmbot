@@ -26,7 +26,7 @@ namespace FMBot.Bot.Services
             this._botSettings = botSettings.Value;
         }
 
-        public async Task<TimeSpan> GetPlayTimeForPlays(IEnumerable<UserPlay> plays)
+        public async Task<TimeSpan> GetPlayTimeForPlays(IEnumerable<UserPlayTs> plays)
         {
             await CacheAllTrackLengths();
 
@@ -129,7 +129,7 @@ namespace FMBot.Bot.Services
             return $"artist-length-avg-{artistName}";
         }
 
-        public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(ICommandContext context, List<UserPlay> userPlays, ICollection<GuildUser> guildUsers)
+        public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(ICommandContext context, List<UserPlayTs> userPlays, ICollection<GuildUser> guildUsers)
         {
             var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 

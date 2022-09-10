@@ -15,7 +15,7 @@ public static class PlayRepository
 {
     public record PlayUpdate(List<UserPlay> NewPlays, List<UserPlayTs> RemovedPlays);
 
-    public static async Task<PlayUpdate> InsertLatestPlays(List<RecentTrack> recentTracks, int userId, NpgsqlConnection connection)
+    public static async Task<PlayUpdate> InsertLatestPlays(IEnumerable<RecentTrack> recentTracks, int userId, NpgsqlConnection connection)
     {
         var plays = recentTracks
             .Where(w => !w.NowPlaying &&
@@ -123,15 +123,31 @@ public static class PlayRepository
         await copyHelper.SaveAllAsync(connection, plays);
     }
 
-    private static async Task<IReadOnlyCollection<UserPlayTs>> GetUserPlays(int userId, NpgsqlConnection connection, int limit)
+    public static async Task<IReadOnlyList<UserPlayTs>> GetUserPlays(int userId, NpgsqlConnection connection, int limit)
     {
-        const string sql = "SELECT * FROM public.user_play_ts where user_id = @userId " +
+        const string sql = "SELECT * FROM public.user_play_ts WHERE user_id = @userId " +
                            "ORDER BY time_played DESC LIMIT @limit";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return (await connection.QueryAsync<UserPlayTs>(sql, new
         {
             userId,
             limit
+        })).ToList();
+    }
+
+    public static async Task<IReadOnlyCollection<UserPlayTs>> GetUserPlaysWithinTimeRange(int userId, NpgsqlConnection connection, DateTime start, DateTime? end = null)
+    {
+        end ??= DateTime.UtcNow;
+
+        const string sql = "SELECT * FROM public.user_play_ts WHERE user_id = @userId " +
+                           "AND time_played >= @start AND time_played <= @end  " +
+                           "ORDER BY time_played DESC ";
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<UserPlayTs>(sql, new
+        {
+            userId,
+            start,
+            end
         })).ToList();
     }
 }

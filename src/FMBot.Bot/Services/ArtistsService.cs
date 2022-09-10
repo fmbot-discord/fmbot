@@ -524,22 +524,12 @@ namespace FMBot.Bot.Services
                     return new List<string> { Constants.AutoCompleteLoginRequired };
                 }
 
-                const string sql = "SELECT * " +
-                                   "FROM public.user_plays " +
-                                   "WHERE user_id = @userId " +
-                                   "ORDER BY time_played desc " +
-                                   "LIMIT 50 ";
-
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
                 await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
                 await connection.OpenAsync();
 
-                var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
-                {
-                    userId = user.UserId
-                })).ToList();
+                var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 50);
 
-                var artists = userPlays
+                var artists = plays
                     .OrderByDescending(o => o.TimePlayed)
                     .Select(s => s.ArtistName.ToString())
                     .Distinct()
@@ -576,22 +566,12 @@ namespace FMBot.Bot.Services
                     return new List<string> { Constants.AutoCompleteLoginRequired };
                 }
 
-                const string sql = "SELECT * " +
-                                   "FROM public.user_plays " +
-                                   "WHERE user_id = @userId " +
-                                   "ORDER BY time_played desc " +
-                                   "LIMIT 1500 ";
-
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
                 await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
                 await connection.OpenAsync();
 
-                var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
-                {
-                    userId = user.UserId
-                })).ToList();
+                var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 1500);
 
-                var artists = userPlays
+                var artists = plays
                     .GroupBy(g => g.ArtistName)
                     .OrderByDescending(o => o.Count())
                     .Select(s => s.Key)
@@ -627,7 +607,7 @@ namespace FMBot.Bot.Services
 
                     artists = (await connection.QueryAsync<Artist>(sql)).ToList();
 
-                    this._cache.Set(cacheKey, artists, TimeSpan.FromMinutes(15));
+                    this._cache.Set(cacheKey, artists, TimeSpan.FromHours(2));
                 }
 
                 searchValue = searchValue.ToLower();

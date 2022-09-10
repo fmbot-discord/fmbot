@@ -43,52 +43,54 @@ namespace FMBot.Bot.Services
 
         public async Task<DailyOverview> GetDailyOverview(int userId, int amountOfDays)
         {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-amountOfDays);
-
-            var plays = await db.UserPlays
-                .AsQueryable()
-                .Where(w => w.TimePlayed.Date <= now.Date &&
-                            w.TimePlayed.Date > minDate.Date &&
-                            w.UserId == userId)
-                .ToListAsync();
-
-            if (!plays.Any())
+            try
             {
-                return null;
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
+
+                var start = DateTime.UtcNow.AddDays(-amountOfDays);
+                var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
+
+                if (!plays.Any())
+                {
+                    return null;
+                }
+
+                var overview = new DailyOverview
+                {
+                    Days = plays
+                        .OrderByDescending(o => o.TimePlayed)
+                        .GroupBy(g => g.TimePlayed.Date.AddHours(5))
+                        .Select(s => new DayOverview
+                        {
+                            Date = s.Key,
+                            Playcount = s.Count(),
+                            Plays = s.ToList(),
+                            TopTrack = GetTopTrackForPlays(s.ToList()),
+                            TopAlbum = GetTopAlbumForPlays(s.ToList()),
+                            TopArtist = GetTopArtistForPlays(s.ToList()),
+                        }).Take(amountOfDays).ToList(),
+                    Playcount = plays.Count,
+                    Uniques = GetUniqueCount(plays.ToList()),
+                    AvgPerDay = GetAvgPerDayCount(plays.ToList()),
+                };
+
+                foreach (var day in overview.Days.Where(w => w.Plays.Any()))
+                {
+                    day.TopGenres = await this._genreService.GetTopGenresForPlays(day.Plays);
+                }
+                foreach (var day in overview.Days.Where(w => w.Plays.Any()))
+                {
+                    day.ListeningTime = await this._timeService.GetPlayTimeForPlays(day.Plays);
+                }
+
+                return overview;
             }
-
-            var overview = new DailyOverview
+            catch (Exception e)
             {
-                Days = plays
-                    .OrderByDescending(o => o.TimePlayed)
-                    .GroupBy(g => g.TimePlayed.Date.AddHours(5))
-                    .Select(s => new DayOverview
-                    {
-                        Date = s.Key,
-                        Playcount = s.Count(),
-                        Plays = s.ToList(),
-                        TopTrack = GetTopTrackForPlays(s.ToList()),
-                        TopAlbum = GetTopAlbumForPlays(s.ToList()),
-                        TopArtist = GetTopArtistForPlays(s.ToList()),
-                    }).Take(amountOfDays).ToList(),
-                Playcount = plays.Count,
-                Uniques = GetUniqueCount(plays.ToList()),
-                AvgPerDay = GetAvgPerDayCount(plays.ToList()),
-            };
-
-            foreach (var day in overview.Days.Where(w => w.Plays.Any()))
-            {
-                day.TopGenres = await this._genreService.GetTopGenresForPlays(day.Plays);
+                Console.WriteLine(e);
+                throw;
             }
-            foreach (var day in overview.Days.Where(w => w.Plays.Any()))
-            {
-                day.ListeningTime = await this._timeService.GetPlayTimeForPlays(day.Plays);
-            }
-
-            return overview;
         }
 
         public async Task<YearOverview> GetYear(int userId, int year)
@@ -195,21 +197,21 @@ namespace FMBot.Bot.Services
             return yearOverview;
         }
 
-        private static int GetUniqueCount(IEnumerable<UserPlay> plays)
+        private static int GetUniqueCount(IEnumerable<UserPlayTs> plays)
         {
             return plays
                 .GroupBy(x => new { x.ArtistName, x.TrackName })
                 .Count();
         }
 
-        private static double GetAvgPerDayCount(IEnumerable<UserPlay> plays)
+        private static double GetAvgPerDayCount(IEnumerable<UserPlayTs> plays)
         {
             return plays
                 .GroupBy(g => g.TimePlayed.Date)
                 .Average(a => a.Count());
         }
 
-        private static string GetTopTrackForPlays(IEnumerable<UserPlay> plays)
+        private static string GetTopTrackForPlays(IEnumerable<UserPlayTs> plays)
         {
             var topTrack = plays
                 .GroupBy(x => new { x.ArtistName, x.TrackName })
@@ -224,7 +226,7 @@ namespace FMBot.Bot.Services
             return $"`{topTrack.Count()}` {StringExtensions.GetPlaysString(topTrack.Count())} - {topTrack.Key.ArtistName} | {topTrack.Key.TrackName}";
         }
 
-        private static string GetTopAlbumForPlays(IEnumerable<UserPlay> plays)
+        private static string GetTopAlbumForPlays(IEnumerable<UserPlayTs> plays)
         {
             var topAlbum = plays
                 .GroupBy(x => new { x.ArtistName, x.AlbumName })
@@ -239,7 +241,7 @@ namespace FMBot.Bot.Services
             return $"`{topAlbum.Count()}` {StringExtensions.GetPlaysString(topAlbum.Count())} - {topAlbum.Key.ArtistName} | {topAlbum.Key.AlbumName}";
         }
 
-        private static string GetTopArtistForPlays(IEnumerable<UserPlay> plays)
+        private static string GetTopArtistForPlays(IEnumerable<UserPlayTs> plays)
         {
             var topArtist = plays
                 .GroupBy(x => x.ArtistName)
@@ -254,48 +256,39 @@ namespace FMBot.Bot.Services
             return $"`{topArtist.Count()}` {StringExtensions.GetPlaysString(topArtist.Count())} - {topArtist.Key}";
         }
 
+        private async Task<IReadOnlyCollection<UserPlayTs>> GetWeekPlays(int userId)
+        {
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var start = DateTime.UtcNow.AddDays(-7);
+            return await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
+        }
+
         public async Task<int> GetWeekTrackPlaycountAsync(int userId, string trackName, string artistName)
         {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
+            var plays = await GetWeekPlays(userId);
 
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            return await db.UserPlays
-                .AsQueryable()
-                .CountAsync(t => t.TimePlayed.Date <= now.Date &&
-                                 t.TimePlayed.Date > minDate.Date &&
-                                 t.TrackName.ToLower() == trackName.ToLower() &&
-                                 t.ArtistName.ToLower() == artistName.ToLower() &&
-                                 t.UserId == userId);
+            return plays.Count(t => t.TrackName.ToLower() == trackName.ToLower() &&
+                                    t.ArtistName.ToLower() == artistName.ToLower());
         }
 
         public async Task<int> GetWeekAlbumPlaycountAsync(int userId, string albumName, string artistName)
         {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
-
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            return await db.UserPlays
-                .AsQueryable()
-                .CountAsync(ab => ab.TimePlayed.Date <= now.Date &&
-                                 ab.TimePlayed.Date > minDate.Date &&
-                                 ab.AlbumName.ToLower() == albumName.ToLower() &&
-                                 ab.ArtistName.ToLower() == artistName.ToLower() &&
-                                 ab.UserId == userId);
+            var plays = await GetWeekPlays(userId);
+            return plays.Count(ab => ab.AlbumName.ToLower() == albumName.ToLower() &&
+                                     ab.ArtistName.ToLower() == artistName.ToLower());
         }
 
         public async Task<int> GetArtistPlaycountForTimePeriodAsync(int userId, string artistName, int daysToGoBack = 7)
         {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-daysToGoBack);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            return await db.UserPlays
-                .AsQueryable()
-                .CountAsync(a => a.TimePlayed.Date <= now.Date &&
-                                 a.TimePlayed.Date > minDate.Date &&
-                                 a.ArtistName.ToLower() == artistName.ToLower() &&
-                                 a.UserId == userId);
+            var start = DateTime.UtcNow.AddDays(-daysToGoBack);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
+
+            return plays.Count(a => a.ArtistName.ToLower() == artistName.ToLower());
         }
 
         public async Task<List<UserStreak>> GetStreaks(int userId)
@@ -309,12 +302,10 @@ namespace FMBot.Bot.Services
 
         public async Task<UserStreak> GetStreak(int userId, Response<RecentTrackList> recentTracks)
         {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            var lastPlays = await db.UserPlays
-                .AsQueryable()
-                .Where(w => w.UserId == userId)
-                .OrderByDescending(o => o.TimePlayed)
-                .ToListAsync();
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var lastPlays = await PlayRepository.GetUserPlays(userId, connection, 10000);
 
             if (!lastPlays.Any())
             {
@@ -463,104 +454,38 @@ namespace FMBot.Bot.Services
             return null;
         }
 
-        public async Task<Response<TopTracksLfmResponse>> GetTopTracks(int userId, int days)
-        {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-days);
-
-            await using var db = this._contextFactory.CreateDbContext();
-            var tracks = await db.UserPlays
-                .AsQueryable()
-                .Where(t => t.TimePlayed.Date <= now.Date &&
-                                 t.TimePlayed.Date > minDate.Date &&
-                                 t.UserId == userId)
-                .GroupBy(x => new { x.ArtistName, x.TrackName })
-                .Select(s => new TopTrackLfm
-                {
-                    Name = s.Key.TrackName,
-                    Artist = new Artist
-                    {
-                        Name = s.Key.ArtistName
-                    },
-                    Playcount = s.Count()
-                })
-                .OrderByDescending(o => o.Playcount)
-                .ToListAsync();
-
-            return new Response<TopTracksLfmResponse>
-            {
-                Success = true,
-                Content = new TopTracksLfmResponse
-                {
-                    TopTracks = new TopTracksLfm
-                    {
-                        Track = tracks
-                    }
-                }
-            };
-        }
-
-        public async Task<IReadOnlyList<UserAlbum>> GetUserTopAlbums(int userId, int days)
-        {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-days);
-
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            return await db.UserPlays
-                .AsQueryable()
-                .Where(t => t.TimePlayed.Date <= now.Date &&
-                                 t.TimePlayed.Date > minDate.Date &&
-                                 t.UserId == userId)
-                .GroupBy(x => new { x.ArtistName, x.AlbumName })
-                .Select(s => new UserAlbum
-                {
-                    Name = s.Key.AlbumName,
-                    ArtistName = s.Key.ArtistName,
-                    Playcount = s.Count()
-                })
-                .OrderByDescending(o => o.Playcount)
-                .ToListAsync();
-        }
-
         public async Task<TopArtistList> GetUserTopArtists(int userId, int days)
         {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-days);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            var topArtists = await db.UserPlays
-                .AsQueryable()
-                .Where(t => t.TimePlayed.Date <= now.Date &&
-                                 t.TimePlayed.Date > minDate.Date &&
-                                 t.UserId == userId)
+            var start = DateTime.UtcNow.AddDays(-days);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
+            var topArtists = plays
                 .GroupBy(x => x.ArtistName)
                 .Select(s => new TopArtist
                 {
                     ArtistName = s.Key,
                     UserPlaycount = s.Count()
                 })
-                .OrderByDescending(o => o.UserPlaycount)
-                .ToListAsync();
+                .OrderByDescending(o => o.UserPlaycount);
 
             return new TopArtistList
             {
-                TotalAmount = topArtists.Count,
-                TopArtists = topArtists
+                TotalAmount = topArtists.Count(),
+                TopArtists = topArtists.ToList()
             };
         }
 
         public async Task<List<UserTrack>> GetUserTopTracksForArtist(int userId, int days, string artistName)
         {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-days);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
-            await using var db = this._contextFactory.CreateDbContext();
-            return await db.UserPlays
-                .AsQueryable()
-                .Where(t => t.TimePlayed.Date <= now.Date &&
-                            t.TimePlayed.Date > minDate.Date &&
-                            EF.Functions.ILike(t.ArtistName, artistName) &&
-                            t.UserId == userId)
+            var start = DateTime.UtcNow.AddDays(-days);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
+
+            return plays.Where(w => w.ArtistName.ToLower() == artistName.ToLower())
                 .GroupBy(x => new { x.ArtistName, x.TrackName })
                 .Select(s => new UserTrack
                 {
@@ -569,10 +494,10 @@ namespace FMBot.Bot.Services
                     Playcount = s.Count()
                 })
                 .OrderByDescending(o => o.Playcount)
-                .ToListAsync();
+                .ToList();
         }
 
-        public static List<GuildTrack> GetGuildTopTracks(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
+        public static List<GuildTrack> GetGuildTopTracks(IEnumerable<UserPlayTs> plays, DateTime startDateTime, OrderType orderType, string artistName)
         {
             return plays
                 .Where(w => w.TimePlayed > startDateTime)
@@ -595,7 +520,7 @@ namespace FMBot.Bot.Services
                 .ToList();
         }
 
-        public static List<GuildAlbum> GetGuildTopAlbums(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
+        public static List<GuildAlbum> GetGuildTopAlbums(IEnumerable<UserPlayTs> plays, DateTime startDateTime, OrderType orderType, string artistName)
         {
             return plays
                 .Where(w => w.TimePlayed > startDateTime && w.AlbumName != null)
@@ -617,7 +542,7 @@ namespace FMBot.Bot.Services
                 .ToList();
         }
 
-        public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, int limit = 120, bool includeListeners = false)
+        public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlayTs> plays, DateTime startDateTime, OrderType orderType, int limit = 120, bool includeListeners = false)
         {
             return plays
                 .Where(w => w.TimePlayed > startDateTime)
@@ -689,18 +614,18 @@ namespace FMBot.Bot.Services
             return whoKnowsAlbumList;
         }
 
-        public async Task<IList<UserPlay>> GetGuildUsersPlays(int guildId, int amountOfDays)
+        public async Task<IList<UserPlayTs>> GetGuildUsersPlays(int guildId, int amountOfDays)
         {
             var cacheKey = $"guild-user-plays-{guildId}-{amountOfDays}";
 
-            var cachedPlaysAvailable = this._cache.TryGetValue(cacheKey, out List<UserPlay> userPlays);
+            var cachedPlaysAvailable = this._cache.TryGetValue(cacheKey, out List<UserPlayTs> userPlays);
             if (cachedPlaysAvailable)
             {
                 return userPlays;
             }
 
             var sql = "SELECT up.* " +
-                      "FROM user_plays AS up " +
+                      "FROM user_play_ts AS up " +
                       "INNER JOIN users AS u ON up.user_id = u.user_id  " +
                       "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                       $"WHERE gu.guild_id = @guildId  AND gu.bot != true AND time_played > current_date - interval '{amountOfDays}' day " +
@@ -711,7 +636,7 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            userPlays = (await connection.QueryAsync<UserPlay>(sql, new
+            userPlays = (await connection.QueryAsync<UserPlayTs>(sql, new
             {
                 guildId
             })).ToList();
@@ -721,10 +646,10 @@ namespace FMBot.Bot.Services
             return userPlays;
         }
 
-        public async Task<List<UserPlay>> GetGuildUsersPlaysForTimeLeaderBoard(int guildId)
+        public async Task<List<UserPlayTs>> GetGuildUsersPlaysForTimeLeaderBoard(int guildId)
         {
-            const string sql = "SELECT user_play_id, up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
-                               "FROM public.user_plays AS up " +
+            const string sql = "SELECT up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
+                               "FROM public.user_play_ts AS up " +
                                "INNER JOIN users AS u ON up.user_id = u.user_id " +
                                "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                                "WHERE gu.guild_id = @guildId " +
@@ -736,7 +661,7 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
+            var userPlays = (await connection.QueryAsync<UserPlayTs>(sql, new
             {
                 guildId,
             })).ToList();

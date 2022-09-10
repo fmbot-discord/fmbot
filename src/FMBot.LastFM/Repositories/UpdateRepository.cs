@@ -91,7 +91,8 @@ namespace FMBot.LastFM.Repositories
                 count,
                 true,
                 sessionKey,
-                timeFrom);
+                timeFrom,
+                2);
 
             await using var connection = new NpgsqlConnection(this._connectionString);
 
@@ -136,26 +137,20 @@ namespace FMBot.LastFM.Repositories
 
             AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks.First());
 
-            await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection);
+            var playUpdate = await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection);
 
-            var newScrobbles = recentTracks.Content.RecentTracks
-                .Where(w => !w.NowPlaying &&
-                            w.TimePlayed != null &&
-                            (lastStoredPlay?.TimePlayed == null || w.TimePlayed > lastStoredPlay.TimePlayed))
-                .ToList();
-
-            if (!newScrobbles.Any())
+            if (!playUpdate.NewPlays.Any())
             {
                 Log.Debug("Update: After local filter no new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
 
                 if (!user.TotalPlaycount.HasValue)
                 {
-                    recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
+                    recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
                 }
                 else if (totalPlaycountCorrect)
                 {
-                    await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection, recentTracks.Content.TotalAmount);
+                    await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection, recentTracks.Content.TotalAmount);
                 }
                 else
                 {
@@ -180,22 +175,22 @@ namespace FMBot.LastFM.Repositories
 
                 this._cache.Set(cacheKey, true, TimeSpan.FromSeconds(1));
 
-                recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
+                recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
 
-                await UpdatePlaysForUser(user, newScrobbles, lastStoredPlay, connection);
+                await UpdatePlaysForUser(user, playUpdate.NewPlays, lastStoredPlay, connection);
 
                 var userArtists = await GetUserArtists(user.UserId, connection);
                 var userAlbums = await GetUserAlbums(user.UserId, connection);
                 var userTracks = await GetUserTracks(user.UserId, connection);
 
-                await UpdateArtistsForUser(user, newScrobbles, connection, userArtists);
-                await UpdateAlbumsForUser(user, newScrobbles, connection, userAlbums);
-                await UpdateTracksForUser(user, newScrobbles, connection, userTracks);
+                await UpdateArtistsForUser(user, playUpdate.NewPlays, connection, userArtists);
+                await UpdateAlbumsForUser(user, playUpdate.NewPlays, connection, userAlbums);
+                await UpdateTracksForUser(user, playUpdate.NewPlays, connection, userTracks);
 
-                var lastNewScrobble = newScrobbles.OrderByDescending(o => o.TimePlayed).FirstOrDefault();
+                var lastNewScrobble = playUpdate.NewPlays.OrderByDescending(o => o.TimePlayed).FirstOrDefault();
                 if (lastNewScrobble?.TimePlayed != null)
                 {
-                    await SetUserLastScrobbleTime(user, lastNewScrobble.TimePlayed.Value, connection);
+                    await SetUserLastScrobbleTime(user, lastNewScrobble.TimePlayed, connection);
                 }
 
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
@@ -213,7 +208,7 @@ namespace FMBot.LastFM.Repositories
 
             _ = SmallIndex(user);
 
-            recentTracks.Content.NewRecentTracksAmount = newScrobbles.Count;
+            recentTracks.Content.NewRecentTracksAmount = playUpdate.NewPlays.Count;
             return recentTracks;
         }
 
@@ -270,7 +265,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         private async Task UpdatePlaysForUser(User user,
-            IEnumerable<RecentTrack> newScrobbles,
+            IEnumerable<UserPlay> newScrobbles,
             UserPlay lastPlay,
             NpgsqlConnection connection)
         {
@@ -285,15 +280,13 @@ namespace FMBot.LastFM.Repositories
             await deleteOldPlays.ExecuteNonQueryAsync();
 
             var userPlays = newScrobbles
-                .Where(w => !w.NowPlaying &&
-                            w.TimePlayed.HasValue &&
-                            w.TimePlayed > (lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays).Date))
+                .Where(w => w.TimePlayed > (lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays).Date))
                 .Select(s => new UserPlay
                 {
                     ArtistName = s.ArtistName,
                     AlbumName = s.AlbumName,
                     TrackName = s.TrackName,
-                    TimePlayed = DateTime.SpecifyKind(s.TimePlayed.Value, DateTimeKind.Utc),
+                    TimePlayed = DateTime.SpecifyKind(s.TimePlayed, DateTimeKind.Utc),
                     UserId = user.UserId
                 }).ToList();
 
@@ -325,7 +318,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         private async Task UpdateArtistsForUser(User user,
-            IEnumerable<RecentTrack> newScrobbles,
+            IEnumerable<UserPlay> newScrobbles,
             NpgsqlConnection connection,
             IReadOnlyCollection<UserArtist> userArtists)
         {
@@ -387,7 +380,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         private async Task UpdateAlbumsForUser(User user,
-            IEnumerable<RecentTrack> newScrobbles,
+            List<UserPlay> newScrobbles,
             NpgsqlConnection connection,
             IReadOnlyCollection<UserAlbum> userAlbums)
         {
@@ -456,7 +449,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         private async Task UpdateTracksForUser(User user,
-            IEnumerable<RecentTrack> newScrobbles,
+            List<UserPlay> newScrobbles,
             NpgsqlConnection connection,
             IReadOnlyCollection<UserTrack> userTracks)
         {

@@ -616,22 +616,12 @@ namespace FMBot.Bot.Services
                     return new List<TrackAutoCompleteSearchModel> { new(Constants.AutoCompleteLoginRequired) };
                 }
 
-                const string sql = "SELECT * " +
-                                   "FROM public.user_plays " +
-                                   "WHERE user_id = @userId " +
-                                   "ORDER BY time_played desc " +
-                                   "LIMIT 100 ";
-
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
                 await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
                 await connection.OpenAsync();
 
-                var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
-                {
-                    userId = user.UserId
-                })).ToList();
+                var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 100);
 
-                var tracks = userPlays
+                var tracks = plays
                     .OrderByDescending(o => o.TimePlayed)
                     .Select(s => new TrackAutoCompleteSearchModel(s.ArtistName, s.TrackName))
                     .Distinct()
@@ -668,22 +658,12 @@ namespace FMBot.Bot.Services
                     return new List<TrackAutoCompleteSearchModel> { new(Constants.AutoCompleteLoginRequired) };
                 }
 
-                const string sql = "SELECT * " +
-                                   "FROM public.user_plays " +
-                                   "WHERE user_id = @userId AND track_name IS NOT NULL " +
-                                   "ORDER BY time_played desc " +
-                                   "LIMIT 1500 ";
-
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
                 await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
                 await connection.OpenAsync();
 
-                var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
-                {
-                    userId = user.UserId
-                })).ToList();
+                var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 1500);
 
-                var tracks = userPlays
+                var tracks = plays
                     .GroupBy(g => new TrackAutoCompleteSearchModel(g.ArtistName, g.TrackName))
                     .OrderByDescending(o => o.Count())
                     .Select(s => s.Key)
@@ -723,7 +703,7 @@ namespace FMBot.Bot.Services
                         .Select(s => new TrackAutoCompleteSearchModel(s.ArtistName, s.Name, s.Popularity))
                         .ToList();
 
-                    this._cache.Set(cacheKey, tracks, TimeSpan.FromMinutes(15));
+                    this._cache.Set(cacheKey, tracks, TimeSpan.FromHours(2));
                 }
 
                 searchValue = searchValue.ToLower();

@@ -32,7 +32,7 @@ namespace FMBot.Bot.Models
 
         public TimeSpan ListeningTime { get; set; }
 
-        public List<UserPlay> Plays { get; set; }
+        public List<UserPlayTs> Plays { get; set; }
     }
 
     public class YearOverview
