@@ -195,7 +195,7 @@ public class ArtistBuilders
                     var serverListeners = filteredUsersWithArtist.Count;
                     var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
                     var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
-                    var serverPlaycountLastWeek = await this._whoKnowsArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artistSearch.Artist.ArtistName);
+                    var serverPlaycountLastWeek = await this._playService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artistSearch.Artist.ArtistName);
 
                     serverStats += $"`{serverListeners}` {StringExtensions.GetListenersString(serverListeners)}";
                     serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";

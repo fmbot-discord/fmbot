@@ -614,6 +614,30 @@ namespace FMBot.Bot.Services
             return whoKnowsAlbumList;
         }
 
+        public async Task<int> GetWeekArtistPlaycountForGuildAsync(int guildId, string artistName)
+        {
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            const string sql = "SELECT coalesce(count(up.time_played), 0) " +
+                               "FROM user_play_ts AS up " +
+                               "INNER JOIN users AS u ON up.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND " +
+                               "UPPER(up.artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
+                               "up.time_played >= @minDate";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QuerySingleAsync<int>(sql, new
+            {
+                guildId,
+                artistName,
+                minDate
+            });
+        }
+
         public async Task<IList<UserPlayTs>> GetGuildUsersPlays(int guildId, int amountOfDays)
         {
             var cacheKey = $"guild-user-plays-{guildId}-{amountOfDays}";
