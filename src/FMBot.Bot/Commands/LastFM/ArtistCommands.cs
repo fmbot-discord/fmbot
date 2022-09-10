@@ -162,7 +162,7 @@ public class ArtistCommands : BaseCommandModule
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
 
         var response = new ResponseModel();
-        var artist = await this._artistsService.GetArtist(response,
+        var artist = await this._artistsService.SearchArtist(response,
             this.Context.User,
             userSettings.NewSearchValue,
             contextUser.UserNameLastFM,

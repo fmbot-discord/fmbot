@@ -22,7 +22,7 @@ public class TrackAutoComplete : AutocompleteHandler
         IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
     {
         var recentlyPlayedTracks = await this._trackService.GetLatestTracks(context.User.Id);
-        var recentTopAlbums = await this._trackService.GetRecentTopTracks(context.User.Id);
+        var recentTopTracks = await this._trackService.GetRecentTopTracks(context.User.Id);
 
         var results = new List<string>();
 
@@ -30,7 +30,7 @@ public class TrackAutoComplete : AutocompleteHandler
             string.IsNullOrWhiteSpace(autocompleteInteraction?.Data?.Current?.Value.ToString()))
         {
             if (recentlyPlayedTracks == null || !recentlyPlayedTracks.Any() ||
-                recentTopAlbums == null || !recentTopAlbums.Any())
+                recentTopTracks == null || !recentTopTracks.Any())
             {
                 results.Add("Start typing to search through tracks...");
 
@@ -42,7 +42,7 @@ public class TrackAutoComplete : AutocompleteHandler
                 .ReplaceOrAddToList(recentlyPlayedTracks.Select(s => s.Name).Take(5));
 
             results
-                .ReplaceOrAddToList(recentTopAlbums.Select(s => s.Name).Take(5));
+                .ReplaceOrAddToList(recentTopTracks.Select(s => s.Name).Take(5));
         }
         else
         {
@@ -62,7 +62,7 @@ public class TrackAutoComplete : AutocompleteHandler
                     .Select(s => s.Name)
                     .Take(4));
 
-                results.ReplaceOrAddToList(recentTopAlbums
+                results.ReplaceOrAddToList(recentTopTracks
                     .Where(w => w.Track.ToLower().StartsWith(searchValue.ToLower()))
                     .Select(s => s.Name)
                     .Take(4));
@@ -72,7 +72,7 @@ public class TrackAutoComplete : AutocompleteHandler
                     .Select(s => s.Name)
                     .Take(2));
 
-                results.ReplaceOrAddToList(recentTopAlbums
+                results.ReplaceOrAddToList(recentTopTracks
                     .Where(w => w.Track.ToLower().Contains(searchValue.ToLower()))
                     .Select(s => s.Name)
                     .Take(3));

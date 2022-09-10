@@ -111,10 +111,10 @@ public class AlbumCommands : BaseCommandModule
     {
         try
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-            _ = this.Context.Channel.TriggerTypingAsync();
 
             var response = await this._albumBuilders.AlbumAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);
 
@@ -143,6 +143,8 @@ public class AlbumCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Albums)]
     public async Task AlbumPlaysAsync([Remainder] string albumValues = null)
     {
+        _ = this.Context.Channel.TriggerTypingAsync();
+        
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

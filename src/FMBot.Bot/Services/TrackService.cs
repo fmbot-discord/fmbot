@@ -14,6 +14,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Types;
@@ -193,6 +194,7 @@ namespace FMBot.Bot.Services
             if (result.Success)
             {
                 response.Embed.WithDescription($"Track could not be found, please check your search values and try again.");
+                response.Embed.WithFooter($"Search value: '{searchValue}'");
                 response.CommandResponse = CommandResponse.LastFmError;
                 response.ResponseType = ResponseType.Embed;
                 return new TrackSearch(null, response);
@@ -573,7 +575,7 @@ namespace FMBot.Bot.Services
         {
             try
             {
-                var cacheKey = $"user-recent-albums-{discordUserId}";
+                var cacheKey = $"user-recent-tracks-{discordUserId}";
 
                 var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<TrackAutoCompleteSearchModel> userArtists);
                 if (cacheAvailable && cacheEnabled)
@@ -586,12 +588,12 @@ namespace FMBot.Bot.Services
 
                 if (user == null)
                 {
-                    return new List<TrackAutoCompleteSearchModel> { new("Start typing to search through albums...") };
+                    return new List<TrackAutoCompleteSearchModel> { new(Constants.AutoCompleteLoginRequired) };
                 }
 
                 const string sql = "SELECT * " +
                                    "FROM public.user_plays " +
-                                   "WHERE user_id = @userId AND album_name IS NOT NULL " +
+                                   "WHERE user_id = @userId " +
                                    "ORDER BY time_played desc " +
                                    "LIMIT 100 ";
 
@@ -638,7 +640,7 @@ namespace FMBot.Bot.Services
 
                 if (user == null)
                 {
-                    return new List<TrackAutoCompleteSearchModel> { new("Login to the bot first") };
+                    return new List<TrackAutoCompleteSearchModel> { new(Constants.AutoCompleteLoginRequired) };
                 }
 
                 const string sql = "SELECT * " +

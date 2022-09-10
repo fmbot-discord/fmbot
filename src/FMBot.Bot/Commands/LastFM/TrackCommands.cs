@@ -110,125 +110,17 @@ public class TrackCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks)]
     public async Task TrackAsync([Remainder] string trackValues = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        _ = this.Context.Channel.TriggerTypingAsync();
-
-        var track = await this.SearchTrack(trackValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
-        if (track == null)
-        {
-            return;
-        }
-
-        var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-        this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-        this._embedAuthor.WithName($"Info about {track.ArtistName} - {track.TrackName} for {userTitle}");
-
-        if (track.TrackUrl != null)
-        {
-            this._embedAuthor.WithUrl(track.TrackUrl);
-        }
-
-        this._embed.WithAuthor(this._embedAuthor);
-
-        var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(track);
         try
         {
-            var leftStats = new StringBuilder();
-            var rightStats = new StringBuilder();
-            var footer = new StringBuilder();
+            _ = this.Context.Channel.TriggerTypingAsync();
 
-            leftStats.AppendLine($"`{track.TotalListeners}` listeners");
-            leftStats.AppendLine($"`{track.TotalPlaycount}` global {StringExtensions.GetPlaysString(track.TotalPlaycount)}");
-            leftStats.AppendLine($"`{track.UserPlaycount}` {StringExtensions.GetPlaysString(track.UserPlaycount)} by you");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            if (track.UserPlaycount.HasValue)
-            {
-                await this._updateService.CorrectUserTrackPlaycount(contextUser.UserId, track.ArtistName,
-                    track.TrackName, track.UserPlaycount.Value);
-            }
+            var response = await this._trackBuilders.TrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
-            var duration = spotifyTrack?.DurationMs ?? track.Duration;
-            if (duration is > 0)
-            {
-                var trackLength = TimeSpan.FromMilliseconds(duration.GetValueOrDefault());
-                var formattedTrackLength =
-                    $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
-
-                rightStats.AppendLine($"`{formattedTrackLength}` duration");
-
-                if (track.UserPlaycount > 1)
-                {
-                    var listeningTime =
-                        await this._timeService.GetPlayTimeForTrackWithPlaycount(track.ArtistName, track.TrackName,
-                            track.UserPlaycount.GetValueOrDefault());
-
-                    leftStats.AppendLine($"`{StringExtensions.GetListeningTimeString(listeningTime)}` spent listening");
-                }
-            }
-
-            if (spotifyTrack != null && !string.IsNullOrEmpty(spotifyTrack.SpotifyId))
-            {
-                var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
-
-                rightStats.AppendLine($"`{pitch}` key");
-
-                if (spotifyTrack.Tempo.HasValue)
-                {
-                    var bpm = $"{spotifyTrack.Tempo.Value:0.0}";
-                    rightStats.AppendLine($"`{bpm}` bpm");
-                }
-
-                if (spotifyTrack.Danceability.HasValue && spotifyTrack.Energy.HasValue && spotifyTrack.Instrumentalness.HasValue &&
-                    spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue && spotifyTrack.Liveness.HasValue && spotifyTrack.Valence.HasValue)
-                {
-                    var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
-                    var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
-                    var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
-                    var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
-                    var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
-                    var lively = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
-                    var valence = ((decimal)(spotifyTrack.Valence / 1)).ToString("0%");
-                    footer.AppendLine($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
-                                      $"{instrumental} instrumental - {speechful} speechful - {lively} lively\n" +
-                                      $"{valence} valence (musical positiveness)");
-                }
-            }
-
-            if (contextUser.TotalPlaycount.HasValue && track.UserPlaycount is >= 10)
-            {
-                footer.AppendLine($"{(decimal)track.UserPlaycount.Value / contextUser.TotalPlaycount.Value:P} of all your scrobbles are on this track");
-            }
-
-            if (footer.Length > 0)
-            {
-                this._embed.WithFooter(footer.ToString());
-            }
-
-            this._embed.AddField("Statistics", leftStats.ToString(), true);
-
-            if (rightStats.Length > 0)
-            {
-                this._embed.AddField("Info", rightStats.ToString(), true);
-            }
-
-            if (!string.IsNullOrWhiteSpace(track.Description))
-            {
-                this._embed.AddField("Summary", track.Description);
-            }
-
-            //if (track.Tags != null && track.Tags.Any())
-            //{
-            //    var tags = LastFmRepository.TagsToLinkedString(track.Tags);
-
-            //    this._embed.AddField("Tags", tags);
-            //}
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            this.Context.LogCommandUsed();
-
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -250,40 +142,16 @@ public class TrackCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks)]
     public async Task TrackPlaysAsync([Remainder] string trackValues = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
         _ = this.Context.Channel.TriggerTypingAsync();
 
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(trackValues, contextUser, this.Context);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var track = await this.SearchTrack(userSettings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
-        if (track == null)
-        {
-            return;
-        }
+        var response = await this._trackBuilders.TrackPlays(new ContextModel(this.Context, prfx, contextUser), userSettings, trackValues);
 
-        var reply =
-            $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{track.UserPlaycount}` {StringExtensions.GetPlaysString(track.UserPlaycount)} for **{track.TrackName.FilterOutMentions()}** " +
-            $"by **{track.ArtistName.FilterOutMentions()}**";
-
-        if (track.UserPlaycount.HasValue && !userSettings.DifferentUser)
-        {
-            await this._updateService.CorrectUserTrackPlaycount(contextUser.UserId, track.ArtistName,
-                track.TrackName, track.UserPlaycount.Value);
-        }
-
-        if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
-        {
-            var playsLastWeek =
-                await this._playService.GetWeekTrackPlaycountAsync(userSettings.UserId, track.TrackName, track.ArtistName);
-            if (playsLastWeek != 0)
-            {
-                reply += $" (`{playsLastWeek}` last week)";
-            }
-        }
-
-        await this.Context.Channel.SendMessageAsync(reply, allowedMentions: AllowedMentions.None);
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("love", RunMode = RunMode.Async)]
@@ -294,54 +162,15 @@ public class TrackCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks)]
     public async Task LoveAsync([Remainder] string trackValues = null)
     {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
-        {
-            this._embed.WithTitle($"{prfx}love");
-            this._embed.WithDescription("Loves the track you're currently listening to or searching for on last.fm.");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
+        var response = await this._trackBuilders.LoveTrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
-
-        var track = await this.SearchTrack(trackValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
-        if (track == null)
-        {
-            return;
-        }
-
-        var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-
-        if (track.Loved)
-        {
-            this._embed.WithTitle($"❤️ Track already loved");
-            this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track));
-        }
-        else
-        {
-            var trackLoved = await this._lastFmRepository.LoveTrackAsync(contextUser, track.ArtistName, track.TrackName);
-
-            if (trackLoved)
-            {
-                this._embed.WithTitle($"❤️ Loved track for {userTitle}");
-                this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track));
-            }
-            else
-            {
-                await this.Context.Message.Channel.SendMessageAsync(
-                    "Something went wrong while adding loved track.");
-                this.Context.LogCommandUsed(CommandResponse.Error);
-                return;
-            }
-        }
-
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("unlove", RunMode = RunMode.Async)]
@@ -352,53 +181,15 @@ public class TrackCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks)]
     public async Task UnLoveAsync([Remainder] string trackValues = null)
     {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
-        {
-            this._embed.WithTitle($"{prfx}unlove");
-            this._embed.WithDescription("Unloves the track you're currently listening to or searching for on last.fm.");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
+        var response = await this._trackBuilders.UnLoveTrackAsync(new ContextModel(this.Context, prfx, contextUser), trackValues);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
-
-        var track = await this.SearchTrack(trackValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
-        if (track == null)
-        {
-            return;
-        }
-
-        var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-        if (!track.Loved)
-        {
-            this._embed.WithTitle($"💔 Track wasn't loved");
-            this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track));
-        }
-        else
-        {
-            var trackLoved = await this._lastFmRepository.UnLoveTrackAsync(contextUser, track.ArtistName, track.TrackName);
-
-            if (trackLoved)
-            {
-                this._embed.WithTitle($"💔 Unloved track for {userTitle}");
-                this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track));
-            }
-            else
-            {
-                await this.Context.Message.Channel.SendMessageAsync(
-                    "Something went wrong while unloving track.");
-                this.Context.LogCommandUsed(CommandResponse.Error);
-                return;
-            }
-        }
-
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("loved", RunMode = RunMode.Async)]

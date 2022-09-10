@@ -8,6 +8,7 @@ using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Types;
@@ -53,7 +54,7 @@ namespace FMBot.Bot.Services
             this._botSettings = botSettings.Value;
         }
 
-        public async Task<ArtistSearch> GetArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
+        public async Task<ArtistSearch> SearchArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
             bool useCachedArtists = false, int? userId = null)
         {
             if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
@@ -513,7 +514,7 @@ namespace FMBot.Bot.Services
 
                 if (user == null)
                 {
-                    return new List<string> { "Login to the bot first" };
+                    return new List<string> { Constants.AutoCompleteLoginRequired };
                 }
 
                 const string sql = "SELECT * " +
@@ -565,7 +566,7 @@ namespace FMBot.Bot.Services
 
                 if (user == null)
                 {
-                    return new List<string> { "Login to the bot first" };
+                    return new List<string> { Constants.AutoCompleteLoginRequired };
                 }
 
                 const string sql = "SELECT * " +

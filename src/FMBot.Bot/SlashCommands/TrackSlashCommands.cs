@@ -9,7 +9,6 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
-using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -30,6 +29,98 @@ public class TrackSlashCommands : InteractionModuleBase
         this.Interactivity = interactivity;
     }
 
+    [SlashCommand("track", "Shows track info for the track you're currently listening to or searching for")]
+    [UsernameSetRequired]
+    public async Task TrackAsync(
+        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._trackBuilders.TrackAsync(new ContextModel(this.Context, contextUser), name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("trackplays", "Shows playcount for current track or the one you're searching for.")]
+    [UsernameSetRequired]
+    public async Task TrackPlaysAsync(
+        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+            var response = await this._trackBuilders.TrackPlays(new ContextModel(this.Context, contextUser), userSettings, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("love", "Loves track you're currently listening to or searching for on Last.fm")]
+    [UserSessionRequired]
+    public async Task LoveTrackAsync(
+        [Summary("Track", "The track your want to love (defaults to currently playing)")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._trackBuilders.LoveTrackAsync(new ContextModel(this.Context, contextUser), name);
+
+            await this.Context.SendResponse(this.Interactivity, response, privateResponse);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("unlove", "Removes track you're currently listening to or searching from your loved tracks")]
+    [UserSessionRequired]
+    public async Task UnloveTrackAsync(
+        [Summary("Track", "The track your want to remove (defaults to currently playing)")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._trackBuilders.UnLoveTrackAsync(new ContextModel(this.Context, contextUser), name);
+
+            await this.Context.SendResponse(this.Interactivity, response, privateResponse);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [SlashCommand("receipt", "Shows your track receipt. Based on Receiptify.")]
     [UsernameSetRequired]
     public async Task ReceiptAsync(
@@ -37,7 +128,7 @@ public class TrackSlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
-        _ = DeferAsync();
+        _ = DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

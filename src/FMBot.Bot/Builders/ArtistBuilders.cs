@@ -80,7 +80,7 @@ public class ArtistBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var artistSearch = await this._artistsService.GetArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -265,7 +265,7 @@ public class ArtistBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        var artistSearch = await this._artistsService.GetArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM,
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM,
             context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId);
         if (artistSearch.Artist == null)
         {
@@ -602,7 +602,7 @@ public class ArtistBuilders
                 .TrimStart();
         }
 
-        var artistSearch = await this._artistsService.GetArtist(response, context.DiscordUser, artistName, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistName, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -672,7 +672,7 @@ public class ArtistBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var artistSearch = await this._artistsService.GetArtist(response, context.DiscordUser, artistValues, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true, userId: context.ContextUser.UserId);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true, userId: context.ContextUser.UserId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -790,7 +790,7 @@ public class ArtistBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var artistSearch = await this._artistsService.GetArtist(response, context.DiscordUser, settings.NewSearchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true, userId: context.ContextUser.UserId);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, settings.NewSearchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true, userId: context.ContextUser.UserId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;

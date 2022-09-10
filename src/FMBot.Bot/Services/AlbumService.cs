@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Types;
@@ -192,6 +194,7 @@ public class AlbumService
         if (result.Success)
         {
             response.Embed.WithDescription($"Album could not be found, please check your search values and try again.");
+            response.Embed.WithFooter($"Search value: '{searchValue}'");
             response.CommandResponse = CommandResponse.LastFmError;
             response.ResponseType = ResponseType.Embed;
             return new AlbumSearch(null, response);
@@ -361,7 +364,7 @@ public class AlbumService
 
             if (user == null)
             {
-                return new List<AlbumAutoCompleteSearchModel> { new("Start typing to search through albums...") };
+                return new List<AlbumAutoCompleteSearchModel> { new(Constants.AutoCompleteLoginRequired) };
             }
 
             const string sql = "SELECT * " +
@@ -413,7 +416,7 @@ public class AlbumService
 
             if (user == null)
             {
-                return new List<AlbumAutoCompleteSearchModel> { new("Login to the bot first") };
+                return new List<AlbumAutoCompleteSearchModel> { new(Constants.AutoCompleteLoginRequired) };
             }
 
             const string sql = "SELECT * " +

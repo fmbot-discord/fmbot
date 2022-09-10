@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -33,8 +34,9 @@ public class TrackBuilders
     private readonly TimeService _timeService;
     private readonly LastFmRepository _lastFmRepository;
     private readonly PuppeteerService _puppeteerService;
+    private readonly IUpdateService _updateService;
 
-    public TrackBuilders(UserService userService, GuildService guildService, TrackService trackService, WhoKnowsTrackService whoKnowsTrackService, PlayService playService, SpotifyService spotifyService, TimeService timeService, LastFmRepository lastFmRepository, PuppeteerService puppeteerService)
+    public TrackBuilders(UserService userService, GuildService guildService, TrackService trackService, WhoKnowsTrackService whoKnowsTrackService, PlayService playService, SpotifyService spotifyService, TimeService timeService, LastFmRepository lastFmRepository, PuppeteerService puppeteerService, IUpdateService updateService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -45,6 +47,7 @@ public class TrackBuilders
         this._timeService = timeService;
         this._lastFmRepository = lastFmRepository;
         this._puppeteerService = puppeteerService;
+        this._updateService = updateService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -56,8 +59,244 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        if (trackSearch.Track == null)
+        {
+            return trackSearch.Response;
+        }
 
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
+        if (!context.SlashCommand)
+        {
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+        }
+        response.EmbedAuthor.WithName($"Info about {trackSearch.Track.ArtistName} - {trackSearch.Track.TrackName} for {userTitle}");
+
+        if (trackSearch.Track.TrackUrl != null)
+        {
+            response.EmbedAuthor.WithUrl(trackSearch.Track.TrackUrl);
+        }
+
+        response.Embed.WithAuthor(response.EmbedAuthor);
+
+        var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(trackSearch.Track);
+        var leftStats = new StringBuilder();
+        var rightStats = new StringBuilder();
+        var footer = new StringBuilder();
+
+        leftStats.AppendLine($"`{trackSearch.Track.TotalListeners}` listeners");
+        leftStats.AppendLine($"`{trackSearch.Track.TotalPlaycount}` global {StringExtensions.GetPlaysString(trackSearch.Track.TotalPlaycount)}");
+        leftStats.AppendLine($"`{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} by you");
+
+        if (trackSearch.Track.UserPlaycount.HasValue)
+        {
+            await this._updateService.CorrectUserTrackPlaycount(context.ContextUser.UserId, trackSearch.Track.ArtistName,
+                trackSearch.Track.TrackName, trackSearch.Track.UserPlaycount.Value);
+        }
+
+        var duration = spotifyTrack?.DurationMs ?? trackSearch.Track.Duration;
+        if (duration is > 0)
+        {
+            var trackLength = TimeSpan.FromMilliseconds(duration.GetValueOrDefault());
+            var formattedTrackLength =
+                $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
+
+            rightStats.AppendLine($"`{formattedTrackLength}` duration");
+
+            if (trackSearch.Track.UserPlaycount > 1)
+            {
+                var listeningTime =
+                    await this._timeService.GetPlayTimeForTrackWithPlaycount(trackSearch.Track.ArtistName, trackSearch.Track.TrackName,
+                        trackSearch.Track.UserPlaycount.GetValueOrDefault());
+
+                leftStats.AppendLine($"`{StringExtensions.GetListeningTimeString(listeningTime)}` spent listening");
+            }
+        }
+
+        if (spotifyTrack != null && !string.IsNullOrEmpty(spotifyTrack.SpotifyId))
+        {
+            var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
+
+            rightStats.AppendLine($"`{pitch}` key");
+
+            if (spotifyTrack.Tempo.HasValue)
+            {
+                var bpm = $"{spotifyTrack.Tempo.Value:0.0}";
+                rightStats.AppendLine($"`{bpm}` bpm");
+            }
+
+            if (spotifyTrack.Danceability.HasValue && spotifyTrack.Energy.HasValue && spotifyTrack.Instrumentalness.HasValue &&
+                spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue && spotifyTrack.Liveness.HasValue && spotifyTrack.Valence.HasValue)
+            {
+                var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
+                var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
+                var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
+                var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
+                var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
+                var lively = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
+                var valence = ((decimal)(spotifyTrack.Valence / 1)).ToString("0%");
+                footer.AppendLine($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
+                                  $"{instrumental} instrumental - {speechful} speechful - {lively} lively\n" +
+                                  $"{valence} valence (musical positiveness)");
+            }
+        }
+
+        if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 10)
+        {
+            footer.AppendLine($"{(decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your scrobbles are on this track");
+        }
+
+        if (footer.Length > 0)
+        {
+            response.Embed.WithFooter(footer.ToString());
+        }
+
+        response.Embed.AddField("Statistics", leftStats.ToString(), true);
+
+        if (rightStats.Length > 0)
+        {
+            response.Embed.AddField("Info", rightStats.ToString(), true);
+        }
+
+        if (!string.IsNullOrWhiteSpace(trackSearch.Track.Description))
+        {
+            response.Embed.AddField("Summary", trackSearch.Track.Description);
+        }
+
+        //if (track.Tags != null && track.Tags.Any())
+        //{
+        //    var tags = LastFmRepository.TagsToLinkedString(track.Tags);
+
+        //    response.Embed.AddField("Tags", tags);
+        //}
+
+        return response;
+    }
+
+    public async Task<ResponseModel> TrackPlays(
+        ContextModel context,
+        UserSettingsModel userSettings,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Text,
+        };
+
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        if (trackSearch.Track == null)
+        {
+            return trackSearch.Response;
+        }
+
+        var reply =
+            $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} " +
+            $"for **{trackSearch.Track.AlbumName.FilterOutMentions()}** by **{trackSearch.Track.ArtistName.FilterOutMentions()}**";
+
+        if (trackSearch.Track.UserPlaycount.HasValue && !userSettings.DifferentUser)
+        {
+            await this._updateService.CorrectUserAlbumPlaycount(context.ContextUser.UserId, trackSearch.Track.ArtistName,
+                trackSearch.Track.AlbumName, trackSearch.Track.UserPlaycount.Value);
+        }
+
+        if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
+        {
+            var playsLastWeek =
+                await this._playService.GetWeekTrackPlaycountAsync(userSettings.UserId, trackSearch.Track.TrackName, trackSearch.Track.ArtistName);
+            if (playsLastWeek != 0)
+            {
+                reply += $" (`{playsLastWeek}` last week)";
+            }
+        }
+
+        response.Text = reply;
+
+        return response;
+    }
+
+    public async Task<ResponseModel> LoveTrackAsync(
+        ContextModel context,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        if (trackSearch.Track == null)
+        {
+            return trackSearch.Response;
+        }
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        if (trackSearch.Track.Loved)
+        {
+            response.Embed.WithTitle($"❤️ Track already loved");
+            response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
+        }
+        else
+        {
+            var trackLoved = await this._lastFmRepository.LoveTrackAsync(context.ContextUser, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+
+            if (trackLoved)
+            {
+                response.Embed.WithTitle($"❤️ Loved track for {userTitle}");
+                response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
+            }
+            else
+            {
+                response.Text = "Something went wrong while adding loved track.";
+                response.ResponseType = ResponseType.Text;
+                response.CommandResponse = CommandResponse.Error;
+                return response;
+            }
+        }
+
+        return response;
+    }
+
+    public async Task<ResponseModel> UnLoveTrackAsync(
+        ContextModel context,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        if (trackSearch.Track == null)
+        {
+            return trackSearch.Response;
+        }
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        if (!trackSearch.Track.Loved)
+        {
+            response.Embed.WithTitle($"💔 Track wasn't loved");
+            response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
+        }
+        else
+        {
+            var trackLoved = await this._lastFmRepository.UnLoveTrackAsync(context.ContextUser, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+
+            if (trackLoved)
+            {
+                response.Embed.WithTitle($"💔 Unloved track for {userTitle}");
+                response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
+            }
+            else
+            {
+                response.Text = "Something went wrong while unloving track.";
+                response.ResponseType = ResponseType.Text;
+                response.CommandResponse = CommandResponse.Error;
+                return response;
+            }
+        }
 
         return response;
     }

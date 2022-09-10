@@ -76,7 +76,6 @@ namespace FMBot.Bot.Commands
 
                     var currentTrack = recentScrobbles.Content.RecentTracks[0];
 
-
                     querystring = $"{currentTrack.TrackName} {currentTrack.ArtistName} {currentTrack.AlbumName}";
                 }
 

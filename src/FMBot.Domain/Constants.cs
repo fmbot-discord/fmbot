@@ -26,6 +26,8 @@ namespace FMBot.Domain
 
         public const string UserMentionOrLfmUserNameExample = "`fm-bot` / `@usermention` / `356268235697553409`";
 
+        public const string AutoCompleteLoginRequired = "Connect your Last.fm account with /login first to see results..";
+
         /// <summary>Amount of days to store plays for users for</summary>
         public const int DaysToStorePlays = 46;
 

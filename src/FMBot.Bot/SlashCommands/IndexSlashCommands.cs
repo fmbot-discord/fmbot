@@ -29,10 +29,9 @@ public class IndexSlashCommands : InteractionModuleBase
         this._prefixService = prefixService;
     }
 
-
     [SlashCommand("refreshmembers", "Refreshes the cached member list that .fmbot has for your server")]
     [UsernameSetRequired]
-    public async Task FriendsAsync()
+    public async Task RefreshMembersAsync()
     {
         _ = DeferAsync();
 
