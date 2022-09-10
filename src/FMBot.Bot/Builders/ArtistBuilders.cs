@@ -86,8 +86,9 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
+        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
         var spotifyArtistTask = this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue);
-
+        
         var fullArtist = await spotifyArtistTask;
 
         var footer = new StringBuilder();
@@ -174,6 +175,19 @@ public class ArtistBuilders
                 }
             }
 
+            if (context.ContextUser.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
+            {
+                var firstPlay =
+                    await this._playService.GetArtistFirstPlayDate(context.ContextUser.UserId,
+                        artistSearch.Artist.ArtistName);
+                if (firstPlay != null)
+                {
+                    var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
+
+                    artistInfo.AppendLine($"Your first listen: <t:{firstListenValue}:D>");
+                }
+            }
+
             if (artistInfo.Length > 0)
             {
                 response.Embed.WithDescription(artistInfo.ToString());
@@ -183,7 +197,7 @@ public class ArtistBuilders
         if (context.DiscordGuild != null)
         {
             var serverStats = "";
-            var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+            var guild = await guildTask;
 
             if (guild?.LastIndexed != null)
             {
@@ -664,13 +678,14 @@ public class ArtistBuilders
 
     public async Task<ResponseModel> WhoKnowsArtistAsync(
         ContextModel context,
-        Guild contextGuild,
         string artistValues)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
+
+        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true, userId: context.ContextUser.UserId);
         if (artistSearch.Artist == null)
@@ -680,6 +695,7 @@ public class ArtistBuilders
 
         var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
 
+        var contextGuild = await guildTask;
         var currentUser = await this._indexService.GetOrAddUserToGuild(contextGuild, await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId), context.ContextUser);
 
         if (!contextGuild.GuildUsers.Select(s => s.UserId).Contains(context.ContextUser.UserId))

@@ -145,8 +145,15 @@ namespace FMBot.LastFM.Api
             {
                 response.Success = false;
                 response.Message = "Something went wrong while deserializing the object last.fm returned";
-                Console.WriteLine(ex);
-                Log.Error("Something went wrong while deserializing the object Last.fm returned:", ex);
+                Log.Error("Something went wrong while deserializing the object Last.fm returned - {request} - {ex}", call, ex);
+
+                var errorParameters = "";
+                foreach (var parameter in parameters)
+                {
+                    errorParameters += $"{parameter.Key}: {parameter.Value} - ";
+                }
+
+                Log.Error($"Object error - Call: {call} - Parameters: {errorParameters}");
                 Statistics.LastfmErrors.Inc();
             }
 

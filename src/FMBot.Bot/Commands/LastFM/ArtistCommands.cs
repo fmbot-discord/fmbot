@@ -424,11 +424,9 @@ public class ArtistCommands : BaseCommandModule
 
         try
         {
-            var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser),
-                guild, artistValues);
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), artistValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

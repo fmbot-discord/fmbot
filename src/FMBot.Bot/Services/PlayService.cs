@@ -638,6 +638,23 @@ namespace FMBot.Bot.Services
             });
         }
 
+        public async Task<DateTime?> GetArtistFirstPlayDate(int userId, string artistName)
+        {
+            const string sql = "SELECT first(time_played, time_played) FROM user_play_ts " +
+                               "WHERE user_id = @userId AND " +
+                               "UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QuerySingleOrDefaultAsync<DateTime?>(sql, new
+            {
+                userId,
+                artistName,
+            });
+        }
+
         public async Task<IList<UserPlayTs>> GetGuildUsersPlays(int guildId, int amountOfDays)
         {
             var cacheKey = $"guild-user-plays-{guildId}-{amountOfDays}";
