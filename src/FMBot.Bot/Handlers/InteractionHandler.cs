@@ -145,7 +145,36 @@ public class InteractionHandler
 
     private async Task UserCommandAsync(SocketInteraction socketInteraction)
     {
+        if (socketInteraction is not SocketUserCommand socketUserCommand)
+        {
+            return;
+        }
+
         var context = new ShardedInteractionContext(this._client, socketInteraction);
+        var commandSearch = this._interactionService.SearchUserCommand(socketUserCommand);
+
+        if (!commandSearch.IsSuccess)
+        {
+            Log.Error("Someone tried to execute a non-existent user command! {slashCommand}", socketUserCommand.CommandName);
+            return;
+        }
+
+        var contextUser = await this._userService.GetUserAsync(context.User.Id);
+
+        if (commandSearch.Command.Attributes.OfType<UsernameSetRequired>().Any())
+        {
+            if (contextUser == null)
+            {
+                var embed = new EmbedBuilder()
+                    .WithColor(DiscordConstants.LastFmColorRed);
+                var userNickname = (context.User as SocketGuildUser)?.Nickname;
+                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
+                await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+                context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                return;
+            }
+        }
+
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
     }
 

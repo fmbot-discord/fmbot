@@ -49,6 +49,7 @@ public class FriendSlashCommands : InteractionModuleBase
     }
 
     [UserCommand("Add as friend")]
+    [UsernameSetRequired]
     public async Task AddFriendAsync(IUser user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -67,10 +68,11 @@ public class FriendSlashCommands : InteractionModuleBase
     }
 
     [UserCommand("Remove friend")]
+    [UsernameSetRequired]
     public async Task RemoveFriendAsync(IUser user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
+        
         try
         {
             var response = await this._friendBuilders.RemoveFriendsAsync(new ContextModel(this.Context, contextUser), new []{ user.Id.ToString() }, true);

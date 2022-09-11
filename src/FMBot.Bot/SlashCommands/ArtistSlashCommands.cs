@@ -182,6 +182,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     }
 
     [UserCommand("Compare taste")]
+    [UsernameSetRequired]
     public async Task UserTasteAsync(IUser user)
     {
         await TasteAsync(user.Id.ToString(), privateResponse: true);
