@@ -314,7 +314,7 @@ public class ArtistBuilders
         if (topTracks.Count == 0)
         {
             response.Embed.WithDescription(
-                $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{artistSearch.Artist.ArtistName}** in .fmbot.");
+                $"{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{artistSearch.Artist.ArtistName}** in .fmbot.");
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -353,7 +353,7 @@ public class ArtistBuilders
             {
                 footer.AppendLine($"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
-                title.Append($"{userSettings.DiscordUserName} their top tracks for '{artistSearch.Artist.ArtistName}'");
+                title.Append($"{Format.Sanitize(userSettings.DiscordUserName)} their top tracks for '{artistSearch.Artist.ArtistName}'");
             }
             else
             {
@@ -658,7 +658,7 @@ public class ArtistBuilders
         var determiner = "your";
         if (userSettings.DifferentUser)
         {
-            reply.Append($"<@{context.DiscordUser.Id}> My estimate is that the user '{userSettings.UserNameLastFm.FilterOutMentions()}'");
+            reply.Append($"<@{context.DiscordUser.Id}> My estimate is that the user '{Format.Sanitize(userSettings.UserNameLastFm)}'");
             determiner = "their";
         }
         else
@@ -666,7 +666,7 @@ public class ArtistBuilders
             reply.Append($"<@{context.DiscordUser.Id}> My estimate is that you");
         }
 
-        reply.AppendLine($" will reach **{goalAmount}** plays on **{artistSearch.Artist.ArtistName}** on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
+        reply.AppendLine($" will reach **{goalAmount}** plays on **{Format.Sanitize(artistSearch.Artist.ArtistName)}** on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
 
 
         reply.AppendLine(

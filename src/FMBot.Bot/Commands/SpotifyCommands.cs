@@ -97,7 +97,7 @@ namespace FMBot.Bot.Commands
                 }
                 else
                 {
-                    await ReplyAsync("No results have been found for this track. Querystring: `" + querystring.FilterOutMentions() + "`", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync($"Sorry, Spotify returned no results for *`{Format.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                 }
             }
@@ -164,7 +164,7 @@ namespace FMBot.Bot.Commands
                 }
                 else
                 {
-                    await ReplyAsync("No results have been found for this album. Querystring: `" + querystring.FilterOutMentions() + "`", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync($"Sorry, Spotify returned no results for *`{Format.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                 }
             }
@@ -234,7 +234,7 @@ namespace FMBot.Bot.Commands
                 }
                 else
                 {
-                    await ReplyAsync("No results have been found for this artist. Querystring: `" + querystring.FilterOutMentions() + "`", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync($"Sorry, Spotify returned no results for *`{Format.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                 }
             }

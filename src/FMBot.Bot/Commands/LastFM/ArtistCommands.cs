@@ -183,7 +183,7 @@ public class ArtistCommands : BaseCommandModule
         if (topAlbums.Count == 0)
         {
             this._embed.WithDescription(
-                $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()} has no scrobbles for this artist or their scrobbles have no album associated with them.");
+                $"{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()} has no scrobbles for this artist or their scrobbles have no album associated with them.");
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
             return;
@@ -276,9 +276,9 @@ public class ArtistCommands : BaseCommandModule
         }
 
         var reply =
-            $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has " +
+            $"**{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}** has " +
             $"`{artist.UserPlaycount}` {StringExtensions.GetPlaysString(artist.UserPlaycount)} for " +
-            $"**{artist.ArtistName.FilterOutMentions()}**";
+            $"**{Format.Sanitize(artist.ArtistName)}**";
 
         if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
         {
@@ -310,7 +310,6 @@ public class ArtistCommands : BaseCommandModule
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.Monthly, cachedOrAllTimeOnly: true);

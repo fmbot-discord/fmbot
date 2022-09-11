@@ -159,7 +159,7 @@ namespace FMBot.Bot.Services
 
             var guildUser = await guild.GetUserAsync(user.Id);
 
-            return guildUser?.Nickname ?? user.Username;
+            return Format.Sanitize(guildUser?.Nickname ?? user.Username);
         }
 
         // Rank

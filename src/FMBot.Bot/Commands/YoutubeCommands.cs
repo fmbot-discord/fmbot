@@ -88,7 +88,7 @@ namespace FMBot.Bot.Commands
 
                     var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
 
-                    var reply = $"{name.FilterOutMentions()} searched for: `{querystring.FilterOutMentions()}`";
+                    var reply = $"{Format.Sanitize(name)} searched for: `{Format.Sanitize(querystring)}`";
 
                     var video = await this._youtubeService.GetVideoResult(youtubeResult.VideoId);
 

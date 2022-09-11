@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -495,8 +496,8 @@ public class AlbumBuilders
         }
 
         var reply =
-            $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{albumSearch.Album.UserPlaycount}` {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} " +
-            $"for **{albumSearch.Album.AlbumName.FilterOutMentions()}** by **{albumSearch.Album.ArtistName.FilterOutMentions()}**";
+            $"**{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}** has `{albumSearch.Album.UserPlaycount}` {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} " +
+            $"for **{Format.Sanitize(albumSearch.Album.AlbumName)}** by **{Format.Sanitize(albumSearch.Album.ArtistName)}**";
 
         if (albumSearch.Album.UserPlaycount.HasValue && !userSettings.DifferentUser)
         {

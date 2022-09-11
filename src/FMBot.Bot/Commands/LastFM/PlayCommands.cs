@@ -184,11 +184,11 @@ public class PlayCommands : BaseCommandModule
             IUserMessage message;
             if (response.ResponseType == ResponseType.Embed)
             {
-                message = await ReplyAsync("", false, response.Embed.Build());
+                message = await ReplyAsync("", false, response.Embed.Build(), allowedMentions: AllowedMentions.None);
             }
             else
             {
-                message = await ReplyAsync(response.Text);
+                message = await ReplyAsync(response.Text, allowedMentions: AllowedMentions.None);
             }
 
             try
@@ -570,7 +570,7 @@ public class PlayCommands : BaseCommandModule
 
         var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
-        var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
+        var userTitle = $"{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}";
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {

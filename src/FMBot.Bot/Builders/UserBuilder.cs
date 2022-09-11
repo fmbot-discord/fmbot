@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -122,7 +123,7 @@ public class UserBuilder
         };
 
         response.Embed.WithTitle(
-                    $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}'s featured history");
+                    $"{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}'s featured history");
 
         var featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId);
 

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -199,7 +198,7 @@ public class PlaySlashCommands : InteractionModuleBase
                 userSettings, amount);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -225,22 +224,11 @@ public class PlaySlashCommands : InteractionModuleBase
             var goalAmount = SettingService.GetGoalAmount(amount.ToString(), userInfo.Playcount);
             var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
 
-            long timeFrom;
-            if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
-            {
-                var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
-                timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
-            }
-            else
-            {
-                timeFrom = userInfo.Registered.Unixtime;
-            }
-
             var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.Registered.Unixtime);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -268,7 +256,7 @@ public class PlaySlashCommands : InteractionModuleBase
                 userSettings, mileStoneAmount, userInfo.Playcount);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

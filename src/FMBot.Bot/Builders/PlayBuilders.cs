@@ -724,7 +724,7 @@ public class PlayBuilder
 
         reply.AppendLine(StringService.TrackToLinkedString(mileStonePlay.Content));
 
-        var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
+        var userTitle = $"{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}";
 
         response.Embed.WithTitle($"{mileStoneAmount}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
 
