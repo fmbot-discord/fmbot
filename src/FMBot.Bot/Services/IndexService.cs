@@ -172,6 +172,8 @@ namespace FMBot.Bot.Services
 
                     if (existingGuildUser != null)
                     {
+                        existingGuildUser.User = user;
+                        existingGuildUser.UserName = discordGuildUser.DisplayName;
                         return existingGuildUser;
                     }
 
