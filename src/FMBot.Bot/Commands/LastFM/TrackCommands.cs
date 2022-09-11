@@ -506,16 +506,11 @@ public class TrackCommands : BaseCommandModule
         {
             var guild = await guildTask;
 
-            var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser);
-
-            if (!guild.GuildUsers.Select(s => s.UserId).Contains(contextUser.UserId))
-            {
-                guild.GuildUsers.Add(currentUser);
-            }
-
-            await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), currentUser.UserId, guild);
-
             var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildId, track.ArtistName, track.TrackName);
+
+            var discordGuildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
+            var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithTrack, guild, discordGuildUser, contextUser);
+            await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), currentUser.UserId, guild);
 
             if (track.UserPlaycount.HasValue && track.UserPlaycount != 0)
             {
@@ -593,7 +588,7 @@ public class TrackCommands : BaseCommandModule
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
+        var guildTask = this._guildService.GetGuildWithGuildUsers(this.Context.Guild?.Id);
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -632,13 +627,14 @@ public class TrackCommands : BaseCommandModule
                 usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, trackName, track.UserPlaycount);
             }
 
-            var guild = await guildTask;
             var privacyLevel = PrivacyLevel.Global;
 
             var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
 
-            if (guild != null)
+            if (this.Context.Guild != null)
             {
+                var guild = await guildTask;
+                
                 filteredUsersWithAlbum =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
 

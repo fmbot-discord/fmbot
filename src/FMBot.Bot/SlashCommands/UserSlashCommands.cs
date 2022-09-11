@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -16,6 +17,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
+using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.SlashCommands;
@@ -119,8 +121,21 @@ public class UserSlashCommands : InteractionModuleBase
                     var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
                     if (guild != null)
                     {
-                        await this._indexService.GetOrAddUserToGuild(guild,
-                            await this.Context.Guild.GetUserAsync(this.Context.User.Id), newUserSettings);
+                        var discordGuildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
+                        var newGuildUser = new GuildUser
+                        {
+                            Bot = false,
+                            GuildId = guild.GuildId,
+                            UserId = newUserSettings.UserId,
+                            UserName = discordGuildUser?.DisplayName,
+                        };
+
+                        if (guild.WhoKnowsWhitelistRoleId.HasValue && discordGuildUser != null)
+                        {
+                            newGuildUser.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                        }
+
+                        await this._indexService.AddGuildUserToDatabase(newGuildUser);
                     }
                 }
             }

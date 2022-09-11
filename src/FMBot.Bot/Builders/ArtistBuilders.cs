@@ -88,7 +88,7 @@ public class ArtistBuilders
 
         var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
         var spotifyArtistTask = this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue);
-        
+
         var fullArtist = await spotifyArtistTask;
 
         var footer = new StringBuilder();
@@ -694,18 +694,13 @@ public class ArtistBuilders
         }
 
         var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
-
         var contextGuild = await guildTask;
-        var currentUser = await this._indexService.GetOrAddUserToGuild(contextGuild, await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId), context.ContextUser);
-
-        if (!contextGuild.GuildUsers.Select(s => s.UserId).Contains(context.ContextUser.UserId))
-        {
-            contextGuild.GuildUsers.Add(currentUser);
-        }
-
-        await this._indexService.UpdateGuildUser(await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId), currentUser.UserId, contextGuild);
 
         var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, contextGuild.GuildId, artistSearch.Artist.ArtistName);
+
+        var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
+        var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithArtist, contextGuild, discordGuildUser, context.ContextUser);
+        await this._indexService.UpdateGuildUser(discordGuildUser, context.ContextUser.UserId, contextGuild);
 
         if (artistSearch.Artist.UserPlaycount != 0)
         {
@@ -761,7 +756,7 @@ public class ArtistBuilders
         }
 
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
-            contextGuild, artistSearch.Artist.ArtistName);
+            contextGuild, usersWithArtist, artistSearch.Artist.ArtistName);
 
         if (guildAlsoPlaying != null)
         {
@@ -798,7 +793,7 @@ public class ArtistBuilders
 
     public async Task<ResponseModel> GlobalWhoKnowsArtistAsync(
         ContextModel context,
-        Guild contextGuild,
+        Task<Guild> guildTask,
         WhoKnowsSettings settings)
     {
         var response = new ResponseModel
@@ -821,7 +816,7 @@ public class ArtistBuilders
             var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
             var guildUser = new GuildUser
             {
-                UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : context.ContextUser.UserNameLastFM,
+                UserName = discordGuildUser?.DisplayName ?? context.ContextUser.UserNameLastFM,
                 User = context.ContextUser
             };
             usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, artistSearch.Artist.ArtistName, artistSearch.Artist.UserPlaycount);
@@ -831,8 +826,9 @@ public class ArtistBuilders
 
         var privacyLevel = PrivacyLevel.Global;
 
-        if (contextGuild != null)
+        if (context.DiscordGuild != null)
         {
+            var contextGuild = await guildTask;
             filteredUsersWithArtist =
                 WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithArtist, contextGuild.GuildUsers.ToList());
 
@@ -874,13 +870,13 @@ public class ArtistBuilders
             footer.AppendLine($"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}");
         }
 
-        var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
-            contextGuild, artistSearch.Artist.ArtistName);
+        //var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
+        //    contextGuild, usersWithArtist, artistSearch.Artist.ArtistName);
 
-        if (guildAlsoPlaying != null)
-        {
-            footer.AppendLine(guildAlsoPlaying);
-        }
+        //if (guildAlsoPlaying != null)
+        //{
+        //    footer.AppendLine(guildAlsoPlaying);
+        //}
 
         if (settings.AdminView)
         {

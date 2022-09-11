@@ -81,6 +81,20 @@ namespace FMBot.Bot.Services.Guild
             return await db.Guilds
                 .AsNoTracking()
                 .Include(i => i.GuildBlockedUsers)
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+        }
+
+        public async Task<Persistence.Domain.Models.Guild> GetGuildWithGuildUsers(ulong? discordGuildId = null)
+        {
+            if (discordGuildId == null)
+            {
+                return null;
+            }
+
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            return await db.Guilds
+                .AsNoTracking()
+                .Include(i => i.GuildBlockedUsers)
                 .Include(i => i.GuildUsers.Where(w => w.Bot != true))
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
         }

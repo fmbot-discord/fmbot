@@ -312,17 +312,17 @@ public class PlayBuilder
                 response.EmbedAuthor.WithName(headerText);
                 response.EmbedAuthor.WithUrl(recentTracks.Content.UserUrl);
 
-                if (guild != null && !userSettings.DifferentUser)
-                {
-                    var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
-                        guild, currentTrack.ArtistName, currentTrack.TrackName);
+                //if (guild != null && !userSettings.DifferentUser)
+                //{
+                //    var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
+                //        guild, currentTrack.ArtistName, currentTrack.TrackName);
 
-                    if (guildAlsoPlaying != null)
-                    {
-                        footerText += "\n";
-                        footerText += guildAlsoPlaying;
-                    }
-                }
+                //    if (guildAlsoPlaying != null)
+                //    {
+                //        footerText += "\n";
+                //        footerText += guildAlsoPlaying;
+                //    }
+                //}
 
                 if (!string.IsNullOrWhiteSpace(footerText))
                 {

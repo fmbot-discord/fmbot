@@ -136,7 +136,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-
         [Command("whoknowsgenre", RunMode = RunMode.Async)]
         [Summary("Shows what other users listen to a genre in your server")]
         [Examples("wg", "wkg hip hop", "whoknowsgenre", "whoknowsgenre techno")]
@@ -213,24 +212,18 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
 
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
                 var guild = await guildTask;
 
-                var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(user.DiscordUserId), user);
-
-                if (!guild.GuildUsers.Select(s => s.UserId).Contains(user.UserId))
-                {
-                    guild.GuildUsers.Add(currentUser);
-                }
-
-                await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(user.DiscordUserId), currentUser.UserId, guild);
-
                 var guildTopUserArtists = await this._genreService.GetTopUserArtistsForGuildAsync(guild.GuildId, genre);
-                var usersWithGenre =
-                    await this._genreService.GetUsersWithGenreForUserArtists(guildTopUserArtists, guild.GuildUsers);
+                var usersWithGenre = await this._genreService.GetUsersWithGenreForUserArtists(guildTopUserArtists, guild.GuildUsers);
+                
+                var discordGuildUser = await this.Context.Guild.GetUserAsync(user.DiscordUserId);
+                var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithGenre, guild, discordGuildUser, user);
+                await this._indexService.UpdateGuildUser(discordGuildUser, currentUser.UserId, guild);
 
                 var filteredUsersWithGenre = WhoKnowsService.FilterGuildUsersAsync(usersWithGenre, guild);
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Interfaces
@@ -13,7 +14,11 @@ namespace FMBot.Bot.Interfaces
 
         Task IndexUser(User user);
 
-        Task<GuildUser> GetOrAddUserToGuild(Guild guild, IGuildUser discordGuildUser, User user);
+        Task<GuildUser> GetOrAddUserToGuild(ICollection<WhoKnowsObjectWithUser> users, Guild contextGuild,
+            IGuildUser discordGuildUser,
+            User user);
+
+        Task AddGuildUserToDatabase(GuildUser guildUserToAdd);
 
         Task UpdateGuildUser(IGuildUser discordGuildUser, int userId, Guild guildId);
 

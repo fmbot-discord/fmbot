@@ -253,21 +253,15 @@ public class AlbumCommands : BaseCommandModule
             }
 
             var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
-
             var fullAlbumName = $"{album.AlbumName} by {album.ArtistName}";
 
             var guild = await guildTask;
 
-            var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser);
-
-            if (!guild.GuildUsers.Select(s => s.UserId).Contains(contextUser.UserId))
-            {
-                guild.GuildUsers.Add(currentUser);
-            }
-
-            await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), currentUser.UserId, guild);
-
             var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(this.Context.Guild, guild.GuildId, album.ArtistName, album.AlbumName);
+
+            var discordGuildUser = await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId);
+            var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithAlbum, guild, discordGuildUser, contextUser);
+            await this._indexService.UpdateGuildUser(discordGuildUser, currentUser.UserId, guild);
 
             if (album.UserPlaycount.HasValue)
             {
@@ -317,7 +311,7 @@ public class AlbumCommands : BaseCommandModule
             }
 
             var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(contextUser.UserId,
-                guild, album.ArtistName, album.AlbumName);
+                guild, usersWithAlbum, album.ArtistName, album.AlbumName);
 
             if (guildAlsoPlaying != null)
             {
@@ -376,7 +370,7 @@ public class AlbumCommands : BaseCommandModule
 
         try
         {
-            var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
+            var guildTask = this._guildService.GetGuildWithGuildUsers(this.Context.Guild?.Id);
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -417,11 +411,12 @@ public class AlbumCommands : BaseCommandModule
 
             var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum);
 
-            var guild = await guildTask;
             var privacyLevel = PrivacyLevel.Global;
 
-            if (guild != null)
+            if (this.Context.Guild != null)
             {
+                var guild = await guildTask;
+
                 filteredUsersWithAlbum =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
 
@@ -453,14 +448,14 @@ public class AlbumCommands : BaseCommandModule
                 footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
             }
 
-            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(contextUser.UserId,
-                guild, album.ArtistName, album.AlbumName);
+            //var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(contextUser.UserId,
+            //    guild, usersWithAlbum, album.ArtistName, album.AlbumName);
 
-            if (guildAlsoPlaying != null)
-            {
-                footer += "\n";
-                footer += guildAlsoPlaying;
-            }
+            //if (guildAlsoPlaying != null)
+            //{
+            //    footer += "\n";
+            //    footer += guildAlsoPlaying;
+            //}
 
             if (settings.AdminView)
             {

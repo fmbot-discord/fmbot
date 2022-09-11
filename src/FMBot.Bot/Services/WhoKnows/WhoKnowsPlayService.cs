@@ -46,17 +46,18 @@ namespace FMBot.Bot.Services.WhoKnows
             }
         }
 
-        public string GuildAlsoPlayingTrack(int userId, Persistence.Domain.Models.Guild guild, string artistName, string trackName)
+        public string GuildAlsoPlayingTrack(int userId, Persistence.Domain.Models.Guild guild,
+            IEnumerable<WhoKnowsObjectWithUser> users, string artistName, string trackName)
         {
             if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
             {
                 return null;
             }
 
-            var foundUsers = new List<GuildUser>();
+            var foundUsers = new List<WhoKnowsObjectWithUser>();
             var userPlays = new List<UserPlay>();
 
-            foreach (var user in guild.GuildUsers.Where(w => w.UserId != userId))
+            foreach (var user in users.Where(w => w.UserId != userId))
             {
                 var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
 
@@ -75,28 +76,29 @@ namespace FMBot.Bot.Services.WhoKnows
             return foundUsers.Count switch
             {
                 1 =>
-                    $"{foundUsers.First().UserName} was also listening to this track {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
+                    $"{foundUsers.First().DiscordName} was also listening to this track {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
                 2 =>
-                    $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this track!",
+                    $"{foundUsers[0].DiscordName} and {foundUsers[1].DiscordName} were also recently listening to this track!",
                 3 =>
-                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this track!",
+                    $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName} and {foundUsers[2].DiscordName} were also recently listening to this track!",
                 > 3 =>
-                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this track!",
+                    $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName}, {foundUsers[2].DiscordName} and {foundUsers.Count - 3} others were also recently listening to this track!",
                 _ => null
             };
         }
 
-        public string GuildAlsoPlayingAlbum(int userId, Persistence.Domain.Models.Guild guild, string artistName, string albumName)
+        public string GuildAlsoPlayingAlbum(int userId, Persistence.Domain.Models.Guild guild,
+            IEnumerable<WhoKnowsObjectWithUser> users, string artistName, string albumName)
         {
             if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
             {
                 return null;
             }
 
-            var foundUsers = new List<GuildUser>();
+            var foundUsers = new List<WhoKnowsObjectWithUser>();
             var userPlays = new List<UserPlay>();
 
-            foreach (var user in guild.GuildUsers.Where(w => w.UserId != userId))
+            foreach (var user in users.Where(w => w.UserId != userId))
             {
                 var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
 
@@ -115,28 +117,29 @@ namespace FMBot.Bot.Services.WhoKnows
             return foundUsers.Count switch
             {
                 1 =>
-                    $"{foundUsers.First().UserName} was also listening to this album {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
+                    $"{foundUsers.First().DiscordName} was also listening to this album {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
                 2 =>
-                    $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this album!",
+                    $"{foundUsers[0].DiscordName} and {foundUsers[1].DiscordName} were also recently listening to this album!",
                 3 =>
-                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this album!",
+                    $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName} and {foundUsers[2].DiscordName} were also recently listening to this album!",
                 > 3 =>
-                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this album!",
+                    $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName}, {foundUsers[2].DiscordName} and {foundUsers.Count - 3} others were also recently listening to this album!",
                 _ => null
             };
         }
 
-        public string GuildAlsoPlayingArtist(int userId, Persistence.Domain.Models.Guild guild, string artistName)
+        public string GuildAlsoPlayingArtist(int userId, Persistence.Domain.Models.Guild guild,
+            IEnumerable<WhoKnowsObjectWithUser> users, string artistName)
         {
             if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
             {
                 return null;
             }
 
-            var foundUsers = new List<GuildUser>();
+            var foundUsers = new List<WhoKnowsObjectWithUser>();
             var userPlays = new List<UserPlay>();
 
-            foreach (var user in guild.GuildUsers.Where(w => w.UserId != userId))
+            foreach (var user in users.Where(w => w.UserId != userId))
             {
                 var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
 
@@ -155,13 +158,13 @@ namespace FMBot.Bot.Services.WhoKnows
             return foundUsers.Count switch
             {
                 1 =>
-                    $"{foundUsers.First().UserName} was also listening to this artist {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
+                    $"{foundUsers.First().DiscordName} was also listening to this artist {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
                 2 =>
-                    $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this artist!",
+                    $"{foundUsers[0].DiscordName} and {foundUsers[1].DiscordName} were also recently listening to this artist!",
                 3 =>
-                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this artist!",
+                    $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName} and {foundUsers[2].DiscordName} were also recently listening to this artist!",
                 > 3 =>
-                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this artist!",
+                    $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName}, {foundUsers[2].DiscordName} and {foundUsers.Count - 3} others were also recently listening to this artist!",
                 _ => null
             };
         }

@@ -36,7 +36,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public async Task<CrownModel> GetAndUpdateCrownForArtist(IList<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
         {
-            var eligibleUsers = guild.GuildUsers.ToList();
+            var eligibleUsers = users.ToList();
 
             if (guild.CrownsActivityThresholdDays.HasValue)
             {
