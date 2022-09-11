@@ -31,9 +31,7 @@ public static class PlayRepository
 
         var existingPlays = await GetUserPlays(userId, connection, plays.Count + 250);
 
-        var firstExistingPlay = existingPlays
-            .OrderBy(o => o.TimePlayed)
-            .FirstOrDefault();
+        var firstExistingPlay = existingPlays.MinBy(o => o.TimePlayed);
 
         if (firstExistingPlay != null)
         {
@@ -51,9 +49,7 @@ public static class PlayRepository
             }
         }
 
-        var firstNewPlay = plays
-            .OrderBy(o => o.TimePlayed)
-            .FirstOrDefault();
+        var firstNewPlay = plays.MinBy(o => o.TimePlayed);
 
         var removedPlays = new List<UserPlayTs>();
         if (firstNewPlay != null)
@@ -73,9 +69,12 @@ public static class PlayRepository
             }
         }
 
-        Log.Information($"Inserting {addedPlays.Count} new time series plays for user {userId}");
-        await InsertTimeSeriesPlays(addedPlays, connection);
-
+        if (addedPlays.Any())
+        {
+            Log.Information($"Inserting {addedPlays.Count} new time series plays for user {userId}");
+            await InsertTimeSeriesPlays(addedPlays, connection);
+        }
+        
         return new PlayUpdate(addedPlays, removedPlays);
     }
 
