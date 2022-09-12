@@ -290,7 +290,8 @@ namespace FMBot.Bot.Services
 
                         embed.WithTitle("Monthly supporter expired");
                         embed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
-                                              $"ID: `{existingSupporter.OpenCollectiveId}`");
+                                              $"ID: `{existingSupporter.OpenCollectiveId}\n\n" +
+                                              $"`.removesupporter {existingSupporter.DiscordUserId}`");
 
                         await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
                         await supporterUpdateChannel.SendMessageAsync(null, false, new[] { embed.Build() });
@@ -318,7 +319,8 @@ namespace FMBot.Bot.Services
 
                         embed.WithTitle("Yearly supporter expired");
                         embed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
-                                              $"ID: `{existingSupporter.OpenCollectiveId}`");
+                                              $"ID: `{existingSupporter.OpenCollectiveId}`\n\n" +
+                                              $"`.removesupporter {existingSupporter.DiscordUserId}`");
 
                         await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
                         await supporterUpdateChannel.SendMessageAsync(null, false, new[] { embed.Build() });
