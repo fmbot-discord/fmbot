@@ -199,7 +199,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("featured", RunMode = RunMode.Async)]
         [Summary("Displays the currently picked feature and the user.\n\n" +
                  "This command will also show something special if the user is in your server")]
-        [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar", "ftrd", "feat")]
+        [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar", "ftrd", "ftd", "feat")]
         [CommandCategories(CommandCategory.Other)]
         public async Task FeaturedAsync([Remainder] string options = null)
         {
