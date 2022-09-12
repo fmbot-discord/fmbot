@@ -276,7 +276,8 @@ namespace FMBot.Bot.Services
         public async Task<int> GetWeekAlbumPlaycountAsync(int userId, string albumName, string artistName)
         {
             var plays = await GetWeekPlays(userId);
-            return plays.Count(ab => ab.AlbumName.ToLower() == albumName.ToLower() &&
+            return plays.Count(ab => ab.AlbumName != null &&
+                                     ab.AlbumName.ToLower() == albumName.ToLower() &&
                                      ab.ArtistName.ToLower() == artistName.ToLower());
         }
 
@@ -652,6 +653,44 @@ namespace FMBot.Bot.Services
             {
                 userId,
                 artistName,
+            });
+        }
+
+        public async Task<DateTime?> GetAlbumFirstPlayDate(int userId, string artistName, string albumName)
+        {
+            const string sql = "SELECT first(time_played, time_played) FROM user_play_ts " +
+                               "WHERE user_id = @userId AND " +
+                               "UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
+                               "UPPER(album_name) = UPPER(CAST(@albumName AS CITEXT))";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QuerySingleOrDefaultAsync<DateTime?>(sql, new
+            {
+                userId,
+                artistName,
+                albumName
+            });
+        }
+
+        public async Task<DateTime?> GetTrackFirstPlayDate(int userId, string artistName, string trackName)
+        {
+            const string sql = "SELECT first(time_played, time_played) FROM user_play_ts " +
+                               "WHERE user_id = @userId AND " +
+                               "UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
+                               "UPPER(track_name) = UPPER(CAST(@trackName AS CITEXT))";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QuerySingleOrDefaultAsync<DateTime?>(sql, new
+            {
+                userId,
+                artistName,
+                trackName
             });
         }
 

@@ -162,6 +162,19 @@ public class AlbumBuilders
             }
         }
 
+        if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)
+        {
+            var firstPlay =
+                await this._playService.GetAlbumFirstPlayDate(context.ContextUser.UserId,
+                    albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+            if (firstPlay != null)
+            {
+                var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
+
+                response.Embed.WithDescription($"Your first listen: <t:{firstListenValue}:D>");
+            }
+        }
+
         var footer = new StringBuilder();
 
         if (context.ContextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 10)
@@ -219,7 +232,6 @@ public class AlbumBuilders
                 }
 
                 trackDescription.AppendLine();
-
 
                 if (trackDescription.Length > 900 && (albumSearch.Album.AlbumTracks.Count - 2 - i) > 1)
                 {

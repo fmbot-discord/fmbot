@@ -142,6 +142,19 @@ public class TrackBuilders
             }
         }
 
+        if (context.ContextUser.UserType != UserType.User && trackSearch.Track.UserPlaycount > 0)
+        {
+            var firstPlay =
+                await this._playService.GetTrackFirstPlayDate(context.ContextUser.UserId,
+                    trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+            if (firstPlay != null)
+            {
+                var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
+
+                response.Embed.WithDescription($"Your first listen: <t:{firstListenValue}:D>");
+            }
+        }
+
         if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 10)
         {
             footer.AppendLine($"{(decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your scrobbles are on this track");
