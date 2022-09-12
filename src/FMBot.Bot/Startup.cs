@@ -20,6 +20,7 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Api;
 using FMBot.LastFM.Repositories;
+using FMBot.OpenCollective.Services;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
 using FMBot.Youtube.Services;
@@ -184,6 +185,7 @@ namespace FMBot.Bot
             services.AddHttpClient<InvidiousApi>();
             services.AddHttpClient<LastFmRepository>();
             services.AddHttpClient<TrackService>();
+            services.AddHttpClient<OpenCollectiveService>();
 
             services.AddHttpClient<SpotifyService>(client =>
             {

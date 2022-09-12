@@ -8,6 +8,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
@@ -33,6 +34,7 @@ namespace FMBot.Bot.Commands
         private readonly UserService _userService;
         private readonly SettingService _settingService;
         private readonly FeaturedService _featuredService;
+        private readonly IIndexService _indexService;
 
         public AdminCommands(
                 AdminService adminService,
@@ -43,7 +45,9 @@ namespace FMBot.Bot.Commands
                 SupporterService supporterService,
                 UserService userService,
                 IOptions<BotSettings> botSettings,
-                SettingService settingService, FeaturedService featuredService) : base(botSettings)
+                SettingService settingService,
+                FeaturedService featuredService,
+                IIndexService indexService) : base(botSettings)
         {
             this._adminService = adminService;
             this._censorService = censorService;
@@ -54,6 +58,7 @@ namespace FMBot.Bot.Commands
             this._userService = userService;
             this._settingService = settingService;
             this._featuredService = featuredService;
+            this._indexService = indexService;
         }
 
         //[Command("debug")]
@@ -552,8 +557,140 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("addsupporter")]
+        public async Task AddSupporterAsync(string user = null, string openCollectiveId = null)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                var formatError = "Make sure to follow the correct format when adding a supporter\n" +
+                                  "`.addsupporter \"discord-user-id\" \"open-collective-id\"`\n" +
+                                  "`.addsupporter \"278633844763262976\" \"03k0exgz-nm8yj64a-g4965wao-9r7b4dlv\"`";
+
+                if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(openCollectiveId) || user == "help")
+                {
+                    await ReplyAsync(formatError);
+                    this.Context.LogCommandUsed(CommandResponse.Help);
+                    return;
+                }
+
+                if (!ulong.TryParse(user, out var userId))
+                {
+                    await ReplyAsync(formatError);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var userSettings = await this._userService.GetUserAsync(userId);
+
+                if (userSettings == null)
+                {
+                    await ReplyAsync("`User not found`\n\n" + formatError);
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+                if (userSettings.UserType != UserType.User)
+                {
+                    await ReplyAsync("`Can only change usertype of normal users`\n\n" + formatError);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var openCollectiveSupporter = await this._supporterService.GetOpenCollectiveSupporter(openCollectiveId);
+                if (openCollectiveSupporter == null)
+                {
+                    await ReplyAsync("`OpenCollective user not found`\n\n" + formatError);
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                var supporter = await this._supporterService.AddOpenCollectiveSupporter(userSettings.DiscordUserId, openCollectiveSupporter);
+
+                this._embed.WithTitle("Added new supporter");
+                this._embed.WithDescription($"User id: {user} | <@{user}>\n" +
+                                            $"Name: **{supporter.Name}**\n" +
+                                            $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
+
+                this._embed.WithFooter("Command not intended for use in public channels\n" +
+                                       "Name changes go through OpenCollective and apply within 24h");
+
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed();
+
+                await this._indexService.IndexUser(userSettings);
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can add supporters");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+        [Command("removesupporter")]
+        public async Task RemoveSupporterAsync(string user = null)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                var formatError = "Make sure to follow the correct format when removing a supporter\n" +
+                                  "`.removesupporter \"discord-user-id\"`";
+
+                if (string.IsNullOrEmpty(user) || user == "help")
+                {
+                    await ReplyAsync(formatError);
+                    this.Context.LogCommandUsed(CommandResponse.Help);
+                    return;
+                }
+
+                if (!ulong.TryParse(user, out var userId))
+                {
+                    await ReplyAsync(formatError);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var userSettings = await this._userService.GetUserAsync(userId);
+
+                if (userSettings == null)
+                {
+                    await ReplyAsync("`User not found`\n\n" + formatError);
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+                if (userSettings.UserType != UserType.Supporter)
+                {
+                    await ReplyAsync("`User is not a supporter`\n\n" + formatError);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var existingSupporter = await this._supporterService.GetSupporter(userId);
+                if (existingSupporter == null)
+                {
+                    await ReplyAsync("`Existing supporter not found`\n\n" + formatError);
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                var supporter = await this._supporterService.OpenCollectiveSupporterExpired(existingSupporter);
+
+                this._embed.WithTitle("Processed supporter expiry");
+                this._embed.WithDescription($"User id: {user} | <@{user}>\n" +
+                                            $"Name: **{supporter.Name}**\n" +
+                                            $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
+
+                this._embed.WithFooter("Command not intended for use in public channels");
+
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can add supporters");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+        [Command("addsupporterclassic")]
         [Examples("addsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"", "addsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"")]
-        public async Task AddSupporterAsync(string user = null, string name = null, string internalNotes = null)
+        public async Task AddSupporterClassicAsync(string user = null, string name = null, string internalNotes = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {

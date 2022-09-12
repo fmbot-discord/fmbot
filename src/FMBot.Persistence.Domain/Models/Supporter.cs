@@ -11,11 +11,22 @@ namespace FMBot.Persistence.Domain.Models
 
         public SupporterType SupporterType { get; set; }
 
+
         public string Notes { get; set; }
 
         public bool SupporterMessagesEnabled { get; set; }
 
         public bool VisibleInOverview { get; set; }
+
+        public SubscriptionType? SubscriptionType { get; set; }
+
+        public string OpenCollectiveId { get; set; }
+
+        public DateTime? LastPayment { get; set; }
+
+        public bool? Expired { get; set; }
+
+        public ulong? DiscordUserId { get; set; }
 
         public DateTime Created { get; set; }
 

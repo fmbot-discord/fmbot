@@ -56,7 +56,7 @@ namespace FMBot.Bot.Services.Guild
             var newWebhook = await socketWebChannel.CreateWebhookAsync($".fmbot{botTypeName} featured", fs,
                 new RequestOptions { AuditLogReason = "Created webhook for .fmbot featured feed." });
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var webhook = new Webhook
             {
                 GuildId = guildId,

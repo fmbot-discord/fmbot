@@ -213,6 +213,32 @@ namespace FMBot.Bot.Commands
                     "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. Any supporter advantages will not apply on this bot.");
             }
 
+            var existingSupporter = await this._supporterService.GetSupporter(this.Context.User.Id);
+            if (existingSupporter != null)
+            {
+                var existingSupporterDescription = new StringBuilder();
+
+                var created = DateTime.SpecifyKind(existingSupporter.Created, DateTimeKind.Utc);
+                var createdValue = ((DateTimeOffset)created).ToUnixTimeSeconds();
+                existingSupporterDescription.AppendLine($"Supporter added: <t:{createdValue}:D>");
+
+                if (existingSupporter.LastPayment.HasValue)
+                {
+                    var lastPayment = DateTime.SpecifyKind(existingSupporter.LastPayment.Value, DateTimeKind.Utc);
+                    var lastPaymentValue = ((DateTimeOffset)created).ToUnixTimeSeconds();
+                    existingSupporterDescription.AppendLine($"Last payment: <t:{lastPaymentValue}:D>");
+                }
+
+                if (existingSupporter.SubscriptionType.HasValue)
+                {
+                    existingSupporterDescription.AppendLine($"Subscription type: {Enum.GetName(existingSupporter.SubscriptionType.Value)}");
+                }
+
+                existingSupporterDescription.AppendLine($"Name: **{Format.Sanitize(existingSupporter.Name)}** (from OpenCollective)");
+
+                this._embed.AddField("Thank you for being a supporter!", existingSupporterDescription.ToString());
+            }
+
             this._embed.WithDescription(embedDescription.ToString());
 
             var components = new ComponentBuilder().WithButton("Get .fmbot supporter", style: ButtonStyle.Link, url: "https://opencollective.com/fmbot/contribute");

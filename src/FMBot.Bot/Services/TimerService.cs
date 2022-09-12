@@ -28,6 +28,8 @@ namespace FMBot.Bot.Services
         private readonly Timer _shardReconnectTimer;
         private readonly Timer _userUpdateTimer;
         private readonly Timer _purgeCacheTimer;
+        private readonly Timer _checkNewSupporterTimer;
+        private readonly Timer _updateSupporterTimer;
         private readonly Timer _userIndexTimer;
         private readonly UserService _userService;
         private readonly IUpdateService _updateService;
@@ -37,6 +39,7 @@ namespace FMBot.Bot.Services
         private readonly WebhookService _webhookService;
         private readonly BotSettings _botSettings;
         private readonly FeaturedService _featuredService;
+        private readonly SupporterService _supporterService;
         private readonly IMemoryCache _cache;
 
         private bool _timerEnabled;
@@ -51,7 +54,8 @@ namespace FMBot.Bot.Services
             WebhookService webhookService,
             IOptions<BotSettings> botSettings,
             FeaturedService featuredService,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            SupporterService supporterService)
         {
             this._client = client;
             this._userService = userService;
@@ -60,6 +64,7 @@ namespace FMBot.Bot.Services
             this._webhookService = webhookService;
             this._featuredService = featuredService;
             this._cache = cache;
+            this._supporterService = supporterService;
             this._updateService = updateService;
             this._botSettings = botSettings.Value;
 
@@ -163,6 +168,52 @@ namespace FMBot.Bot.Services
                 null,
                 TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds),
                 TimeSpan.FromHours(12));
+
+            this._checkNewSupporterTimer = new Timer(async _ =>
+                {
+                    try
+                    {
+                        if (this._botSettings.Bot.FeaturedMaster != true)
+                        {
+                            Log.Warning($"Featured: FeaturedMaster is not true, cancelling {nameof(this._checkNewSupporterTimer)}");
+                            this._checkNewSupporterTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                            return;
+                        }
+
+                        await this._supporterService.CheckForNewSupporters();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error(e, $"Featured: Error in {nameof(this._checkNewSupporterTimer)}");
+                        Console.WriteLine(e);
+                    }
+                },
+                null,
+                TimeSpan.FromSeconds(30),
+                TimeSpan.FromMinutes(3));
+
+            this._updateSupporterTimer = new Timer(async _ =>
+                {
+                    try
+                    {
+                        if (this._botSettings.Bot.FeaturedMaster != true)
+                        {
+                            Log.Warning($"Featured: FeaturedMaster is not true, cancelling {nameof(this._updateSupporterTimer)}");
+                            this._updateSupporterTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                            return;
+                        }
+
+                        await this._supporterService.UpdateExistingOpenCollectiveSupporters();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error(e, $"Featured: Error in {nameof(this._updateSupporterTimer)}");
+                        Console.WriteLine(e);
+                    }
+                },
+                null,
+                TimeSpan.FromSeconds(30),
+                TimeSpan.FromHours(3));
 
             this._internalStatsTimer = new Timer(async _ =>
                 {
