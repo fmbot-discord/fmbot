@@ -36,6 +36,7 @@ COPY ["src/FMBot.Youtube", "FMBot.Youtube/"]
 COPY ["src/FMBot.LastFM", "FMBot.LastFM/"]
 COPY ["src/FMBot.LastFM.Domain", "FMBot.LastFM.Domain/"]
 COPY ["src/FMBot.Logger", "FMBot.Logger/"]
+COPY ["src/FMBot.OpenCollective", "FMBot.OpenCollective/"]
 RUN dotnet restore "FMBot.Bot/FMBot.Bot.csproj"
 COPY . .
 WORKDIR "/src/FMBot.Bot"
