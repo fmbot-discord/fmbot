@@ -46,10 +46,10 @@ namespace FMBot.Bot.Extensions
             switch (response.ResponseType)
             {
                 case ResponseType.Text:
-                    await context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None);
+                    await context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None, components: response.Components?.Build());
                     break;
                 case ResponseType.Embed:
-                    await context.Channel.SendMessageAsync("", false, response.Embed.Build());
+                    await context.Channel.SendMessageAsync("", false, response.Embed.Build(), components: response.Components?.Build());
                     break;
                 case ResponseType.Paginator:
                     _ = interactiveService.SendPaginatorAsync(

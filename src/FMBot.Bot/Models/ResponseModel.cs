@@ -21,6 +21,7 @@ public class ResponseModel
     public EmbedAuthorBuilder EmbedAuthor { get; set; }
     public EmbedBuilder Embed { get; set; }
     public EmbedFooterBuilder EmbedFooter { get; set; }
+    public ComponentBuilder Components { get; set; }
 
     public ResponseType ResponseType { get; set; }
 

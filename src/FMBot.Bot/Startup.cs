@@ -152,6 +152,7 @@ namespace FMBot.Bot
                 .AddSingleton<PlayBuilder>()
                 .AddSingleton<PuppeteerService>()
                 .AddSingleton<Random>()
+                .AddSingleton<StaticBuilders>()
                 .AddSingleton<SettingService>()
                 .AddSingleton<StartupService>()
                 .AddSingleton<SupporterService>()

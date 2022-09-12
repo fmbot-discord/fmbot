@@ -235,7 +235,7 @@ public class FriendBuilders
             {
                 response.Embed.AddField("Friend limit reached",
                     $"Sorry, but you can't have more than {Constants.MaxFriends} friends. \n\n" +
-                    $"Did you know that .fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends? [Get supporter here](https://opencollective.com/fmbot/contribute) or use `{context.Prefix}donate` for more info.");
+                    $"Did you know that .fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends? [Get supporter here](https://opencollective.com/fmbot/contribute) or use `{context.Prefix}getsupporter` for more info.");
             }
             else
             {

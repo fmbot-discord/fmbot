@@ -69,10 +69,10 @@ namespace FMBot.Bot.Extensions
             switch (response.ResponseType)
             {
                 case ResponseType.Text:
-                    await context.Interaction.RespondAsync(response.Text, allowedMentions: AllowedMentions.None, ephemeral: ephemeral);
+                    await context.Interaction.RespondAsync(response.Text, allowedMentions: AllowedMentions.None, ephemeral: ephemeral, components: response.Components?.Build());
                     break;
                 case ResponseType.Embed:
-                    await context.Interaction.RespondAsync(null, new[] { response.Embed.Build() }, ephemeral: ephemeral);
+                    await context.Interaction.RespondAsync(null, new[] { response.Embed.Build() }, ephemeral: ephemeral, components: response.Components?.Build());
                     break;
                 case ResponseType.Paginator:
                     _ = interactiveService.SendPaginatorAsync(

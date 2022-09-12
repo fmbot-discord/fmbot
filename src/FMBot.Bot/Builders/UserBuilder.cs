@@ -202,7 +202,7 @@ public class UserBuilder
             }
             else
             {
-                footer.AppendLine($"Every first Sunday of the month is Supporter Sunday. Check '{context.Prefix}donate' for info.");
+                footer.AppendLine($"Every first Sunday of the month is Supporter Sunday. Check '{context.Prefix}getsupporter' for info.");
             }
 
             response.Embed.WithFooter(footer.ToString());

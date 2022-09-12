@@ -11,6 +11,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -35,6 +36,7 @@ namespace FMBot.Bot.Commands
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
         private readonly MusicBotService _musicBotService;
+        private readonly StaticBuilders _staticBuilders;
         private InteractiveService Interactivity { get; }
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
@@ -49,7 +51,8 @@ namespace FMBot.Bot.Commands
                 UserService userService,
                 IOptions<BotSettings> botSettings,
                 InteractiveService interactivity,
-                MusicBotService musicBotService) : base(botSettings)
+                MusicBotService musicBotService,
+                StaticBuilders staticBuilders) : base(botSettings)
         {
             this._friendService = friendsService;
             this._guildService = guildService;
@@ -59,6 +62,7 @@ namespace FMBot.Bot.Commands
             this._userService = userService;
             this.Interactivity = interactivity;
             this._musicBotService = musicBotService;
+            this._staticBuilders = staticBuilders;
         }
 
         [Command("invite", RunMode = RunMode.Async)]
@@ -181,70 +185,17 @@ namespace FMBot.Bot.Commands
 
         [Command("donate", RunMode = RunMode.Async)]
         [Summary("Please donate if you like this bot!")]
-        [Alias("support", "patreon", "opencollective", "donations", "support")]
+        [Alias("support", "patreon", "opencollective", "donations", "support", "getsupporter")]
         [CommandCategories(CommandCategory.Other)]
         public async Task DonateAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var embedDescription = new StringBuilder();
+            var response = await this._staticBuilders.DonateAsync(new ContextModel(this.Context, prfx, userSettings));
 
-            embedDescription.Append(".fmbot is non-commercial, open-source and non-profit. It is maintained by volunteers.");
-            embedDescription.AppendLine("You can help us fund hosting, development and other costs on our [OpenCollective](https://opencollective.com/fmbot).");
-            embedDescription.AppendLine();
-            embedDescription.AppendLine("We use OpenCollective so we can be transparent about our expenses. If you decide to donate, you can see exactly where your money goes.");
-            embedDescription.AppendLine();
-            embedDescription.AppendLine($"Use `{prfx}supporters` to see everyone who has supported us so far!");
-            embedDescription.AppendLine();
-            embedDescription.AppendLine("**.fmbot supporter advantages include**:\n" +
-                                        "- An emote behind their name (⭐)\n" +
-                                        "- Higher chance of being featured on Supporter Sunday\n" +
-                                        "- Their name shown in the list of supporters\n" +
-                                        "- Exclusive role and channel on [our server](https://discord.gg/6y3jJjtDqK)\n" +
-                                        "- A chance of sponsoring a chart\n" +
-                                        "- Friend limit increased to 16 (up from 12)\n" +
-                                        "- WhoKnows tracking increased to all your music (instead of top 4/5/6k artist/albums/tracks)");
-
-            var socketCommandContext = (SocketCommandContext)this.Context;
-            if (IsBotSelfHosted(socketCommandContext.Client.CurrentUser.Id))
-            {
-                this._embed.AddField("Note:",
-                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. Any supporter advantages will not apply on this bot.");
-            }
-
-            var existingSupporter = await this._supporterService.GetSupporter(this.Context.User.Id);
-            if (existingSupporter != null)
-            {
-                var existingSupporterDescription = new StringBuilder();
-
-                var created = DateTime.SpecifyKind(existingSupporter.Created, DateTimeKind.Utc);
-                var createdValue = ((DateTimeOffset)created).ToUnixTimeSeconds();
-                existingSupporterDescription.AppendLine($"Supporter added: <t:{createdValue}:D>");
-
-                if (existingSupporter.LastPayment.HasValue)
-                {
-                    var lastPayment = DateTime.SpecifyKind(existingSupporter.LastPayment.Value, DateTimeKind.Utc);
-                    var lastPaymentValue = ((DateTimeOffset)created).ToUnixTimeSeconds();
-                    existingSupporterDescription.AppendLine($"Last payment: <t:{lastPaymentValue}:D>");
-                }
-
-                if (existingSupporter.SubscriptionType.HasValue)
-                {
-                    existingSupporterDescription.AppendLine($"Subscription type: {Enum.GetName(existingSupporter.SubscriptionType.Value)}");
-                }
-
-                existingSupporterDescription.AppendLine($"Name: **{Format.Sanitize(existingSupporter.Name)}** (from OpenCollective)");
-
-                this._embed.AddField("Thank you for being a supporter!", existingSupporterDescription.ToString());
-            }
-
-            this._embed.WithDescription(embedDescription.ToString());
-
-            var components = new ComponentBuilder().WithButton("Get .fmbot supporter", style: ButtonStyle.Link, url: "https://opencollective.com/fmbot/contribute");
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), components: components.Build());
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
 
         [Command("status", RunMode = RunMode.Async)]
@@ -703,53 +654,13 @@ namespace FMBot.Bot.Commands
         [CommandCategories(CommandCategory.Other)]
         public async Task AllSupportersAsync()
         {
-            var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var supporters = await this._supporterService.GetAllVisibleSupporters();
+            var response = await this._staticBuilders.SupportersAsync(new ContextModel(this.Context, prfx, userSettings));
 
-            var supporterLists = supporters.ChunkBy(10);
-
-            var description = new StringBuilder();
-            description.AppendLine("Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot). \n" +
-                                   $"For all information on donating to .fmbot you can check out `{prefix}donate`.");
-            description.AppendLine();
-
-            var pages = new List<PageBuilder>();
-            foreach (var supporterList in supporterLists)
-            {
-                var supporterString = new StringBuilder();
-                supporterString.Append(description.ToString());
-
-                foreach (var supporter in supporterList)
-                {
-                    var type = supporter.SupporterType switch
-                    {
-                        SupporterType.Guild => " (server)",
-                        SupporterType.User => "",
-                        SupporterType.Company => " (business)",
-                        _ => ""
-                    };
-
-                    supporterString.AppendLine($" - **{supporter.Name}** {type}");
-                }
-
-                pages.Add(new PageBuilder()
-                    .WithDescription(supporterString.ToString())
-                    .WithAuthor(this._embedAuthor)
-                    .WithTitle(".fmbot supporters overview"));
-            }
-
-            this._embed.WithDescription(description.ToString());
-
-            var paginator = StringService.BuildStaticPaginator(pages);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
 
         [Command("countdown", RunMode = RunMode.Async)]
