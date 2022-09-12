@@ -33,7 +33,7 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             if (track.NowPlaying || track.TimePlayed != null && track.TimePlayed > DateTime.UtcNow.AddMinutes(-8))
             {
-                var userPlay = new UserPlay
+                var userPlay = new UserPlayTs
                 {
                     ArtistName = track.ArtistName,
                     AlbumName = track.AlbumName,
@@ -55,11 +55,11 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             var foundUsers = new List<WhoKnowsObjectWithUser>();
-            var userPlays = new List<UserPlay>();
+            var userPlays = new List<UserPlayTs>();
 
             foreach (var user in users.Where(w => w.UserId != userId))
             {
-                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
+                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlayTs userPlay);
 
                 if (userFound && userPlay.ArtistName == artistName.ToLower() && userPlay.TrackName == trackName.ToLower())
                 {
@@ -96,11 +96,11 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             var foundUsers = new List<WhoKnowsObjectWithUser>();
-            var userPlays = new List<UserPlay>();
+            var userPlays = new List<UserPlayTs>();
 
             foreach (var user in users.Where(w => w.UserId != userId))
             {
-                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
+                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlayTs userPlay);
 
                 if (userFound && userPlay.ArtistName == artistName.ToLower() && userPlay.AlbumName == albumName.ToLower())
                 {
@@ -137,11 +137,11 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             var foundUsers = new List<WhoKnowsObjectWithUser>();
-            var userPlays = new List<UserPlay>();
+            var userPlays = new List<UserPlayTs>();
 
             foreach (var user in users.Where(w => w.UserId != userId))
             {
-                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
+                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlayTs userPlay);
 
                 if (userFound && userPlay.ArtistName == artistName.ToLower() && userPlay.TimePlayed > DateTime.UtcNow.AddMinutes(-10))
                 {

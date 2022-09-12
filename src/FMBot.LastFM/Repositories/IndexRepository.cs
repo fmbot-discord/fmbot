@@ -76,7 +76,6 @@ namespace FMBot.LastFM.Repositories
 
             var plays = await GetPlaysForUserFromLastFm(user);
             await PlayRepository.InsertAllPlays(plays, user.UserId, connection);
-            await InsertPlaysIntoDatabase(plays, user.UserId, connection);
 
             var artists = await GetArtistsForUserFromLastFm(user);
             await InsertArtistsIntoDatabase(artists, user.UserId, connection);
@@ -146,7 +145,7 @@ namespace FMBot.LastFM.Repositories
             }).ToList();
         }
 
-        private async Task<IReadOnlyList<UserPlay>> GetPlaysForUserFromLastFm(User user)
+        private async Task<IReadOnlyList<UserPlayTs>> GetPlaysForUserFromLastFm(User user)
         {
             Log.Information($"Getting plays for user {user.UserNameLastFM}");
 
@@ -157,12 +156,12 @@ namespace FMBot.LastFM.Repositories
 
             if (!recentPlays.Success || recentPlays.Content.RecentTracks.Count == 0)
             {
-                return new List<UserPlay>();
+                return new List<UserPlayTs>();
             }
 
             return recentPlays.Content.RecentTracks
                 .Where(w => !w.NowPlaying && w.TimePlayed.HasValue)
-                .Select(t => new UserPlay
+                .Select(t => new UserPlayTs
                 {
                     TrackName = t.TrackName,
                     AlbumName = t.AlbumName,
@@ -228,30 +227,6 @@ namespace FMBot.LastFM.Repositories
                 Playcount = Convert.ToInt32(a.UserPlaycount),
                 UserId = user.UserId
             }).ToList();
-        }
-
-        private static async Task InsertPlaysIntoDatabase(IReadOnlyList<UserPlay> userPlays, int userId,
-            NpgsqlConnection connection)
-        {
-            userPlays = userPlays.Where(w => w.TimePlayed > DateTime.UtcNow.AddDays(-40)).ToList();
-
-            Log.Information($"Inserting {userPlays.Count} plays for user {userId}");
-
-            await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                               "WHERE user_id = @userId", connection);
-
-            deletePlays.Parameters.AddWithValue("userId", userId);
-
-            await deletePlays.ExecuteNonQueryAsync();
-
-            var copyHelper = new PostgreSQLCopyHelper<UserPlay>("public", "user_plays")
-                .MapText("track_name", x => x.TrackName)
-                .MapText("album_name", x => x.AlbumName)
-                .MapText("artist_name", x => x.ArtistName)
-                .MapTimeStampTz("time_played", x => DateTime.SpecifyKind(x.TimePlayed, DateTimeKind.Utc))
-                .MapInteger("user_id", x => x.UserId);
-
-            await copyHelper.SaveAllAsync(connection, userPlays);
         }
 
         private static async Task InsertArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId,

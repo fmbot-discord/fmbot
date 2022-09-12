@@ -389,7 +389,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     setReply +=
                         $"\n\nNote that servers can force a specific mode which will override your own mode. " +
-                        $"\nThis server has the **{guild?.FmEmbedType}** mode set for everyone, which means your own setting will not apply here.";
+                        $"\nThis server has the **{guild.FmEmbedType}** mode set for everyone, which means your own setting will not apply here.";
                 }
             }
 
@@ -492,7 +492,6 @@ namespace FMBot.Bot.Commands.LastFM
             var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var token = await this._lastFmRepository.GetAuthToken();
 
-            // TODO: When our Discord library supports follow up messages for interactions, add slash command support.
             var replyString =
                 $"[Click here add your Last.fm account to .fmbot](http://www.last.fm/api/auth/?api_key={this._botSettings.LastFm.PublicKey}&token={token.Content.Token})";
 
