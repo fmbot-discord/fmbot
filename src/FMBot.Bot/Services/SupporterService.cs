@@ -273,7 +273,7 @@ namespace FMBot.Bot.Services
 
                 if (existingSupporter.SubscriptionType == SubscriptionType.Monthly)
                 {
-                    if (existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-40) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-38))
+                    if (existingSupporter.Expired != true && existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-40) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-38))
                     {
                         Log.Information("Monthly supporter expiration detected for {supporterName} - {discordUserId}", existingSupporter.Name, existingSupporter.DiscordUserId);
 
@@ -301,7 +301,7 @@ namespace FMBot.Bot.Services
 
                 if (existingSupporter.SubscriptionType == SubscriptionType.Yearly)
                 {
-                    if (existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-372) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-370))
+                    if (existingSupporter.Expired != true && existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-372) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-370))
                     {
                         Log.Information("Yearly supporter expiration detected for {supporterName} - {discordUserId}", existingSupporter.Name, existingSupporter.DiscordUserId);
 
