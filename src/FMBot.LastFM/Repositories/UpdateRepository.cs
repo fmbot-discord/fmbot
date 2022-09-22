@@ -135,6 +135,8 @@ namespace FMBot.LastFM.Repositories
             AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks.First());
 
             var playUpdate = await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection);
+            recentTracks.Content.NewRecentTracksAmount = playUpdate.NewPlays.Count;
+            recentTracks.Content.RemovedRecentTracksAmount = playUpdate.RemovedPlays.Count;
 
             if (!playUpdate.NewPlays.Any())
             {
@@ -153,7 +155,6 @@ namespace FMBot.LastFM.Repositories
                 {
                     recentTracks.Content.TotalAmount = user.TotalPlaycount.Value;
                 }
-                recentTracks.Content.NewRecentTracksAmount = 0;
 
                 await connection.CloseAsync();
 
@@ -203,7 +204,6 @@ namespace FMBot.LastFM.Repositories
 
             _ = SmallIndex(user);
 
-            recentTracks.Content.NewRecentTracksAmount = playUpdate.NewPlays.Count;
             return recentTracks;
         }
 
