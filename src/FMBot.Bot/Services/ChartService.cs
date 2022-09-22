@@ -1,16 +1,17 @@
 using System;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Serilog;
 using SkiaSharp;
+using Color = System.Drawing.Color;
 
 namespace FMBot.Bot.Services
 {
@@ -616,7 +617,7 @@ namespace FMBot.Bot.Services
             if (!string.IsNullOrEmpty(randomSupporter))
             {
                 embedDescription +=
-                    $"*This chart was brought to you by .fmbot supporter {randomSupporter}. Also want to help .fmbot and get some small perks? [Get .fmbot supporter here.](https://opencollective.com/fmbot/contribute)*\n";
+                    $"*This chart was brought to you by .fmbot supporter {Format.Sanitize(randomSupporter)}. Also want to help .fmbot and get some small perks? [Get .fmbot supporter here.](https://opencollective.com/fmbot/contribute)*\n";
             }
 
             return embedDescription;

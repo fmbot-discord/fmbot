@@ -73,9 +73,7 @@ namespace FMBot.LastFM.Repositories
                 sessionKey = user.SessionKeyLastFm;
             }
 
-            var lastStoredPlay = await PlayRepository.GetUserPlays(user.UserId, connection, 1);
-
-            var dateFromFilter = lastStoredPlay?.FirstOrDefault()?.TimePlayed.AddMinutes(-2) ?? DateTime.UtcNow.AddDays(-14);
+            var dateFromFilter = user.LastScrobbleUpdate?.AddHours(-3) ?? DateTime.UtcNow.AddDays(-14);
             var timeFrom = (long?)((DateTimeOffset)dateFromFilter).ToUnixTimeSeconds();
 
             var count = 900;

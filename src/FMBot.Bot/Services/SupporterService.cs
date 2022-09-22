@@ -50,7 +50,7 @@ namespace FMBot.Bot.Services
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
-            if (guildSettings != null && guildSettings.DisableSupporterMessages == true)
+            if (guildSettings is { DisableSupporterMessages: true })
             {
                 return null;
             }
@@ -198,7 +198,7 @@ namespace FMBot.Bot.Services
         {
             var openCollectiveSupporters = await this._openCollectiveService.GetOpenCollectiveOverview();
 
-            foreach (var newSupporter in openCollectiveSupporters.Users.Where(w => w.CreatedAt >= DateTime.UtcNow.AddHours(-3)))
+            foreach (var newSupporter in openCollectiveSupporters.Users.Where(w => w.CreatedAt >= DateTime.UtcNow.AddHours(-5)))
             {
                 var cacheKey = $"new-supporter-{newSupporter.Id}";
                 if (this._cache.TryGetValue(cacheKey, out _))

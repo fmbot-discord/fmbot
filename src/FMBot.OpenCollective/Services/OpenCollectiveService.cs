@@ -57,35 +57,35 @@ public class OpenCollectiveService
         var query = new GraphQLRequest
         {
             Query = @"
-                query account($slug: String) {
-                  account(slug: $slug) {
-                    name
-                    slug
-                    members(role: BACKER, limit: 5000) {
-                      totalCount
-                      nodes {
-                        account {
-                          name
-                          slug
-                          id
+            query account($slug: String) {
+              account(slug: $slug) {
+                name
+                slug
+                members(role: BACKER, limit: 5000) {
+                  totalCount
+                  nodes {
+                    account {
+                      name
+                      slug
+                      id
+                      createdAt
+                      transactions(kind: CONTRIBUTION, fromAccount: { slug: $slug }) {
+                        nodes {
                           createdAt
-                          transactions(kind: CONTRIBUTION){
-                              nodes{
-                                  createdAt
-                                  amount {
-                                      currency
-                                      value
-                                  }
-                                  description
-                                  type
-                                  kind             
-                              }
+                          amount {
+                            currency
+                            value
                           }
+                          description
+                          type
+                          kind
                         }
                       }
                     }
                   }
-                }",
+                }
+              }
+            }",
             Variables = @"{""slug"": ""fmbot""}"
         };
 

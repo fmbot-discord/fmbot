@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
@@ -139,6 +140,10 @@ public class ChartBuilders
 
         var supporter = await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
         embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
+        if (supporter != null)
+        {
+            response.Components = new ComponentBuilder().WithButton("Get .fmbot supporter", style: ButtonStyle.Link, url: "https://opencollective.com/fmbot/contribute");
+        }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
         var chart = await this._chartService.GenerateChartAsync(chartSettings);
@@ -274,6 +279,10 @@ public class ChartBuilders
 
         var supporter = await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
         embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
+        if (supporter != null)
+        {
+            response.Components = new ComponentBuilder().WithButton("Get .fmbot supporter", style: ButtonStyle.Link, url: "https://opencollective.com/fmbot/contribute");
+        }
 
         var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
