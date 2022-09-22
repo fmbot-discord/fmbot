@@ -208,7 +208,7 @@ namespace FMBot.Bot.Commands
             }
             else
             {
-                if (userSettings.LastUpdated > DateTime.UtcNow.AddSeconds(-1))
+                if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-1))
                 {
                     var recentlyUpdatedText =
                         $"Your cached playcounts have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). \n\n" +
