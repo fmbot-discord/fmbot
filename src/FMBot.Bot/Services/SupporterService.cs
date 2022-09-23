@@ -24,7 +24,6 @@ namespace FMBot.Bot.Services
         private readonly BotSettings _botSettings;
         private readonly IMemoryCache _cache;
 
-
         public SupporterService(IDbContextFactory<FMBotDbContext> contextFactory, OpenCollectiveService openCollectiveService, IOptions<BotSettings> botSettings, IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
@@ -41,6 +40,11 @@ namespace FMBot.Bot.Services
             }
 
             if (userUserType == UserType.Supporter)
+            {
+                return null;
+            }
+
+            if (this._cache.TryGetValue(GetGuildPromoCacheKey(guild.Id), out _))
             {
                 return null;
             }
@@ -73,10 +77,60 @@ namespace FMBot.Bot.Services
                 var rand = new Random();
                 var randomSupporter = supporters[rand.Next(supporters.Count())];
 
+                SetGuildPromoCache(guild.Id);
+
                 return randomSupporter.Name;
             }
 
             return null;
+        }
+
+        public string GetPromotionalMessage(UserType userType, string prfx, ulong? guildId = null)
+        {
+            if (userType != UserType.User)
+            {
+                return null;
+            }
+
+            if (guildId != null)
+            {
+                if (this._cache.TryGetValue(GetGuildPromoCacheKey(guildId), out _))
+                {
+                    return null;
+                }
+            }
+
+            var rnd = new Random();
+            var randomHintNumber = rnd.Next(0, 12);
+
+            switch (randomHintNumber)
+            {
+                case 1:
+                    SetGuildPromoCache(guildId);
+                    return
+                        $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4k/5k/6k? " +
+                        $"[Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{prfx}getsupporter` for more info.*";
+                case 2:
+                    SetGuildPromoCache(guildId);
+                    return
+                        $"*Want .fmbot to store all your scrobbles so you can see extra statistics in some commands? " +
+                        $"[Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{prfx}getsupporter` for more info.*";
+                default:
+                    return null;
+            }
+        }
+
+        private static string GetGuildPromoCacheKey(ulong? guildId = null)
+        {
+            return $"guild-supporter-promo-{guildId}";
+        }
+
+        private void SetGuildPromoCache(ulong? guildId = null)
+        {
+            if (guildId != null)
+            {
+                this._cache.Set(GetGuildPromoCacheKey(guildId), 1, TimeSpan.FromMinutes(5));
+            }
         }
 
         public async Task<Supporter> AddSupporter(ulong id, string name, string notes)
@@ -124,7 +178,7 @@ namespace FMBot.Bot.Services
                 SupporterMessagesEnabled = true,
                 VisibleInOverview = true,
                 SupporterType = SupporterType.User,
-                DiscordUserId = id, 
+                DiscordUserId = id,
                 LastPayment = openCollectiveUser.LastPayment,
                 SubscriptionType = openCollectiveUser.SubscriptionType,
                 OpenCollectiveId = openCollectiveUser.Id

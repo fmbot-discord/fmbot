@@ -27,6 +27,7 @@ namespace FMBot.Bot.Commands
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
         private readonly UserService _userService;
+        private readonly SupporterService _supporterService;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -37,13 +38,15 @@ namespace FMBot.Bot.Commands
                 IPrefixService prefixService,
                 IUpdateService updateService,
                 UserService userService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                SupporterService supporterService) : base(botSettings)
         {
             this._guildService = guildService;
             this._indexService = indexService;
             this._prefixService = prefixService;
             this._updateService = updateService;
             this._userService = userService;
+            this._supporterService = supporterService;
         }
 
         [Command("refreshmembers", RunMode = RunMode.Async)]
@@ -186,16 +189,11 @@ namespace FMBot.Bot.Commands
 
                 var updatedDescription = $"✅ {userSettings.UserNameLastFM} has been fully updated.";
 
-                switch (randomPromoChance)
+                var supporterPromo =
+                    this._supporterService.GetPromotionalMessage(userSettings.UserType, prfx, this.Context.Guild?.Id);
+                if (supporterPromo != null)
                 {
-                    case 1 when userSettings.UserType == UserType.User:
-                        updatedDescription += "\n\n" +
-                                              $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4k/5k/6k? [Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{prfx}getsupporter` for more info.*";
-                        break;
-                    case 2 when userSettings.UserType == UserType.User:
-                        updatedDescription += "\n\n" +
-                                              $"*Want .fmbot to store all your scrobbles so you can see extra statistics in some commands? [Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{prfx}getsupporter` for more info.*";
-                        break;
+                    updatedDescription += $"\n\n{supporterPromo}";
                 }
 
                 await message.ModifyAsync(m =>
@@ -269,24 +267,12 @@ namespace FMBot.Bot.Commands
                                                  $"and {update.Content.RemovedRecentTracksAmount} removed {StringExtensions.GetScrobblesString(update.Content.RemovedRecentTracksAmount)}.";
                         }
 
-                        switch (randomPromoChance)
+                        var supporterPromo =
+                            this._supporterService.GetPromotionalMessage(userSettings.UserType, prfx, this.Context.Guild?.Id);
+                        if (supporterPromo != null)
                         {
-                            case 1:
-                                updatedDescription +=
-                                    $"\n\n" +
-                                    $"Any commands that require updating will also update your playcount automatically.\n\n" +
-                                    $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.";
-                                break;
-                            case 2 when userSettings.UserType == UserType.User:
-                                updatedDescription += "\n\n" +
-                                                      $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4k/5k/6k? [Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{prfx}getsupporter` for more info.*";
-                                break;
-                            case 3 when userSettings.UserType == UserType.User:
-                                updatedDescription += "\n\n" +
-                                                      $"*Want .fmbot to store all your scrobbles so you can see extra statistics in some commands? [Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{prfx}getsupporter` for more info.*";
-                                break;
+                            updatedDescription += $"\n\n{supporterPromo}";
                         }
-
 
                         m.Embed = new EmbedBuilder()
                             .WithDescription(updatedDescription)
