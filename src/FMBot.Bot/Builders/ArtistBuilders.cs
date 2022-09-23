@@ -956,9 +956,16 @@ public class ArtistBuilders
         var otherArtists = await otherArtistsTask;
 
 
-        if (!ownArtists.Success || ownArtists.Content == null || !otherArtists.Success || otherArtists.Content == null)
+        if (!ownArtists.Success || ownArtists.Content == null)
         {
-            response.Embed.ErrorResponse(ownArtists.Error, ownArtists.Message, "taste", context.DiscordUser);
+            response.Embed.ErrorResponse(ownArtists.Error, ownArtists.Message, "taste", context.DiscordUser, "artist list");
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+
+        if (!otherArtists.Success || otherArtists.Content == null)
+        {
+            response.Embed.ErrorResponse(otherArtists.Error, otherArtists.Message, "taste", context.DiscordUser, "artist list");
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }
