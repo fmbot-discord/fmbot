@@ -464,7 +464,7 @@ public class AlbumBuilders
 
                 description.AppendLine();
 
-                var pageNumberDesc = $"Page {pageNumber}/{albumTracks.Count / 12 + 1} - ";
+                var pageNumberDesc = $"Page {pageNumber}/{albumTracks.ChunkBy(12).Count} - ";
 
                 tracksDisplayed++;
                 if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
