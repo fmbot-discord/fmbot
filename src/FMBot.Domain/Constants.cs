@@ -28,10 +28,13 @@ namespace FMBot.Domain
 
         public const string AutoCompleteLoginRequired = "Connect your Last.fm account with /login first to see results..";
 
+        public const string GetSupporterButton = "Get .fmbot supporter";
+        public const string GetSupporterLink = "https://opencollective.com/fmbot/contribute";
+
         /// <summary>Amount of days to store plays for users for</summary>
         public const int DaysToStorePlays = 46;
 
-        public const int SupporterMessageChance = 15;
+        public const int SupporterMessageChance = 12;
 
         public const int DefaultPlaysForCrown = 30;
 

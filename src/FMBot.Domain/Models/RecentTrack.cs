@@ -7,6 +7,7 @@ namespace FMBot.Domain.Models
     {
         public long TotalAmount { get; set; }
         public long NewRecentTracksAmount { get; set; }
+        public long RemovedRecentTracksAmount { get; set; }
 
         public string UserUrl { get; set; }
         public string UserRecentTracksUrl { get; set; }

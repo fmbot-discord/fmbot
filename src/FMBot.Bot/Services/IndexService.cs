@@ -249,8 +249,6 @@ namespace FMBot.Bot.Services
                     return;
                 }
 
-                var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
-
                 await using var db = await this._contextFactory.CreateDbContextAsync();
 
                 const string sql = "UPDATE guild_users " +
@@ -264,7 +262,7 @@ namespace FMBot.Bot.Services
 
                 var dto = new IndexedUserUpdateDto
                 {
-                    UserName = discordName,
+                    UserName = discordGuildUser.DisplayName,
                     GuildId = guild.GuildId,
                     UserId = userId
                 };

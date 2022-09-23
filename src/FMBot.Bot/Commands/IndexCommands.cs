@@ -27,6 +27,7 @@ namespace FMBot.Bot.Commands
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
         private readonly UserService _userService;
+        private readonly SupporterService _supporterService;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -37,13 +38,15 @@ namespace FMBot.Bot.Commands
                 IPrefixService prefixService,
                 IUpdateService updateService,
                 UserService userService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                SupporterService supporterService) : base(botSettings)
         {
             this._guildService = guildService;
             this._indexService = indexService;
             this._prefixService = prefixService;
             this._updateService = updateService;
             this._userService = userService;
+            this._supporterService = supporterService;
         }
 
         [Command("refreshmembers", RunMode = RunMode.Async)]
@@ -118,6 +121,9 @@ namespace FMBot.Bot.Commands
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
+            var rnd = new Random();
+            var randomPromoChance = rnd.Next(0, 8);
+
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
                 if (PublicProperties.IssuesAtLastFm)
@@ -183,11 +189,11 @@ namespace FMBot.Bot.Commands
 
                 var updatedDescription = $"✅ {userSettings.UserNameLastFM} has been fully updated.";
 
-                var rnd = new Random();
-                if (rnd.Next(0, 4) == 1 && userSettings.UserType == UserType.User)
+                var supporterPromo =
+                    this._supporterService.GetPromotionalMessage(userSettings.UserType, prfx, this.Context.Guild?.Id);
+                if (supporterPromo != null)
                 {
-                    updatedDescription += "\n\n" +
-                                          $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4k/5k/6k? [Get .fmbot supporter here](https://opencollective.com/fmbot/contribute) or use `{prfx}getsupporter` for more info.*";
+                    updatedDescription += $"\n\n{supporterPromo}";
                 }
 
                 await message.ModifyAsync(m =>
@@ -200,7 +206,7 @@ namespace FMBot.Bot.Commands
             }
             else
             {
-                if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
+                if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-1))
                 {
                     var recentlyUpdatedText =
                         $"Your cached playcounts have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). \n\n" +
@@ -226,11 +232,11 @@ namespace FMBot.Bot.Commands
                     $"<a:loading:821676038102056991> Updating user {userSettings.UserNameLastFM}...");
                 var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
-                var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
+                var update = await this._updateService.UpdateUserAndGetRecentTracks(userSettings);
 
                 await message.ModifyAsync(m =>
                 {
-                    if (scrobblesUsed == 0)
+                    if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
                     {
                         var newEmbed =
                             new EmbedBuilder()
@@ -249,16 +255,23 @@ namespace FMBot.Bot.Commands
                     }
                     else
                     {
-                        var updatedDescription =
-                            $"✅ Cached playcounts have been updated for {userSettings.UserNameLastFM} based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.";
+                        string updatedDescription;
 
-                        var rnd = new Random();
-                        if (rnd.Next(0, 4) == 1)
+                        if (update.Content.RemovedRecentTracksAmount == 0)
                         {
-                            updatedDescription +=
-                                $"\n\n" +
-                                $"Any commands that require updating will also update your playcount automatically.\n\n" +
-                                $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.";
+                            updatedDescription = $"✅ Cached playcounts have been updated for {userSettings.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)}.";
+                        }
+                        else
+                        {
+                            updatedDescription = $"✅ Cached playcounts have been updated for {userSettings.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)} " +
+                                                 $"and {update.Content.RemovedRecentTracksAmount} removed {StringExtensions.GetScrobblesString(update.Content.RemovedRecentTracksAmount)}.";
+                        }
+
+                        var supporterPromo =
+                            this._supporterService.GetPromotionalMessage(userSettings.UserType, prfx, this.Context.Guild?.Id);
+                        if (supporterPromo != null)
+                        {
+                            updatedDescription += $"\n\n{supporterPromo}";
                         }
 
                         m.Embed = new EmbedBuilder()

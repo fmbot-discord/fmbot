@@ -266,7 +266,7 @@ namespace FMBot.Bot.Services
             return trackInfo;
         }
 
-        public async Task<TrackSearchResult> GetTrackFromLink(string description, bool possiblyContainsLinks = true)
+        public async Task<TrackSearchResult> GetTrackFromLink(string description, bool possiblyContainsLinks = true, bool skipUploaderName = false)
         {
             try
             {
@@ -326,7 +326,7 @@ namespace FMBot.Bot.Services
                     string trackName;
 
                     // Soundcloud uploader name is often different, so in case of 3 dashes skip the uploader name
-                    if (splitDesc.Length == 3)
+                    if (splitDesc.Length == 3 && skipUploaderName)
                     {
                         artistName = splitDesc[1];
                         trackName = splitDesc[2];

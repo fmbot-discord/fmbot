@@ -353,7 +353,7 @@ public class ArtistBuilders
             {
                 footer.AppendLine($"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
-                title.Append($"{Format.Sanitize(userSettings.DiscordUserName)} their top tracks for '{artistSearch.Artist.ArtistName}'");
+                title.Append($"{userSettings.DiscordUserName} their top tracks for '{artistSearch.Artist.ArtistName}'");
             }
             else
             {
@@ -956,9 +956,16 @@ public class ArtistBuilders
         var otherArtists = await otherArtistsTask;
 
 
-        if (!ownArtists.Success || ownArtists.Content == null || !otherArtists.Success || otherArtists.Content == null)
+        if (!ownArtists.Success || ownArtists.Content == null)
         {
-            response.Embed.ErrorResponse(ownArtists.Error, ownArtists.Message, "taste", context.DiscordUser);
+            response.Embed.ErrorResponse(ownArtists.Error, ownArtists.Message, "taste", context.DiscordUser, "artist list");
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+
+        if (!otherArtists.Success || otherArtists.Content == null)
+        {
+            response.Embed.ErrorResponse(otherArtists.Error, otherArtists.Message, "taste", context.DiscordUser, "artist list");
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }

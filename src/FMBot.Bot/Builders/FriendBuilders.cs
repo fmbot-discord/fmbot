@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dasync.Collections;
+using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -235,7 +236,8 @@ public class FriendBuilders
             {
                 response.Embed.AddField("Friend limit reached",
                     $"Sorry, but you can't have more than {Constants.MaxFriends} friends. \n\n" +
-                    $"Did you know that .fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends? [Get supporter here](https://opencollective.com/fmbot/contribute) or use `{context.Prefix}getsupporter` for more info.");
+                    $".fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends. Get supporter [here]({Constants.GetSupporterLink}) or use `{context.Prefix}getsupporter` for more info.");
+                response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink);
             }
             else
             {
@@ -281,7 +283,7 @@ public class FriendBuilders
 
         response.Embed.WithDescription(reply);
 
-        if (context.ContextUser.UserType != UserType.User && !friendLimitReached)
+        if (context.ContextUser.UserType != UserType.User && !friendLimitReached && existingFriends.Count >= Constants.MaxFriendsSupporter - 5)
         {
             var userType = context.ContextUser.UserType.ToString().ToLower();
             response.Embed.WithFooter(
