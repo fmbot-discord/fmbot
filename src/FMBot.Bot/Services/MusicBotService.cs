@@ -165,7 +165,7 @@ public class MusicBotService
             }
 
             // Bot sending only link with track in the embed description
-            var trackResult = await this._trackService.GetTrackFromLink(targetEmbed.Description);
+            var trackResult = await this._trackService.GetTrackFromLink(targetEmbed.Description, skipUploaderName: true);
 
             if (trackResult == null)
             {
