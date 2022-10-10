@@ -190,7 +190,7 @@ namespace FMBot.Bot.Services
                 },
                 null,
                 TimeSpan.FromSeconds(30),
-                TimeSpan.FromMinutes(3));
+                TimeSpan.FromMinutes(2));
 
             this._updateSupporterTimer = new Timer(async _ =>
                 {

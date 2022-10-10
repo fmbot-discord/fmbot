@@ -280,11 +280,10 @@ namespace FMBot.Bot.Services
                 embed.WithTitle("New supporter on OpenCollective!");
                 embed.WithDescription($"Name: `{newSupporter.Name}`\n" +
                                       $"OpenCollective ID: `{newSupporter.Id}`\n" +
-                                      $"Subscription type: `{newSupporter.SubscriptionType}`\n\n" +
-                                      $"`.addsupporter \"discord-user-id\" \"{newSupporter.Id}\"`");
+                                      $"Subscription type: `{newSupporter.SubscriptionType}`\n\n");
 
-                await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
-                await supporterUpdateChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+                await supporterAuditLogChannel.SendMessageAsync($"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", false, new[] { embed.Build() });
+                await supporterUpdateChannel.SendMessageAsync($"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", false, new[] { embed.Build() });
 
                 this._cache.Set(cacheKey, 1, TimeSpan.FromDays(1));
             }

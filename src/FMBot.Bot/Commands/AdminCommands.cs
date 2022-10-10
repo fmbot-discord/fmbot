@@ -595,7 +595,7 @@ namespace FMBot.Bot.Commands
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 const string formatError = "Make sure to follow the correct format when adding a supporter\n" +
-                                           "`.addsupporter \"discord-user-id\" \"open-collective-id\"`\n" +
+                                           "`.addsupporter \"discordUserId\" \"open-collective-id\"`\n" +
                                            "`.addsupporter \"278633844763262976\" \"03k0exgz-nm8yj64a-g4965wao-9r7b4dlv\"`";
 
                 if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(openCollectiveId) || user == "help")
@@ -642,7 +642,7 @@ namespace FMBot.Bot.Commands
                                             $"Name: **{supporter.Name}**\n" +
                                             $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
 
-                this._embed.WithFooter("Full update has been started" +
+                this._embed.WithFooter("Full update has been started\n" +
                                        "Name changes go through OpenCollective and apply within 24h");
 
                 await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);

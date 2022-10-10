@@ -129,8 +129,6 @@ public class StaticBuilders
                 .WithTitle(".fmbot supporters overview"));
         }
 
-        response.Embed.WithDescription(description.ToString());
-
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
 
         return response;
@@ -184,10 +182,12 @@ public class StaticBuilders
             pages.Add(new PageBuilder()
                 .WithDescription(supporterString.ToString())
                 .WithAuthor(response.EmbedAuthor)
+                .WithFooter($"OC: {supporters.Users.Count} - db: {existingSupporters.Count}\n" +
+                            $"{supporters.Users.Count(c => c.SubscriptionType == SubscriptionType.Monthly && c.LastPayment >= DateTime.Now.AddDays(-35))} active monthly ({supporters.Users.Count(c => c.SubscriptionType == SubscriptionType.Monthly)} total)\n" +
+                            $"{supporters.Users.Count(c => c.SubscriptionType == SubscriptionType.Yearly && c.LastPayment >= DateTime.Now.AddDays(-370))} active yearly ({supporters.Users.Count(c => c.SubscriptionType == SubscriptionType.Yearly)} total)\n" +
+                            $"{supporters.Users.Count(c => c.SubscriptionType == SubscriptionType.Lifetime)} lifetime")
                 .WithTitle(".fmbot opencollective supporters overview"));
         }
-
-        response.Embed.WithDescription(description.ToString());
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
 
