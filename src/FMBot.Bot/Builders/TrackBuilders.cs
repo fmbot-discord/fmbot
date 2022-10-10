@@ -197,7 +197,7 @@ public class TrackBuilders
             ResponseType = ResponseType.Text,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;

@@ -176,7 +176,7 @@ public class CountryBuilders
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(context.ContextUser.UserId, true);
         if (topArtists.Count < 100)
         {
-            response.Embed.WithDescription("Sorry, you don't have enough top artists yet to use this command.\n\n" +
+            response.Embed.WithDescription($"Sorry, you don't have enough top artists yet to use this command (must have at least 100 - you have {topArtists.Count}).\n\n" +
                                         "Please try again later.");
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
