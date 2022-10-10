@@ -109,6 +109,20 @@ public class ArtistBuilders
         response.EmbedAuthor.WithUrl(artistSearch.Artist.ArtistUrl);
         response.Embed.WithAuthor(response.EmbedAuthor);
 
+        string firstListenInfo = null;
+        if (context.ContextUser.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
+        {
+            var firstPlay =
+                await this._playService.GetArtistFirstPlayDate(context.ContextUser.UserId,
+                    artistSearch.Artist.ArtistName);
+            if (firstPlay != null)
+            {
+                var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
+
+                firstListenInfo = $"Your first listen: <t:{firstListenValue}:D>";
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(fullArtist.Type))
         {
             var artistInfo = new StringBuilder();
@@ -175,17 +189,10 @@ public class ArtistBuilders
                 }
             }
 
-            if (context.ContextUser.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
+            if (firstListenInfo != null)
             {
-                var firstPlay =
-                    await this._playService.GetArtistFirstPlayDate(context.ContextUser.UserId,
-                        artistSearch.Artist.ArtistName);
-                if (firstPlay != null)
-                {
-                    var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
-
-                    artistInfo.AppendLine($"Your first listen: <t:{firstListenValue}:D>");
-                }
+                artistInfo.AppendLine(firstListenInfo);
+                firstListenInfo = null;
             }
 
             if (artistInfo.Length > 0)
@@ -232,6 +239,11 @@ public class ArtistBuilders
             {
                 response.Embed.AddField("Server stats", serverStats, true);
             }
+        }
+
+        if (firstListenInfo != null && string.IsNullOrEmpty(response.Embed.Description))
+        {
+            response.Embed.WithDescription(firstListenInfo);
         }
 
         var globalStats = "";
