@@ -6,9 +6,12 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
@@ -35,6 +38,10 @@ namespace FMBot.Bot.Commands
         private readonly SettingService _settingService;
         private readonly FeaturedService _featuredService;
         private readonly IIndexService _indexService;
+        private readonly IPrefixService _prefixService;
+        private readonly StaticBuilders _staticBuilders;
+
+        private InteractiveService Interactivity { get; }
 
         public AdminCommands(
                 AdminService adminService,
@@ -47,7 +54,9 @@ namespace FMBot.Bot.Commands
                 IOptions<BotSettings> botSettings,
                 SettingService settingService,
                 FeaturedService featuredService,
-                IIndexService indexService) : base(botSettings)
+                IIndexService indexService,
+                IPrefixService prefixService,
+                StaticBuilders staticBuilders, InteractiveService interactivity) : base(botSettings)
         {
             this._adminService = adminService;
             this._censorService = censorService;
@@ -59,6 +68,9 @@ namespace FMBot.Bot.Commands
             this._settingService = settingService;
             this._featuredService = featuredService;
             this._indexService = indexService;
+            this._prefixService = prefixService;
+            this._staticBuilders = staticBuilders;
+            this.Interactivity = interactivity;
         }
 
         //[Command("debug")]
@@ -267,6 +279,27 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored albums.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
+        }
+
+        [Command("opencollectivesupporters", RunMode = RunMode.Async)]
+        [Summary("Displays all .fmbot supporters.")]
+        [Alias("ocsupporters")]
+        [CommandCategories(CommandCategory.Other)]
+        public async Task AllSupportersAsync()
+        {
+            if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync("Error: Insufficient rights.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._staticBuilders.OpenCollectiveSupportersAsync(new ContextModel(this.Context, prfx, userSettings));
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
 
         [Command("addnsfwalbum")]

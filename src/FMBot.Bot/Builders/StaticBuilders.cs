@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -126,6 +127,64 @@ public class StaticBuilders
                 .WithDescription(supporterString.ToString())
                 .WithAuthor(response.EmbedAuthor)
                 .WithTitle(".fmbot supporters overview"));
+        }
+
+        response.Embed.WithDescription(description.ToString());
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> OpenCollectiveSupportersAsync(
+        ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var existingSupporters = await this._supporterService.GetAllVisibleSupporters();
+
+        var supporters = await this._supporterService.GetOpenCollectiveSupporters();
+
+        var supporterLists = supporters.Users.OrderByDescending(o => o.CreatedAt).Chunk(10);
+
+        var description = new StringBuilder();
+
+        var pages = new List<PageBuilder>();
+        foreach (var supporterList in supporterLists)
+        {
+            var supporterString = new StringBuilder();
+            supporterString.Append(description.ToString());
+
+            foreach (var supporter in supporterList)
+            {
+                supporterString.AppendLine($"**{supporter.Name}** - `{supporter.Id}` - `{supporter.SubscriptionType}`");
+
+                var lastPayment = DateTime.SpecifyKind(supporter.LastPayment, DateTimeKind.Utc);
+                var lastPaymentValue = ((DateTimeOffset)lastPayment).ToUnixTimeSeconds();
+
+                var created = DateTime.SpecifyKind(supporter.CreatedAt, DateTimeKind.Utc);
+                var createdValue = ((DateTimeOffset)lastPayment).ToUnixTimeSeconds();
+
+                supporterString.AppendLine($"Created: <t:{createdValue}:D> - Last payment: <t:{lastPaymentValue}:D>");
+
+                var existingSupporter = existingSupporters.FirstOrDefault(f => f.OpenCollectiveId == supporter.Id);
+                if (existingSupporter != null)
+                {
+                    supporterString.AppendLine($"✅ Claimed - {existingSupporter.DiscordUserId} - <@{existingSupporter.DiscordUserId}>");
+                }
+
+                supporterString.AppendLine();
+            }
+
+            pages.Add(new PageBuilder()
+                .WithDescription(supporterString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithTitle(".fmbot opencollective supporters overview"));
         }
 
         response.Embed.WithDescription(description.ToString());

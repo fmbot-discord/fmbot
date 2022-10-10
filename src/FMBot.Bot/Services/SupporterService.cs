@@ -206,6 +206,11 @@ namespace FMBot.Bot.Services
             return openCollectiveSupporters.Users.FirstOrDefault(f => f.Id == openCollectiveId);
         }
 
+        public async Task<OpenCollectiveOverview> GetOpenCollectiveSupporters()
+        {
+            return await this._openCollectiveService.GetOpenCollectiveOverview();
+        }
+
         public async Task<Supporter> OpenCollectiveSupporterExpired(Supporter supporter)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
