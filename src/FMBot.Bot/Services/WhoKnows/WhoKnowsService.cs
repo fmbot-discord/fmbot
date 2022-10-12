@@ -104,6 +104,7 @@ namespace FMBot.Bot.Services.WhoKnows
             foreach (var user in users.Where(w => guildUsers.Select(s => s.UserId).Contains(w.UserId)))
             {
                 user.PrivacyLevel = PrivacyLevel.Global;
+                user.SameServer = true;
             }
 
             return users;
@@ -159,7 +160,9 @@ namespace FMBot.Bot.Services.WhoKnows
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
 
                 var positionCounter = $"{spacer}{indexNumber}.";
-                positionCounter = user.UserId == requestedUserId ? $"**{positionCounter}** " : $"{positionCounter} ";
+                positionCounter = user.UserId == requestedUserId ?
+                    user.SameServer == true ? $"__**{positionCounter}** __" : $"**{positionCounter}** " :
+                    user.SameServer == true ? $"__{positionCounter}__ " : $"{positionCounter} ";
 
                 if (crownModel?.Crown != null && crownModel.Crown.UserId == user.UserId)
                 {
