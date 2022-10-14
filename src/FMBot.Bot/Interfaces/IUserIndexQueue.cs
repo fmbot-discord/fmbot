@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
-namespace FMBot.Bot.Interfaces
-{
-    public interface IUserIndexQueue
-    {
-        IObservable<IndexUserQueueItem> UsersToIndex { get; }
+namespace FMBot.Bot.Interfaces;
 
-        void Publish(IReadOnlyList<User> users);
-    }
+public interface IUserIndexQueue
+{
+    IObservable<IndexUserQueueItem> UsersToIndex { get; }
+
+    void Publish(IReadOnlyList<User> users);
 }

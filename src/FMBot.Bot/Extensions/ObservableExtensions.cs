@@ -4,28 +4,27 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Serilog;
 
-namespace FMBot.Bot.Extensions
+namespace FMBot.Bot.Extensions;
+
+public static class ObservableExtensions
 {
-    public static class ObservableExtensions
+    public static void SubscribeAsync<T>(this IObservable<T> observable, Func<T, Task> subscription)
     {
-        public static void SubscribeAsync<T>(this IObservable<T> observable, Func<T, Task> subscription)
-        {
-            observable
-                .ObserveOn(NewThreadScheduler.Default)
-                .Subscribe(async value =>
+        observable
+            .ObserveOn(NewThreadScheduler.Default)
+            .Subscribe(async value =>
+            {
+                try
                 {
-                    try
-                    {
-                        await subscription(value);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex, "Error occured in subscription OnNext");
-                    }
-                }, ex =>
+                    await subscription(value);
+                }
+                catch (Exception ex)
                 {
                     Log.Error(ex, "Error occured in subscription OnNext");
-                });
-        }
+                }
+            }, ex =>
+            {
+                Log.Error(ex, "Error occured in subscription OnNext");
+            });
     }
 }

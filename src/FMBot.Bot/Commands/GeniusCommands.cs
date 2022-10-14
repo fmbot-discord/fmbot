@@ -18,133 +18,132 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
 
-namespace FMBot.Bot.Commands
+namespace FMBot.Bot.Commands;
+
+[Name("Genius")]
+public class GeniusCommands : BaseCommandModule
 {
-    [Name("Genius")]
-    public class GeniusCommands : BaseCommandModule
+    private readonly GeniusService _geniusService;
+    private readonly IPrefixService _prefixService;
+    private readonly LastFmRepository _lastFmRepository;
+    private readonly UserService _userService;
+
+    public GeniusCommands(
+        GeniusService geniusService,
+        IPrefixService prefixService,
+        LastFmRepository lastFmRepository,
+        UserService userService,
+        IOptions<BotSettings> botSettings) : base(botSettings)
     {
-        private readonly GeniusService _geniusService;
-        private readonly IPrefixService _prefixService;
-        private readonly LastFmRepository _lastFmRepository;
-        private readonly UserService _userService;
+        this._geniusService = geniusService;
+        this._lastFmRepository = lastFmRepository;
+        this._prefixService = prefixService;
+        this._userService = userService;
+    }
 
-        public GeniusCommands(
-                GeniusService geniusService,
-                IPrefixService prefixService,
-                LastFmRepository lastFmRepository,
-                UserService userService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+    [Command("genius")]
+    [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
+    [Alias("lyrics", "lyr", "lr", "gen", "lyricsfind", "lyricsearch", "lyricssearch")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.ThirdParty)]
+    public async Task GeniusAsync([Remainder] string searchValue = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        try
         {
-            this._geniusService = geniusService;
-            this._lastFmRepository = lastFmRepository;
-            this._prefixService = prefixService;
-            this._userService = userService;
-        }
+            var currentTrackName = "";
+            var currentTrackArtist = "";
 
-        [Command("genius")]
-        [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
-        [Alias("lyrics", "lyr", "lr", "gen", "lyricsfind", "lyricsearch", "lyricssearch")]
-        [UsernameSetRequired]
-        [CommandCategories(CommandCategory.ThirdParty)]
-        public async Task GeniusAsync([Remainder] string searchValue = null)
-        {
-            _ = this.Context.Channel.TriggerTypingAsync();
-
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-            try
+            string querystring;
+            if (!string.IsNullOrWhiteSpace(searchValue))
             {
-                var currentTrackName = "";
-                var currentTrackArtist = "";
-
-                string querystring;
-                if (!string.IsNullOrWhiteSpace(searchValue))
+                querystring = searchValue;
+            }
+            else
+            {
+                string sessionKey = null;
+                if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
                 {
-                    querystring = searchValue;
-                }
-                else
-                {
-                    string sessionKey = null;
-                    if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
-                    {
-                        sessionKey = userSettings.SessionKeyLastFm;
-                    }
-
-                    var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
-
-                    if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
-                    {
-                        return;
-                    }
-
-                    var currentTrack = recentScrobbles.Content.RecentTracks[0];
-                    querystring = $"{currentTrack.ArtistName} {currentTrack.TrackName}";
-
-                    currentTrackName = currentTrack.TrackName;
-                    currentTrackArtist = currentTrack.ArtistName;
+                    sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var geniusResults = await this._geniusService.SearchGeniusAsync(querystring, currentTrackName, currentTrackArtist);
+                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                if (geniusResults != null && geniusResults.Any())
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
-                    var rnd = new Random();
-                    if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
-                    {
-                        this._embedFooter.WithText($"Tip: Search for other songs by simply adding the searchvalue behind '{prfx}genius'.");
-                        this._embed.WithFooter(this._embedFooter);
-                    }
+                    return;
+                }
 
-                    var firstResult = geniusResults.First().Result;
-                    if (firstResult.TitleWithFeatured.Trim().ToLower().StartsWith(currentTrackName.Trim().ToLower()) &&
-                        firstResult.PrimaryArtist.Name.Trim().ToLower().Equals(currentTrackArtist.Trim().ToLower()) ||
-                        geniusResults.Count == 1)
-                    {
-                        this._embed.WithTitle(firstResult.TitleWithFeatured);
-                        this._embed.WithUrl(firstResult.Url);
-                        this._embed.WithThumbnailUrl(firstResult.SongArtImageThumbnailUrl);
+                var currentTrack = recentScrobbles.Content.RecentTracks[0];
+                querystring = $"{currentTrack.ArtistName} {currentTrack.TrackName}";
 
-                        this._embed.WithDescription($"By **[{firstResult.PrimaryArtist.Name}]({firstResult.PrimaryArtist.Url})**");
+                currentTrackName = currentTrack.TrackName;
+                currentTrackArtist = currentTrack.ArtistName;
+            }
 
-                        var components = new ComponentBuilder().WithButton("View on Genius", style: ButtonStyle.Link, url: firstResult.Url);
+            var geniusResults = await this._geniusService.SearchGeniusAsync(querystring, currentTrackName, currentTrackArtist);
 
-                        await ReplyAsync("", false, this._embed.Build(), components: components.Build());
-                        this.Context.LogCommandUsed();
-                        return;
-                    }
+            if (geniusResults != null && geniusResults.Any())
+            {
+                var rnd = new Random();
+                if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                {
+                    this._embedFooter.WithText($"Tip: Search for other songs by simply adding the searchvalue behind '{prfx}genius'.");
+                    this._embed.WithFooter(this._embedFooter);
+                }
 
-                    this._embed.WithTitle($"Genius results for {querystring}");
+                var firstResult = geniusResults.First().Result;
+                if (firstResult.TitleWithFeatured.Trim().ToLower().StartsWith(currentTrackName.Trim().ToLower()) &&
+                    firstResult.PrimaryArtist.Name.Trim().ToLower().Equals(currentTrackArtist.Trim().ToLower()) ||
+                    geniusResults.Count == 1)
+                {
+                    this._embed.WithTitle(firstResult.TitleWithFeatured);
+                    this._embed.WithUrl(firstResult.Url);
                     this._embed.WithThumbnailUrl(firstResult.SongArtImageThumbnailUrl);
 
-                    var embedDescription = new StringBuilder();
+                    this._embed.WithDescription($"By **[{firstResult.PrimaryArtist.Name}]({firstResult.PrimaryArtist.Url})**");
 
-                    var amount = geniusResults.Count > 5 ? 5 : geniusResults.Count;
-                    for (var i = 0; i < amount; i++)
-                    {
-                        var geniusResult = geniusResults[i].Result;
+                    var components = new ComponentBuilder().WithButton("View on Genius", style: ButtonStyle.Link, url: firstResult.Url);
 
-                        embedDescription.AppendLine($"{i + 1}. [{geniusResult.TitleWithFeatured}]({geniusResult.Url})");
-                        embedDescription.AppendLine($"By **[{geniusResult.PrimaryArtist.Name}]({geniusResult.PrimaryArtist.Url})**");
-                        embedDescription.AppendLine();
-                    }
-
-                    this._embed.WithDescription(embedDescription.ToString());
-
-                    await ReplyAsync("", false, this._embed.Build());
-
+                    await ReplyAsync("", false, this._embed.Build(), components: components.Build());
                     this.Context.LogCommandUsed();
+                    return;
                 }
-                else
+
+                this._embed.WithTitle($"Genius results for {querystring}");
+                this._embed.WithThumbnailUrl(firstResult.SongArtImageThumbnailUrl);
+
+                var embedDescription = new StringBuilder();
+
+                var amount = geniusResults.Count > 5 ? 5 : geniusResults.Count;
+                for (var i = 0; i < amount; i++)
                 {
-                    await ReplyAsync("No results have been found for this track.");
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    var geniusResult = geniusResults[i].Result;
+
+                    embedDescription.AppendLine($"{i + 1}. [{geniusResult.TitleWithFeatured}]({geniusResult.Url})");
+                    embedDescription.AppendLine($"By **[{geniusResult.PrimaryArtist.Name}]({geniusResult.PrimaryArtist.Url})**");
+                    embedDescription.AppendLine();
                 }
+
+                this._embed.WithDescription(embedDescription.ToString());
+
+                await ReplyAsync("", false, this._embed.Build());
+
+                this.Context.LogCommandUsed();
             }
-            catch (Exception e)
+            else
             {
-                await this.Context.HandleCommandException(e);
+                await ReplyAsync("No results have been found for this track.");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
             }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
         }
     }
 }

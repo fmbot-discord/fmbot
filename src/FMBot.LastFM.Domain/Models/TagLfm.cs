@@ -1,10 +1,9 @@
 using System;
 
-namespace FMBot.LastFM.Domain.Models
+namespace FMBot.LastFM.Domain.Models;
+
+public class TagLfm
 {
-    public class TagLfm
-    {
-        public string Name { get; set; }
-        public string Url { get; set; }
-    }
+    public string Name { get; set; }
+    public string Url { get; set; }
 }

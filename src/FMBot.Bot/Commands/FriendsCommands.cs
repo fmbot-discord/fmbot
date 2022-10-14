@@ -19,157 +19,156 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
-namespace FMBot.Bot.Commands
+namespace FMBot.Bot.Commands;
+
+[Name("Friends")]
+public class FriendsCommands : BaseCommandModule
 {
-    [Name("Friends")]
-    public class FriendsCommands : BaseCommandModule
+    private readonly FriendsService _friendsService;
+    private readonly GuildService _guildService;
+    private readonly IPrefixService _prefixService;
+    private readonly LastFmRepository _lastFmRepository;
+    private readonly UserService _userService;
+    private readonly SettingService _settingService;
+    private readonly IUpdateService _updateService;
+    private readonly FriendBuilders _friendBuilders;
+
+    private InteractiveService Interactivity { get; }
+
+    public FriendsCommands(
+        FriendsService friendsService,
+        GuildService guildService,
+        IPrefixService prefixService,
+        LastFmRepository lastFmRepository,
+        UserService userService,
+        IOptions<BotSettings> botSettings,
+        SettingService settingService,
+        IUpdateService updateService,
+        FriendBuilders friendBuilders,
+        InteractiveService interactivity) : base(botSettings)
     {
-        private readonly FriendsService _friendsService;
-        private readonly GuildService _guildService;
-        private readonly IPrefixService _prefixService;
-        private readonly LastFmRepository _lastFmRepository;
-        private readonly UserService _userService;
-        private readonly SettingService _settingService;
-        private readonly IUpdateService _updateService;
-        private readonly FriendBuilders _friendBuilders;
+        this._friendsService = friendsService;
+        this._guildService = guildService;
+        this._lastFmRepository = lastFmRepository;
+        this._prefixService = prefixService;
+        this._userService = userService;
+        this._settingService = settingService;
+        this._updateService = updateService;
+        this._friendBuilders = friendBuilders;
+        this.Interactivity = interactivity;
+    }
 
-        private InteractiveService Interactivity { get; }
+    [Command("friends", RunMode = RunMode.Async)]
+    [Summary("Displays your friends and what they're listening to.")]
+    [Alias("recentfriends", "friendsrecent", "f")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Friends)]
+    public async Task FriendsAsync()
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
 
-        public FriendsCommands(
-                FriendsService friendsService,
-                GuildService guildService,
-                IPrefixService prefixService,
-                LastFmRepository lastFmRepository,
-                UserService userService,
-                IOptions<BotSettings> botSettings,
-                SettingService settingService,
-                IUpdateService updateService,
-                FriendBuilders friendBuilders,
-                InteractiveService interactivity) : base(botSettings)
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
+
+        try
         {
-            this._friendsService = friendsService;
-            this._guildService = guildService;
-            this._lastFmRepository = lastFmRepository;
-            this._prefixService = prefixService;
-            this._userService = userService;
-            this._settingService = settingService;
-            this._updateService = updateService;
-            this._friendBuilders = friendBuilders;
-            this.Interactivity = interactivity;
+            var response = await this._friendBuilders.FriendsAsync(new ContextModel(this.Context, prfx, contextUser));
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("addfriends", RunMode = RunMode.Async)]
+    [Summary("Adds users to your friend list")]
+    [Options(Constants.UserMentionExample)]
+    [Examples("addfriends fm-bot @user", "addfriends 356268235697553409")]
+    [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "friend add", "add friends")]
+    [UsernameSetRequired]
+    [GuildOnly]
+    [CommandCategories(CommandCategory.Friends)]
+    public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
+    {
+        if (enteredFriends.Length == 0)
+        {
+            await ReplyAsync("Please enter at least one friend to add. You can use their last.fm usernames, discord mention or discord id.");
+            this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+            return;
         }
 
-        [Command("friends", RunMode = RunMode.Async)]
-        [Summary("Displays your friends and what they're listening to.")]
-        [Alias("recentfriends", "friendsrecent", "f")]
-        [UsernameSetRequired]
-        [CommandCategories(CommandCategory.Friends)]
-        public async Task FriendsAsync()
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
+
+        try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            var response = await this._friendBuilders.AddFriendsAsync(new ContextModel(this.Context, prfx, contextUser), enteredFriends);
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 
-            try
-            {
-                var response = await this._friendBuilders.FriendsAsync(new ContextModel(this.Context, prfx, contextUser));
+    [Command("removefriends", RunMode = RunMode.Async)]
+    [Summary("Removes users from your friend list")]
+    [Options(Constants.UserMentionExample)]
+    [Examples("removefriends fm-bot @user", "removefriend 356268235697553409")]
+    [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend", "remove friend", "remove friends", "friends remove", "friend remove")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Friends)]
+    public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
-                await this.Context.SendResponse(this.Interactivity, response);
-                this.Context.LogCommandUsed(response.CommandResponse);
-            }
-            catch (Exception e)
-            {
-                await this.Context.HandleCommandException(e);
-            }
+        if (enteredFriends.Length == 0)
+        {
+            await ReplyAsync("Please enter at least one friend to remove. You can use their last.fm usernames, discord mention or discord id.");
+            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            return;
         }
 
-        [Command("addfriends", RunMode = RunMode.Async)]
-        [Summary("Adds users to your friend list")]
-        [Options(Constants.UserMentionExample)]
-        [Examples("addfriends fm-bot @user", "addfriends 356268235697553409")]
-        [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "friend add", "add friends")]
-        [UsernameSetRequired]
-        [GuildOnly]
-        [CommandCategories(CommandCategory.Friends)]
-        public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
+        try
         {
-            if (enteredFriends.Length == 0)
-            {
-                await ReplyAsync("Please enter at least one friend to add. You can use their last.fm usernames, discord mention or discord id.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
+            var response = await this._friendBuilders.RemoveFriendsAsync(new ContextModel(this.Context, prfx, contextUser), enteredFriends);
 
-            _ = this.Context.Channel.TriggerTypingAsync();
-
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
-
-            try
-            {
-                var response = await this._friendBuilders.AddFriendsAsync(new ContextModel(this.Context, prfx, contextUser), enteredFriends);
-
-                await this.Context.SendResponse(this.Interactivity, response);
-                this.Context.LogCommandUsed(response.CommandResponse);
-            }
-            catch (Exception e)
-            {
-                await this.Context.HandleCommandException(e);
-            }
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
-
-        [Command("removefriends", RunMode = RunMode.Async)]
-        [Summary("Removes users from your friend list")]
-        [Options(Constants.UserMentionExample)]
-        [Examples("removefriends fm-bot @user", "removefriend 356268235697553409")]
-        [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend", "remove friend", "remove friends", "friends remove", "friend remove")]
-        [UsernameSetRequired]
-        [CommandCategories(CommandCategory.Friends)]
-        public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
+        catch (Exception e)
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
-
-            if (enteredFriends.Length == 0)
-            {
-                await ReplyAsync("Please enter at least one friend to remove. You can use their last.fm usernames, discord mention or discord id.");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
-            }
-
-            try
-            {
-                var response = await this._friendBuilders.RemoveFriendsAsync(new ContextModel(this.Context, prfx, contextUser), enteredFriends);
-
-                await this.Context.SendResponse(this.Interactivity, response);
-                this.Context.LogCommandUsed(response.CommandResponse);
-            }
-            catch (Exception e)
-            {
-                await this.Context.HandleCommandException(e);
-            }
+            await this.Context.HandleCommandException(e);
         }
+    }
 
-        [Command("removeallfriends", RunMode = RunMode.Async)]
-        [Summary("Remove all your friends")]
-        [Alias("friendsremoveall", "friends remove all")]
-        [UsernameSetRequired]
-        [CommandCategories(CommandCategory.Friends)]
-        public async Task RemoveAllFriends()
+    [Command("removeallfriends", RunMode = RunMode.Async)]
+    [Summary("Remove all your friends")]
+    [Alias("friendsremoveall", "friends remove all")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Friends)]
+    public async Task RemoveAllFriends()
+    {
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
 
-            try
-            {
-                await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
-
-                await ReplyAsync("Removed all your friends.");
-                this.Context.LogCommandUsed();
-            }
-            catch (Exception e)
-            {
-                await this.Context.HandleCommandException(e);
-            }
+            await ReplyAsync("Removed all your friends.");
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
         }
     }
 }

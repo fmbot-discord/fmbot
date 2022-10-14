@@ -1,19 +1,18 @@
-namespace FMBot.Persistence.Domain.Models
+namespace FMBot.Persistence.Domain.Models;
+
+public class GuildBlockedUser
 {
-    public class GuildBlockedUser
-    {
-        public int GuildId { get; set; }
+    public int GuildId { get; set; }
 
-        public Guild Guild { get; set; }
+    public Guild Guild { get; set; }
 
-        public int UserId { get; set; }
+    public int UserId { get; set; }
 
-        public User User { get; set; }
+    public User User { get; set; }
 
-        public bool BlockedFromCrowns { get; set; }
+    public bool BlockedFromCrowns { get; set; }
 
-        public bool BlockedFromWhoKnows { get; set; }
+    public bool BlockedFromWhoKnows { get; set; }
 
-        public bool SelfBlockFromWhoKnows { get; set; }
-    }
+    public bool SelfBlockFromWhoKnows { get; set; }
 }

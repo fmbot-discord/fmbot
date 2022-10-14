@@ -1,17 +1,16 @@
 using System.Threading.Tasks;
 
-namespace FMBot.Bot.Interfaces
+namespace FMBot.Bot.Interfaces;
+
+public interface IGuildDisabledCommandService
 {
-    public interface IGuildDisabledCommandService
-    {
-        void StoreDisabledCommands(string[] commands, ulong key);
+    void StoreDisabledCommands(string[] commands, ulong key);
 
-        string[] GetDisabledCommands(ulong? key);
+    string[] GetDisabledCommands(ulong? key);
 
-        void RemoveDisabledCommands(ulong key);
+    void RemoveDisabledCommands(ulong key);
 
-        Task LoadAllDisabledCommands();
+    Task LoadAllDisabledCommands();
 
-        Task ReloadDisabledCommands(ulong discordGuildId);
-    }
+    Task ReloadDisabledCommands(ulong discordGuildId);
 }

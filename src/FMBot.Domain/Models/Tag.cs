@@ -1,9 +1,8 @@
-namespace FMBot.Domain.Models
-{
-    public class Tag
-    {
-        public string Name { get; set; }
+namespace FMBot.Domain.Models;
 
-        public string Url { get; set; }
-    }
+public class Tag
+{
+    public string Name { get; set; }
+
+    public string Url { get; set; }
 }

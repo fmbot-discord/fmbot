@@ -1,17 +1,16 @@
 using System.Threading.Tasks;
 
-namespace FMBot.Bot.Interfaces
+namespace FMBot.Bot.Interfaces;
+
+public interface IPrefixService
 {
-    public interface IPrefixService
-    {
-        void StorePrefix(string prefix, ulong key);
+    void StorePrefix(string prefix, ulong key);
 
-        string GetPrefix(ulong? key);
+    string GetPrefix(ulong? key);
 
-        void RemovePrefix(ulong key);
+    void RemovePrefix(ulong key);
 
-        Task LoadAllPrefixes();
+    Task LoadAllPrefixes();
 
-        Task ReloadPrefix(ulong discordGuildId);
-    }
+    Task ReloadPrefix(ulong discordGuildId);
 }

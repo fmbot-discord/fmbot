@@ -7,27 +7,26 @@ using FMBot.Bot.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
-namespace FMBot.Bot.Models
+namespace FMBot.Bot.Models;
+
+public class UserIndexQueue : IUserIndexQueue
 {
-    public class UserIndexQueue : IUserIndexQueue
+    private readonly Subject<IReadOnlyList<IndexUserQueueItem>> _subject;
+
+    public UserIndexQueue()
     {
-        private readonly Subject<IReadOnlyList<IndexUserQueueItem>> _subject;
+        this._subject = new Subject<IReadOnlyList<IndexUserQueueItem>>();
+        this.UsersToIndex = this._subject.SelectMany(q => q);
+    }
 
-        public UserIndexQueue()
-        {
-            this._subject = new Subject<IReadOnlyList<IndexUserQueueItem>>();
-            this.UsersToIndex = this._subject.SelectMany(q => q);
-        }
+    public IObservable<IndexUserQueueItem> UsersToIndex { get; }
 
-        public IObservable<IndexUserQueueItem> UsersToIndex { get; }
+    public void Publish(IReadOnlyList<User> users)
+    {
+        var queueItems = users
+            .Select(s => new IndexUserQueueItem(s.UserId, 10000))
+            .ToList();
 
-        public void Publish(IReadOnlyList<User> users)
-        {
-            var queueItems = users
-                .Select(s => new IndexUserQueueItem(s.UserId, 10000))
-                .ToList();
-
-            this._subject.OnNext(queueItems);
-        }
+        this._subject.OnNext(queueItems);
     }
 }
