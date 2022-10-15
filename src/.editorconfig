@@ -1,7 +1,7 @@
+root = true
 # EditorConfig to support per-project formatting.
 # http://editorconfig.org
 
-root = true
 
 [*]
 charset = utf-8
@@ -12,7 +12,7 @@ csharp_indent_labels = one_less_than_current
 csharp_using_directive_placement = outside_namespace:silent
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_prefer_braces = true:silent
-csharp_style_namespace_declarations = block_scoped:suggestion
+csharp_style_namespace_declarations = file_scoped:suggestion
 csharp_style_prefer_method_group_conversion = true:silent
 csharp_style_prefer_top_level_statements = true:silent
 csharp_style_expression_bodied_methods = false:silent
@@ -53,7 +53,7 @@ indent_style = space
 indent_size = 4
 
 # S1643: Strings should not be concatenated using '+' in a loop
-dotnet_diagnostic.S1643.severity = silent
+dotnet_diagnostic.s1643.severity = silent
 
 [**.cshtml]
 charset = utf-8-bom

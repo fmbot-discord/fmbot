@@ -16,7 +16,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
-using PostgreSQLCopyHelper;
 using Serilog;
 
 namespace FMBot.LastFM.Repositories;
