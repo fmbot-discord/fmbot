@@ -191,7 +191,7 @@ public class StartupService
 
 #if DEBUG
         Log.Information("Registering slash commands to guild");
-        await this._interactionService.RegisterCommandsToGuildAsync(821660544581763093);
+        await this._interactionService.RegisterCommandsToGuildAsync(this._botSettings.Bot.BaseServerId);
 #else
             Log.Information("Registering slash commands globally");
             await this._interactionService.RegisterCommandsGloballyAsync();
