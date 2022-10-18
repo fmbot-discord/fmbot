@@ -13,7 +13,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 
-namespace FMBot.Bot.Commands.Guild;
+namespace FMBot.Bot.TextCommands.Guild;
 
 [Name("Server member settings")]
 [ServerStaffOnly]

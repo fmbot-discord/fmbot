@@ -18,14 +18,12 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
-using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
-namespace FMBot.Bot.Commands.LastFM;
+namespace FMBot.Bot.TextCommands.LastFM;
 
 [Name("Plays")]
 public class PlayCommands : BaseCommandModule

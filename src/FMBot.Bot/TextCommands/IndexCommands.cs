@@ -17,7 +17,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using Serilog;
 
-namespace FMBot.Bot.Commands;
+namespace FMBot.Bot.TextCommands;
 
 [Name("Indexing")]
 public class IndexCommands : BaseCommandModule

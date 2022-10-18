@@ -1,11 +1,10 @@
 using Discord;
 using Discord.Commands;
-using FMBot.Bot.Attributes;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 
-namespace FMBot.Bot.Commands;
+namespace FMBot.Bot.TextCommands;
 
 public class BaseCommandModule : ModuleBase
 {

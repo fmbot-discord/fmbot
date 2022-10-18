@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Dasync.Collections;
 using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -14,12 +11,10 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
-using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
-namespace FMBot.Bot.Commands;
+namespace FMBot.Bot.TextCommands;
 
 [Name("Friends")]
 public class FriendsCommands : BaseCommandModule

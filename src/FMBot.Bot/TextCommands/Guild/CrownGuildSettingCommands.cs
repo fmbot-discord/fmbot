@@ -6,7 +6,6 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -17,7 +16,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 
-namespace FMBot.Bot.Commands.Guild;
+namespace FMBot.Bot.TextCommands.Guild;
 
 [Name("Crown settings")]
 [ServerStaffOnly]

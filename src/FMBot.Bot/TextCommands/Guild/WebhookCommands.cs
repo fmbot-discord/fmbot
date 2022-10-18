@@ -9,7 +9,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 
-namespace FMBot.Bot.Commands.Guild;
+namespace FMBot.Bot.TextCommands.Guild;
 
 [Name("Webhooks")]
 [ServerStaffOnly]

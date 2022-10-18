@@ -1,18 +1,17 @@
-using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
-using FMBot.Bot.Extensions;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
+using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 
-namespace FMBot.Bot.Commands;
+namespace FMBot.Bot.TextCommands;
 
 [Name("Owner commands")]
 [Summary(".fmbot Owners Only")]

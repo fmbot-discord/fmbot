@@ -3,17 +3,15 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
 
-namespace FMBot.Bot.Commands;
+namespace FMBot.Bot.TextCommands;
 
 [Name("Youtube")]
 public class YoutubeCommands : BaseCommandModule

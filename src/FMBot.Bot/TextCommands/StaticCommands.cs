@@ -24,7 +24,7 @@ using Microsoft.Extensions.Options;
 using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
-namespace FMBot.Bot.Commands;
+namespace FMBot.Bot.TextCommands;
 
 [Name("Static commands")]
 public class StaticCommands : BaseCommandModule
