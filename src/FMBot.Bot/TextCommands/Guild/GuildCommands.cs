@@ -15,6 +15,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.TextCommands.Guild;
@@ -27,6 +28,8 @@ public class GuildCommands : BaseCommandModule
     private readonly GuildService _guildService;
     private readonly SettingService _settingService;
     private readonly CommandService _service;
+
+    private readonly IMemoryCache _cache;
 
     private readonly IPrefixService _prefixService;
     private readonly IGuildDisabledCommandService _guildDisabledCommandService;
@@ -42,7 +45,7 @@ public class GuildCommands : BaseCommandModule
         IChannelDisabledCommandService channelDisabledCommandService,
         SettingService settingService,
         IOptions<BotSettings> botSettings,
-        CommandService service) : base(botSettings)
+        CommandService service, IMemoryCache cache) : base(botSettings)
     {
         this._prefixService = prefixService;
         this._guildService = guildService;
@@ -51,7 +54,21 @@ public class GuildCommands : BaseCommandModule
         this._channelDisabledCommandService = channelDisabledCommandService;
         this._settingService = settingService;
         this._service = service;
+        this._cache = cache;
         this._adminService = adminService;
+    }
+
+    [Command("keepdata", RunMode = RunMode.Async)]
+    [Summary("Allows you to keep your server data when removing the bot from your server")]
+    [GuildOnly]
+    [CommandCategories(CommandCategory.ServerSettings)]
+    public async Task KeepDataAsync(params string[] otherSettings)
+    {
+        this._cache.Set($"{this.Context.Guild.Id}-keep-data", true, TimeSpan.FromMinutes(5));
+
+        await ReplyAsync(
+            "You can now kick this bot from your server in the next 5 minutes without losing the stored .fmbot data, like server settings and crown history.\n\n" +
+            "If you still wish to remove all server data from the bot you can kick the bot after the time period is over.");
     }
 
     [Command("servermode", RunMode = RunMode.Async)]

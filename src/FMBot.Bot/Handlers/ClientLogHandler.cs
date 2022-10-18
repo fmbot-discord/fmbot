@@ -8,12 +8,14 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
 namespace FMBot.Bot.Handlers;
 
 public class ClientLogHandler
 {
+    private readonly IMemoryCache _cache;
     private readonly DiscordShardedClient _client;
     private readonly IChannelDisabledCommandService _channelDisabledCommandService;
     private readonly IGuildDisabledCommandService _guildDisabledCommandService;
@@ -25,7 +27,7 @@ public class ClientLogHandler
         IChannelDisabledCommandService channelDisabledCommandService,
         IGuildDisabledCommandService guildDisabledCommandService,
         GuildService guildService,
-        IPrefixService prefixService, IIndexService indexService)
+        IPrefixService prefixService, IIndexService indexService, IMemoryCache cache)
     {
         this._client = client;
         this._channelDisabledCommandService = channelDisabledCommandService;
@@ -33,6 +35,7 @@ public class ClientLogHandler
         this._guildService = guildService;
         this._prefixService = prefixService;
         this._indexService = indexService;
+        this._cache = cache;
         this._client.Log += LogEvent;
         this._client.ShardLatencyUpdated += ShardLatencyEvent;
         this._client.ShardDisconnected += ShardDisconnectedEvent;
@@ -153,7 +156,20 @@ public class ClientLogHandler
 
     private async Task ClientLeftGuild(SocketGuild guild)
     {
-        if (BotTypeExtension.GetBotType(this._client.CurrentUser.Id) != BotType.Beta)
+        var keepData = false;
+
+        var key = $"{guild.Id}-keep-data";
+        if (this._cache.TryGetValue(key, out _))
+        {
+            keepData = true;
+        }
+
+        if (BotTypeExtension.GetBotType(this._client.CurrentUser.Id) == BotType.Beta)
+        {
+            keepData = true;
+        }
+
+        if (!keepData)
         {
             Log.Information(
                 "LeftGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
