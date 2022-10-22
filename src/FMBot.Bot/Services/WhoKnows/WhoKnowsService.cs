@@ -155,6 +155,10 @@ public class WhoKnowsService
             else
             {
                 nameWithLink = NameWithLink(user);
+                if (user.UserId == requestedUserId)
+                {
+                    nameWithLink = $"**{nameWithLink}**";
+                }
             }
 
             var playString = StringExtensions.GetPlaysString(user.Playcount);
