@@ -746,15 +746,18 @@ public class PlayService
         return userPlays;
     }
 
-    public async Task<bool> UserHasImported(int userId)
+    public bool UserHasImported(IEnumerable<UserPlayTs> userPlays)
+    {
+        return userPlays
+            .GroupBy(g => g.TimePlayed.Date)
+            .Count(w => w.Count() > 2500) >= 7;
+    }
+
+    public async Task<IReadOnlyList<UserPlayTs>> GetAllUserPlays(int userId)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var lastPlays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
-
-        return lastPlays
-            .GroupBy(g => g.TimePlayed.Date)
-            .Count(w => w.Count() > 2500) >= 7;
+        return await PlayRepository.GetUserPlays(userId, connection, 9999999);
     }
 }

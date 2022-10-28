@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -40,6 +41,7 @@ public class UserCommands : BaseCommandModule
     public readonly UserBuilder _userBuilder;
     private readonly ArtistsService _artistsService;
     private readonly PlayService _playService;
+    private readonly TimeService _timeService;
 
     private InteractiveService Interactivity { get; }
 
@@ -59,7 +61,7 @@ public class UserCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         FeaturedService featuredService,
         UserBuilder userBuilder,
-        InteractiveService interactivity, ArtistsService artistsService, PlayService playService) : base(botSettings)
+        InteractiveService interactivity, ArtistsService artistsService, PlayService playService, TimeService timeService) : base(botSettings)
     {
         this._friendsService = friendsService;
         this._guildService = guildService;
@@ -75,6 +77,7 @@ public class UserCommands : BaseCommandModule
         this.Interactivity = interactivity;
         this._artistsService = artistsService;
         this._playService = playService;
+        this._timeService = timeService;
     }
 
     [Command("stats", RunMode = RunMode.Async)]
@@ -158,10 +161,12 @@ public class UserCommands : BaseCommandModule
             playcounts.AppendLine($"Artists: **{userInfo.ArtistCount}**");
             this._embed.AddField("Playcounts", playcounts.ToString(), true);
 
+            var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+
             var stats = new StringBuilder();
             if (userSettings.UserType != UserType.User)
             {
-                var hasImported = await this._playService.UserHasImported(userSettings.UserId);
+                var hasImported = this._playService.UserHasImported(allPlays);
                 if (hasImported)
                 {
                     stats.AppendLine("User has most likely imported plays from external source");
@@ -172,13 +177,58 @@ public class UserCommands : BaseCommandModule
 
             if (topArtists.Any())
             {
-                stats.AppendLine($"Your top 10 artists make up x% of your scrobbles");
+                //stats.AppendLine($"Your top 10 artists make up x% of your scrobbles");
             }
 
             if (stats.Length > 0)
             {
                 this._embed.AddField("Stats", stats.ToString());
             }
+
+            var monthDescription = new StringBuilder();
+            var monthGroups = allPlays
+                .OrderByDescending(o => o.TimePlayed)
+                .GroupBy(g => new { g.TimePlayed.Month, g.TimePlayed.Year });
+
+            foreach (var month in monthGroups.Take(6))
+            {
+                if (!allPlays.Any(a => a.TimePlayed < DateTime.UtcNow.AddMonths(-month.Key.Month)))
+                {
+                    break;
+                }
+
+                var time = await this._timeService.GetPlayTimeForPlays(month);
+                monthDescription.AppendLine(
+                    $"**{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}** " +
+                    $"- **{month.Count()}** plays " +
+                    $"- **{StringExtensions.GetListeningTimeString(time)}**");
+            }
+            if (monthDescription.Length > 0)
+            {
+                this._embed.AddField("Months", monthDescription.ToString());
+            }
+
+            if (userSettings.UserType != UserType.User)
+            {
+                var yearDescription = new StringBuilder();
+                var yearGroups = allPlays
+                    .OrderByDescending(o => o.TimePlayed)
+                    .GroupBy(g => g.TimePlayed.Year);
+
+                foreach (var year in yearGroups)
+                {
+                    var time = await this._timeService.GetPlayTimeForPlays(year);
+                    yearDescription.AppendLine(
+                        $"**{year.Key}** " +
+                        $"- **{year.Count()}** plays " +
+                        $"- **{StringExtensions.GetListeningTimeString(time)}**");
+                }
+                if (yearDescription.Length > 0)
+                {
+                    this._embed.AddField("Years", yearDescription.ToString());
+                }
+            }
+            
 
             var footer = new StringBuilder();
             if (user.Friends?.Count > 0)
