@@ -14,6 +14,12 @@ public class UserLfm
     public long Playlists { get; set; }
 
     public long Playcount { get; set; }
+    [JsonPropertyName("artist_count")]
+    public long ArtistCount { get; set; }
+    [JsonPropertyName("album_count")]
+    public long AlbumCount { get; set; }
+    [JsonPropertyName("track_count")]
+    public long TrackCount { get; set; }
 
     public string Gender { get; set; }
 

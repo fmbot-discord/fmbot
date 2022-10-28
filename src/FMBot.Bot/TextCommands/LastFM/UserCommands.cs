@@ -38,6 +38,8 @@ public class UserCommands : BaseCommandModule
     private readonly TimerService _timer;
     private readonly UserService _userService;
     public readonly UserBuilder _userBuilder;
+    private readonly ArtistsService _artistsService;
+    private readonly PlayService _playService;
 
     private InteractiveService Interactivity { get; }
 
@@ -57,7 +59,7 @@ public class UserCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         FeaturedService featuredService,
         UserBuilder userBuilder,
-        InteractiveService interactivity) : base(botSettings)
+        InteractiveService interactivity, ArtistsService artistsService, PlayService playService) : base(botSettings)
     {
         this._friendsService = friendsService;
         this._guildService = guildService;
@@ -71,6 +73,8 @@ public class UserCommands : BaseCommandModule
         this._featuredService = featuredService;
         this._userBuilder = userBuilder;
         this.Interactivity = interactivity;
+        this._artistsService = artistsService;
+        this._playService = playService;
     }
 
     [Command("stats", RunMode = RunMode.Async)]
@@ -105,57 +109,90 @@ public class UserCommands : BaseCommandModule
                 userTitle = await this._userService.GetUserTitleAsync(this.Context);
             }
 
-            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithName(".fmbot and last.fm stats for " + userTitle);
+            this._embedAuthor.WithName($"{userTitle} - User profile");
             this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}");
             this._embed.WithAuthor(this._embedAuthor);
 
-            this._embedFooter.WithText(
-                $"To see stats for other .fmbot users, use {prfx}stats '@user'");
-            this._embed.WithFooter(this._embedFooter);
-
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
 
-            var userImages = userInfo.Image;
-            var userAvatar = userImages.FirstOrDefault(f => f.Size == "extralarge");
-
-            if (userAvatar != null && !string.IsNullOrWhiteSpace(userAvatar.Text))
+            var userAvatar = userInfo.Image?.FirstOrDefault(f => f.Size == "extralarge");
+            if (!string.IsNullOrWhiteSpace(userAvatar?.Text))
             {
                 this._embed.WithThumbnailUrl(userAvatar.Text);
             }
 
-            var fmbotStats = new StringBuilder();
-
-            fmbotStats.AppendLine($"Bot usertype: `{user.UserType}`");
-
-            fmbotStats.AppendLine($".fm embed type: `{user.FmEmbedType}`");
-            fmbotStats.AppendLine($"Last update: `{user.LastUpdated} (UTC)`");
-            fmbotStats.AppendLine($"Last index: `{user.LastIndexed} (UTC)`");
-            if (user.Friends?.Count > 0)
+            var description = new StringBuilder();
+            if (user.UserType != UserType.User)
             {
-                fmbotStats.AppendLine($"Friends: `{user.Friends?.Count}`");
+                description.AppendLine($"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
             }
-            if (user.FriendedByUsers?.Count > 0)
+
+            if (userInfo.Type != "user" && userInfo.Type != "subscriber")
             {
-                fmbotStats.AppendLine($"Befriended by: `{user.FriendedByUsers?.Count}`");
+                description.AppendLine($"Last.fm {userInfo.Type}");
+            }
+
+            if (description.Length > 0)
+            {
+                this._embed.WithDescription(description.ToString());
             }
 
             var lastFmStats = new StringBuilder();
-
-            lastFmStats.AppendLine($"Username: [`{userSettings.UserNameLastFm}`]({Constants.LastFMUserUrl}{userSettings.UserNameLastFm})");
-            lastFmStats.AppendLine($"Name: `{userInfo.Name}`");
-
-            if (!userSettings.DifferentUser)
+            lastFmStats.AppendLine($"Name: **{userInfo.Name}**");
+            lastFmStats.AppendLine($"Username: **[{userSettings.UserNameLastFm}]({Constants.LastFMUserUrl}{userSettings.UserNameLastFm})**");
+            if (userInfo.Subscriber != 0)
             {
-                var authorized = !string.IsNullOrEmpty(user.SessionKeyLastFm) ? "Yes" : "No";
-                lastFmStats.AppendLine($".fmbot authorized: `{authorized}`");
+                lastFmStats.AppendLine("Last.fm Pro subscriber");
             }
-            lastFmStats.AppendLine($"User type: `{userInfo.Type}`");
-            lastFmStats.AppendLine($"Scrobbles: `{userInfo.Playcount}`");
-            lastFmStats.AppendLine($"Country: `{userInfo.Country}`");
 
-            this._embed.AddField("last.fm info", lastFmStats.ToString(), true);
-            this._embed.AddField(".fmbot info", fmbotStats.ToString(), true);
+            lastFmStats.AppendLine($"Country: **{userInfo.Country}**");
+
+            lastFmStats.AppendLine($"Registered: **<t:{userInfo.Registered.Text}:D>** (<t:{userInfo.Registered.Text}:R>)");
+
+            this._embed.AddField("Last.fm info", lastFmStats.ToString(), true);
+
+            var playcounts = new StringBuilder();
+            playcounts.AppendLine($"Scrobbles: **{userInfo.Playcount}**");
+            playcounts.AppendLine($"Tracks: **{userInfo.TrackCount}**");
+            playcounts.AppendLine($"Albums: **{userInfo.AlbumCount}**");
+            playcounts.AppendLine($"Artists: **{userInfo.ArtistCount}**");
+            this._embed.AddField("Playcounts", playcounts.ToString(), true);
+
+            var stats = new StringBuilder();
+            if (userSettings.UserType != UserType.User)
+            {
+                var hasImported = await this._playService.UserHasImported(userSettings.UserId);
+                if (hasImported)
+                {
+                    stats.AppendLine("User has most likely imported plays from external source");
+                }
+            }
+
+            var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true);
+
+            if (topArtists.Any())
+            {
+                stats.AppendLine($"Your top 10 artists make up x% of your scrobbles");
+            }
+
+            if (stats.Length > 0)
+            {
+                this._embed.AddField("Stats", stats.ToString());
+            }
+
+            var footer = new StringBuilder();
+            if (user.Friends?.Count > 0)
+            {
+                footer.AppendLine($"Friends: {user.Friends?.Count}");
+            }
+            if (user.FriendedByUsers?.Count > 0)
+            {
+                footer.AppendLine($"Befriended by: {user.FriendedByUsers?.Count}");
+            }
+            if (footer.Length > 0)
+            {
+                this._embed.WithFooter(footer.ToString());
+            }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();

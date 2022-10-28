@@ -215,8 +215,7 @@ public class PlayService
     {
         var topTrack = plays
             .GroupBy(x => new { x.ArtistName, x.TrackName })
-            .OrderByDescending(o => o.Count())
-            .FirstOrDefault();
+            .MaxBy(o => o.Count());
 
         if (topTrack == null)
         {
@@ -230,8 +229,7 @@ public class PlayService
     {
         var topAlbum = plays
             .GroupBy(x => new { x.ArtistName, x.AlbumName })
-            .OrderByDescending(o => o.Count())
-            .FirstOrDefault();
+            .MaxBy(o => o.Count());
 
         if (topAlbum == null)
         {
@@ -245,8 +243,7 @@ public class PlayService
     {
         var topArtist = plays
             .GroupBy(x => x.ArtistName)
-            .OrderByDescending(o => o.Count())
-            .FirstOrDefault();
+            .MaxBy(o => o.Count());
 
         if (topArtist == null)
         {
@@ -747,5 +744,17 @@ public class PlayService
         })).ToList();
 
         return userPlays;
+    }
+
+    public async Task<bool> UserHasImported(int userId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var lastPlays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+
+        return lastPlays
+            .GroupBy(g => g.TimePlayed.Date)
+            .Count(w => w.Count() > 2500) >= 7;
     }
 }
