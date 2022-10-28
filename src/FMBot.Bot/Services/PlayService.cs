@@ -328,6 +328,12 @@ public class PlayService
         {
             var play = lastPlays[i];
 
+            if (!artistContinue)
+            {
+                streak.ArtistName = null;
+                streak.ArtistPlaycount = null;
+            }
+
             if (firstPlay.ArtistName.ToLower() == play.ArtistName.ToLower() && artistContinue)
             {
                 streak.ArtistPlaycount++;
@@ -339,6 +345,12 @@ public class PlayService
                 artistContinue = false;
             }
 
+            if (!albumContinue)
+            {
+                streak.AlbumName = null;
+                streak.AlbumPlaycount = null;
+            }
+
             if (firstPlay.AlbumName != null && play.AlbumName != null && firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
             {
                 streak.AlbumPlaycount++;
@@ -348,6 +360,12 @@ public class PlayService
             else
             {
                 albumContinue = false;
+            }
+
+            if (!trackContinue)
+            {
+                streak.TrackName = null;
+                streak.TrackPlaycount = null;
             }
 
             if (firstPlay.TrackName.ToLower() == play.TrackName.ToLower() && trackContinue)
@@ -411,7 +429,9 @@ public class PlayService
     public async Task<string> UpdateOrInsertStreak(UserStreak streak)
     {
         const int saveThreshold = 25;
-        if (streak.TrackPlaycount < saveThreshold && streak.AlbumPlaycount < saveThreshold && streak.ArtistPlaycount < saveThreshold)
+        if (streak.TrackPlaycount is null or < saveThreshold &&
+            streak.AlbumPlaycount is null or < saveThreshold &&
+            streak.ArtistPlaycount is null or < saveThreshold)
         {
             return $"Only streaks with {saveThreshold} plays or higher are saved.";
         }
