@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Text;
 using System.Web;
 using Discord;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 
@@ -37,6 +39,54 @@ public static class StringService
 
         return $"[{Format.Sanitize(track.TrackName)}]({track.TrackUrl})\n" +
                $"By **{Format.Sanitize(track.ArtistName)}**\n";
+    }
+
+    public static string TrackToLinkedStringWithTimestamp(RecentTrack track, bool? rymEnabled = null, TimeSpan? trackLength = null)
+    {
+        var description = new StringBuilder();
+
+        description.AppendLine($"**[{Format.Sanitize(track.TrackName)}]({track.TrackUrl})** by **{Format.Sanitize(track.ArtistName)}**");
+
+
+        if (!track.TimePlayed.HasValue || track.NowPlaying)
+        {
+            description.Append("🎶 • ");
+        }
+        else
+        {
+            var specifiedDateTime = DateTime.SpecifyKind(track.TimePlayed.Value, DateTimeKind.Utc);
+            var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+            description.Append($"<t:{dateValue}:t> • ");
+        }
+
+        if (trackLength.HasValue)
+        {
+            description.Append($"{StringExtensions.GetListeningTimeString(trackLength.Value, true)} - ");
+        }
+
+        if (!string.IsNullOrWhiteSpace(track.AlbumName))
+        {
+            if (rymEnabled == true)
+            {
+                var albumQueryName = track.AlbumName.Replace(" - Single", "");
+                albumQueryName = albumQueryName.Replace(" - EP", "");
+
+                var albumRymUrl = @"https://rateyourmusic.com/search?searchterm=";
+                albumRymUrl += HttpUtility.UrlEncode($"{track.ArtistName} {albumQueryName}");
+                albumRymUrl += "&searchtype=l";
+
+                description.Append($"*[{Format.Sanitize(track.AlbumName)}]({albumRymUrl})*");
+            }
+            else
+            {
+                description.Append($"*{Format.Sanitize(track.AlbumName)}*");
+            }
+        }
+
+        description.AppendLine();
+
+        return description.ToString();
     }
 
     public static string TrackToString(RecentTrack track)

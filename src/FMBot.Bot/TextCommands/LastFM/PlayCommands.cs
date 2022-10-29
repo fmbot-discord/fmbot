@@ -234,12 +234,11 @@ public class PlayCommands : BaseCommandModule
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var amount = SettingService.GetAmount(extraOptions, 5, 10);
 
         try
         {
             var response = await this._playBuilder.RecentAsync(new ContextModel(this.Context, prfx, contextUser),
-                userSettings, amount);
+                userSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

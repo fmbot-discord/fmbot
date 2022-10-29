@@ -58,6 +58,15 @@ public class TimeService
         return avgArtistTrackLength ?? 210000;
     }
 
+    public async Task<TimeSpan?> GetTrackLengthForTrackOrDefault(string artistName, string trackName)
+    {
+        await CacheAllTrackLengths();
+
+        var trackLength = (long?)this._cache.Get(CacheKeyForTrack(trackName.ToLower(), artistName.ToLower()));
+
+        return trackLength.HasValue ? TimeSpan.FromMilliseconds(trackLength.Value) : null;
+    }
+
     public async Task<TimeSpan> GetPlayTimeForAlbum(List<AlbumTrack> albumTracks, List<UserTrack> userTracks, long totalPlaycount)
     {
         await CacheAllTrackLengths();
@@ -91,7 +100,7 @@ public class TimeService
     private async Task CacheAllTrackLengths()
     {
         const string cacheKey = "track-lengths-cached";
-        var cacheTime = TimeSpan.FromMinutes(10);
+        var cacheTime = TimeSpan.FromMinutes(60);
 
         if (this._cache.TryGetValue(cacheKey, out _))
         {

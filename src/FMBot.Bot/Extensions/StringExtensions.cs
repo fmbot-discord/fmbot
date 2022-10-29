@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using FMBot.Domain.Models;
@@ -165,19 +166,27 @@ public static class StringExtensions
     }
 
 
-    public static string GetListeningTimeString(TimeSpan timeSpan)
+    public static string GetListeningTimeString(TimeSpan timeSpan, bool includeSeconds = false)
     {
+        var time = new StringBuilder();
         if (timeSpan.TotalDays >= 1)
         {
-            return $"{(int)timeSpan.TotalDays}d{timeSpan.Hours}h{timeSpan.Minutes}m";
+            time.Append($"{(int)timeSpan.TotalDays}d");
         }
 
         if (timeSpan.TotalHours >= 1)
         {
-            return $"{timeSpan.Hours}h{timeSpan.Minutes}m";
+            time.Append($"{timeSpan.Hours}h");
         }
 
-        return $"{timeSpan.Minutes}m";
+        time.Append($"{timeSpan.Minutes}m");
+
+        if (includeSeconds)
+        {
+            time.Append($"{timeSpan.Seconds}s");
+        }
+
+        return time.ToString();
     }
 
     public static string GetRymUrl(string albumName, string artistName)

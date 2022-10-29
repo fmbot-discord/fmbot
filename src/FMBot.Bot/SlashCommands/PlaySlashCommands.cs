@@ -107,21 +107,15 @@ public class PlaySlashCommands : InteractionModuleBase
     [SlashCommand("recent", "Shows you or someone else their recent tracks")]
     [UsernameSetRequired]
     public async Task RecentAsync(
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Amount", "Amount of recent tracks to show")] int amount = 5)
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        if (amount > 10)
-        {
-            amount = 10;
-        }
-
         try
         {
             var response = await this._playBuilder.RecentAsync(new ContextModel(this.Context, contextUser),
-                userSettings, amount);
+                userSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
