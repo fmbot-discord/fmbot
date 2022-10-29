@@ -370,7 +370,25 @@ public class PlayBuilder
             sessionKey = context.ContextUser.SessionKeyLastFm;
         }
 
-        var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, 120, useCache: true, sessionKey: sessionKey);
+        Response<RecentTrackList> recentTracks;
+        if (!userSettings.DifferentUser)
+        {
+            if (context.ContextUser.LastIndexed == null)
+            {
+                _ = this._indexService.IndexUser(context.ContextUser);
+                recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm,
+                    useCache: true, sessionKey: sessionKey);
+            }
+            else
+            {
+                recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(context.ContextUser);
+            }
+        }
+        else
+        {
+            recentTracks =
+                await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, 120, useCache: true);
+        }
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
