@@ -196,7 +196,7 @@ public class WhoKnowsService
                 var nameWithLink = NameWithLink(requestedUser);
                 var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
 
-                reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.**  {nameWithLink} ");
+                reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink}** ");
 
                 reply.Append($" - **{requestedUser.Playcount}** {playString}\n");
             }
