@@ -326,7 +326,7 @@ public class UserBuilder
         if (topArtists.Any())
         {
             var amount = topArtists.OrderByDescending(o => o.UserPlaycount).Take(10).Sum(s => s.UserPlaycount);
-            stats.AppendLine($"Your top **10** artists make up **{Math.Round((double)amount.GetValueOrDefault(0) / userInfo.Playcount * 100, 1)}%** of your scrobbles");
+            stats.AppendLine($"Top **10** artists make up **{Math.Round((double)amount.GetValueOrDefault(0) / userInfo.Playcount * 100, 1)}%** of your scrobbles");
         }
 
         if (stats.Length > 0)
