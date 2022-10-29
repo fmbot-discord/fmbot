@@ -83,9 +83,12 @@ public class UserCommands : BaseCommandModule
     [Command("stats", RunMode = RunMode.Async)]
     [Summary("Displays user stats related to Last.fm and .fmbot")]
     [UsernameSetRequired]
+    [Alias("profile", "user")]
     [CommandCategories(CommandCategory.Other)]
     public async Task StatsAsync([Remainder] string userOptions = null)
     {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
@@ -93,159 +96,11 @@ public class UserCommands : BaseCommandModule
         {
             var userSettings = await this._settingService.GetUser(userOptions, user, this.Context);
 
-            string userTitle;
-            if (userSettings.DifferentUser)
-            {
-                if (userSettings.DifferentUser && user.DiscordUserId == userSettings.DiscordUserId)
-                {
-                    await ReplyAsync("That user is not registered in .fmbot.");
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                    return;
-                }
+            var response =
+                await this._userBuilder.StatsAsync(new ContextModel(this.Context, prfx, user), userSettings, user);
 
-                userTitle =
-                    $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-                user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
-            }
-            else
-            {
-                userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            }
-
-            this._embedAuthor.WithName($"{userTitle} - User profile");
-            this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}");
-            this._embed.WithAuthor(this._embedAuthor);
-
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
-
-            var userAvatar = userInfo.Image?.FirstOrDefault(f => f.Size == "extralarge");
-            if (!string.IsNullOrWhiteSpace(userAvatar?.Text))
-            {
-                this._embed.WithThumbnailUrl(userAvatar.Text);
-            }
-
-            var description = new StringBuilder();
-            if (user.UserType != UserType.User)
-            {
-                description.AppendLine($"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
-            }
-
-            if (userInfo.Type != "user" && userInfo.Type != "subscriber")
-            {
-                description.AppendLine($"Last.fm {userInfo.Type}");
-            }
-
-            if (description.Length > 0)
-            {
-                this._embed.WithDescription(description.ToString());
-            }
-
-            var lastFmStats = new StringBuilder();
-            lastFmStats.AppendLine($"Name: **{userInfo.Name}**");
-            lastFmStats.AppendLine($"Username: **[{userSettings.UserNameLastFm}]({Constants.LastFMUserUrl}{userSettings.UserNameLastFm})**");
-            if (userInfo.Subscriber != 0)
-            {
-                lastFmStats.AppendLine("Last.fm Pro subscriber");
-            }
-
-            lastFmStats.AppendLine($"Country: **{userInfo.Country}**");
-
-            lastFmStats.AppendLine($"Registered: **<t:{userInfo.Registered.Text}:D>** (<t:{userInfo.Registered.Text}:R>)");
-
-            this._embed.AddField("Last.fm info", lastFmStats.ToString(), true);
-
-            var playcounts = new StringBuilder();
-            playcounts.AppendLine($"Scrobbles: **{userInfo.Playcount}**");
-            playcounts.AppendLine($"Tracks: **{userInfo.TrackCount}**");
-            playcounts.AppendLine($"Albums: **{userInfo.AlbumCount}**");
-            playcounts.AppendLine($"Artists: **{userInfo.ArtistCount}**");
-            this._embed.AddField("Playcounts", playcounts.ToString(), true);
-
-            var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
-
-            var stats = new StringBuilder();
-            if (userSettings.UserType != UserType.User)
-            {
-                var hasImported = this._playService.UserHasImported(allPlays);
-                if (hasImported)
-                {
-                    stats.AppendLine("User has most likely imported plays from external source");
-                }
-            }
-
-            var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true);
-
-            if (topArtists.Any())
-            {
-                //stats.AppendLine($"Your top 10 artists make up x% of your scrobbles");
-            }
-
-            if (stats.Length > 0)
-            {
-                this._embed.AddField("Stats", stats.ToString());
-            }
-
-            var monthDescription = new StringBuilder();
-            var monthGroups = allPlays
-                .OrderByDescending(o => o.TimePlayed)
-                .GroupBy(g => new { g.TimePlayed.Month, g.TimePlayed.Year });
-
-            foreach (var month in monthGroups.Take(6))
-            {
-                if (!allPlays.Any(a => a.TimePlayed < DateTime.UtcNow.AddMonths(-month.Key.Month)))
-                {
-                    break;
-                }
-
-                var time = await this._timeService.GetPlayTimeForPlays(month);
-                monthDescription.AppendLine(
-                    $"**{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}** " +
-                    $"- **{month.Count()}** plays " +
-                    $"- **{StringExtensions.GetListeningTimeString(time)}**");
-            }
-            if (monthDescription.Length > 0)
-            {
-                this._embed.AddField("Months", monthDescription.ToString());
-            }
-
-            if (userSettings.UserType != UserType.User)
-            {
-                var yearDescription = new StringBuilder();
-                var yearGroups = allPlays
-                    .OrderByDescending(o => o.TimePlayed)
-                    .GroupBy(g => g.TimePlayed.Year);
-
-                foreach (var year in yearGroups)
-                {
-                    var time = await this._timeService.GetPlayTimeForPlays(year);
-                    yearDescription.AppendLine(
-                        $"**{year.Key}** " +
-                        $"- **{year.Count()}** plays " +
-                        $"- **{StringExtensions.GetListeningTimeString(time)}**");
-                }
-                if (yearDescription.Length > 0)
-                {
-                    this._embed.AddField("Years", yearDescription.ToString());
-                }
-            }
-            
-
-            var footer = new StringBuilder();
-            if (user.Friends?.Count > 0)
-            {
-                footer.AppendLine($"Friends: {user.Friends?.Count}");
-            }
-            if (user.FriendedByUsers?.Count > 0)
-            {
-                footer.AppendLine($"Befriended by: {user.FriendedByUsers?.Count}");
-            }
-            if (footer.Length > 0)
-            {
-                this._embed.WithFooter(footer.ToString());
-            }
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
