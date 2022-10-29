@@ -22,625 +22,624 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
 
-namespace FMBot.Bot.Services
+namespace FMBot.Bot.Services;
+
+public class ArtistsService
 {
-    public class ArtistsService
+    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+    private readonly IMemoryCache _cache;
+    private readonly BotSettings _botSettings;
+    private readonly ArtistRepository _artistRepository;
+    private readonly LastFmRepository _lastFmRepository;
+    private readonly WhoKnowsArtistService _whoKnowsArtistService;
+    private readonly TimerService _timer;
+    private readonly UpdateRepository _updateRepository;
+
+    public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory,
+        IMemoryCache cache,
+        IOptions<BotSettings> botSettings,
+        ArtistRepository artistRepository,
+        LastFmRepository lastFmRepository,
+        WhoKnowsArtistService whoKnowsArtistService,
+        TimerService timer,
+        UpdateRepository updateRepository)
     {
-        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-        private readonly IMemoryCache _cache;
-        private readonly BotSettings _botSettings;
-        private readonly ArtistRepository _artistRepository;
-        private readonly LastFmRepository _lastFmRepository;
-        private readonly WhoKnowsArtistService _whoKnowsArtistService;
-        private readonly TimerService _timer;
-        private readonly UpdateRepository _updateRepository;
+        this._contextFactory = contextFactory;
+        this._cache = cache;
+        this._artistRepository = artistRepository;
+        this._lastFmRepository = lastFmRepository;
+        this._whoKnowsArtistService = whoKnowsArtistService;
+        this._timer = timer;
+        this._updateRepository = updateRepository;
+        this._botSettings = botSettings.Value;
+    }
 
-        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory,
-            IMemoryCache cache,
-            IOptions<BotSettings> botSettings,
-            ArtistRepository artistRepository,
-            LastFmRepository lastFmRepository,
-            WhoKnowsArtistService whoKnowsArtistService,
-            TimerService timer,
-            UpdateRepository updateRepository)
+    public async Task<ArtistSearch> SearchArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
+        bool useCachedArtists = false, int? userId = null)
+    {
+        if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
         {
-            this._contextFactory = contextFactory;
-            this._cache = cache;
-            this._artistRepository = artistRepository;
-            this._lastFmRepository = lastFmRepository;
-            this._whoKnowsArtistService = whoKnowsArtistService;
-            this._timer = timer;
-            this._updateRepository = updateRepository;
-            this._botSettings = botSettings.Value;
-        }
-
-        public async Task<ArtistSearch> SearchArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
-            bool useCachedArtists = false, int? userId = null)
-        {
-            if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
+            if (otherUserUsername != null)
             {
-                if (otherUserUsername != null)
-                {
-                    lastFmUserName = otherUserUsername;
-                }
+                lastFmUserName = otherUserUsername;
+            }
 
-                if (artistValues.ToLower() == "featured")
-                {
-                    artistValues = this._timer._currentFeatured.ArtistName;
-                }
+            if (artistValues.ToLower() == "featured")
+            {
+                artistValues = this._timer._currentFeatured.ArtistName;
+            }
 
-                int? rndPosition = null;
-                long? rndPlaycount = null;
-                if (userId.HasValue && (artistValues.ToLower() == "rnd" || artistValues.ToLower() == "random"))
+            int? rndPosition = null;
+            long? rndPlaycount = null;
+            if (userId.HasValue && (artistValues.ToLower() == "rnd" || artistValues.ToLower() == "random"))
+            {
+                var topArtists = await this.GetUserAllTimeTopArtists(userId.Value, true);
+                if (topArtists.Count > 0)
                 {
-                    var topArtists = await this.GetUserAllTimeTopArtists(userId.Value, true);
-                    if (topArtists.Count > 0)
-                    {
-                        var rnd = RandomNumberGenerator.GetInt32(0, topArtists.Count);
+                    var rnd = RandomNumberGenerator.GetInt32(0, topArtists.Count);
 
-                        var artist = topArtists[rnd];
+                    var artist = topArtists[rnd];
 
-                        rndPosition = rnd;
-                        rndPlaycount = artist.UserPlaycount;
-                        artistValues = artist.ArtistName;
-                    }
+                    rndPosition = rnd;
+                    rndPlaycount = artist.UserPlaycount;
+                    artistValues = artist.ArtistName;
                 }
+            }
 
-                Response<ArtistInfo> artistCall;
-                if (useCachedArtists)
-                {
-                    artistCall = await GetCachedArtist(artistValues, lastFmUserName, userId);
-                }
-                else
-                {
-                    artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName);
-                }
-
-                if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
-                {
-                    response.Embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");
-                    response.CommandResponse = CommandResponse.NotFound;
-                    response.ResponseType = ResponseType.Embed;
-                    return new ArtistSearch(null, response);
-                }
-                if (!artistCall.Success || artistCall.Content == null)
-                {
-                    response.Embed.ErrorResponse(artistCall.Error, artistCall.Message, null, discordUser, "artist");
-                    response.CommandResponse = CommandResponse.LastFmError;
-                    response.ResponseType = ResponseType.Embed;
-                    return new ArtistSearch(null, response);
-                }
-
-                return new ArtistSearch(artistCall.Content, response, rndPosition, rndPlaycount);
+            Response<ArtistInfo> artistCall;
+            if (useCachedArtists)
+            {
+                artistCall = await GetCachedArtist(artistValues, lastFmUserName, userId);
             }
             else
             {
-                Response<RecentTrackList> recentScrobbles;
-
-                if (userId.HasValue && otherUserUsername == null)
-                {
-                    recentScrobbles = await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId.Value));
-                }
-                else
-                {
-                    recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
-                }
-
-                if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
-                {
-                    response.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(recentScrobbles, lastFmUserName);
-                    response.ResponseType = ResponseType.Embed;
-                    return new ArtistSearch(null, response);
-                }
-
-                if (otherUserUsername != null)
-                {
-                    lastFmUserName = otherUserUsername;
-                }
-
-                var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
-                Response<ArtistInfo> artistCall;
-                if (useCachedArtists)
-                {
-                    artistCall = await GetCachedArtist(lastPlayedTrack.ArtistName, lastFmUserName, userId);
-                }
-                else
-                {
-                    artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
-                }
-
-                if (artistCall.Content == null || !artistCall.Success)
-                {
-                    response.Embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.ArtistName}**.");
-                    response.CommandResponse = CommandResponse.NotFound;
-                    response.ResponseType = ResponseType.Embed;
-                    return new ArtistSearch(null, response);
-                }
-
-                return new ArtistSearch(artistCall.Content, response);
+                artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName);
             }
-        }
 
-        private async Task<Response<ArtistInfo>> GetCachedArtist(string artistName, string lastFmUserName, int? userId = null)
-        {
-            Response<ArtistInfo> artistInfo;
-            var cachedArtist = await GetArtistFromDatabase(artistName);
-            if (cachedArtist != null)
+            if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
             {
-                artistInfo = new Response<ArtistInfo>
-                {
-                    Content = CachedArtistToArtistInfo(cachedArtist),
-                    Success = true
-                };
+                response.Embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");
+                response.CommandResponse = CommandResponse.NotFound;
+                response.ResponseType = ResponseType.Embed;
+                return new ArtistSearch(null, response);
+            }
+            if (!artistCall.Success || artistCall.Content == null)
+            {
+                response.Embed.ErrorResponse(artistCall.Error, artistCall.Message, null, discordUser, "artist");
+                response.CommandResponse = CommandResponse.LastFmError;
+                response.ResponseType = ResponseType.Embed;
+                return new ArtistSearch(null, response);
+            }
 
-                if (userId.HasValue)
-                {
-                    var userPlaycount = await this._whoKnowsArtistService.GetArtistPlayCountForUser(cachedArtist.Name, userId.Value);
-                    artistInfo.Content.UserPlaycount = userPlaycount;
-                }
+            return new ArtistSearch(artistCall.Content, response, rndPosition, rndPlaycount);
+        }
+        else
+        {
+            Response<RecentTrackList> recentScrobbles;
+
+            if (userId.HasValue && otherUserUsername == null)
+            {
+                recentScrobbles = await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId.Value));
             }
             else
             {
-                artistInfo = await this._lastFmRepository.GetArtistInfoAsync(artistName, lastFmUserName);
+                recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
             }
 
-            return artistInfo;
-        }
-
-        private ArtistInfo CachedArtistToArtistInfo(Artist artist)
-        {
-            return new ArtistInfo
+            if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
             {
-                ArtistName = artist.Name,
-                ArtistUrl = artist.LastFmUrl,
-                Mbid = artist.Mbid
+                response.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(recentScrobbles, lastFmUserName);
+                response.ResponseType = ResponseType.Embed;
+                return new ArtistSearch(null, response);
+            }
+
+            if (otherUserUsername != null)
+            {
+                lastFmUserName = otherUserUsername;
+            }
+
+            var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
+            Response<ArtistInfo> artistCall;
+            if (useCachedArtists)
+            {
+                artistCall = await GetCachedArtist(lastPlayedTrack.ArtistName, lastFmUserName, userId);
+            }
+            else
+            {
+                artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
+            }
+
+            if (artistCall.Content == null || !artistCall.Success)
+            {
+                response.Embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.ArtistName}**.");
+                response.CommandResponse = CommandResponse.NotFound;
+                response.ResponseType = ResponseType.Embed;
+                return new ArtistSearch(null, response);
+            }
+
+            return new ArtistSearch(artistCall.Content, response);
+        }
+    }
+
+    private async Task<Response<ArtistInfo>> GetCachedArtist(string artistName, string lastFmUserName, int? userId = null)
+    {
+        Response<ArtistInfo> artistInfo;
+        var cachedArtist = await GetArtistFromDatabase(artistName);
+        if (cachedArtist != null)
+        {
+            artistInfo = new Response<ArtistInfo>
+            {
+                Content = CachedArtistToArtistInfo(cachedArtist),
+                Success = true
             };
+
+            if (userId.HasValue)
+            {
+                var userPlaycount = await this._whoKnowsArtistService.GetArtistPlayCountForUser(cachedArtist.Name, userId.Value);
+                artistInfo.Content.UserPlaycount = userPlaycount;
+            }
+        }
+        else
+        {
+            artistInfo = await this._lastFmRepository.GetArtistInfoAsync(artistName, lastFmUserName);
         }
 
-        public async Task<List<TopArtist>> FillArtistImages(List<TopArtist> topArtists)
+        return artistInfo;
+    }
+
+    private ArtistInfo CachedArtistToArtistInfo(Artist artist)
+    {
+        return new ArtistInfo
         {
-            if (topArtists.All(a => a.ArtistImageUrl != null))
-            {
-                return topArtists;
-            }
+            ArtistName = artist.Name,
+            ArtistUrl = artist.LastFmUrl,
+            Mbid = artist.Mbid
+        };
+    }
 
-            await CacheSpotifyArtistImages();
-
-            foreach (var topArtist in topArtists.Where(w => w.ArtistImageUrl == null))
-            {
-                var url = topArtist.ArtistUrl.ToLower();
-                var artistImage = (string)this._cache.Get(CacheKeyForArtist(url));
-
-                if (artistImage != null)
-                {
-                    topArtist.ArtistImageUrl = artistImage;
-                }
-            }
-
+    public async Task<List<TopArtist>> FillArtistImages(List<TopArtist> topArtists)
+    {
+        if (topArtists.All(a => a.ArtistImageUrl != null))
+        {
             return topArtists;
         }
 
-        private async Task CacheSpotifyArtistImages()
+        await CacheSpotifyArtistImages();
+
+        foreach (var topArtist in topArtists.Where(w => w.ArtistImageUrl == null))
         {
-            const string cacheKey = "artist-spotify-covers";
-            var cacheTime = TimeSpan.FromMinutes(5);
+            var url = topArtist.ArtistUrl.ToLower();
+            var artistImage = (string)this._cache.Get(CacheKeyForArtist(url));
 
-            if (this._cache.TryGetValue(cacheKey, out _))
+            if (artistImage != null)
             {
-                return;
+                topArtist.ArtistImageUrl = artistImage;
             }
-
-            const string sql = "SELECT LOWER(last_fm_url) as last_fm_url, LOWER(spotify_image_url) as spotify_image_url " +
-                               "FROM public.artists where last_fm_url is not null and spotify_image_url is not null;";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            await connection.OpenAsync();
-
-            var artistCovers = (await connection.QueryAsync<ArtistSpotifyCoverDto>(sql)).ToList();
-
-            foreach (var artistCover in artistCovers)
-            {
-                this._cache.Set(CacheKeyForArtist(artistCover.LastFmUrl), artistCover.SpotifyImageUrl, cacheTime);
-            }
-
-            this._cache.Set(cacheKey, true, cacheTime);
         }
 
-        public static string CacheKeyForArtist(string lastFmUrl)
+        return topArtists;
+    }
+
+    private async Task CacheSpotifyArtistImages()
+    {
+        const string cacheKey = "artist-spotify-covers";
+        var cacheTime = TimeSpan.FromMinutes(5);
+
+        if (this._cache.TryGetValue(cacheKey, out _))
         {
-            return $"artist-spotify-image-{lastFmUrl.ToLower()}";
+            return;
         }
 
-        // Top artists for 2 users
-        public TasteModels GetEmbedTaste(TopArtistList leftUserArtists,
-            TopArtistList rightUserArtists, int amount, TimePeriod timePeriod)
+        const string sql = "SELECT LOWER(last_fm_url) as last_fm_url, LOWER(spotify_image_url) as spotify_image_url " +
+                           "FROM public.artists where last_fm_url is not null and spotify_image_url is not null;";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var artistCovers = (await connection.QueryAsync<ArtistSpotifyCoverDto>(sql)).ToList();
+
+        foreach (var artistCover in artistCovers)
         {
-            var matchedArtists = ArtistsToShow(leftUserArtists.TopArtists, rightUserArtists.TopArtists);
+            this._cache.Set(CacheKeyForArtist(artistCover.LastFmUrl), artistCover.SpotifyImageUrl, cacheTime);
+        }
 
-            var left = "";
-            var right = "";
-            foreach (var artist in matchedArtists.Take(amount))
+        this._cache.Set(cacheKey, true, cacheTime);
+    }
+
+    public static string CacheKeyForArtist(string lastFmUrl)
+    {
+        return $"artist-spotify-image-{lastFmUrl.ToLower()}";
+    }
+
+    // Top artists for 2 users
+    public TasteModels GetEmbedTaste(TopArtistList leftUserArtists,
+        TopArtistList rightUserArtists, int amount, TimePeriod timePeriod)
+    {
+        var matchedArtists = ArtistsToShow(leftUserArtists.TopArtists, rightUserArtists.TopArtists);
+
+        var left = "";
+        var right = "";
+        foreach (var artist in matchedArtists.Take(amount))
+        {
+            var name = artist.ArtistName;
+            if (!string.IsNullOrWhiteSpace(name) && name.Length > 24)
             {
-                var name = artist.ArtistName;
-                if (!string.IsNullOrWhiteSpace(name) && name.Length > 24)
-                {
-                    left += $"**{name.Substring(0, 24)}..**\n";
-                }
-                else
-                {
-                    left += $"**{name}**\n";
-                }
-
-                var ownPlaycount = artist.UserPlaycount.Value;
-                var otherPlaycount = rightUserArtists.TopArtists.First(f => f.ArtistName.Equals(name)).UserPlaycount.Value;
-
-                if (ownPlaycount > otherPlaycount)
-                {
-                    right += $"**{ownPlaycount}**";
-                }
-                else
-                {
-                    right += $"{ownPlaycount}";
-                }
-
-                right += " • ";
-
-                if (otherPlaycount > ownPlaycount)
-                {
-                    right += $"**{otherPlaycount}**";
-                }
-                else
-                {
-                    right += $"{otherPlaycount}";
-                }
-                right += $"\n";
+                left += $"**{name.Substring(0, 24)}..**\n";
+            }
+            else
+            {
+                left += $"**{name}**\n";
             }
 
-            var description = Description(leftUserArtists.TopArtists, timePeriod, matchedArtists);
+            var ownPlaycount = artist.UserPlaycount.Value;
+            var otherPlaycount = rightUserArtists.TopArtists.First(f => f.ArtistName.Equals(name)).UserPlaycount.Value;
 
-            return new TasteModels
+            if (ownPlaycount > otherPlaycount)
             {
-                Description = description,
-                LeftDescription = left,
-                RightDescription = right
+                right += $"**{ownPlaycount}**";
+            }
+            else
+            {
+                right += $"{ownPlaycount}";
+            }
+
+            right += " • ";
+
+            if (otherPlaycount > ownPlaycount)
+            {
+                right += $"**{otherPlaycount}**";
+            }
+            else
+            {
+                right += $"{otherPlaycount}";
+            }
+            right += $"\n";
+        }
+
+        var description = Description(leftUserArtists.TopArtists, timePeriod, matchedArtists);
+
+        return new TasteModels
+        {
+            Description = description,
+            LeftDescription = left,
+            RightDescription = right
+        };
+    }
+
+    public async Task<List<TopArtist>> GetUserAllTimeTopArtists(int userId, bool useCache = false)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var cacheKey = $"user-{userId}-topartists-alltime";
+        if (this._cache.TryGetValue(cacheKey, out List<TopArtist> topArtists) && useCache)
+        {
+            return topArtists;
+        }
+
+        var freshTopArtists = (await this._artistRepository.GetUserArtists(userId, connection))
+            .Select(s => new TopArtist
+            {
+                ArtistName = s.Name,
+                UserPlaycount = s.Playcount
+            })
+            .OrderByDescending(o => o.UserPlaycount)
+            .ToList();
+
+        if (freshTopArtists.Count > 100)
+        {
+            this._cache.Set(cacheKey, freshTopArtists, TimeSpan.FromMinutes(10));
+        }
+
+        return freshTopArtists;
+    }
+
+    // Top artists for 2 users
+    public string GetTableTaste(TopArtistList leftUserArtists,
+        TopArtistList rightUserArtists, int amount, TimePeriod timePeriod, string mainUser, string userToCompare)
+    {
+        var artistsToShow = ArtistsToShow(leftUserArtists.TopArtists, rightUserArtists.TopArtists);
+
+        var artists = artistsToShow.Select(s =>
+        {
+            var ownPlaycount = s.UserPlaycount.Value;
+            var otherPlaycount = rightUserArtists.TopArtists.First(f => f.ArtistName.Equals(s.ArtistName)).UserPlaycount.Value;
+
+            return new TasteTwoUserModel
+            {
+                Artist = !string.IsNullOrWhiteSpace(s.ArtistName) && s.ArtistName.Length > AllowedCharacterCount(s.ArtistName) ? $"{s.ArtistName.Substring(0, AllowedCharacterCount(s.ArtistName) - 2)}.." : s.ArtistName,
+                OwnPlaycount = ownPlaycount,
+                OtherPlaycount = otherPlaycount
             };
+
+            static int AllowedCharacterCount(string name)
+            {
+                return (StringExtensions.ContainsUnicodeCharacter(name) ? 10 : 18);
+            }
+        }).ToList();
+
+        var description = $"{Description(leftUserArtists.TopArtists, timePeriod, artistsToShow)}\n";
+
+        var filterAmount = 0;
+        for (var i = 0; i < 100; i++)
+        {
+            if (artists.Count(w => w.OwnPlaycount >= i && w.OtherPlaycount >= i) <= amount)
+            {
+                filterAmount = i;
+                break;
+            }
         }
 
-        public async Task<List<TopArtist>> GetUserAllTimeTopArtists(int userId, bool useCache = false)
-        {
-            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            await connection.OpenAsync();
+        artists = artists.Where(w => w.OwnPlaycount >= filterAmount && w.OtherPlaycount >= filterAmount).ToList();
 
-            var cacheKey = $"user-{userId}-topartists-alltime";
-            if (this._cache.TryGetValue(cacheKey, out List<TopArtist> topArtists) && useCache)
-            {
-                return topArtists;
-            }
+        var customTable = artists
+            .Take(amount)
+            .ToTasteTable(new[] { "Artist", mainUser, "   ", userToCompare },
+                u => u.Artist,
+                u => u.OwnPlaycount,
+                u => GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
+                u => u.OtherPlaycount
+            );
 
-            var freshTopArtists = (await this._artistRepository.GetUserArtists(userId, connection))
-                .Select(s => new TopArtist
-                {
-                    ArtistName = s.Name,
-                    UserPlaycount = s.Playcount
-                })
+        description += $"```{customTable}```";
+
+        return description;
+    }
+
+    private static string Description(IEnumerable<TopArtist> mainUserArtists, TimePeriod chartTimePeriod, ICollection<TopArtist> matchedArtists)
+    {
+        var percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
+        var description =
+            $"**{matchedArtists.Count()}** ({percentage:0.0}%)  out of top **{mainUserArtists.Count()}** {chartTimePeriod.ToString().ToLower()} artists match";
+
+        return description;
+    }
+
+    private static string GetCompareChar(long ownPlaycount, long otherPlaycount)
+    {
+        return ownPlaycount == otherPlaycount ? " • " : ownPlaycount > otherPlaycount ? " > " : " < ";
+    }
+
+    private static IList<TopArtist> ArtistsToShow(IEnumerable<TopArtist> leftUserArtists, IEnumerable<TopArtist> rightUserArtists)
+    {
+        var artistsToShow =
+            leftUserArtists
+                .Where(w => rightUserArtists.Select(s => s.ArtistName).Contains(w.ArtistName))
                 .OrderByDescending(o => o.UserPlaycount)
                 .ToList();
+        return artistsToShow;
+    }
 
-            if (freshTopArtists.Count > 100)
-            {
-                this._cache.Set(cacheKey, freshTopArtists, TimeSpan.FromMinutes(10));
-            }
+    public TasteSettings SetTasteSettings(TasteSettings currentTasteSettings, string extraOptions)
+    {
+        var tasteSettings = currentTasteSettings;
 
-            return freshTopArtists;
-        }
-
-        // Top artists for 2 users
-        public string GetTableTaste(TopArtistList leftUserArtists,
-            TopArtistList rightUserArtists, int amount, TimePeriod timePeriod, string mainUser, string userToCompare)
+        if (extraOptions == null)
         {
-            var artistsToShow = ArtistsToShow(leftUserArtists.TopArtists, rightUserArtists.TopArtists);
-
-            var artists = artistsToShow.Select(s =>
-            {
-                var ownPlaycount = s.UserPlaycount.Value;
-                var otherPlaycount = rightUserArtists.TopArtists.First(f => f.ArtistName.Equals(s.ArtistName)).UserPlaycount.Value;
-
-                return new TasteTwoUserModel
-                {
-                    Artist = !string.IsNullOrWhiteSpace(s.ArtistName) && s.ArtistName.Length > AllowedCharacterCount(s.ArtistName) ? $"{s.ArtistName.Substring(0, AllowedCharacterCount(s.ArtistName) - 2)}.." : s.ArtistName,
-                    OwnPlaycount = ownPlaycount,
-                    OtherPlaycount = otherPlaycount
-                };
-
-                static int AllowedCharacterCount(string name)
-                {
-                    return (StringExtensions.ContainsUnicodeCharacter(name) ? 10 : 18);
-                }
-            }).ToList();
-
-            var description = $"{Description(leftUserArtists.TopArtists, timePeriod, artistsToShow)}\n";
-
-            var filterAmount = 0;
-            for (var i = 0; i < 100; i++)
-            {
-                if (artists.Count(w => w.OwnPlaycount >= i && w.OtherPlaycount >= i) <= amount)
-                {
-                    filterAmount = i;
-                    break;
-                }
-            }
-
-            artists = artists.Where(w => w.OwnPlaycount >= filterAmount && w.OtherPlaycount >= filterAmount).ToList();
-
-            var customTable = artists
-                .Take(amount)
-                .ToTasteTable(new[] { "Artist", mainUser, "   ", userToCompare },
-                    u => u.Artist,
-                    u => u.OwnPlaycount,
-                    u => GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
-                    u => u.OtherPlaycount
-                );
-
-            description += $"```{customTable}```";
-
-            return description;
-        }
-
-        private static string Description(IEnumerable<TopArtist> mainUserArtists, TimePeriod chartTimePeriod, ICollection<TopArtist> matchedArtists)
-        {
-            var percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
-            var description =
-                $"**{matchedArtists.Count()}** ({percentage:0.0}%)  out of top **{mainUserArtists.Count()}** {chartTimePeriod.ToString().ToLower()} artists match";
-
-            return description;
-        }
-
-        private static string GetCompareChar(long ownPlaycount, long otherPlaycount)
-        {
-            return ownPlaycount == otherPlaycount ? " • " : ownPlaycount > otherPlaycount ? " > " : " < ";
-        }
-
-        private static IList<TopArtist> ArtistsToShow(IEnumerable<TopArtist> leftUserArtists, IEnumerable<TopArtist> rightUserArtists)
-        {
-            var artistsToShow =
-                leftUserArtists
-                    .Where(w => rightUserArtists.Select(s => s.ArtistName).Contains(w.ArtistName))
-                    .OrderByDescending(o => o.UserPlaycount)
-                    .ToList();
-            return artistsToShow;
-        }
-
-        public TasteSettings SetTasteSettings(TasteSettings currentTasteSettings, string extraOptions)
-        {
-            var tasteSettings = currentTasteSettings;
-
-            if (extraOptions == null)
-            {
-                return tasteSettings;
-            }
-
-            if (extraOptions.Contains("t") || extraOptions.Contains("table"))
-            {
-                tasteSettings.TasteType = TasteType.Table;
-            }
-            if (extraOptions.Contains("e") || extraOptions.Contains("embed") || extraOptions.Contains("embedfull") || extraOptions.Contains("fullembed"))
-            {
-                tasteSettings.TasteType = TasteType.FullEmbed;
-            }
-
             return tasteSettings;
         }
 
-        public async Task<string> GetCorrectedArtistName(string artistName)
+        if (extraOptions.Contains("t") || extraOptions.Contains("table"))
         {
-            var cachedArtistAliases = await GetCachedArtistAliases();
-            var alias = cachedArtistAliases
-                .FirstOrDefault(f => f.Alias.ToLower() == artistName.ToLower());
-
-            var correctedArtistName = alias != null ? alias.Artist.Name : artistName;
-
-            return correctedArtistName;
+            tasteSettings.TasteType = TasteType.Table;
+        }
+        if (extraOptions.Contains("e") || extraOptions.Contains("embed") || extraOptions.Contains("embedfull") || extraOptions.Contains("fullembed"))
+        {
+            tasteSettings.TasteType = TasteType.FullEmbed;
         }
 
-        public async Task<Artist> GetArtistFromDatabase(string artistName)
+        return tasteSettings;
+    }
+
+    public async Task<string> GetCorrectedArtistName(string artistName)
+    {
+        var cachedArtistAliases = await GetCachedArtistAliases();
+        var alias = cachedArtistAliases
+            .FirstOrDefault(f => f.Alias.ToLower() == artistName.ToLower());
+
+        var correctedArtistName = alias != null ? alias.Artist.Name : artistName;
+
+        return correctedArtistName;
+    }
+
+    public async Task<Artist> GetArtistFromDatabase(string artistName)
+    {
+        if (string.IsNullOrWhiteSpace(artistName))
         {
-            if (string.IsNullOrWhiteSpace(artistName))
+            return null;
+        }
+
+        var correctedArtistName = await GetCorrectedArtistName(artistName);
+
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var artist = await this._artistRepository.GetArtistForName(correctedArtistName, connection, true);
+
+        await connection.CloseAsync();
+
+        return artist?.SpotifyId != null ? artist : null;
+    }
+
+    private async Task<IReadOnlyList<ArtistAlias>> GetCachedArtistAliases()
+    {
+        if (this._cache.TryGetValue("artists", out IReadOnlyList<ArtistAlias> artists))
+        {
+            return artists;
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        artists = await db.ArtistAliases
+            .AsNoTracking()
+            .Include(i => i.Artist)
+            .ToListAsync();
+
+        this._cache.Set("artists", artists, TimeSpan.FromHours(2));
+        Log.Information($"Added {artists.Count} artists to memory cache");
+
+        return artists;
+    }
+
+
+    public async Task<List<UserTrack>> GetTopTracksForArtist(int userId, string artistName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.UserTracks
+            .AsNoTracking()
+            .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
+                        && w.UserId == userId)
+            .OrderByDescending(o => o.Playcount)
+            .ToListAsync();
+    }
+
+    public async Task<List<UserAlbum>> GetTopAlbumsForArtist(int userId, string artistName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.UserAlbums
+            .AsNoTracking()
+            .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
+                        && w.UserId == userId)
+            .OrderByDescending(o => o.Playcount)
+            .ToListAsync();
+    }
+
+    public async Task<List<string>> GetLatestArtists(ulong discordUserId, bool cacheEnabled = true)
+    {
+        try
+        {
+            var cacheKey = $"user-recent-artists-{discordUserId}";
+
+            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<string> userArtists);
+            if (cacheAvailable && cacheEnabled)
             {
-                return null;
+                return userArtists;
             }
 
-            var correctedArtistName = await GetCorrectedArtistName(artistName);
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+            if (user == null)
+            {
+                return new List<string> { Constants.AutoCompleteLoginRequired };
+            }
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var artist = await this._artistRepository.GetArtistForName(correctedArtistName, connection, true);
+            var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 50);
 
-            await connection.CloseAsync();
+            var artists = plays
+                .OrderByDescending(o => o.TimePlayed)
+                .Select(s => s.ArtistName.ToString())
+                .Distinct()
+                .ToList();
 
-            return artist?.SpotifyId != null ? artist : null;
-        }
-
-        private async Task<IReadOnlyList<ArtistAlias>> GetCachedArtistAliases()
-        {
-            if (this._cache.TryGetValue("artists", out IReadOnlyList<ArtistAlias> artists))
-            {
-                return artists;
-            }
-
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            artists = await db.ArtistAliases
-                .AsNoTracking()
-                .Include(i => i.Artist)
-                .ToListAsync();
-
-            this._cache.Set("artists", artists, TimeSpan.FromHours(2));
-            Log.Information($"Added {artists.Count} artists to memory cache");
+            this._cache.Set(cacheKey, artists, TimeSpan.FromSeconds(30));
 
             return artists;
         }
-
-
-        public async Task<List<UserTrack>> GetTopTracksForArtist(int userId, string artistName)
+        catch (Exception e)
         {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            return await db.UserTracks
-                .AsNoTracking()
-                .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
-                            && w.UserId == userId)
-                .OrderByDescending(o => o.Playcount)
-                .ToListAsync();
+            Log.Error("Error in GetLatestArtists", e);
+            throw;
         }
+    }
 
-        public async Task<List<UserAlbum>> GetTopAlbumsForArtist(int userId, string artistName)
+    public async Task<List<string>> GetRecentTopArtists(ulong discordUserId, bool cacheEnabled = true)
+    {
+        try
         {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            return await db.UserAlbums
-                .AsNoTracking()
-                .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
-                            && w.UserId == userId)
-                .OrderByDescending(o => o.Playcount)
-                .ToListAsync();
-        }
+            var cacheKey = $"user-recent-top-artists-{discordUserId}";
 
-        public async Task<List<string>> GetLatestArtists(ulong discordUserId, bool cacheEnabled = true)
-        {
-            try
+            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<string> userArtists);
+            if (cacheAvailable && cacheEnabled)
             {
-                var cacheKey = $"user-recent-artists-{discordUserId}";
+                return userArtists;
+            }
 
-                var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<string> userArtists);
-                if (cacheAvailable && cacheEnabled)
-                {
-                    return userArtists;
-                }
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
-                await using var db = await this._contextFactory.CreateDbContextAsync();
-                var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+            if (user == null)
+            {
+                return new List<string> { Constants.AutoCompleteLoginRequired };
+            }
 
-                if (user == null)
-                {
-                    return new List<string> { Constants.AutoCompleteLoginRequired };
-                }
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
+            var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 1500);
+
+            var artists = plays
+                .GroupBy(g => g.ArtistName)
+                .OrderByDescending(o => o.Count())
+                .Select(s => s.Key)
+                .ToList();
+
+            this._cache.Set(cacheKey, artists, TimeSpan.FromSeconds(120));
+
+            return artists;
+        }
+        catch (Exception e)
+        {
+            Log.Error("Error in GetRecentTopArtists", e);
+            throw;
+        }
+    }
+
+    public async Task<List<Artist>> SearchThroughArtists(string searchValue, bool cacheEnabled = true)
+    {
+        try
+        {
+            const string cacheKey = "artists-all";
+
+            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<Artist> artists);
+            if (!cacheAvailable && cacheEnabled)
+            {
+                const string sql = "SELECT * " +
+                                   "FROM public.artists " +
+                                   "WHERE popularity is not null AND popularity > 9 ";
+
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
                 await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
                 await connection.OpenAsync();
 
-                var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 50);
+                artists = (await connection.QueryAsync<Artist>(sql)).ToList();
 
-                var artists = plays
-                    .OrderByDescending(o => o.TimePlayed)
-                    .Select(s => s.ArtistName.ToString())
-                    .Distinct()
-                    .ToList();
-
-                this._cache.Set(cacheKey, artists, TimeSpan.FromSeconds(30));
-
-                return artists;
+                this._cache.Set(cacheKey, artists, TimeSpan.FromHours(2));
             }
-            catch (Exception e)
-            {
-                Log.Error("Error in GetLatestArtists", e);
-                throw;
-            }
-        }
 
-        public async Task<List<string>> GetRecentTopArtists(ulong discordUserId, bool cacheEnabled = true)
-        {
-            try
-            {
-                var cacheKey = $"user-recent-top-artists-{discordUserId}";
+            searchValue = searchValue.ToLower();
 
-                var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<string> userArtists);
-                if (cacheAvailable && cacheEnabled)
-                {
-                    return userArtists;
-                }
-
-                await using var db = await this._contextFactory.CreateDbContextAsync();
-                var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
-
-                if (user == null)
-                {
-                    return new List<string> { Constants.AutoCompleteLoginRequired };
-                }
-
-                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-                await connection.OpenAsync();
-
-                var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 1500);
-
-                var artists = plays
-                    .GroupBy(g => g.ArtistName)
-                    .OrderByDescending(o => o.Count())
-                    .Select(s => s.Key)
-                    .ToList();
-
-                this._cache.Set(cacheKey, artists, TimeSpan.FromSeconds(120));
-
-                return artists;
-            }
-            catch (Exception e)
-            {
-                Log.Error("Error in GetRecentTopArtists", e);
-                throw;
-            }
-        }
-
-        public async Task<List<Artist>> SearchThroughArtists(string searchValue, bool cacheEnabled = true)
-        {
-            try
-            {
-                const string cacheKey = "artists-all";
-
-                var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<Artist> artists);
-                if (!cacheAvailable && cacheEnabled)
-                {
-                    const string sql = "SELECT * " +
-                                       "FROM public.artists " +
-                                       "WHERE popularity is not null AND popularity > 9 ";
-
-                    DefaultTypeMap.MatchNamesWithUnderscores = true;
-                    await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-                    await connection.OpenAsync();
-
-                    artists = (await connection.QueryAsync<Artist>(sql)).ToList();
-
-                    this._cache.Set(cacheKey, artists, TimeSpan.FromHours(2));
-                }
-
-                searchValue = searchValue.ToLower();
-
-                var results = artists.Where(w =>
+            var results = artists.Where(w =>
                     w.Name.ToLower().StartsWith(searchValue))
-                    .OrderByDescending(o => o.Popularity)
-                    .ToList();
+                .OrderByDescending(o => o.Popularity)
+                .ToList();
 
-                results.AddRange(artists.Where(w =>
-                        w.Name.ToLower().Contains(searchValue))
-                    .OrderByDescending(o => o.Popularity));
+            results.AddRange(artists.Where(w =>
+                    w.Name.ToLower().Contains(searchValue))
+                .OrderByDescending(o => o.Popularity));
 
-                return results;
-            }
-            catch (Exception e)
-            {
-                Log.Error("Error in SearchThroughArtists", e);
-                throw;
-            }
+            return results;
         }
-
-        public static string IsArtistBirthday(DateTime? startDateTime = null)
+        catch (Exception e)
         {
-            if (!startDateTime.HasValue ||
-                startDateTime.Value.Day == 1 && startDateTime.Value.Month == 1 ||
-                startDateTime.Value.Day != DateTime.UtcNow.Day ||
-                startDateTime.Value.Month != DateTime.UtcNow.Month)
-            {
-                return null;
-            }
-
-            return " 🎂";
+            Log.Error("Error in SearchThroughArtists", e);
+            throw;
         }
+    }
+
+    public static string IsArtistBirthday(DateTime? startDateTime = null)
+    {
+        if (!startDateTime.HasValue ||
+            startDateTime.Value.Day == 1 && startDateTime.Value.Month == 1 ||
+            startDateTime.Value.Day != DateTime.UtcNow.Day ||
+            startDateTime.Value.Month != DateTime.UtcNow.Month)
+        {
+            return null;
+        }
+
+        return " 🎂";
     }
 }

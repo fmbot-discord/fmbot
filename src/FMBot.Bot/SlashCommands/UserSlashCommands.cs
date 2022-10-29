@@ -342,4 +342,21 @@ public class UserSlashCommands : InteractionModuleBase
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
+
+    [SlashCommand("stats", "Shows you or someone else their profile")]
+    [UsernameSetRequired]
+    public async Task StatsAsync(
+        [Summary("User", "The user of which you want to view their profile")] string user = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        var response = await this._userBuilder.StatsAsync(new ContextModel(this.Context, contextUser), userSettings, contextUser);
+
+        await this.Context.SendFollowUpResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
 }

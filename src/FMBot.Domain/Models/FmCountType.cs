@@ -1,10 +1,9 @@
-namespace FMBot.Domain.Models
+namespace FMBot.Domain.Models;
+
+public enum FmCountType
 {
-    public enum FmCountType
-    {
-        None = 0,
-        Artist = 1,
-        Album = 2,
-        Track = 3
-    }
+    None = 0,
+    Artist = 1,
+    Album = 2,
+    Track = 3
 }

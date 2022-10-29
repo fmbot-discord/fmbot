@@ -26,7 +26,7 @@ using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
-namespace FMBot.Bot.Commands.LastFM;
+namespace FMBot.Bot.TextCommands.LastFM;
 
 [Name("Artists")]
 public class ArtistCommands : BaseCommandModule

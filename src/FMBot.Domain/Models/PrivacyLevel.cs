@@ -1,8 +1,7 @@
-namespace FMBot.Domain.Models
+namespace FMBot.Domain.Models;
+
+public enum PrivacyLevel
 {
-    public enum PrivacyLevel
-    {
-        Global = 1,
-        Server = 2
-    }
+    Global = 1,
+    Server = 2
 }

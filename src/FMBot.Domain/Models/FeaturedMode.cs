@@ -1,15 +1,14 @@
-namespace FMBot.Domain.Models
+namespace FMBot.Domain.Models;
+
+public enum FeaturedMode
 {
-    public enum FeaturedMode
-    {
-        Custom = 0,
+    Custom = 0,
 
-        RecentPlays = 1,
+    RecentPlays = 1,
 
-        TopAlbumsWeekly = 2,
+    TopAlbumsWeekly = 2,
 
-        TopAlbumsMonthly = 3,
+    TopAlbumsMonthly = 3,
 
-        TopAlbumsAllTime = 4
-    }
+    TopAlbumsAllTime = 4
 }

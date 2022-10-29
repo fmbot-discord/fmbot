@@ -17,9 +17,11 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Genius.Models.User;
 using Microsoft.Extensions.Options;
 using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Builders;
 
@@ -355,8 +357,7 @@ public class PlayBuilder
 
     public async Task<ResponseModel> RecentAsync(
         ContextModel context,
-        UserSettingsModel userSettings,
-        int amount)
+        UserSettingsModel userSettings)
     {
         var response = new ResponseModel
         {
@@ -369,7 +370,25 @@ public class PlayBuilder
             sessionKey = context.ContextUser.SessionKeyLastFm;
         }
 
-        var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true, sessionKey: sessionKey);
+        Response<RecentTrackList> recentTracks;
+        if (!userSettings.DifferentUser)
+        {
+            if (context.ContextUser.LastIndexed == null)
+            {
+                _ = this._indexService.IndexUser(context.ContextUser);
+                recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm,
+                    useCache: true, sessionKey: sessionKey);
+            }
+            else
+            {
+                recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(context.ContextUser);
+            }
+        }
+        else
+        {
+            recentTracks =
+                await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, 120, useCache: true);
+        }
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
@@ -378,7 +397,6 @@ public class PlayBuilder
             return response;
         }
 
-        string footerText;
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"
@@ -386,69 +404,70 @@ public class PlayBuilder
 
         response.EmbedAuthor.WithName($"Latest tracks for {embedTitle}");
 
-        response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+        if (!context.SlashCommand)
+        {
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+        }
         response.EmbedAuthor.WithUrl(recentTracks.Content.UserRecentTracksUrl);
         response.Embed.WithAuthor(response.EmbedAuthor);
 
-        var fmRecentText = "";
-        var resultAmount = recentTracks.Content.RecentTracks.Count;
-        if (recentTracks.Content.RecentTracks.Any(a => a.NowPlaying))
+        var firstTrack = recentTracks.Content.RecentTracks.ElementAtOrDefault(0);
+        string thumbnailUrl = null;
+        if (firstTrack?.AlbumCoverUrl != null)
         {
-            resultAmount -= 1;
-        }
-        for (var i = 0; i < resultAmount; i++)
-        {
-            var track = recentTracks.Content.RecentTracks[i];
-
-            if (i == 0)
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+                firstTrack.AlbumName, firstTrack.ArtistName, firstTrack.AlbumCoverUrl);
+            if (safeForChannel == CensorService.CensorResult.Safe)
             {
-                if (track.AlbumCoverUrl != null)
-                {
-                    var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
-                        track.AlbumName, track.ArtistName, track.AlbumCoverUrl);
-                    if (safeForChannel == CensorService.CensorResult.Safe)
-                    {
-                        response.Embed.WithThumbnailUrl(track.AlbumCoverUrl);
-                    }
-                }
-            }
-
-            var trackString = StringService.TrackToLinkedString(track, context.ContextUser.RymEnabled);
-
-            if (track.NowPlaying)
-            {
-                fmRecentText += $"🎶 - {trackString}\n";
-            }
-            else
-            {
-                fmRecentText += $"`{i + 1}` - {trackString}\n";
+                thumbnailUrl = firstTrack.AlbumCoverUrl;
             }
         }
 
-        response.Embed.WithDescription(fmRecentText);
+        var pages = new List<PageBuilder>();
 
-        var firstTrack = recentTracks.Content.RecentTracks[0];
-        if (firstTrack.NowPlaying)
-        {
-            footerText =
-                $"{userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles | Now Playing";
-        }
-        else
-        {
-            footerText =
-                $"{userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles";
+        var trackPages = recentTracks.Content.RecentTracks
+            .Take(120)
+            .ToList()
+            .ChunkBy(6);
+        var pageCounter = 1;
 
-            if (!firstTrack.NowPlaying && firstTrack.TimePlayed.HasValue)
+        foreach (var trackPage in trackPages)
+        {
+            var trackPageString = new StringBuilder();
+            foreach (var track in trackPage)
             {
-                footerText += " | Last scrobble:";
-                response.Embed.WithTimestamp(firstTrack.TimePlayed.Value);
+                trackPageString.AppendLine(StringService
+                    .TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled));
             }
+
+            var footer = new StringBuilder();
+            footer.Append($"Page {pageCounter}/{trackPages.Count}");
+            footer.Append($" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles");
+
+            var page = new PageBuilder()
+                .WithDescription(trackPageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString());
+
+            if (pageCounter == 1 && thumbnailUrl != null)
+            {
+                page.WithThumbnailUrl(thumbnailUrl);
+            }
+
+            pages.Add(page);
+
+            pageCounter++;
         }
 
-        response.EmbedFooter.WithText(footerText);
+        if (!pages.Any())
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription("No recent tracks found.")
+                .WithAuthor(response.EmbedAuthor));
+        }
 
-        response.Embed.WithFooter(response.EmbedFooter);
-
+        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
         return response;
     }
 

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Fergun.Interactive;
@@ -11,11 +10,9 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.Images.Generators;
 using Microsoft.Extensions.Options;
-using SkiaSharp;
 
-namespace FMBot.Bot.Commands.LastFM;
+namespace FMBot.Bot.TextCommands.LastFM;
 
 [Name("Countries")]
 public class CountryCommands : BaseCommandModule

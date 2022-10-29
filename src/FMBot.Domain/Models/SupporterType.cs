@@ -1,11 +1,10 @@
-namespace FMBot.Domain.Models
+namespace FMBot.Domain.Models;
+
+public enum SupporterType
 {
-    public enum SupporterType
-    {
-        Guild = 1,
+    Guild = 1,
 
-        User = 2,
+    User = 2,
 
-        Company = 3
-    }
+    Company = 3
 }
