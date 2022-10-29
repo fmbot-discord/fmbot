@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
@@ -172,17 +174,18 @@ public class FeaturedService
                             await AlbumNotFeaturedRecently(currentAlbum.AlbumName, currentAlbum.ArtistName) &&
                             await AlbumPopularEnough(currentAlbum.AlbumName, currentAlbum.ArtistName))
                         {
+                            var artistLink = $"https://www.last.fm/music/{UrlEncoder.Default.Encode(currentAlbum.ArtistName)}";
                             if (supporterDay)
                             {
                                 featuredLog.Description = $"[{currentAlbum.AlbumName}]({currentAlbum.AlbumUrl}) \n" +
-                                                          $"by {currentAlbum.ArtistName} \n\n" +
+                                                          $"by [{currentAlbum.ArtistName}]({artistLink}) \n\n" +
                                                           $"{randomAvatarModeDesc}\n" +
                                                           $"⭐ Supporter Sunday - Thanks {user.UserNameLastFM} for supporting .fmbot!";
                             }
                             else
                             {
                                 featuredLog.Description = $"[{currentAlbum.AlbumName}]({currentAlbum.AlbumUrl}) \n" +
-                                                          $"by {currentAlbum.ArtistName} \n\n" +
+                                                          $"by [{currentAlbum.ArtistName}]({artistLink}) \n\n" +
                                                           $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
                             }
 
