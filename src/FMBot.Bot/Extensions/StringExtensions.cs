@@ -165,25 +165,43 @@ public static class StringExtensions
         return oldValue > newValue ? "Down from" : "From";
     }
 
-
-    public static string GetListeningTimeString(TimeSpan timeSpan, bool includeSeconds = false)
+    public static string GetListeningTimeString(TimeSpan timeSpan, bool includeSeconds = false, bool boldNumber = false)
     {
         var time = new StringBuilder();
+
+        var bold = boldNumber ? "**" : "";
+
         if (timeSpan.TotalDays >= 1)
         {
-            time.Append($"{(int)timeSpan.TotalDays}d");
+            time.Append(bold);
+            time.Append($"{(int)timeSpan.TotalDays}");
+            time.Append(bold);
+
+            time.Append("d");
         }
 
         if (timeSpan.TotalHours >= 1)
         {
-            time.Append($"{timeSpan.Hours}h");
+            time.Append(bold);
+            time.Append($"{timeSpan.Hours}");
+            time.Append(bold);
+
+            time.Append("h");
         }
 
-        time.Append($"{timeSpan.Minutes}m");
+        time.Append(bold);
+        time.Append($"{timeSpan.Minutes}");
+        time.Append(bold);
+
+        time.Append($"m");
 
         if (includeSeconds)
         {
-            time.Append($"{timeSpan.Seconds}s");
+            time.Append(bold);
+            time.Append($"{timeSpan.Seconds}");
+            time.Append(bold);
+
+            time.Append("s");
         }
 
         return time.ToString();

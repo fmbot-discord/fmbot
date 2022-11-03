@@ -354,9 +354,9 @@ public class UserBuilder
 
             var time = await this._timeService.GetPlayTimeForPlays(month);
             monthDescription.AppendLine(
-                $"**{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}** " +
+                $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}`** " +
                 $"- **{month.Count()}** plays " +
-                $"- **{StringExtensions.GetListeningTimeString(time)}**");
+                $"- {StringExtensions.GetListeningTimeString(time, boldNumber: true)}");
         }
         if (monthDescription.Length > 0)
         {
@@ -370,13 +370,23 @@ public class UserBuilder
                 .OrderByDescending(o => o.TimePlayed)
                 .GroupBy(g => g.TimePlayed.Year);
 
+            var totalTime = await this._timeService.GetPlayTimeForPlays(allPlays);
+            if (totalTime.TotalSeconds > 0)
+            {
+                yearDescription.AppendLine(
+                    $"**` All`** " +
+                    $"- **{allPlays.Count}** plays " +
+                    $"- {StringExtensions.GetListeningTimeString(totalTime, boldNumber: true)}");
+            }
+
+
             foreach (var year in yearGroups)
             {
                 var time = await this._timeService.GetPlayTimeForPlays(year);
                 yearDescription.AppendLine(
-                    $"**{year.Key}** " +
+                    $"**`{year.Key}`** " +
                     $"- **{year.Count()}** plays " +
-                    $"- **{StringExtensions.GetListeningTimeString(time)}**");
+                    $"- {StringExtensions.GetListeningTimeString(time, boldNumber: true)}");
             }
             if (yearDescription.Length > 0)
             {
