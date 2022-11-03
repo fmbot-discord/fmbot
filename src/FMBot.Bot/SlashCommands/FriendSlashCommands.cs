@@ -19,7 +19,11 @@ public class FriendSlashCommands : InteractionModuleBase
 
     private InteractiveService Interactivity { get; }
 
-    public FriendSlashCommands(UserService userService, FriendsService friendsService, InteractiveService interactivity, SettingService settingService, FriendBuilders friendBuilders)
+    public FriendSlashCommands(UserService userService,
+        FriendsService friendsService,
+        InteractiveService interactivity,
+        SettingService settingService,
+        FriendBuilders friendBuilders)
     {
         this._userService = userService;
         this.Interactivity = interactivity;

@@ -81,6 +81,13 @@ public static class InteractionContextExtensions
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     ephemeral: ephemeral);
                 break;
+            case ResponseType.PagedSelection:
+                _ = interactiveService.SendSelectionAsync(
+                    response.PagedSelection,
+                    (SocketInteraction)context.Interaction,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    ephemeral: ephemeral);
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }

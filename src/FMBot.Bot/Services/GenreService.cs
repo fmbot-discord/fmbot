@@ -196,7 +196,7 @@ public class GenreService
         foreach (var artist in topArtists)
         {
             var genres = await GetGenresForArtist(artist);
-            if (genres.Any())
+            if (genres != null && genres.Any())
             {
                 topGenres.AddRange(genres);
             }
