@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -18,6 +19,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -635,10 +637,32 @@ public class AdminCommands : BaseCommandModule
 
             var supporter = await this._supporterService.AddOpenCollectiveSupporter(userSettings.DiscordUserId, openCollectiveSupporter);
 
+            var addedRole = false;
+            if (this.Context.Guild.Id == this._botSettings.Bot.BaseServerId)
+            {
+                try
+                {
+                    var guildUser = await this.Context.Guild.GetUserAsync(userId);
+                    if (guildUser != null)
+                    {
+                        var role = this.Context.Guild.Roles.FirstOrDefault(x => x.Name == "Supporter");
+                        await guildUser.AddRoleAsync(role);
+                        addedRole = true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Error("Adding supporter role failed for {id}", userId, e);
+                }
+            }
+
             this._embed.WithTitle("Added new supporter");
             this._embed.WithDescription($"User id: {user} | <@{user}>\n" +
                                         $"Name: **{supporter.Name}**\n" +
                                         $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
+
+            this._embed.AddField("Bot was able to add supporter role?",
+                    addedRole ? "Yes" : "No, please add manually");
 
             this._embed.WithFooter("Full update has been started\n" +
                                    "Name changes go through OpenCollective and apply within 24h");
@@ -702,19 +726,43 @@ public class AdminCommands : BaseCommandModule
 
             var supporter = await this._supporterService.OpenCollectiveSupporterExpired(existingSupporter);
 
+            var removedRole = false;
+            if (this.Context.Guild.Id == this._botSettings.Bot.BaseServerId)
+            {
+                try
+                {
+                    var guildUser = await this.Context.Guild.GetUserAsync(userId);
+                    if (guildUser != null)
+                    {
+                        var role = this.Context.Guild.Roles.FirstOrDefault(x => x.Name == "Supporter");
+                        await guildUser.RemoveRoleAsync(role);
+                        removedRole = true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Error("Removing supporter role failed for {id}", userId, e);
+                }
+            }
+
             this._embed.WithTitle("Processed supporter expiry");
             this._embed.WithDescription($"User id: {user} | <@{user}>\n" +
                                         $"Name: **{supporter.Name}**\n" +
                                         $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
 
-            this._embed.WithFooter("Command not intended for use in public channels");
+            this._embed.AddField("Bot was able to remove supporter role?",
+                removedRole ? "Yes" : "No, please remove manually");
+
+            this._embed.WithFooter("Full update has been started");
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();
+
+            await this._indexService.IndexUser(userSettings);
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can add supporters");
+            await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can remove supporters");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
