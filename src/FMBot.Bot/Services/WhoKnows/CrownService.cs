@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Discord.WebSocket;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
@@ -34,35 +32,35 @@ public class CrownService
         this._botSettings = botSettings.Value;
     }
 
-        public async Task<CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
+    public async Task<CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
+    {
+        var eligibleUsers = users.ToList();
+
+        if (guild.CrownsActivityThresholdDays.HasValue)
         {
-            var eligibleUsers = users.ToList();
+            eligibleUsers = eligibleUsers
+                .Where(w => w.LastUsed != null &&
+                            w.LastUsed >= DateTime.UtcNow.AddDays(-guild.CrownsActivityThresholdDays.Value))
+                .ToList();
+        }
+        if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromCrowns))
+        {
+            eligibleUsers = eligibleUsers.Where(w =>
+                    !guild.GuildBlockedUsers
+                        .Where(wh => wh.BlockedFromCrowns)
+                        .Select(s => s.UserId).Contains(w.UserId))
+                .ToList();
+        }
+        if (guild.WhoKnowsWhitelistRoleId.HasValue)
+        {
+            eligibleUsers = eligibleUsers.Where(w => w.WhoKnowsWhitelisted != false)
+                .ToList();
+        }
 
-            if (guild.CrownsActivityThresholdDays.HasValue)
-            {
-                eligibleUsers = eligibleUsers
-                    .Where(w => w.LastUsed != null &&
-                                w.LastUsed >= DateTime.UtcNow.AddDays(-guild.CrownsActivityThresholdDays.Value))
-                    .ToList();
-            }
-            if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromCrowns))
-            {
-                eligibleUsers = eligibleUsers.Where(w =>
-                        !guild.GuildBlockedUsers
-                            .Where(wh => wh.BlockedFromCrowns)
-                            .Select(s => s.UserId).Contains(w.UserId))
-                    .ToList();
-            }
-            if (guild.WhoKnowsWhitelistRoleId.HasValue)
-            {
-                eligibleUsers = eligibleUsers.Where(w => w.WhoKnowsWhitelisted != false)
-                    .ToList();
-            }
-
-            var topUser = users
-                .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId) &&
-                            (guild.CrownsMinimumPlaycountThreshold.HasValue ? w.Playcount >= guild.CrownsMinimumPlaycountThreshold : w.Playcount >= Constants.DefaultPlaysForCrown))
-                .MaxBy(o => o.Playcount);
+        var topUser = users
+            .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId) &&
+                        (guild.CrownsMinimumPlaycountThreshold.HasValue ? w.Playcount >= guild.CrownsMinimumPlaycountThreshold : w.Playcount >= Constants.DefaultPlaysForCrown))
+            .MaxBy(o => o.Playcount);
 
         if (topUser == null)
         {
@@ -70,11 +68,11 @@ public class CrownService
         }
 
 
-            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            await connection.OpenAsync();
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
 
-            var currentCrownHolder = await GetCurrentCrownHolder(connection, guild.GuildId, artistName);
-            var currentCrownHolderUser = users.FirstOrDefault(f => f.UserId == currentCrownHolder.UserId);
+        var currentCrownHolder = await GetCurrentCrownHolder(connection, guild.GuildId, artistName);
+        var currentCrownHolderUser = users.FirstOrDefault(f => f.UserId == currentCrownHolder.UserId);
 
         // Crown exists and is same as top user
         if (currentCrownHolder != null && topUser.UserId == currentCrownHolder.UserId)
@@ -121,20 +119,20 @@ public class CrownService
                 };
             }
 
-                var currentCrownHolderIndex = users.IndexOf(currentCrownHolderUser);
+            var currentCrownHolderIndex = users.IndexOf(currentCrownHolderUser);
 
-                // Current crownholder playcount is still higher after extra check
-                if (eligibleUsers.Select(s => s.UserId).Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
+            // Current crownholder playcount is still higher after extra check
+            if (eligibleUsers.Select(s => s.UserId).Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
+            {
+                currentCrownHolder.CurrentPlaycount = topUser.Playcount;
+                currentCrownHolder.Modified = DateTime.UtcNow;
+
+                if (currentCrownHolderIndex != -1 && users[currentCrownHolderIndex]?.UserId == currentCrownHolder.UserId)
                 {
-                    currentCrownHolder.CurrentPlaycount = topUser.Playcount;
-                    currentCrownHolder.Modified = DateTime.UtcNow;
+                    users[currentCrownHolderIndex].Playcount = (int)currentPlaycountForCrownHolder;
+                }
 
-                    if (currentCrownHolderIndex != -1 && users[currentCrownHolderIndex]?.UserId == currentCrownHolder.UserId)
-                    {
-                        users[currentCrownHolderIndex].Playcount = (int)currentPlaycountForCrownHolder;
-                    }
-
-                    await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
+                await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
                 return new CrownModel
                 {
@@ -142,17 +140,17 @@ public class CrownService
                 };
             }
 
-                currentCrownHolder.Active = false;
-                currentCrownHolder.Modified = DateTime.UtcNow;
-                if (currentPlaycountForCrownHolder > currentCrownHolder.CurrentPlaycount)
-                {
-                    currentCrownHolder.CurrentPlaycount = (int)currentPlaycountForCrownHolder;
-                }
+            currentCrownHolder.Active = false;
+            currentCrownHolder.Modified = DateTime.UtcNow;
+            if (currentPlaycountForCrownHolder > currentCrownHolder.CurrentPlaycount)
+            {
+                currentCrownHolder.CurrentPlaycount = (int)currentPlaycountForCrownHolder;
+            }
 
-                if (currentCrownHolderIndex != -1 && users[currentCrownHolderIndex]?.UserId == currentCrownHolder.UserId)
-                {
-                    users[currentCrownHolderIndex].Playcount = (int)currentPlaycountForCrownHolder;
-                }
+            if (currentCrownHolderIndex != -1 && users[currentCrownHolderIndex]?.UserId == currentCrownHolder.UserId)
+            {
+                users[currentCrownHolderIndex].Playcount = (int)currentPlaycountForCrownHolder;
+            }
 
             await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
@@ -378,7 +376,7 @@ public class CrownService
 
     public async Task RemoveCrowns(IList<UserCrown> crowns)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
         db.UserCrowns.RemoveRange(crowns);
 
@@ -388,7 +386,7 @@ public class CrownService
     public async Task<List<UserCrown>> GetCrownsForUser(Persistence.Domain.Models.Guild guild, int userId,
         CrownOrderType crownOrderType)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var query = db.UserCrowns
             .AsQueryable()
             .Include(i => i.User)
@@ -460,7 +458,7 @@ public class CrownService
 
     public async Task RemoveAllSeededCrownsFromGuild(Persistence.Domain.Models.Guild guild)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var guildCrowns = await db.UserCrowns
             .AsQueryable()
             .Where(w => w.GuildId == guild.GuildId && w.SeededCrown)
@@ -473,7 +471,7 @@ public class CrownService
 
     public async Task RemoveAllCrownsFromUser(int userId)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var userCrowns = await db.UserCrowns
             .AsQueryable()
             .Where(f => f.UserId == userId)
@@ -486,7 +484,7 @@ public class CrownService
 
     public async Task RemoveAllCrownsFromDiscordUser(ulong discordUserId, ulong discordGuildId)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var userThatLeft = await db.Users
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
