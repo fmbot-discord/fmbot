@@ -34,19 +34,15 @@ namespace FMBot.Bot.Services.WhoKnows
             this._botSettings = botSettings.Value;
         }
 
-        public async Task<CrownModel> GetAndUpdateCrownForArtist(IList<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
+        public async Task<CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
         {
             var eligibleUsers = users.ToList();
 
             if (guild.CrownsActivityThresholdDays.HasValue)
             {
-                users = users.Where(w =>
-                        w.LastUsed != null &&
-                        w.LastUsed >= DateTime.UtcNow.AddDays(-guild.CrownsActivityThresholdDays.Value))
-                    .ToList();
-
                 eligibleUsers = eligibleUsers
-                    .Where(w => users.Select(s => s.UserId).Contains(w.UserId))
+                    .Where(w => w.LastUsed != null &&
+                                w.LastUsed >= DateTime.UtcNow.AddDays(-guild.CrownsActivityThresholdDays.Value))
                     .ToList();
             }
             if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromCrowns))
@@ -66,18 +62,19 @@ namespace FMBot.Bot.Services.WhoKnows
             var topUser = users
                 .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId) &&
                             (guild.CrownsMinimumPlaycountThreshold.HasValue ? w.Playcount >= guild.CrownsMinimumPlaycountThreshold : w.Playcount >= Constants.DefaultPlaysForCrown))
-                .OrderByDescending(o => o.Playcount)
-                .FirstOrDefault();
+                .MaxBy(o => o.Playcount);
 
             if (topUser == null)
             {
                 return null;
             }
 
+
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             var currentCrownHolder = await GetCurrentCrownHolder(connection, guild.GuildId, artistName);
+            var currentCrownHolderUser = users.FirstOrDefault(f => f.UserId == currentCrownHolder.UserId);
 
             // Crown exists and is same as top user
             if (currentCrownHolder != null && topUser.UserId == currentCrownHolder.UserId)
@@ -124,10 +121,18 @@ namespace FMBot.Bot.Services.WhoKnows
                     };
                 }
 
+                var currentCrownHolderIndex = users.IndexOf(currentCrownHolderUser);
+
+                // Current crownholder playcount is still higher after extra check
                 if (eligibleUsers.Select(s => s.UserId).Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
                 {
                     currentCrownHolder.CurrentPlaycount = topUser.Playcount;
                     currentCrownHolder.Modified = DateTime.UtcNow;
+
+                    if (currentCrownHolderIndex != -1 && users[currentCrownHolderIndex]?.UserId == currentCrownHolder.UserId)
+                    {
+                        users[currentCrownHolderIndex].Playcount = (int)currentPlaycountForCrownHolder;
+                    }
 
                     await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
@@ -139,6 +144,15 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 currentCrownHolder.Active = false;
                 currentCrownHolder.Modified = DateTime.UtcNow;
+                if (currentPlaycountForCrownHolder > currentCrownHolder.CurrentPlaycount)
+                {
+                    currentCrownHolder.CurrentPlaycount = (int)currentPlaycountForCrownHolder;
+                }
+
+                if (currentCrownHolderIndex != -1 && users[currentCrownHolderIndex]?.UserId == currentCrownHolder.UserId)
+                {
+                    users[currentCrownHolderIndex].Playcount = (int)currentPlaycountForCrownHolder;
+                }
 
                 await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
