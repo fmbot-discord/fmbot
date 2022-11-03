@@ -2,313 +2,321 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using FMBot.Domain.Models;
 
-namespace FMBot.Bot.Extensions
+namespace FMBot.Bot.Extensions;
+
+public static class StringExtensions
 {
-    public static class StringExtensions
+    public static IEnumerable<string> SplitByMessageLength(this string str)
     {
-        public static IEnumerable<string> SplitByMessageLength(this string str)
-        {
-            var messageLength = 2000;
+        var messageLength = 2000;
 
-            for (var index = 0; index < str.Length; index += messageLength)
-            {
-                yield return str.Substring(index, Math.Min(messageLength, str.Length - index));
-            }
+        for (var index = 0; index < str.Length; index += messageLength)
+        {
+            yield return str.Substring(index, Math.Min(messageLength, str.Length - index));
+        }
+    }
+
+    public static string FilterOutMentions(this string str)
+    {
+        var pattern = new Regex("(@everyone|@here|<@|`|http://|https://)");
+        return pattern.Replace(str, "");
+    }
+
+    public static bool ContainsUnicodeCharacter(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return false;
         }
 
-        public static string FilterOutMentions(this string str)
+        const int MaxAnsiCode = 255;
+
+        return input.Any(c => c > MaxAnsiCode);
+    }
+
+    public static string ReplaceInvalidChars(string filename)
+    {
+        filename = filename.Replace("\"", "_");
+        filename = filename.Replace("'", "_");
+        filename = filename.Replace(".", "_");
+        filename = filename.Replace(" ", "_");
+
+        var invalidChars = Path.GetInvalidFileNameChars();
+        return string.Join("_", filename.Split(invalidChars));
+    }
+
+    public static string SanitizeTrackNameForComparison(string trackName)
+    {
+        trackName = trackName.ToLower();
+        trackName = trackName.Replace("(", "");
+        trackName = trackName.Replace(")", "");
+        trackName = trackName.Replace("-", "");
+        trackName = trackName.Replace("'", "");
+        trackName = trackName.Replace(" ", "");
+        trackName = trackName.Replace("[", "");
+        trackName = trackName.Replace("]", "");
+
+        return trackName;
+    }
+
+    public static string UserTypeToIcon(this UserType userType)
+    {
+        switch (userType)
         {
-            var pattern = new Regex("(@everyone|@here|<@|`|http://|https://)");
-            return pattern.Replace(str, "");
+            case UserType.Owner:
+                return " 👑";
+            case UserType.Admin:
+                return " 🛡";
+            case UserType.Contributor:
+                return " 🔥";
+            case UserType.Supporter:
+                return " ⭐";
+            default:
+                return "";
+        }
+    }
+
+    public static string TruncateLongString(string str, int maxLength)
+    {
+        if (string.IsNullOrEmpty(str))
+        {
+            return str;
         }
 
-        public static bool ContainsUnicodeCharacter(string input)
+        return str.Substring(0, Math.Min(str.Length, maxLength));
+    }
+
+    public static string KeyIntToPitchString(int key)
+    {
+        return key switch
         {
-            if (string.IsNullOrWhiteSpace(input))
-            {
-                return false;
-            }
+            0 => "C",
+            1 => "C#",
+            2 => "D",
+            3 => "D#",
+            4 => "E",
+            5 => "F",
+            6 => "F#",
+            7 => "G",
+            8 => "G#",
+            9 => "A",
+            10 => "A#",
+            11 => "B",
+            _ => null
+        };
+    }
 
-            const int MaxAnsiCode = 255;
+    public static string CommandCategoryToString(CommandCategory commandCategory)
+    {
+        return commandCategory switch
+        {
+            CommandCategory.Artists => "Info, WhoKnows, tracks, albums, serverartists, topartists",
+            CommandCategory.Tracks => "Info, WhoKnows, love, unlove, servertracks, toptracks",
+            CommandCategory.Albums => "Info, WhoKnows, cover, serveralbums, topalbums",
+            CommandCategory.WhoKnows => "Global, server, friends, settings",
+            CommandCategory.Friends => "Add, remove, WhoKnows, view",
+            CommandCategory.Genres => "Info, WhoKnows, topgenres",
+            CommandCategory.Charts => "Image charts",
+            CommandCategory.Crowns => "Crowns commands and crown management",
+            CommandCategory.ThirdParty => "Spotify, Youtube and Genius",
+            CommandCategory.UserSettings => "Configure your user settings",
+            CommandCategory.ServerSettings => "Configure your server settings",
+            CommandCategory.Other => "Other",
+            _ => null
+        };
+    }
 
-            return input.Any(c => c > MaxAnsiCode);
+    public static string GetPlaysString(long? playcount)
+    {
+        return playcount == 1 ? "play" : "plays";
+    }
+
+    public static string GetScrobblesString(long? scrobbles)
+    {
+        return scrobbles == 1 ? "scrobble" : "scrobbles";
+    }
+
+    public static string GetListenersString(long? listeners)
+    {
+        return listeners == 1 ? "listener" : "listeners";
+    }
+
+    public static string GetFriendsString(long? friends)
+    {
+        return friends == 1 ? "friend" : "friends";
+    }
+
+    public static string GetCrownsString(long? crowns)
+    {
+        return crowns == 1 ? "crown" : "crowns";
+    }
+
+    public static string GetChangeString(decimal oldValue, decimal newValue)
+    {
+        if (oldValue < newValue)
+        {
+            return "Up from";
+        }
+        return oldValue > newValue ? "Down from" : "From";
+    }
+
+
+    public static string GetListeningTimeString(TimeSpan timeSpan, bool includeSeconds = false)
+    {
+        var time = new StringBuilder();
+        if (timeSpan.TotalDays >= 1)
+        {
+            time.Append($"{(int)timeSpan.TotalDays}d");
         }
 
-        public static string ReplaceInvalidChars(string filename)
+        if (timeSpan.TotalHours >= 1)
         {
-            filename = filename.Replace("\"", "_");
-            filename = filename.Replace("'", "_");
-            filename = filename.Replace(".", "_");
-            filename = filename.Replace(" ", "_");
-
-            var invalidChars = Path.GetInvalidFileNameChars();
-            return string.Join("_", filename.Split(invalidChars));
+            time.Append($"{timeSpan.Hours}h");
         }
 
-        public static string SanitizeTrackNameForComparison(string trackName)
-        {
-            trackName = trackName.ToLower();
-            trackName = trackName.Replace("(", "");
-            trackName = trackName.Replace(")", "");
-            trackName = trackName.Replace("-", "");
-            trackName = trackName.Replace("'", "");
-            trackName = trackName.Replace(" ", "");
-            trackName = trackName.Replace("[", "");
-            trackName = trackName.Replace("]", "");
+        time.Append($"{timeSpan.Minutes}m");
 
-            return trackName;
+        if (includeSeconds)
+        {
+            time.Append($"{timeSpan.Seconds}s");
         }
 
-        public static string UserTypeToIcon(this UserType userType)
+        return time.ToString();
+    }
+
+    public static string GetRymUrl(string albumName, string artistName)
+    {
+        var albumQueryName = albumName.Replace(" - Single", "");
+        albumQueryName = albumQueryName.Replace(" - EP", "");
+
+        var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
+        albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{artistName}\"");
+
+        return albumRymUrl;
+    }
+
+    public static string GetAmountEnd(long amount)
+    {
+        var amountString = amount.ToString();
+
+        return amountString switch
         {
-            switch (userType)
-            {
-                case UserType.Owner:
-                    return " 👑";
-                case UserType.Admin:
-                    return " 🛡";
-                case UserType.Contributor:
-                    return " 🔥";
-                case UserType.Supporter:
-                    return " ⭐";
-                default:
-                    return "";
-            }
+            { } a when a.EndsWith("11") => "th",
+            { } a when a.EndsWith("12") => "th",
+            { } a when a.EndsWith("13") => "th",
+            { } a when a.EndsWith("1") => "st",
+            { } a when a.EndsWith("2") => "nd",
+            { } a when a.EndsWith("3") => "rd",
+            _ => "th"
+        };
+    }
+
+    public static string GetTimeAgo(DateTime timeAgo)
+    {
+        var ts = new TimeSpan(DateTime.UtcNow.Ticks - timeAgo.Ticks);
+        var delta = Math.Abs(ts.TotalSeconds);
+
+        if (delta < 60)
+        {
+            return ts.Seconds == 1 ? "one second ago" : ts.Seconds + " seconds ago";
+        }
+        if (delta < 60 * 2)
+        {
+            return "a minute ago";
+        }
+        if (delta < 45 * 60)
+        {
+            return ts.Minutes + " minutes ago";
+        }
+        if (delta < 90 * 60)
+        {
+            return "an hour ago";
+        }
+        if (delta < 24 * 60 * 60)
+        {
+            return ts.Hours + " hours ago";
+        }
+        if (delta < 48 * 60 * 60)
+        {
+            return "yesterday";
+        }
+        if (delta < 30 * 24 * 60 * 60)
+        {
+            return ts.Days + " days ago";
+        }
+        if (delta < 12 * 30 * 24 * 60 * 60)
+        {
+            var months = Convert.ToInt32(Math.Floor((double)ts.Days / 30));
+            return months <= 1 ? "one month ago" : months + " months ago";
         }
 
-        public static string TruncateLongString(string str, int maxLength)
-        {
-            if (string.IsNullOrEmpty(str))
-            {
-                return str;
-            }
+        return "more then a month ago";
+    }
 
-            return str.Substring(0, Math.Min(str.Length, maxLength));
+    public static string GetTimeAgoShortString(DateTime timeAgo)
+    {
+        var ts = new TimeSpan(DateTime.UtcNow.Ticks - timeAgo.Ticks);
+        var delta = Math.Abs(ts.TotalSeconds);
+
+        if (delta < 60)
+        {
+            return ts.Seconds + "s";
         }
-
-        public static string KeyIntToPitchString(int key)
+        if (delta < 60 * 2)
         {
-            return key switch
-            {
-                0 => "C",
-                1 => "C#",
-                2 => "D",
-                3 => "D#",
-                4 => "E",
-                5 => "F",
-                6 => "F#",
-                7 => "G",
-                8 => "G#",
-                9 => "A",
-                10 => "A#",
-                11 => "B",
-                _ => null
-            };
+            return "1m";
         }
-
-        public static string CommandCategoryToString(CommandCategory commandCategory)
+        if (delta < 45 * 60)
         {
-            return commandCategory switch
-            {
-                CommandCategory.Artists => "Info, WhoKnows, tracks, albums, serverartists, topartists",
-                CommandCategory.Tracks => "Info, WhoKnows, love, unlove, servertracks, toptracks",
-                CommandCategory.Albums => "Info, WhoKnows, cover, serveralbums, topalbums",
-                CommandCategory.WhoKnows => "Global, server, friends, settings",
-                CommandCategory.Friends => "Add, remove, WhoKnows, view",
-                CommandCategory.Genres => "Info, WhoKnows, topgenres",
-                CommandCategory.Charts => "Image charts",
-                CommandCategory.Crowns => "Crowns commands and crown management",
-                CommandCategory.ThirdParty => "Spotify, Youtube and Genius",
-                CommandCategory.UserSettings => "Configure your user settings",
-                CommandCategory.ServerSettings => "Configure your server settings",
-                CommandCategory.Other => "Other",
-                _ => null
-            };
+            return ts.Minutes + "m";
         }
-
-        public static string GetPlaysString(long? playcount)
+        if (delta < 90 * 60)
         {
-            return playcount == 1 ? "play" : "plays";
+            return "1h";
         }
-
-        public static string GetScrobblesString(long? scrobbles)
+        if (delta < 24 * 60 * 60)
         {
-            return scrobbles == 1 ? "scrobble" : "scrobbles";
+            return ts.Hours + "h";
         }
-
-        public static string GetListenersString(long? listeners)
+        if (delta < 48 * 60 * 60)
         {
-            return listeners == 1 ? "listener" : "listeners";
+            return "yesterday";
         }
-
-        public static string GetFriendsString(long? friends)
+        if (delta < 30 * 24 * 60 * 60)
         {
-            return friends == 1 ? "friend" : "friends";
+            return ts.Days + "d";
         }
-
-        public static string GetCrownsString(long? crowns)
+        if (delta < 12 * 30 * 24 * 60 * 60)
         {
-            return crowns == 1 ? "crown" : "crowns";
+            var months = Convert.ToInt32(Math.Floor((double)ts.Days / 30));
+            return months + " mnths";
         }
+        var years = Convert.ToInt32(Math.Floor((double)ts.Days / 365));
+        return years + "y";
+    }
 
-        public static string GetChangeString(decimal oldValue, decimal newValue)
+    public static void ReplaceOrAddToList(this List<string> currentList, IEnumerable<string> optionsToAdd)
+    {
+        foreach (var optionToAdd in optionsToAdd)
         {
-            if (oldValue < newValue)
-            {
-                return "Up from";
-            }
-            return oldValue > newValue ? "Down from" : "From";
-        }
+            var existingOption = currentList.FirstOrDefault(f => f.ToLower() == optionToAdd.ToLower());
 
-
-        public static string GetListeningTimeString(TimeSpan timeSpan)
-        {
-            if (timeSpan.TotalDays >= 1)
+            if (existingOption != null && existingOption != optionToAdd)
             {
-                return $"{(int)timeSpan.TotalDays}d{timeSpan.Hours}h{timeSpan.Minutes}m";
-            }
-
-            if (timeSpan.TotalHours >= 1)
-            {
-                return $"{timeSpan.Hours}h{timeSpan.Minutes}m";
-            }
-
-            return $"{timeSpan.Minutes}m";
-        }
-
-        public static string GetRymUrl(string albumName, string artistName)
-        {
-            var albumQueryName = albumName.Replace(" - Single", "");
-            albumQueryName = albumQueryName.Replace(" - EP", "");
-
-            var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
-            albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{artistName}\"");
-
-            return albumRymUrl;
-        }
-
-        public static string GetAmountEnd(long amount)
-        {
-            var amountString = amount.ToString();
-
-            return amountString switch
-            {
-                { } a when a.EndsWith("11") => "th",
-                { } a when a.EndsWith("12") => "th",
-                { } a when a.EndsWith("13") => "th",
-                { } a when a.EndsWith("1") => "st",
-                { } a when a.EndsWith("2") => "nd",
-                { } a when a.EndsWith("3") => "rd",
-                _ => "th"
-            };
-        }
-
-        public static string GetTimeAgo(DateTime timeAgo)
-        {
-            var ts = new TimeSpan(DateTime.UtcNow.Ticks - timeAgo.Ticks);
-            var delta = Math.Abs(ts.TotalSeconds);
-
-            if (delta < 60)
-            {
-                return ts.Seconds == 1 ? "one second ago" : ts.Seconds + " seconds ago";
-            }
-            if (delta < 60 * 2)
-            {
-                return "a minute ago";
-            }
-            if (delta < 45 * 60)
-            {
-                return ts.Minutes + " minutes ago";
-            }
-            if (delta < 90 * 60)
-            {
-                return "an hour ago";
-            }
-            if (delta < 24 * 60 * 60)
-            {
-                return ts.Hours + " hours ago";
-            }
-            if (delta < 48 * 60 * 60)
-            {
-                return "yesterday";
-            }
-            if (delta < 30 * 24 * 60 * 60)
-            {
-                return ts.Days + " days ago";
-            }
-            if (delta < 12 * 30 * 24 * 60 * 60)
-            {
-                var months = Convert.ToInt32(Math.Floor((double)ts.Days / 30));
-                return months <= 1 ? "one month ago" : months + " months ago";
-            }
-
-            return "more then a month ago";
-        }
-
-        public static string GetTimeAgoShortString(DateTime timeAgo)
-        {
-            var ts = new TimeSpan(DateTime.UtcNow.Ticks - timeAgo.Ticks);
-            var delta = Math.Abs(ts.TotalSeconds);
-
-            if (delta < 60)
-            {
-                return ts.Seconds + "s";
-            }
-            if (delta < 60 * 2)
-            {
-                return "1m";
-            }
-            if (delta < 45 * 60)
-            {
-                return ts.Minutes + "m";
-            }
-            if (delta < 90 * 60)
-            {
-                return "1h";
-            }
-            if (delta < 24 * 60 * 60)
-            {
-                return ts.Hours + "h";
-            }
-            if (delta < 48 * 60 * 60)
-            {
-                return "yesterday";
-            }
-            if (delta < 30 * 24 * 60 * 60)
-            {
-                return ts.Days + "d";
-            }
-            if (delta < 12 * 30 * 24 * 60 * 60)
-            {
-                var months = Convert.ToInt32(Math.Floor((double)ts.Days / 30));
-                return months + " mnths";
-            }
-            var years = Convert.ToInt32(Math.Floor((double)ts.Days / 365));
-            return years + "y";
-        }
-
-        public static void ReplaceOrAddToList(this List<string> currentList, IEnumerable<string> optionsToAdd)
-        {
-            foreach (var optionToAdd in optionsToAdd)
-            {
-                var existingOption = currentList.FirstOrDefault(f => f.ToLower() == optionToAdd.ToLower());
-
-                if (existingOption != null && existingOption != optionToAdd)
+                var index = currentList.IndexOf(existingOption);
+                if (index != -1)
                 {
-                    var index = currentList.IndexOf(existingOption);
-                    if (index != -1)
-                    {
-                        currentList[index] = optionToAdd;
-                    }
+                    currentList[index] = optionToAdd;
                 }
-                else if (existingOption == null)
-                {
-                    currentList.Add(optionToAdd);
-                }
+            }
+            else if (existingOption == null)
+            {
+                currentList.Add(optionToAdd);
             }
         }
     }

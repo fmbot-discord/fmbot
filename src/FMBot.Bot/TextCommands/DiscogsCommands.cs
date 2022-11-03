@@ -1,12 +1,8 @@
-using System.Threading.Tasks;
-using Discord.Commands;
-using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
-using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 
-namespace FMBot.Bot.Commands;
+namespace FMBot.Bot.TextCommands;
 
 public class DiscogsCommands : BaseCommandModule
 {

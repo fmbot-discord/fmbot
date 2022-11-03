@@ -1,19 +1,18 @@
-namespace FMBot.Domain.Models
+namespace FMBot.Domain.Models;
+
+public enum CommandCategory
 {
-    public enum CommandCategory
-    {
-        General,
-        Tracks,
-        Albums,
-        Artists,
-        WhoKnows,
-        Friends,
-        Genres,
-        Charts,
-        Crowns,
-        ThirdParty,
-        UserSettings,
-        ServerSettings,
-        Other
-    }
+    General,
+    Tracks,
+    Albums,
+    Artists,
+    WhoKnows,
+    Friends,
+    Genres,
+    Charts,
+    Crowns,
+    ThirdParty,
+    UserSettings,
+    ServerSettings,
+    Other
 }

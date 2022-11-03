@@ -1,15 +1,14 @@
-namespace FMBot.Domain.Models
+namespace FMBot.Domain.Models;
+
+public enum UserType
 {
-    public enum UserType
-    {
-        User = 0,
+    User = 0,
 
-        Admin = 1,
+    Admin = 1,
 
-        Owner = 2,
+    Owner = 2,
 
-        Contributor = 3,
+    Contributor = 3,
 
-        Supporter = 4
-    }
+    Supporter = 4
 }

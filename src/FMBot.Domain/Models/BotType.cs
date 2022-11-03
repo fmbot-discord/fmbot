@@ -1,11 +1,10 @@
-namespace FMBot.Domain.Models
+namespace FMBot.Domain.Models;
+
+public enum BotType
 {
-    public enum BotType
-    {
-        Production = 1,
+    Production = 1,
 
-        Beta = 2,
+    Beta = 2,
 
-        Local = 3
-    }
+    Local = 3
 }

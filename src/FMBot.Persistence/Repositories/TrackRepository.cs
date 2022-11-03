@@ -7,41 +7,40 @@ using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
-namespace FMBot.Persistence.Repositories
+namespace FMBot.Persistence.Repositories;
+
+public class TrackRepository
 {
-    public class TrackRepository
+    private readonly BotSettings _botSettings;
+
+    public TrackRepository(IOptions<BotSettings> botSettings)
     {
-        private readonly BotSettings _botSettings;
+        this._botSettings = botSettings.Value;
+    }
 
-        public TrackRepository(IOptions<BotSettings> botSettings)
+    public async Task<Track> GetTrackForName(string artistName, string trackName, NpgsqlConnection connection)
+    {
+        const string getTrackQuery = "SELECT * FROM public.tracks " +
+                                     "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
+                                     "UPPER(name) = UPPER(CAST(@trackName AS CITEXT))";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return await connection.QueryFirstOrDefaultAsync<Track>(getTrackQuery, new
         {
-            this._botSettings = botSettings.Value;
-        }
+            artistName,
+            trackName
+        });
+    }
 
-        public async Task<Track> GetTrackForName(string artistName, string trackName, NpgsqlConnection connection)
+    public async Task<ICollection<Track>> GetAlbumTracks(int albumId, NpgsqlConnection connection)
+    {
+        const string getTrackQuery = "SELECT * FROM public.tracks " +
+                                     "WHERE album_id = @albumId ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<Track>(getTrackQuery, new
         {
-            const string getTrackQuery = "SELECT * FROM public.tracks " +
-                                        "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
-                                        "UPPER(name) = UPPER(CAST(@trackName AS CITEXT))";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            return await connection.QueryFirstOrDefaultAsync<Track>(getTrackQuery, new
-            {
-                artistName,
-                trackName
-            });
-        }
-
-        public async Task<ICollection<Track>> GetAlbumTracks(int albumId, NpgsqlConnection connection)
-        {
-            const string getTrackQuery = "SELECT * FROM public.tracks " +
-                                        "WHERE album_id = @albumId ";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            return (await connection.QueryAsync<Track>(getTrackQuery, new
-            {
-                albumId
-            })).ToList();
-        }
+            albumId
+        })).ToList();
     }
 }

@@ -1,12 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -27,7 +21,7 @@ using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using Constants = FMBot.Domain.Constants;
 
-namespace FMBot.Bot.Commands.LastFM;
+namespace FMBot.Bot.TextCommands.LastFM;
 
 [Name("Albums")]
 public class AlbumCommands : BaseCommandModule

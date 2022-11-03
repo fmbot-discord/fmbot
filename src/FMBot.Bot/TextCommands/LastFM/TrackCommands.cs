@@ -4,9 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
-using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -29,7 +27,7 @@ using Microsoft.Extensions.Options;
 using RunMode = Discord.Commands.RunMode;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
-namespace FMBot.Bot.Commands.LastFM;
+namespace FMBot.Bot.TextCommands.LastFM;
 
 [Name("Tracks")]
 public class TrackCommands : BaseCommandModule

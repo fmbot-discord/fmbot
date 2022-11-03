@@ -1,7 +1,6 @@
-namespace FMBot.LastFM.Domain.Models
+namespace FMBot.LastFM.Domain.Models;
+
+public class TokenResponse
 {
-    public class TokenResponse
-    {
-        public string Token { get; set; }
-    }
+    public string Token { get; set; }
 }
