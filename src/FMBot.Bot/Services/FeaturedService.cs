@@ -297,11 +297,20 @@ public class FeaturedService
             {
                 users.Add(voaz);
             }
-
             var rndl = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 546055787835949077);
             if (rndl != null)
             {
                 users.Add(rndl);
+            }
+            var drasil = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 278633844763262976);
+            if (drasil != null)
+            {
+                users.Add(drasil);
+            }
+            var aeth = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 616906331537932300);
+            if (aeth != null)
+            {
+                users.Add(aeth);
             }
         }
 
