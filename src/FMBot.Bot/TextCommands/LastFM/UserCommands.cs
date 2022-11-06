@@ -577,6 +577,7 @@ public class UserCommands : BaseCommandModule
 
             sb.AppendLine("- Indexed artists, albums and tracks");
             sb.AppendLine("- All crowns you've gained or lost");
+            sb.AppendLine("- All featured history");
 
             if (userSettings.UserType != UserType.User)
             {
