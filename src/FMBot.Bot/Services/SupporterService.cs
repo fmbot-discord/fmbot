@@ -85,23 +85,50 @@ public class SupporterService
         return null;
     }
 
-    public string GetPromotionalMessage(UserType userType, string prfx, ulong? guildId = null)
+    public static async Task<string> GetSupporterCommand(IDiscordClient contextClient, string prfx)
+    {
+        var commands = await contextClient.GetGlobalApplicationCommandsAsync();
+        var getSupporter = commands.FirstOrDefault(f => f.Name.ToLower() == "getsupporter");
+        var getSupporterCommand = $"{prfx}getsupporter";
+
+        if (getSupporter != null)
+        {
+            getSupporterCommand = $"</getsupporter:{getSupporter.Id}>";
+        }
+
+        return getSupporterCommand;
+    }
+
+
+    public bool ShowPromotionalMessage(UserType userType, ulong? guildId)
     {
         if (userType != UserType.User)
         {
-            return null;
+            return true;
         }
 
         if (guildId != null)
         {
             if (this._cache.TryGetValue(GetGuildPromoCacheKey(guildId), out _))
             {
-                return null;
+                return true;
             }
         }
 
-        var rnd = new Random();
-        var randomHintNumber = rnd.Next(0, 12);
+        return false;
+    }
+
+    public async Task<string> GetPromotionalUpdateMessage(UserType userType, string prfx, IDiscordClient contextClient,
+        ulong? guildId = null)
+    {
+        if (ShowPromotionalMessage(userType, guildId))
+        {
+            return null;
+        }
+
+        var getSupporterCommand = await GetSupporterCommand(contextClient, prfx);
+
+        var randomHintNumber = new Random().Next(0, 18);
 
         switch (randomHintNumber)
         {
@@ -109,12 +136,17 @@ public class SupporterService
                 SetGuildPromoCache(guildId);
                 return
                     $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4k/5k/6k? " +
-                    $"[Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{prfx}getsupporter` for more info.*";
+                    $"[Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{getSupporterCommand}` for more info.*";
             case 2:
                 SetGuildPromoCache(guildId);
                 return
                     $"*Want .fmbot to store all your scrobbles so you can see extra statistics in some commands? " +
-                    $"[Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{prfx}getsupporter` for more info.*";
+                    $"[Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{getSupporterCommand}` for more info.*";
+            case 3:
+                SetGuildPromoCache(guildId);
+                return
+                    $"*Supporters get extra statistics like first listen dates in artist/album/track and full history in `stats`." +
+                    $"[Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{getSupporterCommand}` for more info.*";
             default:
                 return null;
         }
@@ -125,7 +157,7 @@ public class SupporterService
         return $"guild-supporter-promo-{guildId}";
     }
 
-    private void SetGuildPromoCache(ulong? guildId = null)
+    public void SetGuildPromoCache(ulong? guildId = null)
     {
         if (guildId != null)
         {

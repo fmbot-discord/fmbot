@@ -28,6 +28,7 @@ public class UserBuilder
     private readonly PlayService _playService;
     private readonly TimeService _timeService;
     private readonly ArtistsService _artistsService;
+    private readonly SupporterService _supporterService;
 
     public UserBuilder(UserService userService,
         GuildService guildService,
@@ -38,7 +39,8 @@ public class UserBuilder
         LastFmRepository lastFmRepository,
         PlayService playService,
         TimeService timeService,
-        ArtistsService artistsService)
+        ArtistsService artistsService,
+        SupporterService supporterService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -49,6 +51,7 @@ public class UserBuilder
         this._playService = playService;
         this._timeService = timeService;
         this._artistsService = artistsService;
+        this._supporterService = supporterService;
         this._botSettings = botSettings.Value;
     }
 
@@ -80,6 +83,17 @@ public class UserBuilder
             {
                 response.Text = "in-server";
                 response.Embed.AddField("🥳 Congratulations!", $"This user is in your server under the name {guildUser.UserName}.");
+            }
+        }
+
+        if (this._timer._currentFeatured.SupporterDay)
+        {
+            var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
+            if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+            {
+                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                response.Embed.AddField("Get featured", $"*Also want a higher chance of getting featured on Supporter Sunday? " +
+                                                            $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
             }
         }
 
@@ -379,7 +393,6 @@ public class UserBuilder
                     $"- {StringExtensions.GetListeningTimeString(totalTime, boldNumber: true)}");
             }
 
-
             foreach (var year in yearGroups)
             {
                 var time = await this._timeService.GetPlayTimeForPlays(year);
@@ -391,6 +404,16 @@ public class UserBuilder
             if (yearDescription.Length > 0)
             {
                 response.Embed.AddField("Years", yearDescription.ToString());
+            }
+        }
+        else
+        {
+            var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
+            if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+            {
+                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years? " +
+                                                 $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
             }
         }
 

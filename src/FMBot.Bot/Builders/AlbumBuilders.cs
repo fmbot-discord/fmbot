@@ -36,8 +36,20 @@ public class AlbumBuilders
     private readonly CensorService _censorService;
     private readonly IUpdateService _updateService;
     private readonly LastFmRepository _lastFmRepository;
+    private readonly SupporterService _supporterService;
 
-    public AlbumBuilders(UserService userService, GuildService guildService, AlbumService albumService, WhoKnowsAlbumService whoKnowsAlbumService, PlayService playService, SpotifyService spotifyService, TrackService trackService, IUpdateService updateService, TimeService timeService, CensorService censorService, LastFmRepository lastFmRepository)
+    public AlbumBuilders(UserService userService,
+        GuildService guildService,
+        AlbumService albumService,
+        WhoKnowsAlbumService whoKnowsAlbumService,
+        PlayService playService,
+        SpotifyService spotifyService,
+        TrackService trackService,
+        IUpdateService updateService,
+        TimeService timeService,
+        CensorService censorService,
+        LastFmRepository lastFmRepository,
+        SupporterService supporterService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -50,6 +62,7 @@ public class AlbumBuilders
         this._timeService = timeService;
         this._censorService = censorService;
         this._lastFmRepository = lastFmRepository;
+        this._supporterService = supporterService;
     }
 
     public async Task<ResponseModel> AlbumAsync(
@@ -172,6 +185,16 @@ public class AlbumBuilders
                 var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
 
                 response.Embed.WithDescription($"Your first listen: <t:{firstListenValue}:D>");
+            }
+        }
+        else
+        {
+            var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
+            if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+            {
+                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                response.Embed.WithDescription($"*Want to see the date you first listened to this album? " +
+                                               $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
             }
         }
 
