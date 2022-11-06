@@ -82,7 +82,7 @@ public class FriendsCommands : BaseCommandModule
     [Summary("Adds users to your friend list")]
     [Options(Constants.UserMentionExample)]
     [Examples("addfriends fm-bot @user", "addfriends 356268235697553409")]
-    [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "friend add", "add friends")]
+    [Alias("friend", "friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "friend add", "add friends")]
     [UsernameSetRequired]
     [GuildOnly]
     [CommandCategories(CommandCategory.Friends)]
@@ -117,7 +117,7 @@ public class FriendsCommands : BaseCommandModule
     [Summary("Removes users from your friend list")]
     [Options(Constants.UserMentionExample)]
     [Examples("removefriends fm-bot @user", "removefriend 356268235697553409")]
-    [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend", "remove friend", "remove friends", "friends remove", "friend remove")]
+    [Alias("unfriend", "friendsremove", "deletefriend", "deletefriends", "removefriend", "remove friend", "remove friends", "friends remove", "friend remove")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
     public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)

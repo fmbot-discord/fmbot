@@ -643,7 +643,7 @@ public class PlayCommands : BaseCommandModule
     }
 
     [Command("playleaderboard", RunMode = RunMode.Async)]
-    [Summary("Shows users with the most crowns in your server")]
+    [Summary("Shows users with the most plays in your server")]
     [Alias("sblb", "scrobblelb", "scrobbleleaderboard", "scrobble leaderboard")]
     [UsernameSetRequired]
     [GuildOnly]
