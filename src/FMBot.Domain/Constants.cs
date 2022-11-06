@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Runtime.InteropServices.ComTypes;
+
 namespace FMBot.Domain;
 
 public static class Constants
@@ -35,6 +38,7 @@ public static class Constants
     public const int DaysToStorePlays = 46;
 
     public const int SupporterMessageChance = 12;
+    public const int SupporterPromoChance = 10;
 
     public const int DefaultPlaysForCrown = 30;
 
@@ -45,7 +49,7 @@ public static class Constants
     public const int DaysLastUsedForFeatured = 1;
 
     public const int MaxFriends = 12;
-    public const int MaxFriendsSupporter = 16;
+    public const int MaxFriendsSupporter = 18;
 
     public static readonly int[] PlayCountBreakPoints = {
         50,

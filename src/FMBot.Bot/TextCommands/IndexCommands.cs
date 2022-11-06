@@ -121,9 +121,6 @@ public class IndexCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var rnd = new Random();
-        var randomPromoChance = rnd.Next(0, 8);
-
         if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
         {
             if (PublicProperties.IssuesAtLastFm)
@@ -176,7 +173,7 @@ public class IndexCommands : BaseCommandModule
             if (userSettings.UserType != UserType.User)
             {
                 indexDescription += "\n\n" +
-                                    $"*As a thank you for being an .fmbot {userSettings.UserType.ToString().ToLower()} the bot will store all of your artists/albums/tracks (instead of top 4k/5k/6k). " +
+                                    $"*As a thank you for being an .fmbot {userSettings.UserType.ToString().ToLower()} the bot will store all of your artists/albums/tracks (up from top 4/5/6k). " +
                                     $"Additionally your full scrobble history will be stored to provide extra statistics in a few commands.*";
             }
 
@@ -189,7 +186,7 @@ public class IndexCommands : BaseCommandModule
             var updatedDescription = $"✅ {userSettings.UserNameLastFM} has been fully updated.";
 
             var supporterPromo =
-                this._supporterService.GetPromotionalMessage(userSettings.UserType, prfx, this.Context.Guild?.Id);
+                await this._supporterService.GetPromotionalUpdateMessage(userSettings.UserType, prfx, this.Context.Client, this.Context.Guild?.Id);
             if (supporterPromo != null)
             {
                 updatedDescription += $"\n\n{supporterPromo}";
@@ -233,6 +230,8 @@ public class IndexCommands : BaseCommandModule
 
             var update = await this._updateService.UpdateUserAndGetRecentTracks(userSettings);
 
+            var supporterPromo =
+                await this._supporterService.GetPromotionalUpdateMessage(userSettings.UserType, prfx, this.Context.Client, this.Context.Guild?.Id);
             await message.ModifyAsync(m =>
             {
                 if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
@@ -266,8 +265,6 @@ public class IndexCommands : BaseCommandModule
                                              $"and {update.Content.RemovedRecentTracksAmount} removed {StringExtensions.GetScrobblesString(update.Content.RemovedRecentTracksAmount)}.";
                     }
 
-                    var supporterPromo =
-                        this._supporterService.GetPromotionalMessage(userSettings.UserType, prfx, this.Context.Guild?.Id);
                     if (supporterPromo != null)
                     {
                         updatedDescription += $"\n\n{supporterPromo}";

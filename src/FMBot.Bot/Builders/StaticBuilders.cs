@@ -35,24 +35,49 @@ public class StaticBuilders
 
         var embedDescription = new StringBuilder();
 
-        embedDescription.Append(".fmbot is non-commercial, open-source and non-profit. It is maintained by volunteers.");
-        embedDescription.AppendLine("You can help us fund hosting, development and other costs on our [OpenCollective](https://opencollective.com/fmbot).");
-        embedDescription.AppendLine();
-        embedDescription.AppendLine("We use OpenCollective so we can be transparent about our expenses. If you decide to donate, you can see exactly where your money goes.");
-        embedDescription.AppendLine();
-        embedDescription.AppendLine($"Use `{context.Prefix}supporters` to see everyone who has supported us so far!");
-        embedDescription.AppendLine();
-        embedDescription.AppendLine("**.fmbot supporter advantages include**:\n" +
-                                    "- Extra statistics in some commands\n" +
-                                    "- An emote behind their name (⭐)\n" +
-                                    "- Higher chance of being featured on Supporter Sunday\n" +
-                                    "- Their name shown in the list of supporters\n" +
-                                    "- Exclusive role and channel on [our server](https://discord.gg/6y3jJjtDqK)\n" +
-                                    "- A chance of sponsoring a chart\n" +
-                                    "- Friend limit increased to 16 (up from 12)\n" +
-                                    "- WhoKnows tracking increased to all your music (instead of top 4/5/6k artist/albums/tracks)");
-
         var existingSupporter = await this._supporterService.GetSupporter(context.DiscordUser.Id);
+        
+        if (context.ContextUser.UserType == UserType.Supporter || existingSupporter != null)
+        {
+            response.Embed.WithTitle("Thank you for being a supporter!");
+            embedDescription.AppendLine("See a list of all your perks below:");
+        }
+        else
+        {
+            response.Embed.WithTitle("Become a supporter");
+        }
+        
+        response.Embed.AddField("Make development sustainable",
+            "- Support development and get cool perks\n" +
+            "- Help us remain independent and free for everyone\n" +
+            "- Transparent fundraising on [OpenCollective](https://opencollective.com/fmbot)");
+
+        response.Embed.AddField("Get more stats",
+            "- See first listen dates for artists/albums/tracks\n" +
+            "- Expanded `stats` command with overall history\n" +
+            "- More coming soon");
+
+        response.Embed.AddField("Flex your support",
+            "- Get a ⭐ badge after your name\n" +
+            "- Sponsor charts\n" +
+            "- Your name in `supporters`");
+
+        response.Embed.AddField("Add more friends",
+            $"- Friend limit raised to {Constants.MaxFriendsSupporter} (up from {Constants.MaxFriends})\n" +
+            "- Applies to all commands, from `friends` to `friendwhoknows`");
+
+        response.Embed.AddField("All your scrobbles",
+            "- Lifetime scrobble history stored for extra stats\n" +
+            "- All artist/album/track playcounts cached (up from top 4/5/6k)");
+
+        response.Embed.AddField("Get featured",
+            "- Every first Sunday of the month is Supporter Sunday\n" +
+            "- Higher chance for supporters to become featured");
+
+        response.Embed.AddField("Join the community",
+            "- Exclusive role and channel on our [Discord](https://discord.gg/6y3jJjtDqK)\n" +
+            "- Sneak peeks of new features");
+
         if (existingSupporter != null)
         {
             var existingSupporterDescription = new StringBuilder();
@@ -64,7 +89,7 @@ public class StaticBuilders
             if (existingSupporter.LastPayment.HasValue)
             {
                 var lastPayment = DateTime.SpecifyKind(existingSupporter.LastPayment.Value, DateTimeKind.Utc);
-                var lastPaymentValue = ((DateTimeOffset)created).ToUnixTimeSeconds();
+                var lastPaymentValue = ((DateTimeOffset)lastPayment).ToUnixTimeSeconds();
                 existingSupporterDescription.AppendLine($"Last payment: <t:{lastPaymentValue}:D>");
             }
 
@@ -75,7 +100,7 @@ public class StaticBuilders
 
             existingSupporterDescription.AppendLine($"Name: **{Format.Sanitize(existingSupporter.Name)}** (from OpenCollective)");
 
-            response.Embed.AddField("Thank you for being a supporter!", existingSupporterDescription.ToString());
+            response.Embed.AddField("Your details", existingSupporterDescription.ToString());
         }
 
         response.Embed.WithDescription(embedDescription.ToString());

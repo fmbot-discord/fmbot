@@ -9,7 +9,6 @@ using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -39,6 +38,7 @@ public class ArtistBuilders
     private readonly WhoKnowsService _whoKnowsService;
     private readonly SettingService _settingService;
     private readonly SmallIndexRepository _smallIndexRepository;
+    private readonly SupporterService _supporterService;
 
     public ArtistBuilders(ArtistsService artistsService,
         LastFmRepository lastFmRepository,
@@ -53,7 +53,8 @@ public class ArtistBuilders
         CrownService crownService,
         WhoKnowsService whoKnowsService,
         SettingService settingService,
-        SmallIndexRepository smallIndexRepository)
+        SmallIndexRepository smallIndexRepository,
+        SupporterService supporterService)
     {
         this._artistsService = artistsService;
         this._lastFmRepository = lastFmRepository;
@@ -69,6 +70,7 @@ public class ArtistBuilders
         this._whoKnowsService = whoKnowsService;
         this._settingService = settingService;
         this._smallIndexRepository = smallIndexRepository;
+        this._supporterService = supporterService;
     }
 
     public async Task<ResponseModel> ArtistAsync(
@@ -120,6 +122,16 @@ public class ArtistBuilders
                 var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
 
                 firstListenInfo = $"Your first listen: <t:{firstListenValue}:D>";
+            }
+        }
+        else
+        {
+            var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
+            if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+            {
+                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                firstListenInfo = $"*Want to see the date you first listened to this artist? " +
+                                  $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
             }
         }
 

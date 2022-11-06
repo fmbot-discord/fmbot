@@ -35,8 +35,9 @@ public class TrackBuilders
     private readonly LastFmRepository _lastFmRepository;
     private readonly PuppeteerService _puppeteerService;
     private readonly IUpdateService _updateService;
+    private readonly SupporterService _supporterService;
 
-    public TrackBuilders(UserService userService, GuildService guildService, TrackService trackService, WhoKnowsTrackService whoKnowsTrackService, PlayService playService, SpotifyService spotifyService, TimeService timeService, LastFmRepository lastFmRepository, PuppeteerService puppeteerService, IUpdateService updateService)
+    public TrackBuilders(UserService userService, GuildService guildService, TrackService trackService, WhoKnowsTrackService whoKnowsTrackService, PlayService playService, SpotifyService spotifyService, TimeService timeService, LastFmRepository lastFmRepository, PuppeteerService puppeteerService, IUpdateService updateService, SupporterService supporterService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -48,6 +49,7 @@ public class TrackBuilders
         this._lastFmRepository = lastFmRepository;
         this._puppeteerService = puppeteerService;
         this._updateService = updateService;
+        this._supporterService = supporterService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -152,6 +154,16 @@ public class TrackBuilders
                 var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
 
                 response.Embed.WithDescription($"Your first listen: <t:{firstListenValue}:D>");
+            }
+        }
+        else
+        {
+            var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
+            if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+            {
+                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                response.Embed.WithDescription($"*Want to see the date you first listened to this track? " +
+                                               $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
             }
         }
 
