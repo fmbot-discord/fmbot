@@ -46,7 +46,6 @@ public static class StringService
 
         description.AppendLine($"**[{Format.Sanitize(track.TrackName)}]({track.TrackUrl})** by **{Format.Sanitize(track.ArtistName)}**");
 
-
         if (!track.TimePlayed.HasValue || track.NowPlaying)
         {
             description.Append("🎶 • ");
@@ -56,7 +55,9 @@ public static class StringService
             var specifiedDateTime = DateTime.SpecifyKind(track.TimePlayed.Value, DateTimeKind.Utc);
             var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
 
-            description.Append($"<t:{dateValue}:t> • ");
+            var format = DateTime.UtcNow.AddHours(-20) < track.TimePlayed.Value ? "t" : "f";
+
+            description.Append($"<t:{dateValue}:{format}> • ");
         }
 
         if (trackLength.HasValue)

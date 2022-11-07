@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Discord.Interactions;
 using Fergun.Interactive;
@@ -10,7 +9,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
 
