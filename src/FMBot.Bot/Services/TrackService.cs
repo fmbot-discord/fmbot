@@ -509,7 +509,7 @@ public class TrackService
         trackAudioFeatureDescription.AppendLine();
 
         var avgCurrentValence = (decimal)currentOverview.Average.Valence / currentOverview.Total;
-        trackAudioFeatureDescription.Append($"**Valence (musical positiveness)**: **__{avgCurrentValence:P}__**");
+        trackAudioFeatureDescription.Append($"**Musical positiveness**: **__{avgCurrentValence:P}__**");
         if (previousOverview.Total > 0)
         {
             var avgPrevValence = (decimal)previousOverview.Average.Valence / previousOverview.Total;

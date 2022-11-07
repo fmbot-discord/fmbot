@@ -147,7 +147,7 @@ public class CountryService
         }
 
         return countries
-            .OrderByDescending(o => o.Artists.Count)
+            .OrderByDescending(o => addArtists ? o.Artists.Count : o.UserPlaycount)
             .ToList();
     }
 
