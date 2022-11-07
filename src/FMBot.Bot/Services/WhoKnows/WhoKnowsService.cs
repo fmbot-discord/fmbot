@@ -130,6 +130,7 @@ public class WhoKnowsService
         var indexNumber = 1;
         var timesNameAdded = 0;
         var requestedUserAdded = false;
+        var addedUsers = new List<int>();
 
         // Note: You might not be able to see them, but this code contains specific spacers
         // https://www.compart.com/en/unicode/category/Zs
@@ -141,6 +142,11 @@ public class WhoKnowsService
             }
 
             var user = usersToShow[index];
+
+            if (addedUsers.Any(a => a.Equals(user.UserId)))
+            {
+                continue;
+            }
 
             string nameWithLink;
             if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
@@ -181,6 +187,8 @@ public class WhoKnowsService
 
             indexNumber += 1;
             timesNameAdded += 1;
+
+            addedUsers.Add(user.UserId);
 
             if (user.UserId == requestedUserId)
             {
