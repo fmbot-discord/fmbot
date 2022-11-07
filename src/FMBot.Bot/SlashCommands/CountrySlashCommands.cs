@@ -1,7 +1,6 @@
-using System;
 using System.Threading.Tasks;
+using System;
 using Discord.Interactions;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
@@ -9,40 +8,42 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using Fergun.Interactive;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class GenreSlashCommands : InteractionModuleBase
+public class CountrySlashCommands : InteractionModuleBase
 {
     private readonly UserService _userService;
     private readonly GuildService _guildService;
-    private readonly GenreBuilders _genreBuilders;
+
+    private readonly CountryBuilders _countryBuilders;
 
     private InteractiveService Interactivity { get; }
 
-    public GenreSlashCommands(UserService userService, InteractiveService interactivity, GenreBuilders genreBuilders, GuildService guildService)
+
+    public CountrySlashCommands(UserService userService, CountryBuilders countryBuilders, GuildService guildService, InteractiveService interactivity)
     {
         this._userService = userService;
-        this.Interactivity = interactivity;
-        this._genreBuilders = genreBuilders;
+        this._countryBuilders = countryBuilders;
         this._guildService = guildService;
+        this.Interactivity = interactivity;
     }
 
-    [SlashCommand("genre", "Shows genre info for artist or top artists for genre")]
+    [SlashCommand("country", "Shows country for artist or top artists for country")]
     [UsernameSetRequired]
     public async Task GenreAsync(
-        [Summary("search", "The genre or artist you want to view")]
-        [Autocomplete(typeof(GenreArtistAutoComplete))]
+        [Summary("search", "The country or artist you want to view")]
+        [Autocomplete(typeof(CountryArtistAutoComplete))]
         string name = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
         try
         {
-            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, contextUser), name, guild);
+            var response = await this._countryBuilders.CountryAsync(new ContextModel(this.Context, contextUser), name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

@@ -527,7 +527,7 @@ public class ArtistsService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 50);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-2));
 
             var artists = plays
                 .OrderByDescending(o => o.TimePlayed)
@@ -569,7 +569,7 @@ public class ArtistsService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 1500);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-20));
 
             var artists = plays
                 .GroupBy(g => g.ArtistName)

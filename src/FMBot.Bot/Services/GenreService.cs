@@ -28,7 +28,7 @@ public class GenreService
     private async Task CacheAllArtistGenres()
     {
         const string cacheKey = "artist-genres-cached";
-        var cacheTime = TimeSpan.FromMinutes(5);
+        var cacheTime = TimeSpan.FromHours(1);
 
         if (this._cache.TryGetValue(cacheKey, out _))
         {

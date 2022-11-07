@@ -133,37 +133,38 @@ public class UpdateRepository
 
         AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks.First());
 
-        var playUpdate = await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection);
-        recentTracks.Content.NewRecentTracksAmount = playUpdate.NewPlays.Count;
-        recentTracks.Content.RemovedRecentTracksAmount = playUpdate.RemovedPlays.Count;
-
-        if (!playUpdate.NewPlays.Any())
-        {
-            Log.Debug("Update: After local filter no new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-            await SetUserUpdateTime(user, DateTime.UtcNow, connection);
-
-            if (!user.TotalPlaycount.HasValue)
-            {
-                recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
-            }
-            else if (totalPlaycountCorrect)
-            {
-                await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection, recentTracks.Content.TotalAmount);
-            }
-            else
-            {
-                recentTracks.Content.TotalAmount = user.TotalPlaycount.Value;
-            }
-
-            await connection.CloseAsync();
-
-            return recentTracks;
-        }
-
-        await CacheArtistAliases();
-
         try
         {
+            var playUpdate = await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection);
+
+            recentTracks.Content.NewRecentTracksAmount = playUpdate.NewPlays.Count;
+            recentTracks.Content.RemovedRecentTracksAmount = playUpdate.RemovedPlays.Count;
+
+            if (!playUpdate.NewPlays.Any())
+            {
+                Log.Debug("Update: After local filter no new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                await SetUserUpdateTime(user, DateTime.UtcNow, connection);
+
+                if (!user.TotalPlaycount.HasValue)
+                {
+                    recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
+                }
+                else if (totalPlaycountCorrect)
+                {
+                    await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection, recentTracks.Content.TotalAmount);
+                }
+                else
+                {
+                    recentTracks.Content.TotalAmount = user.TotalPlaycount.Value;
+                }
+
+                await connection.CloseAsync();
+
+                return recentTracks;
+            }
+
+            await CacheArtistAliases();
+
             var cacheKey = $"{user.UserId}-update-in-progress";
             if (this._cache.TryGetValue(cacheKey, out bool _))
             {
@@ -399,10 +400,10 @@ public class UpdateRepository
         var updateExistingTracks = new StringBuilder();
 
         foreach (var track in newScrobbles.GroupBy(x => new
-                 {
-                     ArtistName = x.ArtistName.ToLower(),
-                     TrackName = x.TrackName.ToLower()
-                 }))
+        {
+            ArtistName = x.ArtistName.ToLower(),
+            TrackName = x.TrackName.ToLower()
+        }))
         {
             var alias = (string)this._cache.Get(CacheKeyForAlias(track.Key.ArtistName.ToLower()));
 
