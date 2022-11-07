@@ -72,7 +72,11 @@ public class CrownService
         await connection.OpenAsync();
 
         var currentCrownHolder = await GetCurrentCrownHolder(connection, guild.GuildId, artistName);
-        var currentCrownHolderUser = users.FirstOrDefault(f => f.UserId == currentCrownHolder.UserId);
+        WhoKnowsObjectWithUser currentCrownHolderUser = null;
+        if (currentCrownHolder != null)
+        {
+            currentCrownHolderUser = users.FirstOrDefault(f => f.UserId == currentCrownHolder.UserId);
+        }
 
         // Crown exists and is same as top user
         if (currentCrownHolder != null && topUser.UserId == currentCrownHolder.UserId)
