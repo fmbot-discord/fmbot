@@ -615,8 +615,16 @@ public class StaticCommands : BaseCommandModule
 
         if (PublicProperties.IssuesAtLastFm)
         {
+            var issues = "";
+            if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
+            {
+                issues = "\n\n" +
+                         "Note:\n" +
+                         $"*\"{PublicProperties.IssuesReason}\"*";
+            }
+
             this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues.\n" +
-                                          ".fmbot is not affiliated with Last.fm.");
+                                          $".fmbot is not affiliated with Last.fm.{issues}");
         }
 
         this._embed.WithDescription(description.ToString());
