@@ -509,7 +509,7 @@ public class TrackService
         trackAudioFeatureDescription.AppendLine();
 
         var avgCurrentValence = (decimal)currentOverview.Average.Valence / currentOverview.Total;
-        trackAudioFeatureDescription.Append($"**Valence (musical positiveness)**: **__{avgCurrentValence:P}__**");
+        trackAudioFeatureDescription.Append($"**Musical positiveness**: **__{avgCurrentValence:P}__**");
         if (previousOverview.Total > 0)
         {
             var avgPrevValence = (decimal)previousOverview.Average.Valence / previousOverview.Total;
@@ -619,7 +619,7 @@ public class TrackService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 100);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-2));
 
             var tracks = plays
                 .OrderByDescending(o => o.TimePlayed)
@@ -661,7 +661,7 @@ public class TrackService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 1500);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-20));
 
             var tracks = plays
                 .GroupBy(g => new TrackAutoCompleteSearchModel(g.ArtistName, g.TrackName))

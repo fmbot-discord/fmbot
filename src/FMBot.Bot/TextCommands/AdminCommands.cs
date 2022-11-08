@@ -183,19 +183,22 @@ public class AdminCommands : BaseCommandModule
 
     [Command("issues")]
     [Summary("Toggles issue mode")]
-    public async Task IssuesAsync()
+    public async Task IssuesAsync([Remainder]string reason = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            if (!PublicProperties.IssuesAtLastFm)
+            if (!PublicProperties.IssuesAtLastFm || reason != null)
             {
                 PublicProperties.IssuesAtLastFm = true;
-                await ReplyAsync("Enabled issue mode. This adds some warning messages, changes the bot status and disables full updates.");
+                PublicProperties.IssuesReason = reason;
+                await ReplyAsync("Enabled issue mode. This adds some warning messages, changes the bot status and disables full updates.\n" +
+                                 $"Reason given: *\"{reason}\"*", allowedMentions: AllowedMentions.None);
 
             }
             else
             {
                 PublicProperties.IssuesAtLastFm = false;
+                PublicProperties.IssuesReason = null;
                 await ReplyAsync("Disabled issue mode");
             }
 

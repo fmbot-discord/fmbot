@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,6 +46,7 @@ public class PlayCommands : BaseCommandModule
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
     private readonly PlayBuilder _playBuilder;
+    private readonly CountryService _countryService;
     private InteractiveService Interactivity { get; }
 
     private static readonly List<DateTimeOffset> StackCooldownTimer = new();
@@ -70,7 +72,8 @@ public class PlayCommands : BaseCommandModule
         TimeService timeService,
         GenreService genreService,
         TrackService trackService,
-        PlayBuilder playBuilder) : base(botSettings)
+        PlayBuilder playBuilder,
+        CountryService countryService) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -90,6 +93,7 @@ public class PlayCommands : BaseCommandModule
         this._genreService = genreService;
         this._trackService = trackService;
         this._playBuilder = playBuilder;
+        this._countryService = countryService;
     }
 
     [Command("fm", RunMode = RunMode.Async)]
@@ -293,6 +297,7 @@ public class PlayCommands : BaseCommandModule
 
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
         var year = SettingService.GetYear(extraOptions).GetValueOrDefault(DateTime.UtcNow.AddDays(-90).Year);
+        var pagesAmount = userSettings.UserType == UserType.User ? 2 : 3;
 
         try
         {
@@ -388,7 +393,7 @@ public class PlayCommands : BaseCommandModule
             var risesDescription = new StringBuilder();
             if (rises.Any())
             {
-                foreach (var rise in rises.Take(6))
+                foreach (var rise in rises.Take(7))
                 {
                     risesDescription.Append($"<:5_or_more_up:912380324841918504>");
                     risesDescription.AppendLine($"{rise.Name} (From #{rise.OldPosition} to #{rise.NewPosition})");
@@ -409,7 +414,7 @@ public class PlayCommands : BaseCommandModule
             var dropsDescription = new StringBuilder();
             if (drops.Any())
             {
-                foreach (var drop in drops.Take(6))
+                foreach (var drop in drops.Take(7))
                 {
                     dropsDescription.Append($"<:5_or_more_down:912380324753838140> ");
                     dropsDescription.AppendLine($"{drop.Name} (From #{drop.OldPosition} to #{drop.NewPosition})");
@@ -424,7 +429,7 @@ public class PlayCommands : BaseCommandModule
             pages.Add(new PageBuilder()
                 .WithFields(fields)
                 .WithDescription(description.ToString())
-                .WithTitle($"{userTitle} {year} in Review - 1/2"));
+                .WithTitle($"{userTitle} {year} in Review - 1/{pagesAmount}"));
 
             fields = new List<EmbedFieldBuilder>();
 
@@ -462,6 +467,34 @@ public class PlayCommands : BaseCommandModule
 
             fields.Add(new EmbedFieldBuilder().WithName("Tracks").WithValue(trackDescription.ToString()));
 
+            var countries = await this._countryService.GetTopCountriesForTopArtists(yearOverview.TopArtists.TopArtists);
+
+            var previousTopCountries = new List<TopCountry>();
+            if (yearOverview.PreviousTopArtists?.TopArtists != null)
+            {
+                previousTopCountries = await this._countryService.GetTopCountriesForTopArtists(yearOverview.PreviousTopArtists?.TopArtists);
+            }
+
+            var countryDescription = new StringBuilder();
+            for (var i = 0; i < countries.Count; i++)
+            {
+                var topCountry = countries[i];
+
+                var previousTopCountry = previousTopCountries.FirstOrDefault(f => f.CountryCode == topCountry.CountryCode);
+
+                int? previousPosition = previousTopCountry == null ? null : previousTopCountries.IndexOf(previousTopCountry);
+
+                var line = StringService.GetBillboardLine($"**{topCountry.CountryName}**", i, previousPosition);
+                lines.Add(line);
+
+                if (i < 8)
+                {
+                    countryDescription.AppendLine(line.Text);
+                }
+            }
+
+            fields.Add(new EmbedFieldBuilder().WithName("Countries").WithValue(countryDescription.ToString()).WithIsInline(true));
+
             var tracksAudioOverview = await this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.TopTracks.TopTracks);
             var previousTracksAudioOverview = await this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.PreviousTopTracks?.TopTracks);
 
@@ -480,7 +513,74 @@ public class PlayCommands : BaseCommandModule
 
             pages.Add(new PageBuilder()
                 .WithFields(fields)
-                .WithTitle($"{userTitle} {year} in Review - 2/2"));
+                .WithTitle($"{userTitle} {year} in Review - 2/{pagesAmount}"));
+
+            if (userSettings.UserType != UserType.User)
+            {
+                fields = new List<EmbedFieldBuilder>();
+
+                var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+
+                var filter = new DateTime(year, 01, 01);
+                var knownArtists = allPlays
+                    .Where(w => w.TimePlayed < filter)
+                    .GroupBy(g => g.ArtistName)
+                    .Select(s => s.Key)
+                    .ToList();
+
+                var topNewArtists = allPlays
+                    .Where(w => w.TimePlayed >= filter)
+                    .GroupBy(g => g.ArtistName)
+                    .Select(s => new TopArtist
+                    {
+                        ArtistName = s.Key,
+                        UserPlaycount = s.Count()
+                    })
+                    .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName)))
+                    .OrderByDescending(o => o.UserPlaycount)
+                    .ToList();
+
+                var newArtistDescription = new StringBuilder();
+                for (var i = 0; i < topNewArtists.Take(10).Count(); i++)
+                {
+                    var newArtist = topNewArtists[i];
+
+                    newArtistDescription.AppendLine($"{i + 1}. **[{newArtist.ArtistName}]({newArtist})** ({newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)})");
+                }
+
+                fields.Add(new EmbedFieldBuilder().WithName("Newly discovered artists")
+                    .WithValue(newArtistDescription.ToString()));
+
+                var monthDescription = new StringBuilder();
+                var monthGroups = allPlays
+                    .Where(w => w.TimePlayed >= filter)
+                    .OrderByDescending(o => o.TimePlayed)
+                    .GroupBy(g => new { g.TimePlayed.Month, g.TimePlayed.Year });
+
+                foreach (var month in monthGroups)
+                {
+                    if (!allPlays.Any(a => a.TimePlayed < DateTime.UtcNow.AddMonths(-month.Key.Month)))
+                    {
+                        break;
+                    }
+
+                    var time = await this._timeService.GetPlayTimeForPlays(month);
+                    monthDescription.AppendLine(
+                        $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}`** " +
+                        $"- **{month.Count()}** plays " +
+                        $"- {StringExtensions.GetListeningTimeString(time, boldNumber: true)}");
+                }
+                if (monthDescription.Length > 0)
+                {
+                    fields.Add(new EmbedFieldBuilder().WithName("Months")
+                        .WithValue(monthDescription.ToString()));
+                }
+
+                pages.Add(new PageBuilder()
+                    .WithFields(fields)
+                    .WithTitle($"{userTitle} {year} in Review - 3/{pagesAmount}")
+                    .WithDescription("⭐ .fmbot Supporter stats"));
+            }
 
             var paginator = StringService.BuildSimpleStaticPaginator(pages);
 

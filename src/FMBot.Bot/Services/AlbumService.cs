@@ -393,7 +393,7 @@ public class AlbumService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 100);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-2));
 
             var albums = plays
                 .OrderByDescending(o => o.TimePlayed)
@@ -435,7 +435,7 @@ public class AlbumService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 1500);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-20));
 
             var albums = plays
                 .GroupBy(g => new AlbumAutoCompleteSearchModel(g.ArtistName, g.AlbumName))

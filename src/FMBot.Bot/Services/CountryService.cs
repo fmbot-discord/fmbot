@@ -10,6 +10,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using Serilog;
 
 namespace FMBot.Bot.Services;
 
@@ -87,6 +88,29 @@ public class CountryService
         return foundCountry;
     }
 
+    public IEnumerable<CountryInfo> SearchThroughCountries(string countryValues)
+    {
+        if (string.IsNullOrWhiteSpace(countryValues))
+        {
+            return null;
+        }
+
+        var searchQuery = countryValues.ToLower().Replace(" ", "").Replace("-", "");
+
+        var foundCountries = this._countries
+            .Where(f => TrimCountry(f.Name) == searchQuery ||
+                        f.Code.ToLower() == searchQuery ||
+                        TrimCountry(f.Name).StartsWith(searchQuery) ||
+                        TrimCountry(f.Name).Contains(searchQuery));
+
+        return foundCountries;
+    }
+
+    public static string TrimCountry(string country)
+    {
+        return country.ToLower().Replace(" ", "").Replace("-", "");
+    }
+
     public async Task<List<TopCountry>> GetTopCountriesForTopArtists(IEnumerable<TopArtist> topArtists, bool addArtists = false)
     {
         if (topArtists == null)
@@ -123,7 +147,39 @@ public class CountryService
         }
 
         return countries
-            .OrderByDescending(o => o.Artists.Count)
+            .OrderByDescending(o => addArtists ? o.Artists.Count : o.UserPlaycount)
+            .ToList();
+    }
+
+    public string CountryCodeToCountryName(string code)
+    {
+        return this._countries.FirstOrDefault(f => f.Code == code)?.Name;
+    }
+
+    public async Task<List<string>> GetTopCountriesForTopArtistsString(IEnumerable<string> topArtists)
+    {
+        var topCountries = new List<string>();
+        if (topArtists == null)
+        {
+            return topCountries;
+        }
+
+        await CacheAllArtistCountries();
+
+        foreach (var topArtist in topArtists)
+        {
+            var country = GetCountry(topArtist);
+            if (country != null)
+            {
+                topCountries.Add(country);
+            }
+        }
+
+        return topCountries
+            .GroupBy(g => g)
+            .OrderByDescending(o => o.Count())
+            .Where(w => w.Key != null)
+            .Select(s => s.Key)
             .ToList();
     }
 
@@ -141,9 +197,14 @@ public class CountryService
         return topArtists.Where(w => countryArtists.Contains(w.ArtistName.ToLower())).ToList();
     }
 
+    private string GetCountry(string artist)
+    {
+        return (string)this._cache.Get(CacheKeyForArtistCountry(artist.ToLower()));
+    }
+
     private List<CountryWithPlaycount> GetCountryWithPlaycountsForArtist(List<CountryWithPlaycount> countries, string artistName, long? artistPlaycount)
     {
-        var foundCountry = (string)this._cache.Get(CacheKeyForArtistCountry(artistName.ToLower()));
+        var foundCountry = GetCountry(artistName);
 
         if (foundCountry != null)
         {

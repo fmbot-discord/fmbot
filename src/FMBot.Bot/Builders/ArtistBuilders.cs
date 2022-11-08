@@ -338,7 +338,7 @@ public class ArtistBuilders
         if (topTracks.Count == 0)
         {
             response.Embed.WithDescription(
-                $"{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{artistSearch.Artist.ArtistName}** in .fmbot.");
+                $"{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{Format.Sanitize(artistSearch.Artist.ArtistName)}** in .fmbot.");
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -359,7 +359,7 @@ public class ArtistBuilders
             var albumPageString = new StringBuilder();
             foreach (var track in topTrackPage)
             {
-                albumPageString.AppendLine($"{counter}. **{track.Name}** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)})");
+                albumPageString.AppendLine($"{counter}. **{Format.Sanitize(track.Name)}** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)})");
                 counter++;
             }
 

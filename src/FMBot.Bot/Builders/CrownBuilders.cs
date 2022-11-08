@@ -109,9 +109,11 @@ public class CrownBuilders
 
             }
 
+            response.Embed.AddField("Crown history", crownHistory.ToString());
+
             if (artistCrowns.Count(w => !w.Active) > 10)
             {
-                crownHistory.AppendLine($"*{artistCrowns.Count(w => !w.Active) - 11} more steals hidden..*");
+                crownHistory.AppendLine($"*{artistCrowns.Count(w => !w.Active) - 10} more steals hidden..*");
 
                 var firstCrown = artistCrowns.OrderBy(o => o.Created).First();
                 var crownUsername = GuildService.GetUserFromGuild(guild, firstCrown.UserId);
@@ -120,8 +122,6 @@ public class CrownBuilders
                      $"**<t:{((DateTimeOffset)firstCrown.Created).ToUnixTimeSeconds()}:D>** to **<t:{((DateTimeOffset)lastCrownCreateDate).ToUnixTimeSeconds()}:D>** - " +
                      $"`{firstCrown.StartPlaycount}` to `{firstCrown.CurrentPlaycount}` plays");
             }
-
-            response.Embed.AddField("Crown history", crownHistory.ToString());
         }
 
         response.Embed.WithTitle($"Crown info for {currentCrown.ArtistName}");

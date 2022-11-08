@@ -85,21 +85,6 @@ public class SupporterService
         return null;
     }
 
-    public static async Task<string> GetSupporterCommand(IDiscordClient contextClient, string prfx)
-    {
-        var commands = await contextClient.GetGlobalApplicationCommandsAsync();
-        var getSupporter = commands.FirstOrDefault(f => f.Name.ToLower() == "getsupporter");
-        var getSupporterCommand = $"{prfx}getsupporter";
-
-        if (getSupporter != null)
-        {
-            getSupporterCommand = $"</getsupporter:{getSupporter.Id}>";
-        }
-
-        return getSupporterCommand;
-    }
-
-
     public bool ShowPromotionalMessage(UserType userType, ulong? guildId)
     {
         if (userType != UserType.User)
@@ -126,8 +111,6 @@ public class SupporterService
             return null;
         }
 
-        var getSupporterCommand = await GetSupporterCommand(contextClient, prfx);
-
         var randomHintNumber = new Random().Next(0, 18);
 
         switch (randomHintNumber)
@@ -136,17 +119,17 @@ public class SupporterService
                 SetGuildPromoCache(guildId);
                 return
                     $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4k/5k/6k? " +
-                    $"[Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{getSupporterCommand}` for more info.*";
+                    $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
             case 2:
                 SetGuildPromoCache(guildId);
                 return
                     $"*Want .fmbot to store all your scrobbles so you can see extra statistics in some commands? " +
-                    $"[Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{getSupporterCommand}` for more info.*";
+                    $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
             case 3:
                 SetGuildPromoCache(guildId);
                 return
-                    $"*Supporters get extra statistics like first listen dates in artist/album/track and full history in `stats`." +
-                    $"[Get .fmbot supporter here]({Constants.GetSupporterLink}) or use `{getSupporterCommand}` for more info.*";
+                    $"*Supporters get extra statistics like first listen dates in artist/album/track and full history in `stats`. " +
+                    $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
             default:
                 return null;
         }

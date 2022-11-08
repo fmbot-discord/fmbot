@@ -111,6 +111,14 @@ public static class InteractionContextExtensions
                     InteractionResponseType.DeferredChannelMessageWithSource,
                     ephemeral: ephemeral);
                 break;
+            case ResponseType.PagedSelection:
+                _ = interactiveService.SendSelectionAsync(
+                    response.PagedSelection,
+                    (SocketInteraction)context.Interaction,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    InteractionResponseType.DeferredChannelMessageWithSource,
+                    ephemeral: ephemeral);
+                break;
             case ResponseType.ImageWithEmbed:
                 await context.Interaction.FollowupWithFileAsync(response.Stream,
                     (response.Spoiler
