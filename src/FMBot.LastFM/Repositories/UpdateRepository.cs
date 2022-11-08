@@ -42,7 +42,7 @@ public class UpdateRepository
     {
         if (queueItem.UpdateQueue)
         {
-            Thread.Sleep(1400);
+            Thread.Sleep(1200);
         }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -92,7 +92,7 @@ public class UpdateRepository
             true,
             sessionKey,
             timeFrom,
-            2);
+            3);
 
         if (!recentTracks.Success)
         {

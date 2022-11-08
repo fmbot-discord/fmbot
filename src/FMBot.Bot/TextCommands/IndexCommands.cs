@@ -125,8 +125,17 @@ public class IndexCommands : BaseCommandModule
         {
             if (PublicProperties.IssuesAtLastFm)
             {
+                var issues = "";
+                if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
+                {
+                    issues = "\n\n" +
+                             "Note:\n" +
+                             $"*\"{PublicProperties.IssuesReason}\"*";
+                }
+
                 await ReplyAsync(
-                    "Doing a full update is disabled temporarily while Last.fm is having issues. Please try again later.");
+                    $"Doing a full update is disabled temporarily while Last.fm is having issues. Please try again later.{issues}",
+                    allowedMentions: AllowedMentions.None);
                 this.Context.LogCommandUsed(CommandResponse.Disabled);
                 return;
             }
