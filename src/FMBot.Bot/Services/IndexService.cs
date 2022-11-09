@@ -427,23 +427,12 @@ public class IndexService : IIndexService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var begin = DateTime.SpecifyKind(new DateTime(2022, 11, 7), DateTimeKind.Utc);
-        var end = DateTime.SpecifyKind(new DateTime(2022, 11, 9, 11, 0, 0), DateTimeKind.Utc);
-
         return await db.Users
             .AsQueryable()
             .Where(f => f.LastIndexed != null &&
-                        f.LastIndexed >= begin &&
-                        f.LastIndexed <= end)
-            .OrderBy(o => o.LastIndexed)
+                        f.LastUpdated != null &&
+                        f.LastIndexed <= timeLastIndexed)
+            .OrderBy(o => o.LastUpdated)
             .ToListAsync();
-
-        //return await db.Users
-        //    .AsQueryable()
-        //    .Where(f => f.LastIndexed != null &&
-        //                f.LastUpdated != null &&
-        //                f.LastIndexed <= timeLastIndexed)
-        //    .OrderBy(o => o.LastUpdated)
-        //    .ToListAsync();
     }
 }
