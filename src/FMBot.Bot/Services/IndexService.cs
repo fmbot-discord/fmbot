@@ -427,8 +427,8 @@ public class IndexService : IIndexService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var begin = new DateTime(2022, 11, 7);
-        var end = new DateTime(2022, 11, 9, 11, 0, 0);
+        var begin = DateTime.SpecifyKind(new DateTime(2022, 11, 7), DateTimeKind.Utc);
+        var end = DateTime.SpecifyKind(new DateTime(2022, 11, 9, 11, 0, 0), DateTimeKind.Utc);
 
         return await db.Users
             .AsQueryable()
