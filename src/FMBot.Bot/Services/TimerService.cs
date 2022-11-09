@@ -356,12 +356,12 @@ public class TimerService
 
         this._userIndexTimer = new Timer(async _ =>
             {
-                if (this._botSettings.LastFm.UserIndexFrequencyInDays == null || this._botSettings.LastFm.UserIndexFrequencyInDays == 0)
-                {
-                    Log.Warning("No user index frequency set, cancelling user index timer");
-                    this._userIndexTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                    return;
-                }
+                //if (this._botSettings.LastFm.UserIndexFrequencyInDays == null || this._botSettings.LastFm.UserIndexFrequencyInDays == 0)
+                //{
+                //    Log.Warning("No user index frequency set, cancelling user index timer");
+                //    this._userIndexTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                //    return;
+                //}
 
                 if (PublicProperties.IssuesAtLastFm)
                 {
@@ -370,9 +370,9 @@ public class TimerService
                 }
 
                 Log.Information("Getting users to index");
-                var timeToIndex = DateTime.UtcNow.AddDays(-this._botSettings.LastFm.UserIndexFrequencyInDays.Value);
+                //var timeToIndex = DateTime.UtcNow.AddDays(-this._botSettings.LastFm.UserIndexFrequencyInDays.Value);
 
-                var usersToUpdate = (await this._indexService.GetOutdatedUsers(timeToIndex))
+                var usersToUpdate = (await this._indexService.GetOutdatedUsers(DateTime.Now))
                     .Take(500)
                     .ToList();
 
