@@ -28,7 +28,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Youtube.Domain", "FMB
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Images", "FMBot.Images\FMBot.Images.csproj", "{3A126F42-6267-4ECC-9AB8-024DFF8B934E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.OpenCollective", "FMBot.OpenCollective\FMBot.OpenCollective.csproj", "{5E680345-355D-40CD-BF9B-31157F8CEAD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.OpenCollective", "FMBot.OpenCollective\FMBot.OpenCollective.csproj", "{5E680345-355D-40CD-BF9B-31157F8CEAD8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,6 +1,6 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
+FROM mcr.microsoft.com/dotnet/runtime:7.0 AS base
 RUN apt-get update && apt-get install -y libgdiplus
 WORKDIR /app
 
@@ -23,7 +23,7 @@ RUN wget --no-verbose -O /tmp/chrome.deb http://dl.google.com/linux/chrome/deb/p
 
 ENV PUPPETEER_EXECUTABLE_PATH "/usr/bin/google-chrome-stable"
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 COPY ["src/FMBot.Bot", "FMBot.Bot/"]
 COPY ["src/FMBot.Images", "FMBot.Images/"]

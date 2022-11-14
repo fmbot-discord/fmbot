@@ -426,6 +426,7 @@ public class IndexService : IIndexService
     public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastIndexed)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
+
         return await db.Users
             .AsQueryable()
             .Where(f => f.LastIndexed != null &&
