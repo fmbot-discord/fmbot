@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -39,6 +40,7 @@ public class PlayBuilder
     private readonly TimeService _timeService;
     private readonly TrackService _trackService;
     private readonly UserService _userService;
+    private readonly CountryService _countryService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
@@ -63,7 +65,8 @@ public class PlayBuilder
         IOptions<BotSettings> botSettings,
         TimeService timeService,
         GenreService genreService,
-        TrackService trackService)
+        TrackService trackService,
+        CountryService countryService)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -82,6 +85,7 @@ public class PlayBuilder
         this._timeService = timeService;
         this._genreService = genreService;
         this._trackService = trackService;
+        this._countryService = countryService;
     }
 
     public async Task<ResponseModel> NowPlayingAsync(
@@ -767,6 +771,310 @@ public class PlayBuilder
 
         response.Embed.WithDescription(reply.ToString());
 
+        return response;
+    }
+
+    public async Task<ResponseModel> YearAsync(
+        ContextModel context,
+        UserSettingsModel userSettings,
+        int year)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator
+        };
+
+        var pagesAmount = userSettings.UserType == UserType.User ? 2 : 3;
+
+        var yearOverview = await this._playService.GetYear(userSettings.UserId, year);
+
+        if (yearOverview.LastfmErrors)
+        {
+            response.Embed.WithDescription("Sorry, Last.fm returned an error. Please try again");
+            response.CommandResponse = CommandResponse.LastFmError;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+        if (yearOverview.TopArtists?.TopArtists == null || !yearOverview.TopArtists.TopArtists.Any())
+        {
+            response.Embed.WithDescription("Sorry, you haven't listened to music in this year. If you think this message is wrong, please try again.");
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        var userTitle = $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}'s";
+        var pages = new List<PageBuilder>();
+
+        var description = new StringBuilder();
+        var fields = new List<EmbedFieldBuilder>();
+
+        if (yearOverview.PreviousTopArtists?.TopArtists is { Count: > 0 })
+        {
+            description.AppendLine($"Your top genres, artists, albums and tracks for {year} compared to {year - 1}.");
+        }
+        else
+        {
+            description.AppendLine($"Welcome to Last.fm and .fmbot. Here's your overview for {year}.");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+
+        var genres = await this._genreService.GetTopGenresForTopArtists(yearOverview.TopArtists.TopArtists);
+
+        var previousTopGenres = new List<TopGenre>();
+        if (yearOverview.PreviousTopArtists?.TopArtists != null)
+        {
+            previousTopGenres = await this._genreService.GetTopGenresForTopArtists(yearOverview.PreviousTopArtists?.TopArtists);
+        }
+
+        var genreDescription = new StringBuilder();
+        var lines = new List<StringService.BillboardLine>();
+        for (var i = 0; i < genres.Count; i++)
+        {
+            var topGenre = genres[i];
+
+            var previousTopGenre = previousTopGenres.FirstOrDefault(f => f.GenreName == topGenre.GenreName);
+
+            int? previousPosition = previousTopGenre == null ? null : previousTopGenres.IndexOf(previousTopGenre);
+
+            var line = StringService.GetBillboardLine($"**{topGenre.GenreName}**", i, previousPosition);
+            lines.Add(line);
+
+            if (i < 10)
+            {
+                genreDescription.AppendLine(line.Text);
+            }
+        }
+
+        fields.Add(new EmbedFieldBuilder().WithName("Genres").WithValue(genreDescription.ToString()).WithIsInline(true));
+
+        var artistDescription = new StringBuilder();
+        for (var i = 0; i < yearOverview.TopArtists.TopArtists.Count; i++)
+        {
+            var topArtist = yearOverview.TopArtists.TopArtists[i];
+
+            var previousTopArtist =
+                yearOverview.PreviousTopArtists?.TopArtists?.FirstOrDefault(f =>
+                    f.ArtistName == topArtist.ArtistName);
+
+            var previousPosition = previousTopArtist == null ? null : yearOverview.PreviousTopArtists?.TopArtists?.IndexOf(previousTopArtist);
+
+            var line = StringService.GetBillboardLine($"**{topArtist.ArtistName}**", i, previousPosition);
+            lines.Add(line);
+
+            if (i < 10)
+            {
+                artistDescription.AppendLine(line.Text);
+            }
+        }
+
+        fields.Add(new EmbedFieldBuilder().WithName("Artists").WithValue(artistDescription.ToString()).WithIsInline(true));
+
+        var rises = lines
+            .Where(w => w.OldPosition is >= 20 && w.NewPosition <= 15 && w.PositionsMoved >= 15)
+            .OrderBy(o => o.PositionsMoved)
+            .ThenBy(o => o.NewPosition)
+            .ToList();
+
+        var risesDescription = new StringBuilder();
+        if (rises.Any())
+        {
+            foreach (var rise in rises.Take(7))
+            {
+                risesDescription.Append($"<:5_or_more_up:912380324841918504>");
+                risesDescription.AppendLine($"{rise.Name} (From #{rise.OldPosition} to #{rise.NewPosition})");
+            }
+        }
+
+        if (risesDescription.Length > 0)
+        {
+            fields.Add(new EmbedFieldBuilder().WithName("Rises").WithValue(risesDescription.ToString()));
+        }
+
+        var drops = lines
+            .Where(w => w.OldPosition is <= 15 && w.NewPosition >= 20 && w.PositionsMoved <= -15)
+            .OrderBy(o => o.PositionsMoved)
+            .ThenBy(o => o.OldPosition)
+            .ToList();
+
+        var dropsDescription = new StringBuilder();
+        if (drops.Any())
+        {
+            foreach (var drop in drops.Take(7))
+            {
+                dropsDescription.Append($"<:5_or_more_down:912380324753838140> ");
+                dropsDescription.AppendLine($"{drop.Name} (From #{drop.OldPosition} to #{drop.NewPosition})");
+            }
+        }
+
+        if (dropsDescription.Length > 0)
+        {
+            fields.Add(new EmbedFieldBuilder().WithName("Drops").WithValue(dropsDescription.ToString()));
+        }
+
+        pages.Add(new PageBuilder()
+            .WithFields(fields)
+            .WithDescription(description.ToString())
+            .WithTitle($"{userTitle} {year} in Review - 1/{pagesAmount}"));
+
+        fields = new List<EmbedFieldBuilder>();
+
+        var albumDescription = new StringBuilder();
+        if (yearOverview.TopAlbums.TopAlbums.Any())
+        {
+            for (var i = 0; i < yearOverview.TopAlbums.TopAlbums.Take(8).Count(); i++)
+            {
+                var topAlbum = yearOverview.TopAlbums.TopAlbums[i];
+
+                var previousTopAlbum =
+                    yearOverview.PreviousTopAlbums?.TopAlbums?.FirstOrDefault(f =>
+                        f.ArtistName == topAlbum.ArtistName && f.AlbumName == topAlbum.AlbumName);
+
+                var previousPosition = previousTopAlbum == null ? null : yearOverview.PreviousTopAlbums?.TopAlbums?.IndexOf(previousTopAlbum);
+
+                albumDescription.AppendLine(StringService.GetBillboardLine($"**{topAlbum.ArtistName}** - **{topAlbum.AlbumName}**", i, previousPosition).Text);
+            }
+            fields.Add(new EmbedFieldBuilder().WithName("Albums").WithValue(albumDescription.ToString()));
+        }
+
+        var trackDescription = new StringBuilder();
+        for (var i = 0; i < yearOverview.TopTracks.TopTracks.Take(8).Count(); i++)
+        {
+            var topTrack = yearOverview.TopTracks.TopTracks[i];
+
+            var previousTopTrack =
+                yearOverview.PreviousTopTracks?.TopTracks?.FirstOrDefault(f =>
+                    f.ArtistName == topTrack.ArtistName && f.TrackName == topTrack.TrackName);
+
+            var previousPosition = previousTopTrack == null ? null : yearOverview.PreviousTopTracks?.TopTracks?.IndexOf(previousTopTrack);
+
+            trackDescription.AppendLine(StringService.GetBillboardLine($"**{topTrack.ArtistName}** - **{topTrack.TrackName}**", i, previousPosition).Text);
+        }
+
+        fields.Add(new EmbedFieldBuilder().WithName("Tracks").WithValue(trackDescription.ToString()));
+
+        var countries = await this._countryService.GetTopCountriesForTopArtists(yearOverview.TopArtists.TopArtists);
+
+        var previousTopCountries = new List<TopCountry>();
+        if (yearOverview.PreviousTopArtists?.TopArtists != null)
+        {
+            previousTopCountries = await this._countryService.GetTopCountriesForTopArtists(yearOverview.PreviousTopArtists?.TopArtists);
+        }
+
+        var countryDescription = new StringBuilder();
+        for (var i = 0; i < countries.Count; i++)
+        {
+            var topCountry = countries[i];
+
+            var previousTopCountry = previousTopCountries.FirstOrDefault(f => f.CountryCode == topCountry.CountryCode);
+
+            int? previousPosition = previousTopCountry == null ? null : previousTopCountries.IndexOf(previousTopCountry);
+
+            var line = StringService.GetBillboardLine($"**{topCountry.CountryName}**", i, previousPosition);
+            lines.Add(line);
+
+            if (i < 8)
+            {
+                countryDescription.AppendLine(line.Text);
+            }
+        }
+
+        fields.Add(new EmbedFieldBuilder().WithName("Countries").WithValue(countryDescription.ToString()).WithIsInline(true));
+
+        var tracksAudioOverview = await this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.TopTracks.TopTracks);
+        var previousTracksAudioOverview = await this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.PreviousTopTracks?.TopTracks);
+
+        if (tracksAudioOverview.Total > 0)
+        {
+            fields.Add(new EmbedFieldBuilder().WithName("Top track analysis")
+                .WithValue(TrackService.AudioFeatureAnalysisComparisonString(tracksAudioOverview, previousTracksAudioOverview)));
+        }
+
+        if (DateTime.UtcNow.Month == 12 && DateTime.UtcNow.Year == year)
+        {
+            fields.Add(new EmbedFieldBuilder().WithName("Note")
+                .WithValue("Happy holidays from the .fmbot team!"));
+            //"Make sure you also check out your [Last.Year](https://www.last.fm/user/_/listening-report/year) report over at Last.fm."
+        }
+
+        pages.Add(new PageBuilder()
+            .WithFields(fields)
+            .WithTitle($"{userTitle} {year} in Review - 2/{pagesAmount}"));
+
+        if (userSettings.UserType != UserType.User)
+        {
+            fields = new List<EmbedFieldBuilder>();
+
+            var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+
+            var filter = new DateTime(year, 01, 01);
+            var endFilter = new DateTime(year, 12, 12, 23, 59, 59);
+            var knownArtists = allPlays
+                .Where(w => w.TimePlayed < filter)
+                .GroupBy(g => g.ArtistName)
+                .Select(s => s.Key)
+                .ToList();
+
+            var topNewArtists = allPlays
+                .Where(w => w.TimePlayed >= filter && w.TimePlayed <= endFilter)
+                .GroupBy(g => g.ArtistName)
+                .Select(s => new TopArtist
+                {
+                    ArtistName = s.Key,
+                    UserPlaycount = s.Count(),
+                    FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed
+                })
+                .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName)))
+                .OrderByDescending(o => o.UserPlaycount)
+                .Take(10)
+                .ToList();
+
+            var newArtistDescription = new StringBuilder();
+            for (var i = 0; i < topNewArtists.Count(); i++)
+            {
+                var newArtist = topNewArtists.OrderBy(o => o.FirstPlay).ToList()[i];
+
+                newArtistDescription.AppendLine($"**[{newArtist.ArtistName}]({newArtist})** " +
+                                                $"- **{newArtist.UserPlaycount}** {StringExtensions.GetPlaysString(newArtist.UserPlaycount)} " +
+                                                $"- On **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
+            }
+
+            fields.Add(new EmbedFieldBuilder().WithName("Artist discoveries")
+                .WithValue(newArtistDescription.ToString()));
+
+            var monthDescription = new StringBuilder();
+            var monthGroups = allPlays
+                .Where(w => w.TimePlayed >= filter && w.TimePlayed <= endFilter)
+                .OrderBy(o => o.TimePlayed)
+                .GroupBy(g => new { g.TimePlayed.Month, g.TimePlayed.Year });
+
+            foreach (var month in monthGroups)
+            {
+                if (!allPlays.Any(a => a.TimePlayed < DateTime.UtcNow.AddMonths(-month.Key.Month)))
+                {
+                    break;
+                }
+
+                var time = await this._timeService.GetPlayTimeForPlays(month);
+                monthDescription.AppendLine(
+                    $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}`** " +
+                    $"- **{month.Count()}** plays " +
+                    $"- **{StringExtensions.GetLongListeningTimeString(time)}**");
+            }
+            if (monthDescription.Length > 0)
+            {
+                fields.Add(new EmbedFieldBuilder().WithName("Months")
+                    .WithValue(monthDescription.ToString()));
+            }
+
+            pages.Add(new PageBuilder()
+                .WithFields(fields)
+                .WithTitle($"{userTitle} {year} in Review - 3/{pagesAmount}")
+                .WithDescription("⭐ .fmbot Supporter stats"));
+        }
+
+        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
         return response;
     }
 }

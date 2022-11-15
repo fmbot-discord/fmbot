@@ -169,7 +169,6 @@ public static class StringExtensions
     {
         var time = new StringBuilder();
 
-
         if (timeSpan.TotalDays >= 1)
         {
             time.Append($"{(int)timeSpan.TotalDays}");
@@ -200,20 +199,20 @@ public static class StringExtensions
 
         if (timeSpan.Days >= 2)
         {
-            time.Append($"**{(int)timeSpan.TotalDays} days**");
+            time.Append($"{(int)timeSpan.TotalDays} days");
             if (timeSpan.Hours > 0)
             {
-                time.Append($", **{timeSpan.Hours} hours**");
+                time.Append($", {timeSpan.Hours} hours");
             }
 
             return time.ToString();
         }
         if (timeSpan.Days == 1)
         {
-            time.Append($"**{(int)timeSpan.TotalDays} day**");
+            time.Append($"{(int)timeSpan.TotalDays} day");
             if (timeSpan.Hours > 0)
             {
-                time.Append($", **{timeSpan.Hours} hours**");
+                time.Append($", {timeSpan.Hours} hours");
             }
 
             return time.ToString();
@@ -221,20 +220,20 @@ public static class StringExtensions
 
         if (timeSpan.Hours >= 2)
         {
-            time.Append($"**{timeSpan.Hours} hours**");
+            time.Append($"{timeSpan.Hours} hours");
             if (timeSpan.Minutes > 0)
             {
-                time.Append($", **{timeSpan.Minutes} minutes**");
+                time.Append($", {timeSpan.Minutes} minutes");
             }
 
             return time.ToString();
         }
         if (timeSpan.Hours == 1)
         {
-            time.Append($"**{timeSpan.Hours} hour**");
+            time.Append($"{timeSpan.Hours} hour");
             if (timeSpan.Minutes > 0)
             {
-                time.Append($", **{timeSpan.Minutes} minutes**");
+                time.Append($", {timeSpan.Minutes} minutes");
             }
 
             return time.ToString();
