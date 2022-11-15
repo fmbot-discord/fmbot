@@ -31,12 +31,17 @@ public class GuildService
         return context.Guild == null;
     }
 
-    public async Task<Persistence.Domain.Models.Guild> GetGuildAsync(ulong guildId)
+    public async Task<Persistence.Domain.Models.Guild> GetGuildAsync(ulong? discordGuildId)
     {
+        if (discordGuildId == null)
+        {
+            return null;
+        }
+
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Guilds
             .AsQueryable()
-            .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
     }
 
     public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong? discordGuildId = null, bool filterBots = true, bool enableCache = true)

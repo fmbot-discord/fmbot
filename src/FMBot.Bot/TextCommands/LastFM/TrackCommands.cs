@@ -509,11 +509,8 @@ public class TrackCommands : BaseCommandModule
             var discordGuildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
             var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithTrack, guild, discordGuildUser, contextUser);
             await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), currentUser.UserId, guild);
-
-            if (track.UserPlaycount.HasValue && track.UserPlaycount != 0)
-            {
-                usersWithTrack = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, currentUser, trackName, track.UserPlaycount.Value);
-            }
+            
+            usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, contextUser, trackName, this.Context.Guild, track.UserPlaycount);
 
             var filteredUsersWithTrack = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild);
 
@@ -612,27 +609,18 @@ public class TrackCommands : BaseCommandModule
 
         try
         {
-            var usersWithArtist = await this._whoKnowsTrackService.GetGlobalUsersForTrack(this.Context, track.ArtistName, track.TrackName);
+            var usersWithTrack = await this._whoKnowsTrackService.GetGlobalUsersForTrack(this.Context, track.ArtistName, track.TrackName);
 
-            if (track.UserPlaycount != 0 && this.Context.Guild != null)
-            {
-                var discordGuildUser = await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId);
-                var guildUser = new GuildUser
-                {
-                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : contextUser.UserNameLastFM,
-                    User = contextUser
-                };
-                usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, trackName, track.UserPlaycount);
-            }
+            usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, contextUser, trackName, this.Context.Guild, track.UserPlaycount);
 
             var privacyLevel = PrivacyLevel.Global;
 
-            var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
+            var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack);
 
             if (this.Context.Guild != null)
             {
                 var guild = await guildTask;
-                
+
                 filteredUsersWithAlbum =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
 
@@ -712,7 +700,6 @@ public class TrackCommands : BaseCommandModule
     [Examples("fwt", "fwkt The Beatles Yesterday", "friendwhoknowstrack", "friendwhoknowstrack Hothouse Flowers Don't Go", "friendwhoknowstrack Mall Grab | Sunflower")]
     [Alias("fwt", "fwkt", "fwktr", "fwtrack", "friendwhoknows track", "friends whoknows track", "friend whoknows track")]
     [UsernameSetRequired]
-    [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows, CommandCategory.Friends)]
     public async Task FriendWhoKnowsTrackAsync([Remainder] string albumValues = null)
@@ -733,7 +720,7 @@ public class TrackCommands : BaseCommandModule
                 return;
             }
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
 
             var track = await this.SearchTrack(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, useCachedTracks: true, userId: contextUser.UserId);
             if (track == null)
@@ -743,18 +730,9 @@ public class TrackCommands : BaseCommandModule
 
             var trackName = $"{track.TrackName} by {track.ArtistName}";
 
-            var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(this.Context, guild.GuildId, contextUser.UserId, track.ArtistName, track.TrackName);
+            var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(this.Context, guild?.GuildId ?? 0, contextUser.UserId, track.ArtistName, track.TrackName);
 
-            if (track.UserPlaycount.HasValue && this.Context.Guild != null)
-            {
-                var discordGuildUser = await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId);
-                var guildUser = new GuildUser
-                {
-                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : contextUser.UserNameLastFM,
-                    User = contextUser
-                };
-                usersWithTrack = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, guildUser, trackName, track.UserPlaycount);
-            }
+            usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, contextUser, trackName, this.Context.Guild, track.UserPlaycount);
 
             var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithTrack, contextUser.UserId, PrivacyLevel.Server);
             if (usersWithTrack.Count == 0)

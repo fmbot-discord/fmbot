@@ -497,7 +497,6 @@ public class ArtistCommands : BaseCommandModule
     [Examples("fw", "fwk COMA", "friendwhoknows", "friendwhoknows DJ Seinfeld")]
     [Alias("fw", "fwk", "friendwhoknows artist", "friend whoknows", "friends whoknows", "friend whoknows artist", "friends whoknows artist")]
     [UsernameSetRequired]
-    [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
     public async Task FriendWhoKnowsAsync([Remainder] string artistValues = null)
@@ -508,9 +507,9 @@ public class ArtistCommands : BaseCommandModule
         {
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var user = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
-            if (user.Friends?.Any() != true)
+            if (contextUser.Friends?.Any() != true)
             {
                 await ReplyAsync("We couldn't find any friends. To add friends:\n" +
                                  $"`{prfx}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
@@ -518,7 +517,7 @@ public class ArtistCommands : BaseCommandModule
                 return;
             }
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
 
             string artistName;
             string artistUrl;
@@ -527,17 +526,17 @@ public class ArtistCommands : BaseCommandModule
 
             var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistValues);
 
-            if (user.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
+            if (contextUser.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
             {
                 artistName = cachedArtist.Name;
                 artistUrl = cachedArtist.LastFmUrl;
                 spotifyImageUrl = cachedArtist.SpotifyImageUrl;
 
-                userPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForUser(artistName, user.UserId);
+                userPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForUser(artistName, contextUser.UserId);
             }
             else
             {
-                var artist = await GetArtist(artistValues, user.UserNameLastFM, user.SessionKeyLastFm);
+                var artist = await GetArtist(artistValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
                 if (artist == null)
                 {
                     return;
@@ -551,25 +550,16 @@ public class ArtistCommands : BaseCommandModule
                 userPlaycount = artist.UserPlaycount;
                 if (userPlaycount.HasValue)
                 {
-                    await this._updateService.CorrectUserArtistPlaycount(user.UserId, artist.ArtistName,
+                    await this._updateService.CorrectUserArtistPlaycount(contextUser.UserId, artist.ArtistName,
                         userPlaycount.Value);
                 }
             }
 
-            var usersWithArtist = await this._whoKnowArtistService.GetFriendUsersForArtists(this.Context, guild.GuildId, user.UserId, artistName);
+            var usersWithArtist = await this._whoKnowArtistService.GetFriendUsersForArtists(this.Context, guild?.GuildId ?? 0, contextUser.UserId, artistName);
+            
+            usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, contextUser, artistName, this.Context.Guild, userPlaycount);
 
-            if (userPlaycount != 0 && this.Context.Guild != null)
-            {
-                var discordGuildUser = await this.Context.Guild.GetUserAsync(user.DiscordUserId);
-                var guildUser = new GuildUser
-                {
-                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : user.UserNameLastFM,
-                    User = user
-                };
-                usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, artistName, userPlaycount);
-            }
-
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist, user.UserId, PrivacyLevel.Server);
+            var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist, contextUser.UserId, PrivacyLevel.Server);
             if (usersWithArtist.Count == 0)
             {
                 serverUsers = "None of your friends has listened to this artist.";
@@ -584,7 +574,7 @@ public class ArtistCommands : BaseCommandModule
                 footer += $"\n{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}";
             }
 
-            var amountOfHiddenFriends = user.Friends.Count(c => !c.FriendUserId.HasValue);
+            var amountOfHiddenFriends = contextUser.Friends.Count(c => !c.FriendUserId.HasValue);
             if (amountOfHiddenFriends > 0)
             {
                 footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";

@@ -23,8 +23,25 @@ public class WhoKnowsService
         this._contextFactory = contextFactory;
     }
 
-    public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(ICollection<WhoKnowsObjectWithUser> users, GuildUser guildUser, string name, long? playcount)
+    public static async Task<IList<WhoKnowsObjectWithUser>> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, User contextUser, string name, IGuild discordGuild = null, long? playcount = null)
     {
+        if (!playcount.HasValue)
+        {
+            return users;
+        }
+
+        IGuildUser discordGuildUser = null;
+        if (discordGuild != null)
+        {
+            discordGuildUser = await discordGuild.GetUserAsync(contextUser.DiscordUserId);
+        }
+
+        var guildUser = new GuildUser
+        {
+            UserName = discordGuildUser != null ? discordGuildUser.DisplayName : contextUser.UserNameLastFM,
+            User = contextUser
+        };
+
         var existingUsers = users
             .Where(f => f.LastFMUsername.ToLower() == guildUser.User.UserNameLastFM.ToLower());
         if (existingUsers.Any())
