@@ -370,7 +370,7 @@ public class UserBuilder
             monthDescription.AppendLine(
                 $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}`** " +
                 $"- **{month.Count()}** plays " +
-                $"- {StringExtensions.GetListeningTimeString(time, boldNumber: true)}");
+                $"- {StringExtensions.GetLongListeningTimeString(time)}");
         }
         if (monthDescription.Length > 0)
         {
@@ -390,7 +390,7 @@ public class UserBuilder
                 yearDescription.AppendLine(
                     $"**` All`** " +
                     $"- **{allPlays.Count}** plays " +
-                    $"- {StringExtensions.GetListeningTimeString(totalTime, boldNumber: true)}");
+                    $"- {StringExtensions.GetLongListeningTimeString(totalTime)}");
             }
 
             foreach (var year in yearGroups)
@@ -399,7 +399,7 @@ public class UserBuilder
                 yearDescription.AppendLine(
                     $"**`{year.Key}`** " +
                     $"- **{year.Count()}** plays " +
-                    $"- {StringExtensions.GetListeningTimeString(time, boldNumber: true)}");
+                    $"- {StringExtensions.GetLongListeningTimeString(time)}");
             }
             if (yearDescription.Length > 0)
             {

@@ -116,7 +116,7 @@ public class AlbumBuilders
         {
             var listeningTime = await this._timeService.GetPlayTimeForAlbum(albumSearch.Album.AlbumTracks, artistUserTracks,
                 albumSearch.Album.UserPlaycount.Value);
-            globalStats.AppendLine($"`{StringExtensions.GetListeningTimeString(listeningTime)}` spent listening");
+            globalStats.AppendLine($"`{StringExtensions.GetLongListeningTimeString(listeningTime)}` spent listening");
         }
 
         response.Embed.AddField("Statistics", globalStats.ToString(), true);

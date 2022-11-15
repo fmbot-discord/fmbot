@@ -21,6 +21,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
+using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
@@ -534,27 +535,31 @@ public class PlayCommands : BaseCommandModule
                     .Select(s => new TopArtist
                     {
                         ArtistName = s.Key,
-                        UserPlaycount = s.Count()
+                        UserPlaycount = s.Count(),
+                        FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed
                     })
                     .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName)))
                     .OrderByDescending(o => o.UserPlaycount)
+                    .Take(10)
                     .ToList();
 
                 var newArtistDescription = new StringBuilder();
-                for (var i = 0; i < topNewArtists.Take(10).Count(); i++)
+                for (var i = 0; i < topNewArtists.Count(); i++)
                 {
-                    var newArtist = topNewArtists[i];
+                    var newArtist = topNewArtists.OrderBy(o => o.FirstPlay).ToList()[i];
 
-                    newArtistDescription.AppendLine($"{i + 1}. **[{newArtist.ArtistName}]({newArtist})** ({newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)})");
+                    newArtistDescription.AppendLine($"**[{newArtist.ArtistName}]({newArtist})** " +
+                                                    $"- **{newArtist.UserPlaycount}** {StringExtensions.GetPlaysString(newArtist.UserPlaycount)} " +
+                                                    $"- On **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
                 }
 
-                fields.Add(new EmbedFieldBuilder().WithName("Newly discovered artists")
+                fields.Add(new EmbedFieldBuilder().WithName("Artist discoveries")
                     .WithValue(newArtistDescription.ToString()));
 
                 var monthDescription = new StringBuilder();
                 var monthGroups = allPlays
                     .Where(w => w.TimePlayed >= filter)
-                    .OrderByDescending(o => o.TimePlayed)
+                    .OrderBy(o => o.TimePlayed)
                     .GroupBy(g => new { g.TimePlayed.Month, g.TimePlayed.Year });
 
                 foreach (var month in monthGroups)
@@ -568,7 +573,7 @@ public class PlayCommands : BaseCommandModule
                     monthDescription.AppendLine(
                         $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}`** " +
                         $"- **{month.Count()}** plays " +
-                        $"- {StringExtensions.GetListeningTimeString(time, boldNumber: true)}");
+                        $"- {StringExtensions.GetLongListeningTimeString(time)}");
                 }
                 if (monthDescription.Length > 0)
                 {
