@@ -911,12 +911,11 @@ public class AdminCommands : BaseCommandModule
         {
             var guild = client.GetGuild(guildId.Value);
             shard = client.GetShardFor(guild);
-            this._embed.WithFooter($"{guild.Name} - {guild.MemberCount} members");
         }
 
         if (shard != null)
         {
-            if (shard.ConnectionState == ConnectionState.Disconnected)
+            if (shard.ConnectionState == ConnectionState.Disconnected || shard.ConnectionState == ConnectionState.Disconnecting)
             {
                 await this.Context.Channel.SendMessageAsync($"Connecting Shard #{shard.ShardId}");
                 await shard.StartAsync();
@@ -935,7 +934,6 @@ public class AdminCommands : BaseCommandModule
             return;
         }
 
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         this.Context.LogCommandUsed();
     }
 
