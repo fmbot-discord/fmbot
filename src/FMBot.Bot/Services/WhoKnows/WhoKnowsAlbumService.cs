@@ -185,10 +185,19 @@ public class WhoKnowsAlbumService
         {
             var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
 
-            var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
+            var discordUser = await context.Client.GetUserAsync(userArtist.DiscordUserId);
             if (discordUser != null)
             {
-                userName = discordUser.Nickname ?? discordUser.Username;
+                userName = discordUser.Username;
+            }
+
+            if (context.Guild != null)
+            {
+                var guildUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
+                if (guildUser != null)
+                {
+                    userName = guildUser.DisplayName;
+                }
             }
 
             whoKnowsArtistList.Add(new WhoKnowsObjectWithUser

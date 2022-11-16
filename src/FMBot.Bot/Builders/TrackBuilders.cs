@@ -112,7 +112,7 @@ public class TrackBuilders
                     await this._timeService.GetPlayTimeForTrackWithPlaycount(trackSearch.Track.ArtistName, trackSearch.Track.TrackName,
                         trackSearch.Track.UserPlaycount.GetValueOrDefault());
 
-                leftStats.AppendLine($"`{StringExtensions.GetListeningTimeString(listeningTime)}` spent listening");
+                leftStats.AppendLine($"`{StringExtensions.GetLongListeningTimeString(listeningTime)}` spent listening");
             }
         }
 

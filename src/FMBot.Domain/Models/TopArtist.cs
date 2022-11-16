@@ -25,5 +25,7 @@ public class TopArtist
 
     public Guid? Mbid { get; set; }
 
+    public DateTime? FirstPlay { get; set; }
+
     public List<string> Genres { get; set; }
 }

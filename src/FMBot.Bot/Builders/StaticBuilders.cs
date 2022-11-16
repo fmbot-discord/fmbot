@@ -55,6 +55,7 @@ public class StaticBuilders
         response.Embed.AddField("Get more stats",
             "- See first listen dates for artists/albums/tracks\n" +
             "- Expanded `stats` command with overall history\n" +
+            "- Extra page on `year` overview" +
             "- More coming soon");
 
         response.Embed.AddField("Flex your support",

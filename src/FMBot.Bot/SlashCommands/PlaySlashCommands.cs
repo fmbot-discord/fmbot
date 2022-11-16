@@ -257,4 +257,30 @@ public class PlaySlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [SlashCommand("year", "Shows an overview of your year")]
+    [UsernameSetRequired]
+    public async Task YearAsync(
+        [Summary("Year", "Year to view")] int? year = null,
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var parsedYear = SettingService.GetYear(year?.ToString()).GetValueOrDefault(DateTime.UtcNow.AddDays(-90).Year);
+
+        try
+        {
+            var response = await this._playBuilder.YearAsync(new ContextModel(this.Context, contextUser),
+                userSettings, parsedYear);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }

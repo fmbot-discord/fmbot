@@ -726,10 +726,7 @@ public class ArtistBuilders
         var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithArtist, contextGuild, discordGuildUser, context.ContextUser);
         await this._indexService.UpdateGuildUser(discordGuildUser, context.ContextUser.UserId, contextGuild);
 
-        if (artistSearch.Artist.UserPlaycount != 0)
-        {
-            usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, currentUser, artistSearch.Artist.ArtistName, artistSearch.Artist.UserPlaycount);
-        }
+        usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
         var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, contextGuild);
 
@@ -835,16 +832,7 @@ public class ArtistBuilders
 
         var usersWithArtist = await this._whoKnowsArtistService.GetGlobalUsersForArtists(context.DiscordGuild, artistSearch.Artist.ArtistName);
 
-        if (artistSearch.Artist.UserPlaycount != 0 && context.DiscordGuild != null)
-        {
-            var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
-            var guildUser = new GuildUser
-            {
-                UserName = discordGuildUser?.DisplayName ?? context.ContextUser.UserNameLastFM,
-                User = context.ContextUser
-            };
-            usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, artistSearch.Artist.ArtistName, artistSearch.Artist.UserPlaycount);
-        }
+        usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
         var filteredUsersWithArtist = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
 

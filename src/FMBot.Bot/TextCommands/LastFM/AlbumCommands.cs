@@ -257,10 +257,7 @@ public class AlbumCommands : BaseCommandModule
             var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithAlbum, guild, discordGuildUser, contextUser);
             await this._indexService.UpdateGuildUser(discordGuildUser, currentUser.UserId, guild);
 
-            if (album.UserPlaycount.HasValue)
-            {
-                usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, currentUser, fullAlbumName, album.UserPlaycount);
-            }
+            usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, contextUser, fullAlbumName, this.Context.Guild, album.UserPlaycount);
 
             var filteredUsersWithAlbum = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
 
@@ -392,16 +389,7 @@ public class AlbumCommands : BaseCommandModule
 
             var usersWithAlbum = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(this.Context, album.ArtistName, album.AlbumName);
 
-            if (album.UserPlaycount.HasValue && this.Context.Guild != null)
-            {
-                var discordGuildUser = await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId);
-                var guildUser = new GuildUser
-                {
-                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : contextUser.UserNameLastFM,
-                    User = contextUser
-                };
-                usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, guildUser, albumName, album.UserPlaycount);
-            }
+            usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, contextUser, albumName, this.Context.Guild, album.UserPlaycount);
 
             var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum);
 
@@ -518,7 +506,6 @@ public class AlbumCommands : BaseCommandModule
     [Examples("fwa", "fwka COMA", "friendwhoknows", "friendwhoknowsalbum the beatles abbey road", "friendwhoknowsalbum Metallica & Lou Reed | Lulu")]
     [Alias("fwa", "fwka", "fwkab", "fwab", "friendwhoknows album", "friends whoknows album", "friend whoknows album")]
     [UsernameSetRequired]
-    [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows, CommandCategory.Friends)]
     public async Task FriendWhoKnowsAlbumAsync([Remainder] string albumValues = null)
@@ -539,7 +526,7 @@ public class AlbumCommands : BaseCommandModule
                 return;
             }
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
 
             var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
                 useCachedAlbums: true, userId: contextUser.UserId);
@@ -552,18 +539,9 @@ public class AlbumCommands : BaseCommandModule
 
             var albumName = $"{album.AlbumName} by {album.ArtistName}";
 
-            var usersWithAlbum = await this._whoKnowsAlbumService.GetFriendUsersForAlbum(this.Context, guild.GuildId, contextUser.UserId, album.ArtistName, album.AlbumName);
+            var usersWithAlbum = await this._whoKnowsAlbumService.GetFriendUsersForAlbum(this.Context, guild?.GuildId ?? 0, contextUser.UserId, album.ArtistName, album.AlbumName);
 
-            if (album.UserPlaycount.HasValue && this.Context.Guild != null)
-            {
-                var discordGuildUser = await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId);
-                var guildUser = new GuildUser
-                {
-                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : contextUser.UserNameLastFM,
-                    User = contextUser
-                };
-                usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, guildUser, albumName, album.UserPlaycount);
-            }
+            usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, contextUser, albumName, this.Context.Guild, album.UserPlaycount);
 
             var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithAlbum, contextUser.UserId, PrivacyLevel.Server);
             if (usersWithAlbum.Count == 0)
