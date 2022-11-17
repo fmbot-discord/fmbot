@@ -1,12 +1,9 @@
-using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
-using DiscogsClient;
+using Discord.Commands;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
-using RestSharpHelper.OAuth1;
 
 namespace FMBot.Bot.Builders;
 
@@ -22,14 +19,15 @@ public class DiscogsBuilder
     }
 
     public async Task<ResponseModel> DiscogsCollectionAsync(
-        ContextModel context)
+        ContextModel context,
+        ICommandContext commandContext)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed
         };
 
-        //await this._discogsService.AuthDiscogs();
+        //await this._discogsService.AuthDiscogs(commandContext);
 
         return response;
     }

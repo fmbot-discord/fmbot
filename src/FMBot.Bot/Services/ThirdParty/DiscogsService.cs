@@ -1,12 +1,9 @@
-using System;
-using System.Diagnostics;
-using System.Net.Http;
 using System.Threading.Tasks;
-using DiscogsClient;
-using Discord.Commands;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
-using RestSharpHelper.OAuth1;
+using RestSharp.Authenticators;
+using RestSharp;
+using System.Web;
 
 namespace FMBot.Bot.Services.ThirdParty;
 
@@ -19,34 +16,64 @@ public class DiscogsService
         this._botSettings = botSettings.Value;
     }
 
-    //public async Task<string> GetDiscogsAuthUrl()
-    //{
-
-    //}
-
-    //private Task<string> ExtractVerifier(string arg)
-    //{
-
-
-    //}
-
-    public async Task AuthDiscogsTextCommand(ICommandContext context)
+    public async Task<DiscogsAuth> GetDiscogsAuthLink()
     {
-        var oAuthConsumerInformation = new OAuthConsumerInformation(this._botSettings.Discogs.Key, this._botSettings.Discogs.Secret);
-        var discogsClient = new DiscogsAuthentifierClient(oAuthConsumerInformation);
+        var client = new RestClient($"https://api.discogs.com/")
+        {
+            Authenticator = OAuth1Authenticator.ForRequestToken(this._botSettings.Discogs.Key, this._botSettings.Discogs.Secret),
+        };
 
-        var aouth = discogsClient.Authorize(s => Task.FromResult(GetTextCommandToken(s, context))).Result;
+        var request = new RestRequest("oauth/request_token");
+        request.AddHeader("User-Agent", ".fmbot/1.0 +https://fmbot.xyz/");
+        var response = await client.ExecuteAsync(request);
 
-        Console.WriteLine($"{((aouth != null) ? "Success" : "Fail")}");
-        Console.WriteLine($"Token:{aouth?.TokenInformation?.Token}, Token:{aouth?.TokenInformation?.TokenSecret}");
+        if (response.IsSuccessStatusCode)
+        {
+            var query = HttpUtility.ParseQueryString(response.Content);
+            var oauthToken = query.Get("oauth_token");
+            var oauthTokenSecret = query.Get("oauth_token_secret");
+
+            var loginUrl = $"https://discogs.com/oauth/authorize?oauth_token={oauthToken}";
+
+            return new DiscogsAuth(loginUrl, oauthToken, oauthTokenSecret);
+        }
+
+        return null;
     }
 
-    private static string GetTextCommandToken(string url, ICommandContext commandContext)
+    public record DiscogsAuth(string LoginUrl, string OathToken, string OauthTokenSecret);
+
+    public async Task<bool> StoreDiscogsAuth(int userId, DiscogsAuth discogsAuth, string verifier)
     {
-        Console.WriteLine("Please authorize the application and enter the final key in the console");
-        Process.Start(url);
-        string tokenKey = Console.ReadLine();
-        tokenKey = string.IsNullOrEmpty(tokenKey) ? null : tokenKey;
-        return tokenKey;
+        var client = new RestClient($"https://api.discogs.com/")
+        {
+            Authenticator = OAuth1Authenticator.ForAccessToken(
+                this._botSettings.Discogs.Key,
+                this._botSettings.Discogs.Secret,
+                discogsAuth.OathToken,
+                discogsAuth.OauthTokenSecret,
+                verifier
+            ),
+        };
+
+        var request = new RestRequest("oauth/access_token", Method.Post);
+        request.AddHeader("User-Agent", ".fmbot/1.0 +https://fmbot.xyz/");
+        var response = await client.ExecuteAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var query = HttpUtility.ParseQueryString(response.Content);
+            var oauthToken = query.Get("oauth_token");
+            var oauthTokenSecret = query.Get("oauth_token_secret");
+
+            // TODO: save creds
+        }
+        else
+        {
+            return false;
+        }
+
+
+        return true;
     }
 }
