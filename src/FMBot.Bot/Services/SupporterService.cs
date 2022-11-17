@@ -363,7 +363,7 @@ public class SupporterService
 
                     embed.WithTitle("Monthly supporter expired");
                     embed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
-                                          $"ID: `{existingSupporter.OpenCollectiveId}\n\n" +
+                                          $"ID: `{existingSupporter.OpenCollectiveId}`\n\n" +
                                           $"`.removesupporter {existingSupporter.DiscordUserId}`");
 
                     await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
