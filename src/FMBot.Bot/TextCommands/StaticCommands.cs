@@ -277,6 +277,26 @@ public class StaticCommands : BaseCommandModule
             $"Max latency: `{client.Shards.Select(s => s.Latency).Max() + "ms`"}");
 
 
+        if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnecting) > 0)
+        {
+            var disconnecting = new StringBuilder();
+            foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(20))
+            {
+                disconnecting.Append($"`{shard.ShardId}` - ");
+            }
+            this._embed.AddField("Disconnecting shards", disconnecting.ToString());
+        }
+
+        if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnected) > 0)
+        {
+            var disconnected = new StringBuilder();
+            foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(20))
+            {
+                disconnected.Append($"`{shard.ShardId}` - ");
+            }
+            this._embed.AddField("Disconnected shards", disconnected.ToString());
+        }
+
         this._embed.WithDescription(shardDescription.ToString());
         if (this.Context.Guild != null)
         {
