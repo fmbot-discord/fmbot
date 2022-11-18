@@ -100,11 +100,11 @@ public class DiscogsCommands : BaseCommandModule
             return;
         }
 
-        var success = await this._discogsService.StoreDiscogsAuth(contextUser.UserId, discogsAuth, result.Value.Content);
+        var user = await this._discogsService.StoreDiscogsAuth(contextUser.UserId, discogsAuth, result.Value.Content);
 
-        if (success)
+        if (user != null)
         {
-            this._embed.WithDescription($"✅ Your Discogs account has been connected.");
+            this._embed.WithDescription($"✅ Your Discogs account '[{user.username}](https://www.discogs.com/user/{user.username})' has been connected.");
             await this.Context.User.SendMessageAsync("", false, this._embed.Build());
         }
     }

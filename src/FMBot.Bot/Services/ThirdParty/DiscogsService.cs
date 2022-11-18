@@ -4,12 +4,16 @@ using Microsoft.Extensions.Options;
 using RestSharp.Authenticators;
 using RestSharp;
 using System.Web;
+using DiscogsClient.Data.Result;
+using RestSharpHelper.OAuth1;
 
 namespace FMBot.Bot.Services.ThirdParty;
 
 public class DiscogsService
 {
     private readonly BotSettings _botSettings;
+
+    private const string UserAgent = ".fmbot/1.0 +https://fmbot.xyz/";
 
     public DiscogsService(IOptions<BotSettings> botSettings)
     {
@@ -24,10 +28,10 @@ public class DiscogsService
         };
 
         var request = new RestRequest("oauth/request_token");
-        request.AddHeader("User-Agent", ".fmbot/1.0 +https://fmbot.xyz/");
+        request.AddHeader("User-Agent", UserAgent);
         var response = await client.ExecuteAsync(request);
 
-        if (response.IsSuccessStatusCode)
+        if (response.IsSuccessful)
         {
             var query = HttpUtility.ParseQueryString(response.Content);
             var oauthToken = query.Get("oauth_token");
@@ -43,7 +47,7 @@ public class DiscogsService
 
     public record DiscogsAuth(string LoginUrl, string OathToken, string OauthTokenSecret);
 
-    public async Task<bool> StoreDiscogsAuth(int userId, DiscogsAuth discogsAuth, string verifier)
+    public async Task<DiscogsIdentity> StoreDiscogsAuth(int userId, DiscogsAuth discogsAuth, string verifier)
     {
         var client = new RestClient($"https://api.discogs.com/")
         {
@@ -53,27 +57,38 @@ public class DiscogsService
                 discogsAuth.OathToken,
                 discogsAuth.OauthTokenSecret,
                 verifier
-            ),
+            )
         };
 
-        var request = new RestRequest("oauth/access_token", Method.Post);
-        request.AddHeader("User-Agent", ".fmbot/1.0 +https://fmbot.xyz/");
+        var request = new RestRequest("oauth/access_token", Method.POST);
+        request.AddHeader("User-Agent", UserAgent);
         var response = await client.ExecuteAsync(request);
 
-        if (response.IsSuccessStatusCode)
+        if (response.IsSuccessful)
         {
             var query = HttpUtility.ParseQueryString(response.Content);
             var oauthToken = query.Get("oauth_token");
             var oauthTokenSecret = query.Get("oauth_token_secret");
 
+            var oAuthCompleteInformation = new OAuthCompleteInformation(this._botSettings.Discogs.Key,
+                this._botSettings.Discogs.Secret, oauthToken, oauthTokenSecret);
+            var discogsClient = new DiscogsClient.DiscogsClient(oAuthCompleteInformation);
+
+            var user = await discogsClient.GetUserIdentityAsync();
+
+            return user;
+
             // TODO: save creds
         }
-        else
-        {
-            return false;
-        }
+
+        return null;
+    }
+
+    public async Task GetCollection()
+    {
+        
 
 
-        return true;
+
     }
 }
