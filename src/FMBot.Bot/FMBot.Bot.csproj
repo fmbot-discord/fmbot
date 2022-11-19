@@ -24,7 +24,6 @@
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
     <PackageReference Include="BotListAPI" Version="5.5.2" />
     <PackageReference Include="Dapper" Version="2.0.123" />
-    <PackageReference Include="DiscogsClient" Version="2.7.1" />
     <PackageReference Include="Discord.Net" Version="3.7.2" />
     <PackageReference Include="Discord.Net.Core" Version="3.7.2" />
     <PackageReference Include="Discord.Net.Rest" Version="3.7.2" />
@@ -49,7 +48,6 @@
     <PackageReference Include="Npgsql" Version="7.0.0" />
     <PackageReference Include="PostgreSQLCopyHelper" Version="2.8.0" />
     <PackageReference Include="prometheus-net" Version="7.0.0" />
-    <PackageReference Include="RestSharp" Version="106.15.0" />
     <PackageReference Include="Serilog" Version="2.12.0" />
     <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
     <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
@@ -66,6 +64,7 @@
     <PackageReference Include="System.Reactive.Linq" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FMBot.Discogs\FMBot.Discogs.csproj" />
     <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Images\FMBot.Images.csproj" />
     <ProjectReference Include="..\FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj" />

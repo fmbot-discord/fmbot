@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.AccessControl;
 using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models;
@@ -45,6 +46,9 @@ public class User
     public DateTime? LastScrobbleUpdate { get; set; }
 
     public DateTime? LastUsed { get; set; }
+
+    public UserDiscogs UserDiscogs { get; set; }
+    public ICollection<UserDiscogsReleases> DiscogsReleases { get; set; }
 
     public ICollection<Friend> FriendedByUsers { get; set; }
 

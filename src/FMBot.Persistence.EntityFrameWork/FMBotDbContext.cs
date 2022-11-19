@@ -17,6 +17,10 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Supporter> Supporters { get; set; }
 
+        public virtual DbSet<DiscogsRelease> DiscogsReleases { get; set; }
+        public virtual DbSet<DiscogsMaster> DiscogsMasters { get; set; }
+        public virtual DbSet<UserDiscogsReleases> UserDiscogsReleases { get; set; }
+
         public virtual DbSet<BottedUser> BottedUsers { get; set; }
         public virtual DbSet<InactiveUsers> InactiveUsers { get; set; }
 
@@ -37,21 +41,21 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
 
-        private readonly IConfiguration _configuration;
+        //private readonly IConfiguration _configuration;
 
-        public FMBotDbContext(IConfiguration configuration)
-        {
-            this._configuration = configuration;
-        }
+        //public FMBotDbContext(IConfiguration configuration)
+        //{
+        //    this._configuration = configuration;
+        //}
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
+                //optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 // Uncomment below connection string when creating migrations, and also comment out the above iconfiguration stuff
-                //optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
+                optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
@@ -392,6 +396,107 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.ArtistGenres)
                     .HasForeignKey(d => d.ArtistId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserDiscogs>(entity =>
+            {
+                entity.HasKey(a => a.UserId);
+
+                entity.HasOne(u => u.User)
+                    .WithOne(a => a.UserDiscogs)
+                    .HasForeignKey<UserDiscogs>(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserDiscogsReleases>(entity =>
+            {
+                entity.HasKey(a => a.UserDiscogsReleaseId);
+
+                entity.HasIndex(i => i.UserId);
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.DiscogsReleases)
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.Release)
+                    .WithMany(p => p.UserDiscogsReleases)
+                    .HasForeignKey(d => d.ReleaseId);
+            });
+
+            modelBuilder.Entity<DiscogsMaster>(entity =>
+            {
+                entity.HasKey(a => a.DiscogsId);
+
+                entity.Property(p => p.DiscogsId)
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.Title)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.Artist)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.FeaturingArtist)
+                    .HasColumnType("citext");
+            });
+
+            modelBuilder.Entity<DiscogsRelease>(entity =>
+            {
+                entity.HasKey(a => a.DiscogsId);
+
+                entity.Property(p => p.DiscogsId)
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.Format)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.Label)
+                    .HasColumnType("citext");
+
+                entity.HasOne(d => d.DiscogsMaster)
+                    .WithMany(p => p.Releases)
+                    .HasForeignKey(d => d.MasterId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<DiscogsFormatDescriptions>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.Property(e => e.Description)
+                    .HasColumnType("citext");
+
+                entity.HasOne(d => d.DiscogsRelease)
+                    .WithMany(p => p.FormatDescriptions)
+                    .HasForeignKey(d => d.ReleaseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<DiscogsStyle>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.Property(e => e.Description)
+                    .HasColumnType("citext");
+
+                entity.HasOne(d => d.DiscogsMaster)
+                    .WithMany(p => p.Styles)
+                    .HasForeignKey(d => d.MasterId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<DiscogsGenre>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.Property(e => e.Description)
+                    .HasColumnType("citext");
+
+                entity.HasOne(d => d.DiscogsMaster)
+                    .WithMany(p => p.Genres)
+                    .HasForeignKey(d => d.MasterId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

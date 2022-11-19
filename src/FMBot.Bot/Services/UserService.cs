@@ -111,6 +111,18 @@ public class UserService
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
     }
 
+    public async Task<User> GetUserWithDiscogs(IUser discordUser)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Users
+            .Include(i => i.UserDiscogs)
+            .Include(i => i.DiscogsReleases)
+            .ThenInclude(i => i.Release)
+            .ThenInclude(i => i.DiscogsMaster)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+    }
+
     public async Task<User> GetUserWithFriendsAsync(IUser discordUser)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

@@ -1,94 +1,167 @@
+using System;
+using System.Linq;
 using System.Threading.Tasks;
-using FMBot.Domain.Models;
-using Microsoft.Extensions.Options;
-using RestSharp.Authenticators;
-using RestSharp;
-using System.Web;
-using DiscogsClient.Data.Result;
-using RestSharpHelper.OAuth1;
+using FMBot.Discogs.Apis;
+using FMBot.Discogs.Models;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services.ThirdParty;
 
 public class DiscogsService
 {
-    private readonly BotSettings _botSettings;
+    private readonly DiscogsApi _discogsApi;
+    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-    private const string UserAgent = ".fmbot/1.0 +https://fmbot.xyz/";
-
-    public DiscogsService(IOptions<BotSettings> botSettings)
+    public DiscogsService(IDbContextFactory<FMBotDbContext> contextFactory, DiscogsApi discogsApi)
     {
-        this._botSettings = botSettings.Value;
+        this._contextFactory = contextFactory;
+        this._discogsApi = discogsApi;
     }
 
-    public async Task<DiscogsAuth> GetDiscogsAuthLink()
+    public async Task<DiscogsAuthInitialization> GetDiscogsAuthLink()
     {
-        var client = new RestClient($"https://api.discogs.com/")
+        return await this._discogsApi.GetDiscogsAuthLink();
+    }
+
+    public async Task<(DiscogsAuth Auth, DiscogsIdentity Identity)> ConfirmDiscogsAuth(int userId, DiscogsAuthInitialization discogsAuthInit, string verifier)
+    {
+        var auth = await this._discogsApi.StoreDiscogsAuth(discogsAuthInit, verifier);
+
+        if (auth == null)
         {
-            Authenticator = OAuth1Authenticator.ForRequestToken(this._botSettings.Discogs.Key, this._botSettings.Discogs.Secret),
-        };
-
-        var request = new RestRequest("oauth/request_token");
-        request.AddHeader("User-Agent", UserAgent);
-        var response = await client.ExecuteAsync(request);
-
-        if (response.IsSuccessful)
-        {
-            var query = HttpUtility.ParseQueryString(response.Content);
-            var oauthToken = query.Get("oauth_token");
-            var oauthTokenSecret = query.Get("oauth_token_secret");
-
-            var loginUrl = $"https://discogs.com/oauth/authorize?oauth_token={oauthToken}";
-
-            return new DiscogsAuth(loginUrl, oauthToken, oauthTokenSecret);
+            return (null, null);
         }
 
-        return null;
+        return (auth, await this._discogsApi.GetIdentity(auth));
     }
 
-    public record DiscogsAuth(string LoginUrl, string OathToken, string OauthTokenSecret);
-
-    public async Task<DiscogsIdentity> StoreDiscogsAuth(int userId, DiscogsAuth discogsAuth, string verifier)
+    public async Task StoreDiscogsAuth(int userId, DiscogsAuth discogsAuth, DiscogsIdentity discogsIdentity)
     {
-        var client = new RestClient($"https://api.discogs.com/")
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users
+            .Include(i => i.UserDiscogs)
+            .FirstAsync(f => f.UserId == userId);
+
+        if (user.UserDiscogs == null)
         {
-            Authenticator = OAuth1Authenticator.ForAccessToken(
-                this._botSettings.Discogs.Key,
-                this._botSettings.Discogs.Secret,
-                discogsAuth.OathToken,
-                discogsAuth.OauthTokenSecret,
-                verifier
-            )
-        };
+            user.UserDiscogs = new UserDiscogs
+            {
+                AccessToken = discogsAuth.AccessToken,
+                AccessTokenSecret = discogsAuth.AccessTokenSecret,
+                DiscogsId = discogsIdentity.Id,
+                Username = discogsIdentity.Username,
+                LastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                UserId = user.UserId
+            };
 
-        var request = new RestRequest("oauth/access_token", Method.POST);
-        request.AddHeader("User-Agent", UserAgent);
-        var response = await client.ExecuteAsync(request);
-
-        if (response.IsSuccessful)
+            db.Update(user);
+        }
+        else
         {
-            var query = HttpUtility.ParseQueryString(response.Content);
-            var oauthToken = query.Get("oauth_token");
-            var oauthTokenSecret = query.Get("oauth_token_secret");
+            user.UserDiscogs.AccessToken = discogsAuth.AccessToken;
+            user.UserDiscogs.AccessTokenSecret = discogsAuth.AccessTokenSecret;
+            user.UserDiscogs.DiscogsId = discogsIdentity.Id;
+            user.UserDiscogs.Username = discogsIdentity.Username;
+            user.UserDiscogs.LastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
-            var oAuthCompleteInformation = new OAuthCompleteInformation(this._botSettings.Discogs.Key,
-                this._botSettings.Discogs.Secret, oauthToken, oauthTokenSecret);
-            var discogsClient = new DiscogsClient.DiscogsClient(oAuthCompleteInformation);
-
-            var user = await discogsClient.GetUserIdentityAsync();
-
-            return user;
-
-            // TODO: save creds
+            db.Update(user.UserDiscogs);
         }
 
-        return null;
+        await db.SaveChangesAsync();
     }
 
-    public async Task GetCollection()
+    public async Task<DiscogsUserReleases> StoreUserReleases(User user)
     {
-        
+        var discogsAuth = new DiscogsAuth(user.UserDiscogs.AccessToken,
+            user.UserDiscogs.AccessTokenSecret);
 
+        var releases = await this._discogsApi.GetUserReleases(discogsAuth, user.UserDiscogs.Username);
 
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
+        await db.Database.ExecuteSqlAsync($"DELETE FROM user_discogs_releases WHERE user_id = {user.UserId}");
+
+        foreach (var release in releases.Releases)
+        {
+            var userDiscogsRelease = new UserDiscogsReleases
+            {
+                DateAdded = DateTime.SpecifyKind(release.DateAdded, DateTimeKind.Utc),
+                InstanceId = release.InstanceId,
+                Quantity = release.BasicInformation.Formats.First().Qty,
+                Rating = release.Rating,
+                UserId = user.UserId
+            };
+
+            var existingRelease = await db.DiscogsReleases
+                .FirstOrDefaultAsync(f => f.DiscogsId == release.Id);
+
+            if (existingRelease == null)
+            {
+                userDiscogsRelease.Release = new DiscogsRelease
+                {
+                    DiscogsId = release.Id,
+                    MasterId = release.BasicInformation.MasterId,
+                    CoverUrl = release.BasicInformation.CoverImage,
+                    Format = release.BasicInformation.Formats.First().Name,
+                    FormatText = release.BasicInformation.Formats.First().Text,
+                    Label = release.BasicInformation.Labels.FirstOrDefault()?.Name,
+                    SecondLabel = release.BasicInformation.Labels.Count > 1
+                        ? release.BasicInformation.Labels[1].Name
+                        : null,
+                    Year = release.BasicInformation.Year,
+                    FormatDescriptions = release.BasicInformation.Formats.Select(s => new DiscogsFormatDescriptions
+                    {
+                        Description = s.Name
+                    }).ToList(),
+                };
+
+                var existingMaster = await db.DiscogsMasters
+                    .FirstOrDefaultAsync(f => f.DiscogsId == release.BasicInformation.MasterId);
+
+                if (existingMaster == null)
+                {
+                    userDiscogsRelease.Release.DiscogsMaster = new DiscogsMaster
+                    {
+                        DiscogsId = release.BasicInformation.MasterId,
+                        Artist = release.BasicInformation.Artists.First().Name,
+                        Title = release.BasicInformation.Title,
+                        ArtistDiscogsId = release.BasicInformation.Artists.First().Id,
+                        FeaturingArtistJoin = release.BasicInformation.Artists.First().Join,
+                        FeaturingArtist = release.BasicInformation.Artists.Count > 1
+                            ? release.BasicInformation.Artists[1].Name
+                            : null,
+                        FeaturingArtistDiscogsId = release.BasicInformation.Artists.Count > 1
+                            ? release.BasicInformation.Artists[1].Id
+                            : null,
+                        Genres = release.BasicInformation.Genres?.Select(s => new DiscogsGenre
+                        {
+                            Description = s
+                        }).ToList(),
+                        Styles = release.BasicInformation.Styles?.Select(s => new DiscogsStyle
+                        {
+                            Description = s
+                        }).ToList()
+                    };
+                }
+                else
+                {
+                    userDiscogsRelease.Release.MasterId = existingMaster.DiscogsId;
+                }
+            }
+            else
+            {
+                userDiscogsRelease.ReleaseId = existingRelease.DiscogsId;
+            }
+
+            db.UserDiscogsReleases.Add(userDiscogsRelease);
+        }
+
+        user.UserDiscogs.ReleasesLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+        await db.SaveChangesAsync();
+
+        return releases;
     }
 }

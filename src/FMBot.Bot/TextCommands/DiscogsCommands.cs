@@ -11,6 +11,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using Fergun.Interactive;
+using FMBot.Bot.Extensions;
 using static System.Text.RegularExpressions.Regex;
 
 namespace FMBot.Bot.TextCommands;
@@ -20,25 +21,23 @@ public class DiscogsCommands : BaseCommandModule
     private readonly DiscogsBuilder _discogsBuilder;
     private readonly UserService _userService;
     private readonly DiscogsService _discogsService;
+    private readonly SettingService _settingService;
 
     private InteractiveService Interactivity { get; }
 
 
-    public DiscogsCommands(DiscogsBuilder discogsBuilder, IOptions<BotSettings> botSettings, UserService userService, DiscogsService discogsService, InteractiveService interactivity) : base(botSettings)
+    public DiscogsCommands(DiscogsBuilder discogsBuilder,
+        IOptions<BotSettings> botSettings,
+        UserService userService,
+        DiscogsService discogsService,
+        InteractiveService interactivity,
+        SettingService settingService) : base(botSettings)
     {
         this._discogsBuilder = discogsBuilder;
         this._userService = userService;
         this._discogsService = discogsService;
         this.Interactivity = interactivity;
-    }
-
-    [Command("collection", RunMode = RunMode.Async)]
-    [Summary("Displays user stats related to Last.fm and .fmbot")]
-    [UsernameSetRequired]
-    [CommandCategories(CommandCategory.Other)]
-    public async Task CollectionAsync()
-    {
-        await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, "/"), this.Context);
+        this._settingService = settingService;
     }
 
     [Command("discogs", RunMode = RunMode.Async)]
@@ -48,6 +47,17 @@ public class DiscogsCommands : BaseCommandModule
     [UsernameSetRequired]
     public async Task DiscogsAsync([Remainder] string unusedValues = null)
     {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (contextUser.UserType == UserType.User)
+        {
+            this._embed.WithDescription($"You found a feature that is not quite ready yet 👀\n" +
+                                        $"The Discogs implementation is still a work in progress.\n\n" +
+                                        $"Want to try it out early? [Get .fmbot supporter here](https://opencollective.com/fmbot/contribute)");
+            await this.Context.User.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+
         if (this.Context.Guild != null)
         {
             var serverEmbed = new EmbedBuilder()
@@ -56,8 +66,6 @@ public class DiscogsCommands : BaseCommandModule
             serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
             await this.Context.Channel.SendMessageAsync("", false, serverEmbed.Build());
         }
-
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         var discogsAuth = await this._discogsService.GetDiscogsAuthLink();
 
@@ -75,6 +83,7 @@ public class DiscogsCommands : BaseCommandModule
         if (!result.IsSuccess)
         {
             await this.Context.User.SendMessageAsync("Something went wrong while trying to connect your Discogs account.");
+            this.Context.LogCommandUsed(CommandResponse.Error);
             return;
         }
 
@@ -88,6 +97,7 @@ public class DiscogsCommands : BaseCommandModule
                     .WithColor(DiscordConstants.WarningColorOrange)
                     .Build();
             });
+            this.Context.LogCommandUsed(CommandResponse.NotFound);
             return;
         }
 
@@ -97,15 +107,42 @@ public class DiscogsCommands : BaseCommandModule
                                         $"Re-run the `discogs` command to try again.");
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
             await this.Context.User.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
 
-        var user = await this._discogsService.StoreDiscogsAuth(contextUser.UserId, discogsAuth, result.Value.Content);
+        var user = await this._discogsService.ConfirmDiscogsAuth(contextUser.UserId, discogsAuth, result.Value.Content);
 
-        if (user != null)
+        if (user.Identity != null)
         {
-            this._embed.WithDescription($"✅ Your Discogs account '[{user.username}](https://www.discogs.com/user/{user.username})' has been connected.");
+            await this._discogsService.StoreDiscogsAuth(contextUser.UserId, user.Auth, user.Identity);
+
+            this._embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}](https://www.discogs.com/user/{user.Identity.Username})' has been connected.");
             await this.Context.User.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
         }
+        else
+        {
+            this._embed.WithDescription($"Could not connect a Discogs account with provided code.\n\n" +
+                                        $"Re-run the `discogs` command to try again.");
+            this._embed.WithColor(DiscordConstants.WarningColorOrange);
+            await this.Context.User.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+        }
+    }
+
+    [Command("collection", RunMode = RunMode.Async)]
+    [Summary("Shows your Discogs collection")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Other)]
+    public async Task CollectionAsync([Remainder]string searchValues = null)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
+
+        var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, "/", contextUser), this.Context);
+
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 }

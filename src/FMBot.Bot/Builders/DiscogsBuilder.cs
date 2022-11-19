@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord.Commands;
 using FMBot.Bot.Models;
@@ -27,8 +30,27 @@ public class DiscogsBuilder
             ResponseType = ResponseType.Embed
         };
 
-        //await this._discogsService.AuthDiscogs(commandContext);
+        try
+        {
 
-        return response;
+            var user = await this._userService.GetUserWithDiscogs(context.DiscordUser);
+
+            var collection = await this._discogsService.StoreUserReleases(user);
+
+            var description = new StringBuilder();
+            foreach (var item in user.DiscogsReleases.Take(10))
+            {
+                description.AppendLine($"{item.Release.DiscogsMaster.Title} - {item.Release.DiscogsMaster.Artist}");
+            }
+
+            response.Embed.WithDescription(description.ToString());
+
+            return response;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20221119205659_AddDiscogs")]
+    partial class AddDiscogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -444,9 +447,9 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("title");
 
                     b.HasKey("DiscogsId")
-                        .HasName("pk_discogs_masters");
+                        .HasName("pk_discogs_master");
 
-                    b.ToTable("discogs_masters", (string)null);
+                    b.ToTable("discogs_master", (string)null);
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsRelease", b =>
@@ -488,12 +491,12 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("year");
 
                     b.HasKey("DiscogsId")
-                        .HasName("pk_discogs_releases");
+                        .HasName("pk_discogs_release");
 
                     b.HasIndex("MasterId")
-                        .HasDatabaseName("ix_discogs_releases_master_id");
+                        .HasDatabaseName("ix_discogs_release_master_id");
 
-                    b.ToTable("discogs_releases", (string)null);
+                    b.ToTable("discogs_release", (string)null);
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsStyle", b =>
@@ -1561,7 +1564,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasForeignKey("ReleaseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_discogs_format_descriptions_discogs_releases_discogs_releas");
+                        .HasConstraintName("fk_discogs_format_descriptions_discogs_release_discogs_release");
 
                     b.Navigation("DiscogsRelease");
                 });
@@ -1573,7 +1576,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasForeignKey("MasterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_discogs_genre_discogs_masters_discogs_master_temp_id");
+                        .HasConstraintName("fk_discogs_genre_discogs_master_discogs_master_temp_id1");
 
                     b.Navigation("DiscogsMaster");
                 });
@@ -1585,7 +1588,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasForeignKey("MasterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_discogs_releases_discogs_masters_discogs_master_temp_id1");
+                        .HasConstraintName("fk_discogs_release_discogs_master_discogs_master_temp_id");
 
                     b.Navigation("DiscogsMaster");
                 });
@@ -1597,7 +1600,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasForeignKey("MasterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_discogs_style_discogs_masters_discogs_master_temp_id2");
+                        .HasConstraintName("fk_discogs_style_discogs_master_discogs_master_temp_id2");
 
                     b.Navigation("DiscogsMaster");
                 });
@@ -1767,11 +1770,11 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserDiscogsReleases", b =>
                 {
                     b.HasOne("FMBot.Persistence.Domain.Models.DiscogsRelease", "Release")
-                        .WithMany("UserDiscogsReleases")
+                        .WithMany()
                         .HasForeignKey("ReleaseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_user_discogs_releases_discogs_releases_release_id");
+                        .HasConstraintName("fk_user_discogs_releases_discogs_release_release_id");
 
                     b.HasOne("FMBot.Persistence.Domain.Models.UserDiscogs", null)
                         .WithMany("Releases")
@@ -1866,8 +1869,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsRelease", b =>
                 {
                     b.Navigation("FormatDescriptions");
-
-                    b.Navigation("UserDiscogsReleases");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Guild", b =>
