@@ -50,7 +50,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     {
         _ = DeferAsync();
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User);
 
         try
         {

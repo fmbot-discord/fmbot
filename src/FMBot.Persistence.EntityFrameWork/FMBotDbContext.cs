@@ -18,7 +18,6 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Supporter> Supporters { get; set; }
 
         public virtual DbSet<DiscogsRelease> DiscogsReleases { get; set; }
-        public virtual DbSet<DiscogsMaster> DiscogsMasters { get; set; }
         public virtual DbSet<UserDiscogsReleases> UserDiscogsReleases { get; set; }
 
         public virtual DbSet<BottedUser> BottedUsers { get; set; }
@@ -425,23 +424,6 @@ namespace FMBot.Persistence.EntityFrameWork
                     .HasForeignKey(d => d.ReleaseId);
             });
 
-            modelBuilder.Entity<DiscogsMaster>(entity =>
-            {
-                entity.HasKey(a => a.DiscogsId);
-
-                entity.Property(p => p.DiscogsId)
-                    .ValueGeneratedNever();
-
-                entity.Property(e => e.Title)
-                    .HasColumnType("citext");
-
-                entity.Property(e => e.Artist)
-                    .HasColumnType("citext");
-
-                entity.Property(e => e.FeaturingArtist)
-                    .HasColumnType("citext");
-            });
-
             modelBuilder.Entity<DiscogsRelease>(entity =>
             {
                 entity.HasKey(a => a.DiscogsId);
@@ -455,10 +437,14 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.Property(e => e.Label)
                     .HasColumnType("citext");
 
-                entity.HasOne(d => d.DiscogsMaster)
-                    .WithMany(p => p.Releases)
-                    .HasForeignKey(d => d.MasterId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(e => e.Title)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.Artist)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.FeaturingArtist)
+                    .HasColumnType("citext");
             });
 
             modelBuilder.Entity<DiscogsFormatDescriptions>(entity =>
@@ -481,9 +467,9 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.Property(e => e.Description)
                     .HasColumnType("citext");
 
-                entity.HasOne(d => d.DiscogsMaster)
+                entity.HasOne(d => d.DiscogsRelease)
                     .WithMany(p => p.Styles)
-                    .HasForeignKey(d => d.MasterId)
+                    .HasForeignKey(d => d.ReleaseId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -494,9 +480,9 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.Property(e => e.Description)
                     .HasColumnType("citext");
 
-                entity.HasOne(d => d.DiscogsMaster)
+                entity.HasOne(d => d.DiscogsRelease)
                     .WithMany(p => p.Genres)
-                    .HasForeignKey(d => d.MasterId)
+                    .HasForeignKey(d => d.ReleaseId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

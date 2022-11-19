@@ -283,6 +283,24 @@ public class ArtistBuilders
         //    response.Embed.AddField("Tags", tags);
         //}
 
+
+        if (context.ContextUser.UserDiscogs != null && context.ContextUser.DiscogsReleases.Any())
+        {
+            var artistCollection = context.ContextUser.DiscogsReleases
+                .Where(w => w.Release.Artist.ToLower().Contains(artistSearch.Artist.ArtistName.ToLower()))
+                .ToList();
+
+            if (artistCollection.Any())
+            {
+                var artistCollectionDescription = new StringBuilder();
+                foreach (var album in artistCollection.Take(8))
+                {
+                    artistCollectionDescription.Append(StringService.UserDiscogsWithAlbumName(album));
+                }
+                response.Embed.AddField("Your collection", artistCollectionDescription.ToString());
+            }
+        }
+
         if (fullArtist.ArtistGenres != null && fullArtist.ArtistGenres.Any())
         {
             footer.AppendLine(GenreService.GenresToString(fullArtist.ArtistGenres.ToList()));

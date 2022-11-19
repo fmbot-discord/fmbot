@@ -110,7 +110,6 @@ public class DiscogsApi
     public async Task<DiscogsUserReleases> GetUserReleases(DiscogsAuth discogsAuth, string discogsUser, int pages = 1)
     {
         var client = GetClient(discogsAuth);
-
         var request = new RestRequest($"users/{discogsUser}/collection/folders/0/releases");
 
         request.AddParameter("per_page", 100);
@@ -146,6 +145,16 @@ public class DiscogsApi
                 }
             }
         }
+
+        return response.Data;
+    }
+
+    public async Task<DiscogsCollectionValue> GetCollectionValue(DiscogsAuth discogsAuth, string discogsUser)
+    {
+        var client = GetClient(discogsAuth);
+        var request = new RestRequest($"users/{discogsUser}/collection/value");
+
+        var response = await client.ExecuteAsync<DiscogsCollectionValue>(request);
 
         return response.Data;
     }

@@ -137,8 +137,9 @@ public class DiscogsCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task CollectionAsync([Remainder]string searchValues = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User);
 
         var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, "/", contextUser), this.Context);
 

@@ -118,7 +118,6 @@ public class UserService
             .Include(i => i.UserDiscogs)
             .Include(i => i.DiscogsReleases)
             .ThenInclude(i => i.Release)
-            .ThenInclude(i => i.DiscogsMaster)
             .AsNoTracking()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
     }

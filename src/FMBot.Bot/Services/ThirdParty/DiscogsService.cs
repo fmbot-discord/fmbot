@@ -72,12 +72,12 @@ public class DiscogsService
         await db.SaveChangesAsync();
     }
 
-    public async Task<DiscogsUserReleases> StoreUserReleases(User user)
+    public async Task<UserDiscogs> StoreUserReleases(User user)
     {
         var discogsAuth = new DiscogsAuth(user.UserDiscogs.AccessToken,
             user.UserDiscogs.AccessTokenSecret);
 
-        var releases = await this._discogsApi.GetUserReleases(discogsAuth, user.UserDiscogs.Username);
+        var releases = await this._discogsApi.GetUserReleases(discogsAuth, user.UserDiscogs.Username, 10);
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -90,7 +90,7 @@ public class DiscogsService
                 DateAdded = DateTime.SpecifyKind(release.DateAdded, DateTimeKind.Utc),
                 InstanceId = release.InstanceId,
                 Quantity = release.BasicInformation.Formats.First().Qty,
-                Rating = release.Rating,
+                Rating = release.Rating == 0 ? null : release.Rating,
                 UserId = user.UserId
             };
 
@@ -111,44 +111,29 @@ public class DiscogsService
                         ? release.BasicInformation.Labels[1].Name
                         : null,
                     Year = release.BasicInformation.Year,
-                    FormatDescriptions = release.BasicInformation.Formats.Select(s => new DiscogsFormatDescriptions
+                    FormatDescriptions = release.BasicInformation.Formats.First().Descriptions.Select(s => new DiscogsFormatDescriptions
                     {
-                        Description = s.Name
+                        Description = s
                     }).ToList(),
-                };
-
-                var existingMaster = await db.DiscogsMasters
-                    .FirstOrDefaultAsync(f => f.DiscogsId == release.BasicInformation.MasterId);
-
-                if (existingMaster == null)
-                {
-                    userDiscogsRelease.Release.DiscogsMaster = new DiscogsMaster
+                    Artist = release.BasicInformation.Artists.First().Name,
+                    Title = release.BasicInformation.Title,
+                    ArtistDiscogsId = release.BasicInformation.Artists.First().Id,
+                    FeaturingArtistJoin = release.BasicInformation.Artists.First().Join,
+                    FeaturingArtist = release.BasicInformation.Artists.Count > 1
+                        ? release.BasicInformation.Artists[1].Name
+                        : null,
+                    FeaturingArtistDiscogsId = release.BasicInformation.Artists.Count > 1
+                        ? release.BasicInformation.Artists[1].Id
+                        : null,
+                    Genres = release.BasicInformation.Genres?.Select(s => new DiscogsGenre
                     {
-                        DiscogsId = release.BasicInformation.MasterId,
-                        Artist = release.BasicInformation.Artists.First().Name,
-                        Title = release.BasicInformation.Title,
-                        ArtistDiscogsId = release.BasicInformation.Artists.First().Id,
-                        FeaturingArtistJoin = release.BasicInformation.Artists.First().Join,
-                        FeaturingArtist = release.BasicInformation.Artists.Count > 1
-                            ? release.BasicInformation.Artists[1].Name
-                            : null,
-                        FeaturingArtistDiscogsId = release.BasicInformation.Artists.Count > 1
-                            ? release.BasicInformation.Artists[1].Id
-                            : null,
-                        Genres = release.BasicInformation.Genres?.Select(s => new DiscogsGenre
-                        {
-                            Description = s
-                        }).ToList(),
-                        Styles = release.BasicInformation.Styles?.Select(s => new DiscogsStyle
-                        {
-                            Description = s
-                        }).ToList()
-                    };
-                }
-                else
-                {
-                    userDiscogsRelease.Release.MasterId = existingMaster.DiscogsId;
-                }
+                        Description = s
+                    }).ToList(),
+                    Styles = release.BasicInformation.Styles?.Select(s => new DiscogsStyle
+                    {
+                        Description = s
+                    }).ToList()
+                };
             }
             else
             {
@@ -160,8 +145,19 @@ public class DiscogsService
 
         user.UserDiscogs.ReleasesLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
+        var collectionValue = await this._discogsApi.GetCollectionValue(discogsAuth, user.UserDiscogs.Username);
+
+        if (collectionValue != null)
+        {
+            user.UserDiscogs.MinimumValue = collectionValue.Minimum;
+            user.UserDiscogs.MedianValue = collectionValue.Median;
+            user.UserDiscogs.MaximumValue = collectionValue.Maximum;
+        }
+
+        db.Users.Update(user);
+
         await db.SaveChangesAsync();
 
-        return releases;
+        return user.UserDiscogs;
     }
 }

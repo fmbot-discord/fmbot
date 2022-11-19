@@ -107,7 +107,7 @@ public class AlbumCommands : BaseCommandModule
         {
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var response = await this._albumBuilders.AlbumAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);

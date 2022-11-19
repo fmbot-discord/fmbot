@@ -265,6 +265,25 @@ public class AlbumBuilders
             response.Embed.AddField("Tracks", trackDescription.ToString());
         }
 
+        if (context.ContextUser.UserDiscogs != null && context.ContextUser.DiscogsReleases.Any())
+        {
+            var albumCollection = context.ContextUser.DiscogsReleases.Where(w =>
+                (w.Release.Title.ToLower().Contains(albumSearch.Album.AlbumName.ToLower()) ||
+                 albumSearch.Album.AlbumName.ToLower().Contains(w.Release.Title))
+                &&
+                w.Release.Artist.ToLower().Contains(albumSearch.Album.ArtistName.ToLower())).ToList();
+
+            if (albumCollection.Any())
+            {
+                var albumCollectionDescription = new StringBuilder();
+                foreach (var album in albumCollection.Take(4))
+                {
+                    albumCollectionDescription.Append(StringService.UserDiscogsReleaseToString(album));
+                }
+                response.Embed.AddField("Your collection", albumCollectionDescription.ToString());
+            }
+        }
+
         //if (album.Tags != null && album.Tags.Any())
         //{
         //    var tags = LastFmRepository.TagsToLinkedString(album.Tags);
