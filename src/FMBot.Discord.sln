@@ -24,8 +24,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Domain", "FMBot.Domai
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Youtube", "FMBot.Youtube\FMBot.Youtube.csproj", "{4A84C25C-2443-4261-A8CB-F224851B9CE1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Youtube.Domain", "FMBot.Youtube.Domain\FMBot.Youtube.Domain.csproj", "{38D080FF-1E26-4D22-A9BA-0ACF5099827A}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Images", "FMBot.Images\FMBot.Images.csproj", "{3A126F42-6267-4ECC-9AB8-024DFF8B934E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.OpenCollective", "FMBot.OpenCollective\FMBot.OpenCollective.csproj", "{5E680345-355D-40CD-BF9B-31157F8CEAD8}"
@@ -72,10 +70,6 @@ Global
 		{4A84C25C-2443-4261-A8CB-F224851B9CE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A84C25C-2443-4261-A8CB-F224851B9CE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A84C25C-2443-4261-A8CB-F224851B9CE1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{38D080FF-1E26-4D22-A9BA-0ACF5099827A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{38D080FF-1E26-4D22-A9BA-0ACF5099827A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{38D080FF-1E26-4D22-A9BA-0ACF5099827A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{38D080FF-1E26-4D22-A9BA-0ACF5099827A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3A126F42-6267-4ECC-9AB8-024DFF8B934E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3A126F42-6267-4ECC-9AB8-024DFF8B934E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A126F42-6267-4ECC-9AB8-024DFF8B934E}.Release|Any CPU.ActiveCfg = Release|Any CPU

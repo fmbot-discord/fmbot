@@ -27,7 +27,6 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 COPY ["src/FMBot.Bot", "FMBot.Bot/"]
 COPY ["src/FMBot.Images", "FMBot.Images/"]
-COPY ["src/FMBot.Youtube.Domain", "FMBot.Youtube.Domain/"]
 COPY ["src/FMBot.Persistence.Domain", "FMBot.Persistence.Domain/"]
 COPY ["src/FMBot.Domain", "FMBot.Domain/"]
 COPY ["src/FMBot.Persistence", "FMBot.Persistence/"]

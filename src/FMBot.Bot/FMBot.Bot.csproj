@@ -71,7 +71,6 @@
     <ProjectReference Include="..\FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj" />
     <ProjectReference Include="..\FMBot.OpenCollective\FMBot.OpenCollective.csproj" />
     <ProjectReference Include="..\FMBot.Persistence\FMBot.Persistence.csproj" />
-    <ProjectReference Include="..\FMBot.Youtube.Domain\FMBot.Youtube.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj" />
     <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
