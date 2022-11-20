@@ -323,6 +323,8 @@ public static class StringService
                 return "<:vinyl:1043644602969763861>";
             case "CD":
                 return "💿";
+            case "Casette":
+                return "<:casette:1043890774384853012>";
         }
 
         return null;
