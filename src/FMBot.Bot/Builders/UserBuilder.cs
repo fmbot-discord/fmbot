@@ -365,17 +365,21 @@ public class UserBuilder
                                   $"· {user.UserDiscogs.MedianValue} med " +
                                   $"· {user.UserDiscogs.MaximumValue} max");
 
-            var discogsCollection = await this._discogsService.GetUserCollection(userSettings.UserId);
-            if (discogsCollection.Any())
+            if (user.UserType != UserType.User)
             {
-                var collectionTypes = discogsCollection
-                        .GroupBy(g => g.Release.Format)
-                        .OrderByDescending(o => o.Count());
-                foreach (var type in collectionTypes)
+                var discogsCollection = await this._discogsService.GetUserCollection(userSettings.UserId);
+                if (discogsCollection.Any())
                 {
-                    collection.AppendLine($"**`{type.Key}` {StringService.GetDiscogsFormatEmote(type.Key)}** - **{type.Count()}** ");
+                    var collectionTypes = discogsCollection
+                            .GroupBy(g => g.Release.Format)
+                            .OrderByDescending(o => o.Count());
+                    foreach (var type in collectionTypes)
+                    {
+                        collection.AppendLine($"**`{type.Key}` {StringService.GetDiscogsFormatEmote(type.Key)}** - **{type.Count()}** ");
+                    }
                 }
             }
+
 
             response.Embed.AddField("Your Discogs collection", collection.ToString());
         }
