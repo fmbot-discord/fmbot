@@ -603,7 +603,7 @@ public class TrackCommands : BaseCommandModule
             return;
         }
 
-        await this._spotifyService.GetOrStoreTrackAsync(track);
+        var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(track);
 
         var trackName = $"{track.TrackName} by {track.ArtistName}";
 
@@ -615,14 +615,14 @@ public class TrackCommands : BaseCommandModule
 
             var privacyLevel = PrivacyLevel.Global;
 
-            var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack);
+            var filteredUsersWithTrack = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack);
 
             if (this.Context.Guild != null)
             {
                 var guild = await guildTask;
 
-                filteredUsersWithAlbum =
-                    WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
+                filteredUsersWithTrack =
+                    WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithTrack, guild.GuildUsers.ToList());
 
                 if (settings.AdminView && guild.SpecialGuild == true)
                 {
@@ -630,8 +630,8 @@ public class TrackCommands : BaseCommandModule
                 }
             }
 
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, contextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
-            if (!filteredUsersWithAlbum.Any())
+            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, contextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+            if (!filteredUsersWithTrack.Any())
             {
                 serverUsers = "Nobody that uses .fmbot has listened to this track.";
             }
@@ -641,11 +641,25 @@ public class TrackCommands : BaseCommandModule
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
             var footer = $"Global WhoKnows track requested by {userTitle}";
 
-            if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count() > 1)
+            var duration = spotifyTrack?.DurationMs ?? track.Duration;
+
+            if (duration is > 0)
             {
-                var serverListeners = filteredUsersWithAlbum.Count();
-                var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
-                var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
+                var trackLength = TimeSpan.FromMilliseconds(duration.GetValueOrDefault());
+                if (trackLength < TimeSpan.FromSeconds(60) &&
+                    track.UserPlaycount > 2500)
+                {
+                    this._embed.AddField("Heads up",
+                        "We regularly remove people who spam short songs to raise their playcounts from Global WhoKnows. " +
+                        "Consider not spamming scrobbles and/or removing your scrobbles on this track if you don't want to be removed.");
+                }
+            }
+
+            if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count() > 1)
+            {
+                var serverListeners = filteredUsersWithTrack.Count();
+                var serverPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
+                var avgServerPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
 
                 footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
                 footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
