@@ -292,6 +292,9 @@ public static class StringService
         var formatEmote = GetDiscogsFormatEmote(discogsRelease.Release.Format);
         description.Append(formatEmote ?? discogsRelease.Release.Format);
 
+        description.Append(
+            $" - **[{discogsRelease.Release.Title}](https://www.discogs.com/release/{discogsRelease.Release.DiscogsId})**");
+
         if (discogsRelease.Release.FormatText != null)
         {
             description.Append($" - *{discogsRelease.Release.FormatText}*");
@@ -306,10 +309,6 @@ public static class StringService
                 description.Append("<:star:1043647352273121311>");
             }
         }
-
-        description.Append(
-            $" - **[{discogsRelease.Release.Title}](https://www.discogs.com/release/{discogsRelease.Release.DiscogsId})**");
-
 
         description.AppendLine();
 
