@@ -57,6 +57,10 @@ public static class Statistics
         .CreateCounter("musicbrainz_api_calls", "Amount of MusicBrainz API calls");
 
 
+    public static readonly Counter DiscogsApiCalls = Metrics
+        .CreateCounter("discogs_api_calls", "Amount of Discogs API calls");
+
+
     public static readonly Counter CommandsExecuted = Metrics
         .CreateCounter("bot_commands_executed", "Amount of commands executed",
             new CounterConfiguration

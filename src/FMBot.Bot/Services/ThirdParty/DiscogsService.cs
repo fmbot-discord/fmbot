@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Discogs.Apis;
 using FMBot.Discogs.Models;
+using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,7 @@ public class DiscogsService
 
     public async Task<DiscogsAuthInitialization> GetDiscogsAuthLink()
     {
+        Statistics.DiscogsApiCalls.Inc();
         return await this._discogsApi.GetDiscogsAuthLink();
     }
 
@@ -35,6 +37,7 @@ public class DiscogsService
             return (null, null);
         }
 
+        Statistics.DiscogsApiCalls.Inc();
         return (auth, await this._discogsApi.GetIdentity(auth));
     }
 
@@ -79,6 +82,7 @@ public class DiscogsService
             user.UserDiscogs.AccessTokenSecret);
 
         var releases = await this._discogsApi.GetUserReleases(discogsAuth, user.UserDiscogs.Username, 10);
+        Statistics.DiscogsApiCalls.Inc();
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -148,6 +152,7 @@ public class DiscogsService
         user.UserDiscogs.ReleasesLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
         var collectionValue = await this._discogsApi.GetCollectionValue(discogsAuth, user.UserDiscogs.Username);
+        Statistics.DiscogsApiCalls.Inc();
 
         if (collectionValue != null)
         {
