@@ -123,14 +123,14 @@ public class DiscogsApi
             response.Data.Releases.Count == 100 &&
             pages > 1)
         {
-            for (var i = 1; i <= pages; i++)
+            for (var i = 2; i <= pages; i++)
             {
                 request.Parameters.RemoveParameter("page");
                 request.AddParameter("page", i);
 
                 var pageResponse = await client.ExecuteAsync<DiscogsUserReleases>(request);
 
-                if (pageResponse?.Data != null && pageResponse.Data.Releases.Any())
+                if (pageResponse.Data != null && pageResponse.Data.Releases.Any())
                 {
                     response.Data.Releases.AddRange(pageResponse.Data.Releases);
 

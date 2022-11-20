@@ -45,7 +45,7 @@ public class DiscogsBuilder
 
         var justUpdated = false;
         if (user.UserDiscogs.ReleasesLastUpdated == null ||
-            user.UserDiscogs.ReleasesLastUpdated <= DateTime.UtcNow.AddHours(-1))
+            user.UserDiscogs.ReleasesLastUpdated <= DateTime.UtcNow.AddSeconds(-1))
         {
             user.UserDiscogs = await this._discogsService.StoreUserReleases(user);
             user.UserDiscogs = await this._discogsService.UpdateCollectionValue(user.UserId);
