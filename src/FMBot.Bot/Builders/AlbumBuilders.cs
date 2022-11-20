@@ -280,7 +280,7 @@ public class AlbumBuilders
                 {
                     albumCollectionDescription.Append(StringService.UserDiscogsReleaseToString(album));
                 }
-                response.Embed.AddField("Your collection", albumCollectionDescription.ToString());
+                response.Embed.AddField("Your Discogs collection", albumCollectionDescription.ToString());
             }
         }
 

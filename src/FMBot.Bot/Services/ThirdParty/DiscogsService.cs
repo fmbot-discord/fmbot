@@ -160,9 +160,24 @@ public class DiscogsService
             await db.UserDiscogsReleases.AddAsync(userDiscogsRelease);
         }
 
+        await db.SaveChangesAsync();
+
+        return user.UserDiscogs;
+    }
+
+    public async Task<UserDiscogs> UpdateCollectionValue(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var user = await db.Users
+            .Include(i => i.UserDiscogs)
+            .FirstAsync(f => f.UserId == userId);
+
         user.UserDiscogs.ReleasesLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
-        var collectionValue = await this._discogsApi.GetCollectionValue(discogsAuth, user.UserDiscogs.Username);
+        var collectionValue = await this._discogsApi.GetCollectionValue(
+            new DiscogsAuth(user.UserDiscogs.AccessToken, user.UserDiscogs.AccessTokenSecret),
+            user.UserDiscogs.Username);
         Statistics.DiscogsApiCalls.Inc();
 
         if (collectionValue != null)
@@ -171,6 +186,8 @@ public class DiscogsService
             user.UserDiscogs.MedianValue = collectionValue.Median;
             user.UserDiscogs.MaximumValue = collectionValue.Maximum;
         }
+
+        db.UserDiscogs.Update(user.UserDiscogs);
 
         await db.SaveChangesAsync();
 

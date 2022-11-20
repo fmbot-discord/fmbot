@@ -234,15 +234,7 @@ public static class StringService
 
         description.AppendLine();
 
-        switch (discogsRelease.Release.Format)
-        {
-            case "Vinyl":
-                description.Append("<:vinyl:1043644602969763861>");
-                break;
-            case "CD":
-                description.Append("💿");
-                break;
-        }
+        description.Append(GetDiscogsFormatEmote(discogsRelease.Release.Format));
 
         description.Append($" {discogsRelease.Release.Format}");
 
@@ -269,14 +261,8 @@ public static class StringService
     public static string UserDiscogsReleaseToString(UserDiscogsReleases discogsRelease)
     {
         var description = new StringBuilder();
-        if (discogsRelease.Release.Format == "Vinyl")
-        {
-            description.Append("<:vinyl:1043644602969763861>");
-        }
-        if (discogsRelease.Release.Format == "CD")
-        {
-            description.Append("💿");
-        }
+
+        description.Append(GetDiscogsFormatEmote(discogsRelease.Release.Format));
 
         description.Append($" [{discogsRelease.Release.Format}](https://www.discogs.com/release/{discogsRelease.Release.DiscogsId})");
         if (discogsRelease.Release.FormatText != null)
@@ -302,19 +288,9 @@ public static class StringService
     public static string UserDiscogsWithAlbumName(UserDiscogsReleases discogsRelease)
     {
         var description = new StringBuilder();
-        
-        switch (discogsRelease.Release.Format)
-        {
-            case "Vinyl":
-                description.Append("<:vinyl:1043644602969763861>");
-                break;
-            case "CD":
-                description.Append("💿");
-                break;
-            default:
-                description.Append(discogsRelease.Release.Format);
-                break;
-        }
+
+        var formatEmote = GetDiscogsFormatEmote(discogsRelease.Release.Format);
+        description.Append(formatEmote ?? discogsRelease.Release.Format);
 
         if (discogsRelease.Release.FormatText != null)
         {
@@ -338,5 +314,18 @@ public static class StringService
         description.AppendLine();
 
         return description.ToString();
+    }
+
+    public static string GetDiscogsFormatEmote(string format)
+    {
+        switch (format)
+        {
+            case "Vinyl":
+                return "<:vinyl:1043644602969763861>";
+            case "CD":
+                return "💿";
+        }
+
+        return null;
     }
 }

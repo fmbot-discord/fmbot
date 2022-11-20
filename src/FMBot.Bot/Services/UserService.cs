@@ -153,6 +153,7 @@ public class UserService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var query = db.Users
+            .Include(i => i.UserDiscogs)
             .Include(i => i.Friends)
             .Include(i => i.FriendedByUsers);
 

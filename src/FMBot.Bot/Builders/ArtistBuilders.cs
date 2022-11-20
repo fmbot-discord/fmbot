@@ -297,7 +297,7 @@ public class ArtistBuilders
                 {
                     artistCollectionDescription.Append(StringService.UserDiscogsWithAlbumName(album));
                 }
-                response.Embed.AddField("Your collection", artistCollectionDescription.ToString());
+                response.Embed.AddField("Your Discogs collection", artistCollectionDescription.ToString());
             }
         }
 

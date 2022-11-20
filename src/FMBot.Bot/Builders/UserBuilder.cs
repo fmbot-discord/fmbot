@@ -8,6 +8,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
@@ -29,6 +30,7 @@ public class UserBuilder
     private readonly TimeService _timeService;
     private readonly ArtistsService _artistsService;
     private readonly SupporterService _supporterService;
+    private readonly DiscogsService _discogsService;
 
     public UserBuilder(UserService userService,
         GuildService guildService,
@@ -40,7 +42,8 @@ public class UserBuilder
         PlayService playService,
         TimeService timeService,
         ArtistsService artistsService,
-        SupporterService supporterService)
+        SupporterService supporterService,
+        DiscogsService discogsService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -52,6 +55,7 @@ public class UserBuilder
         this._timeService = timeService;
         this._artistsService = artistsService;
         this._supporterService = supporterService;
+        this._discogsService = discogsService;
         this._botSettings = botSettings.Value;
     }
 
@@ -239,7 +243,6 @@ public class UserBuilder
         return response;
     }
 
-
     public async Task<ResponseModel> StatsAsync(ContextModel context, UserSettingsModel userSettings, User user)
     {
         var response = new ResponseModel
@@ -352,6 +355,29 @@ public class UserBuilder
         if (stats.Length > 0)
         {
             response.Embed.AddField("Stats", stats.ToString());
+        }
+
+        if (user.UserDiscogs != null)
+        {
+            var collection = new StringBuilder();
+
+            collection.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
+                                  $"- {user.UserDiscogs.MedianValue} med " +
+                                  $"- {user.UserDiscogs.MaximumValue} max");
+
+            var discogsCollection = await this._discogsService.GetUserCollection(userSettings.UserId);
+            if (discogsCollection.Any())
+            {
+                var collectionTypes = discogsCollection
+                        .GroupBy(g => g.Release.Format)
+                        .OrderByDescending(o => o.Count());
+                foreach (var type in collectionTypes)
+                {
+                    collection.AppendLine($"**`{type.Key}` {StringService.GetDiscogsFormatEmote(type.Key)}** - **{type.Count()}** ");
+                }
+            }
+
+            response.Embed.AddField("Your Discogs collection", collection.ToString());
         }
 
         var monthDescription = new StringBuilder();
