@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
@@ -17,11 +20,87 @@ public class DiscogsBuilder
 {
     private readonly UserService _userService;
     private readonly DiscogsService _discogsService;
+    private readonly InteractiveService _interactivity;
 
-    public DiscogsBuilder(UserService userService, DiscogsService discogsService)
+    public DiscogsBuilder(UserService userService, DiscogsService discogsService, InteractiveService interactiveService)
     {
         this._userService = userService;
         this._discogsService = discogsService;
+        this._interactivity = interactiveService;
+    }
+
+    public async Task<ResponseModel> DiscogsLoginAsync(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var discogsAuth = await this._discogsService.GetDiscogsAuthLink();
+
+        response.Embed.WithDescription($"**[Click here to login to Discogs.]({discogsAuth.LoginUrl})**\n\n" +
+                                    $"After authorizing .fmbot a code will be shown.\n" +
+                                    $"**Copy the code and send it in this chat.**");
+        response.Embed.WithFooter($"Do not share the code outside of this DM conversation");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var dm = await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
+        response.Embed.Footer = null;
+
+        var result = await this._interactivity.NextMessageAsync(x => x.Channel.Id == dm.Channel.Id, timeout: TimeSpan.FromMinutes(15));
+
+        if (!result.IsSuccess)
+        {
+            await context.DiscordUser.SendMessageAsync("Something went wrong while trying to connect your Discogs account.");
+            response.CommandResponse = CommandResponse.Error;
+            return response;
+        }
+
+        if (result.IsTimeout)
+        {
+            await dm.ModifyAsync(m =>
+            {
+                m.Embed = new EmbedBuilder()
+                    .WithDescription($"❌ Login failed.. link timed out.\n\n" +
+                                        $"Re-run the `{context.Prefix}discogs` command to try again.")
+                    .WithColor(DiscordConstants.WarningColorOrange)
+                    .Build();
+            });
+            response.CommandResponse = CommandResponse.Cooldown;
+            return response;
+        }
+
+        if (result.Value?.Content == null || !Regex.IsMatch(result.Value.Content, @"^[a-zA-Z]+$") || result.Value.Content.Length != 10)
+        {
+            response.Embed.WithDescription($"Login failed, incorrect input.\n\n" +
+                                        $"Re-run the `{context.Prefix}discogs` command to try again.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.WrongInput;
+            await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
+            return response;
+        }
+
+        var user = await this._discogsService.ConfirmDiscogsAuth(context.ContextUser.UserId, discogsAuth, result.Value.Content);
+
+        if (user.Identity != null)
+        {
+            await this._discogsService.StoreDiscogsAuth(context.ContextUser.UserId, user.Auth, user.Identity);
+
+            response.Embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}](https://www.discogs.com/user/{user.Identity.Username})' has been connected.\n" +
+                                        $"Run the `{context.Prefix}collection` command to view your collection.");
+            response.CommandResponse = CommandResponse.Ok;
+            await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
+        }
+        else
+        {
+            response.Embed.WithDescription($"Could not connect a Discogs account with provided code.\n\n" +
+                                        $"Re-run the `{context.Prefix}discogs` command to try again.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.WrongInput;
+            await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
+        }
+
+        return response;
     }
 
     public async Task<ResponseModel> DiscogsCollectionAsync(ContextModel context,
@@ -37,8 +116,16 @@ public class DiscogsBuilder
 
         if (user.UserDiscogs == null)
         {
-            response.Embed.WithDescription("To use the Discogs commands you have to connect a Discogs account.\n\n" +
-                                           "Use the `.discogs` command to get started.");
+            if (!userSettings.DifferentUser)
+            {
+                response.Embed.WithDescription("To use the Discogs commands you have to connect a Discogs account.\n\n" +
+                                               "Use the `.discogs` command to get started.");
+            }
+            else
+            {
+                response.Embed.WithDescription("The user you're trying to look up has not setup their Discogs account yet.");
+            }
+            
             response.CommandResponse = CommandResponse.UsernameNotSet;
             return response;
         }
@@ -53,7 +140,7 @@ public class DiscogsBuilder
         }
 
         var releases = await this._discogsService.GetUserCollection(user.UserId);
-        if (searchValues != null)
+        if (!string.IsNullOrWhiteSpace(searchValues))
         {
             searchValues = searchValues.ToLower();
 
@@ -86,7 +173,7 @@ public class DiscogsBuilder
 
             footer.AppendLine($"Page {pageCounter}/{collectionPages.Count()} - {releases.Count} total");
 
-            if (searchValues != null)
+            if (!string.IsNullOrWhiteSpace(searchValues))
             {
                 footer.AppendLine($"Searching for '{Format.Sanitize(searchValues)}'");
             }
@@ -123,6 +210,13 @@ public class DiscogsBuilder
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString()));
             pageCounter++;
+        }
+
+        if (!pages.Any())
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription("No collection could be found or there are no results.")
+                .WithAuthor(response.EmbedAuthor));
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);

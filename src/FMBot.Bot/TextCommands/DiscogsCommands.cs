@@ -12,6 +12,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using static System.Text.RegularExpressions.Regex;
 
 namespace FMBot.Bot.TextCommands;
@@ -22,6 +23,7 @@ public class DiscogsCommands : BaseCommandModule
     private readonly UserService _userService;
     private readonly DiscogsService _discogsService;
     private readonly SettingService _settingService;
+    private readonly IPrefixService _prefixService;
 
     private InteractiveService Interactivity { get; }
 
@@ -31,13 +33,14 @@ public class DiscogsCommands : BaseCommandModule
         UserService userService,
         DiscogsService discogsService,
         InteractiveService interactivity,
-        SettingService settingService) : base(botSettings)
+        SettingService settingService, IPrefixService prefixService) : base(botSettings)
     {
         this._discogsBuilder = discogsBuilder;
         this._userService = userService;
         this._discogsService = discogsService;
         this.Interactivity = interactivity;
         this._settingService = settingService;
+        this._prefixService = prefixService;
     }
 
     [Command("discogs", RunMode = RunMode.Async)]
@@ -49,6 +52,7 @@ public class DiscogsCommands : BaseCommandModule
     public async Task DiscogsAsync([Remainder] string unusedValues = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         if (this.Context.Guild != null)
         {
@@ -59,69 +63,8 @@ public class DiscogsCommands : BaseCommandModule
             await this.Context.Channel.SendMessageAsync("", false, serverEmbed.Build());
         }
 
-        var discogsAuth = await this._discogsService.GetDiscogsAuthLink();
-
-        this._embed.WithDescription($"**[Click here to login to Discogs.]({discogsAuth.LoginUrl})**\n\n" +
-                                    $"After authorizing .fmbot a code will be shown.\n" +
-                                    $"**Copy the code and send it in this chat.**");
-        this._embed.WithFooter($"Do not share the code outside of this DM conversation");
-        this._embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        var dm = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
-        this._embed.Footer = null;
-
-        var result = await this.Interactivity.NextMessageAsync(x => x.Channel.Id == dm.Channel.Id, timeout: TimeSpan.FromMinutes(15));
-
-        if (!result.IsSuccess)
-        {
-            await this.Context.User.SendMessageAsync("Something went wrong while trying to connect your Discogs account.");
-            this.Context.LogCommandUsed(CommandResponse.Error);
-            return;
-        }
-
-        if (result.IsTimeout)
-        {
-            await dm.ModifyAsync(m =>
-            {
-                m.Embed = new EmbedBuilder()
-                    .WithDescription($"❌ Login failed.. link timed out.\n\n" +
-                                        $"Re-run the `discogs` command to try again.")
-                    .WithColor(DiscordConstants.WarningColorOrange)
-                    .Build();
-            });
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
-            return;
-        }
-
-        if (result.Value?.Content == null || !IsMatch(result.Value.Content, @"^[a-zA-Z]+$") || result.Value.Content.Length != 10)
-        {
-            this._embed.WithDescription($"Login failed, incorrect input.\n\n" +
-                                        $"Re-run the `discogs` command to try again.");
-            this._embed.WithColor(DiscordConstants.WarningColorOrange);
-            await this.Context.User.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
-
-        var user = await this._discogsService.ConfirmDiscogsAuth(contextUser.UserId, discogsAuth, result.Value.Content);
-
-        if (user.Identity != null)
-        {
-            await this._discogsService.StoreDiscogsAuth(contextUser.UserId, user.Auth, user.Identity);
-
-            this._embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}](https://www.discogs.com/user/{user.Identity.Username})' has been connected.\n" +
-                                        $"Run the `.collection` command to view your collection.");
-            await this.Context.User.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
-        }
-        else
-        {
-            this._embed.WithDescription($"Could not connect a Discogs account with provided code.\n\n" +
-                                        $"Re-run the `discogs` command to try again.");
-            this._embed.WithColor(DiscordConstants.WarningColorOrange);
-            await this.Context.User.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-        }
+        var response = await this._discogsBuilder.DiscogsLoginAsync(new ContextModel(this.Context, prfx, contextUser));
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("collection", RunMode = RunMode.Async)]
@@ -138,7 +81,7 @@ public class DiscogsCommands : BaseCommandModule
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, "/", contextUser), userSettings, searchValues);
+            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, "/", contextUser), userSettings, userSettings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
