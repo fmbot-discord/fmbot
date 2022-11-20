@@ -695,7 +695,7 @@ public class ArtistCommands : BaseCommandModule
         var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild);
 
         var users = filteredGuildUsers.Select(s => s.User).ToList();
-        var neighbors = await this._whoKnowArtistService.GetNeighbors(users, userSettings.UserId);
+        var neighbors = await this._whoKnowArtistService.GetNeighbors(users, userSettings.UserId, guild.GuildId);
 
         var description = new StringBuilder();
 

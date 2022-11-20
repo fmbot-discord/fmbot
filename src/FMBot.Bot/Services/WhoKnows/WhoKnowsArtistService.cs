@@ -258,14 +258,14 @@ public class WhoKnowsArtistService
         return guildArtists;
     }
 
-    public async Task<ICollection<GuildArtist>> GetTopAllTimeArtistsForGuildWithListeners(int guildId,
-        OrderType orderType)
+    private async Task<IEnumerable<UserArtist>> GetGuildUserArtists(int guildId, int minPlaycount = 0)
     {
         const string sql = "SELECT * " +
                            "FROM user_artists AS ua " +
                            "INNER JOIN users AS u ON ua.user_id = u.user_id " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                           "WHERE gu.guild_id = @guildId  AND gu.bot != true  " +
+                           "WHERE gu.guild_id = @guildId  AND gu.bot != true " +
+                           "AND ua.playcount > @minPlaycount " +
                            "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                            "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
                            "AND LOWER(ua.name) = ANY(SELECT LOWER(artists.name) AS artist_name " +
@@ -276,10 +276,17 @@ public class WhoKnowsArtistService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var userArtists = await connection.QueryAsync<UserArtist>(sql, new
+        return await connection.QueryAsync<UserArtist>(sql, new
         {
-            guildId
+            guildId,
+            minPlaycount
         });
+    }
+
+    public async Task<ICollection<GuildArtist>> GetTopAllTimeArtistsForGuildWithListeners(int guildId,
+        OrderType orderType)
+    {
+        var userArtists = await GetGuildUserArtists(guildId);
 
         var guildArtists = userArtists
             .GroupBy(g => g.Name)
@@ -314,81 +321,59 @@ public class WhoKnowsArtistService
         });
     }
 
-    public async Task<IReadOnlyList<AffinityArtistResultWithUser>> GetNeighbors(IEnumerable<User> guildUsers, int userId)
+    public async Task<IReadOnlyList<AffinityArtistResultWithUser>> GetNeighbors(IEnumerable<User> guildUsers, int userId, int guildId)
     {
-        var userIds = guildUsers
-            .Where(w => w.UserId != userId)
-            .Select(s => s.UserId);
-
         var topArtistsForEveryoneInServer = new List<AffinityArtist>();
 
-        await userIds.ParallelForEachAsync(async user =>
+        var allUserArtists = (await GetGuildUserArtists(guildId, 29))
+                .OrderByDescending(o => o.Playcount)
+                .GroupBy(g => g.UserId)
+                .ToList();
+
+        foreach (var userArtists in allUserArtists)
         {
-            var key = $"top-affinity-artists-{user}";
+            var topArtist = userArtists
+                .FirstOrDefault();
 
-            if (this._cache.TryGetValue(key, out List<AffinityArtist> topArtistsForUser))
+            var avgPlaycount = userArtists
+                .Average(a => a.Playcount);
+
+            if (topArtist != null)
             {
-                topArtistsForEveryoneInServer.AddRange(topArtistsForUser);
-            }
-            else
-            {
-                await using var db = await this._contextFactory.CreateDbContextAsync();
-
-                var topArtist = await db.UserArtists
-                    .AsQueryable()
-                    .OrderByDescending(o => o.Playcount)
-                    .FirstOrDefaultAsync(w => w.UserId == user);
-
-                var avgPlaycount = await db.UserArtists
-                    .AsQueryable()
-                    .Where(w => w.UserId == userId && w.Playcount > 29)
-                    .AverageAsync(a => a.Playcount);
-
-                if (topArtist != null)
-                {
-                    topArtistsForUser = await db.UserArtists
-                        .AsQueryable()
-                        .Where(
-                            w => w.Playcount > 29 &&
-                                 w.UserId == user &&
-                                 w.Name != null)
-                        .Select(s => new AffinityArtist
-                        {
-                            ArtistName = s.Name.ToLower(),
-                            Playcount = s.Playcount,
-                            UserId = s.UserId,
-                            Weight = ((decimal)s.Playcount / (decimal)topArtist.Playcount) * (s.Playcount > (avgPlaycount * 2) ? 3 : 1)
-                        })
-                        .ToListAsync();
-
-                    if (topArtistsForUser.Any())
+                var topArtistsForUser = userArtists
+                    .Where(w => w.Name != null)
+                    .Select(s => new AffinityArtist
                     {
-                        this._cache.Set(key, topArtistsForUser, TimeSpan.FromHours(12));
-                        topArtistsForEveryoneInServer.AddRange(topArtistsForUser);
-                    }
+                        ArtistName = s.Name.ToLower(),
+                        Playcount = s.Playcount,
+                        UserId = s.UserId,
+                        Weight = ((decimal)s.Playcount / (decimal)topArtist.Playcount) * (s.Playcount > (avgPlaycount * 2) ? 3 : 1)
+                    })
+                    .ToList();
+
+                if (topArtistsForUser.Any())
+                {
+                    topArtistsForEveryoneInServer.AddRange(topArtistsForUser);
                 }
-
-
             }
-        });
+        };
 
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var userTopArtist = await db.UserArtists
-            .AsQueryable()
-            .OrderByDescending(o => o.Playcount)
-            .FirstOrDefaultAsync(w => w.UserId == userId);
+        var currentUserArtists = await db.UserArtists
+            .Where(w => w.UserId == userId)
+            .ToListAsync();
 
-        var userAvgPlaycount = await db.UserArtists
-            .AsQueryable()
-            .Where(w => w.Playcount > 29 && w.UserId == userId)
-            .AverageAsync(a => a.Playcount);
+        var userTopArtist = currentUserArtists
+            .MaxBy(o => o.Playcount);
 
-        var topArtists = await db.UserArtists
-            .AsQueryable()
+        var userAvgPlaycount = currentUserArtists
+            .Where(w => w.Playcount > 29)
+            .Average(a => a.Playcount);
+
+        var topArtists = currentUserArtists
             .Where(
-                w => w.UserId == userId &&
-                     w.Playcount > 29 &&
+                w => w.Playcount > 29 &&
                      w.Name != null)
             .OrderByDescending(o => o.Playcount)
             .Select(s => new AffinityArtist
@@ -398,12 +383,11 @@ public class WhoKnowsArtistService
                 UserId = s.UserId,
                 Weight = ((decimal)s.Playcount / (decimal)userTopArtist.Playcount) * (s.Playcount > (userAvgPlaycount * 2) ? 24 : 8)
             })
-            .ToListAsync();
+            .ToList();
 
         return topArtistsForEveryoneInServer
-            .Where(w =>
-                w != null &&
-                topArtists.Select(s => s.ArtistName).Contains(w.ArtistName))
+            .Where(w => w != null &&
+                        topArtists.Select(s => s.ArtistName).Contains(w.ArtistName))
             .GroupBy(g => g.UserId)
             .OrderByDescending(g => g.Sum(s => s.Weight * topArtists.First(f => f.ArtistName == s.ArtistName).Weight))
             .Select(s => new AffinityArtistResultWithUser
