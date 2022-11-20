@@ -104,7 +104,7 @@ public class DiscogsService
                 userDiscogsRelease.Release = new DiscogsRelease
                 {
                     DiscogsId = release.Id,
-                    MasterId = release.BasicInformation.MasterId,
+                    MasterId = release.BasicInformation.MasterId == 0 ? null : release.BasicInformation.MasterId,
                     CoverUrl = release.BasicInformation.CoverImage,
                     Format = release.BasicInformation.Formats.First().Name,
                     FormatText = release.BasicInformation.Formats.First().Text,
