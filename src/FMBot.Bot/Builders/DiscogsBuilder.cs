@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord.Commands;
+using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
-using static ICSharpCode.SharpZipLib.Zip.ZipEntryFactory;
 
 namespace FMBot.Bot.Builders;
 
@@ -24,16 +23,18 @@ public class DiscogsBuilder
         this._discogsService = discogsService;
     }
 
-    public async Task<ResponseModel> DiscogsCollectionAsync(
-        ContextModel context,
-        ICommandContext commandContext)
+    public async Task<ResponseModel> DiscogsCollectionAsync(ContextModel context,
+        UserSettingsModel userSettings,
+        string searchValues)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed
         };
 
-        if (context.ContextUser.UserDiscogs == null)
+        var user = await this._userService.GetUserWithDiscogs(userSettings.DiscordUserId);
+
+        if (user.UserDiscogs == null)
         {
             response.Embed.WithDescription("To use the Discogs commands you have to connect a Discogs account.\n\n" +
                                            "Use the `.discogs` command to get started.");
@@ -41,69 +42,81 @@ public class DiscogsBuilder
             return response;
         }
 
-        try
+        var justUpdated = false;
+        if (user.UserDiscogs.ReleasesLastUpdated == null ||
+            user.UserDiscogs.ReleasesLastUpdated <= DateTime.UtcNow.AddHours(-1))
         {
-            var justUpdated = false;
-            if (context.ContextUser.UserDiscogs.ReleasesLastUpdated == null ||
-                context.ContextUser.UserDiscogs.ReleasesLastUpdated <= DateTime.UtcNow.AddHours(-1))
+            user.UserDiscogs = await this._discogsService.StoreUserReleases(context.ContextUser);
+            justUpdated = true;
+        }
+
+        var releases = await this._discogsService.GetUserCollection(user.UserId);
+        if (searchValues != null)
+        {
+            searchValues = searchValues.ToLower();
+
+            releases = releases.Where(w => w.Release.Title.ToLower().Contains(searchValues) ||
+                                           w.Release.Artist.ToLower().Contains(searchValues)).ToList();
+        }
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        response.EmbedAuthor.WithName(!userSettings.DifferentUser
+            ? $"Discogs collection for {userTitle}"
+            : $"Discogs collection for {userSettings.DiscordUserName}, requested by {userTitle}");
+
+        response.EmbedAuthor.WithUrl($"https://www.discogs.com/user/{user.UserDiscogs.Username}/collection");
+        response.Embed.WithAuthor(response.EmbedAuthor);
+
+        var pages = new List<PageBuilder>();
+        var pageCounter = 1;
+        var collectionPages = releases.Chunk(6);
+
+        foreach (var page in collectionPages)
+        {
+            var description = new StringBuilder();
+            foreach (var item in page)
             {
-                context.ContextUser.UserDiscogs = await this._discogsService.StoreUserReleases(context.ContextUser);
-                justUpdated = true;
+                description.AppendLine(StringService.UserDiscogsReleaseToStringWithTitle(item));
             }
 
-            var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+            var footer = new StringBuilder();
 
-            response.EmbedAuthor.WithName($"Discogs collection for {userTitle}");
-            response.EmbedAuthor.WithUrl($"https://www.discogs.com/user/{context.ContextUser.UserDiscogs.Username}/collection");
-            response.Embed.WithAuthor(response.EmbedAuthor);
+            footer.AppendLine($"Page {pageCounter}/{collectionPages.Count()} - {releases.Count} total");
 
-            var pages = new List<PageBuilder>();
-            var pageCounter = 1;
-            var collectionPages = context.ContextUser.DiscogsReleases.Chunk(6);
-
-            foreach (var page in collectionPages)
+            if (searchValues != null)
             {
-                var description = new StringBuilder();
-                foreach (var item in page)
-                {
-                    description.AppendLine(StringService.UserDiscogsReleaseToStringWithTitle(item));
-                }
-
-                var footer = new StringBuilder();
-
-                footer.AppendLine($"Page {pageCounter}/{collectionPages.Count()} - {context.ContextUser.DiscogsReleases.Count} total");
-
-                footer.AppendLine($"{context.ContextUser.UserDiscogs.MinimumValue} min " +
-                                  $"- {context.ContextUser.UserDiscogs.MedianValue} med" +
-                                  $"- {context.ContextUser.UserDiscogs.MaximumValue} max");
-
-                if (justUpdated)
-                {
-                    footer.AppendLine("Last update just now - Updates max once per hour");
-                }
-                else
-                {
-                    var diff = DateTime.UtcNow - context.ContextUser.UserDiscogs.ReleasesLastUpdated;
-
-                    footer.AppendLine($"Last update {(int)diff.Value.TotalMinutes}m ago - " +
-                                      $"Updates max once per hour");
-                }
-
-                pages.Add(new PageBuilder()
-                    .WithDescription(description.ToString())
-                    .WithAuthor(response.EmbedAuthor)
-                    .WithFooter(footer.ToString()));
-                pageCounter++;
+                footer.AppendLine($"Searching for '{Format.Sanitize(searchValues)}'");
             }
 
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages);
-            response.ResponseType = ResponseType.Paginator;
-            return response;
+            if (searchValues == null)
+            {
+                footer.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
+                                  $"- {user.UserDiscogs.MedianValue} med" +
+                                  $"- {user.UserDiscogs.MaximumValue} max");
+            }
+
+            if (justUpdated)
+            {
+                footer.AppendLine("Last update just now - Updates max once per hour");
+            }
+            else
+            {
+                var diff = DateTime.UtcNow - user.UserDiscogs.ReleasesLastUpdated;
+
+                footer.AppendLine($"Last update {(int)diff.Value.TotalMinutes}m ago - " +
+                                  $"Updates max once per hour");
+            }
+
+            pages.Add(new PageBuilder()
+                .WithDescription(description.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString()));
+            pageCounter++;
         }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
     }
 }

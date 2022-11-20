@@ -335,7 +335,6 @@ public static class StringService
             $" - **[{discogsRelease.Release.Title}](https://www.discogs.com/release/{discogsRelease.Release.DiscogsId})**");
 
 
-
         description.AppendLine();
 
         return description.ToString();

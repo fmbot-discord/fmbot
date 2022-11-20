@@ -45,6 +45,7 @@ public class DiscogsCommands : BaseCommandModule
              "Not receiving a DM? Please check if you have direct messages from server members enabled.")]
     [CommandCategories(CommandCategory.UserSettings)]
     [UsernameSetRequired]
+    [Alias("login discogs")]
     public async Task DiscogsAsync([Remainder] string unusedValues = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -52,10 +53,12 @@ public class DiscogsCommands : BaseCommandModule
         if (contextUser.UserType == UserType.User)
         {
             this._embed.WithDescription($"You found a feature that is not quite ready yet 👀\n" +
-                                        $"The Discogs implementation is still a work in progress.\n\n" +
+                                        $"The Discogs implementation is still in development. We will be seeing how it runs on a small scale, make more improvements and roll it out to everyone later.\n\n" +
                                         $"Want to try it out early? [Get .fmbot supporter here](https://opencollective.com/fmbot/contribute)");
-            await this.Context.User.SendMessageAsync("", false, this._embed.Build());
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
         }
 
         if (this.Context.Guild != null)
@@ -117,7 +120,9 @@ public class DiscogsCommands : BaseCommandModule
         {
             await this._discogsService.StoreDiscogsAuth(contextUser.UserId, user.Auth, user.Identity);
 
-            this._embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}](https://www.discogs.com/user/{user.Identity.Username})' has been connected.");
+            this._embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}](https://www.discogs.com/user/{user.Identity.Username})' has been connected.\n" +
+                                        $"Run the `.collection` command to view your collection.\n\n" +
+                                        $"Note: This might be buggy. Please report if you have any issues or feedback.");
             await this.Context.User.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
@@ -135,15 +140,24 @@ public class DiscogsCommands : BaseCommandModule
     [Summary("Shows your Discogs collection")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
-    public async Task CollectionAsync([Remainder]string searchValues = null)
+    [Alias("coll", "vinyl", "discogscollection")]
+    public async Task CollectionAsync([Remainder] string searchValues = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
 
-        var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, "/", contextUser), this.Context);
+        try
+        {
+            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, "/", contextUser), userSettings, searchValues);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 }

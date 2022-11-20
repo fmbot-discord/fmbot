@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Discogs.Apis;
@@ -95,6 +96,7 @@ public class DiscogsService
             };
 
             var existingRelease = await db.DiscogsReleases
+                .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.DiscogsId == release.Id);
 
             if (existingRelease == null)
@@ -159,5 +161,15 @@ public class DiscogsService
         await db.SaveChangesAsync();
 
         return user.UserDiscogs;
+    }
+
+    public async Task<List<UserDiscogsReleases>> GetUserCollection(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.UserDiscogsReleases
+            .Include(i => i.Release)
+            .ThenInclude(i => i.FormatDescriptions)
+            .Where(w => w.UserId == userId)
+            .ToListAsync();
     }
 }
