@@ -362,8 +362,8 @@ public class UserBuilder
             var collection = new StringBuilder();
 
             collection.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
-                                  $"· {user.UserDiscogs.MedianValue} med " +
-                                  $"· {user.UserDiscogs.MaximumValue} max");
+                                  $"• {user.UserDiscogs.MedianValue} med " +
+                                  $"• {user.UserDiscogs.MaximumValue} max");
 
             if (user.UserType != UserType.User)
             {

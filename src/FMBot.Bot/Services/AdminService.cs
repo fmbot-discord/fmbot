@@ -96,7 +96,7 @@ public class AdminService
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
-        if (user == null)
+        if (user == null || user.UserType == UserType.Owner)
         {
             return false;
         }
@@ -119,7 +119,7 @@ public class AdminService
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
-        if (user == null)
+        if (user == null || user.UserType == UserType.Owner)
         {
             return false;
         }
