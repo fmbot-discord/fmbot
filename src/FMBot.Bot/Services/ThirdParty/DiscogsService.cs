@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FMBot.Discogs.Apis;
 using FMBot.Discogs.Models;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -81,12 +82,19 @@ public class DiscogsService
         var discogsAuth = new DiscogsAuth(user.UserDiscogs.AccessToken,
             user.UserDiscogs.AccessTokenSecret);
 
-        var releases = await this._discogsApi.GetUserReleases(discogsAuth, user.UserDiscogs.Username, 10);
+        var pages = user.UserType == UserType.User ? 1 : 50;
+
+        var releases = await this._discogsApi.GetUserReleases(discogsAuth, user.UserDiscogs.Username, pages);
         Statistics.DiscogsApiCalls.Inc();
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         await db.Database.ExecuteSqlAsync($"DELETE FROM user_discogs_releases WHERE user_id = {user.UserId}");
+
+        var ids = releases.Releases.Select(s => s.Id);
+        var existingReleases = await db.DiscogsReleases
+            .Where(f => ids.Contains(f.DiscogsId))
+            .ToListAsync();
 
         foreach (var release in releases.Releases)
         {
@@ -99,25 +107,22 @@ public class DiscogsService
                 UserId = user.UserId
             };
 
-            var existingRelease = await db.DiscogsReleases
-                .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.DiscogsId == release.Id);
-
+            var existingRelease = existingReleases.FirstOrDefault(f => f.DiscogsId == release.Id);
             if (existingRelease == null)
             {
-                userDiscogsRelease.Release = new DiscogsRelease
+                var newRelease = new DiscogsRelease
                 {
                     DiscogsId = release.Id,
                     MasterId = release.BasicInformation.MasterId == 0 ? null : release.BasicInformation.MasterId,
                     CoverUrl = release.BasicInformation.CoverImage,
-                    Format = release.BasicInformation.Formats.First().Name,
-                    FormatText = release.BasicInformation.Formats.First().Text,
-                    Label = release.BasicInformation.Labels.FirstOrDefault()?.Name,
-                    SecondLabel = release.BasicInformation.Labels.Count > 1
+                    Format = release.BasicInformation.Formats?.FirstOrDefault()?.Name,
+                    FormatText = release.BasicInformation.Formats?.FirstOrDefault()?.Text,
+                    Label = release.BasicInformation.Labels?.FirstOrDefault()?.Name,
+                    SecondLabel = release.BasicInformation.Labels?.Count > 1
                         ? release.BasicInformation.Labels[1].Name
                         : null,
                     Year = release.BasicInformation.Year,
-                    FormatDescriptions = release.BasicInformation.Formats.First().Descriptions.Select(s => new DiscogsFormatDescriptions
+                    FormatDescriptions = release.BasicInformation.Formats.FirstOrDefault()?.Descriptions?.Select(s => new DiscogsFormatDescriptions
                     {
                         Description = s
                     }).ToList(),
@@ -140,13 +145,19 @@ public class DiscogsService
                         Description = s
                     }).ToList()
                 };
+
+                await db.DiscogsReleases.AddAsync(newRelease);
+
+                existingReleases.Add(newRelease);
+
+                userDiscogsRelease.ReleaseId = newRelease.DiscogsId;
             }
             else
             {
                 userDiscogsRelease.ReleaseId = existingRelease.DiscogsId;
             }
 
-            db.UserDiscogsReleases.Add(userDiscogsRelease);
+            await db.UserDiscogsReleases.AddAsync(userDiscogsRelease);
         }
 
         user.UserDiscogs.ReleasesLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
@@ -160,8 +171,6 @@ public class DiscogsService
             user.UserDiscogs.MedianValue = collectionValue.Median;
             user.UserDiscogs.MaximumValue = collectionValue.Maximum;
         }
-
-        db.Users.Update(user);
 
         await db.SaveChangesAsync();
 

@@ -19,6 +19,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<DiscogsRelease> DiscogsReleases { get; set; }
         public virtual DbSet<UserDiscogsReleases> UserDiscogsReleases { get; set; }
+        public virtual DbSet<UserDiscogs> UserDiscogs { get; set; }
 
         public virtual DbSet<BottedUser> BottedUsers { get; set; }
         public virtual DbSet<InactiveUsers> InactiveUsers { get; set; }

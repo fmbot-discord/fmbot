@@ -50,17 +50,6 @@ public class DiscogsCommands : BaseCommandModule
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (contextUser.UserType == UserType.User)
-        {
-            this._embed.WithDescription($"You found a feature that is not quite ready yet 👀\n" +
-                                        $"The Discogs implementation is still in development. We will be seeing how it runs on a small scale, make more improvements and roll it out to everyone later.\n\n" +
-                                        $"Want to try it out early? [Get .fmbot supporter here](https://opencollective.com/fmbot/contribute)");
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
-
         if (this.Context.Guild != null)
         {
             var serverEmbed = new EmbedBuilder()

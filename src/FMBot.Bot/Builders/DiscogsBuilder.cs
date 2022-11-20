@@ -8,6 +8,7 @@ using Fergun.Interactive;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Builders;
@@ -106,6 +107,14 @@ public class DiscogsBuilder
 
                 footer.AppendLine($"Last update {(int)diff.Value.TotalMinutes}m ago - " +
                                   $"Updates max once per hour");
+            }
+
+            if (releases.Count >= 95 &&
+                user.UserType == UserType.User &&
+                pageCounter == 17)
+            {
+                description.AppendLine("Only the first 100 items of your collection are fetched and stored.\n" +
+                                       $"Want to see your whole collection? [Get .fmbot supporter here.]({Constants.GetSupporterLink})");
             }
 
             pages.Add(new PageBuilder()

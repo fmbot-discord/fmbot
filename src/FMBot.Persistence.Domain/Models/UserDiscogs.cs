@@ -20,7 +20,5 @@ public class UserDiscogs
     public DateTime? LastUpdated { get; set; }
     public DateTime? ReleasesLastUpdated { get; set; }
 
-    public List<UserDiscogsReleases> Releases { get; set; }
-
     public User User { get; set; }
 }
