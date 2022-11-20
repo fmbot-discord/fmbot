@@ -63,7 +63,7 @@ public class StaticBuilders
             "- Sponsor charts\n" +
             "- Your name in `supporters`");
 
-        response.Embed.AddField("All your stats",
+        response.Embed.AddField("All your music",
             "- Lifetime scrobble history stored for extra stats\n" +
             "- All artist/album/track playcounts cached (up from top 4/5/6k)\n" +
             "- Full Discogs collection stored (up from last 100)");

@@ -103,33 +103,42 @@ public class SupporterService
         return false;
     }
 
-    public async Task<string> GetPromotionalUpdateMessage(UserType userType, string prfx, IDiscordClient contextClient,
+    public async Task<string> GetPromotionalUpdateMessage(User user, string prfx, IDiscordClient contextClient,
         ulong? guildId = null)
     {
-        if (ShowPromotionalMessage(userType, guildId))
+        if (ShowPromotionalMessage(user.UserType, guildId))
         {
             return null;
         }
 
-        var randomHintNumber = new Random().Next(0, 18);
+        var randomHintNumber = new Random().Next(0, 15);
 
         switch (randomHintNumber)
         {
             case 1:
                 SetGuildPromoCache(guildId);
                 return
-                    $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4k/5k/6k? " +
+                    $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4/5/6k? " +
                     $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
             case 2:
                 SetGuildPromoCache(guildId);
                 return
-                    $"*Want .fmbot to store all your scrobbles so you can see extra statistics in some commands? " +
+                    $"*Supporters get extra statistics like first listen dates in artist/album/track, full history in `stats`, artist discoveries in `year` and more. " +
                     $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
             case 3:
-                SetGuildPromoCache(guildId);
-                return
-                    $"*Supporters get extra statistics like first listen dates in artist/album/track and full history in `stats`. " +
-                    $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
+                {
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
+                    if (await db.UserDiscogs.AnyAsync(a => a.UserId == user.UserId))
+                    {
+                        SetGuildPromoCache(guildId);
+                        return
+                            $"*Supporters can fetch and view their entire Discogs collection (up from last 100). " +
+                            $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
+                    }
+
+                    return
+                        $"*Using Discogs to keep track of your vinyl collection? Connect your account with the `discogs` command.*";
+                }
             default:
                 return null;
         }

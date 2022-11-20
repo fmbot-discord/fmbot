@@ -102,7 +102,7 @@ public class WhoKnowsArtistService
                            "FROM user_artists AS ua " +
                            "INNER JOIN users AS u ON ua.user_id = u.user_id " +
                            "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                           "ORDER BY UPPER(u.user_name_last_fm) DESC) ua " +
+                           "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ua " +
                            "ORDER BY playcount DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -165,7 +165,7 @@ public class WhoKnowsArtistService
                            "INNER JOIN friends AS fr ON fr.friend_user_id = u.user_id " +
                            "LEFT JOIN guild_users AS gu ON gu.user_id = u.user_id AND gu.guild_id = @guildId " +
                            "WHERE fr.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                           "ORDER BY UPPER(u.user_name_last_fm) DESC) ua " +
+                           "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ua " +
                            "ORDER BY playcount DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;

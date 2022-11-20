@@ -110,8 +110,7 @@ public class DiscogsCommands : BaseCommandModule
             await this._discogsService.StoreDiscogsAuth(contextUser.UserId, user.Auth, user.Identity);
 
             this._embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}](https://www.discogs.com/user/{user.Identity.Username})' has been connected.\n" +
-                                        $"Run the `.collection` command to view your collection.\n\n" +
-                                        $"Note: This might be buggy. Please report if you have any issues or feedback.");
+                                        $"Run the `.collection` command to view your collection.");
             await this.Context.User.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }

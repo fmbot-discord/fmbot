@@ -442,8 +442,16 @@ public class UserBuilder
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years? " +
-                                                 $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
+                if (user.UserDiscogs == null)
+                {
+                    response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years? " +
+                                                     $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
+                }
+                else
+                {
+                    response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years and your Discogs collection? " +
+                                                     $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
+                }
             }
         }
 

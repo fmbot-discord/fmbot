@@ -195,7 +195,7 @@ public class IndexCommands : BaseCommandModule
             var updatedDescription = $"✅ {userSettings.UserNameLastFM} has been fully updated.";
 
             var supporterPromo =
-                await this._supporterService.GetPromotionalUpdateMessage(userSettings.UserType, prfx, this.Context.Client, this.Context.Guild?.Id);
+                await this._supporterService.GetPromotionalUpdateMessage(userSettings, prfx, this.Context.Client, this.Context.Guild?.Id);
             if (supporterPromo != null)
             {
                 updatedDescription += $"\n\n{supporterPromo}";
@@ -240,7 +240,7 @@ public class IndexCommands : BaseCommandModule
             var update = await this._updateService.UpdateUserAndGetRecentTracks(userSettings);
 
             var supporterPromo =
-                await this._supporterService.GetPromotionalUpdateMessage(userSettings.UserType, prfx, this.Context.Client, this.Context.Guild?.Id);
+                await this._supporterService.GetPromotionalUpdateMessage(userSettings, prfx, this.Context.Client, this.Context.Guild?.Id);
             await message.ModifyAsync(m =>
             {
                 if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
