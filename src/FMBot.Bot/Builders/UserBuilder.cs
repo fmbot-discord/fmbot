@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -470,5 +471,56 @@ public class UserBuilder
         }
 
         return response;
+    }
+
+    public static EmbedBuilder GetRemoveDataEmbed(User userSettings, string prfx)
+    {
+        var description = new StringBuilder();
+        description.AppendLine("**Are you sure you want to delete all your data from .fmbot?**");
+        description.AppendLine("This will remove the following data:");
+
+        description.AppendLine("- Account settings like your connected Last.fm account");
+
+        if (userSettings.Friends?.Count > 0)
+        {
+            var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
+            description.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
+        }
+
+        if (userSettings.FriendedByUsers?.Count > 0)
+        {
+            var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
+            description.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
+        }
+
+        description.AppendLine("- All crowns you've gained or lost");
+        description.AppendLine("- All featured history");
+
+        if (userSettings.UserType != UserType.User)
+        {
+            description.AppendLine($"- `{userSettings.UserType}` account status");
+            description.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
+        }
+
+        description.AppendLine();
+        description.AppendLine($"Spotify out of sync? Check `/outofsync`");
+        description.AppendLine($"Changed Last.fm username? Run `/login`");
+        description.AppendLine();
+
+        if (prfx == "/")
+        {
+            description.AppendLine($"If you still wish to logout, please click 'confirm'.");
+        }
+        else
+        {
+            description.AppendLine($"Type `{prfx}remove confirm` to confirm deletion.");
+        }
+
+        var embed = new EmbedBuilder();
+        embed.WithDescription(description.ToString());
+
+        embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
+
+        return embed;
     }
 }

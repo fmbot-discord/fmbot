@@ -558,43 +558,9 @@ public class UserCommands : BaseCommandModule
 
         if (string.IsNullOrEmpty(confirmation) || confirmation.ToLower() != "confirm")
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("Are you sure you want to delete all your data from .fmbot?");
-            sb.AppendLine("This will remove the following data:");
+            var embed = UserBuilder.GetRemoveDataEmbed(userSettings, prfx);
 
-            sb.AppendLine("- Your last.fm username");
-            if (userSettings.Friends?.Count > 0)
-            {
-                var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
-                sb.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
-            }
-
-            if (userSettings.FriendedByUsers?.Count > 0)
-            {
-                var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
-                sb.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
-            }
-
-            sb.AppendLine("- Indexed artists, albums and tracks");
-            sb.AppendLine("- All crowns you've gained or lost");
-            sb.AppendLine("- All featured history");
-
-            if (userSettings.UserType != UserType.User)
-            {
-                sb.AppendLine($"- `{userSettings.UserType}` account status");
-                sb.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
-            }
-
-            sb.AppendLine();
-            sb.AppendLine($"Logging out will not fix any sync issues with Spotify, for that please check out `{prfx}outofsync`.");
-            sb.AppendLine();
-            sb.AppendLine($"Type `{prfx}remove confirm` to confirm deletion.");
-
-            this._embed.WithDescription(sb.ToString());
-
-            this._embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            await this.Context.Channel.SendMessageAsync("", false, embed.Build());
         }
         else
         {

@@ -231,41 +231,7 @@ public class UserSlashCommands : InteractionModuleBase
     {
         var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
 
-        var description = new StringBuilder();
-        description.AppendLine("Are you sure you want to delete all your data from .fmbot?");
-        description.AppendLine("This will remove the following data:");
-
-        description.AppendLine("- Your last.fm username");
-        if (userSettings.Friends?.Count > 0)
-        {
-            var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
-            description.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
-        }
-
-        if (userSettings.FriendedByUsers?.Count > 0)
-        {
-            var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
-            description.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
-        }
-
-        description.AppendLine("- Indexed artists, albums and tracks");
-        description.AppendLine("- All crowns you've gained or lost");
-
-        if (userSettings.UserType != UserType.User)
-        {
-            description.AppendLine($"- `{userSettings.UserType}` account status");
-            description.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
-        }
-
-        description.AppendLine();
-        description.AppendLine($"Logging out will not fix any sync issues with Spotify, for that please check out `/outofsync`.");
-        description.AppendLine();
-        description.AppendLine($"To logout, please click 'confirm'.");
-
-        var embed = new EmbedBuilder();
-        embed.WithDescription(description.ToString());
-
-        embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
+        var embed = UserBuilder.GetRemoveDataEmbed(userSettings, "/");
 
         var builder = new ComponentBuilder()
             .WithButton("Confirm", "id");
@@ -287,7 +253,7 @@ public class UserSlashCommands : InteractionModuleBase
 
             var followUpEmbed = new EmbedBuilder();
             followUpEmbed.WithTitle("Removal successful");
-            followUpEmbed.WithDescription("Your data has been removed from .fmbot.");
+            followUpEmbed.WithDescription("Your settings, friends and any other data have been successfully deleted from .fmbot.");
             await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
         }
         else
