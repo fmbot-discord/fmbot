@@ -73,13 +73,16 @@ public class UserSlashCommands : InteractionModuleBase
             {
                 reply.AppendLine($"**[Click here add your Last.fm account to .fmbot]({link})**");
                 reply.AppendLine();
-                reply.AppendLine("Link will expire after 3 minutes, please wait a moment after allowing access...");
+                reply.AppendLine("Link will expire after 5 minutes, please wait a moment after allowing access...");
+                reply.AppendLine();
+                reply.AppendLine("Don't have a Last.fm account yet? \n" +
+                                 "[Sign up here](https://last.fm/join) and see [how to track your music here](https://last.fm/about/trackmymusic).");
             }
             else
             {
                 reply.AppendLine(
                     $"You have already logged in before. If you want to change or reconnect your connected Last.fm account, [click here.]({link}) " +
-                    $"Note that this link will expire after 3 minutes.");
+                    $"Note that this link will expire after 5 minutes.");
                 reply.AppendLine();
                 reply.AppendLine(
                     $"Using Spotify and having problems with your music not being tracked or it lagging behind? " +
@@ -197,7 +200,7 @@ public class UserSlashCommands : InteractionModuleBase
         var newUserSettings = await this._userService.SetSettings(userSettings, embedType, countType);
 
         var reply = new StringBuilder();
-        reply.Append($"Your `.fm` mode has been set to **{newUserSettings.FmEmbedType}**");
+        reply.Append($"Your `/fm` mode has been set to **{newUserSettings.FmEmbedType}**");
         if (newUserSettings.FmCountType != null)
         {
             reply.Append($" with the **{newUserSettings.FmCountType.ToString().ToLower()} playcount**.");

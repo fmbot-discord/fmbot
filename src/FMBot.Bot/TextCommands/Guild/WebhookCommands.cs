@@ -6,6 +6,7 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 
@@ -43,8 +44,7 @@ public class WebhookCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -69,7 +69,7 @@ public class WebhookCommands : BaseCommandModule
             await ReplyAsync(
                 "This server already has a webhook configured.\n" +
                 "You can change the channel in the webhook settings (`Server settings` > `Integrations` > `Webhooks`)\n" +
-                "If you recently deleted the webhook and want to make a new one, please run `.fmtestwebhook` once to remove the deleted webhook from our database.");
+                "If you recently deleted the webhook and want to make a new one, please run `.testwebhook` once to remove the deleted webhook from our database.");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -94,8 +94,7 @@ public class WebhookCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -113,7 +112,7 @@ public class WebhookCommands : BaseCommandModule
             if (!successful)
             {
                 await ReplyAsync("The previously registered webhook has been removed from our database.\n" +
-                                 "You can now add a new webhook for .fmbot with `.fmaddwebhook`.");
+                                 "You can now add a new webhook for .fmbot with `.addwebhook`.");
             }
 
             this.Context.LogCommandUsed();
@@ -121,7 +120,7 @@ public class WebhookCommands : BaseCommandModule
         else
         {
             await ReplyAsync("You don't have any webhooks added yet.\n" +
-                             "Add a webhook for .fmbot with `.fmaddwebhook`");
+                             "Add a webhook for .fmbot with `.addwebhook`");
             this.Context.LogCommandUsed();
         }
     }

@@ -90,7 +90,7 @@ public class FriendsCommands : BaseCommandModule
     {
         if (enteredFriends.Length == 0)
         {
-            await ReplyAsync("Please enter at least one friend to add. You can use their last.fm usernames, discord mention or discord id.");
+            await ReplyAsync("Please enter at least one friend to add. You can use their Last.fm usernames, Discord mention or discord id.");
             this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
             return;
         }
@@ -127,7 +127,7 @@ public class FriendsCommands : BaseCommandModule
 
         if (enteredFriends.Length == 0)
         {
-            await ReplyAsync("Please enter at least one friend to remove. You can use their last.fm usernames, discord mention or discord id.");
+            await ReplyAsync("Please enter at least one friend to remove. You can use their Last.fm usernames, Discord mention or discord id.");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }

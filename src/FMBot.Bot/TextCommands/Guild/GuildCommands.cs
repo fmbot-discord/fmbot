@@ -658,8 +658,7 @@ public class GuildCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to change the `.fm` cooldown. Only users with the 'Ban Members' permission or server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
