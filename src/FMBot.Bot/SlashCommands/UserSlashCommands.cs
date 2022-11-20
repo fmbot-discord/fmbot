@@ -146,7 +146,7 @@ public class UserSlashCommands : InteractionModuleBase
             {
                 followUpEmbed.WithColor(DiscordConstants.WarningColorOrange);
                 followUpEmbed.WithDescription(
-                    $"❌ Login failed.. link expired or something went wrong.\n\n" +
+                    $"Login expired. Re-run the command to try again.\n\n" +
                     $"Having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.");
 
                 await FollowupAsync(null, new[] { followUpEmbed.Build() }, ephemeral: true);

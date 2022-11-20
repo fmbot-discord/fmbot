@@ -547,7 +547,7 @@ public class UserCommands : BaseCommandModule
             await authorizeMessage.ModifyAsync(m =>
             {
                 m.Embed = new EmbedBuilder()
-                    .WithDescription($"❌ Login failed.. link expired or something went wrong.\n\n" +
+                    .WithDescription($"Login expired. Re-run the command to try again.\n\n" +
                                      $"Having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.")
                     .WithColor(DiscordConstants.WarningColorOrange)
                     .Build();
