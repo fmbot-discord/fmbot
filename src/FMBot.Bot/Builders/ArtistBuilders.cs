@@ -287,7 +287,8 @@ public class ArtistBuilders
         if (context.ContextUser.UserDiscogs != null && context.ContextUser.DiscogsReleases.Any())
         {
             var artistCollection = context.ContextUser.DiscogsReleases
-                .Where(w => w.Release.Artist.ToLower().Contains(artistSearch.Artist.ArtistName.ToLower()))
+                .Where(w => w.Release.Artist.ToLower().Contains(artistSearch.Artist.ArtistName.ToLower()) ||
+                            artistSearch.Artist.ArtistName.ToLower().Contains(w.Release.Artist.ToLower()))
                 .ToList();
 
             if (artistCollection.Any())

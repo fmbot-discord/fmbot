@@ -271,7 +271,8 @@ public class AlbumBuilders
                 (w.Release.Title.ToLower().Contains(albumSearch.Album.AlbumName.ToLower()) ||
                  albumSearch.Album.AlbumName.ToLower().Contains(w.Release.Title))
                 &&
-                w.Release.Artist.ToLower().Contains(albumSearch.Album.ArtistName.ToLower())).ToList();
+                (w.Release.Artist.ToLower().Contains(albumSearch.Album.ArtistName.ToLower()) ||
+                albumSearch.Album.ArtistName.ToLower().Contains(w.Release.Artist.ToLower()))).ToList();
 
             if (albumCollection.Any())
             {
