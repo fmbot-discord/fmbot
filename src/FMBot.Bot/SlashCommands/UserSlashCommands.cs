@@ -90,8 +90,9 @@ public class UserSlashCommands : InteractionModuleBase
             }
 
             var embed = new EmbedBuilder();
-            embed.WithColor(DiscordConstants.InformationColorBlue);
+            embed.WithColor(DiscordConstants.LastFmColorRed);
             embed.WithDescription(reply.ToString());
+            embed.WithFooter(".fmbot is not affiliated with Last.fm");
 
             await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
             this.Context.LogCommandUsed();
