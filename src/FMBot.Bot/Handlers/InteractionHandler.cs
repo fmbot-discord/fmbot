@@ -12,6 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
 namespace FMBot.Bot.Handlers;
@@ -27,7 +28,17 @@ public class InteractionHandler
     private readonly IGuildDisabledCommandService _guildDisabledCommandService;
     private readonly IChannelDisabledCommandService _channelDisabledCommandService;
 
-    public InteractionHandler(DiscordShardedClient client, InteractionService interactionService, IServiceProvider provider, UserService userService, GuildService guildService, IGuildDisabledCommandService guildDisabledCommandService, IChannelDisabledCommandService channelDisabledCommandService)
+    private readonly IMemoryCache _cache;
+
+
+    public InteractionHandler(DiscordShardedClient client,
+        InteractionService interactionService,
+        IServiceProvider provider,
+        UserService userService,
+        GuildService guildService,
+        IGuildDisabledCommandService guildDisabledCommandService,
+        IChannelDisabledCommandService channelDisabledCommandService,
+        IMemoryCache cache)
     {
         this._client = client;
         this._interactionService = interactionService;
@@ -36,6 +47,7 @@ public class InteractionHandler
         this._guildService = guildService;
         this._guildDisabledCommandService = guildDisabledCommandService;
         this._channelDisabledCommandService = channelDisabledCommandService;
+        this._cache = cache;
         this._client.SlashCommandExecuted += SlashCommandAsync;
         this._client.AutocompleteExecuted += AutoCompleteAsync;
         client.UserCommandExecuted += UserCommandAsync;
@@ -80,7 +92,9 @@ public class InteractionHandler
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 var userNickname = (context.User as SocketGuildUser)?.Nickname;
-                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
+                var loginCommandId = (ulong?)this._cache.Get("login-command-id");
+                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username, loginCommandId);
+
                 await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
@@ -133,6 +147,11 @@ public class InteractionHandler
 
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
+        if (command.Name == "login")
+        {
+            this._cache.Set("login-command-id", socketSlashCommand.CommandId);
+        }
+
         Statistics.SlashCommandsExecuted.WithLabels(command.Name).Inc();
         _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
     }
@@ -168,7 +187,9 @@ public class InteractionHandler
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 var userNickname = (context.User as SocketGuildUser)?.Nickname;
-                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
+                var loginCommandId = (ulong?)this._cache.Get("login-command-id");
+
+                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username, loginCommandId);
                 await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;

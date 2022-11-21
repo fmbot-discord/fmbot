@@ -460,7 +460,6 @@ public class UserCommands : BaseCommandModule
 
         this._embed.WithDescription(reply.ToString());
         this._embed.WithColor(DiscordConstants.LastFmColorRed);
-        this._embed.WithFooter(".fmbot is not affiliated with Last.fm");
 
         var authorizeMessage = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
 

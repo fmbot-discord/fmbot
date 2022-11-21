@@ -125,6 +125,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [SlashCommand("whoknows", "Shows what other users listen to an artist in your server")]
     [UsernameSetRequired]
     [RequiresIndex]
+    [GuildOnly]
     public async Task WhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null)
@@ -220,6 +221,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [SlashCommand("affinity", "Shows users from this server with similar top artists.")]
     [UsernameSetRequired]
     [RequiresIndex]
+    [GuildOnly]
     public async Task AffinityAsync()
     {
         _ = DeferAsync();
