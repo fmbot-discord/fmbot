@@ -288,6 +288,16 @@ public class UserBuilder
             description.AppendLine($"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
         }
 
+        if(this._supporterService.ShowPromotionalMessage(user.UserType, context.DiscordGuild?.Id))
+        {
+            var random = new Random().Next(0, Constants.SupporterPromoChance);
+            if (random == 1)
+            {
+                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                description.AppendLine($"*Want to see an overview of all your years? [Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
+            }
+        }
+
         if (userInfo.Type != "user" && userInfo.Type != "subscriber")
         {
             description.AppendLine($"Last.fm {userInfo.Type}");
