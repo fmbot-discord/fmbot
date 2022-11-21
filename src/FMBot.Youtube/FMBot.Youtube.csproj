@@ -20,7 +20,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
-    <ProjectReference Include="..\FMBot.Youtube.Domain\FMBot.Youtube.Domain.csproj" />
   </ItemGroup>
 
 </Project>

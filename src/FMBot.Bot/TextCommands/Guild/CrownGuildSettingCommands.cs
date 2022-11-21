@@ -59,8 +59,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -115,8 +114,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -173,8 +171,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -262,8 +259,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -341,7 +337,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task BlockedUsersAsync()
+    public async Task CrownBlockedUsersAsync()
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
@@ -349,8 +345,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -398,8 +393,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command. ");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -599,8 +593,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command. ");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -668,8 +661,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command. ");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }

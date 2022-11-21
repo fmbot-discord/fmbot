@@ -50,8 +50,7 @@ public class UserGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -108,8 +107,7 @@ public class UserGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -198,8 +196,7 @@ public class UserGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -265,8 +262,7 @@ public class UserGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -351,8 +347,7 @@ public class UserGuildSettingCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }

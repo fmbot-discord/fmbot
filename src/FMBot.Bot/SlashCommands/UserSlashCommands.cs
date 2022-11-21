@@ -73,13 +73,16 @@ public class UserSlashCommands : InteractionModuleBase
             {
                 reply.AppendLine($"**[Click here add your Last.fm account to .fmbot]({link})**");
                 reply.AppendLine();
-                reply.AppendLine("Link will expire after 3 minutes, please wait a moment after allowing access...");
+                reply.AppendLine("Link will expire after 5 minutes, please wait a moment after allowing access...");
+                reply.AppendLine();
+                reply.AppendLine("Don't have a Last.fm account yet? \n" +
+                                 "[Sign up here](https://last.fm/join) and see [how to track your music here](https://last.fm/about/trackmymusic).");
             }
             else
             {
                 reply.AppendLine(
                     $"You have already logged in before. If you want to change or reconnect your connected Last.fm account, [click here.]({link}) " +
-                    $"Note that this link will expire after 3 minutes.");
+                    $"Note that this link will expire after 5 minutes.");
                 reply.AppendLine();
                 reply.AppendLine(
                     $"Using Spotify and having problems with your music not being tracked or it lagging behind? " +
@@ -87,7 +90,7 @@ public class UserSlashCommands : InteractionModuleBase
             }
 
             var embed = new EmbedBuilder();
-            embed.WithColor(DiscordConstants.InformationColorBlue);
+            embed.WithColor(DiscordConstants.LastFmColorRed);
             embed.WithDescription(reply.ToString());
 
             await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
@@ -143,7 +146,7 @@ public class UserSlashCommands : InteractionModuleBase
             {
                 followUpEmbed.WithColor(DiscordConstants.WarningColorOrange);
                 followUpEmbed.WithDescription(
-                    $"❌ Login failed.. link expired or something went wrong.\n\n" +
+                    $"Login expired. Re-run the command to try again.\n\n" +
                     $"Having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.");
 
                 await FollowupAsync(null, new[] { followUpEmbed.Build() }, ephemeral: true);
@@ -197,7 +200,7 @@ public class UserSlashCommands : InteractionModuleBase
         var newUserSettings = await this._userService.SetSettings(userSettings, embedType, countType);
 
         var reply = new StringBuilder();
-        reply.Append($"Your `.fm` mode has been set to **{newUserSettings.FmEmbedType}**");
+        reply.Append($"Your `/fm` mode has been set to **{newUserSettings.FmEmbedType}**");
         if (newUserSettings.FmCountType != null)
         {
             reply.Append($" with the **{newUserSettings.FmCountType.ToString().ToLower()} playcount**.");
@@ -231,41 +234,7 @@ public class UserSlashCommands : InteractionModuleBase
     {
         var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
 
-        var description = new StringBuilder();
-        description.AppendLine("Are you sure you want to delete all your data from .fmbot?");
-        description.AppendLine("This will remove the following data:");
-
-        description.AppendLine("- Your last.fm username");
-        if (userSettings.Friends?.Count > 0)
-        {
-            var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
-            description.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
-        }
-
-        if (userSettings.FriendedByUsers?.Count > 0)
-        {
-            var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
-            description.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
-        }
-
-        description.AppendLine("- Indexed artists, albums and tracks");
-        description.AppendLine("- All crowns you've gained or lost");
-
-        if (userSettings.UserType != UserType.User)
-        {
-            description.AppendLine($"- `{userSettings.UserType}` account status");
-            description.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
-        }
-
-        description.AppendLine();
-        description.AppendLine($"Logging out will not fix any sync issues with Spotify, for that please check out `/outofsync`.");
-        description.AppendLine();
-        description.AppendLine($"To logout, please click 'confirm'.");
-
-        var embed = new EmbedBuilder();
-        embed.WithDescription(description.ToString());
-
-        embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
+        var embed = UserBuilder.GetRemoveDataEmbed(userSettings, "/");
 
         var builder = new ComponentBuilder()
             .WithButton("Confirm", "id");
@@ -287,7 +256,7 @@ public class UserSlashCommands : InteractionModuleBase
 
             var followUpEmbed = new EmbedBuilder();
             followUpEmbed.WithTitle("Removal successful");
-            followUpEmbed.WithDescription("Your data has been removed from .fmbot.");
+            followUpEmbed.WithDescription("Your settings, friends and any other data have been successfully deleted from .fmbot.");
             await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
         }
         else

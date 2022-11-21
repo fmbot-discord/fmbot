@@ -111,6 +111,17 @@ public class UserService
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
     }
 
+    public async Task<User> GetUserWithDiscogs(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Users
+            .Include(i => i.UserDiscogs)
+            .Include(i => i.DiscogsReleases)
+            .ThenInclude(i => i.Release)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+    }
+
     public async Task<User> GetUserWithFriendsAsync(IUser discordUser)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -142,6 +153,7 @@ public class UserService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var query = db.Users
+            .Include(i => i.UserDiscogs)
             .Include(i => i.Friends)
             .Include(i => i.FriendedByUsers);
 
@@ -251,8 +263,10 @@ public class UserService
 
     public async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
     {
-        var loginDelay = 7000;
-        for (var i = 0; i < 9; i++)
+        Log.Information("LastfmAuth: Login session starting for {user} | {discordUserId}", contextUser.Username, contextUser.Id);
+
+        var loginDelay = 8000;
+        for (var i = 0; i < 11; i++)
         {
             await Task.Delay(loginDelay);
 
@@ -272,15 +286,14 @@ public class UserService
                 return true;
             }
 
-            if (!authSession.Success && i == 8)
+            if (!authSession.Success && i == 10)
             {
                 Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})", contextUser.Id);
                 return false;
             }
             if (!authSession.Success)
             {
-                loginDelay += 2000;
-                Log.Information("LastfmAuth: Login attempt {attempt} for {user} | {discordUserId} not succeeded yet ({errorCode}), delaying", i, contextUser.Username, contextUser.Id, authSession.Message);
+                loginDelay += 3000;
             }
         }
 

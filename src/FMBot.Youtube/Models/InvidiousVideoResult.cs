@@ -1,4 +1,4 @@
-namespace FMBot.Youtube.Domain.Models
+namespace FMBot.Youtube.Models
 {
     public class InvidiousVideoResult
     {

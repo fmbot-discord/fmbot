@@ -434,37 +434,54 @@ public class UserCommands : BaseCommandModule
         var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         var token = await this._lastFmRepository.GetAuthToken();
 
-        var replyString =
-            $"[Click here add your Last.fm account to .fmbot](http://www.last.fm/api/auth/?api_key={this._botSettings.LastFm.PublicKey}&token={token.Content.Token})";
+        var reply = new StringBuilder();
+        var link =
+            $"http://www.last.fm/api/auth/?api_key={this._botSettings.LastFm.PublicKey}&token={token.Content.Token}";
 
-        this._embed.WithTitle("Logging into .fmbot...");
-        this._embed.WithDescription(replyString);
+        if (existingUserSettings == null)
+        {
+            reply.AppendLine($"**[Click here add your Last.fm account to .fmbot]({link})**");
+            reply.AppendLine();
+            reply.AppendLine("Link will expire after 5 minutes, please wait a moment after allowing access...");
+            reply.AppendLine();
+            reply.AppendLine("Don't have a Last.fm account yet? \n" +
+                             "[Sign up here](https://last.fm/join) and see [how to track your music here](https://last.fm/about/trackmymusic).");
+        }
+        else
+        {
+            reply.AppendLine(
+                $"You have already logged in before. If you want to change or reconnect your connected Last.fm account, [click here.]({link}) " +
+                $"Note that this link will expire after 5 minutes.");
+            reply.AppendLine();
+            reply.AppendLine(
+                $"Using Spotify and having problems with your music not being tracked or it lagging behind? " +
+                $"Re-logging in again will not fix this, please use `/outofsync` for help instead.");
+        }
 
-        this._embedFooter.WithText("Link will expire after 3 minutes, please wait a moment after allowing access...");
-        this._embed.WithFooter(this._embedFooter);
+        this._embed.WithDescription(reply.ToString());
+        this._embed.WithColor(DiscordConstants.LastFmColorRed);
 
         var authorizeMessage = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
-
 
         if (!this._guildService.CheckIfDM(this.Context))
         {
             var serverEmbed = new EmbedBuilder()
                 .WithColor(DiscordConstants.InformationColorBlue);
 
-            var reply = "Check your DMs for a link to connect your Last.fm account to .fmbot!";
+            var guildReply = "Check your DMs for a link to connect your Last.fm account to .fmbot!";
 
             if (this.Context.Message.Content.Contains("set"))
             {
-                reply += $"\nPlease use `{prfx}mode` to change how your .fm command looks.";
+                guildReply += $"\nPlease use `{prfx}mode` to change how your .fm command looks.";
             }
 
             if (existingUserSettings != null)
             {
-                reply = $"You have already logged in before, however a link to re-connect your Last.fm account to .fmbot has still been sent to your DMs!\n\n" +
-                        $"Using Spotify and having problems with your music not being tracked or it lagging behind? Re-logging in again will not fix this, please use `{prfx}outofsync` for help instead.";
+                guildReply = $"You have already logged in before, however a link to re-connect your Last.fm account to .fmbot has still been sent to your DMs!\n\n" +
+                             $"Using Spotify and having problems with your music not being tracked or it lagging behind? Re-logging in again will not fix this, please use `{prfx}outofsync` for help instead.";
             }
 
-            serverEmbed.WithDescription(reply);
+            serverEmbed.WithDescription(guildReply);
             await this.Context.Channel.SendMessageAsync("", false, serverEmbed.Build());
         }
 
@@ -530,7 +547,7 @@ public class UserCommands : BaseCommandModule
             await authorizeMessage.ModifyAsync(m =>
             {
                 m.Embed = new EmbedBuilder()
-                    .WithDescription($"❌ Login failed.. link expired or something went wrong.\n\n" +
+                    .WithDescription($"Login expired. Re-run the command to try again.\n\n" +
                                      $"Having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.")
                     .WithColor(DiscordConstants.WarningColorOrange)
                     .Build();
@@ -558,43 +575,9 @@ public class UserCommands : BaseCommandModule
 
         if (string.IsNullOrEmpty(confirmation) || confirmation.ToLower() != "confirm")
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("Are you sure you want to delete all your data from .fmbot?");
-            sb.AppendLine("This will remove the following data:");
+            var embed = UserBuilder.GetRemoveDataEmbed(userSettings, prfx);
 
-            sb.AppendLine("- Your last.fm username");
-            if (userSettings.Friends?.Count > 0)
-            {
-                var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
-                sb.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
-            }
-
-            if (userSettings.FriendedByUsers?.Count > 0)
-            {
-                var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
-                sb.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
-            }
-
-            sb.AppendLine("- Indexed artists, albums and tracks");
-            sb.AppendLine("- All crowns you've gained or lost");
-            sb.AppendLine("- All featured history");
-
-            if (userSettings.UserType != UserType.User)
-            {
-                sb.AppendLine($"- `{userSettings.UserType}` account status");
-                sb.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
-            }
-
-            sb.AppendLine();
-            sb.AppendLine($"Logging out will not fix any sync issues with Spotify, for that please check out `{prfx}outofsync`.");
-            sb.AppendLine();
-            sb.AppendLine($"Type `{prfx}remove confirm` to confirm deletion.");
-
-            this._embed.WithDescription(sb.ToString());
-
-            this._embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            await this.Context.Channel.SendMessageAsync("", false, embed.Build());
         }
         else
         {

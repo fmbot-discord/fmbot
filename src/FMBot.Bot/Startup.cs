@@ -16,6 +16,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Discogs.Apis;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Api;
@@ -185,6 +186,7 @@ public class Startup
         services.AddHttpClient<ILastfmApi, LastfmApi>();
         services.AddHttpClient<ChartService>();
         services.AddHttpClient<InvidiousApi>();
+        services.AddHttpClient<DiscogsApi>();
         services.AddHttpClient<LastFmRepository>();
         services.AddHttpClient<TrackService>();
         services.AddHttpClient<OpenCollectiveService>();

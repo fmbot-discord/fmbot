@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using FMBot.Youtube.Domain.Models;
+using FMBot.Youtube.Models;
 using FMBot.Youtube.Services;
 
 namespace FMBot.Bot.Services.ThirdParty;

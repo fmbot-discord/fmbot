@@ -17,7 +17,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.7")
+                .HasAnnotation("ProductVersion", "7.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
@@ -347,6 +347,164 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasDatabaseName("ix_channels_guild_id");
 
                     b.ToTable("channels", (string)null);
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsFormatDescriptions", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("citext")
+                        .HasColumnName("description");
+
+                    b.Property<int>("ReleaseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("release_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_discogs_format_descriptions");
+
+                    b.HasIndex("ReleaseId")
+                        .HasDatabaseName("ix_discogs_format_descriptions_release_id");
+
+                    b.ToTable("discogs_format_descriptions", (string)null);
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsGenre", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("citext")
+                        .HasColumnName("description");
+
+                    b.Property<int>("ReleaseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("release_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_discogs_genre");
+
+                    b.HasIndex("ReleaseId")
+                        .HasDatabaseName("ix_discogs_genre_release_id");
+
+                    b.ToTable("discogs_genre", (string)null);
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsRelease", b =>
+                {
+                    b.Property<int>("DiscogsId")
+                        .HasColumnType("integer")
+                        .HasColumnName("discogs_id");
+
+                    b.Property<int?>("AlbumId")
+                        .HasColumnType("integer")
+                        .HasColumnName("album_id");
+
+                    b.Property<string>("Artist")
+                        .HasColumnType("citext")
+                        .HasColumnName("artist");
+
+                    b.Property<int>("ArtistDiscogsId")
+                        .HasColumnType("integer")
+                        .HasColumnName("artist_discogs_id");
+
+                    b.Property<int?>("ArtistId")
+                        .HasColumnType("integer")
+                        .HasColumnName("artist_id");
+
+                    b.Property<string>("CoverUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("cover_url");
+
+                    b.Property<string>("FeaturingArtist")
+                        .HasColumnType("citext")
+                        .HasColumnName("featuring_artist");
+
+                    b.Property<int?>("FeaturingArtistDiscogsId")
+                        .HasColumnType("integer")
+                        .HasColumnName("featuring_artist_discogs_id");
+
+                    b.Property<int?>("FeaturingArtistId")
+                        .HasColumnType("integer")
+                        .HasColumnName("featuring_artist_id");
+
+                    b.Property<string>("FeaturingArtistJoin")
+                        .HasColumnType("text")
+                        .HasColumnName("featuring_artist_join");
+
+                    b.Property<string>("Format")
+                        .HasColumnType("citext")
+                        .HasColumnName("format");
+
+                    b.Property<string>("FormatText")
+                        .HasColumnType("text")
+                        .HasColumnName("format_text");
+
+                    b.Property<string>("Label")
+                        .HasColumnType("citext")
+                        .HasColumnName("label");
+
+                    b.Property<decimal?>("LowestPrice")
+                        .HasColumnType("numeric")
+                        .HasColumnName("lowest_price");
+
+                    b.Property<int?>("MasterId")
+                        .HasColumnType("integer")
+                        .HasColumnName("master_id");
+
+                    b.Property<string>("SecondLabel")
+                        .HasColumnType("text")
+                        .HasColumnName("second_label");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("citext")
+                        .HasColumnName("title");
+
+                    b.Property<int?>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
+
+                    b.HasKey("DiscogsId")
+                        .HasName("pk_discogs_releases");
+
+                    b.ToTable("discogs_releases", (string)null);
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsStyle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("citext")
+                        .HasColumnName("description");
+
+                    b.Property<int>("ReleaseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("release_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_discogs_style");
+
+                    b.HasIndex("ReleaseId")
+                        .HasDatabaseName("ix_discogs_style_release_id");
+
+                    b.ToTable("discogs_style", (string)null);
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.FeaturedLog", b =>
@@ -1043,6 +1201,99 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.ToTable("user_crowns", (string)null);
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserDiscogs", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("AccessToken")
+                        .HasColumnType("text")
+                        .HasColumnName("access_token");
+
+                    b.Property<string>("AccessTokenSecret")
+                        .HasColumnType("text")
+                        .HasColumnName("access_token_secret");
+
+                    b.Property<int>("DiscogsId")
+                        .HasColumnType("integer")
+                        .HasColumnName("discogs_id");
+
+                    b.Property<DateTime?>("LastUpdated")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_updated");
+
+                    b.Property<string>("MaximumValue")
+                        .HasColumnType("text")
+                        .HasColumnName("maximum_value");
+
+                    b.Property<string>("MedianValue")
+                        .HasColumnType("text")
+                        .HasColumnName("median_value");
+
+                    b.Property<string>("MinimumValue")
+                        .HasColumnType("text")
+                        .HasColumnName("minimum_value");
+
+                    b.Property<DateTime?>("ReleasesLastUpdated")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("releases_last_updated");
+
+                    b.Property<string>("Username")
+                        .HasColumnType("text")
+                        .HasColumnName("username");
+
+                    b.HasKey("UserId")
+                        .HasName("pk_user_discogs");
+
+                    b.ToTable("user_discogs", (string)null);
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserDiscogsReleases", b =>
+                {
+                    b.Property<int>("UserDiscogsReleaseId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("user_discogs_release_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserDiscogsReleaseId"));
+
+                    b.Property<DateTime>("DateAdded")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date_added");
+
+                    b.Property<int>("InstanceId")
+                        .HasColumnType("integer")
+                        .HasColumnName("instance_id");
+
+                    b.Property<string>("Quantity")
+                        .HasColumnType("text")
+                        .HasColumnName("quantity");
+
+                    b.Property<int?>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<int>("ReleaseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("release_id");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("UserDiscogsReleaseId")
+                        .HasName("pk_user_discogs_releases");
+
+                    b.HasIndex("ReleaseId")
+                        .HasDatabaseName("ix_user_discogs_releases_release_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_discogs_releases_user_id");
+
+                    b.ToTable("user_discogs_releases", (string)null);
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserPlay", b =>
                 {
                     b.Property<long>("UserPlayId")
@@ -1281,6 +1532,42 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Navigation("Guild");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsFormatDescriptions", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.DiscogsRelease", "DiscogsRelease")
+                        .WithMany("FormatDescriptions")
+                        .HasForeignKey("ReleaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_discogs_format_descriptions_discogs_releases_discogs_releas");
+
+                    b.Navigation("DiscogsRelease");
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsGenre", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.DiscogsRelease", "DiscogsRelease")
+                        .WithMany("Genres")
+                        .HasForeignKey("ReleaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_discogs_genre_discogs_releases_discogs_release_temp_id1");
+
+                    b.Navigation("DiscogsRelease");
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsStyle", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.DiscogsRelease", "DiscogsRelease")
+                        .WithMany("Styles")
+                        .HasForeignKey("ReleaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_discogs_style_discogs_releases_discogs_release_temp_id2");
+
+                    b.Navigation("DiscogsRelease");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.FeaturedLog", b =>
                 {
                     b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
@@ -1431,6 +1718,39 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserDiscogs", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
+                        .WithOne("UserDiscogs")
+                        .HasForeignKey("FMBot.Persistence.Domain.Models.UserDiscogs", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_discogs_users_user_id");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserDiscogsReleases", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.DiscogsRelease", "Release")
+                        .WithMany("UserDiscogsReleases")
+                        .HasForeignKey("ReleaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_discogs_releases_discogs_releases_release_id");
+
+                    b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
+                        .WithMany("DiscogsReleases")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_discogs_releases_users_user_id");
+
+                    b.Navigation("Release");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserPlay", b =>
                 {
                     b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
@@ -1495,6 +1815,17 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Navigation("Tracks");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.DiscogsRelease", b =>
+                {
+                    b.Navigation("FormatDescriptions");
+
+                    b.Navigation("Genres");
+
+                    b.Navigation("Styles");
+
+                    b.Navigation("UserDiscogsReleases");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Guild", b =>
                 {
                     b.Navigation("Channels");
@@ -1516,6 +1847,8 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
 
                     b.Navigation("Crowns");
 
+                    b.Navigation("DiscogsReleases");
+
                     b.Navigation("FeaturedLogs");
 
                     b.Navigation("FriendedByUsers");
@@ -1531,6 +1864,8 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Navigation("Streaks");
 
                     b.Navigation("Tracks");
+
+                    b.Navigation("UserDiscogs");
                 });
 #pragma warning restore 612, 618
         }

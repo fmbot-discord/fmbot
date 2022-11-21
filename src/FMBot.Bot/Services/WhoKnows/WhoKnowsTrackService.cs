@@ -101,7 +101,7 @@ public class WhoKnowsTrackService
                            "FROM user_tracks AS ut " +
                            "INNER JOIN users AS u ON ut.user_id = u.user_id " +
                            "WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                           "ORDER BY UPPER(u.user_name_last_fm) DESC) ut " +
+                           "ORDER BY UPPER(u.user_name_last_fm) DESC, ut.playcount DESC) ut " +
                            "ORDER BY playcount DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;

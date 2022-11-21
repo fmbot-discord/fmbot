@@ -27,7 +27,6 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 COPY ["src/FMBot.Bot", "FMBot.Bot/"]
 COPY ["src/FMBot.Images", "FMBot.Images/"]
-COPY ["src/FMBot.Youtube.Domain", "FMBot.Youtube.Domain/"]
 COPY ["src/FMBot.Persistence.Domain", "FMBot.Persistence.Domain/"]
 COPY ["src/FMBot.Domain", "FMBot.Domain/"]
 COPY ["src/FMBot.Persistence", "FMBot.Persistence/"]
@@ -37,6 +36,7 @@ COPY ["src/FMBot.LastFM", "FMBot.LastFM/"]
 COPY ["src/FMBot.LastFM.Domain", "FMBot.LastFM.Domain/"]
 COPY ["src/FMBot.Logger", "FMBot.Logger/"]
 COPY ["src/FMBot.OpenCollective", "FMBot.OpenCollective/"]
+COPY ["src/FMBot.Discogs", "FMBot.Discogs/"]
 RUN dotnet restore "FMBot.Bot/FMBot.Bot.csproj"
 COPY . .
 WORKDIR "/src/FMBot.Bot"

@@ -3,11 +3,13 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
@@ -29,6 +31,7 @@ public class UserBuilder
     private readonly TimeService _timeService;
     private readonly ArtistsService _artistsService;
     private readonly SupporterService _supporterService;
+    private readonly DiscogsService _discogsService;
 
     public UserBuilder(UserService userService,
         GuildService guildService,
@@ -40,7 +43,8 @@ public class UserBuilder
         PlayService playService,
         TimeService timeService,
         ArtistsService artistsService,
-        SupporterService supporterService)
+        SupporterService supporterService,
+        DiscogsService discogsService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -52,6 +56,7 @@ public class UserBuilder
         this._timeService = timeService;
         this._artistsService = artistsService;
         this._supporterService = supporterService;
+        this._discogsService = discogsService;
         this._botSettings = botSettings.Value;
     }
 
@@ -239,7 +244,6 @@ public class UserBuilder
         return response;
     }
 
-
     public async Task<ResponseModel> StatsAsync(ContextModel context, UserSettingsModel userSettings, User user)
     {
         var response = new ResponseModel
@@ -354,6 +358,33 @@ public class UserBuilder
             response.Embed.AddField("Stats", stats.ToString());
         }
 
+        if (user.UserDiscogs != null)
+        {
+            var collection = new StringBuilder();
+
+            collection.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
+                                  $"• {user.UserDiscogs.MedianValue} med " +
+                                  $"• {user.UserDiscogs.MaximumValue} max");
+
+            if (user.UserType != UserType.User)
+            {
+                var discogsCollection = await this._discogsService.GetUserCollection(userSettings.UserId);
+                if (discogsCollection.Any())
+                {
+                    var collectionTypes = discogsCollection
+                            .GroupBy(g => g.Release.Format)
+                            .OrderByDescending(o => o.Count());
+                    foreach (var type in collectionTypes)
+                    {
+                        collection.AppendLine($"**`{type.Key}` {StringService.GetDiscogsFormatEmote(type.Key)}** - **{type.Count()}** ");
+                    }
+                }
+            }
+
+
+            response.Embed.AddField("Your Discogs collection", collection.ToString());
+        }
+
         var monthDescription = new StringBuilder();
         var monthGroups = allPlays
             .OrderByDescending(o => o.TimePlayed)
@@ -412,8 +443,16 @@ public class UserBuilder
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years? " +
-                                                 $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
+                if (user.UserDiscogs == null)
+                {
+                    response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years? " +
+                                                     $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
+                }
+                else
+                {
+                    response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years and your Discogs collection? " +
+                                                     $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
+                }
             }
         }
 
@@ -432,5 +471,56 @@ public class UserBuilder
         }
 
         return response;
+    }
+
+    public static EmbedBuilder GetRemoveDataEmbed(User userSettings, string prfx)
+    {
+        var description = new StringBuilder();
+        description.AppendLine("**Are you sure you want to delete all your data from .fmbot?**");
+        description.AppendLine("This will remove the following data:");
+
+        description.AppendLine("- Account settings like your connected Last.fm account");
+
+        if (userSettings.Friends?.Count > 0)
+        {
+            var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
+            description.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
+        }
+
+        if (userSettings.FriendedByUsers?.Count > 0)
+        {
+            var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
+            description.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
+        }
+
+        description.AppendLine("- All crowns you've gained or lost");
+        description.AppendLine("- All featured history");
+
+        if (userSettings.UserType != UserType.User)
+        {
+            description.AppendLine($"- `{userSettings.UserType}` account status");
+            description.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
+        }
+
+        description.AppendLine();
+        description.AppendLine($"Spotify out of sync? Check `/outofsync`");
+        description.AppendLine($"Changed Last.fm username? Run `/login`");
+        description.AppendLine();
+
+        if (prfx == "/")
+        {
+            description.AppendLine($"If you still wish to logout, please click 'confirm'.");
+        }
+        else
+        {
+            description.AppendLine($"Type `{prfx}remove confirm` to confirm deletion.");
+        }
+
+        var embed = new EmbedBuilder();
+        embed.WithDescription(description.ToString());
+
+        embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
+
+        return embed;
     }
 }

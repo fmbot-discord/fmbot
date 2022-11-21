@@ -8,6 +8,7 @@ using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Services;
 
@@ -213,5 +214,119 @@ public static class StringService
         });
 
         return builder.Build();
+    }
+
+    public static string UserDiscogsReleaseToStringWithTitle(UserDiscogsReleases discogsRelease)
+    {
+        var description = new StringBuilder();
+        description.Append($"**");
+        description.Append($"{discogsRelease.Release.Artist}");
+
+        if (discogsRelease.Release.FeaturingArtistJoin != null && discogsRelease.Release.FeaturingArtist != null)
+        {
+            description.Append($"** {discogsRelease.Release.FeaturingArtistJoin} **{discogsRelease.Release.FeaturingArtist}");
+        }
+
+        description.Append($" - ");
+
+        description.Append($"[{discogsRelease.Release.Title}](https://www.discogs.com/release/{discogsRelease.Release.DiscogsId})");
+        description.Append("**");
+
+        description.AppendLine();
+
+        description.Append(GetDiscogsFormatEmote(discogsRelease.Release.Format));
+
+        description.Append($" {discogsRelease.Release.Format}");
+
+        if (discogsRelease.Release.FormatText != null)
+        {
+            description.Append($" - *{discogsRelease.Release.FormatText}*");
+        }
+
+        if (discogsRelease.Rating.HasValue)
+        {
+            description.Append($" - ");
+
+            for (var i = 0; i < discogsRelease.Rating; i++)
+            {
+                description.Append("<:star:1043647352273121311>");
+            }
+        }
+
+        description.AppendLine();
+
+        return description.ToString();
+    }
+
+    public static string UserDiscogsReleaseToString(UserDiscogsReleases discogsRelease)
+    {
+        var description = new StringBuilder();
+
+        description.Append(GetDiscogsFormatEmote(discogsRelease.Release.Format));
+
+        description.Append($" [{discogsRelease.Release.Format}](https://www.discogs.com/release/{discogsRelease.Release.DiscogsId})");
+        if (discogsRelease.Release.FormatText != null)
+        {
+            description.Append($" - *{discogsRelease.Release.FormatText}*");
+        }
+
+        if (discogsRelease.Rating.HasValue)
+        {
+            description.Append($" - ");
+
+            for (var i = 0; i < discogsRelease.Rating; i++)
+            {
+                description.Append("<:star:1043647352273121311>");
+            }
+        }
+
+        description.AppendLine();
+
+        return description.ToString();
+    }
+
+    public static string UserDiscogsWithAlbumName(UserDiscogsReleases discogsRelease)
+    {
+        var description = new StringBuilder();
+
+        var formatEmote = GetDiscogsFormatEmote(discogsRelease.Release.Format);
+        description.Append(formatEmote ?? discogsRelease.Release.Format);
+
+        description.Append(
+            $" - **[{discogsRelease.Release.Title}](https://www.discogs.com/release/{discogsRelease.Release.DiscogsId})**");
+
+        if (discogsRelease.Release.FormatText != null)
+        {
+            description.Append($" - *{discogsRelease.Release.FormatText}*");
+        }
+
+        if (discogsRelease.Rating.HasValue)
+        {
+            description.Append($" - ");
+
+            for (var i = 0; i < discogsRelease.Rating; i++)
+            {
+                description.Append("<:star:1043647352273121311>");
+            }
+        }
+
+        description.AppendLine();
+
+        return description.ToString();
+    }
+
+    public static string GetDiscogsFormatEmote(string format)
+    {
+        switch (format)
+        {
+            case "Vinyl":
+                return "<:vinyl:1043644602969763861>";
+            case "CD":
+                return "💿";
+            case "Casette":
+                return "<:casette:1043890774384853012>";
+        }
+
+        return null;
     }
 }

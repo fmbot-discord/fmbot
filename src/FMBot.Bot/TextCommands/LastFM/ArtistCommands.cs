@@ -110,7 +110,7 @@ public class ArtistCommands : BaseCommandModule
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, prfx, contextUser), artistValues);
@@ -475,7 +475,7 @@ public class ArtistCommands : BaseCommandModule
                 .GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), guildTask, settings);
 
             await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -678,42 +678,27 @@ public class ArtistCommands : BaseCommandModule
     }
 
     [Command("affinity", RunMode = RunMode.Async)]
-    [Summary("Shows server users with similar top artists.\n\n" +
-             "This command is still a work in progress.")]
-    [Alias("n", "aff", "neighbors")]
+    [Summary("Shows users from this server with similar top artists.")]
+    [Alias("n", "aff", "neighbors", "soulmates")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists)]
     public async Task AffinityAsync()
     {
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-        var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild);
 
-        var users = filteredGuildUsers.Select(s => s.User).ToList();
-        var neighbors = await this._whoKnowArtistService.GetNeighbors(users, userSettings.UserId);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        var description = new StringBuilder();
+        var fullGuildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
-        foreach (var neighbor in neighbors.Take(15))
-        {
-            description.AppendLine($"**[{neighbor.Name}]({Constants.LastFMUserUrl}{neighbor.LastFMUsername})** " +
-                                   $"- {neighbor.MatchPercentage:0.0}%");
-        }
+        var response = await this._artistBuilders
+            .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), guild, fullGuildTask);
 
-        var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-        this._embed.WithTitle($"Neighbors for {userTitle}");
-        this._embed.WithFooter("Experimental command - work in progress");
-
-        this._embed.WithDescription(description.ToString());
-
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     private async Task<ArtistInfo> GetArtist(string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null, User user = null)

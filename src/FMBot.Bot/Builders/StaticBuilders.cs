@@ -55,7 +55,7 @@ public class StaticBuilders
         response.Embed.AddField("Get more stats",
             "- See first listen dates for artists/albums/tracks\n" +
             "- Expanded `stats` command with overall history\n" +
-            "- Extra page on `year` overview" +
+            "- Extra page on `year` overview\n" +
             "- More coming soon");
 
         response.Embed.AddField("Flex your support",
@@ -63,13 +63,14 @@ public class StaticBuilders
             "- Sponsor charts\n" +
             "- Your name in `supporters`");
 
+        response.Embed.AddField("All your music",
+            "- Lifetime scrobble history stored for extra stats\n" +
+            "- All artist/album/track playcounts cached (up from top 4/5/6k)\n" +
+            "- Full Discogs collection stored (up from last 100)");
+
         response.Embed.AddField("Add more friends",
             $"- Friend limit raised to {Constants.MaxFriendsSupporter} (up from {Constants.MaxFriends})\n" +
             "- Applies to all commands, from `friends` to `friendwhoknows`");
-
-        response.Embed.AddField("All your scrobbles",
-            "- Lifetime scrobble history stored for extra stats\n" +
-            "- All artist/album/track playcounts cached (up from top 4/5/6k)");
 
         response.Embed.AddField("Get featured",
             "- Every first Sunday of the month is Supporter Sunday\n" +

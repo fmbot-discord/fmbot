@@ -50,7 +50,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     {
         _ = DeferAsync();
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
 
         try
         {
@@ -125,6 +125,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [SlashCommand("whoknows", "Shows what other users listen to an artist in your server")]
     [UsernameSetRequired]
     [RequiresIndex]
+    [GuildOnly]
     public async Task WhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null)
@@ -209,6 +210,32 @@ public class ArtistSlashCommands : InteractionModuleBase
                 new TasteSettings { TasteType = tasteType }, timeSettings, userSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("affinity", "Shows users from this server with similar top artists.")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    [GuildOnly]
+    public async Task AffinityAsync()
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+        
+        try
+        {
+            var response = await this._artistBuilders.AffinityAsync(new ContextModel(this.Context, contextUser),
+                guild, guildTask);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
