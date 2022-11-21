@@ -1074,7 +1074,7 @@ public class ArtistBuilders
             foreach (var neighbor in page)
             {
                 var guildUser = fullGuild.GuildUsers.First(f => f.UserId == neighbor.UserId);
-                pageString.AppendLine($"{counter}. **[{guildUser.UserName}]({Constants.LastFMUserUrl}{guildUser.User.UserNameLastFM})** " +
+                pageString.AppendLine($"{counter}. **[{Format.Sanitize(guildUser.UserName)}]({Constants.LastFMUserUrl}{guildUser.User.UserNameLastFM})** " +
                                       $"- {neighbor.MatchPercentage:0.0}%");
 
                 counter++;
