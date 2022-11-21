@@ -89,24 +89,24 @@ public class SupporterService
     {
         if (userType != UserType.User)
         {
-            return true;
+            return false;
         }
 
         if (guildId != null)
         {
             if (this._cache.TryGetValue(GetGuildPromoCacheKey(guildId), out _))
             {
-                return true;
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     public async Task<string> GetPromotionalUpdateMessage(User user, string prfx, IDiscordClient contextClient,
         ulong? guildId = null)
     {
-        if (ShowPromotionalMessage(user.UserType, guildId))
+        if (!ShowPromotionalMessage(user.UserType, guildId))
         {
             return null;
         }
