@@ -119,7 +119,7 @@ public class DiscogsBuilder
             if (!userSettings.DifferentUser)
             {
                 response.Embed.WithDescription("To use the Discogs commands you have to connect a Discogs account.\n\n" +
-                                               "Use the `.discogs` command to get started.");
+                                               $"Use the `{context.Prefix}discogs` command to get started.");
             }
             else
             {
