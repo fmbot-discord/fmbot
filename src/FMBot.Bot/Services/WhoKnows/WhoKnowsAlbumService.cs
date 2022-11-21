@@ -101,7 +101,7 @@ public class WhoKnowsAlbumService
                            "FROM user_albums AS ub " +
                            "INNER JOIN users AS u ON ub.user_id = u.user_id " +
                            "WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                           "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ub " +
+                           "ORDER BY UPPER(u.user_name_last_fm) DESC, ub.playcount DESC) ub " +
                            "ORDER BY playcount DESC ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
