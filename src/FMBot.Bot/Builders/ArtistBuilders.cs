@@ -15,6 +15,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Swan;
@@ -39,7 +40,7 @@ public class ArtistBuilders
     private readonly SettingService _settingService;
     private readonly SmallIndexRepository _smallIndexRepository;
     private readonly SupporterService _supporterService;
-
+    
     public ArtistBuilders(ArtistsService artistsService,
         LastFmRepository lastFmRepository,
         GuildService guildService,
@@ -1037,6 +1038,65 @@ public class ArtistBuilders
         {
             await this._smallIndexRepository.UpdateUserArtists(context.ContextUser, ownArtists.Content.TopArtists);
         }
+
+        return response;
+    }
+
+    public async Task<ResponseModel> AffinityAsync(
+        ContextModel context,
+        Guild guild,
+        Task<Guild> fullGuildTask)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var neighbors = await this._whoKnowsArtistService.GetNeighbors(guild.GuildId, context.ContextUser.UserId);
+
+        var fullGuild = await fullGuildTask;
+        var filteredGuildUsers = GuildService.FilterGuildUsersAsync(fullGuild);
+        var filteredUserIds = filteredGuildUsers.Select(s => s.UserId).ToList();
+
+        neighbors = neighbors
+            .Where(w => filteredUserIds.Contains(w.UserId))
+            .ToList();
+
+        var neighborPages = neighbors.Chunk(12).ToList();
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        var counter = 1;
+        var pageCounter = 1;
+        var pages = new List<PageBuilder>();
+        foreach (var page in neighborPages)
+        {
+            var pageString = new StringBuilder();
+            foreach (var neighbor in page)
+            {
+                var guildUser = fullGuild.GuildUsers.First(f => f.UserId == neighbor.UserId);
+                pageString.AppendLine($"{counter}. **[{guildUser.UserName}]({Constants.LastFMUserUrl}{guildUser.User.UserNameLastFM})** " +
+                                      $"- {neighbor.MatchPercentage:0.0}%");
+
+                counter++;
+            }
+
+            var pageFooter = new StringBuilder();
+            pageFooter.Append($"Page {pageCounter}/{neighborPages.Count}");
+
+            pages.Add(new PageBuilder()
+                .WithTitle($"Neighbors for {userTitle}")
+                .WithDescription(pageString.ToString())
+                .WithFooter(pageFooter.ToString()));
+            pageCounter++;
+        }
+
+        if (!neighborPages.Any())
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription("Could not find users with a similar music taste."));
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
 
         return response;
     }

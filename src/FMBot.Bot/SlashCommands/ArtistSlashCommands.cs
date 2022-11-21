@@ -216,4 +216,29 @@ public class ArtistSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [SlashCommand("affinity", "Shows users from this server with similar top artists.")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task AffinityAsync()
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+        
+        try
+        {
+            var response = await this._artistBuilders.AffinityAsync(new ContextModel(this.Context, contextUser),
+                guild, guildTask);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }

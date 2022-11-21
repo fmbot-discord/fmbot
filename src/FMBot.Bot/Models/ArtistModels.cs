@@ -97,13 +97,7 @@ public class AffinityArtist
 
 public class AffinityArtistResultWithUser
 {
-    public string Name { get; set; }
-
     public decimal MatchPercentage { get; set; }
-
-    public string LastFMUsername { get; set; }
-
-    public ulong DiscordUserId { get; set; }
 
     public int UserId { get; set; }
 }

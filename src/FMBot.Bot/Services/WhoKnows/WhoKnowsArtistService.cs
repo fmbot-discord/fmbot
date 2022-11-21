@@ -321,7 +321,7 @@ public class WhoKnowsArtistService
         });
     }
 
-    public async Task<IReadOnlyList<AffinityArtistResultWithUser>> GetNeighbors(IEnumerable<User> guildUsers, int userId, int guildId)
+    public async Task<IReadOnlyList<AffinityArtistResultWithUser>> GetNeighbors(int guildId, int userId)
     {
         var topArtistsForEveryoneInServer = new List<AffinityArtist>();
 
@@ -395,9 +395,7 @@ public class WhoKnowsArtistService
                 UserId = s.Key,
                 MatchPercentage = Math.Min(
                     ((decimal)s.Sum(w => w.Weight * topArtists.First(f => f.ArtistName == w.ArtistName).Weight)
-                        / (decimal)topArtists.Sum(w => w.Weight) * 100) * 2, 100),
-                LastFMUsername = guildUsers.First(f => f.UserId == s.Key).UserNameLastFM,
-                Name = guildUsers.First(f => f.UserId == s.Key).UserNameLastFM
+                        / (decimal)topArtists.Sum(w => w.Weight) * 100) * 2, 100)
             })
             .ToList();
     }
