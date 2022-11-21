@@ -111,7 +111,7 @@ public class SupporterService
             return null;
         }
 
-        var randomHintNumber = new Random().Next(0, 15);
+        var randomHintNumber = new Random().Next(0, 18);
 
         switch (randomHintNumber)
         {
@@ -137,7 +137,7 @@ public class SupporterService
                     }
 
                     return
-                        $"*Using Discogs to keep track of your vinyl collection? Connect your account with the `discogs` command.*";
+                        $"*Using Discogs to keep track of your vinyl collection? Connect your account with the `{prfx}discogs` command.*";
                 }
             default:
                 return null;
