@@ -21,7 +21,7 @@ public static class GenericEmbedService
         var loginCommand = loginCommandId.HasValue ? $"</login:{loginCommandId}>" : "`/login`";
         embed.WithDescription($"Hi {name}, welcome to .fmbot. \n" +
                               $"To use this bot you first need to add your Last.fm account.\n\n" +
-                              $"Please use the {loginCommand} command. The bot will then DM you a link so you can connect your Last.fm account.");
+                              $"Please use the {loginCommand} command. The bot will then send you a link so you can connect your Last.fm account.");
 
         embed.WithUrl($"{Constants.DocsUrl}/commands/");
 
