@@ -217,7 +217,7 @@ public class ArtistCommands : BaseCommandModule
             {
                 footer.AppendLine($" - {userSettings.UserNameLastFm} has {artist.Artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
-                title.Append($"{userSettings.DiscordUserName} their top albums for '{artist.Artist.ArtistName}'");
+                title.Append($"{userSettings.DiscordUserName}'s top albums for '{artist.Artist.ArtistName}'");
             }
             else
             {
@@ -332,7 +332,7 @@ public class ArtistCommands : BaseCommandModule
     }
 
     [Command("topartists", RunMode = RunMode.Async)]
-    [Summary("Shows your or someone else their top artists over a certain time period.")]
+    [Summary("Shows your or someone else's top artists over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
         Constants.BillboardExample, Constants.ExtraLargeExample)]
     [Examples("ta", "topartists", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]

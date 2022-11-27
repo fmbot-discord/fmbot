@@ -420,6 +420,8 @@ public class SupporterService
         return await db.Supporters
             .AsQueryable()
             .Where(w => w.VisibleInOverview)
+            .Where(w => w.Expired != true)
+            .Where(w => w.Name != "Incognito" && w.Name != "Guest")
             .OrderByDescending(o => o.Created)
             .ToListAsync();
     }

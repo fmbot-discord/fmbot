@@ -304,7 +304,7 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("scrobble", RunMode = RunMode.Async)]
-    [Discord.Commands.Summary("Scrobbles a track on Last.fm.")]
+    [Summary("Scrobbles a track on Last.fm.")]
     [Examples("scrobble", "sb stronger Kanye West", "scrobble Loona Heart Attack", "scrobble Mac DeMarco | Chamber of Reflection")]
     [UserSessionRequired]
     [Alias("sb")]
@@ -402,7 +402,7 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("toptracks", RunMode = RunMode.Async)]
-    [Discord.Commands.Summary("Shows your or someone else their top tracks over a certain time period.")]
+    [Summary("Shows your or someone else's top tracks over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
         Constants.BillboardExample, Constants.ExtraLargeExample)]
     [Examples("tt", "toptracks", "tt y 3", "toptracks weekly @user", "tt bb xl")]

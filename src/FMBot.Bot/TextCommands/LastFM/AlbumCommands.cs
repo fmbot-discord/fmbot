@@ -186,7 +186,7 @@ public class AlbumCommands : BaseCommandModule
     }
 
     [Command("topalbums", RunMode = RunMode.Async)]
-    [Summary("Shows your or someone else their top albums over a certain time period.")]
+    [Summary("Shows your or someone else's top albums over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
         Constants.BillboardExample, Constants.ExtraLargeExample)]
     [Examples("tab", "topalbums", "tab a lfm:fm-bot", "topalbums weekly @user", "tab bb xl")]

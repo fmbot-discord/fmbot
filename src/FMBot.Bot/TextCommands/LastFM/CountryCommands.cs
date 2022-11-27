@@ -41,7 +41,7 @@ public class CountryCommands : BaseCommandModule
     }
 
     [Command("topcountries", RunMode = RunMode.Async)]
-    [Summary("Shows a list of your or someone else their top artist countries over a certain time period.")]
+    [Summary("Shows a list of your or someone else's top artist countries over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("tc", "topcountries", "tc a lfm:fm-bot", "topcountries weekly @user")]
     [Alias("cl", "tc", "countrylist", "countries", "top countries", "countrieslist")]

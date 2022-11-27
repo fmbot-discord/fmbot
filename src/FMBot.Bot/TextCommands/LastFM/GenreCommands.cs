@@ -72,7 +72,7 @@ public class GenreCommands : BaseCommandModule
     }
 
     [Command("topgenres", RunMode = RunMode.Async)]
-    [Summary("Shows a list of your or someone else their top genres over a certain time period.")]
+    [Summary("Shows a list of your or someone else's top genres over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("tg", "topgenres", "tg a lfm:fm-bot", "topgenres weekly @user")]
     [Alias("gl", "tg", "genrelist", "genres", "top genres", "genreslist")]

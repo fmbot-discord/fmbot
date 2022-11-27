@@ -397,7 +397,7 @@ public class ArtistBuilders
             {
                 footer.AppendLine($"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
-                title.Append($"{userSettings.DiscordUserName} their top tracks for '{artistSearch.Artist.ArtistName}'");
+                title.Append($"{userSettings.DiscordUserName}'s top tracks for '{artistSearch.Artist.ArtistName}'");
             }
             else
             {
