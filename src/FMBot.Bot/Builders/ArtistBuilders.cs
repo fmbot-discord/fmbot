@@ -131,8 +131,8 @@ public class ArtistBuilders
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                firstListenInfo = $"*Want to see the date you first listened to this artist? " +
-                                  $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
+                response.Embed.WithDescription($"*Supporters can see the date they first listened to an artist. " +
+                                               $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterOverviewLink})*");
             }
         }
 

@@ -119,12 +119,12 @@ public class SupporterService
                 SetGuildPromoCache(guildId);
                 return
                     $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4/5/6k? " +
-                    $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
+                    $"[See all the benefits of becoming a supporter here.]({Constants.GetSupporterOverviewLink})*";
             case 2:
                 SetGuildPromoCache(guildId);
                 return
                     $"*Supporters get extra statistics like first listen dates in artist/album/track, full history in `stats`, artist discoveries in `year` and more. " +
-                    $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
+                    $"[See all the perks of getting supporter here.]({Constants.GetSupporterOverviewLink})*";
             case 3:
                 {
                     await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -133,7 +133,7 @@ public class SupporterService
                         SetGuildPromoCache(guildId);
                         return
                             $"*Supporters can fetch and view their entire Discogs collection (up from last 100). " +
-                            $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
+                            $"[Get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})*";
                     }
 
                     return

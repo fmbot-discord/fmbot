@@ -236,8 +236,8 @@ public class FriendBuilders
             {
                 response.Embed.AddField("Friend limit reached",
                     $"Sorry, but you can't have more than {Constants.MaxFriends} friends. \n\n" +
-                    $".fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends. Get supporter [here]({Constants.GetSupporterLink}) or use `{context.Prefix}getsupporter` for more info.");
-                response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink);
+                    $".fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends. [Click here to view all perks of being a supporter]({Constants.GetSupporterOverviewLink}).");
+                response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink);
             }
             else
             {
