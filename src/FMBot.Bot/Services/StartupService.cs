@@ -119,7 +119,7 @@ public class StartupService
                 Assembly.GetEntryAssembly(),
                 this._provider);
 
-        var shardTimeOut = 4300;
+        var shardTimeOut = 4000;
         foreach (var shard in this._client.Shards)
         {
             Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
@@ -130,8 +130,8 @@ public class StartupService
         Log.Information("Preparing cache folder");
         PrepareCacheFolder();
 
-        await this.RegisterSlashCommands();
         await this.StartMetricsPusher();
+        await this.RegisterSlashCommands();
         await this.StartBotSiteUpdater();
     }
 
