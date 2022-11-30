@@ -216,6 +216,12 @@ public class StaticBuilders
                 .WithTitle(".fmbot opencollective supporters overview"));
         }
 
+        if (!pages.Any())
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription("No pages, most likely an error while fetching supporters"));
+        }
+
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
 
         return response;

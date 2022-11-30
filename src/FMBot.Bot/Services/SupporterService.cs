@@ -281,6 +281,11 @@ public class SupporterService
     {
         var openCollectiveSupporters = await this._openCollectiveService.GetOpenCollectiveOverview();
 
+        if (openCollectiveSupporters == null)
+        {
+            Log.Error("Error while checking newsupporters - response null");
+        }
+
         foreach (var newSupporter in openCollectiveSupporters.Users.Where(w => w.CreatedAt >= DateTime.UtcNow.AddHours(-5)))
         {
             var cacheKey = $"new-supporter-{newSupporter.Id}";

@@ -28,6 +28,11 @@ public class OpenCollectiveService
     {
         var data = await GetBackersFromOpenCollective();
 
+        if (data.Account?.Name == null)
+        {
+            return null;
+        }
+
         var users = data.Account.Members.Nodes.Select(s => new OpenCollectiveUser
         {
             Id = s.Account.Id,
