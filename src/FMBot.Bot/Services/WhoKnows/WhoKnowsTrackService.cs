@@ -186,7 +186,7 @@ public class WhoKnowsTrackService
         {
             var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
 
-            var discordUser = await context.Client.GetUserAsync(userArtist.DiscordUserId);
+            var discordUser = await context.Client.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
             if (discordUser != null)
             {
                 userName = discordUser.Username;
@@ -194,7 +194,7 @@ public class WhoKnowsTrackService
 
             if (context.Guild != null)
             {
-                var guildUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
+                var guildUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
                 if (guildUser != null)
                 {
                     userName = guildUser.DisplayName;

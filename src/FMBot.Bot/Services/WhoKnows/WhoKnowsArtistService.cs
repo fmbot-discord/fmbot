@@ -161,7 +161,7 @@ public class WhoKnowsArtistService
                            "gu.who_knows_whitelisted " +
                            "FROM user_artists AS ua " +
                            "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
-                           "INNER JOIN friends AS fr ON fr.friend_user_id = u.user_id " +
+                           "INNER JOIN friends AS fr ON fr.friend_user_id = ua.user_id " +
                            "LEFT JOIN guild_users AS gu ON gu.user_id = u.user_id AND gu.guild_id = @guildId " +
                            "WHERE fr.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ua " +
@@ -184,7 +184,7 @@ public class WhoKnowsArtistService
         {
             var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
 
-            var discordUser = await context.Client.GetUserAsync(userArtist.DiscordUserId);
+            var discordUser = await context.Client.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
             if (discordUser != null)
             {
                 userName = discordUser.Username;
@@ -192,7 +192,7 @@ public class WhoKnowsArtistService
 
             if (context.Guild != null)
             {
-                var guildUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
+                var guildUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
                 if (guildUser != null)
                 {
                     userName = guildUser.DisplayName;
