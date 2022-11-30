@@ -190,7 +190,7 @@ public class TimerService
             },
             null,
             TimeSpan.FromSeconds(30),
-            TimeSpan.FromMinutes(2));
+            TimeSpan.FromMinutes(3));
 
         this._updateSupporterTimer = new Timer(async _ =>
             {

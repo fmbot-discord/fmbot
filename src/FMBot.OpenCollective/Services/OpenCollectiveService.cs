@@ -1,8 +1,11 @@
+using System.Net;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.OpenCollective.Models;
 using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
+using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
 namespace FMBot.OpenCollective.Services;
@@ -13,9 +16,12 @@ public class OpenCollectiveService
 
     private const string ApiUrl = "https://api.opencollective.com/graphql/v2";
 
-    public OpenCollectiveService(HttpClient client)
+    private readonly IMemoryCache _cache;
+
+    public OpenCollectiveService(HttpClient client, IMemoryCache cache)
     {
         this._client = client;
+        this._cache = cache;
     }
 
     public async Task<OpenCollectiveOverview> GetOpenCollectiveOverview()
@@ -54,6 +60,13 @@ public class OpenCollectiveService
 
     private async Task<OpenCollectiveResponseModel> GetBackersFromOpenCollective()
     {
+        const string cacheKey = "opencollective-supporters";
+
+        if (this._cache.TryGetValue(cacheKey, out OpenCollectiveResponseModel cachedResponse))
+        {
+            return cachedResponse;
+        }
+
         var query = new GraphQLRequest
         {
             Query = @"
@@ -95,12 +108,23 @@ public class OpenCollectiveService
         }, new SystemTextJsonSerializer(options => options.PropertyNameCaseInsensitive = true), this._client);
 
         var response = await graphQLClient.SendQueryAsync<OpenCollectiveResponseModel>(query);
+        Statistics.OpenCollectiveApiCalls.Inc();
 
         if (response.Errors != null && response.Errors.Any())
         {
             foreach (var error in response.Errors)
             {
                 Log.Error("Error while fetching OpenCollective backers - {error}", error.Message);
+            }
+        }
+
+        if (response is GraphQLHttpResponse<OpenCollectiveResponseModel> httpResponse)
+        {
+            Log.Information("OpenCollective response is {statusCode}", httpResponse.StatusCode);
+
+            if (httpResponse.StatusCode == HttpStatusCode.OK)
+            {
+                this._cache.Set(cacheKey, response.Data, TimeSpan.FromMinutes(2));
             }
         }
 

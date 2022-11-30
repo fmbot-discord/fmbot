@@ -60,6 +60,9 @@ public static class Statistics
     public static readonly Counter DiscogsApiCalls = Metrics
         .CreateCounter("discogs_api_calls", "Amount of Discogs API calls");
 
+    public static readonly Counter OpenCollectiveApiCalls = Metrics
+        .CreateCounter("opencollective_api_calls", "Amount of OpenCollective API calls");
+
 
     public static readonly Counter CommandsExecuted = Metrics
         .CreateCounter("bot_commands_executed", "Amount of commands executed",

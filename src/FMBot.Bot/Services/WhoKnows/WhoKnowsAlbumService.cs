@@ -226,7 +226,7 @@ public class WhoKnowsAlbumService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await connection.QuerySingleOrDefaultAsync<int?>(sql, new
+        return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
         {
             userId,
             albumName,

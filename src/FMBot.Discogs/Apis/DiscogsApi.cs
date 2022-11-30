@@ -1,9 +1,8 @@
-using System.ComponentModel.Design;
-using System.Text.Json;
 using RestSharp.Authenticators;
 using RestSharp;
 using System.Web;
 using FMBot.Discogs.Models;
+using FMBot.Domain;
 using Microsoft.Extensions.Configuration;
 using RestSharp.Serializers.Json;
 
@@ -35,6 +34,7 @@ public class DiscogsApi
         var request = new RestRequest("oauth/request_token");
         request.AddHeader("User-Agent", UserAgent);
         var response = await client.ExecuteAsync(request);
+        Statistics.DiscogsApiCalls.Inc();
 
         if (response.IsSuccessful)
         {
@@ -66,6 +66,7 @@ public class DiscogsApi
         var request = new RestRequest("oauth/access_token", Method.Post);
         request.AddHeader("User-Agent", UserAgent);
         var response = await client.ExecuteAsync(request);
+        Statistics.DiscogsApiCalls.Inc();
 
         if (response.IsSuccessful)
         {
@@ -103,6 +104,7 @@ public class DiscogsApi
 
         var request = new RestRequest("oauth/identity");
         var response = await client.ExecuteAsync<DiscogsIdentity>(request);
+        Statistics.DiscogsApiCalls.Inc();
 
         return response.Data;
     }
@@ -117,6 +119,7 @@ public class DiscogsApi
         request.AddParameter("sort_order", "desc");
 
         var response = await client.ExecuteAsync<DiscogsUserReleases>(request);
+        Statistics.DiscogsApiCalls.Inc();
 
         if (response.IsSuccessStatusCode &&
             response.Data != null &&
@@ -129,6 +132,7 @@ public class DiscogsApi
                 request.AddParameter("page", i);
 
                 var pageResponse = await client.ExecuteAsync<DiscogsUserReleases>(request);
+                Statistics.DiscogsApiCalls.Inc();
 
                 if (pageResponse.Data != null && pageResponse.Data.Releases.Any())
                 {
@@ -155,6 +159,7 @@ public class DiscogsApi
         var request = new RestRequest($"users/{discogsUser}/collection/value");
 
         var response = await client.ExecuteAsync<DiscogsCollectionValue>(request);
+        Statistics.DiscogsApiCalls.Inc();
 
         return response.Data;
     }

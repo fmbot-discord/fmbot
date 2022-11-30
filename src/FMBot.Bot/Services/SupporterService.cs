@@ -372,11 +372,10 @@ public class SupporterService
 
                     embed.WithTitle("Monthly supporter expired");
                     embed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
-                                          $"ID: `{existingSupporter.OpenCollectiveId}`\n\n" +
-                                          $"`.removesupporter {existingSupporter.DiscordUserId}`");
+                                          $"ID: `{existingSupporter.OpenCollectiveId}`");
 
-                    await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
-                    await supporterUpdateChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+                    await supporterAuditLogChannel.SendMessageAsync($"`.removesupporter {existingSupporter.DiscordUserId}`", false, new[] { embed.Build() });
+                    await supporterUpdateChannel.SendMessageAsync($"`.removesupporter {existingSupporter.DiscordUserId}`", false, new[] { embed.Build() });
 
                     this._cache.Set(cacheKey, 1, TimeSpan.FromDays(2));
                 }

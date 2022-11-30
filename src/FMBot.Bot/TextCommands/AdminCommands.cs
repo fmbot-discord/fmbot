@@ -294,6 +294,7 @@ public class AdminCommands : BaseCommandModule
         {
             await ReplyAsync("Error: Insufficient rights.");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
         }
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

@@ -97,7 +97,7 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("track", RunMode = RunMode.Async)]
-    [Discord.Commands.Summary("Track you're currently listening to or searching for.")]
+    [Summary("Track you're currently listening to or searching for.")]
     [Examples(
         "tr",
         "track",
@@ -127,7 +127,7 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("trackplays", RunMode = RunMode.Async)]
-    [Discord.Commands.Summary("Shows playcount for current track or the one you're searching for.\n\n" +
+    [Summary("Shows playcount for current track or the one you're searching for.\n\n" +
                               "You can also mention another user to see their playcount.")]
     [Examples(
         "tp",
@@ -574,7 +574,7 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("globalwhoknowstrack", RunMode = RunMode.Async)]
-    [Discord.Commands.Summary("Shows what other users listen to a track in .fmbot")]
+    [Summary("Shows what other users listen to a track in .fmbot")]
     [Examples("gwt", "globalwhoknowstrack", "globalwhoknowstrack Hothouse Flowers Don't Go", "globalwhoknowstrack Natasha Bedingfield | Unwritten")]
     [Alias("gwt", "gwkt", "gwtr", "gwktr", "globalwkt", "globalwktrack", "globalwhoknows track")]
     [UsernameSetRequired]
@@ -710,7 +710,7 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("friendwhoknowstrack", RunMode = RunMode.Async)]
-    [Discord.Commands.Summary("Shows who of your friends listen to an track in .fmbot")]
+    [Summary("Shows who of your friends listen to an track in .fmbot")]
     [Examples("fwt", "fwkt The Beatles Yesterday", "friendwhoknowstrack", "friendwhoknowstrack Hothouse Flowers Don't Go", "friendwhoknowstrack Mall Grab | Sunflower")]
     [Alias("fwt", "fwkt", "fwktr", "fwtrack", "friendwhoknows track", "friends whoknows track", "friend whoknows track")]
     [UsernameSetRequired]
@@ -808,7 +808,7 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("servertracks", RunMode = RunMode.Async)]
-    [Discord.Commands.Summary("Top tracks for your server, optionally for an artist")]
+    [Summary("Top tracks for your server, optionally for an artist")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
     [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly", "servertracks kanye west listeners")]
     [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks", "billboard", "bb")]

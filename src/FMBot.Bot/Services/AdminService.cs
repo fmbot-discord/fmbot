@@ -137,7 +137,7 @@ public class AdminService
 
     public async Task<BottedUser> GetBottedUserAsync(string lastFmUserName)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.BottedUsers
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
@@ -145,7 +145,7 @@ public class AdminService
 
     public async Task<List<User>> GetUsersWithLfmUsernameAsync(string lastFmUserName)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Users
             .AsQueryable()
             .Where(w => w.UserNameLastFM.ToLower() == lastFmUserName.ToLower())
@@ -154,7 +154,7 @@ public class AdminService
 
     public async Task<bool> DisableBottedUserBanAsync(string lastFmUserName)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var bottedUser = await db.BottedUsers
             .AsQueryable()

@@ -21,6 +21,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using Serilog;
 using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
@@ -276,25 +277,31 @@ public class StaticCommands : BaseCommandModule
         shardDescription.AppendLine(
             $"Max latency: `{client.Shards.Select(s => s.Latency).Max() + "ms`"}");
 
-
-        if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnecting) > 0)
+        try
         {
-            var disconnecting = new StringBuilder();
-            foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(20))
+            if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnecting) > 0)
             {
-                disconnecting.Append($"`{shard.ShardId}` - ");
+                var disconnecting = new StringBuilder();
+                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(10))
+                {
+                    disconnecting.Append($"`{shard.ShardId}` - ");
+                }
+                this._embed.AddField("Disconnecting shards", disconnecting.ToString());
             }
-            this._embed.AddField("Disconnecting shards", disconnecting.ToString());
+
+            if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnected) > 0)
+            {
+                var disconnected = new StringBuilder();
+                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(10))
+                {
+                    disconnected.Append($"`{shard.ShardId}` - ");
+                }
+                this._embed.AddField("Disconnected shards", disconnected.ToString());
+            }
         }
-
-        if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnected) > 0)
+        catch (Exception e)
         {
-            var disconnected = new StringBuilder();
-            foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(20))
-            {
-                disconnected.Append($"`{shard.ShardId}` - ");
-            }
-            this._embed.AddField("Disconnected shards", disconnected.ToString());
+            Log.Error("Error in shards command", e);
         }
 
         this._embed.WithDescription(shardDescription.ToString());
@@ -309,7 +316,7 @@ public class StaticCommands : BaseCommandModule
     }
 
     [Command("debugbotscrobbling", RunMode = RunMode.Async)]
-    [Alias("debugbotscrobble", "debugbotscrobbles", "botscrobbledebug","botscrobblingdebug")]
+    [Alias("debugbotscrobble", "debugbotscrobbles", "botscrobbledebug", "botscrobblingdebug")]
     [Summary("Debugging for bot scrobbling")]
     [ExcludeFromHelp]
     public async Task DebugBotScrobbles()
