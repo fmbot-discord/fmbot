@@ -84,7 +84,7 @@ public class LastFmRepository
             else
             {
                 recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks, authorizedCall);
-                if (recentTracksCall.Success && recentTracksCall.Content.RecentTracks.Track.Count >= (count - 2))
+                if (recentTracksCall.Success && recentTracksCall.Content.RecentTracks.Track.Count >= (count - 2) && count >= 200)
                 {
                     for (var i = 1; i < amountOfPages; i++)
                     {

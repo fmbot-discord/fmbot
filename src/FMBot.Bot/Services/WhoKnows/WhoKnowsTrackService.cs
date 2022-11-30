@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
@@ -38,8 +39,8 @@ public class WhoKnowsTrackService
                            "gu.user_name, " +
                            "gu.who_knows_whitelisted " +
                            "FROM user_tracks AS ut " +
-                           "INNER JOIN users AS u ON ut.user_id = u.user_id " +
-                           "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                           "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
+                           "INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id " +
                            "WHERE gu.guild_id = @guildId AND UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY ut.playcount DESC";
 
@@ -64,7 +65,7 @@ public class WhoKnowsTrackService
 
             if (i < 15)
             {
-                var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId, CacheMode.CacheOnly);
                 if (discordUser != null)
                 {
                     userName = discordUser.Nickname ?? discordUser.Username;
@@ -99,7 +100,7 @@ public class WhoKnowsTrackService
                            "u.registered_last_fm, " +
                            "u.privacy_level " +
                            "FROM user_tracks AS ut " +
-                           "INNER JOIN users AS u ON ut.user_id = u.user_id " +
+                           "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
                            "WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ut.playcount DESC) ut " +
                            "ORDER BY playcount DESC";
@@ -126,7 +127,7 @@ public class WhoKnowsTrackService
             {
                 if (context.Guild != null)
                 {
-                    var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId);
+                    var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId, CacheMode.CacheOnly);
                     if (discordUser != null)
                     {
                         userName = discordUser.Nickname ?? discordUser.Username;
@@ -160,8 +161,8 @@ public class WhoKnowsTrackService
                            "gu.user_name, " +
                            "gu.who_knows_whitelisted " +
                            "FROM user_tracks AS ut " +
-                           "INNER JOIN users AS u ON ut.user_id = u.user_id " +
-                           "INNER JOIN friends AS fr ON fr.friend_user_id = u.user_id " +
+                           "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
+                           "INNER JOIN friends AS fr ON fr.friend_user_id = ut.user_id " +
                            "LEFT JOIN guild_users AS gu ON gu.user_id = u.user_id AND gu.guild_id = @guildId " +
                            "WHERE fr.user_id = @userId AND " +
                            "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
@@ -244,8 +245,7 @@ public class WhoKnowsTrackService
                   "SUM(ut.playcount) AS total_playcount, " +
                   "COUNT(ut.user_id) AS listener_count " +
                   "FROM user_tracks AS ut   " +
-                  "INNER JOIN users AS u ON ut.user_id = u.user_id   " +
-                  "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
+                  "INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id  " +
                   "WHERE gu.guild_id = @guildId  AND gu.bot != true " +
                   "AND NOT ut.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";

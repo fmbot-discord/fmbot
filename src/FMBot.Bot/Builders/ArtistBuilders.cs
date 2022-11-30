@@ -782,7 +782,7 @@ public class ArtistBuilders
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-100))
         {
-            footer.AppendLine($"Missing members? Update with {context.Prefix}index");
+            footer.AppendLine($"Missing members? Update with {context.Prefix}refreshmembers");
         }
 
         if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)

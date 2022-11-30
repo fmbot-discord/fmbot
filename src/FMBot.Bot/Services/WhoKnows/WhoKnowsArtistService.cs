@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Dasync.Collections;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Models;
@@ -41,9 +40,9 @@ public class WhoKnowsArtistService
                            "gu.user_name, " +
                            "gu.who_knows_whitelisted " +
                            "FROM user_artists AS ua " +
-                           "INNER JOIN users AS u ON ua.user_id = u.user_id " +
-                           "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                           "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))" +
+                           "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
+                           "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id " +
+                           "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY ua.playcount DESC ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -66,7 +65,7 @@ public class WhoKnowsArtistService
 
             if (i < 15)
             {
-                var discordUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId);
+                var discordUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
                 if (discordUser != null)
                 {
                     userName = discordUser.Nickname ?? discordUser.Username;
@@ -100,7 +99,7 @@ public class WhoKnowsArtistService
                            "u.registered_last_fm, " +
                            "u.privacy_level " +
                            "FROM user_artists AS ua " +
-                           "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                           "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
                            "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ua " +
                            "ORDER BY playcount DESC";
@@ -126,7 +125,7 @@ public class WhoKnowsArtistService
             {
                 if (discordGuild != null)
                 {
-                    var discordUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId);
+                    var discordUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
                     if (discordUser != null)
                     {
                         userName = discordUser.Nickname ?? discordUser.Username;
@@ -161,7 +160,7 @@ public class WhoKnowsArtistService
                            "gu.user_name, " +
                            "gu.who_knows_whitelisted " +
                            "FROM user_artists AS ua " +
-                           "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                           "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
                            "INNER JOIN friends AS fr ON fr.friend_user_id = u.user_id " +
                            "LEFT JOIN guild_users AS gu ON gu.user_id = u.user_id AND gu.guild_id = @guildId " +
                            "WHERE fr.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
@@ -228,8 +227,7 @@ public class WhoKnowsArtistService
                   "SUM(ua.playcount) AS total_playcount, " +
                   "COUNT(ua.user_id) AS listener_count " +
                   "FROM user_artists AS ua   " +
-                  "INNER JOIN users AS u ON ua.user_id = u.user_id   " +
-                  "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
+                  "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id  " +
                   "WHERE gu.guild_id = @guildId  AND gu.bot != true " +
                   "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
@@ -260,10 +258,9 @@ public class WhoKnowsArtistService
 
     private async Task<IEnumerable<UserArtist>> GetGuildUserArtists(int guildId, int minPlaycount = 0)
     {
-        const string sql = "SELECT * " +
+        const string sql = "SELECT ua.* " +
                            "FROM user_artists AS ua " +
-                           "INNER JOIN users AS u ON ua.user_id = u.user_id " +
-                           "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                           "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id " +
                            "WHERE gu.guild_id = @guildId  AND gu.bot != true " +
                            "AND ua.playcount > @minPlaycount " +
                            "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
