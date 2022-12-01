@@ -95,7 +95,7 @@ public class WhoKnowsService
         return users.ToList();
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(ICollection<WhoKnowsObjectWithUser> users)
+    public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IEnumerable<WhoKnowsObjectWithUser> users)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var bottedUsers = await db.BottedUsers
@@ -103,22 +103,29 @@ public class WhoKnowsService
             .Where(w => w.BanActive)
             .ToListAsync();
 
+        var userNamesToFilter = bottedUsers
+            .Select(s => s.UserNameLastFM.ToLower())
+            .ToList();
+
+        var userDatesToFilter = bottedUsers
+            .Where(we => we.LastFmRegistered != null)
+            .Select(s => s.LastFmRegistered)
+            .ToList();
+
         return users
             .Where(w =>
-                !bottedUsers
-                    .Select(s => s.UserNameLastFM.ToLower())
+                !userNamesToFilter
                     .Contains(w.LastFMUsername.ToLower())
                 &&
-                !bottedUsers
-                    .Where(we => we.LastFmRegistered != null)
-                    .Select(s => s.LastFmRegistered)
+                !userDatesToFilter
                     .Contains(w.RegisteredLastFm))
             .ToList();
     }
 
     public static IList<WhoKnowsObjectWithUser> ShowGuildMembersInGlobalWhoKnowsAsync(IList<WhoKnowsObjectWithUser> users, IList<GuildUser> guildUsers)
     {
-        foreach (var user in users.Where(w => guildUsers.Select(s => s.UserId).Contains(w.UserId)))
+        var guildUserIds = guildUsers.Select(s => s.UserId).ToList();
+        foreach (var user in users.Where(w => guildUserIds.Contains(w.UserId)))
         {
             user.PrivacyLevel = PrivacyLevel.Global;
             user.SameServer = true;

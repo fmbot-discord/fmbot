@@ -130,7 +130,7 @@ public class StaticCommands : BaseCommandModule
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         embedDescription.AppendLine(".fmbot is open-source, non-profit and maintained by volunteers.");
-        embedDescription.AppendLine("The bot is written in C#, uses .NET 6 and Discord.Net.");
+        embedDescription.AppendLine("The bot is written in C#, uses .NET 7 and Discord.Net.");
 
         this._embed.WithDescription(embedDescription.ToString());
 

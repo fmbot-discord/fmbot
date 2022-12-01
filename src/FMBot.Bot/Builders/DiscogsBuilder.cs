@@ -202,7 +202,7 @@ public class DiscogsBuilder
                 pageCounter == 17)
             {
                 description.AppendLine("Only the first 100 items of your collection are fetched and stored.\n" +
-                                       $"Want to see your whole collection? [Get .fmbot supporter here.]({Constants.GetSupporterLink})");
+                                       $"Want to see your whole collection? [Get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})");
             }
 
             pages.Add(new PageBuilder()

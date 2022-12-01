@@ -162,8 +162,8 @@ public class TrackBuilders
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                response.Embed.WithDescription($"*Want to see the date you first listened to this track? " +
-                                               $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*");
+                response.Embed.WithDescription($"*Supporters can see the date they first listened to a track. " +
+                                               $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterOverviewLink})*");
             }
         }
 

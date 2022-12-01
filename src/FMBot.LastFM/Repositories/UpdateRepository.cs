@@ -78,10 +78,10 @@ public class UpdateRepository
         var count = 900;
         var totalPlaycountCorrect = false;
         var now = DateTime.UtcNow;
-        if (dateFromFilter > now.AddHours(-18))
+        if (dateFromFilter > now.AddHours(-22) && queueItem.GetAccurateTotalPlaycount)
         {
             var playsToGet = (int)((DateTime.UtcNow - dateFromFilter).TotalMinutes / 4);
-            count = 100 + playsToGet;
+            count = 75 + playsToGet;
             timeFrom = null;
             totalPlaycountCorrect = true;
         }

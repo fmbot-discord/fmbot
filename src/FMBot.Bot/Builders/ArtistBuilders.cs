@@ -131,8 +131,8 @@ public class ArtistBuilders
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                firstListenInfo = $"*Want to see the date you first listened to this artist? " +
-                                  $"[Get .fmbot supporter here.]({Constants.GetSupporterLink})*";
+                response.Embed.WithDescription($"*Supporters can see the date they first listened to an artist. " +
+                                               $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterOverviewLink})*");
             }
         }
 
@@ -782,7 +782,7 @@ public class ArtistBuilders
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-100))
         {
-            footer.AppendLine($"Missing members? Update with {context.Prefix}index");
+            footer.AppendLine($"Missing members? Update with {context.Prefix}refreshmembers");
         }
 
         if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)

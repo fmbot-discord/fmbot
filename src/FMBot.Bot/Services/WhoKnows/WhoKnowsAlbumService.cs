@@ -38,8 +38,8 @@ public class WhoKnowsAlbumService
                            "gu.user_name, " +
                            "gu.who_knows_whitelisted " +
                            "FROM user_albums AS ub " +
-                           "INNER JOIN users AS u ON ub.user_id = u.user_id " +
-                           "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                           "FULL OUTER JOIN users AS u ON ub.user_id = u.user_id " +
+                           "INNER JOIN guild_users AS gu ON gu.user_id = ub.user_id " +
                            "WHERE gu.guild_id = @guildId AND UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY ub.playcount DESC ";
 
@@ -64,7 +64,7 @@ public class WhoKnowsAlbumService
 
             if (i < 15)
             {
-                var discordUser = await discordGuild.GetUserAsync(userAlbum.DiscordUserId);
+                var discordUser = await discordGuild.GetUserAsync(userAlbum.DiscordUserId, CacheMode.CacheOnly);
                 if (discordUser != null)
                 {
                     userName = discordUser.Nickname ?? discordUser.Username;
@@ -99,7 +99,7 @@ public class WhoKnowsAlbumService
                            "u.registered_last_fm, " +
                            "u.privacy_level " +
                            "FROM user_albums AS ub " +
-                           "INNER JOIN users AS u ON ub.user_id = u.user_id " +
+                           "FULL OUTER JOIN users AS u ON ub.user_id = u.user_id " +
                            "WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ub.playcount DESC) ub " +
                            "ORDER BY playcount DESC ";
@@ -126,7 +126,7 @@ public class WhoKnowsAlbumService
             {
                 if (context.Guild != null)
                 {
-                    var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
+                    var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId, CacheMode.CacheOnly);
                     if (discordUser != null)
                     {
                         userName = discordUser.Nickname ?? discordUser.Username;
@@ -160,8 +160,8 @@ public class WhoKnowsAlbumService
                            "gu.user_name, " +
                            "gu.who_knows_whitelisted " +
                            "FROM user_albums AS ub " +
-                           "INNER JOIN users AS u ON ub.user_id = u.user_id " +
-                           "INNER JOIN friends AS fr ON fr.friend_user_id = u.user_id " +
+                           "FULL OUTER JOIN users AS u ON ub.user_id = u.user_id " +
+                           "INNER JOIN friends AS fr ON fr.friend_user_id = ub.user_id " +
                            "LEFT JOIN guild_users AS gu ON gu.user_id = u.user_id AND gu.guild_id = @guildId " +
                            "WHERE fr.user_id = @userId AND " +
                            "UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
@@ -185,7 +185,7 @@ public class WhoKnowsAlbumService
         {
             var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
 
-            var discordUser = await context.Client.GetUserAsync(userArtist.DiscordUserId);
+            var discordUser = await context.Client.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
             if (discordUser != null)
             {
                 userName = discordUser.Username;
@@ -193,7 +193,7 @@ public class WhoKnowsAlbumService
 
             if (context.Guild != null)
             {
-                var guildUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
+                var guildUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
                 if (guildUser != null)
                 {
                     userName = guildUser.DisplayName;
@@ -241,8 +241,7 @@ public class WhoKnowsAlbumService
                   "SUM(ub.playcount) AS total_playcount, " +
                   "COUNT(ub.user_id) AS listener_count " +
                   "FROM user_albums AS ub   " +
-                  "INNER JOIN users AS u ON ub.user_id = u.user_id   " +
-                  "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
+                  "INNER JOIN guild_users AS gu ON gu.user_id = ub.user_id  " +
                   "WHERE gu.guild_id = @guildId AND gu.bot != true " +
                   "AND NOT ub.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
