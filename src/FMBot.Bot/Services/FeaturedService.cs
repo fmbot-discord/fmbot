@@ -97,7 +97,7 @@ public class FeaturedService
                     RecentTrack trackToFeature = null;
                     foreach (var track in tracks.Content.RecentTracks.Where(w => w.AlbumName != null && w.AlbumCoverUrl != null))
                     {
-                        if (await this._censorService.AlbumResult(track.AlbumName, track.ArtistName) == CensorService.CensorResult.Safe &&
+                        if (await this._censorService.AlbumResult(track.AlbumName, track.ArtistName, true) == CensorService.CensorResult.Safe &&
                             await AlbumNotFeaturedRecently(track.AlbumName, track.ArtistName) &&
                             await AlbumPopularEnough(track.AlbumName, track.ArtistName))
                         {

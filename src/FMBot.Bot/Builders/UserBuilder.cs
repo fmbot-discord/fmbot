@@ -288,7 +288,7 @@ public class UserBuilder
             description.AppendLine($"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
         }
 
-        if(this._supporterService.ShowPromotionalMessage(user.UserType, context.DiscordGuild?.Id))
+        if(this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
         {
             var random = new Random().Next(0, Constants.SupporterPromoChance);
             if (random == 1)
