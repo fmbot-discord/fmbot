@@ -335,7 +335,7 @@ public class AdminCommands : BaseCommandModule
     [Command("addcensoredartist")]
     [Summary("Adds censored artist")]
     [Examples("addcensoredartist \"Last Days of Humanity\"")]
-    public async Task AddCensoredArtistAsync(string artist)
+    public async Task AddCensoredArtistAsync([Remainder]string artist)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {

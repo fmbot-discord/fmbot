@@ -170,7 +170,7 @@ public class FeaturedService
 
                         if (currentAlbum.AlbumCoverUrl != null &&
                             currentAlbum.AlbumName != null &&
-                            await this._censorService.AlbumResult(currentAlbum.AlbumName, currentAlbum.ArtistName) == CensorService.CensorResult.Safe &&
+                            await this._censorService.AlbumResult(currentAlbum.AlbumName, currentAlbum.ArtistName, true) == CensorService.CensorResult.Safe &&
                             await AlbumNotFeaturedRecently(currentAlbum.AlbumName, currentAlbum.ArtistName) &&
                             await AlbumPopularEnough(currentAlbum.AlbumName, currentAlbum.ArtistName))
                         {

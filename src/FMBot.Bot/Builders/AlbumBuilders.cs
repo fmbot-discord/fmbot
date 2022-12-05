@@ -588,6 +588,7 @@ public class AlbumBuilders
             useCachedAlbums: true, userId: context.ContextUser.UserId);
         if (albumSearch.Album == null)
         {
+            response.ResponseType = ResponseType.Embed;
             return albumSearch.Response;
         }
 
@@ -615,6 +616,7 @@ public class AlbumBuilders
         if (safeForChannel == CensorService.CensorResult.NotSafe)
         {
             response.CommandResponse = CommandResponse.Censored;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -625,6 +627,7 @@ public class AlbumBuilders
                                         $"{albumSearch.Album.ArtistName} - {albumSearch.Album.AlbumName}\n" +
                                         $"[View on last.fm]({albumSearch.Album.AlbumUrl})");
             response.CommandResponse = CommandResponse.Error;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
