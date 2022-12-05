@@ -141,7 +141,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             if (userInThisServer == null)
             {
                 await ReplyAsync("User not found. Are you sure they are in this server?\n" +
-                                 $"To refresh the cached memberlist on your server, use `{prfx}index`.");
+                                 $"To refresh the cached memberlist on your server, use `{prfx}refreshmembers`.");
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
@@ -358,7 +358,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             await this._guildService.StaleGuildLastIndexedAsync(this.Context.Guild);
 
             this._embed.WithTitle("Removed whitelist role for WhoKnows!");
-            this._embed.WithDescription($"Please run `{prfx}index` to re-store all server users.");
+            this._embed.WithDescription($"Please run `{prfx}refreshmembers` to refresh the cached memberlist.");
             this._embed.WithColor(DiscordConstants.SuccessColorGreen);
 
             await ReplyAsync("", false, this._embed.Build());
@@ -388,7 +388,7 @@ public class UserGuildSettingCommands : BaseCommandModule
 
         this._embed.AddField("Some things to keep in mind:",
             $"Some things to keep in mind:\n" +
-            $"- To check all users for the whitelist role you can run `{prfx}index`.\n" +
+            $"- To check all users for the whitelist role you can run `{prfx}refreshmembers`.\n" +
             $"- If you give someone the whitelist role they will need to run a command before the bot detects the whitelist role.");
 
         this._embed.WithColor(DiscordConstants.SuccessColorGreen);

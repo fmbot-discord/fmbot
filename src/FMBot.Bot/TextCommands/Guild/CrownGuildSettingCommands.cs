@@ -205,7 +205,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
             if (userInThisServer == null)
             {
                 await ReplyAsync("User not found. Are you sure they are in this server?\n" +
-                                 $"To refresh the cached memberlist on your server, use `{prfx}index`.");
+                                 $"To refresh the cached memberlist on your server, use `{prfx}refreshmembers`.");
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
