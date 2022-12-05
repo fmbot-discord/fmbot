@@ -591,6 +591,7 @@ public class TrackService
         {
             AlbumName = track.AlbumName,
             ArtistName = track.ArtistName,
+            TrackUrl = track.LastFmUrl,
             TrackName = track.Name,
             Mbid = track.Mbid
         };

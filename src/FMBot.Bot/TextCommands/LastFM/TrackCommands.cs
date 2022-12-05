@@ -874,6 +874,11 @@ public class TrackCommands : BaseCommandModule
                 if (useCachedTracks)
                 {
                     trackInfo = await this._trackService.GetCachedTrack(trackArtist, trackName, lastFmUserName, userId);
+                    if (trackInfo.Success && trackInfo.Content.TrackUrl == null)
+                    {
+                        trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackName, trackArtist,
+                            lastFmUserName);
+                    }
                 }
                 else
                 {
@@ -918,6 +923,11 @@ public class TrackCommands : BaseCommandModule
             if (useCachedTracks)
             {
                 trackInfo = await this._trackService.GetCachedTrack(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, lastFmUserName, userId);
+                if (trackInfo.Success && trackInfo.Content.TrackUrl == null)
+                {
+                    trackInfo = await this._lastFmRepository.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
+                        lastFmUserName);
+                }
             }
             else
             {
