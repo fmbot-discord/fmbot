@@ -310,6 +310,10 @@ public class PlayService
             return null;
         }
 
+        lastPlays = lastPlays
+            .OrderByDescending(o => o.TimePlayed)
+            .ToList();
+
         var firstPlay = recentTracks.Content.RecentTracks.First();
 
         var streak = new UserStreak
@@ -345,12 +349,6 @@ public class PlayService
                 artistContinue = false;
             }
 
-            if (!albumContinue)
-            {
-                streak.AlbumName = null;
-                streak.AlbumPlaycount = null;
-            }
-
             if (firstPlay.AlbumName != null && play.AlbumName != null && firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
             {
                 streak.AlbumPlaycount++;
@@ -360,12 +358,6 @@ public class PlayService
             else
             {
                 albumContinue = false;
-            }
-
-            if (!trackContinue)
-            {
-                streak.TrackName = null;
-                streak.TrackPlaycount = null;
             }
 
             if (firstPlay.TrackName.ToLower() == play.TrackName.ToLower() && trackContinue)
@@ -460,16 +452,15 @@ public class PlayService
 
     private static string GetEmojiForStreakCount(int count)
     {
-        if (count > 50 && count < 100 || count > 100)
+        return count switch
         {
-            return "🔥 ";
-        }
-
-        if (count == 100)
-        {
-            return "💯 ";
-        }
-        return null;
+            > 1000 => "😲 ",
+            420 => "🍃 ",
+            100 => "💯 ",
+            69 => "😎 ",
+            > 50 => "🔥 ",
+            _ => null
+        };
     }
 
     public async Task<TopArtistList> GetUserTopArtists(int userId, int days)
