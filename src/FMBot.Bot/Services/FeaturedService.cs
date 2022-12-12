@@ -217,6 +217,18 @@ public class FeaturedService
         return null;
     }
 
+    public static int GetDaysUntilNextSupporterSunday()
+    {
+        var nextSupporterSunday = DateTime.UtcNow;
+        while (nextSupporterSunday.DayOfWeek != DayOfWeek.Sunday || nextSupporterSunday.Day > 7)
+        {
+            nextSupporterSunday = nextSupporterSunday.AddDays(1);
+        }
+
+        var diff = nextSupporterSunday - DateTime.UtcNow;
+        return (int)diff.TotalDays;
+    }
+
     public async Task<FeaturedLog> GetFeaturedForDateTime(DateTime dateTime)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

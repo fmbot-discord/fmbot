@@ -160,6 +160,7 @@ public class UserBuilder
 
         var description = new StringBuilder();
         var odds = await this._featuredService.GetFeaturedOddsAsync();
+        var nextSupporterSunday = FeaturedService.GetDaysUntilNextSupporterSunday();
 
         if (!featuredHistory.Any())
         {
@@ -173,11 +174,11 @@ public class UserBuilder
                 if (context.ContextUser.UserType == UserType.Supporter)
                 {
                     description.AppendLine();
-                    description.AppendLine($"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday.");
+                    description.AppendLine($"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}).");
                 }
                 else
                 {
-                    description.AppendLine($"Or become an [.fmbot supporter](https://opencollective.com/fmbot/contribute) and get a higher chance every Supporter Sunday.");
+                    description.AppendLine($"Or become an [.fmbot supporter](https://opencollective.com/fmbot/contribute) and get a higher chance every Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}).");
                 }
 
                 if (context.DiscordGuild?.Id != this._botSettings.Bot.BaseServerId)
@@ -233,7 +234,7 @@ public class UserBuilder
             }
             else
             {
-                footer.AppendLine($"Every first Sunday of the month is Supporter Sunday. Check '{context.Prefix}getsupporter' for info.");
+                footer.AppendLine($"Every first Sunday of the month is Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}). Check '{context.Prefix}getsupporter' for info.");
             }
 
             response.Embed.WithFooter(footer.ToString());
