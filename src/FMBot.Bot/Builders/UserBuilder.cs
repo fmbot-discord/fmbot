@@ -67,7 +67,7 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
-        var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
+        var guild = await this._guildService.GetGuildWithGuildUsers(context.DiscordGuild?.Id);
 
         if (this._timer._currentFeatured == null)
         {
