@@ -627,12 +627,12 @@ public class AdminCommands : BaseCommandModule
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
-            //if (userSettings.UserType != UserType.User)
-            //{
-            //    await ReplyAsync("`Can only change usertype of normal users`\n\n" + formatError);
-            //    this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            //    return;
-            //}
+            if (userSettings.UserType != UserType.User)
+            {
+                await ReplyAsync("`Can only change usertype of normal users`\n\n" + formatError);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
 
             var openCollectiveSupporter = await this._supporterService.GetOpenCollectiveSupporter(openCollectiveId);
             if (openCollectiveSupporter == null)
