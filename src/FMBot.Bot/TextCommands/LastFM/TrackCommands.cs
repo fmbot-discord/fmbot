@@ -22,7 +22,6 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
-using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using RunMode = Discord.Commands.RunMode;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
@@ -305,7 +304,7 @@ public class TrackCommands : BaseCommandModule
 
     [Command("scrobble", RunMode = RunMode.Async)]
     [Summary("Scrobbles a track on Last.fm.")]
-    [Examples("scrobble", "sb stronger Kanye West", "scrobble Loona Heart Attack", "scrobble Mac DeMarco | Chamber of Reflection")]
+    [Examples("scrobble", "sb the less i know the better", "scrobble Loona Heart Attack", "scrobble Mac DeMarco | Chamber of Reflection")]
     [UserSessionRequired]
     [Alias("sb")]
     [CommandCategories(CommandCategory.Tracks)]
@@ -323,7 +322,7 @@ public class TrackCommands : BaseCommandModule
 
             this._embed.AddField("Search for a track to scrobble",
                 $"Format: `{prfx}scrobble SearchValue`\n" +
-                $"`{prfx}sb Stronger Kanye` *(scrobbles Stronger by Kanye West)*\n" +
+                $"`{prfx}sb the less i know the better` *(scrobbles The Less I Know The Better by Tame Impala)*\n" +
                 $"`{prfx}scrobble Loona Heart Attack` *(scrobbles Heart Attack (츄) by LOONA)*");
 
             this._embed.AddField("Or enter the exact name with separators",
@@ -527,9 +526,9 @@ public class TrackCommands : BaseCommandModule
 
             var rnd = new Random();
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-            if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-30))
+            if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-100))
             {
-                footer += $"\nMissing members? Update with {prfx}index";
+                footer += $"\nMissing members? Update with {prfx}refreshmembers";
             }
 
             if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)
@@ -810,7 +809,7 @@ public class TrackCommands : BaseCommandModule
     [Command("servertracks", RunMode = RunMode.Async)]
     [Summary("Top tracks for your server, optionally for an artist")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
-    [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly", "servertracks kanye west listeners")]
+    [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly", "servertracks the beatles listeners", "servertracks the beatles alltime")]
     [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks", "billboard", "bb")]
     [GuildOnly]
     [RequiresIndex]
@@ -875,6 +874,11 @@ public class TrackCommands : BaseCommandModule
                 if (useCachedTracks)
                 {
                     trackInfo = await this._trackService.GetCachedTrack(trackArtist, trackName, lastFmUserName, userId);
+                    if (trackInfo.Success && trackInfo.Content.TrackUrl == null)
+                    {
+                        trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackName, trackArtist,
+                            lastFmUserName);
+                    }
                 }
                 else
                 {
@@ -919,6 +923,11 @@ public class TrackCommands : BaseCommandModule
             if (useCachedTracks)
             {
                 trackInfo = await this._trackService.GetCachedTrack(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, lastFmUserName, userId);
+                if (trackInfo.Success && trackInfo.Content.TrackUrl == null)
+                {
+                    trackInfo = await this._lastFmRepository.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
+                        lastFmUserName);
+                }
             }
             else
             {

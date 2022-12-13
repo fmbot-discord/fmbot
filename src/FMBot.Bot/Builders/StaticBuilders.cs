@@ -68,13 +68,14 @@ public class StaticBuilders
             "- All artist/album/track playcounts cached (up from top 4/5/6k)\n" +
             "- Full Discogs collection stored (up from last 100)");
 
+        response.Embed.AddField("Get featured",
+            $"- Every first Sunday of the month is Supporter Sunday\n" +
+            "- Higher chance for supporters to become featured\n" +
+            $"- Next Supporter Sunday is in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}");
+
         response.Embed.AddField("Add more friends",
             $"- Friend limit raised to {Constants.MaxFriendsSupporter} (up from {Constants.MaxFriends})\n" +
             "- Applies to all commands, from `friends` to `friendwhoknows`");
-
-        response.Embed.AddField("Get featured",
-            "- Every first Sunday of the month is Supporter Sunday\n" +
-            "- Higher chance for supporters to become featured");
 
         response.Embed.AddField("Join the community",
             "- Exclusive role and channel on our [Discord](https://discord.gg/6y3jJjtDqK)\n" +

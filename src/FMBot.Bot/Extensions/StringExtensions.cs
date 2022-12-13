@@ -156,6 +156,11 @@ public static class StringExtensions
         return crowns == 1 ? "crown" : "crowns";
     }
 
+    public static string GetDaysString(long? days)
+    {
+        return days == 1 ? "day" : "days";
+    }
+
     public static string GetChangeString(decimal oldValue, decimal newValue)
     {
         if (oldValue < newValue)

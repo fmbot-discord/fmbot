@@ -16,5 +16,7 @@ public class CensoredMusic
 
     public bool SafeForFeatured { get; set; }
 
+    public bool? FeaturedBanOnly { get; set; }
+
     public bool Artist { get; set; }
 }

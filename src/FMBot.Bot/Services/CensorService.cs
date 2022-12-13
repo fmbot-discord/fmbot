@@ -78,9 +78,16 @@ public class CensorService
         this._cache.Remove("censored-music");
     }
 
-    public async Task<CensorResult> AlbumResult(string albumName, string artistName)
+    public async Task<CensorResult> AlbumResult(string albumName, string artistName, bool featured = false)
     {
         var censoredMusic = await GetCachedCensoredMusic();
+
+        if (!featured)
+        {
+            censoredMusic = censoredMusic
+                .Where(w => w.FeaturedBanOnly != true)
+                .ToList();
+        }
 
         var censoredArtist = censoredMusic
             .Where(w => w.Artist)

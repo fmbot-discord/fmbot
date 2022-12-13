@@ -97,7 +97,7 @@ public class FeaturedService
                     RecentTrack trackToFeature = null;
                     foreach (var track in tracks.Content.RecentTracks.Where(w => w.AlbumName != null && w.AlbumCoverUrl != null))
                     {
-                        if (await this._censorService.AlbumResult(track.AlbumName, track.ArtistName) == CensorService.CensorResult.Safe &&
+                        if (await this._censorService.AlbumResult(track.AlbumName, track.ArtistName, true) == CensorService.CensorResult.Safe &&
                             await AlbumNotFeaturedRecently(track.AlbumName, track.ArtistName) &&
                             await AlbumPopularEnough(track.AlbumName, track.ArtistName))
                         {
@@ -170,7 +170,7 @@ public class FeaturedService
 
                         if (currentAlbum.AlbumCoverUrl != null &&
                             currentAlbum.AlbumName != null &&
-                            await this._censorService.AlbumResult(currentAlbum.AlbumName, currentAlbum.ArtistName) == CensorService.CensorResult.Safe &&
+                            await this._censorService.AlbumResult(currentAlbum.AlbumName, currentAlbum.ArtistName, true) == CensorService.CensorResult.Safe &&
                             await AlbumNotFeaturedRecently(currentAlbum.AlbumName, currentAlbum.ArtistName) &&
                             await AlbumPopularEnough(currentAlbum.AlbumName, currentAlbum.ArtistName))
                         {
@@ -215,6 +215,18 @@ public class FeaturedService
         }
 
         return null;
+    }
+
+    public static int GetDaysUntilNextSupporterSunday()
+    {
+        var nextSupporterSunday = DateTime.UtcNow;
+        while (nextSupporterSunday.DayOfWeek != DayOfWeek.Sunday || nextSupporterSunday.Day > 7)
+        {
+            nextSupporterSunday = nextSupporterSunday.AddDays(1);
+        }
+
+        var diff = nextSupporterSunday - DateTime.UtcNow;
+        return (int)diff.TotalDays;
     }
 
     public async Task<FeaturedLog> GetFeaturedForDateTime(DateTime dateTime)

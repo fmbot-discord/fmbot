@@ -258,8 +258,8 @@ public class SpotifyService
                     ArtistName = trackInfo.ArtistName,
                     DurationMs = (int)trackInfo.Duration,
                     LastFmUrl = trackInfo.TrackUrl,
-                    LastfmDate = DateTime.UtcNow
-                };
+                    LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
+            };
 
                 var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName, connection);
 
@@ -309,6 +309,13 @@ public class SpotifyService
                     dbTrack.ArtistId = artist.Id;
                     db.Entry(dbTrack).State = EntityState.Modified;
                 }
+            }
+
+            if (dbTrack.LastFmUrl == null && trackInfo.TrackUrl != null)
+            {
+                dbTrack.LastFmUrl = trackInfo.TrackUrl;
+                dbTrack.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                db.Entry(dbTrack).State = EntityState.Modified;
             }
 
             var monthsToGoBack = !string.IsNullOrEmpty(dbTrack.SpotifyId) && !dbTrack.Energy.HasValue ? 1 : 3;

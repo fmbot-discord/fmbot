@@ -274,9 +274,9 @@ public class AlbumCommands : BaseCommandModule
 
             var rnd = new Random();
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-            if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-30))
+            if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-100))
             {
-                footer += $"\nMissing members? Update with {prfx}index";
+                footer += $"\nMissing members? Update with {prfx}refreshmembers";
             }
 
             if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)

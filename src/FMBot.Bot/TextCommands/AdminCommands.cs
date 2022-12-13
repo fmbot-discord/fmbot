@@ -183,7 +183,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("issues")]
     [Summary("Toggles issue mode")]
-    public async Task IssuesAsync([Remainder]string reason = null)
+    public async Task IssuesAsync([Remainder] string reason = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -335,7 +335,7 @@ public class AdminCommands : BaseCommandModule
     [Command("addcensoredartist")]
     [Summary("Adds censored artist")]
     [Examples("addcensoredartist \"Last Days of Humanity\"")]
-    public async Task AddCensoredArtistAsync(string artist)
+    public async Task AddCensoredArtistAsync([Remainder] string artist)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -594,13 +594,15 @@ public class AdminCommands : BaseCommandModule
     }
 
     [Command("addsupporter")]
-    public async Task AddSupporterAsync(string user = null, string openCollectiveId = null)
+    public async Task AddSupporterAsync(string user = null, string openCollectiveId = null, string sendDm = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             const string formatError = "Make sure to follow the correct format when adding a supporter\n" +
                                        "`.addsupporter \"discordUserId\" \"open-collective-id\"`\n" +
-                                       "`.addsupporter \"278633844763262976\" \"03k0exgz-nm8yj64a-g4965wao-9r7b4dlv\"`";
+                                       "`.addsupporter \"278633844763262976\" \"03k0exgz-nm8yj64a-g4965wao-9r7b4dlv\"`\n\n" +
+                                       "If you don't want the bot to send a thank you dm, add `\"nodm\"`\n" +
+                                       "`.addsupporter \"278633844763262976\" \"03k0exgz-nm8yj64a-g4965wao-9r7b4dlv\" \"nodm\"`";
 
             if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(openCollectiveId) || user == "help")
             {
@@ -609,14 +611,15 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            if (!ulong.TryParse(user, out var userId))
+            if (!ulong.TryParse(user, out var discordUserId))
             {
                 await ReplyAsync(formatError);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
-            var userSettings = await this._userService.GetUserAsync(userId);
+            _ = this.Context.Channel.TriggerTypingAsync();
+            var userSettings = await this._userService.GetUserWithDiscogs(discordUserId);
 
             if (userSettings == null)
             {
@@ -646,7 +649,7 @@ public class AdminCommands : BaseCommandModule
             {
                 try
                 {
-                    var guildUser = await this.Context.Guild.GetUserAsync(userId);
+                    var guildUser = await this.Context.Guild.GetUserAsync(discordUserId);
                     if (guildUser != null)
                     {
                         var role = this.Context.Guild.Roles.FirstOrDefault(x => x.Name == "Supporter");
@@ -656,20 +659,72 @@ public class AdminCommands : BaseCommandModule
                 }
                 catch (Exception e)
                 {
-                    Log.Error("Adding supporter role failed for {id}", userId, e);
+                    Log.Error("Adding supporter role failed for {id}", discordUserId, e);
                 }
             }
 
             this._embed.WithTitle("Added new supporter");
-            this._embed.WithDescription($"User id: {user} | <@{user}>\n" +
-                                        $"Name: **{supporter.Name}**\n" +
-                                        $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
+            var description = new StringBuilder();
+            description.AppendLine($"User id: {user} | <@{user}>\n" +
+                                   $"Name: **{supporter.Name}**\n" +
+                                   $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
 
-            this._embed.AddField("Bot was able to add supporter role?",
-                    addedRole ? "Yes" : "No, please add manually");
+            description.AppendLine();
+            description.AppendLine(addedRole ? "✅ Supporter role added" : "❌ Unable to add supporter role");
+            description.AppendLine("✅ Full update started");
 
-            this._embed.WithFooter("Full update has been started\n" +
-                                   "Name changes go through OpenCollective and apply within 24h");
+            this._embed.WithFooter("Name changes go through OpenCollective and apply within 24h");
+
+            var discordUser = await this.Context.Guild.GetUserAsync(discordUserId);
+            if (discordUser != null && sendDm == null)
+            {
+                var thankYouEmbed = new EmbedBuilder();
+                var thankYouMessage = new StringBuilder();
+                thankYouMessage.AppendLine($"**Thank you for getting .fmbot {openCollectiveSupporter.SubscriptionType.ToString().ToLower()} supporter!**");
+                thankYouMessage.AppendLine(openCollectiveSupporter.SubscriptionType == SubscriptionType.Lifetime
+                    ? "Thanks to your purchase we can continue to improve and host the bot, while you get some nice perks in return. Here's a brief reminder of the features available to supporters:"
+                    : "Thanks to your subscription we can continue to improve and host the bot, while you get some nice perks in return. Here's a brief reminder of the features available to supporters:");
+
+                thankYouMessage.AppendLine();
+                thankYouMessage.AppendLine("**Expanded statistics**\n" +
+                                           "We've started a full update for you. " +
+                                           "After a few minutes the following commands should be expanded:\n" +
+                                           "- `artist`, `album` and `track` with first listen dates\n" +
+                                           "- `stats` command with overall history\n" +
+                                           "- `year` with artist discoveries and monthly overview\n" +
+                                           "- More coming soon");
+
+                thankYouMessage.AppendLine();
+                thankYouMessage.AppendLine("**Get featured**\n" +
+                                           "Every first Sunday of the month is Supporter Sunday, where you have a higher chance of getting featured. " +
+                                           $"The next Supporter Sunday is in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}.");
+
+                if (userSettings.UserDiscogs != null)
+                {
+                    thankYouMessage.AppendLine();
+                    thankYouMessage.AppendLine("**View your full Discogs collection**\n" +
+                                               "If you use the `collection` command it will fetch your full collection from Discogs.\n" +
+                                               $"This is also visible in other commands, like `artist`, `album`, `track` and `stats`.");
+                }
+
+                thankYouMessage.AppendLine();
+                thankYouMessage.AppendLine("**Your info**\n" +
+                                           $"Your name in the `supporters` command will be shown as `{supporter.Name}`. " +
+                                           "This is also the name that will be shown when you sponsor charts. You can update this through your OpenCollective settings.");
+
+                thankYouMessage.AppendLine();
+                thankYouMessage.AppendLine("*You also get a badge after your name, a higher friend limit and more. You can view a full overview of your perks and info anytime by doing the `getsupporter` command.*");
+
+                thankYouEmbed.WithDescription(thankYouMessage.ToString());
+                await discordUser.SendMessageAsync(embed: thankYouEmbed.Build());
+                description.AppendLine("✅ Thank you dm sent");
+            }
+            else
+            {
+                description.AppendLine("❌ Did not send thank you dm");
+            }
+
+            this._embed.WithDescription(description.ToString());
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();
