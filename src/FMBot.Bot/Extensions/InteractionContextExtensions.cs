@@ -131,6 +131,17 @@ public static class InteractionContextExtensions
                     ephemeral: ephemeral);
                 await response.Stream.DisposeAsync();
                 break;
+            case ResponseType.ImageOnly:
+                await context.Interaction.FollowupWithFileAsync(response.Stream,
+                    (response.Spoiler
+                        ? "SPOILER_"
+                        : "") +
+                    response.FileName +
+                    ".png",
+                    null,
+                    ephemeral: ephemeral);
+                await response.Stream.DisposeAsync();
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }

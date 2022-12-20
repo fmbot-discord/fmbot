@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using Ganss.Xss;
 using PuppeteerSharp;
 using SkiaSharp;
 
@@ -78,6 +80,178 @@ public class PuppeteerService
         return skImg;
     }
 
+    public async Task<SKBitmap> GetWhoKnows(string type, string location, string imageUrl, IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
+        PrivacyLevel minPrivacyLevel, UserCrown userCrown = null, string crownText = null, bool hidePrivateUsers = false)
+    {
+        await this._initializationTask;
+
+        await using var page = await this._browser.NewPageAsync();
+
+        var title = whoKnowsObjects.First().Name;
+        var extraHeight = 0;
+        if (title.Length > 35)
+        {
+            var lines = (int)(title.Length / 35);
+
+            extraHeight += (lines - 1) * 40;
+        }
+
+        await page.SetViewportAsync(new ViewPortOptions
+        {
+            Width = 850,
+            Height = 592 + extraHeight
+        });
+
+        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "whoknows.html");
+        var content = await File.ReadAllTextAsync(localPath);
+
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.AllowedTags.Clear();
+        sanitizer.AllowedTags.Add("b");
+
+        content = content.Replace("{{type}}", type);
+        content = content.Replace("{{location}}", sanitizer.Sanitize(location));
+
+        content = imageUrl != null ? content.Replace("{{image-url}}", imageUrl) : content.Replace("{{hide-img}}", "hidden");
+
+        content = content.Replace("{{title}}", sanitizer.Sanitize(title));
+
+        var whoKnowsCount = whoKnowsObjects.Count;
+        if (whoKnowsCount > 10)
+        {
+            whoKnowsCount = 10;
+        }
+
+        var usersToShow = whoKnowsObjects
+            .OrderByDescending(o => o.Playcount)
+            .ToList();
+
+        var indexNumber = 1;
+        var timesNameAdded = 0;
+        var requestedUserAdded = false;
+        var addedUsers = new List<int>();
+
+        var userList = new StringBuilder();
+        var requestedUser = whoKnowsObjects.FirstOrDefault(f => f.UserId == requestedUserId);
+
+        for (var index = 0; timesNameAdded < whoKnowsCount; index++)
+        {
+            if (index >= usersToShow.Count)
+            {
+                break;
+            }
+
+            var user = usersToShow[index];
+
+            if (addedUsers.Any(a => a.Equals(user.UserId)))
+            {
+                continue;
+            }
+
+            string nameWithLink;
+            if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
+            {
+                nameWithLink = "Private user";
+                if (hidePrivateUsers)
+                {
+                    indexNumber += 1;
+                    continue;
+                }
+            }
+            else
+            {
+                nameWithLink = Name(user, sanitizer, user.UserId == requestedUserId);
+            }
+
+            var positionCounter = $"{indexNumber}.";
+            if (userCrown != null && userCrown.UserId == user.UserId)
+            {
+                positionCounter = "👑 ";
+            }
+
+            userList.Append(GetWhoKnowsLine(positionCounter,
+                nameWithLink, user.Playcount));
+
+            indexNumber += 1;
+            timesNameAdded += 1;
+
+            addedUsers.Add(user.UserId);
+
+            if (user.UserId == requestedUserId)
+            {
+                requestedUserAdded = true;
+            }
+
+            if (!requestedUserAdded && requestedUser != null && indexNumber == 10)
+            {
+                break;
+            }
+        }
+
+        if (!requestedUserAdded)
+        {
+            if (requestedUser != null)
+            {
+                var nameWithLink = Name(requestedUser, sanitizer);
+                var position = whoKnowsObjects.IndexOf(requestedUser) + 1;
+
+                content = position switch
+                {
+                    > 100 and < 1000 => content.Replace("{{num-width}}", "44"),
+                    > 1000 and < 10000 => content.Replace("{{num-width}}", "52"),
+                    > 10000 => content.Replace("{{num-width}}", "60"),
+                    _ => content.Replace("{{num-width}}", "32")
+                };
+
+                userList.Append(GetWhoKnowsLine($"{position}.",
+                    nameWithLink, requestedUser.Playcount, true));
+            }
+        }
+
+        content = content.Replace("{{users}}", userList.ToString());
+
+        content = content.Replace("{{listeners}}", whoKnowsObjects.Count.ToString());
+        content = content.Replace("{{plays}}", whoKnowsObjects.Sum(a => a.Playcount).ToString());
+        content = content.Replace("{{average}}", ((int)whoKnowsObjects.Average(a => a.Playcount)).ToString());
+
+        await page.SetContentAsync(content);
+        await page.WaitForSelectorAsync(".result-list");
+
+        var img = await page.ScreenshotDataAsync();
+        return SKBitmap.FromImage(SKImage.FromEncodedData(img));
+    }
+
+    private static string GetWhoKnowsLine(string position, string name, int plays, bool self = false)
+    {
+        name = name.Length > 18 ? $"{name[..17]}.." : name;
+        var cssClass = self ? "num own-num" : "num";
+
+        return $"""
+            <li>
+                <div class="{cssClass}">{position}</div> {name} <span class="float-right">{plays}</span>
+            </li>
+            """;
+    }
+
+    private static string Name(WhoKnowsObjectWithUser user, HtmlSanitizer sanitizer, bool bold = false)
+    {
+        var discordName = user.DiscordName;
+
+        if (string.IsNullOrWhiteSpace(discordName))
+        {
+            discordName = user.LastFMUsername;
+        }
+
+        var nameWithLink = $"\u2066{sanitizer.Sanitize(discordName)}\u2069";
+
+        if (bold)
+        {
+            nameWithLink = $"<b>{nameWithLink}</b>";
+        }
+
+        return nameWithLink;
+    }
+
     public async Task<SKBitmap> GetReceipt(UserSettingsModel user, TopTrackList topTracks,
         TimeSettingsModel timeSettings, long? count)
     {
@@ -106,7 +280,6 @@ public class PuppeteerService
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "receipt.html");
-
         var content = await File.ReadAllTextAsync(localPath);
 
         var tracksToAdd = new StringBuilder();
@@ -158,15 +331,13 @@ public class PuppeteerService
             "Thank you for being an .fmbot supporter - Dankjewel !" : "Thank you for visiting - Dankjewel !");
 
         await page.SetContentAsync(content);
-
         await page.WaitForSelectorAsync("table");
 
         var img = await page.ScreenshotDataAsync();
-
         return SKBitmap.FromImage(SKImage.FromEncodedData(img));
     }
 
-    private List<GroupedCountries> GetGroupedCountries(List<TopCountry> artists)
+    private static List<GroupedCountries> GetGroupedCountries(IEnumerable<TopCountry> artists)
     {
         var list = new List<GroupedCountries>();
 
@@ -188,7 +359,7 @@ public class PuppeteerService
 
     private record GroupedCountries(List<string> CountryCodes, int MinAmount, int MaxAmount, double Opacity);
 
-    private void AddTitleToChartImage(SKBitmap chartImage, List<GroupedCountries> lines)
+    private static void AddTitleToChartImage(SKBitmap chartImage, List<GroupedCountries> lines)
     {
         const int textSize = 35;
 
@@ -224,12 +395,12 @@ public class PuppeteerService
 
         using var bitmapCanvas = new SKCanvas(chartImage);
 
-        var lineHeight = 65;
+        const int lineHeight = 65;
 
-        var rectangleLeft = 100;
-        var rectangleRight = 440;
-        var rectangleTop = 700;
-        var rectangleBottom = 1350;
+        const int rectangleLeft = 100;
+        const int rectangleRight = 440;
+        const int rectangleTop = 700;
+        const int rectangleBottom = 1350;
 
         var backgroundRectangle = new SKRect(rectangleLeft, rectangleTop, rectangleRight, rectangleBottom - (lineHeight * (7 - lines.Count)));
 

@@ -32,7 +32,7 @@ public class CrownService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
+    public async Task<Models.CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
     {
         var eligibleUsers = users.ToList();
 
@@ -90,13 +90,13 @@ public class CrownService
 
                 await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
-                return new CrownModel
+                return new Models.CrownModel
                 {
                     Crown = currentCrownHolder
                 };
             }
 
-            return new CrownModel
+            return new Models.CrownModel
             {
                 Crown = currentCrownHolder,
             };
@@ -116,7 +116,7 @@ public class CrownService
 
             if (PublicProperties.IssuesAtLastFm)
             {
-                return new CrownModel
+                return new Models.CrownModel
                 {
                     Crown = currentCrownHolder,
                     CrownResult = "*Crown stealing is currently disabled due to issues with the Last.fm API*"
@@ -138,7 +138,7 @@ public class CrownService
 
                 await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
-                return new CrownModel
+                return new Models.CrownModel
                 {
                     Crown = currentCrownHolder
                 };
@@ -180,7 +180,7 @@ public class CrownService
 
             var currentCrownHolderName = users.FirstOrDefault(f => f.UserId == currentCrownHolder.UserId)?.DiscordName;
 
-            return new CrownModel
+            return new Models.CrownModel
             {
                 Crown = newCrown,
                 CrownResult = $"Crown stolen by {topUser.DiscordName} with `{topUser.Playcount}` plays! \n" +
@@ -215,7 +215,7 @@ public class CrownService
                 await db.DisposeAsync();
                 await connection.CloseAsync();
 
-                return new CrownModel
+                return new Models.CrownModel
                 {
                     Crown = newCrown,
                     CrownResult = $"Crown claimed by {topUser.DiscordName}!"
@@ -226,7 +226,7 @@ public class CrownService
             {
                 var amountOfPlaysRequired = minAmountOfPlaysForCrown - topUser.Playcount;
 
-                return new CrownModel
+                return new Models.CrownModel
                 {
                     CrownResult = $"{topUser.DiscordName} needs {amountOfPlaysRequired} more {StringExtensions.GetPlaysString(amountOfPlaysRequired)} to claim the crown."
                 };

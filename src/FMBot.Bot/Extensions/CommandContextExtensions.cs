@@ -73,6 +73,15 @@ public static class CommandContextExtensions
                     isSpoiler: response.Spoiler);
                 await response.Stream.DisposeAsync();
                 break;
+            case ResponseType.ImageOnly:
+                await context.Channel.SendFileAsync(
+                    response.Stream,
+                    response.FileName + ".png",
+                    null,
+                    false,
+                    isSpoiler: response.Spoiler);
+                await response.Stream.DisposeAsync();
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }

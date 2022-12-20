@@ -354,6 +354,13 @@ public class SettingService
             return whoKnowsSettings;
         }
 
+        var image = new[] { "img", "image" };
+        if (Contains(extraOptions, image))
+        {
+            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, image);
+            whoKnowsSettings.WhoKnowsMode = WhoKnowsMode.Image;
+        }
+
         var hidePrivateUsers = new[] { "hp", "hideprivate", "hideprivateusers" };
         if (Contains(extraOptions, hidePrivateUsers))
         {
