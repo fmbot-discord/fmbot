@@ -1,6 +1,4 @@
-using System.ComponentModel.DataAnnotations;
 using System.Text;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Ganss.Xss;
@@ -160,7 +158,7 @@ public class PuppeteerService
             }
             else
             {
-                nameWithLink = Name(user, sanitizer, user.UserId == requestedUserId);
+                nameWithLink = Name(user, sanitizer);
             }
 
             var positionCounter = $"{indexNumber}.";
@@ -170,7 +168,7 @@ public class PuppeteerService
             }
 
             userList.Append(GetWhoKnowsLine(positionCounter,
-                nameWithLink, user.Playcount));
+                nameWithLink, user.Playcount, user.UserId == requestedUserId));
 
             indexNumber += 1;
             timesNameAdded += 1;
@@ -226,6 +224,8 @@ public class PuppeteerService
         name = name.Length > 18 ? $"{name[..17]}.." : name;
         var cssClass = self ? "num own-num" : "num";
 
+        name = self ? $"<b>{name}</b>" : name;
+
         return $"""
             <li>
                 <div class="{cssClass}">{position}</div> {name} <span class="float-right">{plays}</span>
@@ -233,7 +233,7 @@ public class PuppeteerService
             """;
     }
 
-    private static string Name(WhoKnowsObjectWithUser user, HtmlSanitizer sanitizer, bool bold = false)
+    private static string Name(WhoKnowsObjectWithUser user, HtmlSanitizer sanitizer)
     {
         var discordName = user.DiscordName;
 
@@ -243,11 +243,6 @@ public class PuppeteerService
         }
 
         var nameWithLink = $"\u2066{sanitizer.Sanitize(discordName)}\u2069";
-
-        if (bold)
-        {
-            nameWithLink = $"<b>{nameWithLink}</b>";
-        }
 
         return nameWithLink;
     }
