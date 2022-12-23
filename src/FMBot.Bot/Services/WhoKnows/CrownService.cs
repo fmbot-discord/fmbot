@@ -32,7 +32,7 @@ public class CrownService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
+    public async Task<Models.CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
     {
         var eligibleUsers = users.ToList();
 
@@ -116,10 +116,11 @@ public class CrownService
 
             if (PublicProperties.IssuesAtLastFm)
             {
-                return new CrownModel
+                return new Models.CrownModel
                 {
                     Crown = currentCrownHolder,
-                    CrownResult = "*Crown stealing is currently disabled due to issues with the Last.fm API*"
+                    CrownResult = "*Crown stealing is currently disabled due to issues with the Last.fm API*",
+                    CrownHtmlResult = "Crown stealing is currently disabled due to issues with the Last.fm API"
                 };
             }
 
@@ -138,7 +139,7 @@ public class CrownService
 
                 await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
-                return new CrownModel
+                return new Models.CrownModel
                 {
                     Crown = currentCrownHolder
                 };
@@ -184,7 +185,9 @@ public class CrownService
             {
                 Crown = newCrown,
                 CrownResult = $"Crown stolen by {topUser.DiscordName} with `{topUser.Playcount}` plays! \n" +
-                              $"*Previous owner: {currentCrownHolderName ?? crownUser.UserNameLastFM} with `{currentCrownHolder.CurrentPlaycount}` plays*."
+                              $"*Previous owner: {currentCrownHolderName ?? crownUser.UserNameLastFM} with `{currentCrownHolder.CurrentPlaycount}` plays*.",
+                CrownHtmlResult = $"Crown stolen by <b>{topUser.DiscordName}</b> with <b>{topUser.Playcount} plays</b>! " +
+                              $"Previous owner: <b>{currentCrownHolderName ?? crownUser.UserNameLastFM}</b> with <b>{currentCrownHolder.CurrentPlaycount} plays</b>.",
             };
         }
 
@@ -215,10 +218,11 @@ public class CrownService
                 await db.DisposeAsync();
                 await connection.CloseAsync();
 
-                return new CrownModel
+                return new Models.CrownModel
                 {
                     Crown = newCrown,
-                    CrownResult = $"Crown claimed by {topUser.DiscordName}!"
+                    CrownResult = $"Crown claimed by {topUser.DiscordName}!",
+                    CrownHtmlResult = $"Crown claimed by <b>{topUser.DiscordName}</b>!"
                 };
             }
 
@@ -228,7 +232,8 @@ public class CrownService
 
                 return new CrownModel
                 {
-                    CrownResult = $"{topUser.DiscordName} needs {amountOfPlaysRequired} more {StringExtensions.GetPlaysString(amountOfPlaysRequired)} to claim the crown."
+                    CrownResult = $"{topUser.DiscordName} needs {amountOfPlaysRequired} more {StringExtensions.GetPlaysString(amountOfPlaysRequired)} to claim the crown.",
+                    CrownHtmlResult = $"{topUser.DiscordName} needs {amountOfPlaysRequired} more {StringExtensions.GetPlaysString(amountOfPlaysRequired)} to claim the crown."
                 };
             }
         }

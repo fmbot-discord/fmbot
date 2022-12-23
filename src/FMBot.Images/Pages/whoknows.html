@@ -1,0 +1,182 @@
+<html>
+
+<head>
+    <style>
+        @font-face {
+            font-family: "worksans";
+            src: url("https://fmbot.xyz/fonts/worksans-regular.otf") format("opentype");
+        }
+
+        body {
+            font-family: "worksans";
+            margin-right: 24px;
+            margin-left: 24px;
+            margin-top: 28px;
+            background-color: #282424;
+            color: #dcddde;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.75)), url('{{image-url}}');
+            background-position: center;
+            background-size: cover;
+            background-attachment: fixed;
+        }
+
+        .float-left {
+            float: left;
+        }
+
+        .float-right {
+            float: right;
+        }
+
+        .align-center {
+            text-align: center;
+        }
+
+        .whoknows {
+            font-size: 16px;
+        }
+
+        .title {
+            font-size: 32px;
+            background-color: #2f3136;
+            padding: 20px 8px 20px 8px;
+            margin-top: -12px;
+            box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+        }
+
+        .subtitle {
+            display: initial;
+            background-color: #2f3136;
+            padding: 8px 8px 8px 8px;
+            margin-top: -16px;
+            margin-right: 8px;
+            margin-left: 8px;
+            box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.6);
+            border-radius: 6px;
+        }
+
+        .result-container {
+            margin-top: 28px;
+            display: flex;
+            margin-left: -6px;
+            margin-right: -6px;
+        }
+
+        .crown-view {
+            margin-top: 32px;
+            margin-left: 0;
+            margin-right: 0;
+            text-align: center;
+        }
+
+        .float-child {
+            width: 50%;
+            float: left;
+            padding: 8px;
+            flex: 1;
+        }
+
+        .flex-wrap {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .stat-view {
+            margin-top: -20px;
+        }
+
+        .flex-wrap>* {
+            flex: 1 1 auto;
+        }
+
+        img {
+            max-width: -webkit-fill-available;
+            border-radius: 8px;
+            box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.6);
+            max-height: 408px;
+        }
+
+        .branding {
+            margin-bottom: -20px;
+            display: inline-block;
+            color: rgba(220, 221, 222, 0.4);
+            padding-left: 4px;
+        }
+
+        .result-list {
+            background-color: #2f3136;
+            border-radius: 8px;
+            height: 100%;
+            box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.6);
+        }
+
+        ul {
+            padding: 16px 16px 4px 16px;
+            margin: 0 0 0 0;
+            list-style-type: none;
+            font-size: 24px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .num {
+            width: 32px;
+            display: inline-block;
+            text-align: center;
+            padding-left: -4px;
+        }
+        .own-num {
+            width: {{num-width}}px !important;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="title-container">
+        <div class="whoknows subtitle top">
+            {{type}}
+        </div>
+        <div class="whoknows title align-center">
+            {{title}}
+        </div>
+        <div class="whoknows subtitle float-right bottom">
+            {{location}}
+        </div>
+    </div>
+    <div class="result-container">
+        <div class="float-child {{hide-img}}">
+            <img src="{{image-url}}">
+            <div class="floatleft bottom branding">
+                Powered by .fmbot
+            </div>
+        </div>
+        <div class="float-child">
+            <div class="result-list">
+                <ul>
+                    {{users}}
+                </ul>
+            </div>
+            <div class="whoknows subtitle bottom align-center flex-wrap stat-view">
+                <span class="float-left">{{listeners}} listeners</span>
+                <span><b>·</b></span>
+                <span class="float-right">{{plays}} plays</span>
+                <span><b>·</b></span>
+                <span>{{average}} avg</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="subtitle bottom align-center flex-wrap crown-view {{crown-hide}}">
+        <span>{{crown-text}}</span>
+    </div>
+</body>
+
+</html>

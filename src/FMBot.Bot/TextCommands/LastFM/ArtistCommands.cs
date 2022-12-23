@@ -418,14 +418,22 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows)]
     public async Task WhoKnowsAsync([Remainder] string artistValues = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         _ = this.Context.Channel.TriggerTypingAsync();
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), artistValues);
+            var currentSettings = new WhoKnowsSettings
+            {
+                WhoKnowsMode = WhoKnowsMode.Embed,
+                NewSearchValue = artistValues
+            };
+
+            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
+
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), settings.WhoKnowsMode, settings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -466,7 +474,8 @@ public class ArtistCommands : BaseCommandModule
                 HidePrivateUsers = false,
                 ShowBotters = false,
                 AdminView = false,
-                NewSearchValue = artistValues
+                NewSearchValue = artistValues,
+                WhoKnowsMode = WhoKnowsMode.Embed
             };
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
@@ -556,7 +565,7 @@ public class ArtistCommands : BaseCommandModule
             }
 
             var usersWithArtist = await this._whoKnowArtistService.GetFriendUsersForArtists(this.Context, guild?.GuildId ?? 0, contextUser.UserId, artistName);
-            
+
             usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, contextUser, artistName, this.Context.Guild, userPlaycount);
 
             var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist, contextUser.UserId, PrivacyLevel.Server);

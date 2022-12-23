@@ -230,118 +230,25 @@ public class AlbumCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows)]
     public async Task WhoKnowsAlbumAsync([Remainder] string albumValues = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        _ = this.Context.Channel.TriggerTypingAsync();
 
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        
         try
         {
-            var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
-
-            _ = this.Context.Channel.TriggerTypingAsync();
-
-            var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
-                useCachedAlbums: true, userId: contextUser.UserId);
-            if (album == null)
+            var currentSettings = new WhoKnowsSettings
             {
-                return;
-            }
+                WhoKnowsMode = WhoKnowsMode.Embed,
+                NewSearchValue = albumValues
+            };
 
-            var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
-            var fullAlbumName = $"{album.AlbumName} by {album.ArtistName}";
+            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
-            var guild = await guildTask;
+            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, prfx, contextUser), settings.WhoKnowsMode, settings.NewSearchValue);
 
-            var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(this.Context.Guild, guild.GuildId, album.ArtistName, album.AlbumName);
-
-            var discordGuildUser = await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId);
-            var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithAlbum, guild, discordGuildUser, contextUser);
-            await this._indexService.UpdateGuildUser(discordGuildUser, currentUser.UserId, guild);
-
-            usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, contextUser, fullAlbumName, this.Context.Guild, album.UserPlaycount);
-
-            var filteredUsersWithAlbum = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
-
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, contextUser.UserId, PrivacyLevel.Server);
-            if (filteredUsersWithAlbum.Count == 0)
-            {
-                serverUsers = "Nobody in this server (not even you) has listened to this album.";
-            }
-
-            this._embed.WithDescription(serverUsers);
-
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            var footer = $"WhoKnows album requested by {userTitle}";
-
-            var rnd = new Random();
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-            if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-100))
-            {
-                footer += $"\nMissing members? Update with {prfx}refreshmembers";
-            }
-
-            if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)
-            {
-                var serverListeners = filteredUsersWithAlbum.Count;
-                var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
-                var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
-
-                footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
-                footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
-                footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
-            }
-
-            if (usersWithAlbum.Count > filteredUsersWithAlbum.Count && !guild.WhoKnowsWhitelistRoleId.HasValue)
-            {
-                var filteredAmount = usersWithAlbum.Count - filteredUsersWithAlbum.Count;
-                footer += $"\n{filteredAmount} inactive/blocked users filtered";
-            }
-
-            if (guild.WhoKnowsWhitelistRoleId.HasValue)
-            {
-                footer += $"\nUsers with WhoKnows whitelisted role only";
-            }
-
-            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(contextUser.UserId,
-                guild, usersWithAlbum, album.ArtistName, album.AlbumName);
-
-            if (guildAlsoPlaying != null)
-            {
-                footer += "\n";
-                footer += guildAlsoPlaying;
-            }
-
-            this._embed.WithTitle(StringExtensions.TruncateLongString($"{fullAlbumName} in {this.Context.Guild.Name}", 255));
-
-            var url = contextUser.RymEnabled == true
-                ? StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName)
-                : album.AlbumUrl;
-
-            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-            {
-                this._embed.WithUrl(url);
-            }
-
-            this._embedFooter.WithText(footer);
-            this._embed.WithFooter(this._embedFooter);
-
-            var albumCoverUrl = album.AlbumCoverUrl;
-            if (databaseAlbum.SpotifyImageUrl != null)
-            {
-                albumCoverUrl = databaseAlbum.SpotifyImageUrl;
-            }
-            if (albumCoverUrl != null)
-            {
-                var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
-                    album.AlbumName, album.ArtistName, album.AlbumUrl);
-                if (safeForChannel == CensorService.CensorResult.Safe)
-                {
-                    this._embed.WithThumbnailUrl(albumCoverUrl);
-                }
-            }
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

@@ -4,10 +4,11 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="HtmlSanitizer" Version="8.0.601" />
     <PackageReference Include="PuppeteerSharp" Version="6.2.0" />
     <PackageReference Include="SkiaSharp" Version="2.80.2" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.80.2" />
@@ -22,6 +23,9 @@
   <ItemGroup>
     <None Update="Pages\receipt.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Pages\whoknows.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Pages\world-light.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

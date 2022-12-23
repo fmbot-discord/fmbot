@@ -354,6 +354,19 @@ public class SettingService
             return whoKnowsSettings;
         }
 
+        var image = new[] { "img", "image" };
+        if (Contains(extraOptions, image))
+        {
+            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, image);
+            whoKnowsSettings.WhoKnowsMode = WhoKnowsMode.Image;
+        }
+        var embed = new[] { "embed", "text", "txt" };
+        if (Contains(extraOptions, embed))
+        {
+            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, embed);
+            whoKnowsSettings.WhoKnowsMode = WhoKnowsMode.Embed;
+        }
+
         var hidePrivateUsers = new[] { "hp", "hideprivate", "hideprivateusers" };
         if (Contains(extraOptions, hidePrivateUsers))
         {

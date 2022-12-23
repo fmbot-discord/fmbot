@@ -15,9 +15,12 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.Images.Generators;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Genius.Models.Song;
+using SkiaSharp;
 using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
@@ -40,7 +43,8 @@ public class ArtistBuilders
     private readonly SettingService _settingService;
     private readonly SmallIndexRepository _smallIndexRepository;
     private readonly SupporterService _supporterService;
-    
+    private readonly PuppeteerService _puppeteerService;
+
     public ArtistBuilders(ArtistsService artistsService,
         LastFmRepository lastFmRepository,
         GuildService guildService,
@@ -55,7 +59,7 @@ public class ArtistBuilders
         WhoKnowsService whoKnowsService,
         SettingService settingService,
         SmallIndexRepository smallIndexRepository,
-        SupporterService supporterService)
+        SupporterService supporterService, PuppeteerService puppeteerService)
     {
         this._artistsService = artistsService;
         this._lastFmRepository = lastFmRepository;
@@ -72,6 +76,7 @@ public class ArtistBuilders
         this._settingService = settingService;
         this._smallIndexRepository = smallIndexRepository;
         this._supporterService = supporterService;
+        this._puppeteerService = puppeteerService;
     }
 
     public async Task<ResponseModel> ArtistAsync(
@@ -722,6 +727,7 @@ public class ArtistBuilders
 
     public async Task<ResponseModel> WhoKnowsArtistAsync(
         ContextModel context,
+        WhoKnowsMode mode,
         string artistValues)
     {
         var response = new ResponseModel
@@ -731,7 +737,9 @@ public class ArtistBuilders
 
         var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true, userId: context.ContextUser.UserId);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
+            userId: context.ContextUser.UserId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -755,6 +763,19 @@ public class ArtistBuilders
         {
             crownModel =
                 await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, contextGuild, artistSearch.Artist.ArtistName);
+        }
+
+        if (mode == WhoKnowsMode.Image)
+        {
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>{context.DiscordGuild.Name}</b>", cachedArtist.SpotifyImageUrl,
+                filteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, crownModel?.Crown, crownModel?.CrownHtmlResult);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"whoknows-{artistSearch.Artist.ArtistName}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, crownModel);
@@ -868,6 +889,19 @@ public class ArtistBuilders
             {
                 privacyLevel = PrivacyLevel.Server;
             }
+        }
+
+        if (settings.WhoKnowsMode == WhoKnowsMode.Image)
+        {
+            var image = await this._puppeteerService.GetWhoKnows("Global WhoKnows", $"in <b>.fmbot</b> 🌐", cachedArtist?.SpotifyImageUrl,
+                filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"global-whoknows-{artistSearch.Artist.ArtistName}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);

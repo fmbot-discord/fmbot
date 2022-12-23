@@ -9,6 +9,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -42,6 +43,32 @@ public class TrackSlashCommands : InteractionModuleBase
         try
         {
             var response = await this._trackBuilders.TrackAsync(new ContextModel(this.Context, contextUser), name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("wktrack", "Shows what other users listen to an album in your server")]
+    [UsernameSetRequired]
+    public async Task WhoKnowsTrackAsync(
+        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
+        [Summary("Mode", "The type of response you want")]
+        WhoKnowsMode mode = WhoKnowsMode.Embed)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response =
+                await this._trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), mode, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

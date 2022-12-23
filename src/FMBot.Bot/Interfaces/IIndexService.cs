@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Models;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Interfaces;

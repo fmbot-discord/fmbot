@@ -128,7 +128,8 @@ public class ArtistSlashCommands : InteractionModuleBase
     [GuildOnly]
     public async Task WhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(ArtistAutoComplete))] string name = null)
+        [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed)
     {
         _ = DeferAsync();
 
@@ -136,7 +137,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), name);
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -153,6 +154,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task GlobalWhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed,
         [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
     {
         _ = DeferAsync();
@@ -165,7 +167,8 @@ public class ArtistSlashCommands : InteractionModuleBase
             HidePrivateUsers = hidePrivate,
             ShowBotters = false,
             AdminView = false,
-            NewSearchValue = name
+            NewSearchValue = name,
+            WhoKnowsMode = mode
         };
 
         try
@@ -229,7 +232,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
         var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-        
+
         try
         {
             var response = await this._artistBuilders.AffinityAsync(new ContextModel(this.Context, contextUser),

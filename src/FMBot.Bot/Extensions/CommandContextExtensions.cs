@@ -64,12 +64,23 @@ public static class CommandContextExtensions
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                 break;
             case ResponseType.ImageWithEmbed:
+                var imageEmbedFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
                 await context.Channel.SendFileAsync(
                     response.Stream,
-                    response.FileName + ".png",
+                    imageEmbedFilename + ".png",
                     null,
                     false,
                     response.Embed.Build(),
+                    isSpoiler: response.Spoiler);
+                await response.Stream.DisposeAsync();
+                break;
+            case ResponseType.ImageOnly:
+                var imageFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
+                await context.Channel.SendFileAsync(
+                    response.Stream,
+                    imageFilename + ".png",
+                    null,
+                    false,
                     isSpoiler: response.Spoiler);
                 await response.Stream.DisposeAsync();
                 break;
