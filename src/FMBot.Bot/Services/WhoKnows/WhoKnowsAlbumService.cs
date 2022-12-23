@@ -74,7 +74,7 @@ public class WhoKnowsAlbumService
             whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
             {
                 DiscordName = userName,
-                Name = $"{userAlbum.ArtistName} - {userAlbum.Name}",
+                Name = $"{userAlbum.Name} by {userAlbum.ArtistName}",
                 Playcount = userAlbum.Playcount,
                 LastFMUsername = userAlbum.UserNameLastFm,
                 UserId = userAlbum.UserId,

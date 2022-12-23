@@ -90,13 +90,13 @@ public class CrownService
 
                 await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
-                return new Models.CrownModel
+                return new CrownModel
                 {
                     Crown = currentCrownHolder
                 };
             }
 
-            return new Models.CrownModel
+            return new CrownModel
             {
                 Crown = currentCrownHolder,
             };
@@ -119,7 +119,8 @@ public class CrownService
                 return new Models.CrownModel
                 {
                     Crown = currentCrownHolder,
-                    CrownResult = "*Crown stealing is currently disabled due to issues with the Last.fm API*"
+                    CrownResult = "*Crown stealing is currently disabled due to issues with the Last.fm API*",
+                    CrownHtmlResult = "Crown stealing is currently disabled due to issues with the Last.fm API"
                 };
             }
 
@@ -180,11 +181,13 @@ public class CrownService
 
             var currentCrownHolderName = users.FirstOrDefault(f => f.UserId == currentCrownHolder.UserId)?.DiscordName;
 
-            return new Models.CrownModel
+            return new CrownModel
             {
                 Crown = newCrown,
                 CrownResult = $"Crown stolen by {topUser.DiscordName} with `{topUser.Playcount}` plays! \n" +
-                              $"*Previous owner: {currentCrownHolderName ?? crownUser.UserNameLastFM} with `{currentCrownHolder.CurrentPlaycount}` plays*."
+                              $"*Previous owner: {currentCrownHolderName ?? crownUser.UserNameLastFM} with `{currentCrownHolder.CurrentPlaycount}` plays*.",
+                CrownHtmlResult = $"Crown stolen by <b>{topUser.DiscordName}</b> with <b>{topUser.Playcount} plays</b>! " +
+                              $"Previous owner: <b>{currentCrownHolderName ?? crownUser.UserNameLastFM}</b> with <b>{currentCrownHolder.CurrentPlaycount} plays</b>.",
             };
         }
 
@@ -218,7 +221,8 @@ public class CrownService
                 return new Models.CrownModel
                 {
                     Crown = newCrown,
-                    CrownResult = $"Crown claimed by {topUser.DiscordName}!"
+                    CrownResult = $"Crown claimed by {topUser.DiscordName}!",
+                    CrownHtmlResult = $"Crown claimed by <b>{topUser.DiscordName}</b>!"
                 };
             }
 
@@ -226,9 +230,10 @@ public class CrownService
             {
                 var amountOfPlaysRequired = minAmountOfPlaysForCrown - topUser.Playcount;
 
-                return new Models.CrownModel
+                return new CrownModel
                 {
-                    CrownResult = $"{topUser.DiscordName} needs {amountOfPlaysRequired} more {StringExtensions.GetPlaysString(amountOfPlaysRequired)} to claim the crown."
+                    CrownResult = $"{topUser.DiscordName} needs {amountOfPlaysRequired} more {StringExtensions.GetPlaysString(amountOfPlaysRequired)} to claim the crown.",
+                    CrownHtmlResult = $"{topUser.DiscordName} needs {amountOfPlaysRequired} more {StringExtensions.GetPlaysString(amountOfPlaysRequired)} to claim the crown."
                 };
             }
         }

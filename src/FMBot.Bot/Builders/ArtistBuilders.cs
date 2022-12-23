@@ -736,7 +736,9 @@ public class ArtistBuilders
 
         var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true, userId: context.ContextUser.UserId);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
+            userId: context.ContextUser.UserId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -755,7 +757,7 @@ public class ArtistBuilders
 
         var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, contextGuild);
 
-        Models.CrownModel crownModel = null;
+        CrownModel crownModel = null;
         if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1)
         {
             crownModel =
@@ -765,11 +767,11 @@ public class ArtistBuilders
         if (mode == WhoKnowsMode.Image)
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>{context.DiscordGuild.Name}</b>", cachedArtist.SpotifyImageUrl,
-                filteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, crownModel?.Crown);
+                filteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, crownModel?.Crown, crownModel?.CrownHtmlResult);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = "whoknows";
+            response.FileName = $"whoknows-{artistSearch.Artist.ArtistName}";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;

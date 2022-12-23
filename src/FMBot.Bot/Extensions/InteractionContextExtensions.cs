@@ -120,11 +120,12 @@ public static class InteractionContextExtensions
                     ephemeral: ephemeral);
                 break;
             case ResponseType.ImageWithEmbed:
+                var imageEmbedFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
                 await context.Interaction.FollowupWithFileAsync(response.Stream,
                     (response.Spoiler
                         ? "SPOILER_"
                         : "") +
-                    response.FileName +
+                    imageEmbedFilename +
                     ".png",
                     null,
                     new[] { response.Embed.Build() },
@@ -132,14 +133,15 @@ public static class InteractionContextExtensions
                 await response.Stream.DisposeAsync();
                 break;
             case ResponseType.ImageOnly:
+                var imageName = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
                 await context.Interaction.FollowupWithFileAsync(response.Stream,
-                    (response.Spoiler
-                        ? "SPOILER_"
-                        : "") +
-                    response.FileName +
-                    ".png",
-                    null,
-                    ephemeral: ephemeral);
+                (response.Spoiler
+                    ? "SPOILER_"
+                    : "") +
+                imageName +
+                ".png",
+                null,
+                ephemeral: ephemeral);
                 await response.Stream.DisposeAsync();
                 break;
             default:

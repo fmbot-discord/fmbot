@@ -8,6 +8,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -40,6 +41,31 @@ public class AlbumSlashCommands : InteractionModuleBase
         try
         {
             var response = await this._albumBuilders.AlbumAsync(new ContextModel(this.Context, contextUser), name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("wkalbum", "Shows what other users listen to an album in your server")]
+    [UsernameSetRequired]
+    public async Task WhoKnowsAlbumAsync(
+        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(AlbumAutoComplete))]
+        string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), mode, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

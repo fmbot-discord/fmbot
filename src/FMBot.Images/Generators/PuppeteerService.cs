@@ -85,13 +85,18 @@ public class PuppeteerService
 
         await using var page = await this._browser.NewPageAsync();
 
-        var title = whoKnowsObjects.First().Name;
+        var title = whoKnowsObjects.FirstOrDefault()?.Name ?? "Unknown";
         var extraHeight = 0;
         if (title.Length > 35)
         {
             var lines = (int)(title.Length / 35);
 
-            extraHeight += (lines - 1) * 40;
+            extraHeight += (lines - 1) * 30;
+        }
+
+        if (crownText != null)
+        {
+            extraHeight += 64;
         }
 
         await page.SetViewportAsync(new ViewPortOptions
@@ -113,6 +118,15 @@ public class PuppeteerService
         content = imageUrl != null ? content.Replace("{{image-url}}", imageUrl) : content.Replace("{{hide-img}}", "hidden");
 
         content = content.Replace("{{title}}", sanitizer.Sanitize(title));
+
+        if (crownText != null)
+        {
+            content = content.Replace("{{crown-text}}", sanitizer.Sanitize(crownText));
+        }
+        else
+        {
+            content = content.Replace("{{crown-hide}}", "hidden");
+        }
 
         var whoKnowsCount = whoKnowsObjects.Count;
         if (whoKnowsCount > 10)
@@ -146,10 +160,10 @@ public class PuppeteerService
                 continue;
             }
 
-            string nameWithLink;
+            string name;
             if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
             {
-                nameWithLink = "Private user";
+                name = "Private user";
                 if (hidePrivateUsers)
                 {
                     indexNumber += 1;
@@ -158,7 +172,7 @@ public class PuppeteerService
             }
             else
             {
-                nameWithLink = Name(user, sanitizer);
+                name = Name(user, sanitizer);
             }
 
             var positionCounter = $"{indexNumber}.";
@@ -168,7 +182,7 @@ public class PuppeteerService
             }
 
             userList.Append(GetWhoKnowsLine(positionCounter,
-                nameWithLink, user.Playcount, user.UserId == requestedUserId));
+                name, user.Playcount, user.UserId == requestedUserId));
 
             indexNumber += 1;
             timesNameAdded += 1;
@@ -190,7 +204,7 @@ public class PuppeteerService
         {
             if (requestedUser != null)
             {
-                var nameWithLink = Name(requestedUser, sanitizer);
+                var name = Name(requestedUser, sanitizer);
                 var position = whoKnowsObjects.IndexOf(requestedUser) + 1;
 
                 content = position switch
@@ -202,7 +216,7 @@ public class PuppeteerService
                 };
 
                 userList.Append(GetWhoKnowsLine($"{position}.",
-                    nameWithLink, requestedUser.Playcount, true));
+                    name, requestedUser.Playcount, true));
             }
         }
 
@@ -254,6 +268,9 @@ public class PuppeteerService
 
         await using var page = await this._browser.NewPageAsync();
 
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.AllowedTags.Clear();
+
         const int amountOfTracks = 12;
         const int lineHeight = 20;
 
@@ -290,7 +307,7 @@ public class PuppeteerService
             tracksToAdd.Append("</tr>");
         }
 
-        content = content.Replace("{{tracks}}", tracksToAdd.ToString());
+        content = content.Replace("{{tracks}}", sanitizer.Sanitize(tracksToAdd.ToString()));
 
         content = content.Replace("{{subtotal}}", topTracks.TopTracks.Take(amountOfTracks).Sum(s => s.UserPlaycount.GetValueOrDefault()).ToString());
         content = content.Replace("{{total-plays}}", count.GetValueOrDefault().ToString());
@@ -314,10 +331,10 @@ public class PuppeteerService
         content = content.Replace("{{order}}", this._orderNr.ToString());
         this._orderNr++;
 
-        content = content.Replace("{{time-period}}", timeSettings.Description);
+        content = content.Replace("{{time-period}}", sanitizer.Sanitize(timeSettings.Description));
         content = content.Replace("{{date-generated}}", DateTime.UtcNow.ToLongDateString());
-        content = content.Replace("{{lfm-username}}", user.UserNameLastFm);
-        content = content.Replace("{{discord-username}}", user.DiscordUserName);
+        content = content.Replace("{{lfm-username}}", sanitizer.Sanitize(user.UserNameLastFm));
+        content = content.Replace("{{discord-username}}", sanitizer.Sanitize(user.DiscordUserName));
         content = content.Replace("{{auth-code}}", user.UserId.ToString());
         content = content.Replace("{{background-offset}}", new Random().Next(10, 1000).ToString());
         content = content.Replace("{{year}}", timeSettings.EndDateTime.HasValue ? timeSettings.EndDateTime.Value.Year.ToString() : DateTime.UtcNow.Year.ToString());
