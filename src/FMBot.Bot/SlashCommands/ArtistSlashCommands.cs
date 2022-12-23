@@ -154,6 +154,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task GlobalWhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed,
         [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
     {
         _ = DeferAsync();
@@ -166,7 +167,8 @@ public class ArtistSlashCommands : InteractionModuleBase
             HidePrivateUsers = hidePrivate,
             ShowBotters = false,
             AdminView = false,
-            NewSearchValue = name
+            NewSearchValue = name,
+            WhoKnowsMode = mode
         };
 
         try

@@ -18,6 +18,7 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Genius.Models.Song;
 using SkiaSharp;
 
 namespace FMBot.Bot.Builders;
@@ -35,8 +36,10 @@ public class TrackBuilders
     private readonly PuppeteerService _puppeteerService;
     private readonly IUpdateService _updateService;
     private readonly SupporterService _supporterService;
+    private readonly IIndexService _indexService;
+    private readonly CensorService _censorService;
 
-    public TrackBuilders(UserService userService, GuildService guildService, TrackService trackService, WhoKnowsTrackService whoKnowsTrackService, PlayService playService, SpotifyService spotifyService, TimeService timeService, LastFmRepository lastFmRepository, PuppeteerService puppeteerService, IUpdateService updateService, SupporterService supporterService)
+    public TrackBuilders(UserService userService, GuildService guildService, TrackService trackService, WhoKnowsTrackService whoKnowsTrackService, PlayService playService, SpotifyService spotifyService, TimeService timeService, LastFmRepository lastFmRepository, PuppeteerService puppeteerService, IUpdateService updateService, SupporterService supporterService, IIndexService indexService, CensorService censorService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -49,6 +52,8 @@ public class TrackBuilders
         this._puppeteerService = puppeteerService;
         this._updateService = updateService;
         this._supporterService = supporterService;
+        this._indexService = indexService;
+        this._censorService = censorService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -194,6 +199,122 @@ public class TrackBuilders
 
         //    response.Embed.AddField("Tags", tags);
         //}
+
+        return response;
+    }
+
+    public async Task<ResponseModel> WhoKnowsTrackAsync(
+        ContextModel context,
+        WhoKnowsMode mode,
+        string trackValues)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+
+        var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
+            userId: context.ContextUser.UserId);
+        if (track == null)
+        {
+            return track.Response;
+        }
+
+        await this._spotifyService.GetOrStoreTrackAsync(track.Track);
+
+        var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
+
+        var guild = await guildTask;
+
+        var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guild.GuildId, track.Track.ArtistName, track.Track.TrackName);
+
+        var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.DiscordUser.Id);
+        var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithTrack, guild, discordGuildUser, context.ContextUser);
+        await this._indexService.UpdateGuildUser(await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId), currentUser.UserId, guild);
+
+        usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
+
+        var filteredUsersWithTrack = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild);
+
+        var albumCoverUrl = track.Track.AlbumCoverUrl;
+        if (albumCoverUrl != null)
+        {
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+                track.Track.AlbumName, track.Track.ArtistName, track.Track.AlbumUrl);
+            if (safeForChannel == CensorService.CensorResult.Safe)
+            {
+                response.Embed.WithThumbnailUrl(albumCoverUrl);
+            }
+            else
+            {
+                albumCoverUrl = null;
+            }
+        }
+
+        if (mode == WhoKnowsMode.Image)
+        {
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl,
+                filteredUsersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"whoknows-track-{track.Track.ArtistName}-{track.Track.TrackName}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
+        }
+
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
+        if (filteredUsersWithTrack.Count == 0)
+        {
+            serverUsers = "Nobody in this server (not even you) has listened to this track.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var footer = $"WhoKnows track requested by {userTitle}";
+
+        var rnd = new Random();
+        var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
+        if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-100))
+        {
+            footer += $"\nMissing members? Update with {context.Prefix}refreshmembers";
+        }
+
+        if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)
+        {
+            var serverListeners = filteredUsersWithTrack.Count;
+            var serverPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
+            var avgServerPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
+
+            footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
+            footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
+            footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
+        }
+
+        if (usersWithTrack.Count > filteredUsersWithTrack.Count && !guild.WhoKnowsWhitelistRoleId.HasValue)
+        {
+            var filteredAmount = usersWithTrack.Count - filteredUsersWithTrack.Count;
+            footer += $"\n{filteredAmount} inactive/blocked users filtered";
+        }
+        if (guild.WhoKnowsWhitelistRoleId.HasValue)
+        {
+            footer += $"\nUsers with WhoKnows whitelisted role only";
+        }
+
+        response.Embed.WithTitle($"{trackName} in {context.DiscordGuild.Name}");
+
+        if (track.Track.TrackUrl != null)
+        {
+            response.Embed.WithUrl(track.Track.TrackUrl);
+        }
+
+        response.EmbedFooter.WithText(footer);
+        response.Embed.WithFooter(response.EmbedFooter);
 
         return response;
     }

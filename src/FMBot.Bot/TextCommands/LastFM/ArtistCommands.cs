@@ -474,7 +474,8 @@ public class ArtistCommands : BaseCommandModule
                 HidePrivateUsers = false,
                 ShowBotters = false,
                 AdminView = false,
-                NewSearchValue = artistValues
+                NewSearchValue = artistValues,
+                WhoKnowsMode = WhoKnowsMode.Embed
             };
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);

@@ -27,7 +27,7 @@ public class WhoKnowsTrackService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(ICommandContext context, int guildId, string artistName, string trackName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(IGuild discordGuild, int guildId, string artistName, string trackName)
     {
         const string sql = "SELECT ut.user_id, " +
                            "ut.name, " +
@@ -65,7 +65,7 @@ public class WhoKnowsTrackService
 
             if (i < 15)
             {
-                var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId, CacheMode.CacheOnly);
+                var discordUser = await discordGuild.GetUserAsync(userTrack.DiscordUserId, CacheMode.CacheOnly);
                 if (discordUser != null)
                 {
                     userName = discordUser.Nickname ?? discordUser.Username;

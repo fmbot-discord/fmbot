@@ -19,6 +19,7 @@ using FMBot.Images.Generators;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Genius.Models.Song;
 using SkiaSharp;
 using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -888,6 +889,19 @@ public class ArtistBuilders
             {
                 privacyLevel = PrivacyLevel.Server;
             }
+        }
+
+        if (settings.WhoKnowsMode == WhoKnowsMode.Image)
+        {
+            var image = await this._puppeteerService.GetWhoKnows("Global WhoKnows", $"in <b>.fmbot</b> 🌐", cachedArtist?.SpotifyImageUrl,
+                filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"global-whoknows-{artistSearch.Artist.ArtistName}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);

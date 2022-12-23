@@ -473,7 +473,7 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("whoknowstrack", RunMode = RunMode.Async)]
-    [Discord.Commands.Summary("Shows what other users listen to a track in your server")]
+    [Summary("Shows what other users listen to a track in your server")]
     [Examples("wt", "whoknowstrack", "whoknowstrack Hothouse Flowers Don't Go", "whoknowstrack Natasha Bedingfield | Unwritten")]
     [Alias("wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
     [UsernameSetRequired]
@@ -482,89 +482,25 @@ public class TrackCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows)]
     public async Task WhoKnowsTrackAsync([Remainder] string trackValues = null)
     {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
-
-        _ = this.Context.Channel.TriggerTypingAsync();
-
-        var track = await this.SearchTrack(trackValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, useCachedTracks: true, userId: contextUser.UserId);
-        if (track == null)
-        {
-            return;
-        }
-
-        await this._spotifyService.GetOrStoreTrackAsync(track);
-
-        var trackName = $"{track.TrackName} by {track.ArtistName}";
-
         try
         {
-            var guild = await guildTask;
-
-            var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildId, track.ArtistName, track.TrackName);
-
-            var discordGuildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-            var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithTrack, guild, discordGuildUser, contextUser);
-            await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), currentUser.UserId, guild);
-            
-            usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, contextUser, trackName, this.Context.Guild, track.UserPlaycount);
-
-            var filteredUsersWithTrack = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild);
-
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, contextUser.UserId, PrivacyLevel.Server);
-            if (filteredUsersWithTrack.Count == 0)
+            var currentSettings = new WhoKnowsSettings
             {
-                serverUsers = "Nobody in this server (not even you) has listened to this track.";
-            }
+                WhoKnowsMode = WhoKnowsMode.Embed,
+                NewSearchValue = trackValues
+            };
 
-            this._embed.WithDescription(serverUsers);
+            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
 
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            var footer = $"WhoKnows track requested by {userTitle}";
+            var response = await this._trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, prfx, contextUser), settings.WhoKnowsMode, settings.NewSearchValue);
 
-            var rnd = new Random();
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-            if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-100))
-            {
-                footer += $"\nMissing members? Update with {prfx}refreshmembers";
-            }
-
-            if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)
-            {
-                var serverListeners = filteredUsersWithTrack.Count;
-                var serverPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
-                var avgServerPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
-
-                footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
-                footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
-                footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
-            }
-
-            if (usersWithTrack.Count > filteredUsersWithTrack.Count && !guild.WhoKnowsWhitelistRoleId.HasValue)
-            {
-                var filteredAmount = usersWithTrack.Count - filteredUsersWithTrack.Count;
-                footer += $"\n{filteredAmount} inactive/blocked users filtered";
-            }
-            if (guild.WhoKnowsWhitelistRoleId.HasValue)
-            {
-                footer += $"\nUsers with WhoKnows whitelisted role only";
-            }
-
-            this._embed.WithTitle($"{trackName} in {this.Context.Guild.Name}");
-
-            if (track.TrackUrl != null)
-            {
-                this._embed.WithUrl(track.TrackUrl);
-            }
-
-            this._embedFooter.WithText(footer);
-            this._embed.WithFooter(this._embedFooter);
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

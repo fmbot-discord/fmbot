@@ -233,11 +233,10 @@ public class AlbumCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        
         try
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
             var currentSettings = new WhoKnowsSettings
             {
                 WhoKnowsMode = WhoKnowsMode.Embed,
