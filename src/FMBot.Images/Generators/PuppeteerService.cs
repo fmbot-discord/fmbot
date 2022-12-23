@@ -299,7 +299,7 @@ public class PuppeteerService
         {
             tracksToAdd.Append("<tr>");
             tracksToAdd.Append("<td>");
-            tracksToAdd.Append($"{topTrack.ArtistName} - {topTrack.TrackName}");
+            tracksToAdd.Append($"{sanitizer.Sanitize(topTrack.ArtistName)} - {sanitizer.Sanitize(topTrack.TrackName)}");
             tracksToAdd.Append("</td>");
             tracksToAdd.Append("<td class=\"align-right\">");
             tracksToAdd.Append($"{topTrack.UserPlaycount}");
@@ -307,7 +307,7 @@ public class PuppeteerService
             tracksToAdd.Append("</tr>");
         }
 
-        content = content.Replace("{{tracks}}", sanitizer.Sanitize(tracksToAdd.ToString()));
+        content = content.Replace("{{tracks}}", tracksToAdd.ToString());
 
         content = content.Replace("{{subtotal}}", topTracks.TopTracks.Take(amountOfTracks).Sum(s => s.UserPlaycount.GetValueOrDefault()).ToString());
         content = content.Replace("{{total-plays}}", count.GetValueOrDefault().ToString());
