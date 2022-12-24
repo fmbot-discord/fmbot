@@ -346,6 +346,8 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
+            artist = artist.Replace("\"","");
+
             await this._censorService.AddCensoredArtist(artist);
 
             await ReplyAsync($"Added `{artist}` to the list of censored artists.");
