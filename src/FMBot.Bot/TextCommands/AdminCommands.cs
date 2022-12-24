@@ -272,6 +272,13 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
+            var currentAlbum = await this._censorService.GetCurrentAlbum(album, artist);
+            if (currentAlbum is { SafeForCommands: false })
+            {
+                await ReplyAsync("That album is already censored");
+                return;
+            }
+
             await this._censorService.AddCensoredAlbum(album, artist);
 
             await ReplyAsync($"Added `{album}` by `{artist}` to the list of censored albums.", allowedMentions: AllowedMentions.None);
@@ -320,6 +327,12 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
+            var currentAlbum = await this._censorService.GetCurrentAlbum(album, artist);
+            if (currentAlbum is { SafeForFeatured: false })
+            {
+                await ReplyAsync("That album is already marked as nsfw");
+                return;
+            }
             await this._censorService.AddNsfwAlbum(album, artist);
 
             await ReplyAsync($"Added `{album}` by `{artist}` to the list of nsfw albums.", allowedMentions: AllowedMentions.None);
@@ -452,6 +465,12 @@ public class AdminCommands : BaseCommandModule
                 await ReplyAsync("Enter a Last.fm username to get the accounts for.");
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
+            }
+
+            var otherUser = await this._settingService.GetDifferentUser(userString);
+            if (otherUser != null && otherUser.UserNameLastFM.ToLower() != userString.ToLower())
+            {
+                userString = otherUser.UserNameLastFM;
             }
 
             var users = await this._adminService.GetUsersWithLfmUsernameAsync(userString);

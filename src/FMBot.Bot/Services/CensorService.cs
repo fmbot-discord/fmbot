@@ -132,10 +132,17 @@ public class CensorService
         await connection.CloseAsync();
     }
 
+    public async Task<CensoredMusic> GetCurrentAlbum(string albumName, string artistName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.CensoredMusic.FirstOrDefaultAsync(f => f.AlbumName == albumName && f.ArtistName == artistName);
+    }
+
     public async Task AddCensoredAlbum(string albumName, string artistName)
     {
         ClearCensoredCache();
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
         await db.CensoredMusic.AddAsync(new CensoredMusic
         {
@@ -152,7 +159,7 @@ public class CensorService
     public async Task AddNsfwAlbum(string albumName, string artistName)
     {
         ClearCensoredCache();
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
         await db.CensoredMusic.AddAsync(new CensoredMusic
         {
@@ -169,7 +176,7 @@ public class CensorService
     public async Task AddCensoredArtist(string artistName)
     {
         ClearCensoredCache();
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
         await db.CensoredMusic.AddAsync(new CensoredMusic
         {
