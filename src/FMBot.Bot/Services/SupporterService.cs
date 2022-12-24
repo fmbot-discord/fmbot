@@ -251,7 +251,7 @@ public class SupporterService
                 user.UserType = UserType.User;
                 db.Update(user);
 
-                Log.Information("Removing supporter status from Discord account {discordUserId} - {lastFmUsername}", user.DiscordUserId, user.UserNameLastFM);
+                Log.Information("Removed supporter status from Discord account {discordUserId} - {lastFmUsername}", user.DiscordUserId, user.UserNameLastFM);
             }
         }
 
@@ -286,17 +286,15 @@ public class SupporterService
             Log.Error("Error while checking newsupporters - response null");
         }
 
-        foreach (var newSupporter in openCollectiveSupporters.Users.Where(w => w.CreatedAt >= DateTime.UtcNow.AddHours(-5)))
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingSupporters = await db.Supporters
+            .Where(w => w.OpenCollectiveId != null)
+            .ToListAsync();
+
+        foreach (var newSupporter in openCollectiveSupporters.Users.Where(w => w.LastPayment >= DateTime.UtcNow.AddHours(-6)))
         {
             var cacheKey = $"new-supporter-{newSupporter.Id}";
             if (this._cache.TryGetValue(cacheKey, out _))
-            {
-                return;
-            }
-
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            var existingSupporter = await db.Supporters.FirstOrDefaultAsync(f => f.OpenCollectiveId == newSupporter.Id);
-            if (existingSupporter != null)
             {
                 return;
             }
@@ -305,6 +303,27 @@ public class SupporterService
             var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
             var embed = new EmbedBuilder();
+
+            var existingSupporter = existingSupporters.FirstOrDefault(f => f.OpenCollectiveId == newSupporter.Id);
+            if (existingSupporter is { Expired: true })
+            {
+                embed.WithTitle("Monthly supporter has re-activated their subscription");
+                embed.WithDescription($"Name: `{newSupporter.Name}`\n" +
+                                      $"OpenCollective ID: `{newSupporter.Id}`\n" +
+                                      $"Subscription type: `{newSupporter.SubscriptionType}`\n\n" +
+                                      $"No action should be required. Check botlog channel or ask frik.");
+
+                await supporterAuditLogChannel.SendMessageAsync($"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", false, new[] { embed.Build() });
+                await supporterUpdateChannel.SendMessageAsync($"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", false, new[] { embed.Build() });
+
+                this._cache.Set(cacheKey, 1, TimeSpan.FromDays(1));
+
+                return;
+            }
+            if (existingSupporter != null)
+            {
+                return;
+            }
 
             embed.WithTitle("New supporter on OpenCollective!");
             embed.WithDescription($"Name: `{newSupporter.Name}`\n" +
@@ -337,16 +356,47 @@ public class SupporterService
                 if (existingSupporter.LastPayment != openCollectiveSupporter.LastPayment ||
                     existingSupporter.Name != openCollectiveSupporter.Name)
                 {
+                    var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
                     Log.Information("Updating last payment date for supporter {supporterName} from {currentDate} to {newDate}", existingSupporter.Name, existingSupporter.LastPayment, openCollectiveSupporter.LastPayment);
                     existingSupporter.LastPayment = openCollectiveSupporter.LastPayment;
 
                     Log.Information("Updating name for supporter {supporterName} to {newName}", existingSupporter.Name, openCollectiveSupporter.Name);
                     existingSupporter.Name = openCollectiveSupporter.Name;
 
+                    if (existingSupporter.Expired == true && openCollectiveSupporter.LastPayment >= DateTime.UtcNow.AddHours(-3))
+                    {
+                        Log.Information("Re-activating supporter status for {supporterName} - {openCollectiveId}", existingSupporter.Name, existingSupporter.Name);
+                        if (existingSupporter.DiscordUserId.HasValue)
+                        {
+                            var user = await db.Users
+                                .AsQueryable()
+                                .FirstOrDefaultAsync(f => f.DiscordUserId == existingSupporter.DiscordUserId);
+
+                            if (user != null)
+                            {
+                                user.UserType = UserType.User;
+                                db.Update(user);
+
+                                Log.Information("Re-activated supporter status from Discord account {discordUserId} - {lastFmUsername}", user.DiscordUserId, user.UserNameLastFM);
+                            }
+                        }
+
+                        existingSupporter.Expired = false;
+                        existingSupporter.SupporterMessagesEnabled = true;
+                        existingSupporter.VisibleInOverview = true;
+
+                        var reactivateEmbed = new EmbedBuilder();
+                        reactivateEmbed.WithTitle("Re-activated supporter");
+                        reactivateEmbed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
+                                                        $"LastPayment: `{existingSupporter.LastPayment}`\n" +
+                                                        $"Subscription type: `{Enum.GetName(existingSupporter.SubscriptionType.GetValueOrDefault())}`");
+
+                        await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { reactivateEmbed.Build() });
+                    }
+
                     db.Update(existingSupporter);
                     await db.SaveChangesAsync();
-
-                    var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
                     var embed = new EmbedBuilder();
                     embed.WithTitle("Updated supporter");
@@ -405,10 +455,9 @@ public class SupporterService
 
                     embed.WithTitle("Yearly supporter expired");
                     embed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
-                                          $"ID: `{existingSupporter.OpenCollectiveId}`\n\n" +
-                                          $"`.removesupporter {existingSupporter.DiscordUserId}`");
+                                          $"ID: `{existingSupporter.OpenCollectiveId}`");
 
-                    await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+                    await supporterAuditLogChannel.SendMessageAsync($"`.removesupporter {existingSupporter.DiscordUserId}`", false, new[] { embed.Build() });
                     await supporterUpdateChannel.SendMessageAsync(null, false, new[] { embed.Build() });
 
                     this._cache.Set(cacheKey, 1, TimeSpan.FromDays(2));

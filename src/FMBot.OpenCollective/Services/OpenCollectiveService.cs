@@ -40,6 +40,7 @@ public class OpenCollectiveService
             Slug = s.Account.Slug,
             CreatedAt = s.Account.CreatedAt,
             SubscriptionType = GetSubscriptionType(s.Account.Transactions.Nodes),
+            FirstPayment = s.Account.Transactions.Nodes.OrderBy(o => o.CreatedAt).First().CreatedAt,
             LastPayment = s.Account.Transactions.Nodes.OrderByDescending(o => o.CreatedAt).First().CreatedAt
         });
 

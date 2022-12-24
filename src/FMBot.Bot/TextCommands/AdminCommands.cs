@@ -304,6 +304,8 @@ public class AdminCommands : BaseCommandModule
             return;
         }
 
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 

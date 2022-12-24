@@ -36,7 +36,7 @@ public class StaticBuilders
         var embedDescription = new StringBuilder();
 
         var existingSupporter = await this._supporterService.GetSupporter(context.DiscordUser.Id);
-        
+
         if (context.ContextUser.UserType == UserType.Supporter || existingSupporter != null)
         {
             response.Embed.WithTitle("Thank you for being a supporter!");
@@ -46,7 +46,7 @@ public class StaticBuilders
         {
             response.Embed.WithTitle("Become a supporter");
         }
-        
+
         response.Embed.AddField("Make development sustainable",
             "- Support development and get cool perks\n" +
             "- Help us remain independent and free for everyone\n" +
@@ -170,13 +170,11 @@ public class StaticBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
         var existingSupporters = await this._supporterService.GetAllVisibleSupporters();
 
         var supporters = await this._supporterService.GetOpenCollectiveSupporters();
 
-        var supporterLists = supporters.Users.OrderByDescending(o => o.CreatedAt).Chunk(10);
+        var supporterLists = supporters.Users.OrderByDescending(o => o.FirstPayment).Chunk(10);
 
         var description = new StringBuilder();
 
@@ -193,10 +191,18 @@ public class StaticBuilders
                 var lastPayment = DateTime.SpecifyKind(supporter.LastPayment, DateTimeKind.Utc);
                 var lastPaymentValue = ((DateTimeOffset)lastPayment).ToUnixTimeSeconds();
 
-                var created = DateTime.SpecifyKind(supporter.CreatedAt, DateTimeKind.Utc);
-                var createdValue = ((DateTimeOffset)lastPayment).ToUnixTimeSeconds();
+                var firstPayment = DateTime.SpecifyKind(supporter.FirstPayment, DateTimeKind.Utc);
+                var firstPaymentValue = ((DateTimeOffset)firstPayment).ToUnixTimeSeconds();
 
-                supporterString.AppendLine($"Created: <t:{createdValue}:D> - Last payment: <t:{lastPaymentValue}:D>");
+                if (firstPaymentValue == lastPaymentValue && supporter.SubscriptionType == SubscriptionType.Lifetime)
+                {
+                    supporterString.AppendLine($"Purchase date: <t:{firstPaymentValue}:D>");
+                }
+                else
+                {
+                    supporterString.AppendLine($"First payment: <t:{firstPaymentValue}:D> - Last payment: <t:{lastPaymentValue}:D>");
+                }
+
 
                 var existingSupporter = existingSupporters.FirstOrDefault(f => f.OpenCollectiveId == supporter.Id);
                 if (existingSupporter != null)
@@ -209,6 +215,8 @@ public class StaticBuilders
 
             pages.Add(new PageBuilder()
                 .WithDescription(supporterString.ToString())
+                .WithUrl("https://opencollective.com/fmbot/transactions")
+                .WithColor(DiscordConstants.InformationColorBlue)
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter($"OC: {supporters.Users.Count} - db: {existingSupporters.Count}\n" +
                             $"{supporters.Users.Count(c => c.SubscriptionType == SubscriptionType.Monthly && c.LastPayment >= DateTime.Now.AddDays(-35))} active monthly ({supporters.Users.Count(c => c.SubscriptionType == SubscriptionType.Monthly)} total)\n" +

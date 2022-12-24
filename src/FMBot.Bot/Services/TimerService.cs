@@ -213,7 +213,7 @@ public class TimerService
             },
             null,
             TimeSpan.FromSeconds(30),
-            TimeSpan.FromHours(3));
+            TimeSpan.FromHours(1));
 
         this._internalStatsTimer = new Timer(async _ =>
             {
