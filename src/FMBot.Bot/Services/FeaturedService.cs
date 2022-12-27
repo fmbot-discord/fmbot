@@ -326,6 +326,12 @@ public class FeaturedService
             }
         }
 
+        if (users.Count == 0)
+        {
+            Log.Warning("No users eligible to be featured");
+            return null;
+        }
+
         var user = users[RandomNumberGenerator.GetInt32(0, users.Count)];
 
         return user;
