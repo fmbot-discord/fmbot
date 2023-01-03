@@ -922,7 +922,7 @@ public class AlbumBuilders
         image.Position = 0;
 
         var description = new StringBuilder();
-        description.AppendLine($"**{albumSearch.Album.ArtistName} - [{albumSearch.Album.AlbumName}]({albumSearch.Album.AlbumUrl})**");
+        description.AppendLine($"**[{albumSearch.Album.ArtistName}]({albumSearch.Album.ArtistUrl}) - [{albumSearch.Album.AlbumName}]({albumSearch.Album.AlbumUrl})**");
 
         if (safeForChannel == CensorService.CensorResult.Nsfw)
         {
@@ -930,9 +930,13 @@ public class AlbumBuilders
         }
 
         response.Embed.WithDescription(description.ToString());
-        response.EmbedFooter.WithText(
-            $"Album cover requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}");
 
+        if (!context.SlashCommand)
+        {
+            response.EmbedFooter.WithText(
+                $"Album cover requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}");
+        }
+        
         response.Embed.WithFooter(response.EmbedFooter);
         response.Stream = image;
         response.FileName =
