@@ -203,7 +203,7 @@ public class WhoKnowsService
                 positionCounter = "👑 ";
             }
 
-            var afterPositionSpacer = index + 1 == 10 ? "" : " ";
+            var afterPositionSpacer = index + 1 == 10 ? "" : (index + 1 == 7 || index + 1 == 9) ? " " : " ";
 
             reply.Append($"{positionCounter}{afterPositionSpacer}{nameWithLink}");
 
@@ -228,7 +228,7 @@ public class WhoKnowsService
                 var nameWithLink = NameWithLink(requestedUser);
                 var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
 
-                reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink}** ");
+                reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink}** ");
 
                 reply.Append($" - **{requestedUser.Playcount}** {playString}\n");
             }
