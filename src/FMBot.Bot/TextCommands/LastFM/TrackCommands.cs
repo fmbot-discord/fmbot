@@ -491,7 +491,7 @@ public class TrackCommands : BaseCommandModule
         {
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = WhoKnowsMode.Embed,
+                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
                 NewSearchValue = trackValues
             };
 
@@ -523,7 +523,7 @@ public class TrackCommands : BaseCommandModule
 
         var currentSettings = new WhoKnowsSettings
         {
-            WhoKnowsMode = WhoKnowsMode.Embed,
+            WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
             HidePrivateUsers = false,
             ShowBotters = false,
             AdminView = false,
@@ -569,7 +569,7 @@ public class TrackCommands : BaseCommandModule
 
         var currentSettings = new WhoKnowsSettings
         {
-            WhoKnowsMode = WhoKnowsMode.Embed,
+            WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
             HidePrivateUsers = false,
             NewSearchValue = trackValues
         };

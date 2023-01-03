@@ -239,7 +239,7 @@ public class AlbumCommands : BaseCommandModule
         {
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = WhoKnowsMode.Embed,
+                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
                 NewSearchValue = albumValues
             };
 
@@ -270,6 +270,7 @@ public class AlbumCommands : BaseCommandModule
 
         var currentSettings = new WhoKnowsSettings
         {
+            WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
             HidePrivateUsers = false,
             ShowBotters = false,
             AdminView = false,
@@ -318,7 +319,7 @@ public class AlbumCommands : BaseCommandModule
         {
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = WhoKnowsMode.Embed,
+                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
                 NewSearchValue = albumValues
             };
 

@@ -399,7 +399,7 @@ public class ArtistCommands : BaseCommandModule
 
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = WhoKnowsMode.Embed,
+                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
                 NewSearchValue = artistValues
             };
 
@@ -447,7 +447,7 @@ public class ArtistCommands : BaseCommandModule
                 ShowBotters = false,
                 AdminView = false,
                 NewSearchValue = artistValues,
-                WhoKnowsMode = WhoKnowsMode.Embed
+                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed
             };
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
@@ -491,7 +491,7 @@ public class ArtistCommands : BaseCommandModule
         {
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = WhoKnowsMode.Embed,
+                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
                 NewSearchValue = artistValues
             };
 
