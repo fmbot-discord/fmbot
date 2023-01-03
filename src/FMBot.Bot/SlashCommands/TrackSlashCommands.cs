@@ -78,6 +78,41 @@ public class TrackSlashCommands : InteractionModuleBase
         }
     }
 
+    [SlashCommand("gwktrack", "Shows what other users listen to a track globally in .fmbot")]
+    [UsernameSetRequired]
+    public async Task GlobalWhoKnowsTrackAsync(
+        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed,
+        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var currentSettings = new WhoKnowsSettings
+        {
+            HidePrivateUsers = hidePrivate,
+            ShowBotters = false,
+            AdminView = false,
+            NewSearchValue = name,
+            WhoKnowsMode = mode
+        };
+
+        try
+        {
+            var response =
+                await this._trackBuilders.GlobalWhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), currentSettings, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [SlashCommand("trackplays", "Shows playcount for current track or the one you're searching for.")]
     [UsernameSetRequired]
     public async Task TrackPlaysAsync(

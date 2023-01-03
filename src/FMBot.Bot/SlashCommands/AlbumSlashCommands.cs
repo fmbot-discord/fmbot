@@ -76,7 +76,6 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
     }
 
-
     [SlashCommand("fwkalbum", "Shows who of your friends listen to an album")]
     [UsernameSetRequired]
     public async Task FriendsWhoKnowAlbumAsync(

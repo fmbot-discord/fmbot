@@ -478,6 +478,7 @@ public class AdminCommands : BaseCommandModule
             var users = await this._adminService.GetUsersWithLfmUsernameAsync(userString);
 
             this._embed.WithTitle($"All .fmbot users with Last.fm username {userString}");
+            this._embed.WithUrl($"https://www.last.fm/user/{userString}");
 
             foreach (var user in users)
             {
