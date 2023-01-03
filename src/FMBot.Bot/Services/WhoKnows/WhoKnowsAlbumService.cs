@@ -86,7 +86,7 @@ public class WhoKnowsAlbumService
         return whoKnowsAlbumList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForAlbum(ICommandContext context, string artistName, string albumName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForAlbum(IGuild guild, string artistName, string albumName)
     {
         const string sql = "SELECT * " +
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
@@ -124,9 +124,9 @@ public class WhoKnowsAlbumService
 
             if (i < 15)
             {
-                if (context.Guild != null)
+                if (guild != null)
                 {
-                    var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId, CacheMode.CacheOnly);
+                    var discordUser = await guild.GetUserAsync(userAlbum.DiscordUserId, CacheMode.CacheOnly);
                     if (discordUser != null)
                     {
                         userName = discordUser.Nickname ?? discordUser.Username;

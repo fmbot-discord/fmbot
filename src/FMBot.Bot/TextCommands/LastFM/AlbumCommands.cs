@@ -265,133 +265,25 @@ public class AlbumCommands : BaseCommandModule
     public async Task GlobalWhoKnowsAlbumAsync([Remainder] string albumValues = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        _ = this.Context.Channel.TriggerTypingAsync();
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var currentSettings = new WhoKnowsSettings
+        {
+            HidePrivateUsers = false,
+            ShowBotters = false,
+            AdminView = false,
+            NewSearchValue = albumValues
+        };
+
+        var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
         try
         {
-            var guildTask = this._guildService.GetGuildWithGuildUsers(this.Context.Guild?.Id);
-            _ = this.Context.Channel.TriggerTypingAsync();
+            var response = await this._albumBuilders.GlobalWhoKnowsAlbumAsync(new ContextModel(this.Context, prfx, contextUser), settings, settings.NewSearchValue);
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            var currentSettings = new WhoKnowsSettings
-            {
-                HidePrivateUsers = false,
-                ShowBotters = false,
-                AdminView = false,
-                NewSearchValue = albumValues
-            };
-
-            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
-
-            var album = await this.SearchAlbum(settings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
-                useCachedAlbums: true, userId: contextUser.UserId);
-            if (album == null)
-            {
-                return;
-            }
-
-            var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
-
-            var albumName = $"{album.AlbumName} by {album.ArtistName}";
-
-            var usersWithAlbum = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(this.Context, album.ArtistName, album.AlbumName);
-
-            usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, contextUser, albumName, this.Context.Guild, album.UserPlaycount);
-
-            var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum);
-
-            var privacyLevel = PrivacyLevel.Global;
-
-            if (this.Context.Guild != null)
-            {
-                var guild = await guildTask;
-
-                filteredUsersWithAlbum =
-                    WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
-
-                if (settings.AdminView && guild.SpecialGuild == true)
-                {
-                    privacyLevel = PrivacyLevel.Server;
-                }
-            }
-
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, contextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
-            if (filteredUsersWithAlbum.Count == 0)
-            {
-                serverUsers = "Nobody that uses .fmbot has listened to this album.";
-            }
-
-            this._embed.WithDescription(serverUsers);
-
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            var footer = $"Global WhoKnows album requested by {userTitle}";
-
-            if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)
-            {
-                var serverListeners = filteredUsersWithAlbum.Count;
-                var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
-                var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
-
-                footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
-                footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
-                footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
-            }
-
-            //var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(contextUser.UserId,
-            //    guild, usersWithAlbum, album.ArtistName, album.AlbumName);
-
-            //if (guildAlsoPlaying != null)
-            //{
-            //    footer += "\n";
-            //    footer += guildAlsoPlaying;
-            //}
-
-            if (settings.AdminView)
-            {
-                footer += "\nAdmin view enabled - not for public channels";
-            }
-            if (contextUser.PrivacyLevel != PrivacyLevel.Global)
-            {
-                footer += $"\nYou are currently not globally visible - use " +
-                          $"'{prfx}privacy global' to enable.";
-            }
-            if (settings.HidePrivateUsers)
-            {
-                footer += "\nAll private users are hidden from results";
-            }
-
-            this._embed.WithTitle($"{albumName} globally");
-
-            var url = contextUser.RymEnabled == true
-                ? StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName)
-                : album.AlbumUrl;
-
-            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-            {
-                this._embed.WithUrl(url);
-            }
-
-            this._embedFooter.WithText(footer);
-            this._embed.WithFooter(this._embedFooter);
-
-            var albumCoverUrl = album.AlbumCoverUrl;
-            if (databaseAlbum.SpotifyImageUrl != null)
-            {
-                albumCoverUrl = databaseAlbum.SpotifyImageUrl;
-            }
-            if (albumCoverUrl != null)
-            {
-                var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
-                    album.AlbumName, album.ArtistName, album.AlbumUrl);
-                if (safeForChannel == CensorService.CensorResult.Safe)
-                {
-                    this._embed.WithThumbnailUrl(albumCoverUrl);
-                }
-            }
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

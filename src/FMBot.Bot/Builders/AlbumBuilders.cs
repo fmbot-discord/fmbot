@@ -43,6 +43,7 @@ public class AlbumBuilders
     private readonly IIndexService _indexService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly PuppeteerService _puppeteerService;
+    private readonly WhoKnowsService _whoKnowsService;
 
     public AlbumBuilders(UserService userService,
         GuildService guildService,
@@ -58,7 +59,7 @@ public class AlbumBuilders
         SupporterService supporterService,
         IIndexService indexService,
         WhoKnowsPlayService whoKnowsPlayService,
-        PuppeteerService puppeteerService)
+        PuppeteerService puppeteerService, WhoKnowsService whoKnowsService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -75,6 +76,7 @@ public class AlbumBuilders
         this._indexService = indexService;
         this._whoKnowsPlayService = whoKnowsPlayService;
         this._puppeteerService = puppeteerService;
+        this._whoKnowsService = whoKnowsService;
     }
 
     public async Task<ResponseModel> AlbumAsync(
@@ -425,6 +427,145 @@ public class AlbumBuilders
         }
 
         response.Embed.WithTitle(StringExtensions.TruncateLongString($"{fullAlbumName} in {context.DiscordGuild.Name}", 255));
+
+        var url = context.ContextUser.RymEnabled == true
+            ? StringExtensions.GetRymUrl(album.Album.AlbumName, album.Album.ArtistName)
+            : album.Album.AlbumUrl;
+
+        if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+        {
+            response.Embed.WithUrl(url);
+        }
+
+        response.EmbedFooter.WithText(footer);
+        response.Embed.WithFooter(response.EmbedFooter);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> GlobalWhoKnowsAlbumAsync(
+        ContextModel context,
+        WhoKnowsSettings settings,
+        string albumValues)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var guildTask = this._guildService.GetGuildWithGuildUsers(context.DiscordGuild?.Id);
+
+        var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
+            userId: context.ContextUser.UserId);
+        if (album == null)
+        {
+            return album.Response;
+        }
+
+        var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album.Album);
+
+        var albumName = $"{album.Album.AlbumName} by {album.Album.ArtistName}";
+
+        var usersWithAlbum = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(context.DiscordGuild, album.Album.ArtistName, album.Album.AlbumName);
+
+        usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser, albumName, context.DiscordGuild, album.Album.UserPlaycount);
+
+        var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum);
+
+        var privacyLevel = PrivacyLevel.Global;
+
+        if (context.DiscordGuild != null)
+        {
+            var guild = await guildTask;
+
+            filteredUsersWithAlbum =
+                WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
+
+            if (settings.AdminView && guild.SpecialGuild == true)
+            {
+                privacyLevel = PrivacyLevel.Server;
+            }
+        }
+
+        var albumCoverUrl = album.Album.AlbumCoverUrl;
+        if (databaseAlbum.SpotifyImageUrl != null)
+        {
+            albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+        }
+        if (albumCoverUrl != null)
+        {
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+                album.Album.AlbumName, album.Album.ArtistName, album.Album.AlbumUrl);
+            if (safeForChannel == CensorService.CensorResult.Safe)
+            {
+                response.Embed.WithThumbnailUrl(albumCoverUrl);
+            }
+            else
+            {
+                albumCoverUrl = null;
+            }
+        }
+
+        if (settings.WhoKnowsMode == WhoKnowsMode.Image)
+        {
+            var image = await this._puppeteerService.GetWhoKnows("Global WhoKnows album", $"in <b>.fmbot</b> 🌐", albumCoverUrl,
+                filteredUsersWithAlbum, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"global-whoknows-album-{album.Album.ArtistName}-{album.Album.AlbumName}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
+        }
+
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+        if (filteredUsersWithAlbum.Count == 0)
+        {
+            serverUsers = "Nobody that uses .fmbot has listened to this album.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var footer = $"Global WhoKnows album requested by {userTitle}";
+
+        if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)
+        {
+            var serverListeners = filteredUsersWithAlbum.Count;
+            var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
+            var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
+
+            footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
+            footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
+            footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
+        }
+
+        //var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.ContextUser.UserId,
+        //    guild, usersWithAlbum, album.ArtistName, album.AlbumName);
+
+        //if (guildAlsoPlaying != null)
+        //{
+        //    footer += "\n";
+        //    footer += guildAlsoPlaying;
+        //}
+
+        if (settings.AdminView)
+        {
+            footer += "\nAdmin view enabled - not for public channels";
+        }
+        if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
+        {
+            footer += $"\nYou are currently not globally visible - use " +
+                      $"'{context.Prefix}privacy global' to enable.";
+        }
+        if (settings.HidePrivateUsers)
+        {
+            footer += "\nAll private users are hidden from results";
+        }
+
+        response.Embed.WithTitle($"{albumName} globally");
 
         var url = context.ContextUser.RymEnabled == true
             ? StringExtensions.GetRymUrl(album.Album.AlbumName, album.Album.ArtistName)

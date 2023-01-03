@@ -58,8 +58,7 @@ public class TrackSlashCommands : InteractionModuleBase
     public async Task WhoKnowsTrackAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")]
-        WhoKnowsMode mode = WhoKnowsMode.Embed)
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed)
     {
         _ = DeferAsync();
 

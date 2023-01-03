@@ -76,6 +76,41 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
     }
 
+    [SlashCommand("gwkalbum", "Shows what other users listen to an album globally in .fmbot")]
+    [UsernameSetRequired]
+    public async Task GlobalWhoKnowsAlbumAsync(
+        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(AlbumAutoComplete))]
+        string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed,
+        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var currentSettings = new WhoKnowsSettings
+        {
+            HidePrivateUsers = hidePrivate,
+            ShowBotters = false,
+            AdminView = false,
+            NewSearchValue = name,
+            WhoKnowsMode = mode
+        };
+
+        try
+        {
+            var response = await this._albumBuilders.GlobalWhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), currentSettings, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [SlashCommand("cover", "Cover for current album or the one you're searching for.")]
     [UsernameSetRequired]
     public async Task AlbumCoverAsync(
