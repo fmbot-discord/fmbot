@@ -140,10 +140,10 @@ public class TrackBuilders
                 var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
                 var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
                 var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
-                var lively = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
+                var liveness = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
                 var valence = ((decimal)(spotifyTrack.Valence / 1)).ToString("0%");
                 footer.AppendLine($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
-                                  $"{instrumental} instrumental - {speechful} speechful - {lively} lively\n" +
+                                  $"{instrumental} instrumental - {speechful} speechful - {liveness} liveness\n" +
                                   $"{valence} valence (musical positiveness)");
             }
         }
