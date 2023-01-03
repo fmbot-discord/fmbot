@@ -155,9 +155,9 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
         [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed,
-        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
-        _ = DeferAsync();
+        _ = DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
@@ -166,7 +166,7 @@ public class ArtistSlashCommands : InteractionModuleBase
             var response = await this._artistBuilders.FriendsWhoKnowArtistAsync(new ContextModel(this.Context, contextUser),
                 mode, name);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

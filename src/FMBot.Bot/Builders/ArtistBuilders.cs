@@ -1015,7 +1015,7 @@ public class ArtistBuilders
 
         if (mode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Friends WhoKnow", $"from <b>{userTitle}</b>", cachedArtist.SpotifyImageUrl,
+            var image = await this._puppeteerService.GetWhoKnows("Friends WhoKnow", $"for <b>{userTitle}</b>", cachedArtist.SpotifyImageUrl,
                 usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);

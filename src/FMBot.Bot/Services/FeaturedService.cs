@@ -256,6 +256,7 @@ public class FeaturedService
             .AsQueryable()
             .Where(w => w.UserId == id &&
                         w.HasFeatured)
+            .OrderByDescending(o => o.DateTime)
             .ToListAsync();
     }
 

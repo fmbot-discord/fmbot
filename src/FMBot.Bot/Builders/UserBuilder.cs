@@ -171,21 +171,21 @@ public class UserBuilder
                 description.AppendLine($"But don't give up hope just yet!");
                 description.AppendLine($"Every hour there is a 1 in {odds} chance that you might be picked.");
 
-                if (context.ContextUser.UserType == UserType.Supporter)
-                {
-                    description.AppendLine();
-                    description.AppendLine($"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}).");
-                }
-                else
-                {
-                    description.AppendLine($"Or become an [.fmbot supporter](https://opencollective.com/fmbot/contribute) and get a higher chance every Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}).");
-                }
-
                 if (context.DiscordGuild?.Id != this._botSettings.Bot.BaseServerId)
                 {
                     description.AppendLine();
-                    description.AppendLine($"Want to be notified when you get featured?");
-                    description.AppendLine($"Join [our server](https://discord.gg/6y3jJjtDqK) and you'll get a ping whenever it happens.");
+                    description.AppendLine($"Join [our server](https://discord.gg/6y3jJjtDqK) to get pinged if you get featured.");
+                }
+
+                if (context.ContextUser.UserType == UserType.Supporter)
+                {
+                    description.AppendLine();
+                    description.AppendLine($"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday. The next one is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}.");
+                }
+                else
+                {
+                    description.AppendLine();
+                    description.AppendLine($"Become an [.fmbot supporter](https://opencollective.com/fmbot/contribute) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
                 }
             }
             else
@@ -202,7 +202,6 @@ public class UserBuilder
             {
                 var dateValue = ((DateTimeOffset)featured.DateTime).ToUnixTimeSeconds();
                 description.AppendLine($"Mode: `{featured.FeaturedMode}`");
-                description.AppendLine($"<t:{dateValue}:F> (<t:{dateValue}:R>)");
                 if (featured.TrackName != null)
                 {
                     description.AppendLine($"**{featured.TrackName}**");
@@ -212,6 +211,8 @@ public class UserBuilder
                 {
                     description.AppendLine($"**{featured.ArtistName}** - **{featured.AlbumName}**");
                 }
+
+                description.AppendLine($"<t:{dateValue}:F> (<t:{dateValue}:R>)");
 
                 if (featured.SupporterDay)
                 {
