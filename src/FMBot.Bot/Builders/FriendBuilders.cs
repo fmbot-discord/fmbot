@@ -148,7 +148,7 @@ public class FriendBuilders
                 track = LastFmRepository.TrackToOneLinedString(lastTrack);
                 if (lastTrack.NowPlaying)
                 {
-                    timePlayed = DateTime.UtcNow;
+                    timePlayed = new DateTime(2200, 1, 1);
                     track += " 🎶";
                 }
                 else if (lastTrack.TimePlayed.HasValue)
