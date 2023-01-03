@@ -460,7 +460,7 @@ public class AlbumBuilders
             return response;
         }
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,

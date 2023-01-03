@@ -150,7 +150,7 @@ public class WhoKnowsTrackService
         return whoKnowsTrackList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(ICommandContext context, int guildId, int userId, string artistName, string trackName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(IGuild discordGuild, int guildId, int userId, string artistName, string trackName)
     {
         const string sql = "SELECT ut.user_id, " +
                            "ut.name, " +
@@ -186,15 +186,9 @@ public class WhoKnowsTrackService
         {
             var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
 
-            var discordUser = await context.Client.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
-            if (discordUser != null)
+            if (discordGuild != null)
             {
-                userName = discordUser.Username;
-            }
-
-            if (context.Guild != null)
-            {
-                var guildUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
+                var guildUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
                 if (guildUser != null)
                 {
                     userName = guildUser.DisplayName;

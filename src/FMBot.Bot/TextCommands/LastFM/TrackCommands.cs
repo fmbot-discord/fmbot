@@ -560,81 +560,27 @@ public class TrackCommands : BaseCommandModule
     [UsernameSetRequired]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows, CommandCategory.Friends)]
-    public async Task FriendWhoKnowsTrackAsync([Remainder] string albumValues = null)
+    public async Task FriendWhoKnowsTrackAsync([Remainder] string trackValues = null)
     {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+        var currentSettings = new WhoKnowsSettings
+        {
+            WhoKnowsMode = WhoKnowsMode.Embed,
+            HidePrivateUsers = false,
+            NewSearchValue = trackValues
+        };
+        var settings = this._settingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
 
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            var response = await this._trackBuilders.FriendsWhoKnowTrackAsync(new ContextModel(this.Context, prfx, contextUser), settings.WhoKnowsMode, settings.NewSearchValue);
 
-            var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
-
-            if (contextUser.Friends?.Any() != true)
-            {
-                await ReplyAsync("We couldn't find any friends. To add friends:\n" +
-                                 $"`{prfx}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
-
-            var track = await this.SearchTrack(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, useCachedTracks: true, userId: contextUser.UserId);
-            if (track == null)
-            {
-                return;
-            }
-
-            var trackName = $"{track.TrackName} by {track.ArtistName}";
-
-            var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(this.Context, guild?.GuildId ?? 0, contextUser.UserId, track.ArtistName, track.TrackName);
-
-            usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, contextUser, trackName, this.Context.Guild, track.UserPlaycount);
-
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithTrack, contextUser.UserId, PrivacyLevel.Server);
-            if (usersWithTrack.Count == 0)
-            {
-                serverUsers = "None of your friends have listened to this track.";
-            }
-
-            this._embed.WithDescription(serverUsers);
-
-            var footer = "";
-
-            var amountOfHiddenFriends = contextUser.Friends.Count(c => !c.FriendUserId.HasValue);
-            if (amountOfHiddenFriends > 0)
-            {
-                footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
-            }
-
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            footer += $"\nFriends WhoKnow track requested by {userTitle}";
-
-            if (usersWithTrack.Any() && usersWithTrack.Count > 1)
-            {
-                var globalListeners = usersWithTrack.Count;
-                var globalPlaycount = usersWithTrack.Sum(a => a.Playcount);
-                var avgPlaycount = usersWithTrack.Average(a => a.Playcount);
-
-                footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
-                footer += $"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ";
-                footer += $"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}";
-            }
-
-            this._embed.WithTitle($"{trackName} with friends");
-
-            if (Uri.IsWellFormedUriString(track.TrackUrl, UriKind.Absolute))
-            {
-                this._embed.WithUrl(track.TrackUrl);
-            }
-
-            this._embedFooter.WithText(footer);
-            this._embed.WithFooter(this._embedFooter);
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

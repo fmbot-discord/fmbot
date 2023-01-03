@@ -233,7 +233,7 @@ public class TrackBuilders
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
             userId: context.ContextUser.UserId);
-        if (track == null)
+        if (track.Track == null)
         {
             return track.Response;
         }
@@ -324,6 +324,97 @@ public class TrackBuilders
         response.Embed.WithTitle($"{trackName} in {context.DiscordGuild.Name}");
 
         if (track.Track.TrackUrl != null)
+        {
+            response.Embed.WithUrl(track.Track.TrackUrl);
+        }
+
+        response.EmbedFooter.WithText(footer);
+        response.Embed.WithFooter(response.EmbedFooter);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> FriendsWhoKnowTrackAsync(
+        ContextModel context,
+        WhoKnowsMode mode,
+        string trackValues)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        if (context.ContextUser.Friends?.Any() != true)
+        {
+            response.Embed.WithDescription("We couldn't find any friends. To add friends:\n" +
+                                           $"`{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild?.Id);
+
+        var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
+            userId: context.ContextUser.UserId);
+        if (track.Track == null)
+        {
+            return track.Response;
+        }
+
+        var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
+
+        var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(context.DiscordGuild, guild?.GuildId ?? 0, context.ContextUser.UserId, track.Track.ArtistName, track.Track.TrackName);
+
+        usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        if (mode == WhoKnowsMode.Image)
+        {
+            var image = await this._puppeteerService.GetWhoKnows("Friends WhoKnow track", $"for <b>{userTitle}</b>", null,
+                usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"friends-whoknow-track-{track.Track.ArtistName}-{track.Track.TrackName}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
+        }
+
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
+        if (!usersWithTrack.Any())
+        {
+            serverUsers = "None of your friends have listened to this track.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        var footer = "";
+
+        var amountOfHiddenFriends = context.ContextUser.Friends.Count(c => !c.FriendUserId.HasValue);
+        if (amountOfHiddenFriends > 0)
+        {
+            footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
+        }
+
+        footer += $"\nFriends WhoKnow track requested by {userTitle}";
+
+        if (usersWithTrack.Any() && usersWithTrack.Count() > 1)
+        {
+            var globalListeners = usersWithTrack.Count();
+            var globalPlaycount = usersWithTrack.Sum(a => a.Playcount);
+            var avgPlaycount = usersWithTrack.Average(a => a.Playcount);
+
+            footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
+            footer += $"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+            footer += $"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}";
+        }
+
+        response.Embed.WithTitle($"{trackName} with friends");
+
+        if (Uri.IsWellFormedUriString(track.Track.TrackUrl, UriKind.Absolute))
         {
             response.Embed.WithUrl(track.Track.TrackUrl);
         }
