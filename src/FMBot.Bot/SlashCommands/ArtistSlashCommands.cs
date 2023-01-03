@@ -148,6 +148,33 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
+    [SlashCommand("friendswhoknow", "Shows who of your friends listen to an artist")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task FriendsWhoKnowAsync(
+        [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed,
+        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._artistBuilders.FriendsWhoKnowArtistAsync(new ContextModel(this.Context, contextUser),
+                mode, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [SlashCommand("globalwhoknows", "Shows what other users listen to an artist in .fmbot")]
     [UsernameSetRequired]
     [RequiresIndex]

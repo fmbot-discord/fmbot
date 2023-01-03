@@ -976,6 +976,108 @@ public class ArtistBuilders
         return response;
     }
 
+    public async Task<ResponseModel> FriendsWhoKnowArtistAsync(
+        ContextModel context,
+        WhoKnowsMode mode,
+        string artistValues)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        if (context.ContextUser.Friends?.Any() != true)
+        {
+            response.Embed.WithDescription("We couldn't find any friends. To add friends:\n" +
+                                           $"`{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
+            userId: context.ContextUser.UserId);
+        if (artistSearch.Artist == null)
+        {
+            return artistSearch.Response;
+        }
+
+        var cachedArtist =
+            await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+        var contextGuild = await guildTask;
+
+        var usersWithArtist = await this._whoKnowsArtistService.GetFriendUsersForArtists(context.DiscordGuild, contextGuild?.GuildId ?? 0, context.ContextUser.UserId, artistSearch.Artist.ArtistName);
+
+        usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        if (mode == WhoKnowsMode.Image)
+        {
+            var image = await this._puppeteerService.GetWhoKnows("Friends WhoKnow", $"from <b>{userTitle}</b>", cachedArtist.SpotifyImageUrl,
+                usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"whoknows-{artistSearch.Artist.ArtistName}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
+        }
+
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server);
+        if (usersWithArtist.Count == 0)
+        {
+            serverUsers = "None of your friends has listened to this artist.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        var footer = "";
+
+        if (cachedArtist.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
+        {
+            footer += $"\n{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}";
+        }
+
+        var amountOfHiddenFriends = context.ContextUser.Friends.Count(c => !c.FriendUserId.HasValue);
+        if (amountOfHiddenFriends > 0)
+        {
+            footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
+        }
+
+        footer += $"\nFriends WhoKnow artist requested by {userTitle}";
+
+        if (usersWithArtist.Any() && usersWithArtist.Count > 1)
+        {
+            var globalListeners = usersWithArtist.Count;
+            var globalPlaycount = usersWithArtist.Sum(a => a.Playcount);
+            var avgPlaycount = usersWithArtist.Average(a => a.Playcount);
+
+            footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
+            footer += $"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+            footer += $"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}";
+        }
+
+        response.Embed.WithTitle($"{cachedArtist.Name} with friends");
+
+        if (Uri.IsWellFormedUriString(cachedArtist.LastFmUrl, UriKind.Absolute))
+        {
+            response.Embed.WithUrl(cachedArtist.LastFmUrl);
+        }
+
+        response.EmbedFooter.WithText(footer);
+        response.Embed.WithFooter(response.EmbedFooter);
+
+        if (cachedArtist.SpotifyImageUrl != null)
+        {
+            response.Embed.WithThumbnailUrl(cachedArtist.SpotifyImageUrl);
+        }
+
+        return response;
+    }
+
     public async Task<ResponseModel> TasteAsync(
         ContextModel context,
         TasteSettings tasteSettings,
