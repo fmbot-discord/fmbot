@@ -47,16 +47,16 @@ public class StaticBuilders
             response.Embed.WithTitle("Become a supporter");
         }
 
+        response.Embed.AddField("Get more stats",
+            "- See first listen dates for artists/albums/tracks\n" +
+            "- Expanded `stats` command with overall history\n" +
+            "- Extra page on `year` with months and artist discoveries\n" +
+            "- More coming soon");
+
         response.Embed.AddField("Make development sustainable",
             "- Support development and get cool perks\n" +
             "- Help us remain independent and free for everyone\n" +
             "- Transparent fundraising on [OpenCollective](https://opencollective.com/fmbot)");
-
-        response.Embed.AddField("Get more stats",
-            "- See first listen dates for artists/albums/tracks\n" +
-            "- Expanded `stats` command with overall history\n" +
-            "- Extra page on `year` overview\n" +
-            "- More coming soon");
 
         response.Embed.AddField("Flex your support",
             "- Get a ⭐ badge after your name\n" +

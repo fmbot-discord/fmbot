@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using Discord;
@@ -36,6 +38,8 @@ public class FriendBuilders
         this._settingService = settingService;
     }
 
+    private record FriendResult(DateTime? timePlayed, string Result);
+
     public async Task<ResponseModel> FriendsAsync(ContextModel context)
     {
         var response = new ResponseModel
@@ -53,7 +57,7 @@ public class FriendBuilders
             return response;
         }
 
-        var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+        var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
         var embedFooterText = "Amount of scrobbles of all your friends together: ";
         string embedTitle;
@@ -79,7 +83,7 @@ public class FriendBuilders
         response.Embed.WithAuthor(response.EmbedAuthor);
 
         var totalPlaycount = 0;
-        var embedDescription = "";
+        var friendResult = new List<FriendResult>();
         await friends.ParallelForEachAsync(async friend =>
         {
             var friendUsername = friend.LastFMUserName;
@@ -93,7 +97,7 @@ public class FriendBuilders
                     friendNameToDisplay = guildUser.UserName;
 
                     var user = await this._userService.GetUserForIdAsync(guildUser.UserId);
-                    var discordUser = await context.DiscordGuild.GetUserAsync(user.DiscordUserId);
+                    var discordUser = await context.DiscordGuild.GetUserAsync(user.DiscordUserId, CacheMode.CacheOnly);
                     if (discordUser?.Username != null)
                     {
                         friendNameToDisplay = discordUser.Nickname ?? discordUser.Username;
@@ -129,6 +133,7 @@ public class FriendBuilders
             }
 
             string track;
+            DateTime? timePlayed = null;
             if (!tracks.Success || tracks.Content == null)
             {
                 track = $"Friend could not be retrieved ({tracks.Error})";
@@ -143,23 +148,31 @@ public class FriendBuilders
                 track = LastFmRepository.TrackToOneLinedString(lastTrack);
                 if (lastTrack.NowPlaying)
                 {
+                    timePlayed = DateTime.UtcNow;
                     track += " 🎶";
                 }
                 else if (lastTrack.TimePlayed.HasValue)
                 {
+                    timePlayed = lastTrack.TimePlayed.Value;
                     track += $" ({StringExtensions.GetTimeAgoShortString(lastTrack.TimePlayed.Value)})";
                 }
 
                 totalPlaycount += (int)tracks.Content.TotalAmount;
             }
 
-            embedDescription += $"**[{friendNameToDisplay}]({Constants.LastFMUserUrl}{friendUsername})** | {track}\n";
+            friendResult.Add(new FriendResult(timePlayed, $"**[{friendNameToDisplay}]({Constants.LastFMUserUrl}{friendUsername})** | {track}"));
         }, maxDegreeOfParallelism: 3);
 
         response.EmbedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
         response.Embed.WithFooter(response.EmbedFooter);
 
-        response.Embed.WithDescription(embedDescription);
+        var embedDescription = new StringBuilder();
+        foreach (var friend in friendResult.OrderByDescending(o => o.timePlayed).ThenBy(o => o.Result))
+        {
+            embedDescription.AppendLine(friend.Result);
+        }
+
+        response.Embed.WithDescription(embedDescription.ToString());
 
         return response;
     }
