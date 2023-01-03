@@ -21,7 +21,6 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
-using Genius.Models.Song;
 using SkiaSharp;
 
 namespace FMBot.Bot.Builders;
@@ -322,7 +321,7 @@ public class AlbumBuilders
 
         var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
 
-        var album = await this._albumService.SearchAlbum(response,context.DiscordUser, albumValues,
+        var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId);
         if (album == null)
@@ -435,6 +434,119 @@ public class AlbumBuilders
         if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
         {
             response.Embed.WithUrl(url);
+        }
+
+        response.EmbedFooter.WithText(footer);
+        response.Embed.WithFooter(response.EmbedFooter);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> FriendsWhoKnowAlbumAsync(
+        ContextModel context,
+        WhoKnowsMode mode,
+        string albumValues)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        if (context.ContextUser.Friends?.Any() != true)
+        {
+            response.Embed.WithDescription("We couldn't find any friends. To add friends:\n" +
+                                           $"`{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+
+        var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
+            userId: context.ContextUser.UserId);
+        if (album == null)
+        {
+            return album.Response;
+        }
+
+        var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album.Album);
+        var albumName = $"{album.Album.AlbumName} by {album.Album.ArtistName}";
+
+        var guild = await guildTask;
+
+        var usersWithAlbum = await this._whoKnowsAlbumService.GetFriendUsersForAlbum(context.DiscordGuild, guild?.GuildId ?? 0, context.ContextUser.UserId, album.Album.ArtistName, album.Album.AlbumName);
+
+        usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser, albumName, context.DiscordGuild, album.Album.UserPlaycount);
+
+        var albumCoverUrl = album.Album.AlbumCoverUrl;
+        if (databaseAlbum.SpotifyImageUrl != null)
+        {
+            albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+        }
+        if (albumCoverUrl != null)
+        {
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+                album.Album.AlbumName, album.Album.ArtistName, album.Album.AlbumUrl);
+            if (safeForChannel == CensorService.CensorResult.Safe)
+            {
+                response.Embed.WithThumbnailUrl(albumCoverUrl);
+            }
+            else
+            {
+                albumCoverUrl = null;
+            }
+        }
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        if (mode == WhoKnowsMode.Image)
+        {
+            var image = await this._puppeteerService.GetWhoKnows("Friends WhoKnow album", $"for <b>{userTitle}</b>", albumCoverUrl,
+                usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"friends-whoknow-album-{album.Album.ArtistName}-{album.Album.AlbumName}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
+        }
+
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server);
+        if (usersWithAlbum.Count == 0)
+        {
+            serverUsers = "None of your friends have listened to this album.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        var footer = "";
+
+        var amountOfHiddenFriends = context.ContextUser.Friends.Count(c => !c.FriendUserId.HasValue);
+        if (amountOfHiddenFriends > 0)
+        {
+            footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
+        }
+
+        footer += $"\nFriends WhoKnow album requested by {userTitle}";
+
+        if (usersWithAlbum.Any() && usersWithAlbum.Count > 1)
+        {
+            var globalListeners = usersWithAlbum.Count;
+            var globalPlaycount = usersWithAlbum.Sum(a => a.Playcount);
+            var avgPlaycount = usersWithAlbum.Average(a => a.Playcount);
+
+            footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
+            footer += $"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+            footer += $"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}";
+        }
+
+        response.Embed.WithTitle($"{albumName} with friends");
+
+        if (Uri.IsWellFormedUriString(album.Album.AlbumUrl, UriKind.Absolute))
+        {
+            response.Embed.WithUrl(album.Album.AlbumUrl);
         }
 
         response.EmbedFooter.WithText(footer);
@@ -936,7 +1048,7 @@ public class AlbumBuilders
             response.EmbedFooter.WithText(
                 $"Album cover requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}");
         }
-        
+
         response.Embed.WithFooter(response.EmbedFooter);
         response.Stream = image;
         response.FileName =

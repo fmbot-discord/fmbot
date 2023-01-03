@@ -1020,7 +1020,7 @@ public class ArtistBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"whoknows-{artistSearch.Artist.ArtistName}";
+            response.FileName = $"friends-whoknow-{artistSearch.Artist.ArtistName}";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
