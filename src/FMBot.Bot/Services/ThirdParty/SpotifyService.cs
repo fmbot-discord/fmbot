@@ -259,7 +259,7 @@ public class SpotifyService
                     DurationMs = (int)trackInfo.Duration,
                     LastFmUrl = trackInfo.TrackUrl,
                     LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
-            };
+                };
 
                 var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName, connection);
 

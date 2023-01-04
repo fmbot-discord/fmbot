@@ -189,7 +189,7 @@ public class TimerService
                 }
             },
             null,
-            TimeSpan.FromSeconds(30),
+            TimeSpan.FromSeconds(15),
             TimeSpan.FromMinutes(3));
 
         this._updateSupporterTimer = new Timer(async _ =>
@@ -212,8 +212,8 @@ public class TimerService
                 }
             },
             null,
-            TimeSpan.FromSeconds(30),
-            TimeSpan.FromHours(3));
+            TimeSpan.FromSeconds(20),
+            TimeSpan.FromHours(1));
 
         this._internalStatsTimer = new Timer(async _ =>
             {

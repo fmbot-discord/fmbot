@@ -87,7 +87,7 @@ public class WhoKnowsTrackService
         return whoKnowsTrackList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(ICommandContext context, string artistName, string trackName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(IGuild discordGuild, string artistName, string trackName)
     {
         const string sql = "SELECT * " +
                            "FROM(SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
@@ -125,9 +125,9 @@ public class WhoKnowsTrackService
 
             if (i < 15)
             {
-                if (context.Guild != null)
+                if (discordGuild != null)
                 {
-                    var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId, CacheMode.CacheOnly);
+                    var discordUser = await discordGuild.GetUserAsync(userTrack.DiscordUserId, CacheMode.CacheOnly);
                     if (discordUser != null)
                     {
                         userName = discordUser.Nickname ?? discordUser.Username;
@@ -150,7 +150,7 @@ public class WhoKnowsTrackService
         return whoKnowsTrackList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(ICommandContext context, int guildId, int userId, string artistName, string trackName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(IGuild discordGuild, int guildId, int userId, string artistName, string trackName)
     {
         const string sql = "SELECT ut.user_id, " +
                            "ut.name, " +
@@ -186,15 +186,9 @@ public class WhoKnowsTrackService
         {
             var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
 
-            var discordUser = await context.Client.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
-            if (discordUser != null)
+            if (discordGuild != null)
             {
-                userName = discordUser.Username;
-            }
-
-            if (context.Guild != null)
-            {
-                var guildUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
+                var guildUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
                 if (guildUser != null)
                 {
                     userName = guildUser.DisplayName;

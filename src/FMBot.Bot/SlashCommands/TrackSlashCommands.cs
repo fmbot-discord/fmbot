@@ -58,17 +58,80 @@ public class TrackSlashCommands : InteractionModuleBase
     public async Task WhoKnowsTrackAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")]
-        WhoKnowsMode mode = WhoKnowsMode.Embed)
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
+        mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
+
         try
         {
             var response =
-                await this._trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), mode, name);
+                await this._trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), mode.Value, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("fwktrack", "Shows who of your friends listen to a track")]
+    [UsernameSetRequired]
+    public async Task FriendsWhoKnowAlbumAsync(
+        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        _ = DeferAsync(privateResponse);
+
+        var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+        mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
+
+        try
+        {
+            var response = await this._trackBuilders.FriendsWhoKnowTrackAsync(new ContextModel(this.Context, contextUser), mode.Value, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("gwktrack", "Shows what other users listen to a track globally in .fmbot")]
+    [UsernameSetRequired]
+    public async Task GlobalWhoKnowsTrackAsync(
+        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var currentSettings = new WhoKnowsSettings
+        {
+            HidePrivateUsers = hidePrivate,
+            ShowBotters = false,
+            AdminView = false,
+            NewSearchValue = name,
+            WhoKnowsMode = mode ?? contextUser.Mode ?? WhoKnowsMode.Embed
+        };
+
+        try
+        {
+            var response =
+                await this._trackBuilders.GlobalWhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), currentSettings, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

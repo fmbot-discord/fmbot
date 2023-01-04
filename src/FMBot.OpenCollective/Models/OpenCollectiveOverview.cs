@@ -15,6 +15,7 @@ public class OpenCollectiveUser
     public string Id { get; set; }
     public DateTime CreatedAt { get; set; }
     public SubscriptionType SubscriptionType { get; set; }
+    public DateTime FirstPayment { get; set; }
     public DateTime LastPayment { get; set; }
     public List<OpenCollectiveTransaction> Transactions { get; set; }
 }

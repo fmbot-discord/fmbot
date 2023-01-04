@@ -148,7 +148,7 @@ public class WhoKnowsArtistService
         return whoKnowsArtistList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForArtists(ICommandContext context, int guildId, int userId, string artistName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForArtists(IGuild discordGuild, int guildId, int userId, string artistName)
     {
         const string sql = "SELECT * " +
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
@@ -184,15 +184,9 @@ public class WhoKnowsArtistService
         {
             var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
 
-            var discordUser = await context.Client.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
-            if (discordUser != null)
+            if (discordGuild != null)
             {
-                userName = discordUser.Username;
-            }
-
-            if (context.Guild != null)
-            {
-                var guildUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
+                var guildUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
                 if (guildUser != null)
                 {
                     userName = guildUser.DisplayName;

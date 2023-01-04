@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
@@ -336,6 +337,7 @@ public class AlbumService
             AlbumCoverUrl = album.SpotifyImageUrl ?? album.LastfmImageUrl,
             AlbumName = album.Name,
             ArtistName = album.ArtistName,
+            ArtistUrl = $"https://www.last.fm/music/{UrlEncoder.Default.Encode(album.ArtistName)}",
             Mbid = album.Mbid,
             AlbumUrl = album.LastFmUrl
         };

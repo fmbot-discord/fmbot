@@ -250,6 +250,7 @@ public class UserService
             user.UserNameLastFM = newUserSettings.UserNameLastFM;
             user.FmEmbedType = newUserSettings.FmEmbedType;
             user.FmCountType = newUserSettings.FmCountType;
+            user.Mode = newUserSettings.Mode;
             if (updateSessionKey)
             {
                 user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
@@ -377,6 +378,21 @@ public class UserService
         return userSettings;
     }
 
+    public static User SetWkMode(User userSettings, string[] extraOptions)
+    {
+        extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
+        if (extraOptions.Contains("image") || extraOptions.Contains("img"))
+        {
+            userSettings.Mode = WhoKnowsMode.Image;
+        }
+        else if (extraOptions.Contains("embed") || extraOptions.Contains("embd"))
+        {
+            userSettings.Mode = WhoKnowsMode.Embed;
+        }
+
+        return userSettings;
+    }
+
     public async Task<User> SetSettings(User userToUpdate, FmEmbedType embedType, FmCountType? countType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -384,6 +400,20 @@ public class UserService
 
         user.FmEmbedType = embedType;
         user.FmCountType = countType == FmCountType.None ? null : countType;
+
+        db.Update(user);
+
+        await db.SaveChangesAsync();
+
+        return user;
+    }
+
+    public async Task<User> SetWkMode(User userToUpdate, WhoKnowsMode mode)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+        user.Mode = mode;
 
         db.Update(user);
 

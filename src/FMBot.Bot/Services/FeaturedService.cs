@@ -256,6 +256,7 @@ public class FeaturedService
             .AsQueryable()
             .Where(w => w.UserId == id &&
                         w.HasFeatured)
+            .OrderByDescending(o => o.DateTime)
             .ToListAsync();
     }
 
@@ -324,6 +325,12 @@ public class FeaturedService
             {
                 users.Add(aeth);
             }
+        }
+
+        if (users.Count == 0)
+        {
+            Log.Warning("No users eligible to be featured");
+            return null;
         }
 
         var user = users[RandomNumberGenerator.GetInt32(0, users.Count)];

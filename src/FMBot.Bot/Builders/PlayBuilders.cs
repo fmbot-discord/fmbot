@@ -991,14 +991,12 @@ public class PlayBuilder
                 .WithValue(TrackService.AudioFeatureAnalysisComparisonString(tracksAudioOverview, previousTracksAudioOverview)));
         }
 
-        if (DateTime.UtcNow.Month == 12 && DateTime.UtcNow.Year == year)
-        {
-            fields.Add(new EmbedFieldBuilder().WithName("Note")
-                .WithValue("Happy holidays from the .fmbot team!"));
-            //"Make sure you also check out your [Last.Year](https://www.last.fm/user/_/listening-report/year) report over at Last.fm."
-        }
+        var supporterDescription = context.ContextUser.UserType == UserType.User
+            ? $"Want an extra page with your artist discoveries and a monthly overview? \n[Get .fmbot suppporter here.]({Constants.GetSupporterLink})"
+            : "";
 
         pages.Add(new PageBuilder()
+            .WithDescription(supporterDescription)
             .WithFields(fields)
             .WithTitle($"{userTitle} {year} in Review - 2/{pagesAmount}"));
 

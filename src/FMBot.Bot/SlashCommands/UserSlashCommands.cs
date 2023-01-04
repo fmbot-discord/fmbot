@@ -228,6 +228,25 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed();
     }
 
+    [SlashCommand("wkmode", "Changes your default whoknows mode")]
+    [UsernameSetRequired]
+    public async Task WkModeAsync([Summary("mode", "Mode your fm command should use")] WhoKnowsMode mode)
+    {
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var newUserSettings = await this._userService.SetWkMode(userSettings, mode);
+
+        var reply = new StringBuilder();
+        reply.Append($"Your default `WhoKnows` mode has been set to **{newUserSettings.Mode}**.");
+
+        var embed = new EmbedBuilder();
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+        embed.WithDescription(reply.ToString());
+
+        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+        this.Context.LogCommandUsed();
+    }
+
     [SlashCommand("remove", "Deletes your .fmbot account")]
     [UsernameSetRequired]
     public async Task RemoveAsync()

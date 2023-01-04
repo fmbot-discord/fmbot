@@ -129,17 +129,49 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task WhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed)
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
+        mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
+
         try
         {
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode, name);
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode.Value, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("friendswhoknow", "Shows who of your friends listen to an artist")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task FriendsWhoKnowAsync(
+        [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        _ = DeferAsync(privateResponse);
+
+        var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+        mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
+
+
+        try
+        {
+            var response = await this._artistBuilders.FriendsWhoKnowArtistAsync(new ContextModel(this.Context, contextUser),
+                mode.Value, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -154,7 +186,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task GlobalWhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
         [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
     {
         _ = DeferAsync();
@@ -168,7 +200,7 @@ public class ArtistSlashCommands : InteractionModuleBase
             ShowBotters = false,
             AdminView = false,
             NewSearchValue = name,
-            WhoKnowsMode = mode
+            WhoKnowsMode = mode ?? contextUser.Mode ?? WhoKnowsMode.Embed
         };
 
         try

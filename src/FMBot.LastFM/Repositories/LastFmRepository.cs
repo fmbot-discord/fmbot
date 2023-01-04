@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -552,6 +553,7 @@ public class LastFmRepository
                         ? albumCall.Content.Album.Url
                         : null,
                     ArtistName = albumCall.Content.Album.Artist,
+                    ArtistUrl = $"https://www.last.fm/music/{UrlEncoder.Default.Encode(albumCall.Content.Album.Artist)}",
                     Mbid = !string.IsNullOrWhiteSpace(albumCall.Content.Album.Mbid)
                         ? Guid.Parse(albumCall.Content.Album.Mbid)
                         : null,

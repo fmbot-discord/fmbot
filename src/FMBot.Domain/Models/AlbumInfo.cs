@@ -10,6 +10,7 @@ public class AlbumInfo
     public string AlbumCoverUrl { get; set; }
 
     public string ArtistName { get; set; }
+    public string ArtistUrl { get; set; }
 
     public long TotalListeners { get; set; }
     public long TotalPlaycount { get; set; }

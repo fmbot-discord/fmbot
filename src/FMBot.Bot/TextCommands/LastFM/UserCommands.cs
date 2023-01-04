@@ -342,6 +342,28 @@ public class UserCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
+    [Command("wkmode", RunMode = RunMode.Async)]
+    [Summary("Change how your whoknows commands look.")]
+    [Options("Modes: `embed` or `image`")]
+    [Examples("wkmode embed", "wkmode image")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.UserSettings)]
+    public async Task WkModeAsync(params string[] otherSettings)
+    {
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var newUserSettings = UserService.SetWkMode(userSettings, otherSettings);
+
+        await this._userService.SetLastFm(this.Context.User, newUserSettings);
+
+        var setReply = $"Your default `WhoKnows` mode has been set to **{newUserSettings.Mode}**.";
+
+        this._embed.WithColor(DiscordConstants.InformationColorBlue);
+        this._embed.WithDescription(setReply);
+        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+        this.Context.LogCommandUsed();
+    }
+
     [Command("privacy", RunMode = RunMode.Async)]
     [Summary("Changes your visibility to other .fmbot users.\n\n" +
              "The default privacy setting is 'Server'.")]

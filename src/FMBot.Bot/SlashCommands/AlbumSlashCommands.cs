@@ -57,15 +57,80 @@ public class AlbumSlashCommands : InteractionModuleBase
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))]
         string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode mode = WhoKnowsMode.Embed)
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
+        mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
+
         try
         {
-            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), mode, name);
+            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), mode.Value, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("fwkalbum", "Shows who of your friends listen to an album")]
+    [UsernameSetRequired]
+    public async Task FriendsWhoKnowAlbumAsync(
+        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(AlbumAutoComplete))]
+        string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        _ = DeferAsync(privateResponse);
+
+        var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+        mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
+
+        try
+        {
+            var response = await this._albumBuilders.FriendsWhoKnowAlbumAsync(new ContextModel(this.Context, contextUser), mode.Value, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("gwkalbum", "Shows what other users listen to an album globally in .fmbot")]
+    [UsernameSetRequired]
+    public async Task GlobalWhoKnowsAlbumAsync(
+        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(AlbumAutoComplete))]
+        string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var currentSettings = new WhoKnowsSettings
+        {
+            HidePrivateUsers = hidePrivate,
+            ShowBotters = false,
+            AdminView = false,
+            NewSearchValue = name,
+            WhoKnowsMode = mode ?? contextUser.Mode ?? WhoKnowsMode.Embed
+        };
+
+        try
+        {
+            var response = await this._albumBuilders.GlobalWhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), currentSettings, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

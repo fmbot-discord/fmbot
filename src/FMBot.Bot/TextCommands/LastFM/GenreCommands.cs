@@ -144,13 +144,13 @@ public class GenreCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Genres, CommandCategory.WhoKnows)]
     public async Task WhoKnowsGenreAsync([Remainder] string genreValues = null)
     {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
-
             if (string.IsNullOrWhiteSpace(genreValues))
             {
                 var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, true, contextUser.SessionKeyLastFm);

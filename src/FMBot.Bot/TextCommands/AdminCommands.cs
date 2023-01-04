@@ -272,6 +272,13 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
+            var currentAlbum = await this._censorService.GetCurrentAlbum(album, artist);
+            if (currentAlbum is { SafeForCommands: false })
+            {
+                await ReplyAsync("That album is already censored");
+                return;
+            }
+
             await this._censorService.AddCensoredAlbum(album, artist);
 
             await ReplyAsync($"Added `{album}` by `{artist}` to the list of censored albums.", allowedMentions: AllowedMentions.None);
@@ -297,6 +304,8 @@ public class AdminCommands : BaseCommandModule
             return;
         }
 
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -320,6 +329,12 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
+            var currentAlbum = await this._censorService.GetCurrentAlbum(album, artist);
+            if (currentAlbum is { SafeForFeatured: false })
+            {
+                await ReplyAsync("That album is already marked as nsfw");
+                return;
+            }
             await this._censorService.AddNsfwAlbum(album, artist);
 
             await ReplyAsync($"Added `{album}` by `{artist}` to the list of nsfw albums.", allowedMentions: AllowedMentions.None);
@@ -345,6 +360,8 @@ public class AdminCommands : BaseCommandModule
                                  "Example: `.addcensoredartist \"Last Days of Humanity\"");
                 return;
             }
+
+            artist = artist.Replace("\"","");
 
             await this._censorService.AddCensoredArtist(artist);
 
@@ -452,9 +469,16 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
+            var otherUser = await this._settingService.GetDifferentUser(userString);
+            if (otherUser != null && otherUser.UserNameLastFM.ToLower() != userString.ToLower())
+            {
+                userString = otherUser.UserNameLastFM;
+            }
+
             var users = await this._adminService.GetUsersWithLfmUsernameAsync(userString);
 
             this._embed.WithTitle($"All .fmbot users with Last.fm username {userString}");
+            this._embed.WithUrl($"https://www.last.fm/user/{userString}");
 
             foreach (var user in users)
             {
