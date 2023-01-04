@@ -220,11 +220,23 @@ public class PuppeteerService
             }
         }
 
-        content = content.Replace("{{users}}", userList.ToString());
+        if (whoKnowsObjects.Any())
+        {
+            content = content.Replace("{{users}}", userList.ToString());
 
-        content = content.Replace("{{listeners}}", whoKnowsObjects.Count.ToString());
-        content = content.Replace("{{plays}}", whoKnowsObjects.Sum(a => a.Playcount).ToString());
-        content = content.Replace("{{average}}", ((int)whoKnowsObjects.Average(a => a.Playcount)).ToString());
+            content = content.Replace("{{listeners}}", whoKnowsObjects.Count.ToString());
+            content = content.Replace("{{plays}}", whoKnowsObjects.Sum(a => a.Playcount).ToString());
+            content = content.Replace("{{average}}", ((int)whoKnowsObjects.Average(a => a.Playcount)).ToString());
+        }
+        else
+        {
+            content = content.Replace("{{users}}", "No results.");
+
+            content = content.Replace("{{listeners}}", "0");
+            content = content.Replace("{{plays}}", "0");
+            content = content.Replace("{{average}}", "0");
+        }
+        
 
         await page.SetContentAsync(content);
         await page.WaitForSelectorAsync(".result-list");
