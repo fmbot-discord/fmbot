@@ -581,9 +581,9 @@ public class AlbumBuilders
 
         var usersWithAlbum = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(context.DiscordGuild, album.Album.ArtistName, album.Album.AlbumName);
 
-        usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser, albumName, context.DiscordGuild, album.Album.UserPlaycount);
-
         var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum);
+
+        filteredUsersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(filteredUsersWithAlbum, context.ContextUser, albumName, context.DiscordGuild, album.Album.UserPlaycount);
 
         var privacyLevel = PrivacyLevel.Global;
 
