@@ -74,7 +74,7 @@ public class WhoKnowsTrackService
 
             whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
             {
-                Name = $"{userTrack.ArtistName} - {userTrack.Name}",
+                Name = $"{trackName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userTrack.Playcount,
                 LastFMUsername = userTrack.UserNameLastFm,
@@ -137,7 +137,7 @@ public class WhoKnowsTrackService
 
             whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
             {
-                Name = $"{userTrack.ArtistName} - {userTrack.Name}",
+                Name = $"{trackName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userTrack.Playcount,
                 LastFMUsername = userTrack.UserNameLastFm,
@@ -197,7 +197,7 @@ public class WhoKnowsTrackService
 
             whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
             {
-                Name = userArtist.Name,
+                Name = $"{trackName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
                 LastFMUsername = userArtist.UserNameLastFm,

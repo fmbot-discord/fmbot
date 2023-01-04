@@ -893,7 +893,7 @@ public class ArtistBuilders
 
         if (settings.WhoKnowsMode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Global WhoKnows", $"in <b>.fmbot</b> 🌐", cachedArtist?.SpotifyImageUrl,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>.fmbot 🌐</b>", cachedArtist?.SpotifyImageUrl,
                 filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -1015,7 +1015,7 @@ public class ArtistBuilders
 
         if (mode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Friends WhoKnow", $"for <b>{userTitle}</b>", cachedArtist.SpotifyImageUrl,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"from <b>{userTitle}</b>'s friends", cachedArtist.SpotifyImageUrl,
                 usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);

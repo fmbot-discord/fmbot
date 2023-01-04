@@ -502,7 +502,7 @@ public class AlbumBuilders
 
         if (mode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Friends WhoKnow album", $"for <b>{userTitle}</b>", albumCoverUrl,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"from <b>{userTitle}</b>'s friends", albumCoverUrl,
                 usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -621,7 +621,7 @@ public class AlbumBuilders
 
         if (settings.WhoKnowsMode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Global WhoKnows album", $"in <b>.fmbot</b> 🌐", albumCoverUrl,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"in <b>.fmbot 🌐</b>", albumCoverUrl,
                 filteredUsersWithAlbum, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
