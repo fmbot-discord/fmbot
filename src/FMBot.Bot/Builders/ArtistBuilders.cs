@@ -994,7 +994,7 @@ public class ArtistBuilders
             return response;
         }
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
