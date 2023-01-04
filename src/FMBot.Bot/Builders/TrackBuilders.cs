@@ -557,9 +557,9 @@ public class TrackBuilders
         var databaseAlbum =
             await this._albumService.GetAlbumFromDatabase(track.Track.ArtistName, track.Track.AlbumName);
 
-        var albumCoverUrl = databaseAlbum.LastfmImageUrl;
+        var albumCoverUrl = databaseAlbum?.LastfmImageUrl;
 
-        if (databaseAlbum.SpotifyImageUrl != null)
+        if (databaseAlbum?.SpotifyImageUrl != null)
         {
             albumCoverUrl = databaseAlbum.SpotifyImageUrl;
         }
