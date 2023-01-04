@@ -102,7 +102,7 @@ public class AlbumBuilders
 
         if (albumSearch.Album.AlbumUrl != null)
         {
-            response.Embed.WithUrl(albumSearch.Album.AlbumUrl);
+            response.EmbedAuthor.WithUrl(albumSearch.Album.AlbumUrl);
         }
 
         response.Embed.WithAuthor(response.EmbedAuthor);
