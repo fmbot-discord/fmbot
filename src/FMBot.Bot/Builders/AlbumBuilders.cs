@@ -102,7 +102,7 @@ public class AlbumBuilders
 
         if (albumSearch.Album.AlbumUrl != null)
         {
-            response.Embed.WithUrl(albumSearch.Album.AlbumUrl);
+            response.EmbedAuthor.WithUrl(albumSearch.Album.AlbumUrl);
         }
 
         response.Embed.WithAuthor(response.EmbedAuthor);
@@ -502,7 +502,7 @@ public class AlbumBuilders
 
         if (mode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Friends WhoKnow album", $"for <b>{userTitle}</b>", albumCoverUrl,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"from <b>{userTitle}</b>'s friends", albumCoverUrl,
                 usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -581,9 +581,9 @@ public class AlbumBuilders
 
         var usersWithAlbum = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(context.DiscordGuild, album.Album.ArtistName, album.Album.AlbumName);
 
-        usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser, albumName, context.DiscordGuild, album.Album.UserPlaycount);
-
         var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum);
+
+        filteredUsersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(filteredUsersWithAlbum, context.ContextUser, albumName, context.DiscordGuild, album.Album.UserPlaycount);
 
         var privacyLevel = PrivacyLevel.Global;
 
@@ -621,7 +621,7 @@ public class AlbumBuilders
 
         if (settings.WhoKnowsMode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Global WhoKnows album", $"in <b>.fmbot</b> 🌐", albumCoverUrl,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"in <b>.fmbot 🌐</b>", albumCoverUrl,
                 filteredUsersWithAlbum, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);

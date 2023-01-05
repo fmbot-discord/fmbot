@@ -170,7 +170,7 @@ public class StaticBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        var existingSupporters = await this._supporterService.GetAllVisibleSupporters();
+        var existingSupporters = await this._supporterService.GetAllSupporters();
 
         var supporters = await this._supporterService.GetOpenCollectiveSupporters();
 
@@ -207,7 +207,15 @@ public class StaticBuilders
                 var existingSupporter = existingSupporters.FirstOrDefault(f => f.OpenCollectiveId == supporter.Id);
                 if (existingSupporter != null)
                 {
-                    supporterString.AppendLine($"✅ Claimed - {existingSupporter.DiscordUserId} - <@{existingSupporter.DiscordUserId}>");
+                    supporterString.Append($"✅ Connected");
+
+                    if (existingSupporter.Expired == true)
+                    {
+                        supporterString.Append($" *(Expired)*");
+                    }
+
+                    supporterString.Append($" - {existingSupporter.DiscordUserId} / <@{existingSupporter.DiscordUserId}>");
+                    supporterString.AppendLine();
                 }
 
                 supporterString.AppendLine();

@@ -666,6 +666,14 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
+            var existingSupporters = await this._supporterService.GetAllSupporters();
+            if (existingSupporters.FirstOrDefault(f => f.OpenCollectiveId.ToLower() == openCollectiveId.ToLower()) != null)
+            {
+                await ReplyAsync("`OpenCollective account already connected to someone else`\n\n" + formatError);
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
             var supporter = await this._supporterService.AddOpenCollectiveSupporter(userSettings.DiscordUserId, openCollectiveSupporter);
 
             var addedRole = false;

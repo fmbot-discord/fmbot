@@ -477,4 +477,14 @@ public class SupporterService
             .OrderByDescending(o => o.Created)
             .ToListAsync();
     }
+
+    public async Task<IReadOnlyList<Supporter>> GetAllSupporters()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.Supporters
+            .AsQueryable()
+            .OrderByDescending(o => o.Created)
+            .ToListAsync();
+    }
 }

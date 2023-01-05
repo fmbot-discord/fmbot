@@ -1,13 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
-using Discord.Commands;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -74,7 +71,7 @@ public class WhoKnowsAlbumService
             whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
             {
                 DiscordName = userName,
-                Name = $"{userAlbum.Name} by {userAlbum.ArtistName}",
+                Name = $"{albumName} by {artistName}",
                 Playcount = userAlbum.Playcount,
                 LastFMUsername = userAlbum.UserNameLastFm,
                 UserId = userAlbum.UserId,
@@ -136,7 +133,7 @@ public class WhoKnowsAlbumService
 
             whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
             {
-                Name = $"{userAlbum.ArtistName} - {userAlbum.Name}",
+                Name = $"{albumName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userAlbum.Playcount,
                 LastFMUsername = userAlbum.UserNameLastFm,
@@ -196,7 +193,7 @@ public class WhoKnowsAlbumService
 
             whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
             {
-                Name = userArtist.Name,
+                Name = $"{albumName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
                 LastFMUsername = userArtist.UserNameLastFm,

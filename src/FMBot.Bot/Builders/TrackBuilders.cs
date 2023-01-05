@@ -39,6 +39,7 @@ public class TrackBuilders
     private readonly IIndexService _indexService;
     private readonly CensorService _censorService;
     private readonly WhoKnowsService _whoKnowsService;
+    private readonly AlbumService _albumService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -53,7 +54,8 @@ public class TrackBuilders
         SupporterService supporterService,
         IIndexService indexService,
         CensorService censorService,
-        WhoKnowsService whoKnowsService)
+        WhoKnowsService whoKnowsService,
+        AlbumService albumService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -69,6 +71,7 @@ public class TrackBuilders
         this._indexService = indexService;
         this._censorService = censorService;
         this._whoKnowsService = whoKnowsService;
+        this._albumService = albumService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -254,19 +257,10 @@ public class TrackBuilders
 
         var filteredUsersWithTrack = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild);
 
-        var albumCoverUrl = track.Track.AlbumCoverUrl;
-        if (albumCoverUrl != null)
+        string albumCoverUrl = null;
+        if (track.Track.AlbumName != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
-                track.Track.AlbumName, track.Track.ArtistName, track.Track.AlbumUrl);
-            if (safeForChannel == CensorService.CensorResult.Safe)
-            {
-                response.Embed.WithThumbnailUrl(albumCoverUrl);
-            }
-            else
-            {
-                albumCoverUrl = null;
-            }
+            albumCoverUrl = await GetAlbumCoverUrl(context, track, response);
         }
 
         if (mode == WhoKnowsMode.Image)
@@ -370,9 +364,15 @@ public class TrackBuilders
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
+        string albumCoverUrl = null;
+        if (track.Track.AlbumName != null)
+        {
+            albumCoverUrl = await GetAlbumCoverUrl(context, track, response);
+        }
+
         if (mode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Friends WhoKnow track", $"for <b>{userTitle}</b>", null,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"from <b>{userTitle}</b>'s friends", albumCoverUrl,
                 usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -451,11 +451,11 @@ public class TrackBuilders
 
         var usersWithTrack = await this._whoKnowsTrackService.GetGlobalUsersForTrack(context.DiscordGuild, track.Track.ArtistName, track.Track.TrackName);
 
-        usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
+        var filteredUsersWithTrack = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack);
+
+        filteredUsersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(filteredUsersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
         var privacyLevel = PrivacyLevel.Global;
-
-        var filteredUsersWithTrack = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack);
 
         if (context.DiscordGuild != null)
         {
@@ -470,9 +470,15 @@ public class TrackBuilders
             }
         }
 
+        string albumCoverUrl = null;
+        if (track.Track.AlbumName != null)
+        {
+            albumCoverUrl = await GetAlbumCoverUrl(context, track, response);
+        }
+
         if (settings.WhoKnowsMode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Global WhoKnows track", $"in <b>.fmbot</b> 🌐", null,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>.fmbot 🌐</b>", albumCoverUrl,
                 filteredUsersWithTrack, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -544,6 +550,35 @@ public class TrackBuilders
         response.Embed.WithFooter(response.EmbedFooter);
 
         return response;
+    }
+
+    private async Task<string> GetAlbumCoverUrl(ContextModel context, TrackSearch track, ResponseModel response)
+    {
+        var databaseAlbum =
+            await this._albumService.GetAlbumFromDatabase(track.Track.ArtistName, track.Track.AlbumName);
+
+        var albumCoverUrl = databaseAlbum?.LastfmImageUrl;
+
+        if (databaseAlbum?.SpotifyImageUrl != null)
+        {
+            albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+        }
+
+        if (albumCoverUrl != null)
+        {
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+                track.Track.AlbumName, track.Track.ArtistName, track.Track.AlbumUrl);
+            if (safeForChannel == CensorService.CensorResult.Safe)
+            {
+                response.Embed.WithThumbnailUrl(albumCoverUrl);
+            }
+            else
+            {
+                albumCoverUrl = null;
+            }
+        }
+
+        return albumCoverUrl;
     }
 
     public async Task<ResponseModel> TrackPlays(

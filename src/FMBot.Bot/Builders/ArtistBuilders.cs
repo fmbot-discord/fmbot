@@ -873,9 +873,9 @@ public class ArtistBuilders
 
         var usersWithArtist = await this._whoKnowsArtistService.GetGlobalUsersForArtists(context.DiscordGuild, artistSearch.Artist.ArtistName);
 
-        usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
-
         var filteredUsersWithArtist = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
+
+        filteredUsersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(filteredUsersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
         var privacyLevel = PrivacyLevel.Global;
 
@@ -893,7 +893,7 @@ public class ArtistBuilders
 
         if (settings.WhoKnowsMode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Global WhoKnows", $"in <b>.fmbot</b> 🌐", cachedArtist?.SpotifyImageUrl,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>.fmbot 🌐</b>", cachedArtist?.SpotifyImageUrl,
                 filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -994,7 +994,7 @@ public class ArtistBuilders
             return response;
         }
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
@@ -1015,7 +1015,7 @@ public class ArtistBuilders
 
         if (mode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("Friends WhoKnow", $"for <b>{userTitle}</b>", cachedArtist.SpotifyImageUrl,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"from <b>{userTitle}</b>'s friends", cachedArtist.SpotifyImageUrl,
                 usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
