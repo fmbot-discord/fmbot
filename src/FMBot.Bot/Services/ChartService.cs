@@ -605,7 +605,7 @@ public class ChartService
         var rnd = new Random();
         if (chartSettings.ImagesNeeded == 1 && rnd.Next(0, 3) == 1 && !chartSettings.ArtistChart)
         {
-            embedDescription += "*Linus Tech Tip: If you want the cover of the album you're currently listening to, use `.cover` or `.co`.*\n";
+            embedDescription += $"*Linus Tech Tip: Use `{prfx}cover` if you just want to see an album cover.*\n";
         }
 
         if (chartSettings.UsePlays)
