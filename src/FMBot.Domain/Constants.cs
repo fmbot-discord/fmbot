@@ -55,6 +55,9 @@ public static class Constants
     public const int MaxFriends = 12;
     public const int MaxFriendsSupporter = 18;
 
+    public const int MaxFooterOptions = 4;
+    public const int MaxFooterOptionsSupporter = 8;
+
     public static readonly int[] PlayCountBreakPoints = {
         50,
         100,

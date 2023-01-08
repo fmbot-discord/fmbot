@@ -206,16 +206,21 @@ public class WhoKnowsAlbumService
 
     public async Task<int?> GetAlbumPlayCountForUser(string artistName, string albumName, int userId)
     {
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await GetAlbumPlayCountForUser(connection, artistName, albumName, userId);
+    }
+
+    public static async Task<int?> GetAlbumPlayCountForUser(NpgsqlConnection connection, string artistName, string albumName, int userId)
+    {
         const string sql = "SELECT ua.playcount " +
                            "FROM user_albums AS ua " +
                            "WHERE ua.user_id = @userId AND " +
                            "UPPER(ua.name) = UPPER(CAST(@albumName AS CITEXT)) AND " +
                            "UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY playcount DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
 
         return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
         {
@@ -224,6 +229,7 @@ public class WhoKnowsAlbumService
             artistName
         });
     }
+
 
     public async Task<ICollection<GuildAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
         OrderType orderType, string artistName)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -50,6 +51,7 @@ public class InteractionHandler
         this._cache = cache;
         this._client.SlashCommandExecuted += SlashCommandAsync;
         this._client.AutocompleteExecuted += AutoCompleteAsync;
+        this._client.SelectMenuExecuted += SelectMenuHandler;
         client.UserCommandExecuted += UserCommandAsync;
 
     }
@@ -227,6 +229,54 @@ public class InteractionHandler
         }
 
         return true;
+    }
+
+    public async Task SelectMenuHandler(SocketMessageComponent arg)
+    {
+        if (arg.Data.CustomId == "fm-type-menu")
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(arg.User);
+
+            if (Enum.TryParse(arg.Data.Values.FirstOrDefault(), out FmEmbedType embedType))
+            {
+                var newUserSettings = await this._userService.SetSettings(userSettings, embedType, FmCountType.None);
+
+                var embed = new EmbedBuilder();
+                embed.WithDescription($"Your `fm` mode has been set to **{newUserSettings.FmEmbedType}**.");
+                embed.WithColor(DiscordConstants.InformationColorBlue);
+                await arg.RespondAsync(embed: embed.Build(), ephemeral: true);
+            }
+
+            return;
+        }
+
+        if (arg.Data.CustomId == "fm-footer-menu")
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(arg.User);
+
+            var maxOptions = userSettings.UserType == UserType.User ? Constants.MaxFooterOptions : Constants.MaxFooterOptionsSupporter;
+
+            var flags = FmFooterOption.None;
+            var optionString = new List<string>();
+            foreach (var value in arg.Data.Values.Take(maxOptions))
+            {
+                if (Enum.TryParse(value, out FmFooterOption footerOption))
+                {
+                    flags |= footerOption;
+                    optionString.Add(value);
+                }
+            }
+
+            await this._userService.SetFooterOptions(userSettings, flags);
+
+            var embed = new EmbedBuilder();
+
+            var text = string.Join("**, **", optionString);
+            embed.WithDescription($"Your `fm` footer options have been set to **{text}**.");
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            await arg.RespondAsync(embed: embed.Build(), ephemeral: true);
+            return;
+        }
     }
 
     private static async Task UserBlockedResponse(ShardedInteractionContext shardedCommandContext)

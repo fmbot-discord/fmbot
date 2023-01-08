@@ -296,14 +296,19 @@ public class WhoKnowsArtistService
 
     public async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
     {
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await GetArtistPlayCountForUser(connection, artistName, userId);
+    }
+
+    public static async Task<int?> GetArtistPlayCountForUser(NpgsqlConnection connection, string artistName, int userId)
+    {
         const string sql = "SELECT ua.playcount " +
                            "FROM user_artists AS ua " +
                            "WHERE ua.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY playcount DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
 
         return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
         {

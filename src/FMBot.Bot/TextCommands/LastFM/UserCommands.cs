@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
+using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -19,6 +21,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -42,6 +45,8 @@ public class UserCommands : BaseCommandModule
     private readonly ArtistsService _artistsService;
     private readonly PlayService _playService;
     private readonly TimeService _timeService;
+    private readonly CommandService _commands;
+
 
     private InteractiveService Interactivity { get; }
 
@@ -61,7 +66,7 @@ public class UserCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         FeaturedService featuredService,
         UserBuilder userBuilder,
-        InteractiveService interactivity, ArtistsService artistsService, PlayService playService, TimeService timeService) : base(botSettings)
+        InteractiveService interactivity, ArtistsService artistsService, PlayService playService, TimeService timeService, CommandService commands) : base(botSettings)
     {
         this._friendsService = friendsService;
         this._guildService = guildService;
@@ -78,6 +83,7 @@ public class UserCommands : BaseCommandModule
         this._artistsService = artistsService;
         this._playService = playService;
         this._timeService = timeService;
+        this._commands = commands;
     }
 
     [Command("stats", RunMode = RunMode.Async)]
@@ -614,5 +620,47 @@ public class UserCommands : BaseCommandModule
         }
 
         this.Context.LogCommandUsed();
+    }
+
+    [Command("spawner")]
+    public async Task Spawn()
+    {
+        var userSettings = await this._userService.GetUserAsync(this.Context.User.Id);
+
+        try
+        {
+            var fmType = new SelectMenuBuilder()
+                .WithPlaceholder("Select embed type")
+                .WithCustomId("fm-type-menu")
+                .WithMinValues(1)
+                .WithMaxValues(1);
+
+            foreach (var name in Enum.GetNames(typeof(FmEmbedType)).OrderBy(o => o))
+            {
+                fmType.AddOption(new SelectMenuOptionBuilder(name, name));
+            }
+
+            var fmOptions = new SelectMenuBuilder()
+                .WithPlaceholder("Select footer options")
+                .WithCustomId("fm-footer-menu")
+                .WithMinValues(1)
+                .WithMaxValues(userSettings.UserType == UserType.User ? 4 : 8);
+
+            foreach (var name in Enum.GetNames(typeof(FmFooterOption)))
+            {
+                fmOptions.AddOption(new SelectMenuOptionBuilder(name, name));
+            }
+
+            var builder = new ComponentBuilder()
+                .WithSelectMenu(fmType)
+                .WithSelectMenu(fmOptions, 1);
+
+            await ReplyAsync("You can configure how your `.fm` command looks here.", components: builder.Build());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }

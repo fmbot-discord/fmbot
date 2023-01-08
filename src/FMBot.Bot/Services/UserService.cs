@@ -1,21 +1,26 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Dapper;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using SpotifyAPI.Web;
 
 namespace FMBot.Bot.Services;
 
@@ -25,12 +30,16 @@ public class UserService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly LastFmRepository _lastFmRepository;
     private readonly BotSettings _botSettings;
+    private readonly ArtistRepository _artistRepository;
+    private readonly CountryService _countryService;
 
-    public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings)
+    public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, CountryService countryService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
         this._lastFmRepository = lastFmRepository;
+        this._artistRepository = artistRepository;
+        this._countryService = countryService;
         this._botSettings = botSettings.Value;
     }
 
@@ -161,7 +170,6 @@ public class UserService
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
     }
 
-    // Discord nickname/username
     public static async Task<string> GetNameAsync(IGuild guild, IUser user)
     {
         if (guild == null)
@@ -174,7 +182,6 @@ public class UserService
         return guildUser?.Nickname ?? user.Username;
     }
 
-    // Rank
     public async Task<UserType> GetRankAsync(IUser discordUser)
     {
         await using var db = this._contextFactory.CreateDbContext();
@@ -185,7 +192,6 @@ public class UserService
         return user?.UserType ?? UserType.User;
     }
 
-    // UserTitle
     public async Task<string> GetUserTitleAsync(ICommandContext context)
     {
         var name = await GetNameAsync(context.Guild, context.User);
@@ -198,7 +204,6 @@ public class UserService
         return title;
     }
 
-    // UserTitle
     public async Task<string> GetUserTitleAsync(IGuild guild, IUser user)
     {
         var name = await GetNameAsync(guild, user);
@@ -209,6 +214,97 @@ public class UserService
         title += $"{userType.UserTypeToIcon()}";
 
         return title;
+    }
+
+    public async Task<string> GetFooterAsync(FmFooterOption footerOptions, int userId, string artistName, string albumName, string trackName, bool loved, long totalScrobbles)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var footer = new StringBuilder();
+        var lineLength = 0;
+
+        if (footerOptions.HasFlag(FmFooterOption.Loved) && loved)
+        {
+            lineLength = AddFooterLine("❤️ Loved track", lineLength, footer);
+        }
+        if (footerOptions.HasFlag(FmFooterOption.ArtistPlays))
+        {
+            var trackPlaycount =
+                await WhoKnowsArtistService.GetArtistPlayCountForUser(connection, artistName, userId) ?? 0;
+
+            lineLength = AddFooterLine($"{trackPlaycount} artist plays", lineLength, footer);
+        }
+        if (footerOptions.HasFlag(FmFooterOption.AlbumPlays))
+        {
+            var albumPlaycount =
+                await WhoKnowsAlbumService.GetAlbumPlayCountForUser(connection, artistName, albumName, userId) ?? 0;
+
+            lineLength = AddFooterLine($"{albumPlaycount} album plays", lineLength, footer);
+        }
+        if (footerOptions.HasFlag(FmFooterOption.TrackPlays))
+        {
+            var trackPlaycount =
+                await WhoKnowsTrackService.GetTrackPlayCountForUser(connection, artistName, trackName, userId) ?? 0;
+
+            lineLength = AddFooterLine($"{trackPlaycount} track plays", lineLength, footer);
+        }
+        if (footerOptions.HasFlag(FmFooterOption.TotalScrobbles))
+        {
+            lineLength = AddFooterLine($"{totalScrobbles} total scrobbles", lineLength, footer);
+        }
+        if (footerOptions.HasFlag(FmFooterOption.ArtistPlaysThisWeek))
+        {
+            var start = DateTime.UtcNow.AddDays(-7);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
+
+            var count = plays.Count(a => a.ArtistName.ToLower() == artistName.ToLower());
+
+            lineLength = AddFooterLine($"{count} artist plays this week", lineLength, footer);
+        }
+        if (footerOptions.HasFlag(FmFooterOption.ArtistCountry) || footerOptions.HasFlag(FmFooterOption.ArtistGenres))
+        {
+            var artist = await this._artistRepository.GetArtistForName(artistName, connection, footerOptions.HasFlag(FmFooterOption.ArtistGenres));
+
+            if (footerOptions.HasFlag(FmFooterOption.ArtistCountry) && !string.IsNullOrWhiteSpace(artist.CountryCode))
+            {
+                var artistCountry = this._countryService.GetValidCountry(artist.CountryCode);
+
+                if (artistCountry != null)
+                {
+                    lineLength = AddFooterLine($"{artistCountry.Name}", lineLength, footer);
+                }
+            }
+
+            if (footerOptions.HasFlag(FmFooterOption.ArtistGenres) && artist.ArtistGenres.Any())
+            {
+                lineLength = AddFooterLine(GenreService.GenresToString(artist.ArtistGenres.Take(6).ToList()), lineLength, footer);
+            }
+        }
+
+        return footer.ToString();
+    }
+
+    private static int AddFooterLine(string text, int lineLength, StringBuilder footer)
+    {
+        if (lineLength > 40 || (lineLength > 30 && text.Length > 30))
+        {
+            footer.AppendLine();
+            lineLength = text.Length;
+            footer.Append(text);
+        }
+        else
+        {
+            if (lineLength != 0)
+            {
+                footer.Append(" - ");
+            }
+            footer.Append(text);
+            lineLength += text.Length;
+        }
+
+        return lineLength;
     }
 
     // Set LastFM Name
@@ -400,6 +496,20 @@ public class UserService
 
         user.FmEmbedType = embedType;
         user.FmCountType = countType == FmCountType.None ? null : countType;
+
+        db.Update(user);
+
+        await db.SaveChangesAsync();
+
+        return user;
+    }
+
+    public async Task<User> SetFooterOptions(User userToUpdate, FmFooterOption fmFooterOption)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+        user.FmFooterOptions = fmFooterOption;
 
         db.Update(user);
 

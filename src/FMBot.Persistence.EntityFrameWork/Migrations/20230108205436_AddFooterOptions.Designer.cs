@@ -3,6 +3,7 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230108205436_AddFooterOptions")]
+    partial class AddFooterOptions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1016,9 +1019,9 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("fm_embed_type");
 
-                    b.Property<long>("FmFooterOptions")
+                    b.Property<long>("FmFmFooterOptions")
                         .HasColumnType("bigint")
-                        .HasColumnName("fm_footer_options");
+                        .HasColumnName("fm_fm_footer_options");
 
                     b.Property<DateTime?>("LastIndexed")
                         .HasColumnType("timestamp with time zone")

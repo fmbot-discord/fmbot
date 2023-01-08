@@ -35,6 +35,8 @@ public class User
 
     public FmCountType? FmCountType { get; set; }
 
+    public FmFooterOption FmFooterOptions { get; set; }
+
     public WhoKnowsMode? Mode { get; set; }
 
     public PrivacyLevel PrivacyLevel { get; set; }
