@@ -87,11 +87,11 @@ public class PuppeteerService
 
         var title = whoKnowsObjects.FirstOrDefault()?.Name ?? "Unknown";
         var extraHeight = 0;
-        if (title.Length > 35)
+        if (title.Length > 38)
         {
-            var lines = (int)(title.Length / 35);
+            var lines = (int)(title.Length / 38);
 
-            extraHeight += (lines - 1) * 30;
+            extraHeight += (lines) * 32;
         }
 
         if (crownText != null)
