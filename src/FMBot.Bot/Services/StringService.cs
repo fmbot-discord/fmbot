@@ -306,8 +306,6 @@ public static class StringService
             }
         }
 
-        description.AppendLine();
-
         return description.ToString();
     }
 
