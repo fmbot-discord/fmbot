@@ -7,13 +7,17 @@ using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
+using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using DiscordConfig = Discord.DiscordConfig;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Builders;
@@ -142,6 +146,103 @@ public class UserBuilder
         {
             response.Embed.AddField("Status", $"❌ Disabled. Do '{context.Prefix}botscrobbling on' to enable.");
         }
+
+        return response;
+    }
+
+    public async Task<ResponseModel> ModeAsync(
+        ContextModel context,
+        Guild guild = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var fmType = new SelectMenuBuilder()
+                .WithPlaceholder("Select embed type")
+                .WithCustomId("fm-type-menu")
+                .WithMinValues(1)
+                .WithMaxValues(1);
+
+        foreach (var name in Enum.GetNames(typeof(FmEmbedType)).OrderBy(o => o))
+        {
+            fmType.AddOption(new SelectMenuOptionBuilder(name, name));
+        }
+
+        var maxOptions = context.ContextUser.UserType == UserType.User
+            ? Constants.MaxFooterOptions
+            : Constants.MaxFooterOptionsSupporter;
+
+        var fmOptions = new SelectMenuBuilder()
+            .WithPlaceholder("Select footer options")
+            .WithCustomId("fm-footer-menu")
+            .WithMaxValues(maxOptions);
+
+        var fmSupporterOptions = new SelectMenuBuilder()
+            .WithPlaceholder("Select supporter-exclusive footer option")
+            .WithCustomId("fm-footer-menu-supporter")
+            .WithMaxValues(1);
+
+        fmSupporterOptions.AddOption(new SelectMenuOptionBuilder("None", "none"));
+
+        foreach (var option in ((FmFooterOption[])Enum.GetValues(typeof(FmFooterOption))).Where(w => w != FmFooterOption.None))
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var description = option.GetAttribute<OptionAttribute>().Description;
+            var supporterOnly = option.GetAttribute<OptionAttribute>().SupporterOnly;
+            var value = Enum.GetName(option);
+
+            var active = context.ContextUser.FmFooterOptions.HasFlag(option);
+
+            if (!supporterOnly)
+            {
+                fmOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+            }
+            else
+            {
+                fmSupporterOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+            }
+        }
+
+        var builder = new ComponentBuilder()
+            .WithSelectMenu(fmType)
+            .WithSelectMenu(fmOptions, 1);
+
+        if (context.ContextUser.UserType != UserType.User)
+        {
+            builder.WithSelectMenu(fmSupporterOptions, 2);
+        }
+
+        response.Components = builder;
+
+        response.Embed.WithAuthor("Configuring your 'fm' command");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var embedDescription = new StringBuilder();
+
+        embedDescription.AppendLine("Use the dropdowns below to configure how your `fm` command looks.");
+        embedDescription.AppendLine();
+        embedDescription.AppendLine($"You can select up to {maxOptions} options to be displayed in the footer. ");
+
+        embedDescription.AppendLine();
+        embedDescription.Append($"Some options might not always be visible, for example when no source data is available. ");
+
+        if (context.ContextUser.UserType == UserType.User)
+        {
+            embedDescription.Append($"[.fmbot supporters]({Constants.GetSupporterOverviewLink}) can select up to {Constants.MaxFooterOptionsSupporter} options.");
+        }
+
+        if (guild?.FmEmbedType != null)
+        {
+            embedDescription.AppendLine();
+            embedDescription.AppendLine(
+                $"Note that servers can force a specific mode which will override your own mode. ");
+            embedDescription.AppendLine(
+                $"This server has the **{guild.FmEmbedType}** mode set for everyone, which means your own setting will not apply here.");
+        }
+
+        response.Embed.WithDescription(embedDescription.ToString());
 
         return response;
     }
@@ -290,7 +391,7 @@ public class UserBuilder
             description.AppendLine($"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
         }
 
-        if(this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+        if (this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
         {
             var random = new Random().Next(0, Constants.SupporterPromoChance);
             if (random == 1)

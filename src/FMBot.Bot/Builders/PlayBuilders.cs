@@ -171,7 +171,7 @@ public class PlayBuilder
             : $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
         var fmText = "";
-        var footerText = await this._userService.GetFooterAsync(context.ContextUser.FmFooterOptions, userSettings.UserId, userSettings.UserType,
+        var footerText = await this._userService.GetFooterAsync(context.ContextUser.FmFooterOptions, userSettings,
             currentTrack.ArtistName, currentTrack.AlbumName, currentTrack.TrackName, currentTrack.Loved, totalPlaycount, guild);
 
         if (!userSettings.DifferentUser &&
@@ -240,7 +240,7 @@ public class PlayBuilder
 
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
                 {
-                    footerText += " | Last scrobble:";
+                    footerText += "\nLast scrobble:";
                     response.Embed.WithTimestamp(currentTrack.TimePlayed.Value);
                 }
 

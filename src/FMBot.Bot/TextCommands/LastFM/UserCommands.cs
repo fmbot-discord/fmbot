@@ -275,81 +275,36 @@ public class UserCommands : BaseCommandModule
     }
 
     [Command("mode", RunMode = RunMode.Async)]
-    [Summary("Change how your .fm looks.\n\n" +
-             "Servers can override this setting using `{{prfx}}servermode`.\n" +
-             "Playcounts are only visible in non-text modes.")]
-    [Options("Modes: `embedtiny/embedmini/embedfull/textmini/textfull`",
-        "Playcounts: `artist/album/track`")]
-    [Examples("mode embedmini", "mode embedfull track", "mode textfull", "embedtiny album")]
-    [Alias("m", "md", "fmmode")]
+    [Summary("Sends you a dm so you can configure your `fm` command.\n\n" +
+             "Servers can override this setting using `{{prfx}}servermode`.")]
+    [Examples("mode")]
+    [Alias("md", "fmmode")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task ModeAsync(params string[] otherSettings)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "help")
+        try
         {
-            var replyString = $"Use {prfx}mode to change how your .fm command looks.";
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
 
-            this._embed.AddField("Options",
-                "**Modes**: `embedtiny/embedmini/embedfull/textmini/textfull`\n" +
-                "**Playcounts**: `artist/album/track`\n" +
-                "*Note: Playcounts are only visible in non-text modes.*\n\n" +
-                $"Server mode can be set using `{prfx}servermode`. The server mode overrules any mode set by users.");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var response = await this._userBuilder.ModeAsync(new ContextModel(this.Context, prfx, contextUser), guild);
 
-            this._embed.AddField("Examples",
-                $"`{prfx}mode embedmini` \n" +
-                $"`{prfx}mode embedfull track`\n" +
-                $"`{prfx}mode textfull`\n" +
-                $"`{prfx}mode embedtiny album`");
-
-            this._embed.WithTitle("Changing your .fm command");
-            this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
-
-            var countType = !userSettings.FmCountType.HasValue ? "No extra playcount" : userSettings.FmCountType.ToString();
-            this._embed.WithFooter(
-                $"Current mode and playcount: {userSettings.FmEmbedType} - {countType}");
-            this._embed.WithDescription(replyString);
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
-
-        var newUserSettings = UserService.SetSettings(userSettings, otherSettings);
-
-        await this._userService.SetLastFm(this.Context.User, newUserSettings);
-
-        var setReply = $"Your `.fm` mode has been set to **{newUserSettings.FmEmbedType}**";
-        if (newUserSettings.FmCountType != null)
-        {
-            setReply += $" with the **{newUserSettings.FmCountType.ToString().ToLower()} playcount**.";
-        }
-        else
-        {
-            setReply += $" with no extra playcount.";
-        }
-
-        if (this.Context.Guild != null)
-        {
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-            if (guild?.FmEmbedType != null)
+            if (this.Context.Guild != null)
             {
-                setReply +=
-                    $"\n\nNote that servers can force a specific mode which will override your own mode. " +
-                    $"\nThis server has the **{guild.FmEmbedType}** mode set for everyone, which means your own setting will not apply here.";
+                await ReplyAsync("Check your DMs to configure your `fm` settings!");
             }
+
+            await this.Context.User.SendMessageAsync(embed: response.Embed.Build(),
+                components: response.Components.Build());
+
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
-
-
-        this._embed.WithColor(DiscordConstants.InformationColorBlue);
-        this._embed.WithDescription(setReply);
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [Command("wkmode", RunMode = RunMode.Async)]
@@ -624,70 +579,5 @@ public class UserCommands : BaseCommandModule
         }
 
         this.Context.LogCommandUsed();
-    }
-
-    [Command("spawner")]
-    public async Task Spawn()
-    {
-        var userSettings = await this._userService.GetUserAsync(this.Context.User.Id);
-
-        try
-        {
-            var fmType = new SelectMenuBuilder()
-                .WithPlaceholder("Select embed type")
-                .WithCustomId("fm-type-menu")
-                .WithMinValues(1)
-                .WithMaxValues(1);
-
-            foreach (var name in Enum.GetNames(typeof(FmEmbedType)).OrderBy(o => o))
-            {
-                fmType.AddOption(new SelectMenuOptionBuilder(name, name));
-            }
-
-            var fmOptions = new SelectMenuBuilder()
-                .WithPlaceholder("Select footer options")
-                .WithCustomId("fm-footer-menu")
-                .WithMaxValues(userSettings.UserType == UserType.User ? Constants.MaxFooterOptions : Constants.MaxFooterOptionsSupporter);
-
-            var fmSupporterOptions = new SelectMenuBuilder()
-                .WithPlaceholder("Select supporter-exclusive footer option")
-                .WithCustomId("fm-footer-menu-supporter")
-                .WithMaxValues(1);
-
-            fmSupporterOptions.AddOption(new SelectMenuOptionBuilder("None", "none"));
-
-            foreach (var option in ((FmFooterOption[])Enum.GetValues(typeof(FmFooterOption))).Where(w => w != FmFooterOption.None))
-            {
-                var name = option.GetAttribute<OptionAttribute>().Name;
-                var description = option.GetAttribute<OptionAttribute>().Description;
-                var supporterOnly = option.GetAttribute<OptionAttribute>().SupporterOnly;
-                var value = Enum.GetName(option);
-
-                if (!supporterOnly)
-                {
-                    fmOptions.AddOption(new SelectMenuOptionBuilder(name, value, description));
-                }
-                else
-                {
-                    fmSupporterOptions.AddOption(new SelectMenuOptionBuilder(name, value, description));
-                }
-            }
-
-            var builder = new ComponentBuilder()
-                .WithSelectMenu(fmType)
-                .WithSelectMenu(fmOptions, 1);
-
-            if (userSettings.UserType != UserType.User)
-            {
-                builder.WithSelectMenu(fmSupporterOptions, 2);
-            }
-
-            await ReplyAsync("You can configure how your `.fm` command looks here.", components: builder.Build());
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
     }
 }

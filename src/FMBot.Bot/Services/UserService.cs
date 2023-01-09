@@ -218,7 +218,7 @@ public class UserService
         return title;
     }
 
-    public async Task<string> GetFooterAsync(FmFooterOption footerOptions, int userId, UserType userType, string artistName, string albumName, string trackName, bool loved, long totalScrobbles, Persistence.Domain.Models.Guild guild = null)
+    public async Task<string> GetFooterAsync(FmFooterOption footerOptions, UserSettingsModel userSettings, string artistName, string albumName, string trackName, bool loved, long totalScrobbles, Persistence.Domain.Models.Guild guild = null)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -234,23 +234,23 @@ public class UserService
         if (footerOptions.HasFlag(FmFooterOption.ArtistPlays))
         {
             var trackPlaycount =
-                await WhoKnowsArtistService.GetArtistPlayCountForUser(connection, artistName, userId) ?? 0;
+                await WhoKnowsArtistService.GetArtistPlayCountForUser(connection, artistName, userSettings.UserId) ?? 0;
 
-            options.Add($"{trackPlaycount} artist plays");
+            options.Add($"{trackPlaycount} artist scrobbles");
         }
         if (footerOptions.HasFlag(FmFooterOption.AlbumPlays))
         {
             var albumPlaycount =
-                await WhoKnowsAlbumService.GetAlbumPlayCountForUser(connection, artistName, albumName, userId) ?? 0;
+                await WhoKnowsAlbumService.GetAlbumPlayCountForUser(connection, artistName, albumName, userSettings.UserId) ?? 0;
 
-            options.Add($"{albumPlaycount} album plays");
+            options.Add($"{albumPlaycount} album scrobbles");
         }
         if (footerOptions.HasFlag(FmFooterOption.TrackPlays))
         {
             var trackPlaycount =
-                await WhoKnowsTrackService.GetTrackPlayCountForUser(connection, artistName, trackName, userId) ?? 0;
+                await WhoKnowsTrackService.GetTrackPlayCountForUser(connection, artistName, trackName, userSettings.UserId) ?? 0;
 
-            options.Add($"{trackPlaycount} track plays");
+            options.Add($"{trackPlaycount} track scrobbles");
         }
         if (footerOptions.HasFlag(FmFooterOption.TotalScrobbles))
         {
@@ -259,12 +259,13 @@ public class UserService
         if (footerOptions.HasFlag(FmFooterOption.ArtistPlaysThisWeek))
         {
             var start = DateTime.UtcNow.AddDays(-7);
-            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userSettings.UserId, connection, start);
 
             var count = plays.Count(a => a.ArtistName.ToLower() == artistName.ToLower());
 
             options.Add($"{count} artist plays this week");
         }
+
         if (footerOptions.HasFlag(FmFooterOption.ArtistCountry) || footerOptions.HasFlag(FmFooterOption.ArtistBirthday) || footerOptions.HasFlag(FmFooterOption.ArtistGenres))
         {
             var artist = await this._artistRepository.GetArtistForName(artistName, connection, footerOptions.HasFlag(FmFooterOption.ArtistGenres));
@@ -306,6 +307,7 @@ public class UserService
                 genres = GenreService.GenresToString(artist.ArtistGenres.Take(6).ToList());
             }
         }
+
         if (footerOptions.HasFlag(FmFooterOption.TrackBpm) || footerOptions.HasFlag(FmFooterOption.TrackDuration))
         {
             var track = await TrackRepository.GetTrackForName(artistName, trackName, connection);
@@ -364,7 +366,7 @@ public class UserService
                 {
                     if (footerOptions.HasFlag(FmFooterOption.ServerArtistRank))
                     {
-                        var requestedUser = artistListeners.FirstOrDefault(f => f.UserId == userId);
+                        var requestedUser = artistListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
 
                         if (requestedUser != null)
                         {
@@ -387,7 +389,7 @@ public class UserService
                 {
                     if (footerOptions.HasFlag(FmFooterOption.ServerAlbumRank))
                     {
-                        var requestedUser = albumListeners.FirstOrDefault(f => f.UserId == userId);
+                        var requestedUser = albumListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
 
                         if (requestedUser != null)
                         {
@@ -410,7 +412,7 @@ public class UserService
                 {
                     if (footerOptions.HasFlag(FmFooterOption.ServerTrackRank))
                     {
-                        var requestedUser = trackListeners.FirstOrDefault(f => f.UserId == userId);
+                        var requestedUser = trackListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
 
                         if (requestedUser != null)
                         {
@@ -433,7 +435,7 @@ public class UserService
 
             if (artistListeners.Any())
             {
-                var requestedUser = artistListeners.FirstOrDefault(f => f.UserId == userId);
+                var requestedUser = artistListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
 
                 if (requestedUser != null)
                 {
@@ -449,7 +451,7 @@ public class UserService
 
             if (albumListeners.Any())
             {
-                var requestedUser = albumListeners.FirstOrDefault(f => f.UserId == userId);
+                var requestedUser = albumListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
 
                 if (requestedUser != null)
                 {
@@ -465,7 +467,7 @@ public class UserService
 
             if (trackListeners.Any())
             {
-                var requestedUser = trackListeners.FirstOrDefault(f => f.UserId == userId);
+                var requestedUser = trackListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
 
                 if (requestedUser != null)
                 {
@@ -474,12 +476,12 @@ public class UserService
                 }
             }
         }
-        if (userType != UserType.User)
+        if (userSettings.UserType != UserType.User)
         {
             if (footerOptions.HasFlag(FmFooterOption.FirstArtistListen))
             {
                 var firstPlay =
-                    await this._playService.GetArtistFirstPlayDate(userId, artistName);
+                    await this._playService.GetArtistFirstPlayDate(userSettings.UserId, artistName);
                 if (firstPlay != null)
                 {
                     options.Add($"Artist first listened {firstPlay.Value.ToString("MMMM d yyyy")}");
@@ -488,7 +490,7 @@ public class UserService
             if (footerOptions.HasFlag(FmFooterOption.FirstAlbumListen))
             {
                 var firstPlay =
-                    await this._playService.GetAlbumFirstPlayDate(userId, artistName, albumName);
+                    await this._playService.GetAlbumFirstPlayDate(userSettings.UserId, artistName, albumName);
                 if (firstPlay != null)
                 {
                     options.Add($"Album first listened {firstPlay.Value.ToString("MMMM d yyyy")}");
@@ -497,7 +499,7 @@ public class UserService
             if (footerOptions.HasFlag(FmFooterOption.FirstTrackListen))
             {
                 var firstPlay =
-                    await this._playService.GetTrackFirstPlayDate(userId, artistName, trackName);
+                    await this._playService.GetTrackFirstPlayDate(userSettings.UserId, artistName, trackName);
                 if (firstPlay != null)
                 {
                     options.Add($"First listened {firstPlay.Value.ToString("MMMM d yyyy")}");
@@ -525,9 +527,11 @@ public class UserService
     {
         var footer = new StringBuilder();
 
-        if (genres is { Length: <= 48 })
+        var genresAdded = false;
+        if (genres is { Length: <= 48 } && options.Count > 2)
         {
             footer.AppendLine(genres);
+            genresAdded = true;
         }
 
         var lineLength = 0;
@@ -546,7 +550,7 @@ public class UserService
             {
                 if (lineLength != 0)
                 {
-                    footer.Append(" - ");
+                    footer.Append(" · ");
                 }
 
                 footer.Append(option);
@@ -554,7 +558,7 @@ public class UserService
             }
         }
 
-        if (genres is { Length: > 48 })
+        if (!genresAdded)
         {
             footer.AppendLine();
             footer.Append(genres);
