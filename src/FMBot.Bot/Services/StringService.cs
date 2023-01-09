@@ -298,7 +298,7 @@ public static class StringService
 
         if (discogsRelease.Rating.HasValue)
         {
-            description.Append($" / ");
+            description.Append($" ");
 
             for (var i = 0; i < discogsRelease.Rating; i++)
             {
