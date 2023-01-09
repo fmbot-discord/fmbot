@@ -247,7 +247,7 @@ public class SpotifyService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var dbTrack = await this._trackRepository.GetTrackForName(trackInfo.ArtistName, trackInfo.TrackName, connection);
+            var dbTrack = await TrackRepository.GetTrackForName(trackInfo.ArtistName, trackInfo.TrackName, connection);
 
             if (dbTrack == null)
             {
@@ -572,7 +572,7 @@ public class SpotifyService
         var dbTracks = new List<Track>();
         foreach (var track in simpleTracks.OrderBy(o => o.TrackNumber))
         {
-            var dbTrack = await this._trackRepository.GetTrackForName(albumInfo.ArtistName, track.Name, connection);
+            var dbTrack = await TrackRepository.GetTrackForName(albumInfo.ArtistName, track.Name, connection);
 
             if (dbTrack != null)
             {

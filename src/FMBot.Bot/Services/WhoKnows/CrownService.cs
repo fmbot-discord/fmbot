@@ -258,6 +258,24 @@ public class CrownService
         });
     }
 
+    public static async Task<CurrentCrownHolderDto> GetCurrentCrownHolderWithName(NpgsqlConnection connection, int guildId, string artistName)
+    {
+        const string sql = "SELECT current_playcount, gu.user_id, gu.user_name " +
+                           "FROM public.user_crowns AS uc  " +
+                           "INNER JOIN guild_users AS gu ON gu.user_id = uc.user_id AND gu.guild_id = @guildId " +
+                           "WHERE uc.guild_id = @guildId AND uc.active = true AND  " +
+                           "UPPER(uc.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "ORDER BY current_playcount DESC ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        return await connection.QueryFirstOrDefaultAsync<CurrentCrownHolderDto>(sql, new
+        {
+            guildId,
+            artistName
+        });
+    }
+
     private static async Task UpdateCrown(NpgsqlConnection connection, int crownId, UserCrown updatedCrown)
     {
         const string sql = "UPDATE public.user_crowns " +

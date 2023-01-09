@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -20,11 +22,13 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -643,17 +647,40 @@ public class UserCommands : BaseCommandModule
             var fmOptions = new SelectMenuBuilder()
                 .WithPlaceholder("Select footer options")
                 .WithCustomId("fm-footer-menu")
-                .WithMinValues(1)
-                .WithMaxValues(userSettings.UserType == UserType.User ? 4 : 8);
+                .WithMaxValues(userSettings.UserType == UserType.User ? Constants.MaxFooterOptions : Constants.MaxFooterOptionsSupporter);
 
-            foreach (var name in Enum.GetNames(typeof(FmFooterOption)))
+            var fmSupporterOptions = new SelectMenuBuilder()
+                .WithPlaceholder("Select supporter-exclusive footer option")
+                .WithCustomId("fm-footer-menu-supporter")
+                .WithMaxValues(1);
+
+            fmSupporterOptions.AddOption(new SelectMenuOptionBuilder("None", "none"));
+
+            foreach (var option in ((FmFooterOption[])Enum.GetValues(typeof(FmFooterOption))).Where(w => w != FmFooterOption.None))
             {
-                fmOptions.AddOption(new SelectMenuOptionBuilder(name, name));
+                var name = option.GetAttribute<OptionAttribute>().Name;
+                var description = option.GetAttribute<OptionAttribute>().Description;
+                var supporterOnly = option.GetAttribute<OptionAttribute>().SupporterOnly;
+                var value = Enum.GetName(option);
+
+                if (!supporterOnly)
+                {
+                    fmOptions.AddOption(new SelectMenuOptionBuilder(name, value, description));
+                }
+                else
+                {
+                    fmSupporterOptions.AddOption(new SelectMenuOptionBuilder(name, value, description));
+                }
             }
 
             var builder = new ComponentBuilder()
                 .WithSelectMenu(fmType)
                 .WithSelectMenu(fmOptions, 1);
+
+            if (userSettings.UserType != UserType.User)
+            {
+                builder.WithSelectMenu(fmSupporterOptions, 2);
+            }
 
             await ReplyAsync("You can configure how your `.fm` command looks here.", components: builder.Build());
         }

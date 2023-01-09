@@ -171,8 +171,8 @@ public class PlayBuilder
             : $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
         var fmText = "";
-        var footerText = await this._userService.GetFooterAsync(context.ContextUser.FmFooterOptions, userSettings.UserId,
-            currentTrack.ArtistName, currentTrack.AlbumName, currentTrack.TrackName, currentTrack.Loved, totalPlaycount);
+        var footerText = await this._userService.GetFooterAsync(context.ContextUser.FmFooterOptions, userSettings.UserId, userSettings.UserType,
+            currentTrack.ArtistName, currentTrack.AlbumName, currentTrack.TrackName, currentTrack.Loved, totalPlaycount, guild);
 
         if (!userSettings.DifferentUser &&
             !currentTrack.NowPlaying &&

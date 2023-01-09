@@ -87,6 +87,33 @@ public class WhoKnowsArtistService
         return whoKnowsArtistList;
     }
 
+    public static async Task<IList<WhoKnowsObjectWithUser>> GetBasicUsersForArtist(NpgsqlConnection connection, int guildId, string artistName)
+    {
+        const string sql = "SELECT ua.user_id, " +
+                           "ua.playcount " +
+                           "FROM user_artists AS ua " +
+                           "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
+                           "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id " +
+                           "INNER JOIN guilds AS guild ON guild.guild_id = @guildId " +
+                           "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))  " +
+                           "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                           "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
+                           "AND (guild.activity_threshold_days IS NULL OR u.last_used IS NOT NULL AND u.last_used > now()::DATE - guild.activity_threshold_days) " +
+                           "ORDER BY ua.playcount DESC ";
+
+        var userArtists = (await connection.QueryAsync<WhoKnowsArtistDto>(sql, new
+        {
+            guildId,
+            artistName
+        })).ToList();
+
+        return userArtists.Select(s => new WhoKnowsObjectWithUser
+        {
+            UserId = s.UserId,
+            Playcount = s.Playcount
+        }).ToList();
+    }
+
     public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(IGuild discordGuild, string artistName)
     {
         const string sql = "SELECT * " +
@@ -146,6 +173,31 @@ public class WhoKnowsArtistService
         }
 
         return whoKnowsArtistList;
+    }
+
+    public static async Task<IList<WhoKnowsObjectWithUser>> GetBasicGlobalUsersForArtists(NpgsqlConnection connection, string artistName)
+    {
+        const string sql = "SELECT * " +
+                           "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
+                           "ua.user_id, " +
+                           "ua.playcount " +
+                           "FROM user_artists AS ua " +
+                           "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
+                           "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true) " +
+                           "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ua " +
+                           "ORDER BY playcount DESC";
+
+        var userArtists = (await connection.QueryAsync<WhoKnowsGlobalArtistDto>(sql, new
+        {
+            artistName
+        })).ToList();
+
+        return userArtists.Select(s => new WhoKnowsObjectWithUser
+        {
+            UserId = s.UserId,
+            Playcount = s.Playcount
+        }).ToList();
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForArtists(IGuild discordGuild, int guildId, int userId, string artistName)
