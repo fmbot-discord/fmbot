@@ -346,6 +346,28 @@ public class UserService
             }
         }
 
+        if (footerOptions.HasFlag(FmFooterOption.DiscogsCollection))
+        {
+            var discogsUser = await this.GetUserWithDiscogs(userSettings.DiscordUserId);
+
+            if (discogsUser.UserDiscogs != null && discogsUser.DiscogsReleases.Any())
+            {
+                var albumCollection = discogsUser.DiscogsReleases.Where(w =>
+                    (w.Release.Title.ToLower().StartsWith(albumName.ToLower()) ||
+                     albumName.ToLower().StartsWith(w.Release.Title))
+                    &&
+                    (w.Release.Artist.ToLower().StartsWith(artistName.ToLower()) ||
+                     artistName.ToLower().StartsWith(w.Release.Artist.ToLower()))).ToList();
+
+                var discogsAlbum = albumCollection.MaxBy(o => o.DateAdded);
+
+                if (discogsAlbum != null)
+                {
+                    options.Add(StringService.UserDiscogsReleaseToSimpleString(discogsAlbum));
+                }
+            }
+        }
+
         if (guild != null)
         {
             if (footerOptions.HasFlag(FmFooterOption.CrownHolder) && guild.CrownsDisabled != true)

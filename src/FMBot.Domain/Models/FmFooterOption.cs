@@ -37,34 +37,37 @@ public enum FmFooterOption : long
     [Option("Track duration", "Length of track")]
     TrackDuration = 1 << 10,
 
+    [Option("Discogs collection", "Shows if you have current album in your Discogs collection")]
+    DiscogsCollection = 1 << 11,
+
     [Option("Server artist listeners", "Amount of artist listeners in server")]
-    ServerArtistListeners = 1 << 11,
+    ServerArtistListeners = 1 << 12,
     [Option("Server album listeners", "Amount of album listeners in server")]
-    ServerAlbumListeners = 1 << 12,
+    ServerAlbumListeners = 1 << 13,
     [Option("Server track listeners", "Amount of track listeners in server")]
-    ServerTrackListeners = 1 << 13,
+    ServerTrackListeners = 1 << 14,
 
     [Option("Server artist rank", "Your WhoKnows rank for this artist")]
-    ServerArtistRank = 1 << 14,
+    ServerArtistRank = 1 << 15,
     [Option("Server album rank", "Your WhoKnows rank for this album")]
-    ServerAlbumRank = 1 << 15,
+    ServerAlbumRank = 1 << 16,
     [Option("Server track rank", "Your WhoKnows rank for this track")]
-    ServerTrackRank = 1 << 16,
+    ServerTrackRank = 1 << 17,
 
     [Option("Crown holder", "Current crown holder")]
-    CrownHolder = 1 << 17,
+    CrownHolder = 1 << 18,
 
     [Option("Global artist rank", "Your Global WhoKnows rank for this artist")]
-    GlobalArtistRank = 1 << 18,
+    GlobalArtistRank = 1 << 19,
     [Option("Global album rank", "Your Global WhoKnows rank for this album")]
-    GlobalAlbumRank = 1 << 19,
+    GlobalAlbumRank = 1 << 20,
     [Option("Global track rank", "Your Global WhoKnows rank for this track")]
-    GlobalTrackRank = 1 << 20,
+    GlobalTrackRank = 1 << 21,
 
     [Option("First artist listen", "Date you first listened to an artist", true)]
-    FirstArtistListen = 1 << 21,
+    FirstArtistListen = 1 << 22,
     [Option("First album listen", "Date you first listened to an album", true)]
-    FirstAlbumListen = 1 << 22,
+    FirstAlbumListen = 1 << 23,
     [Option("First track listen", "Date you first listened to a track", true)]
-    FirstTrackListen = 1 << 23
+    FirstTrackListen = 1 << 24
 }
