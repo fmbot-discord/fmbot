@@ -223,10 +223,18 @@ public class UserBuilder
 
         embedDescription.AppendLine("Use the dropdowns below to configure how your `fm` command looks.");
         embedDescription.AppendLine();
-        embedDescription.AppendLine($"You can select up to {maxOptions} options to be displayed in the footer. ");
+
+
+        embedDescription.Append($"The first dropdown allows you to select a mode, while the second allows you to select up to {maxOptions} options that will be displayed in the footer. ");
+        if (context.ContextUser.UserType != UserType.User)
+        {
+            embedDescription.Append($"The third dropdown lets you select 1 supporter-exclusive option.");
+        }
 
         embedDescription.AppendLine();
-        embedDescription.Append($"Some options might not always be visible, for example when no source data is available. ");
+
+        embedDescription.AppendLine();
+        embedDescription.Append($"Some options might not always show up on every track, for example when no source data is available. ");
 
         if (context.ContextUser.UserType == UserType.User)
         {
