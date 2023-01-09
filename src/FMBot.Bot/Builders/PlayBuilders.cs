@@ -181,7 +181,7 @@ public class PlayBuilder
             currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
         {
             footerText +=
-                $"\nUsing Spotify and fm lagging behind? Check '{context.Prefix}outofsync'";
+                $"Using Spotify and fm lagging behind? Check '{context.Prefix}outofsync'";
         }
 
         switch (embedType)

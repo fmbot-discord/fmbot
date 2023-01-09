@@ -238,7 +238,7 @@ public class UserService
 
             options.Add($"{trackPlaycount} artist scrobbles");
         }
-        if (footerOptions.HasFlag(FmFooterOption.AlbumPlays))
+        if (footerOptions.HasFlag(FmFooterOption.AlbumPlays) && albumName != null)
         {
             var albumPlaycount =
                 await WhoKnowsAlbumService.GetAlbumPlayCountForUser(connection, artistName, albumName, userSettings.UserId) ?? 0;
@@ -346,7 +346,7 @@ public class UserService
             }
         }
 
-        if (footerOptions.HasFlag(FmFooterOption.DiscogsCollection))
+        if (footerOptions.HasFlag(FmFooterOption.DiscogsCollection) && albumName != null)
         {
             var discogsUser = await this.GetUserWithDiscogs(userSettings.DiscordUserId);
 
@@ -402,7 +402,7 @@ public class UserService
                     }
                 }
             }
-            if (footerOptions.HasFlag(FmFooterOption.ServerAlbumRank) || footerOptions.HasFlag(FmFooterOption.ServerAlbumListeners))
+            if ((footerOptions.HasFlag(FmFooterOption.ServerAlbumRank) || footerOptions.HasFlag(FmFooterOption.ServerAlbumListeners)) && albumName != null)
             {
                 var albumListeners =
                     await WhoKnowsAlbumService.GetBasicUsersForAlbum(connection, guild.GuildId, artistName, albumName);
@@ -466,7 +466,7 @@ public class UserService
                 }
             }
         }
-        if (footerOptions.HasFlag(FmFooterOption.GlobalAlbumRank))
+        if (footerOptions.HasFlag(FmFooterOption.GlobalAlbumRank) && albumName != null)
         {
             var albumListeners =
                 await WhoKnowsAlbumService.GetBasicGlobalUsersForAlbum(connection, artistName, albumName);
@@ -509,7 +509,7 @@ public class UserService
                     options.Add($"Artist first listened {firstPlay.Value.ToString("MMMM d yyyy")}");
                 }
             }
-            if (footerOptions.HasFlag(FmFooterOption.FirstAlbumListen))
+            if (footerOptions.HasFlag(FmFooterOption.FirstAlbumListen) && albumName != null)
             {
                 var firstPlay =
                     await this._playService.GetAlbumFirstPlayDate(userSettings.UserId, artistName, albumName);

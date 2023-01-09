@@ -318,6 +318,13 @@ public class SpotifyService
                 db.Entry(dbTrack).State = EntityState.Modified;
             }
 
+            if (dbTrack.DurationMs == null && trackInfo.Duration.HasValue)
+            {
+                dbTrack.DurationMs = (int)trackInfo.Duration.Value;
+                dbTrack.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                db.Entry(dbTrack).State = EntityState.Modified;
+            }
+
             var monthsToGoBack = !string.IsNullOrEmpty(dbTrack.SpotifyId) && !dbTrack.Energy.HasValue ? 1 : 3;
             if (dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-monthsToGoBack))
             {
