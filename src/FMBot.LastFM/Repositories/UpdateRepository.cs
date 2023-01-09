@@ -272,7 +272,7 @@ public class UpdateRepository
         {
             var alias = (string)this._cache.Get(CacheKeyForAlias(artist.Key.ToLower()));
 
-            var artistName = alias ?? artist.Key;
+            var artistName = alias ?? artist.First().ArtistName;
 
             var existingUserArtist =
                 userArtists.FirstOrDefault(a => a.Name.ToLower() == artistName.ToLower());
@@ -340,7 +340,7 @@ public class UpdateRepository
         {
             var alias = (string)this._cache.Get(CacheKeyForAlias(album.Key.ArtistName.ToLower()));
 
-            var artistName = alias ?? album.Key.ArtistName;
+            var artistName = alias ?? album.First().ArtistName;
 
             var existingUserAlbum =
                 userAlbums.FirstOrDefault(a => a.Name.ToLower() == album.Key.AlbumName.ToLower() &&
@@ -360,8 +360,10 @@ public class UpdateRepository
                                       "VALUES(@userId, @albumName, @artistName, @albumPlaycount); ",
                         connection);
 
+                var capitalizedAlbumName = album.First().AlbumName;
+
                 addUserAlbum.Parameters.AddWithValue("userId", user.UserId);
-                addUserAlbum.Parameters.AddWithValue("albumName", album.Key.AlbumName);
+                addUserAlbum.Parameters.AddWithValue("albumName", capitalizedAlbumName);
                 addUserAlbum.Parameters.AddWithValue("artistName", artistName);
                 addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
 
@@ -407,7 +409,7 @@ public class UpdateRepository
         {
             var alias = (string)this._cache.Get(CacheKeyForAlias(track.Key.ArtistName.ToLower()));
 
-            var artistName = alias ?? track.Key.ArtistName;
+            var artistName = alias ?? track.First().ArtistName;
 
             var existingUserTrack =
                 userTracks.FirstOrDefault(a => a.Name.ToLower() == track.Key.TrackName.ToLower() &&
@@ -428,8 +430,10 @@ public class UpdateRepository
                                       "VALUES(@userId, @trackName, @artistName, @trackPlaycount); ",
                         connection);
 
+                var capitalizedTrackName = track.First().AlbumName;
+
                 addUserTrack.Parameters.AddWithValue("userId", user.UserId);
-                addUserTrack.Parameters.AddWithValue("trackName", track.Key.TrackName);
+                addUserTrack.Parameters.AddWithValue("trackName", capitalizedTrackName);
                 addUserTrack.Parameters.AddWithValue("artistName", artistName);
                 addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
 
