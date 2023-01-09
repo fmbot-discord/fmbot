@@ -540,22 +540,22 @@ public class UserBuilder
             if (totalTime.TotalSeconds > 0)
             {
                 yearDescription.AppendLine(
-                    $"**` All`** " +
-                    $"- **{allPlays.Count}** plays " +
-                    $"- **{StringExtensions.GetLongListeningTimeString(totalTime)}**");
+                    $"` All`** " +
+                    $"- {allPlays.Count} plays " +
+                    $"- **{StringExtensions.GetLongListeningTimeString(totalTime)}");
             }
 
             foreach (var year in yearGroups)
             {
                 var time = await this._timeService.GetPlayTimeForPlays(year);
                 yearDescription.AppendLine(
-                    $"**`{year.Key}`** " +
-                    $"- **{year.Count()}** plays " +
-                    $"- **{StringExtensions.GetLongListeningTimeString(time)}**");
+                    $"`{year.Key}`** " +
+                    $"- {year.Count()}** plays " +
+                    $"- **{StringExtensions.GetLongListeningTimeString(time)}");
             }
             if (yearDescription.Length > 0)
             {
-                response.Embed.AddField("Years", yearDescription.ToString());
+                response.Embed.AddField("Years", $"**{yearDescription.ToString()}**");
             }
         }
         else
