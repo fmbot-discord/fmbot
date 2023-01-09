@@ -586,7 +586,8 @@ public class UserService
                 FmCountType = newUserSettings.FmCountType,
                 SessionKeyLastFm = newUserSettings.SessionKeyLastFm,
                 DataSource = DataSource.LastFm,
-                PrivacyLevel = PrivacyLevel.Server
+                PrivacyLevel = PrivacyLevel.Server,
+                FmFooterOptions = FmFooterOption.TotalScrobbles
             };
 
             await db.Users.AddAsync(newUser);
@@ -635,7 +636,7 @@ public class UserService
                 {
                     UserNameLastFM = authSession.Content.Session.Name,
                     DataSource = DataSource.LastFm,
-                    SessionKeyLastFm = authSession.Content.Session.Key
+                    SessionKeyLastFm = authSession.Content.Session.Key,
                 };
 
                 Log.Information("LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})", authSession.Content.Session.Name, contextUser.Id);
