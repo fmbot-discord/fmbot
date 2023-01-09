@@ -541,7 +541,7 @@ public class UserBuilder
             {
                 yearDescription.AppendLine(
                     $"` All`** " +
-                    $"- {allPlays.Count} plays " +
+                    $"- **{allPlays.Count}** plays " +
                     $"- **{StringExtensions.GetLongListeningTimeString(totalTime)}");
             }
 
@@ -550,7 +550,7 @@ public class UserBuilder
                 var time = await this._timeService.GetPlayTimeForPlays(year);
                 yearDescription.AppendLine(
                     $"`{year.Key}`** " +
-                    $"- {year.Count()}** plays " +
+                    $"- **{year.Count()}** plays " +
                     $"- **{StringExtensions.GetLongListeningTimeString(time)}");
             }
             if (yearDescription.Length > 0)
