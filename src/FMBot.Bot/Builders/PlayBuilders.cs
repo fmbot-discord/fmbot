@@ -571,7 +571,7 @@ public class PlayBuilder
 
         response.Embed.WithDescription(description);
 
-        response.EmbedAuthor.WithName($"Daily overview for {userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}");
+        response.EmbedAuthor.WithName($"Daily overview for {Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}");
 
         response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?date_preset=LAST_7_DAYS");
         response.Embed.WithAuthor(response.EmbedAuthor);
