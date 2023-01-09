@@ -821,9 +821,6 @@ public class LastFmRepository
                             Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
                                 ? Guid.Parse(s.Mbid)
                                 : null,
-                            ArtistImageUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
-                                ? s.Url
-                                : null,
                             UserPlaycount = s.Playcount
                         }).ToList()
                 }
