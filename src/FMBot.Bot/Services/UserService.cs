@@ -393,7 +393,7 @@ public class UserService
                         if (requestedUser != null)
                         {
                             var index = artistListeners.IndexOf(requestedUser);
-                            options.Add($"WhoKnows #{index}");
+                            options.Add($"WhoKnows #{index + 1}");
                         }
                     }
                     if (footerOptions.HasFlag(FmFooterOption.ServerArtistListeners))
@@ -416,7 +416,7 @@ public class UserService
                         if (requestedUser != null)
                         {
                             var index = albumListeners.IndexOf(requestedUser);
-                            options.Add($"WhoKnows album #{index}");
+                            options.Add($"WhoKnows album #{index + 1}");
                         }
                     }
                     if (footerOptions.HasFlag(FmFooterOption.ServerAlbumListeners))
@@ -439,7 +439,7 @@ public class UserService
                         if (requestedUser != null)
                         {
                             var index = trackListeners.IndexOf(requestedUser);
-                            options.Add($"WhoKnows track #{index}");
+                            options.Add($"WhoKnows track #{index + 1}");
                         }
                     }
                     if (footerOptions.HasFlag(FmFooterOption.ServerTrackListeners))
@@ -462,7 +462,7 @@ public class UserService
                 if (requestedUser != null)
                 {
                     var index = artistListeners.IndexOf(requestedUser);
-                    options.Add($"GlobalWhoKnows #{index}");
+                    options.Add($"GlobalWhoKnows #{index + 1}");
                 }
             }
         }
@@ -478,7 +478,7 @@ public class UserService
                 if (requestedUser != null)
                 {
                     var index = albumListeners.IndexOf(requestedUser);
-                    options.Add($"GlobalWhoKnows album #{index}");
+                    options.Add($"GlobalWhoKnows album #{index + 1}");
                 }
             }
         }
@@ -494,7 +494,7 @@ public class UserService
                 if (requestedUser != null)
                 {
                     var index = trackListeners.IndexOf(requestedUser);
-                    options.Add($"GlobalWhoKnows track #{index}");
+                    options.Add($"GlobalWhoKnows track #{index + 1}");
                 }
             }
         }
