@@ -24,7 +24,7 @@ public class UserIndexQueue : IUserIndexQueue
     public void Publish(IReadOnlyList<User> users)
     {
         var queueItems = users
-            .Select(s => new IndexUserQueueItem(s.UserId, 10000))
+            .Select(s => new IndexUserQueueItem(s.UserId, true))
             .ToList();
 
         this._subject.OnNext(queueItems);

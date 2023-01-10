@@ -2,13 +2,13 @@ namespace FMBot.Domain.Models;
 
 public class IndexUserQueueItem
 {
-    public IndexUserQueueItem(int userId, int timeoutMs = 0)
+    public IndexUserQueueItem(int userId, bool indexQueue = false)
     {
         this.UserId = userId;
-        this.TimeoutMs = timeoutMs;
+        this.IndexQueue = indexQueue;
     }
 
     public int UserId { get; }
 
-    public int TimeoutMs { get; }
+    public bool IndexQueue { get; }
 }
