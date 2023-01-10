@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Configuration;
 
 namespace FMBot.Persistence.EntityFrameWork
@@ -153,6 +157,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasIndex(i => i.DiscordUserId);
             });
+
 
             modelBuilder.Entity<Supporter>(entity =>
             {

@@ -234,7 +234,7 @@ public class IndexCommands : BaseCommandModule
             }
 
             this._embed.WithDescription(
-                $"<a:loading:821676038102056991> Updating user {userSettings.UserNameLastFM}...");
+                $"<a:loading:821676038102056991> Fetching {userSettings.UserNameLastFM}'s latest scrobbles...");
             var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             var update = await this._updateService.UpdateUserAndGetRecentTracks(userSettings);
@@ -245,18 +245,35 @@ public class IndexCommands : BaseCommandModule
             {
                 if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
                 {
-                    var newEmbed =
-                        new EmbedBuilder()
-                            .WithDescription("No new scrobbles found since last update\n\n" +
-                                             $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.")
-                            .WithColor(DiscordConstants.SuccessColorGreen);
+                    var updateDescription = new StringBuilder();
+                    updateDescription.AppendLine($"No new scrobbles found on [your Last.fm profile]({Constants.LastFMUserUrl}{userSettings.UserNameLastFM}) since last update. ");
+                    updateDescription.AppendLine();
 
                     if (userSettings.LastUpdated.HasValue)
                     {
-                        newEmbed.WithTimestamp(userSettings.LastUpdated.Value);
-                        this._embedFooter.WithText("Last update");
-                        newEmbed.WithFooter(this._embedFooter);
+                        var specifiedDateTime = DateTime.SpecifyKind(userSettings.LastUpdated.Value, DateTimeKind.Utc);
+                        var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                        updateDescription.AppendLine($"Last update: <t:{dateValue}:R>.");
                     }
+
+                    var latestScrobble = update.Content.RecentTracks.MaxBy(o => o.TimePlayed);
+                    if (latestScrobble != null && latestScrobble.TimePlayed.HasValue)
+                    {
+                        var specifiedDateTime = DateTime.SpecifyKind(latestScrobble.TimePlayed.Value, DateTimeKind.Utc);
+                        var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                        updateDescription.AppendLine($"Last scrobble: <t:{dateValue}:R>.");
+                    }
+
+
+                    updateDescription.AppendLine();
+                    updateDescription.AppendLine($"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.");
+
+                    var newEmbed =
+                        new EmbedBuilder()
+                            .WithDescription(updateDescription.ToString())
+                            .WithColor(DiscordConstants.SuccessColorGreen);
 
                     m.Embed = newEmbed.Build();
                 }

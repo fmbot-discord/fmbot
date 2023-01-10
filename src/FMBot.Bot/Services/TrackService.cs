@@ -578,7 +578,7 @@ public class TrackService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var album = await this._trackRepository.GetTrackForName(correctedArtistName, trackName, connection);
+        var album = await TrackRepository.GetTrackForName(correctedArtistName, trackName, connection);
 
         await connection.CloseAsync();
 

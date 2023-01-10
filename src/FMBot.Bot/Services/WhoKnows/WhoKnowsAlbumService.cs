@@ -5,6 +5,7 @@ using Dapper;
 using Discord;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -83,6 +84,34 @@ public class WhoKnowsAlbumService
         return whoKnowsAlbumList;
     }
 
+    public static async Task<IList<WhoKnowsObjectWithUser>> GetBasicUsersForAlbum(NpgsqlConnection connection, int guildId, string artistName, string albumName)
+    {
+        const string sql = "SELECT ub.user_id,   " +
+                           "ub.playcount " +
+                           "FROM user_albums AS ub " +
+                           "FULL OUTER JOIN users AS u ON ub.user_id = u.user_id " +
+                           "INNER JOIN guild_users AS gu ON gu.user_id = ub.user_id " +
+                           "INNER JOIN guilds AS guild ON guild.guild_id = @guildId " +
+                           "WHERE gu.guild_id = @guildId AND UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "AND NOT ub.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                           "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
+                           "AND (guild.activity_threshold_days IS NULL OR u.last_used IS NOT NULL AND u.last_used > now()::DATE - guild.activity_threshold_days) " +
+                           "ORDER BY ub.playcount DESC ";
+
+        var userAlbums = (await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
+        {
+            guildId,
+            albumName,
+            artistName
+        })).ToList();
+
+        return userAlbums.Select(s => new WhoKnowsObjectWithUser
+        {
+            UserId = s.UserId,
+            Playcount = s.Playcount
+        }).ToList();
+    }
+
     public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForAlbum(IGuild guild, string artistName, string albumName)
     {
         const string sql = "SELECT * " +
@@ -146,6 +175,32 @@ public class WhoKnowsAlbumService
         return whoKnowsAlbumList;
     }
 
+    public static async Task<IList<WhoKnowsObjectWithUser>> GetBasicGlobalUsersForAlbum(NpgsqlConnection connection, string artistName, string albumName)
+    {
+        const string sql = "SELECT * " +
+                           "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
+                           "ub.user_id, " +
+                           "ub.playcount " +
+                           "FROM user_albums AS ub " +
+                           "FULL OUTER JOIN users AS u ON ub.user_id = u.user_id " +
+                           "WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true) " +
+                           "ORDER BY UPPER(u.user_name_last_fm) DESC, ub.playcount DESC) ub " +
+                           "ORDER BY playcount DESC ";
+
+        var userAlbums = (await connection.QueryAsync<WhoKnowsGlobalAlbumDto>(sql, new
+        {
+            albumName,
+            artistName
+        })).ToList();
+
+        return userAlbums.Select(s => new WhoKnowsObjectWithUser
+        {
+            UserId = s.UserId,
+            Playcount = s.Playcount
+        }).ToList();
+    }
+
     public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForAlbum(IGuild discordGuild, int guildId, int userId, string artistName, string albumName)
     {
         const string sql = "SELECT ub.user_id, " +
@@ -206,16 +261,21 @@ public class WhoKnowsAlbumService
 
     public async Task<int?> GetAlbumPlayCountForUser(string artistName, string albumName, int userId)
     {
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await GetAlbumPlayCountForUser(connection, artistName, albumName, userId);
+    }
+
+    public static async Task<int?> GetAlbumPlayCountForUser(NpgsqlConnection connection, string artistName, string albumName, int userId)
+    {
         const string sql = "SELECT ua.playcount " +
                            "FROM user_albums AS ua " +
                            "WHERE ua.user_id = @userId AND " +
                            "UPPER(ua.name) = UPPER(CAST(@albumName AS CITEXT)) AND " +
                            "UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY playcount DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
 
         return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
         {
@@ -224,6 +284,7 @@ public class WhoKnowsAlbumService
             artistName
         });
     }
+
 
     public async Task<ICollection<GuildAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
         OrderType orderType, string artistName)

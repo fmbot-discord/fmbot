@@ -18,6 +18,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.SlashCommands;
@@ -105,7 +106,8 @@ public class UserSlashCommands : InteractionModuleBase
                 var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
                 var description =
                     $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!\n\n" +
-                    $"`/mode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
+                    $"`/fmmode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
+                    $"`/wkmode` has been set to: `{newUserSettings.Mode ?? WhoKnowsMode.Embed}`\n" +
                     $"`/privacy` has been set to: `{newUserSettings.PrivacyLevel}`";
 
                 followUpEmbed.WithDescription(description);
@@ -190,42 +192,17 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed();
     }
 
-    [SlashCommand("mode", "Changes your '/fm' layout")]
+    [SlashCommand("fmmode", "Changes your '/fm' layout")]
     [UsernameSetRequired]
-    public async Task ModeAsync([Summary("mode", "Mode your fm command should use")] FmEmbedType embedType,
-        [Summary("playcount-type", "Extra playcount your fm command should show")] FmCountType countType = FmCountType.None)
+    public async Task ModeAsync()
     {
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
 
-        var newUserSettings = await this._userService.SetSettings(userSettings, embedType, countType);
+        var response = await this._userBuilder.ModeAsync(new ContextModel(this.Context, contextUser), guild);
 
-        var reply = new StringBuilder();
-        reply.Append($"Your `/fm` mode has been set to **{newUserSettings.FmEmbedType}**");
-        if (newUserSettings.FmCountType != null)
-        {
-            reply.Append($" with the **{newUserSettings.FmCountType.ToString().ToLower()} playcount**.");
-        }
-        else
-        {
-            reply.Append($" with no extra playcount.");
-        }
-
-        if (this.Context.Guild != null)
-        {
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-            if (guild?.FmEmbedType != null)
-            {
-                reply.Append($"\n\nNote that servers can force a specific mode which will override your own mode. " +
-                             $"\nThis server has the **{guild?.FmEmbedType}** mode set for everyone, which means your own setting will not apply here.");
-            }
-        }
-
-        var embed = new EmbedBuilder();
-        embed.WithColor(DiscordConstants.InformationColorBlue);
-        embed.WithDescription(reply.ToString());
-
-        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [SlashCommand("wkmode", "Changes your default whoknows mode")]

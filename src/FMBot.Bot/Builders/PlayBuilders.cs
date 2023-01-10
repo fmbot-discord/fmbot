@@ -171,7 +171,8 @@ public class PlayBuilder
             : $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
         var fmText = "";
-        var footerText = "";
+        var footerText = await this._userService.GetFooterAsync(context.ContextUser.FmFooterOptions, userSettings,
+            currentTrack.ArtistName, currentTrack.AlbumName, currentTrack.TrackName, currentTrack.Loved, totalPlaycount, guild);
 
         if (!userSettings.DifferentUser &&
             !currentTrack.NowPlaying &&
@@ -180,80 +181,8 @@ public class PlayBuilder
             currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
         {
             footerText +=
-                $"Using Spotify and fm lagging behind? Check '{context.Prefix}outofsync'\n";
+                $"Using Spotify and fm lagging behind? Check '{context.Prefix}outofsync'";
         }
-
-        if (currentTrack.Loved)
-        {
-            footerText +=
-                $"❤️ Loved track | ";
-        }
-
-        if (embedType is FmEmbedType.TextMini or FmEmbedType.TextFull or FmEmbedType.EmbedTiny)
-        {
-            if (!userSettings.DifferentUser)
-            {
-                footerText +=
-                    $"{requesterUserTitle} has ";
-            }
-            else
-            {
-                footerText +=
-                    $"{userSettings.UserNameLastFm} (requested by {requesterUserTitle}) has ";
-            }
-        }
-        else
-        {
-            footerText +=
-                $"{userSettings.UserNameLastFm} has ";
-        }
-
-
-        if (!userSettings.DifferentUser)
-        {
-            switch (context.ContextUser.FmCountType)
-            {
-                case FmCountType.Track:
-                    var trackPlaycount =
-                        await this._whoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName,
-                            currentTrack.TrackName, context.ContextUser.UserId);
-                    if (trackPlaycount.HasValue)
-                    {
-                        footerText += $"{trackPlaycount} scrobbles on this track | ";
-                    }
-
-                    break;
-                case FmCountType.Album:
-                    if (!string.IsNullOrEmpty(currentTrack.AlbumName))
-                    {
-                        var albumPlaycount =
-                            await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(currentTrack.ArtistName,
-                                currentTrack.AlbumName, context.ContextUser.UserId);
-                        if (albumPlaycount.HasValue)
-                        {
-                            footerText += $"{albumPlaycount} scrobbles on this album | ";
-                        }
-                    }
-
-                    break;
-                case FmCountType.Artist:
-                    var artistPlaycount =
-                        await this._whoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName,
-                            context.ContextUser.UserId);
-                    if (artistPlaycount.HasValue)
-                    {
-                        footerText += $"{artistPlaycount} scrobbles on this artist | ";
-                    }
-
-                    break;
-                case null:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        footerText += $"{totalPlaycount} total scrobbles";
 
         switch (embedType)
         {
@@ -311,7 +240,7 @@ public class PlayBuilder
 
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
                 {
-                    footerText += " | Last scrobble:";
+                    footerText += "\nLast scrobble:";
                     response.Embed.WithTimestamp(currentTrack.TimePlayed.Value);
                 }
 
@@ -642,7 +571,7 @@ public class PlayBuilder
 
         response.Embed.WithDescription(description);
 
-        response.EmbedAuthor.WithName($"Daily overview for {userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}");
+        response.EmbedAuthor.WithName($"Daily overview for {Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}");
 
         response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?date_preset=LAST_7_DAYS");
         response.Embed.WithAuthor(response.EmbedAuthor);

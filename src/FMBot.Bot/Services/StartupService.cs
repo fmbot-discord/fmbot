@@ -64,7 +64,7 @@ public class StartupService
 
     public async Task StartAsync()
     {
-        await using var context = this._contextFactory.CreateDbContext();
+        await using var context = await this._contextFactory.CreateDbContextAsync();
         try
         {
             Log.Information("Ensuring database is up to date");

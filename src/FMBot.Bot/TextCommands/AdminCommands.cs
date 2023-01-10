@@ -667,7 +667,9 @@ public class AdminCommands : BaseCommandModule
             }
 
             var existingSupporters = await this._supporterService.GetAllSupporters();
-            if (existingSupporters.FirstOrDefault(f => f.OpenCollectiveId.ToLower() == openCollectiveId.ToLower()) != null)
+            if (existingSupporters
+                    .Where(w => w.OpenCollectiveId != null)
+                    .FirstOrDefault(f => f.OpenCollectiveId.ToLower() == openCollectiveId.ToLower()) != null)
             {
                 await ReplyAsync("`OpenCollective account already connected to someone else`\n\n" + formatError);
                 this.Context.LogCommandUsed(CommandResponse.NotFound);

@@ -18,7 +18,7 @@ public class TrackRepository
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<Track> GetTrackForName(string artistName, string trackName, NpgsqlConnection connection)
+    public static async Task<Track> GetTrackForName(string artistName, string trackName, NpgsqlConnection connection)
     {
         const string getTrackQuery = "SELECT * FROM public.tracks " +
                                      "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +

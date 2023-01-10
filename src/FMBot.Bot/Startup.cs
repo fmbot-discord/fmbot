@@ -108,7 +108,9 @@ public class Startup
         {
             LogLevel = LogSeverity.Info,
             MessageCacheSize = 0,
-            ConnectionTimeout = 240000
+            ConnectionTimeout = 240000,
+            GatewayIntents = GatewayIntents.GuildMembers | GatewayIntents.MessageContent |
+                             GatewayIntents.DirectMessages | GatewayIntents.GuildMessages | GatewayIntents.Guilds
         });
 
         services

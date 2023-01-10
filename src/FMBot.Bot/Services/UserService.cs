@@ -1,16 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Dapper;
 using Discord;
 using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -25,12 +30,18 @@ public class UserService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly LastFmRepository _lastFmRepository;
     private readonly BotSettings _botSettings;
+    private readonly ArtistRepository _artistRepository;
+    private readonly CountryService _countryService;
+    private readonly PlayService _playService;
 
-    public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings)
+    public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, CountryService countryService, PlayService playService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
         this._lastFmRepository = lastFmRepository;
+        this._artistRepository = artistRepository;
+        this._countryService = countryService;
+        this._playService = playService;
         this._botSettings = botSettings.Value;
     }
 
@@ -161,7 +172,6 @@ public class UserService
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
     }
 
-    // Discord nickname/username
     public static async Task<string> GetNameAsync(IGuild guild, IUser user)
     {
         if (guild == null)
@@ -174,7 +184,6 @@ public class UserService
         return guildUser?.Nickname ?? user.Username;
     }
 
-    // Rank
     public async Task<UserType> GetRankAsync(IUser discordUser)
     {
         await using var db = this._contextFactory.CreateDbContext();
@@ -185,7 +194,6 @@ public class UserService
         return user?.UserType ?? UserType.User;
     }
 
-    // UserTitle
     public async Task<string> GetUserTitleAsync(ICommandContext context)
     {
         var name = await GetNameAsync(context.Guild, context.User);
@@ -198,7 +206,6 @@ public class UserService
         return title;
     }
 
-    // UserTitle
     public async Task<string> GetUserTitleAsync(IGuild guild, IUser user)
     {
         var name = await GetNameAsync(guild, user);
@@ -209,6 +216,377 @@ public class UserService
         title += $"{userType.UserTypeToIcon()}";
 
         return title;
+    }
+
+    public async Task<string> GetFooterAsync(FmFooterOption footerOptions, UserSettingsModel userSettings, string artistName, string albumName, string trackName, bool loved, long totalScrobbles, Persistence.Domain.Models.Guild guild = null)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var options = new List<string>();
+        string genres = null;
+
+        if (footerOptions.HasFlag(FmFooterOption.Loved) && loved)
+        {
+            options.Add("❤️ Loved track");
+        }
+        if (footerOptions.HasFlag(FmFooterOption.ArtistPlays))
+        {
+            var trackPlaycount =
+                await WhoKnowsArtistService.GetArtistPlayCountForUser(connection, artistName, userSettings.UserId) ?? 0;
+
+            options.Add($"{trackPlaycount} artist scrobbles");
+        }
+        if (footerOptions.HasFlag(FmFooterOption.AlbumPlays) && albumName != null)
+        {
+            var albumPlaycount =
+                await WhoKnowsAlbumService.GetAlbumPlayCountForUser(connection, artistName, albumName, userSettings.UserId) ?? 0;
+
+            options.Add($"{albumPlaycount} album scrobbles");
+        }
+        if (footerOptions.HasFlag(FmFooterOption.TrackPlays))
+        {
+            var trackPlaycount =
+                await WhoKnowsTrackService.GetTrackPlayCountForUser(connection, artistName, trackName, userSettings.UserId) ?? 0;
+
+            options.Add($"{trackPlaycount} track scrobbles");
+        }
+        if (footerOptions.HasFlag(FmFooterOption.TotalScrobbles))
+        {
+            options.Add($"{totalScrobbles} total scrobbles");
+        }
+        if (footerOptions.HasFlag(FmFooterOption.ArtistPlaysThisWeek))
+        {
+            var start = DateTime.UtcNow.AddDays(-7);
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userSettings.UserId, connection, start);
+
+            var count = plays.Count(a => a.ArtistName.ToLower() == artistName.ToLower());
+
+            options.Add($"{count} artist plays this week");
+        }
+
+        if (footerOptions.HasFlag(FmFooterOption.ArtistCountry) || footerOptions.HasFlag(FmFooterOption.ArtistBirthday) || footerOptions.HasFlag(FmFooterOption.ArtistGenres))
+        {
+            var artist = await this._artistRepository.GetArtistForName(artistName, connection, footerOptions.HasFlag(FmFooterOption.ArtistGenres));
+
+            if (footerOptions.HasFlag(FmFooterOption.ArtistCountry) && !string.IsNullOrWhiteSpace(artist?.CountryCode))
+            {
+                var artistCountry = this._countryService.GetValidCountry(artist.CountryCode);
+
+                if (artistCountry != null)
+                {
+                    options.Add($"{artistCountry.Name}");
+                }
+            }
+
+            if (footerOptions.HasFlag(FmFooterOption.ArtistBirthday) &&
+                artist?.StartDate != null &&
+                (artist.StartDate.Value.Month != 1 || artist.StartDate.Value.Day != 1))
+            {
+                var age = GetAgeInYears(artist.StartDate.Value);
+
+                if (artist.StartDate.Value.Month == DateTime.Today.Month &&
+                    artist.StartDate.Value.Day == DateTime.Today.Day)
+                {
+                    options.Add($"🎂 today! ({age})");
+                }
+                else if (artist.StartDate.Value.Month == DateTime.Today.AddDays(-1).Month &&
+                         artist.StartDate.Value.Day == DateTime.Today.AddDays(-1).Day)
+                {
+                    options.Add($"🎂 tomorrow (becomes {age + 1})");
+                }
+                else
+                {
+                    options.Add($"🎂 {artist.StartDate.Value.ToString("MMMM d")} (currently {age})");
+                }
+            }
+
+            if (footerOptions.HasFlag(FmFooterOption.ArtistGenres) && artist?.ArtistGenres != null && artist.ArtistGenres.Any())
+            {
+                genres = GenreService.GenresToString(artist.ArtistGenres.Take(6).ToList());
+            }
+        }
+
+        if (footerOptions.HasFlag(FmFooterOption.TrackBpm) || footerOptions.HasFlag(FmFooterOption.TrackDuration))
+        {
+            var track = await TrackRepository.GetTrackForName(artistName, trackName, connection);
+
+            if (footerOptions.HasFlag(FmFooterOption.TrackBpm) && track?.Tempo != null)
+            {
+                var bpm = $"{track.Tempo.Value:0.0}";
+                options.Add($"bpm {bpm}");
+            }
+
+            if (footerOptions.HasFlag(FmFooterOption.TrackDuration) && track?.DurationMs != null)
+            {
+                var trackLength = TimeSpan.FromMilliseconds(track.DurationMs.GetValueOrDefault());
+                var formattedTrackLength =
+                    $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
+
+                var emoji = trackLength.Minutes switch
+                {
+                    0 => "🕛",
+                    1 => "🕐",
+                    2 => "🕑",
+                    3 => "🕒",
+                    4 => "🕓",
+                    5 => "🕔",
+                    6 => "🕕",
+                    7 => "🕖",
+                    8 => "🕗",
+                    9 => "🕘",
+                    10 => "🕙",
+                    11 => "🕚",
+                    12 => "🕛",
+                    _ => "🕒"
+                };
+
+                options.Add($"{emoji} {formattedTrackLength}");
+            }
+        }
+
+        if (footerOptions.HasFlag(FmFooterOption.DiscogsCollection) && albumName != null)
+        {
+            var discogsUser = await this.GetUserWithDiscogs(userSettings.DiscordUserId);
+
+            if (discogsUser.UserDiscogs != null && discogsUser.DiscogsReleases.Any())
+            {
+                var albumCollection = discogsUser.DiscogsReleases.Where(w =>
+                    (w.Release.Title.ToLower().StartsWith(albumName.ToLower()) ||
+                     albumName.ToLower().StartsWith(w.Release.Title))
+                    &&
+                    (w.Release.Artist.ToLower().StartsWith(artistName.ToLower()) ||
+                     artistName.ToLower().StartsWith(w.Release.Artist.ToLower()))).ToList();
+
+                var discogsAlbum = albumCollection.MaxBy(o => o.DateAdded);
+
+                if (discogsAlbum != null)
+                {
+                    options.Add(StringService.UserDiscogsReleaseToSimpleString(discogsAlbum));
+                }
+            }
+        }
+
+        if (guild != null)
+        {
+            if (footerOptions.HasFlag(FmFooterOption.CrownHolder) && guild.CrownsDisabled != true)
+            {
+                var currentCrownHolder = await CrownService.GetCurrentCrownHolderWithName(connection, guild.GuildId, artistName);
+
+                if (currentCrownHolder != null)
+                {
+                    options.Add($"👑 {Format.Sanitize(currentCrownHolder.UserName)} ({currentCrownHolder.CurrentPlaycount} plays)");
+                }
+            }
+            if (footerOptions.HasFlag(FmFooterOption.ServerArtistRank) || footerOptions.HasFlag(FmFooterOption.ServerArtistListeners))
+            {
+                var artistListeners =
+                    await WhoKnowsArtistService.GetBasicUsersForArtist(connection, guild.GuildId, artistName);
+
+                if (artistListeners.Any())
+                {
+                    if (footerOptions.HasFlag(FmFooterOption.ServerArtistRank))
+                    {
+                        var requestedUser = artistListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
+
+                        if (requestedUser != null)
+                        {
+                            var index = artistListeners.IndexOf(requestedUser);
+                            options.Add($"WhoKnows #{index + 1}");
+                        }
+                    }
+                    if (footerOptions.HasFlag(FmFooterOption.ServerArtistListeners))
+                    {
+                        options.Add($"{artistListeners.Count} listeners");
+                    }
+                }
+            }
+            if ((footerOptions.HasFlag(FmFooterOption.ServerAlbumRank) || footerOptions.HasFlag(FmFooterOption.ServerAlbumListeners)) && albumName != null)
+            {
+                var albumListeners =
+                    await WhoKnowsAlbumService.GetBasicUsersForAlbum(connection, guild.GuildId, artistName, albumName);
+
+                if (albumListeners.Any())
+                {
+                    if (footerOptions.HasFlag(FmFooterOption.ServerAlbumRank))
+                    {
+                        var requestedUser = albumListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
+
+                        if (requestedUser != null)
+                        {
+                            var index = albumListeners.IndexOf(requestedUser);
+                            options.Add($"WhoKnows album #{index + 1}");
+                        }
+                    }
+                    if (footerOptions.HasFlag(FmFooterOption.ServerAlbumListeners))
+                    {
+                        options.Add($"{albumListeners.Count} album listeners");
+                    }
+                }
+            }
+            if (footerOptions.HasFlag(FmFooterOption.ServerTrackRank) || footerOptions.HasFlag(FmFooterOption.ServerTrackListeners))
+            {
+                var trackListeners =
+                    await WhoKnowsTrackService.GetBasicUsersFromTrack(connection, guild.GuildId, artistName, trackName);
+
+                if (trackListeners.Any())
+                {
+                    if (footerOptions.HasFlag(FmFooterOption.ServerTrackRank))
+                    {
+                        var requestedUser = trackListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
+
+                        if (requestedUser != null)
+                        {
+                            var index = trackListeners.IndexOf(requestedUser);
+                            options.Add($"WhoKnows track #{index + 1}");
+                        }
+                    }
+                    if (footerOptions.HasFlag(FmFooterOption.ServerTrackListeners))
+                    {
+                        options.Add($"{trackListeners.Count} track listeners");
+                    }
+                }
+            }
+        }
+
+        if (footerOptions.HasFlag(FmFooterOption.GlobalArtistRank))
+        {
+            var artistListeners =
+                await WhoKnowsArtistService.GetBasicGlobalUsersForArtists(connection, artistName);
+
+            if (artistListeners.Any())
+            {
+                var requestedUser = artistListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
+
+                if (requestedUser != null)
+                {
+                    var index = artistListeners.IndexOf(requestedUser);
+                    options.Add($"GlobalWhoKnows #{index + 1}");
+                }
+            }
+        }
+        if (footerOptions.HasFlag(FmFooterOption.GlobalAlbumRank) && albumName != null)
+        {
+            var albumListeners =
+                await WhoKnowsAlbumService.GetBasicGlobalUsersForAlbum(connection, artistName, albumName);
+
+            if (albumListeners.Any())
+            {
+                var requestedUser = albumListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
+
+                if (requestedUser != null)
+                {
+                    var index = albumListeners.IndexOf(requestedUser);
+                    options.Add($"GlobalWhoKnows album #{index + 1}");
+                }
+            }
+        }
+        if (footerOptions.HasFlag(FmFooterOption.GlobalTrackRank))
+        {
+            var trackListeners =
+                await WhoKnowsTrackService.GetBasicGlobalUsersForTrack(connection, artistName, trackName);
+
+            if (trackListeners.Any())
+            {
+                var requestedUser = trackListeners.FirstOrDefault(f => f.UserId == userSettings.UserId);
+
+                if (requestedUser != null)
+                {
+                    var index = trackListeners.IndexOf(requestedUser);
+                    options.Add($"GlobalWhoKnows track #{index + 1}");
+                }
+            }
+        }
+        if (userSettings.UserType != UserType.User)
+        {
+            if (footerOptions.HasFlag(FmFooterOption.FirstArtistListen))
+            {
+                var firstPlay =
+                    await this._playService.GetArtistFirstPlayDate(userSettings.UserId, artistName);
+                if (firstPlay != null)
+                {
+                    options.Add($"Artist first listened {firstPlay.Value.ToString("MMMM d yyyy")}");
+                }
+            }
+            if (footerOptions.HasFlag(FmFooterOption.FirstAlbumListen) && albumName != null)
+            {
+                var firstPlay =
+                    await this._playService.GetAlbumFirstPlayDate(userSettings.UserId, artistName, albumName);
+                if (firstPlay != null)
+                {
+                    options.Add($"Album first listened {firstPlay.Value.ToString("MMMM d yyyy")}");
+                }
+            }
+            if (footerOptions.HasFlag(FmFooterOption.FirstTrackListen))
+            {
+                var firstPlay =
+                    await this._playService.GetTrackFirstPlayDate(userSettings.UserId, artistName, trackName);
+                if (firstPlay != null)
+                {
+                    options.Add($"First listened {firstPlay.Value.ToString("MMMM d yyyy")}");
+                }
+            }
+        }
+
+        return CreateFooter(options, genres);
+    }
+
+    private static int GetAgeInYears(DateTime birthDate)
+    {
+        var now = DateTime.UtcNow;
+        var age = now.Year - birthDate.Year;
+
+        if (now.Month < birthDate.Month || (now.Month == birthDate.Month && now.Day < birthDate.Day))
+        {
+            age--;
+        }
+
+        return age;
+    }
+
+    private static string CreateFooter(IReadOnlyList<string> options, string genres)
+    {
+        var footer = new StringBuilder();
+
+        var genresAdded = false;
+        if (genres is { Length: <= 48 } && options.Count > 2)
+        {
+            footer.AppendLine(genres);
+            genresAdded = true;
+        }
+
+        var lineLength = 0;
+        for (var index = 0; index < options.Count; index++)
+        {
+            var option = options[index];
+            var nextOption = options.ElementAtOrDefault(index + 1);
+
+            if ((lineLength > 38 || (lineLength > 28 && option.Length > 18)) && nextOption != null)
+            {
+                footer.AppendLine();
+                lineLength = option.Length;
+                footer.Append(option);
+            }
+            else
+            {
+                if (lineLength != 0)
+                {
+                    footer.Append(" · ");
+                }
+
+                footer.Append(option);
+                lineLength += option.Length;
+            }
+        }
+
+        if (!genresAdded)
+        {
+            footer.AppendLine();
+            footer.Append(genres);
+        }
+
+        return footer.ToString();
     }
 
     // Set LastFM Name
@@ -230,7 +608,8 @@ public class UserService
                 FmCountType = newUserSettings.FmCountType,
                 SessionKeyLastFm = newUserSettings.SessionKeyLastFm,
                 DataSource = DataSource.LastFm,
-                PrivacyLevel = PrivacyLevel.Server
+                PrivacyLevel = PrivacyLevel.Server,
+                FmFooterOptions = FmFooterOption.TotalScrobbles
             };
 
             await db.Users.AddAsync(newUser);
@@ -279,7 +658,7 @@ public class UserService
                 {
                     UserNameLastFM = authSession.Content.Session.Name,
                     DataSource = DataSource.LastFm,
-                    SessionKeyLastFm = authSession.Content.Session.Key
+                    SessionKeyLastFm = authSession.Content.Session.Key,
                 };
 
                 Log.Information("LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})", authSession.Content.Session.Name, contextUser.Id);
@@ -400,6 +779,20 @@ public class UserService
 
         user.FmEmbedType = embedType;
         user.FmCountType = countType == FmCountType.None ? null : countType;
+
+        db.Update(user);
+
+        await db.SaveChangesAsync();
+
+        return user;
+    }
+
+    public async Task<User> SetFooterOptions(User userToUpdate, FmFooterOption fmFooterOption)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+        user.FmFooterOptions = fmFooterOption;
 
         db.Update(user);
 

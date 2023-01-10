@@ -285,6 +285,30 @@ public static class StringService
         return description.ToString();
     }
 
+    public static string UserDiscogsReleaseToSimpleString(UserDiscogsReleases discogsRelease)
+    {
+        var description = new StringBuilder();
+
+        if (discogsRelease.Release.FormatText != null)
+        {
+            description.Append($"{discogsRelease.Release.FormatText} ");
+        }
+
+        description.Append(discogsRelease.Release.Format);
+
+        if (discogsRelease.Rating.HasValue)
+        {
+            description.Append($" ");
+
+            for (var i = 0; i < discogsRelease.Rating; i++)
+            {
+                description.Append("⭐");
+            }
+        }
+
+        return description.ToString();
+    }
+
     public static string UserDiscogsWithAlbumName(UserDiscogsReleases discogsRelease)
     {
         var description = new StringBuilder();

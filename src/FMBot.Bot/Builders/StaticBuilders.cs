@@ -51,6 +51,7 @@ public class StaticBuilders
             "- See first listen dates for artists/albums/tracks\n" +
             "- Expanded `stats` command with overall history\n" +
             "- Extra page on `year` with months and artist discoveries\n" +
+            "- Add up to 8 options to your `fm` footer\n" +
             "- More coming soon");
 
         response.Embed.AddField("Make development sustainable",

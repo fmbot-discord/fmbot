@@ -1,13 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
+using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -18,10 +22,13 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -42,6 +49,8 @@ public class UserCommands : BaseCommandModule
     private readonly ArtistsService _artistsService;
     private readonly PlayService _playService;
     private readonly TimeService _timeService;
+    private readonly CommandService _commands;
+
 
     private InteractiveService Interactivity { get; }
 
@@ -61,7 +70,7 @@ public class UserCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         FeaturedService featuredService,
         UserBuilder userBuilder,
-        InteractiveService interactivity, ArtistsService artistsService, PlayService playService, TimeService timeService) : base(botSettings)
+        InteractiveService interactivity, ArtistsService artistsService, PlayService playService, TimeService timeService, CommandService commands) : base(botSettings)
     {
         this._friendsService = friendsService;
         this._guildService = guildService;
@@ -78,6 +87,7 @@ public class UserCommands : BaseCommandModule
         this._artistsService = artistsService;
         this._playService = playService;
         this._timeService = timeService;
+        this._commands = commands;
     }
 
     [Command("stats", RunMode = RunMode.Async)]
@@ -264,82 +274,37 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("mode", RunMode = RunMode.Async)]
-    [Summary("Change how your .fm looks.\n\n" +
-             "Servers can override this setting using `{{prfx}}servermode`.\n" +
-             "Playcounts are only visible in non-text modes.")]
-    [Options("Modes: `embedtiny/embedmini/embedfull/textmini/textfull`",
-        "Playcounts: `artist/album/track`")]
-    [Examples("mode embedmini", "mode embedfull track", "mode textfull", "embedtiny album")]
-    [Alias("m", "md", "fmmode")]
+    [Command("fmmode", RunMode = RunMode.Async)]
+    [Summary("Sends you a dm so you can configure your `fm` command.\n\n" +
+             "Servers can override your mode with `{{prfx}}servermode`.")]
+    [Examples("mode")]
+    [Alias("md", "mode")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task ModeAsync(params string[] otherSettings)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "help")
+        try
         {
-            var replyString = $"Use {prfx}mode to change how your .fm command looks.";
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
 
-            this._embed.AddField("Options",
-                "**Modes**: `embedtiny/embedmini/embedfull/textmini/textfull`\n" +
-                "**Playcounts**: `artist/album/track`\n" +
-                "*Note: Playcounts are only visible in non-text modes.*\n\n" +
-                $"Server mode can be set using `{prfx}servermode`. The server mode overrules any mode set by users.");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var response = await this._userBuilder.ModeAsync(new ContextModel(this.Context, prfx, contextUser), guild);
 
-            this._embed.AddField("Examples",
-                $"`{prfx}mode embedmini` \n" +
-                $"`{prfx}mode embedfull track`\n" +
-                $"`{prfx}mode textfull`\n" +
-                $"`{prfx}mode embedtiny album`");
-
-            this._embed.WithTitle("Changing your .fm command");
-            this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
-
-            var countType = !userSettings.FmCountType.HasValue ? "No extra playcount" : userSettings.FmCountType.ToString();
-            this._embed.WithFooter(
-                $"Current mode and playcount: {userSettings.FmEmbedType} - {countType}");
-            this._embed.WithDescription(replyString);
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
-
-        var newUserSettings = UserService.SetSettings(userSettings, otherSettings);
-
-        await this._userService.SetLastFm(this.Context.User, newUserSettings);
-
-        var setReply = $"Your `.fm` mode has been set to **{newUserSettings.FmEmbedType}**";
-        if (newUserSettings.FmCountType != null)
-        {
-            setReply += $" with the **{newUserSettings.FmCountType.ToString().ToLower()} playcount**.";
-        }
-        else
-        {
-            setReply += $" with no extra playcount.";
-        }
-
-        if (this.Context.Guild != null)
-        {
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-            if (guild?.FmEmbedType != null)
+            if (this.Context.Guild != null)
             {
-                setReply +=
-                    $"\n\nNote that servers can force a specific mode which will override your own mode. " +
-                    $"\nThis server has the **{guild.FmEmbedType}** mode set for everyone, which means your own setting will not apply here.";
+                await ReplyAsync("Check your DMs to configure your `fm` settings!");
             }
+
+            await this.Context.User.SendMessageAsync(embed: response.Embed.Build(),
+                components: response.Components.Build());
+
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
-
-
-        this._embed.WithColor(DiscordConstants.InformationColorBlue);
-        this._embed.WithDescription(setReply);
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [Command("wkmode", RunMode = RunMode.Async)]
@@ -517,6 +482,7 @@ public class UserCommands : BaseCommandModule
                 var description =
                     $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!\n\n" +
                     $"`.fmmode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
+                    $"`.wkmode` has been set to: `{newUserSettings.Mode ?? WhoKnowsMode.Embed}`\n" +
                     $"`.fmprivacy` has been set to: `{newUserSettings.PrivacyLevel}`";
 
                 var sourceGuildId = this.Context.Guild?.Id;

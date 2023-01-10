@@ -87,6 +87,34 @@ public class WhoKnowsTrackService
         return whoKnowsTrackList;
     }
 
+    public static async Task<IList<WhoKnowsObjectWithUser>> GetBasicUsersFromTrack(NpgsqlConnection connection, int guildId, string artistName, string trackName)
+    {
+        const string sql = "SELECT ut.user_id,   " +
+                           "ut.playcount " +
+                           "FROM user_tracks AS ut " +
+                           "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
+                           "INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id " +
+                           "INNER JOIN guilds AS guild ON guild.guild_id = @guildId " +
+                           "WHERE gu.guild_id = @guildId AND UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "AND NOT ut.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                           "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
+                           "AND (guild.activity_threshold_days IS NULL OR u.last_used IS NOT NULL AND u.last_used > now()::DATE - guild.activity_threshold_days) " +
+                           "ORDER BY ut.playcount DESC ";
+
+        var userTracks = (await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
+        {
+            guildId,
+            trackName,
+            artistName
+        })).ToList();
+
+        return userTracks.Select(s => new WhoKnowsObjectWithUser
+        {
+            UserId = s.UserId,
+            Playcount = s.Playcount
+        }).ToList();
+    }
+
     public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(IGuild discordGuild, string artistName, string trackName)
     {
         const string sql = "SELECT * " +
@@ -150,6 +178,32 @@ public class WhoKnowsTrackService
         return whoKnowsTrackList;
     }
 
+    public static async Task<IList<WhoKnowsObjectWithUser>> GetBasicGlobalUsersForTrack(NpgsqlConnection connection, string artistName, string trackName)
+    {
+        const string sql = "SELECT * " +
+                           "FROM(SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
+                           "ut.user_id, " +
+                           "ut.playcount " +
+                           "FROM user_tracks AS ut " +
+                           "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
+                           "WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true) " +
+                           "ORDER BY UPPER(u.user_name_last_fm) DESC, ut.playcount DESC) ut " +
+                           "ORDER BY playcount DESC";
+
+        var userTracks = (await connection.QueryAsync<WhoKnowsGlobalTrackDto>(sql, new
+        {
+            trackName,
+            artistName
+        })).ToList();
+
+        return userTracks.Select(s => new WhoKnowsObjectWithUser
+        {
+            UserId = s.UserId,
+            Playcount = s.Playcount
+        }).ToList();
+    }
+
     public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(IGuild discordGuild, int guildId, int userId, string artistName, string trackName)
     {
         const string sql = "SELECT ut.user_id, " +
@@ -210,16 +264,21 @@ public class WhoKnowsTrackService
 
     public async Task<int?> GetTrackPlayCountForUser(string artistName, string trackName, int userId)
     {
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await GetTrackPlayCountForUser(connection, artistName, trackName, userId);
+    }
+
+    public static async Task<int?> GetTrackPlayCountForUser(NpgsqlConnection connection, string artistName, string trackName, int userId)
+    {
         const string sql = "SELECT ut.playcount " +
                            "FROM user_tracks AS ut " +
                            "WHERE ut.user_id = @userId AND " +
                            "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND " +
                            "UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY playcount DESC";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
 
         return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
         {

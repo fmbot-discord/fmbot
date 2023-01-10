@@ -5,11 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using Dapper;
+using Discord;
 using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
@@ -18,7 +18,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using Artist = FMBot.LastFM.Domain.Models.Artist;
 
 namespace FMBot.Bot.Services;
 
@@ -222,7 +221,7 @@ public class PlayService
             return "No top track for this day";
         }
 
-        return $"`{topTrack.Count()}` {StringExtensions.GetPlaysString(topTrack.Count())} - {topTrack.Key.ArtistName} | {topTrack.Key.TrackName}";
+        return $"`{topTrack.Count()}` {StringExtensions.GetPlaysString(topTrack.Count())} - {Format.Sanitize(topTrack.Key.ArtistName)} | {Format.Sanitize(topTrack.Key.TrackName)}";
     }
 
     private static string GetTopAlbumForPlays(IEnumerable<UserPlayTs> plays)
@@ -236,7 +235,7 @@ public class PlayService
             return "No top album for this day";
         }
 
-        return $"`{topAlbum.Count()}` {StringExtensions.GetPlaysString(topAlbum.Count())} - {topAlbum.Key.ArtistName} | {topAlbum.Key.AlbumName}";
+        return $"`{topAlbum.Count()}` {StringExtensions.GetPlaysString(topAlbum.Count())} - {Format.Sanitize(topAlbum.Key.ArtistName)} | {Format.Sanitize(topAlbum.Key.AlbumName)}";
     }
 
     private static string GetTopArtistForPlays(IEnumerable<UserPlayTs> plays)
@@ -250,7 +249,7 @@ public class PlayService
             return "No top artist for this day";
         }
 
-        return $"`{topArtist.Count()}` {StringExtensions.GetPlaysString(topArtist.Count())} - {topArtist.Key}";
+        return $"`{topArtist.Count()}` {StringExtensions.GetPlaysString(topArtist.Count())} - {Format.Sanitize(topArtist.Key)}";
     }
 
     private async Task<IReadOnlyCollection<UserPlayTs>> GetWeekPlays(int userId)
