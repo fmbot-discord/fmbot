@@ -180,8 +180,7 @@ public class PlayBuilder
             currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-1) &&
             currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
         {
-            footerText +=
-                $"Using Spotify and fm lagging behind? Check '{context.Prefix}outofsync'";
+            footerText.Append($"Using Spotify and lagging behind? Check '{context.Prefix}outofsync' - ");
         }
 
         switch (embedType)
@@ -205,7 +204,7 @@ public class PlayBuilder
                 }
 
                 fmText +=
-                    $"`{footerText.FilterOutMentions()}`";
+                    $"`{footerText}`";
 
                 response.ResponseType = ResponseType.Text;
                 response.Text = fmText;
@@ -240,7 +239,7 @@ public class PlayBuilder
 
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
                 {
-                    footerText += "Last scrobble:";
+                    footerText.AppendLine("Last scrobble:");
                     response.Embed.WithTimestamp(currentTrack.TimePlayed.Value);
                 }
 
@@ -259,9 +258,9 @@ public class PlayBuilder
                 //    }
                 //}
 
-                if (!string.IsNullOrWhiteSpace(footerText))
+                if (footerText.Length > 0)
                 {
-                    response.EmbedFooter.WithText(footerText);
+                    response.EmbedFooter.WithText(footerText.ToString());
                     response.Embed.WithFooter(response.EmbedFooter);
                 }
 
