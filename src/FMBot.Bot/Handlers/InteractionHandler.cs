@@ -238,6 +238,13 @@ public class InteractionHandler
 
     public async Task SelectMenuHandler(SocketMessageComponent arg)
     {
+        if (arg.Data.CustomId != "fm-type-menu" &&
+            arg.Data.CustomId != "fm-footer-menu" &&
+            arg.Data.CustomId != "fm-footer-menu-supporter")
+        {
+            return;
+        }
+
         var userSettings = await this._userService.GetUserSettingsAsync(arg.User);
 
         var embed = new EmbedBuilder();
@@ -252,7 +259,6 @@ public class InteractionHandler
             await arg.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
             return;
         }
-
 
         if (arg.Data.CustomId == "fm-type-menu")
         {

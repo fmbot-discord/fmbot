@@ -294,7 +294,6 @@ public class AdminCommands : BaseCommandModule
     [Command("opencollectivesupporters", RunMode = RunMode.Async)]
     [Summary("Displays all .fmbot supporters.")]
     [Alias("ocsupporters")]
-    [CommandCategories(CommandCategory.Other)]
     public async Task AllSupportersAsync()
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
