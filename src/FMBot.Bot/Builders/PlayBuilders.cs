@@ -240,7 +240,7 @@ public class PlayBuilder
 
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
                 {
-                    footerText += "\nLast scrobble:";
+                    footerText += "Last scrobble:";
                     response.Embed.WithTimestamp(currentTrack.TimePlayed.Value);
                 }
 
