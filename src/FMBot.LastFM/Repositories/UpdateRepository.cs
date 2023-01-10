@@ -367,7 +367,7 @@ public class UpdateRepository
                 addUserAlbum.Parameters.AddWithValue("artistName", artistName);
                 addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
 
-                Log.Debug($"Added album {album.Key.ArtistName} - {album.Key.AlbumName} for {user.UserNameLastFM}");
+                Log.Debug($"Added album {album.Key.ArtistName} - {capitalizedAlbumName} for {user.UserNameLastFM}");
 
                 await addUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
@@ -430,14 +430,14 @@ public class UpdateRepository
                                       "VALUES(@userId, @trackName, @artistName, @trackPlaycount); ",
                         connection);
 
-                var capitalizedTrackName = track.First().AlbumName;
+                var capitalizedTrackName = track.First().TrackName;
 
                 addUserTrack.Parameters.AddWithValue("userId", user.UserId);
                 addUserTrack.Parameters.AddWithValue("trackName", capitalizedTrackName);
                 addUserTrack.Parameters.AddWithValue("artistName", artistName);
                 addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
 
-                Log.Debug($"Added track {track.Key.ArtistName} - {track.Key.TrackName} for {user.UserNameLastFM}");
+                Log.Debug($"Added track {track.Key.ArtistName} - {capitalizedTrackName} for {user.UserNameLastFM}");
 
                 await addUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
