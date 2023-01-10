@@ -106,7 +106,8 @@ public class UserSlashCommands : InteractionModuleBase
                 var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
                 var description =
                     $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!\n\n" +
-                    $"`/mode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
+                    $"`/fmmode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
+                    $"`/wkmode` has been set to: `{newUserSettings.Mode ?? WhoKnowsMode.Embed}`\n" +
                     $"`/privacy` has been set to: `{newUserSettings.PrivacyLevel}`";
 
                 followUpEmbed.WithDescription(description);
@@ -191,7 +192,7 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed();
     }
 
-    [SlashCommand("mode", "Changes your '/fm' layout")]
+    [SlashCommand("fmmode", "Changes your '/fm' layout")]
     [UsernameSetRequired]
     public async Task ModeAsync()
     {

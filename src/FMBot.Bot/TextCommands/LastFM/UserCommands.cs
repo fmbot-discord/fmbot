@@ -274,11 +274,11 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("mode", RunMode = RunMode.Async)]
+    [Command("fmmode", RunMode = RunMode.Async)]
     [Summary("Sends you a dm so you can configure your `fm` command.\n\n" +
-             "Servers can override this setting using `{{prfx}}servermode`.")]
+             "Servers can override your mode with `{{prfx}}servermode`.")]
     [Examples("mode")]
-    [Alias("md", "fmmode")]
+    [Alias("md", "mode")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task ModeAsync(params string[] otherSettings)
@@ -482,6 +482,7 @@ public class UserCommands : BaseCommandModule
                 var description =
                     $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!\n\n" +
                     $"`.fmmode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
+                    $"`.wkmode` has been set to: `{newUserSettings.Mode ?? WhoKnowsMode.Embed}`\n" +
                     $"`.fmprivacy` has been set to: `{newUserSettings.PrivacyLevel}`";
 
                 var sourceGuildId = this.Context.Guild?.Id;
