@@ -218,7 +218,7 @@ public class UserService
         return title;
     }
 
-    public async Task<string> GetFooterAsync(FmFooterOption footerOptions, UserSettingsModel userSettings, string artistName, string albumName, string trackName, bool loved, long totalScrobbles, Persistence.Domain.Models.Guild guild = null)
+    public async Task<StringBuilder> GetFooterAsync(FmFooterOption footerOptions, UserSettingsModel userSettings, string artistName, string albumName, string trackName, bool loved, long totalScrobbles, Persistence.Domain.Models.Guild guild = null)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -545,7 +545,7 @@ public class UserService
         return age;
     }
 
-    private static string CreateFooter(IReadOnlyList<string> options, string genres)
+    private static StringBuilder CreateFooter(IReadOnlyList<string> options, string genres)
     {
         var footer = new StringBuilder();
 
@@ -586,7 +586,7 @@ public class UserService
             footer.Append(genres);
         }
 
-        return footer.ToString();
+        return footer;
     }
 
     // Set LastFM Name

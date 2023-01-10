@@ -272,7 +272,7 @@ public class ArtistCommands : BaseCommandModule
     [Examples("apc", "apc 1k q", "apc 400 h @user", "artistpace", "artistpace weekly @user 2500")]
     [UsernameSetRequired]
     [Alias("apc", "apace", "artistpc")]
-    [CommandCategories(CommandCategory.Other)]
+    [CommandCategories(CommandCategory.Artists)]
     public async Task ArtistPaceAsync([Remainder] string extraOptions = null)
     {
         try

@@ -217,6 +217,7 @@ public class LastFmRepository
             ArtistUrl = recentTrackLfm.Artist.Url,
             AlbumName = !string.IsNullOrWhiteSpace(recentTrackLfm.Album?.Text) ? recentTrackLfm.Album.Text : null,
             AlbumCoverUrl = recentTrackLfm.Image?.FirstOrDefault(a => a.Size == "extralarge") != null &&
+                            !string.IsNullOrWhiteSpace(recentTrackLfm.Image.First(a => a.Size == "extralarge").Text) &&
                             !recentTrackLfm.Image.First(a => a.Size == "extralarge").Text
                                 .Contains(Constants.LastFmNonExistentImageName)
                 ? recentTrackLfm.Image?.First(a => a.Size == "extralarge").Text.Replace("/u/300x300/", "/u/")

@@ -415,7 +415,6 @@ public class StaticCommands : BaseCommandModule
 
     [Command("help", RunMode = RunMode.Async)]
     [Summary("Quick help summary to get started.")]
-    [Alias("bot", "fmbot")]
     [CommandCategories(CommandCategory.Other)]
     public async Task HelpAsync([Remainder] string extraValues = null)
     {

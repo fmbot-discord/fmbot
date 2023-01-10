@@ -51,14 +51,29 @@ public class IndexRepository
 
     public async Task IndexUser(IndexUserQueueItem queueItem)
     {
+        if (queueItem.IndexQueue)
+        {
+            Thread.Sleep(15000);
+        }
+
         var concurrencyCacheKey = $"index-started-{queueItem.UserId}";
         this._cache.Set(concurrencyCacheKey, true, TimeSpan.FromMinutes(3));
-
-        Thread.Sleep(queueItem.TimeoutMs);
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users.FindAsync(queueItem.UserId);
 
+        if (queueItem.IndexQueue)
+        {
+            if (user == null)
+            {
+                return;
+            }
+            if (user.LastIndexed > DateTime.UtcNow.AddHours(-24))
+            {
+                Log.Debug("Index: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                return;
+            }
+        }
 
         Log.Information($"Starting index for {user.UserNameLastFM}");
         var now = DateTime.UtcNow;

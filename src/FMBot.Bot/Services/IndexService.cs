@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
-using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -52,6 +51,8 @@ public class IndexService : IIndexService
 
     public void AddUsersToIndexQueue(IReadOnlyList<User> users)
     {
+        Log.Information($"Adding {users.Count} users to index queue");
+
         this._userIndexQueue.Publish(users);
     }
 
@@ -427,12 +428,14 @@ public class IndexService : IIndexService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
+        var recentlyUsed = DateTime.UtcNow.AddDays(-2);
         return await db.Users
             .AsQueryable()
             .Where(f => f.LastIndexed != null &&
                         f.LastUpdated != null &&
+                        f.LastUsed >= recentlyUsed &&
                         f.LastIndexed <= timeLastIndexed)
-            .OrderBy(o => o.LastUpdated)
+            .OrderBy(o => o.LastUsed)
             .ToListAsync();
     }
 }

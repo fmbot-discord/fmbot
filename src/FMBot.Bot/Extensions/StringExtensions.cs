@@ -123,7 +123,7 @@ public static class StringExtensions
             CommandCategory.Genres => "Info, WhoKnows, topgenres",
             CommandCategory.Charts => "Image charts",
             CommandCategory.Crowns => "Crowns commands and crown management",
-            CommandCategory.ThirdParty => "Spotify, Youtube and Genius",
+            CommandCategory.ThirdParty => "Spotify, Discogs, Youtube and Genius",
             CommandCategory.UserSettings => "Configure your user settings",
             CommandCategory.ServerSettings => "Configure your server settings",
             CommandCategory.Other => "Other",

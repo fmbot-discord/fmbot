@@ -35,23 +35,31 @@ public static class ConfigData
                 },
                 Bot = new BotConfig
                 {
-                    Prefix = ".fm",
-                    BotWarmupTimeInSeconds = 30,
+                    Prefix = ".",
+                    BotWarmupTimeInSeconds = 15,
+                    BaseServerId = 0000000000000,
+                    FeaturedChannelId = 0000000000000,
+                    FeaturedPreviewWebhookUrl = "CHANGE-ME-WEBHOOK-URL",
                     FeaturedTimerStartupDelayInSeconds = 20,
-                    TotalShards = 1,
                     MainInstance = true,
                     FeaturedMaster = true
                 }, 
-                BotLists = new BotListConfig(),
-                Discord = new DiscordConfig(),
+                Discord = new DiscordConfig
+                {
+                    BotUserId = 0000000000000,
+                    Token = "CHANGE-ME-DISCORD-TOKEN"
+                },
                 LastFm = new LastFmConfig
                 {
+                    PrivateKey = "CHANGE-ME-LASTFM-API-KEY",
+                    PublicKey = "CHANGE-ME-LASTFM-API-KEY",
+                    PublicKeySecret = "CHANGE-ME-LASTFM-API-SECRET",
                     UserUpdateFrequencyInHours = 24,
                     UserIndexFrequencyInDays = 120
                 },
                 Genius = new GeniusConfig(),
                 Spotify = new SpotifyConfig(),
-                Google = new GoogleConfig(),
+                Discogs = new DiscogsConfig(),
                 Environment = "local"
             };
 

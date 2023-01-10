@@ -46,7 +46,7 @@ public class DiscogsCommands : BaseCommandModule
     [Command("discogs", RunMode = RunMode.Async)]
     [Summary("Connects your Discogs account.\n\n" +
              "Not receiving a DM? Please check if you have direct messages from server members enabled.")]
-    [CommandCategories(CommandCategory.UserSettings)]
+    [CommandCategories(CommandCategory.ThirdParty)]
     [UsernameSetRequired]
     [Alias("login discogs")]
     public async Task DiscogsAsync([Remainder] string unusedValues = null)
@@ -70,7 +70,7 @@ public class DiscogsCommands : BaseCommandModule
     [Command("collection", RunMode = RunMode.Async)]
     [Summary("Shows your Discogs collection")]
     [UsernameSetRequired]
-    [CommandCategories(CommandCategory.Other)]
+    [CommandCategories(CommandCategory.ThirdParty)]
     [Alias("coll", "vinyl", "discogscollection")]
     public async Task CollectionAsync([Remainder] string searchValues = null)
     {
