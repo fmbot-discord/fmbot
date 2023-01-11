@@ -110,7 +110,8 @@ public class Startup
             MessageCacheSize = 0,
             ConnectionTimeout = 240000,
             GatewayIntents = GatewayIntents.GuildMembers | GatewayIntents.MessageContent |
-                             GatewayIntents.DirectMessages | GatewayIntents.GuildMessages | GatewayIntents.Guilds
+                             GatewayIntents.DirectMessages | GatewayIntents.GuildMessages | GatewayIntents.Guilds |
+                             GatewayIntents.GuildVoiceStates
         });
 
         services
