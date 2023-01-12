@@ -550,7 +550,7 @@ public class UserService
         var footer = new StringBuilder();
 
         var genresAdded = false;
-        if (genres is { Length: <= 48 } && options.Count > 2)
+        if (genres != null && genres.Length <= 48 && options.Count > 2)
         {
             footer.AppendLine(genres);
             genresAdded = true;
@@ -578,12 +578,16 @@ public class UserService
                 footer.Append(option);
                 lineLength += option.Length;
             }
+
+            if (nextOption == null)
+            {
+                footer.AppendLine();
+            }
         }
 
-        if (!genresAdded)
+        if (!genresAdded && genres != null)
         {
-            footer.AppendLine();
-            footer.Append(genres);
+            footer.AppendLine(genres);
         }
 
         return footer;
