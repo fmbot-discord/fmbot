@@ -111,7 +111,7 @@ public class SupporterService
             return null;
         }
 
-        var randomHintNumber = new Random().Next(0, 18);
+        var randomHintNumber = new Random().Next(0, 22);
 
         switch (randomHintNumber)
         {
@@ -123,7 +123,7 @@ public class SupporterService
             case 2:
                 SetGuildPromoCache(guildId);
                 return
-                    $"*Supporters get extra statistics like first listen dates in artist/album/track, full history in `stats`, artist discoveries in `year` and more. " +
+                    $"*Supporters get extra statistics like first listen dates, full history in `stats`, artist discoveries in `year`, extra options in their `fm` footer and more. " +
                     $"[See all the perks of getting supporter here.]({Constants.GetSupporterOverviewLink})*";
             case 3:
                 {
@@ -138,6 +138,19 @@ public class SupporterService
 
                     return
                         $"*Using Discogs to keep track of your vinyl collection? Connect your account with the `{prfx}discogs` command.*";
+                }
+            case 4:
+                {
+                    if (user.FmFooterOptions == FmFooterOption.TotalScrobbles)
+                    {
+                        return
+                            $"*Customize your `{prfx}fm` with the new custom footer options. Get started by using `/fmmode`.*";
+                    }
+
+                    SetGuildPromoCache(guildId);
+                    return
+                        $"*Want more custom options in your `{prfx}fm` footer? Supporters can set up to 8 options. " +
+                        $"[Get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})*";
                 }
             default:
                 return null;

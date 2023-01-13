@@ -291,19 +291,21 @@ public class UserCommands : BaseCommandModule
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var response = await this._userBuilder.ModeAsync(new ContextModel(this.Context, prfx, contextUser), guild);
 
+            await this.Context.User.SendMessageAsync(embed: response.Embed.Build(),
+                components: response.Components.Build());
+
             if (this.Context.Guild != null)
             {
                 await ReplyAsync("Check your DMs to configure your `fm` settings!");
             }
 
-            await this.Context.User.SendMessageAsync(embed: response.Embed.Build(),
-                components: response.Components.Build());
-
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await ReplyAsync("Error occurred while trying to send DM, maybe you have DMs disabled. \n" +
+                             "Try using the slash command version `/fmmode` instead.");
+            await this.Context.HandleCommandException(e,sendReply: false);
         }
     }
 

@@ -455,7 +455,8 @@ public class AlbumBuilders
         if (context.ContextUser.Friends?.Any() != true)
         {
             response.Embed.WithDescription("We couldn't find any friends. To add friends:\n" +
-                                           $"`{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
+                                           $"`{context.Prefix}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
+                                           $"Or right-click a user, go to apps and click 'Add as friend'");
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }

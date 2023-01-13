@@ -725,6 +725,7 @@ public class AdminCommands : BaseCommandModule
                                            "- `artist`, `album` and `track` with first listen dates\n" +
                                            "- `stats` command with overall history\n" +
                                            "- `year` with artist discoveries and monthly overview\n" +
+                                           "- `fm` footer with up to 8 options (configured with `/fmmode`)\n" +
                                            "- More coming soon");
 
                 thankYouMessage.AppendLine();

@@ -58,6 +58,8 @@ public static class Constants
     public const int MaxFooterOptions = 4;
     public const int MaxFooterOptionsSupporter = 8;
 
+    public const int StreakSaveThreshold = 25;
+
     public static readonly int[] PlayCountBreakPoints = {
         50,
         100,
