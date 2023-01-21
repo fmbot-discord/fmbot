@@ -921,7 +921,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("featuredoverride"), Summary("Changes the avatar to be an album.")]
     [Examples("featuredoverride \"imageurl\" \"description\" true")]
-    public async Task FeaturedOverrideAsync(string url, string desc, bool stopTimer)
+    public async Task FeaturedOverrideAsync(string url, string desc, bool stopTimer = false)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {

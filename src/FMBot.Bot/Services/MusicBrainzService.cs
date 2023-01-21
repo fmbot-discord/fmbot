@@ -6,6 +6,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using MetaBrainz.MusicBrainz;
+using MetaBrainz.MusicBrainz.Interfaces.Entities;
 using Serilog;
 
 namespace FMBot.Bot.Services;
@@ -25,7 +26,7 @@ public class MusicBrainzService
         {
             var updated = false;
 
-            if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-120))
+            if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-1))
             {
                 return new ArtistUpdated(artist);
             }
@@ -44,7 +45,7 @@ public class MusicBrainzService
 
                     artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                     artist.Location = musicBrainzArtist.Area?.Name;
-                    artist.CountryCode = musicBrainzArtist.GetCountryCode();
+                    artist.CountryCode = GetArtistCountryCode(musicBrainzArtist);
                     artist.Type = musicBrainzArtist.Type;
                     artist.Disambiguation = musicBrainzArtist.Disambiguation;
                     artist.Gender = musicBrainzArtist.Gender;
@@ -66,13 +67,15 @@ public class MusicBrainzService
 
                 if (musicBrainzArtist != null)
                 {
+                    musicBrainzArtist = await api.LookupArtistAsync(musicBrainzArtist.Id);
+                    Statistics.MusicBrainzApiCalls.Inc();
 
                     var startDate = musicBrainzArtist.LifeSpan?.Begin?.NearestDate;
                     var endDate = musicBrainzArtist.LifeSpan?.End?.NearestDate;
 
                     artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow,DateTimeKind.Utc);
                     artist.Location = musicBrainzArtist.Area?.Name;
-                    artist.CountryCode = musicBrainzArtist.GetCountryCode();
+                    artist.CountryCode = GetArtistCountryCode(musicBrainzArtist);
                     artist.Type = musicBrainzArtist.Type;
                     artist.Disambiguation = musicBrainzArtist.Disambiguation;
                     artist.Gender = musicBrainzArtist.Gender;
@@ -90,6 +93,22 @@ public class MusicBrainzService
             Log.Error(e, "error in musicbrainzservice");
             return new ArtistUpdated(artist);
         }
+    }
+
+    private static string GetArtistCountryCode(IArtist musicBrainzArtist)
+    {
+        var country = musicBrainzArtist.Country
+                      ?? musicBrainzArtist.Area?.Iso31662Codes?.FirstOrDefault()
+                      ?? musicBrainzArtist.Area?.Iso31661Codes?.FirstOrDefault()
+                      ?? musicBrainzArtist.BeginArea?.Iso31662Codes?.FirstOrDefault()
+                      ?? musicBrainzArtist.BeginArea?.Iso31661Codes?.FirstOrDefault();
+
+        if (country == null)
+        {
+            return null;
+        }
+
+        return country.Contains('-') ? country.Split("-").First() : country;
     }
 
     public record ArtistUpdated(Artist Artist, bool Updated = false);

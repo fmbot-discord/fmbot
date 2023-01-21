@@ -388,7 +388,7 @@ public class SupporterService
 
                             if (user != null)
                             {
-                                user.UserType = UserType.User;
+                                user.UserType = UserType.Supporter;
                                 db.Update(user);
 
                                 Log.Information("Re-activated supporter status from Discord account {discordUserId} - {lastFmUsername}", user.DiscordUserId, user.UserNameLastFM);
