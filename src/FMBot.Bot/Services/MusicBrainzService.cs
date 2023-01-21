@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using FMBot.Bot.Extensions;
 using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using MetaBrainz.MusicBrainz;
@@ -43,7 +44,7 @@ public class MusicBrainzService
 
                     artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                     artist.Location = musicBrainzArtist.Area?.Name;
-                    artist.CountryCode = musicBrainzArtist.Country;
+                    artist.CountryCode = musicBrainzArtist.GetCountryCode();
                     artist.Type = musicBrainzArtist.Type;
                     artist.Disambiguation = musicBrainzArtist.Disambiguation;
                     artist.Gender = musicBrainzArtist.Gender;
@@ -71,7 +72,7 @@ public class MusicBrainzService
 
                     artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow,DateTimeKind.Utc);
                     artist.Location = musicBrainzArtist.Area?.Name;
-                    artist.CountryCode = musicBrainzArtist.Country;
+                    artist.CountryCode = musicBrainzArtist.GetCountryCode();
                     artist.Type = musicBrainzArtist.Type;
                     artist.Disambiguation = musicBrainzArtist.Disambiguation;
                     artist.Gender = musicBrainzArtist.Gender;
