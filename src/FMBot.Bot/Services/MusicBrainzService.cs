@@ -26,7 +26,7 @@ public class MusicBrainzService
         {
             var updated = false;
 
-            if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-1))
+            if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-120))
             {
                 return new ArtistUpdated(artist);
             }
