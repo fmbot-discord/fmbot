@@ -303,7 +303,7 @@ public class PlayService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var lastPlays = await PlayRepository.GetUserPlays(userId, connection, 10000);
+        var lastPlays = await PlayRepository.GetUserPlays(userId, connection, 20000);
 
         if (!lastPlays.Any())
         {
