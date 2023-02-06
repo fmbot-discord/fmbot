@@ -830,6 +830,9 @@ public class SettingService
         return guildRankingSettings;
     }
 
+    /// <param name="extraOptions">
+    ///         the part of the command that comes after ".crowns" (or after an alias of ".crowns"). This should include the user specifier.
+    /// </param>
     public static CrownViewSettings SetCrownViewSettings(CrownViewSettings crownViewSettings, string extraOptions)
     {
         var setCrownViewSettings = crownViewSettings;
@@ -838,12 +841,20 @@ public class SettingService
         {
             return setCrownViewSettings;
         }
+        
+        string[] extraOptionsArray = extraOptions.Split();
+        if (extraOptionsArray.Length == 1) {
+		    return setCrownViewSettings; // No order specifier was included, so use default settings
+	    }
+	
+	    string orderSpecifier = extraOptionsArray[1]; // Remove user specifier from string considered in deciding CrownOrderType.
+							                            // NOTE: This also removes any arguments after the second.
 
-        if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
+        if (orderSpecifier.Contains("p") || orderSpecifier.Contains("pc") || orderSpecifier.Contains("playcount") || orderSpecifier.Contains("plays"))
         {
             setCrownViewSettings.CrownOrderType = CrownOrderType.Playcount;
         }
-        if (extraOptions.Contains("r") || extraOptions.Contains("rc") || extraOptions.Contains("recent") || extraOptions.Contains("new") || extraOptions.Contains("latest"))
+        else if (orderSpecifier.Contains("r") || orderSpecifier.Contains("rc") || orderSpecifier.Contains("recent") || orderSpecifier.Contains("new") || orderSpecifier.Contains("latest"))
         {
             setCrownViewSettings.CrownOrderType = CrownOrderType.Recent;
         }
