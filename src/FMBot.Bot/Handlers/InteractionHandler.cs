@@ -8,6 +8,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -30,6 +31,7 @@ public class InteractionHandler
     private readonly IServiceProvider _provider;
     private readonly UserService _userService;
     private readonly GuildService _guildService;
+    private readonly GuildSettingBuilder _guildSettingBuilder;
 
     private readonly IGuildDisabledCommandService _guildDisabledCommandService;
     private readonly IChannelDisabledCommandService _channelDisabledCommandService;
@@ -44,7 +46,7 @@ public class InteractionHandler
         GuildService guildService,
         IGuildDisabledCommandService guildDisabledCommandService,
         IChannelDisabledCommandService channelDisabledCommandService,
-        IMemoryCache cache)
+        IMemoryCache cache, GuildSettingBuilder guildSettingBuilder)
     {
         this._client = client;
         this._interactionService = interactionService;
@@ -54,6 +56,7 @@ public class InteractionHandler
         this._guildDisabledCommandService = guildDisabledCommandService;
         this._channelDisabledCommandService = channelDisabledCommandService;
         this._cache = cache;
+        this._guildSettingBuilder = guildSettingBuilder;
         this._client.SlashCommandExecuted += SlashCommandAsync;
         this._client.AutocompleteExecuted += AutoCompleteAsync;
         this._client.SelectMenuExecuted += SelectMenuHandler;
@@ -238,9 +241,19 @@ public class InteractionHandler
 
     public async Task SelectMenuHandler(SocketMessageComponent arg)
     {
-        if (arg.Data.CustomId != "fm-type-menu" &&
-            arg.Data.CustomId != "fm-footer-menu" &&
-            arg.Data.CustomId != "fm-footer-menu-supporter")
+#if DEBUG
+        Log.Information("Received SelectMenuHandler");
+#endif
+
+        if (arg.Data.CustomId == null)
+        {
+            return;
+        }
+
+        if (arg.Data.CustomId != Constants.FmSettingType &&
+            arg.Data.CustomId != Constants.FmSettingFooter &&
+            arg.Data.CustomId != Constants.FmSettingFooterSupporter &&
+            !arg.Data.CustomId.StartsWith("gs-"))
         {
             return;
         }
@@ -260,7 +273,7 @@ public class InteractionHandler
             return;
         }
 
-        if (arg.Data.CustomId == "fm-type-menu")
+        if (arg.Data.CustomId == Constants.FmSettingType)
         {
             if (Enum.TryParse(arg.Data.Values.FirstOrDefault(), out FmEmbedType embedType))
             {
@@ -274,7 +287,7 @@ public class InteractionHandler
             return;
         }
 
-        if (arg.Data.CustomId == "fm-footer-menu")
+        if (arg.Data.CustomId == nameof(FmFooterOption))
         {
             var maxOptions = userSettings.UserType == UserType.User ? Constants.MaxFooterOptions : Constants.MaxFooterOptionsSupporter;
             var amountSelected = 0;
@@ -299,7 +312,7 @@ public class InteractionHandler
                 }
             }
         }
-        if (arg.Data.CustomId == "fm-footer-menu-supporter" && userSettings.UserType != UserType.User)
+        if (arg.Data.CustomId == Constants.FmSettingFooterSupporter && userSettings.UserType != UserType.User)
         {
             var maxOptions = userSettings.UserType == UserType.User ? 0 : 1;
             var amountSelected = 0;
@@ -323,6 +336,44 @@ public class InteractionHandler
                     }
                 }
             }
+        }
+        if (arg.Data.CustomId.StartsWith("gs-"))
+        {
+            var setting = arg.Data.CustomId.Replace("gs-", "");
+            if(Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out GuildSetting guildSetting))
+            {
+                switch (guildSetting)
+                {
+                    case GuildSetting.TextPrefix:
+                        if (setting.Contains("view"))
+                        {
+                            await this._guildSettingBuilder.RespondToPrefixSetter(arg.)
+                        }
+                        break;
+                    case GuildSetting.EmoteReactions:
+                        break;
+                    case GuildSetting.DefaultEmbedType:
+                        break;
+                    case GuildSetting.WhoKnowsActivityThreshold:
+                        break;
+                    case GuildSetting.WhoKnowsBlockedUsers:
+                        break;
+                    case GuildSetting.CrownActivityThreshold:
+                        break;
+                    case GuildSetting.CrownBlockedUsers:
+                        break;
+                    case GuildSetting.CrownMinimumPlaycount:
+                        break;
+                    case GuildSetting.CrownsDisabled:
+                        break;
+                    case GuildSetting.DisabledCommands:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            
         }
 
         userSettings = await this._userService.SetFooterOptions(userSettings, userSettings.FmFooterOptions);

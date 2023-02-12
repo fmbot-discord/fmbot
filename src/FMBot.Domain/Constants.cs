@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Runtime.InteropServices.ComTypes;
-
 namespace FMBot.Domain;
 
 public static class Constants
@@ -59,6 +56,13 @@ public static class Constants
     public const int MaxFooterOptionsSupporter = 8;
 
     public const int StreakSaveThreshold = 25;
+
+    public const string GuildSettingAuthorized = "guild-set-auth";
+    public const string GuildSetting = "guild-set";
+
+    public const string FmSettingType = "fm-type-menu";
+    public const string FmSettingFooter = "fm-footer-menu";
+    public const string FmSettingFooterSupporter = "fm-footer-menu-supporter";
 
     public static readonly int[] PlayCountBreakPoints = {
         50,
