@@ -89,7 +89,7 @@ public class CrownCommands : BaseCommandModule
             CrownOrderType = CrownOrderType.Playcount
         };
 
-        crownViewSettings = SettingService.SetCrownViewSettings(crownViewSettings, extraOptions);
+        crownViewSettings = SettingService.SetCrownViewSettings(crownViewSettings, userSettings.NewSearchValue);
         var userCrowns = await this._crownService.GetCrownsForUser(guild, userSettings.UserId, crownViewSettings.CrownOrderType);
 
         var title = userSettings.DifferentUser
