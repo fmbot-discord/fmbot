@@ -57,8 +57,7 @@ public static class Constants
 
     public const int StreakSaveThreshold = 25;
 
-    public const string GuildSettingAuthorized = "guild-set-auth";
-    public const string GuildSetting = "guild-set";
+    public const string GuildSetting = "guild-setting-picker";
 
     public const string FmSettingType = "fm-type-menu";
     public const string FmSettingFooter = "fm-footer-menu";

@@ -536,7 +536,7 @@ public class GuildService
         return true;
     }
 
-    public async Task SetGuildPrefixAsync(IGuild discordGuild, string prefix)
+    public async Task<Persistence.Domain.Models.Guild> SetGuildPrefixAsync(IGuild discordGuild, string prefix)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -558,6 +558,8 @@ public class GuildService
             await db.SaveChangesAsync();
 
             await RemoveGuildFromCache(discordGuild.Id);
+
+            return newGuild;
         }
         else
         {
@@ -569,6 +571,8 @@ public class GuildService
             await db.SaveChangesAsync();
 
             await RemoveGuildFromCache(discordGuild.Id);
+
+            return existingGuild;
         }
     }
 

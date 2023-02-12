@@ -60,6 +60,7 @@ public class InteractionHandler
         this._client.SlashCommandExecuted += SlashCommandAsync;
         this._client.AutocompleteExecuted += AutoCompleteAsync;
         this._client.SelectMenuExecuted += SelectMenuHandler;
+        this._client.ModalSubmitted += ModalSubmitted;
         client.UserCommandExecuted += UserCommandAsync;
 
     }
@@ -253,7 +254,7 @@ public class InteractionHandler
         if (arg.Data.CustomId != Constants.FmSettingType &&
             arg.Data.CustomId != Constants.FmSettingFooter &&
             arg.Data.CustomId != Constants.FmSettingFooterSupporter &&
-            !arg.Data.CustomId.StartsWith("gs-"))
+            arg.Data.CustomId != Constants.GuildSetting)
         {
             return;
         }
@@ -337,17 +338,20 @@ public class InteractionHandler
                 }
             }
         }
-        if (arg.Data.CustomId.StartsWith("gs-"))
+        if (arg.Data.CustomId == Constants.GuildSetting && arg.Data.Values.Any())
         {
-            var setting = arg.Data.CustomId.Replace("gs-", "");
-            if(Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out GuildSetting guildSetting))
+            var setting = arg.Data.Values.First().Replace("gs-", "");
+
+            var context = new ShardedInteractionContext(this._client, arg);
+
+            if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out GuildSetting guildSetting))
             {
                 switch (guildSetting)
                 {
                     case GuildSetting.TextPrefix:
                         if (setting.Contains("view"))
                         {
-                            await this._guildSettingBuilder.RespondToPrefixSetter(arg.)
+                            await this._guildSettingBuilder.RespondToPrefixSetter(context);
                         }
                         break;
                     case GuildSetting.EmoteReactions:
@@ -373,7 +377,7 @@ public class InteractionHandler
                 }
             }
 
-            
+            return;
         }
 
         userSettings = await this._userService.SetFooterOptions(userSettings, userSettings.FmFooterOptions);
@@ -394,6 +398,52 @@ public class InteractionHandler
         embed.WithDescription(description.ToString());
         embed.WithColor(DiscordConstants.InformationColorBlue);
         await arg.RespondAsync(embed: embed.Build(), ephemeral: true);
+    }
+
+    public async Task ModalSubmitted(SocketModal socketModal)
+    {
+        if (!socketModal.Data.CustomId.StartsWith("gs-"))
+        {
+            return;
+        }
+
+        var setting = socketModal.Data.CustomId.Replace("gs-", "");
+
+        var context = new ShardedInteractionContext(this._client, socketModal);
+
+        if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out GuildSetting guildSetting))
+        {
+            switch (guildSetting)
+            {
+                case GuildSetting.TextPrefix:
+                    if (setting.Contains("set"))
+                    {
+                        var value = socketModal.Data.Components.First().Value;
+                        await this._guildSettingBuilder.RespondWithPrefixSet(context, value);
+                    }
+                    break;
+                case GuildSetting.EmoteReactions:
+                    break;
+                case GuildSetting.DefaultEmbedType:
+                    break;
+                case GuildSetting.WhoKnowsActivityThreshold:
+                    break;
+                case GuildSetting.WhoKnowsBlockedUsers:
+                    break;
+                case GuildSetting.CrownActivityThreshold:
+                    break;
+                case GuildSetting.CrownBlockedUsers:
+                    break;
+                case GuildSetting.CrownMinimumPlaycount:
+                    break;
+                case GuildSetting.CrownsDisabled:
+                    break;
+                case GuildSetting.DisabledCommands:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
     }
 
     private static async Task UserBlockedResponse(ShardedInteractionContext shardedCommandContext)

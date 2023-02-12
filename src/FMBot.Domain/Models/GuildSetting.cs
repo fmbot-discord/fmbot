@@ -8,7 +8,7 @@ public enum GuildSetting
     TextPrefix = 1,
     [Option("Emote reactions", "Emotes that will automatically be added to 'fm' and 'featured'")]
     EmoteReactions = 2,
-    [Option("Prefix", "Default 'fm' embed type for everyone")]
+    [Option("Default 'fm' type", "Default 'fm' embed type for everyone")]
     DefaultEmbedType = 3,
 
     [Option("WhoKnows activity threshold", "Filter inactive users from WhoKnows")]

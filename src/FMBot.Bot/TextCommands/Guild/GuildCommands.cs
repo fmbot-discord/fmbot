@@ -352,9 +352,9 @@ public class GuildCommands : BaseCommandModule
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
-        if (prefix.Contains("*") || prefix.Contains("`") || prefix.Contains("~"))
+        if (prefix.Contains("*") || prefix.Contains("`") || prefix.Contains("~") || prefix.Contains("|"))
         {
-            await ReplyAsync("You can't have a custom prefix that contains ** * **or **`** or **~**");
+            await ReplyAsync("You can't have a custom prefix that contains ** * **, **`**, **~** or **|**");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
