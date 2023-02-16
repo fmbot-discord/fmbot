@@ -73,11 +73,11 @@ public class GuildCommands : BaseCommandModule
     }
 
 
-    [Command("serversettings", RunMode = RunMode.Async)]
-    [Summary("Shows your Discogs collection")]
+    //[Command("serversettings", RunMode = RunMode.Async)]
+    [Summary("Shows all the server settings")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    [Alias("ss")]
+    //[Alias("ss")]
     public async Task GuildSettingsAsync([Remainder] string searchValues = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
