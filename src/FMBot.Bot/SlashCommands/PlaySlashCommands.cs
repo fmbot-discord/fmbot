@@ -152,14 +152,16 @@ public class PlaySlashCommands : InteractionModuleBase
     [SlashCommand("streakhistory", "Shows you or someone else their streak history")]
     [UsernameSetRequired]
     public async Task StreakHistory(
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [Summary("Action", "The action to do")] StreakHistoryAction action = StreakHistoryAction.View,
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Delete", "Enter the deletion ID here to delete a streak")] long? selectedStreak = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         try
         {
-            var response = await this._playBuilder.StreakHistoryAsync(new ContextModel(this.Context, contextUser), userSettings);
+            var response = await this._playBuilder.StreakHistoryAsync(new ContextModel(this.Context, contextUser), userSettings, action == StreakHistoryAction.Modify, selectedStreak);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -168,6 +170,12 @@ public class PlaySlashCommands : InteractionModuleBase
         {
             await this.Context.HandleCommandException(e, deferFirst: true);
         }
+    }
+
+    public enum StreakHistoryAction
+    {
+        View = 1,
+        Modify = 2
     }
 
     [SlashCommand("overview", "Shows a daily overview")]

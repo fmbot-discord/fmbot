@@ -442,7 +442,9 @@ public class PlayBuilder
 
     public async Task<ResponseModel> StreakHistoryAsync(
         ContextModel context,
-        UserSettingsModel userSettings)
+        UserSettingsModel userSettings,
+        bool viewIds = false,
+        long? streakToDelete = null)
     {
         var response = new ResponseModel
         {
@@ -466,6 +468,19 @@ public class PlayBuilder
             return response;
         }
 
+        if (streakToDelete.HasValue && !userSettings.DifferentUser)
+        {
+            var streak = streaks.FirstOrDefault(f =>
+                f.UserStreakId == streakToDelete && f.UserId == context.ContextUser.UserId);
+            await this._playService.DeleteStreak(streak.UserStreakId);
+
+            response.Embed.WithTitle("🗑 Streak deleted");
+            response.Embed.WithDescription("Successfully deleted the following streak:\n" +
+                                           PlayService.StreakToText(streak, false));
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
         var streakPages = streaks.Chunk(4).ToList();
 
         var counter = 1;
@@ -483,15 +498,20 @@ public class PlayBuilder
                     pageString.Append($"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>");
                     pageString.Append($" til ");
                     pageString.Append($"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:t>");
-                    pageString.AppendLine();
                 }
                 else
                 {
                     pageString.Append($"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>");
                     pageString.Append($" til ");
                     pageString.Append($"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:f>");
-                    pageString.AppendLine();
                 }
+
+                if (viewIds && !userSettings.DifferentUser)
+                {
+                    pageString.Append($" · Deletion ID: `{streak.UserStreakId}`");
+                }
+
+                pageString.AppendLine();
 
                 var streakText = PlayService.StreakToText(streak, false);
                 pageString.AppendLine(streakText);

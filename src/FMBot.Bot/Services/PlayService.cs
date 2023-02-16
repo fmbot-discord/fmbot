@@ -19,6 +19,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using Genius.Models.User;
 
 namespace FMBot.Bot.Services;
 
@@ -296,6 +297,17 @@ public class PlayService
             .Where(w => w.UserId == userId)
             .OrderByDescending(o => o.ArtistPlaycount)
             .ToListAsync();
+    }
+
+    public async Task DeleteStreak(long streakId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var streak = await db.UserStreaks
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.UserStreakId == streakId);
+
+        db.UserStreaks.Remove(streak);
+        await db.SaveChangesAsync();
     }
 
     public async Task<UserStreak> GetStreak(int userId, Response<RecentTrackList> recentTracks)
