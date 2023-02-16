@@ -6,8 +6,10 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -26,6 +28,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     private readonly CrownService _crownService;
     private readonly GuildService _guildService;
     private readonly SettingService _settingService;
+    private readonly GuildSettingBuilder _guildSettingBuilder;
 
     private readonly IPrefixService _prefixService;
     private InteractiveService Interactivity { get; }
@@ -36,13 +39,14 @@ public class CrownGuildSettingCommands : BaseCommandModule
         AdminService adminService,
         SettingService settingService,
         CrownService crownService,
-        IOptions<BotSettings> botSettings, InteractiveService interactivity) : base(botSettings)
+        IOptions<BotSettings> botSettings, InteractiveService interactivity, GuildSettingBuilder guildSettingBuilder) : base(botSettings)
     {
         this._prefixService = prefixService;
         this._guildService = guildService;
         this._settingService = settingService;
         this._crownService = crownService;
         this.Interactivity = interactivity;
+        this._guildSettingBuilder = guildSettingBuilder;
         this._adminService = adminService;
     }
 
@@ -177,7 +181,6 @@ public class CrownGuildSettingCommands : BaseCommandModule
         }
 
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, false, false);
 
         if (user == null)
         {
@@ -195,12 +198,14 @@ public class CrownGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        if (!guild.GuildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
+        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
+
+        if (!guildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
         {
             var similarUsers = await this._adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
 
             var userInThisServer = similarUsers.FirstOrDefault(f =>
-                f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guild.GuildUsers.Select(s => s.UserId).Contains(f.UserId));
+                f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.Select(s => s.UserId).Contains(f.UserId));
 
             if (userInThisServer == null)
             {
@@ -213,7 +218,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
             userToBlock = userInThisServer;
         }
 
-        if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers
+        if (guildUsers
                 .Where(w => w.BlockedFromCrowns)
                 .Select(s => s.UserId)
                 .Contains(userToBlock.UserId))
@@ -229,8 +234,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         {
             this._embed.WithTitle("Added crownblocked user");
             this._embed.WithDescription($"Discord user id: `{userToBlock.DiscordUserId}` (<@{userToBlock.DiscordUserId}>)\n" +
-                                        $"Last.fm username: `{userToBlock.UserNameLastFM}`\n" +
-                                        $".fmbot id: `{userToBlock.UserId}`");
+                                        $"Last.fm username: `{userToBlock.UserNameLastFM}`");
 
             this._embed.WithFooter($"See all crownblocked users with {prfx}crownblockedusers");
 
@@ -265,7 +269,6 @@ public class CrownGuildSettingCommands : BaseCommandModule
         }
 
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
         if (user == null)
         {
@@ -287,8 +290,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         {
             this._embed.WithTitle("Are you sure you want to delete all crowns for this user?");
             this._embed.WithDescription($"Discord user id: `{userToBlock.DiscordUserId}` (<@{userToBlock.DiscordUserId}>)\n" +
-                                        $"Last.fm username: `{userToBlock.UserNameLastFM}`\n" +
-                                        $".fmbot id: `{userToBlock.UserId}`");
+                                        $"Last.fm username: `{userToBlock.UserNameLastFM}`");
             this._embed.WithFooter($"Expires in 30 seconds..");
 
             var builder = new ComponentBuilder()
@@ -302,7 +304,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
             if (result.IsSuccess)
             {
                 await result.Value.DeferAsync();
-                await this._crownService.RemoveAllCrownsFromDiscordUser(userToBlock.DiscordUserId, guild.DiscordGuildId);
+                await this._crownService.RemoveAllCrownsFromDiscordUser(userToBlock.DiscordUserId, this.Context.Guild.Id);
 
                 this._embed.WithTitle("Crowns have been removed for:");
                 await msg.ModifyAsync(x =>
@@ -336,6 +338,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     [Alias("crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers")]
     [GuildOnly]
     [RequiresIndex]
+    [SupportsPagination]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
     public async Task CrownBlockedUsersAsync()
     {
@@ -351,30 +354,11 @@ public class CrownGuildSettingCommands : BaseCommandModule
         }
 
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
-        if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(w => w.BlockedFromCrowns))
-        {
-            this._embed.WithTitle("Crownblocked users");
-            var blockedUsers = "";
+        var response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), true);
 
-            foreach (var crownBlockedUser in guild.GuildBlockedUsers.Where(w => w.BlockedFromCrowns))
-            {
-                blockedUsers +=
-                    $" - `{crownBlockedUser.User.DiscordUserId}` (<@{crownBlockedUser.User.DiscordUserId}>) | Last.fm: `{crownBlockedUser.User.UserNameLastFM}`\n";
-            }
-
-            this._embed.WithDescription(blockedUsers);
-            this._embed.WithFooter($"To add: {prfx}crownblock mention/user id/last.fm username\n" +
-                                   $"To remove: {prfx}unblock mention/user id/last.fm username");
-        }
-        else
-        {
-            this._embed.WithDescription("No crownblocked users found for this server.");
-        }
-
-        await ReplyAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("togglecrowns", RunMode = RunMode.Async)]
@@ -387,7 +371,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
         var serverUser = (IGuildUser)this.Context.Message.Author;
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
@@ -431,7 +415,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     {
         _ = this.Context.Channel.TriggerTypingAsync();
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
         if (!string.IsNullOrWhiteSpace(killCrownValues) && killCrownValues.ToLower() == "help")
         {
@@ -497,7 +481,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     {
         _ = this.Context.Channel.TriggerTypingAsync();
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
         if (!string.IsNullOrWhiteSpace(helpValues) && helpValues.ToLower() == "help")
         {
@@ -566,7 +550,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     {
         _ = this.Context.Channel.TriggerTypingAsync();
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
         if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
         {
@@ -634,7 +618,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     {
         _ = this.Context.Channel.TriggerTypingAsync();
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
         if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
         {

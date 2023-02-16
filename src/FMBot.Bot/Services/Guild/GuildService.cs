@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
+using Dapper;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Models;
@@ -10,6 +12,8 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using Npgsql;
 using Serilog;
 
 namespace FMBot.Bot.Services.Guild;
@@ -18,11 +22,13 @@ public class GuildService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
+    private readonly BotSettings _botSettings;
 
-    public GuildService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
+    public GuildService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
+        this._botSettings = botSettings.Value;
     }
 
     // Message is in dm?
@@ -102,6 +108,34 @@ public class GuildService
             .Include(i => i.GuildBlockedUsers)
             .Include(i => i.GuildUsers.Where(w => w.Bot != true))
             .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+    }
+
+    public async Task<IList<FullGuildUser>> GetGuildUsers(ulong? discordGuildId = null)
+    {
+        const string sql = "SELECT gu.user_id, " +
+                           "gu.guild_id, " +
+                           "gu.user_name, " +
+                           "gu.bot, " +
+                           "gu.who_knows_whitelisted, " +
+                           "u.user_name_last_fm, " +
+                           "u.discord_user_id, " +
+                           "u.last_used, " +
+                           "COALESCE(gbu.blocked_from_crowns, false) as blocked_from_crowns, " +
+                           "COALESCE(gbu.blocked_from_who_knows, false) as blocked_from_who_knows " +
+                           "FROM public.guild_users AS gu " +
+                           "LEFT JOIN users AS u ON gu.user_id = u.user_id " +
+                           "LEFT JOIN guilds AS g ON gu.guild_id = g.guild_id " +
+                           "LEFT OUTER JOIN guild_blocked_users AS gbu ON gu.user_id = gbu.user_id AND gbu.guild_id = gu.guild_id " +
+                           "WHERE g.discord_guild_id = @discordGuildId";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return (await connection.QueryAsync<FullGuildUser>(sql, new
+        {
+            discordGuildId = Convert.ToInt64(discordGuildId)
+        })).ToList();
     }
 
     private async Task RemoveGuildFromCache(ulong discordGuildId)

@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -248,5 +251,82 @@ public class GuildSettingBuilder
         await context.Interaction.RespondAsync(response.ToString(), ephemeral: true);
 
         return false;
+    }
+
+    public async Task<ResponseModel> BlockedUsersAsync(
+        ContextModel context,
+        bool crownBlockedOnly = false)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+
+        var footer = new StringBuilder();
+
+        if (crownBlockedOnly)
+        {
+            response.Embed.WithTitle($"Crownblocked users in {context.DiscordGuild.Name}");
+            footer.AppendLine($"To add: {context.Prefix}crownblock mention/user id/Last.fm username");
+            footer.AppendLine($"To remove: {context.Prefix}crownunblock mention/user id/Last.fm username");
+        }
+        else
+        {
+            response.Embed.WithTitle($"Blocked users in {context.DiscordGuild.Name}");
+            footer.AppendLine($"To add: {context.Prefix}block mention/user id/last.fm username");
+            footer.AppendLine($"To remove: {context.Prefix}unblock mention/user id/last.fm username");
+        }
+
+        footer.AppendLine($"User mentions might not show properly even if the user is in your server");
+
+        var pages = new List<PageBuilder>();
+        var pageCounter = 1;
+
+        if (guildUsers != null && guildUsers.Any(a => a.BlockedFromWhoKnows && (!crownBlockedOnly || a.BlockedFromCrowns)))
+        {
+            guildUsers = guildUsers
+                .Where(w => w.BlockedFromCrowns && (crownBlockedOnly || w.BlockedFromWhoKnows))
+                .ToList();
+
+            var userPages = guildUsers.Chunk(15);
+
+            foreach (var userPage in userPages)
+            {
+                var description = new StringBuilder();
+
+                foreach (var blockedUser in userPage)
+                {
+                    if (blockedUser.BlockedFromCrowns && !blockedUser.BlockedFromWhoKnows)
+                    {
+                        description.Append("<:crownblocked:1075892343552618566> ");
+                    }
+                    else
+                    {
+                        description.Append("🚫 ");
+                    }
+                    description.AppendLine(
+                        $"<@{blockedUser.DiscordUserId}> - `{blockedUser.DiscordUserId}` - Lfm:**`{blockedUser.UserNameLastFM}`**");
+                }
+
+                pages.Add(new PageBuilder()
+                    .WithDescription(description.ToString())
+                    .WithAuthor(response.Embed.Title)
+                    .WithFooter($"Page {pageCounter}/{userPages.Count()} - {guildUsers.Count} total\n" +
+                                footer));
+                pageCounter++;
+            }
+        }
+        else
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription("No blocked users in this server.")
+                .WithAuthor(response.Embed.Title)
+                .WithFooter(footer.ToString()));
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        return response;
     }
 }

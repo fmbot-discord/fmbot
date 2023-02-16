@@ -3,9 +3,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -22,18 +25,24 @@ public class UserGuildSettingCommands : BaseCommandModule
     private readonly AdminService _adminService;
     private readonly GuildService _guildService;
     private readonly SettingService _settingService;
+    private readonly GuildSettingBuilder _guildSettingBuilder;
 
     private readonly IPrefixService _prefixService;
+
+    private InteractiveService Interactivity { get; }
+
 
     public UserGuildSettingCommands(IPrefixService prefixService,
         GuildService guildService,
         AdminService adminService,
         SettingService settingService,
-        IOptions<BotSettings> botSettings) : base(botSettings)
+        IOptions<BotSettings> botSettings, GuildSettingBuilder guildSettingBuilder, InteractiveService interactivity) : base(botSettings)
     {
         this._prefixService = prefixService;
         this._guildService = guildService;
         this._settingService = settingService;
+        this._guildSettingBuilder = guildSettingBuilder;
+        this.Interactivity = interactivity;
         this._adminService = adminService;
     }
 
@@ -113,7 +122,6 @@ public class UserGuildSettingCommands : BaseCommandModule
         }
 
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, false, enableCache: false);
 
         if (user == null)
         {
@@ -131,12 +139,14 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        if (!guild.GuildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
+        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
+
+        if (!guildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
         {
             var similarUsers = await this._adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
 
             var userInThisServer = similarUsers.FirstOrDefault(f =>
-                f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guild.GuildUsers.Select(s => s.UserId).Contains(f.UserId));
+                f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.Select(s => s.UserId).Contains(f.UserId));
 
             if (userInThisServer == null)
             {
@@ -149,8 +159,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             userToBlock = userInThisServer;
         }
 
-        if (guild.GuildBlockedUsers != null &&
-            guild.GuildBlockedUsers
+        if (guildUsers
                 .Where(w => w.BlockedFromWhoKnows)
                 .Select(s => s.UserId)
                 .Contains(userToBlock.UserId))
@@ -166,8 +175,7 @@ public class UserGuildSettingCommands : BaseCommandModule
         {
             this._embed.WithTitle("Added blocked user");
             this._embed.WithDescription($"Discord user id: `{userToBlock.DiscordUserId}` (<@{userToBlock.DiscordUserId}>)\n" +
-                                        $"Last.fm username: `{userToBlock.UserNameLastFM}`\n" +
-                                        $".fmbot id: `{userToBlock.UserId}`");
+                                        $"Last.fm username: `{userToBlock.UserNameLastFM}`");
 
             this._embed.WithFooter($"See all blocked users with {prfx}blockedusers");
 
@@ -202,7 +210,6 @@ public class UserGuildSettingCommands : BaseCommandModule
         }
 
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
         if (user == null)
         {
@@ -220,7 +227,9 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        if (guild.GuildBlockedUsers == null || !guild.GuildBlockedUsers.OrderByDescending(o => o.User.LastUsed).Select(s => s.UserId).Contains(userToUnblock.UserId))
+        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
+
+        if (guildUsers == null || !guildUsers.OrderByDescending(o => o.LastUsed).Select(s => s.UserId).Contains(userToUnblock.UserId))
         {
             await ReplyAsync("The user you're trying to unblock was not blocked on this server.");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
@@ -233,8 +242,7 @@ public class UserGuildSettingCommands : BaseCommandModule
         {
             this._embed.WithTitle("Unblocked user");
             this._embed.WithDescription($"Discord user id: `{userToUnblock.DiscordUserId}` (<@{userToUnblock.DiscordUserId}>)\n" +
-                                        $"Last.fm username: `{userToUnblock.UserNameLastFM}`\n" +
-                                        $".fmbot id: `{userToUnblock.UserId}`");
+                                        $"Last.fm username: `{userToUnblock.UserNameLastFM}`");
 
             this._embed.WithFooter($"See other blocked users with {prfx}blockedusers");
 
@@ -253,6 +261,7 @@ public class UserGuildSettingCommands : BaseCommandModule
     [Alias("blocked", "banned", "bannedusers", "blockedmembers", "bannedmembers")]
     [GuildOnly]
     [RequiresIndex]
+    [SupportsPagination]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
     public async Task BlockedUsersAsync()
     {
@@ -268,30 +277,11 @@ public class UserGuildSettingCommands : BaseCommandModule
         }
 
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
-        if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
-        {
-            this._embed.WithTitle("Blocked users");
-            var blockedUsers = "";
+        var response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx));
 
-            foreach (var blockedUser in guild.GuildBlockedUsers.Where(w => w.BlockedFromWhoKnows))
-            {
-                blockedUsers +=
-                    $" - `{blockedUser.User.DiscordUserId}` (<@{blockedUser.User.DiscordUserId}>) | Last.fm: `{blockedUser.User.UserNameLastFM}`\n";
-            }
-
-            this._embed.WithDescription(blockedUsers);
-            this._embed.WithFooter($"To add: {prfx}block mention/user id/last.fm username\n" +
-                                   $"To remove: {prfx}unblock mention/user id/last.fm username");
-        }
-        else
-        {
-            this._embed.WithDescription("No blocked users found for this server.");
-        }
-
-        await ReplyAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
 

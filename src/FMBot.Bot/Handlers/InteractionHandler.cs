@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -18,9 +16,7 @@ using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
-using Newtonsoft.Json.Linq;
 using Serilog;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace FMBot.Bot.Handlers;
 
