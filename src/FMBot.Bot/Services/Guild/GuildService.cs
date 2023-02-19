@@ -240,8 +240,7 @@ public class GuildService
             var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = discordGuild.Id,
-                Name = discordGuild.Name,
-                TitlesEnabled = true
+                Name = discordGuild.Name
             };
 
             await db.Guilds.AddAsync(newGuild);
@@ -273,7 +272,6 @@ public class GuildService
             var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = discordGuild.Id,
-                TitlesEnabled = true,
                 EmoteReactions = reactions,
                 Name = discordGuild.Name
             };
@@ -306,7 +304,6 @@ public class GuildService
             var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = discordGuild.Id,
-                TitlesEnabled = true,
                 Name = discordGuild.Name,
                 DisableSupporterMessages = true
             };
@@ -582,7 +579,6 @@ public class GuildService
             var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = discordGuild.Id,
-                TitlesEnabled = true,
                 Name = discordGuild.Name,
                 Prefix = prefix
             };
@@ -622,7 +618,6 @@ public class GuildService
             var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = discordGuild.Id,
-                TitlesEnabled = true,
                 Name = discordGuild.Name,
                 WhoKnowsWhitelistRoleId = roleId,
             };
@@ -668,7 +663,6 @@ public class GuildService
             var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = discordGuild.Id,
-                TitlesEnabled = true,
                 Name = discordGuild.Name,
                 DisabledCommands = new[] { command }
             };
@@ -879,7 +873,6 @@ public class GuildService
             {
                 DiscordGuildId = discordGuild.Id,
                 Name = discordGuild.Name,
-                TitlesEnabled = true,
                 LastIndexed = timestamp ?? DateTime.UtcNow
             };
 

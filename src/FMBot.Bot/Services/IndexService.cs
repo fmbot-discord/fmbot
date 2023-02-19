@@ -84,7 +84,6 @@ public class IndexService : IIndexService
             var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = discordGuild.Id,
-                TitlesEnabled = true,
                 Name = discordGuild.Name,
             };
 

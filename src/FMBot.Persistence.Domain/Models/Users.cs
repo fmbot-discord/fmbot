@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Security.AccessControl;
 using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models;
@@ -32,8 +31,6 @@ public class User
     public bool? MusicBotTrackingDisabled { get; set; }
 
     public FmEmbedType FmEmbedType { get; set; }
-
-    public FmCountType? FmCountType { get; set; }
 
     public FmFooterOption FmFooterOptions { get; set; }
 

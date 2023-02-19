@@ -609,7 +609,6 @@ public class UserService
                 UserType = UserType.User,
                 UserNameLastFM = newUserSettings.UserNameLastFM,
                 FmEmbedType = newUserSettings.FmEmbedType,
-                FmCountType = newUserSettings.FmCountType,
                 SessionKeyLastFm = newUserSettings.SessionKeyLastFm,
                 DataSource = DataSource.LastFm,
                 PrivacyLevel = PrivacyLevel.Server,
@@ -632,7 +631,6 @@ public class UserService
         {
             user.UserNameLastFM = newUserSettings.UserNameLastFM;
             user.FmEmbedType = newUserSettings.FmEmbedType;
-            user.FmCountType = newUserSettings.FmCountType;
             user.Mode = newUserSettings.Mode;
             if (updateSessionKey)
             {
@@ -717,50 +715,6 @@ public class UserService
         return userToUpdate.PrivacyLevel;
     }
 
-    public static User SetSettings(User userSettings, string[] extraOptions)
-    {
-        extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
-        if (extraOptions.Contains("embedfull") || extraOptions.Contains("ef"))
-        {
-            userSettings.FmEmbedType = FmEmbedType.EmbedFull;
-        }
-        else if (extraOptions.Contains("textmini") || extraOptions.Contains("tm"))
-        {
-            userSettings.FmEmbedType = FmEmbedType.TextMini;
-        }
-        else if (extraOptions.Contains("textfull") || extraOptions.Contains("tf"))
-        {
-            userSettings.FmEmbedType = FmEmbedType.TextFull;
-        }
-        else if (extraOptions.Contains("embedtiny") || extraOptions.Contains("et"))
-        {
-            userSettings.FmEmbedType = FmEmbedType.EmbedTiny;
-        }
-        else
-        {
-            userSettings.FmEmbedType = FmEmbedType.EmbedMini;
-        }
-
-        if (extraOptions.Contains("artist"))
-        {
-            userSettings.FmCountType = FmCountType.Artist;
-        }
-        else if (extraOptions.Contains("album"))
-        {
-            userSettings.FmCountType = FmCountType.Album;
-        }
-        else if (extraOptions.Contains("track"))
-        {
-            userSettings.FmCountType = FmCountType.Track;
-        }
-        else
-        {
-            userSettings.FmCountType = null;
-        }
-
-        return userSettings;
-    }
-
     public static User SetWkMode(User userSettings, string[] extraOptions)
     {
         extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
@@ -782,7 +736,6 @@ public class UserService
         var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
 
         user.FmEmbedType = embedType;
-        user.FmCountType = countType == FmCountType.None ? null : countType;
 
         db.Update(user);
 
