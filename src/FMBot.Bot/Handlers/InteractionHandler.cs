@@ -15,6 +15,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
@@ -247,16 +248,7 @@ public class InteractionHandler
             return;
         }
 
-        if (arg.Data.CustomId != Constants.FmSettingType &&
-            arg.Data.CustomId != Constants.FmSettingFooter &&
-            arg.Data.CustomId != Constants.FmSettingFooterSupporter &&
-            arg.Data.CustomId != Constants.GuildSetting)
-        {
-            return;
-        }
-
         var userSettings = await this._userService.GetUserSettingsAsync(arg.User);
-
         var embed = new EmbedBuilder();
 
         if (userSettings == null)
@@ -284,7 +276,7 @@ public class InteractionHandler
             return;
         }
 
-        if (arg.Data.CustomId == nameof(FmFooterOption))
+        if (arg.Data.CustomId == Constants.FmSettingFooter)
         {
             var maxOptions = userSettings.UserType == UserType.User ? Constants.MaxFooterOptions : Constants.MaxFooterOptionsSupporter;
             var amountSelected = 0;
@@ -308,6 +300,9 @@ public class InteractionHandler
                     }
                 }
             }
+
+            await SaveFooterOptions(arg, userSettings, embed);
+            return;
         }
         if (arg.Data.CustomId == Constants.FmSettingFooterSupporter && userSettings.UserType != UserType.User)
         {
@@ -333,6 +328,9 @@ public class InteractionHandler
                     }
                 }
             }
+
+            await SaveFooterOptions(arg, userSettings, embed);
+            return;
         }
         if (arg.Data.CustomId == Constants.GuildSetting && arg.Data.Values.Any())
         {
@@ -375,7 +373,10 @@ public class InteractionHandler
 
             return;
         }
+    }
 
+    private async Task SaveFooterOptions(IDiscordInteraction arg, User userSettings, EmbedBuilder embed)
+    {
         userSettings = await this._userService.SetFooterOptions(userSettings, userSettings.FmFooterOptions);
 
 
