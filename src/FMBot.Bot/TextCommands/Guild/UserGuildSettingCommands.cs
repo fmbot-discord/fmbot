@@ -263,7 +263,7 @@ public class UserGuildSettingCommands : BaseCommandModule
     [RequiresIndex]
     [SupportsPagination]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
-    public async Task BlockedUsersAsync()
+    public async Task BlockedUsersAsync([Remainder] string searchValue = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
@@ -278,7 +278,7 @@ public class UserGuildSettingCommands : BaseCommandModule
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx));
+        var response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), searchValue: searchValue);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

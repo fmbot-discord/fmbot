@@ -252,7 +252,7 @@ public class GuildSettingBuilder
         return false;
     }
 
-    private async Task<bool> UserNotAllowedResponse(IInteractionContext context)
+    private static async Task<bool> UserNotAllowedResponse(IInteractionContext context)
     {
         var response = new StringBuilder();
         response.AppendLine("You are not authorized to change this .fmbot setting.");
@@ -267,7 +267,9 @@ public class GuildSettingBuilder
 
     public async Task<ResponseModel> BlockedUsersAsync(
         ContextModel context,
-        bool crownBlockedOnly = false)
+        bool crownBlockedOnly = false,
+        string searchValue = null)
+
     {
         var response = new ResponseModel
         {
@@ -278,23 +280,42 @@ public class GuildSettingBuilder
 
         var footer = new StringBuilder();
 
+        if (!string.IsNullOrWhiteSpace(searchValue))
+        {
+            footer.AppendLine($"Showing results with '{Format.Sanitize(searchValue)}'");
+        }
+
+        footer.AppendLine($"Block type — Discord ID — Name — Last.fm");
+
         if (crownBlockedOnly)
         {
             response.Embed.WithTitle($"Crownblocked users in {context.DiscordGuild.Name}");
             footer.AppendLine($"To add: {context.Prefix}crownblock mention/user id/Last.fm username");
-            footer.AppendLine($"To remove: {context.Prefix}crownunblock mention/user id/Last.fm username");
+            footer.AppendLine($"To remove: {context.Prefix}unblock mention/user id/Last.fm username");
         }
         else
         {
             response.Embed.WithTitle($"Blocked users in {context.DiscordGuild.Name}");
-            footer.AppendLine($"To add: {context.Prefix}block mention/user id/last.fm username");
-            footer.AppendLine($"To remove: {context.Prefix}unblock mention/user id/last.fm username");
+            footer.AppendLine($"To add: {context.Prefix}block mention/user id/Last.fm username");
+            footer.AppendLine($"To remove: {context.Prefix}unblock mention/user id/Last.fm username");
         }
 
         var pages = new List<PageBuilder>();
         var pageCounter = 1;
 
-        if (guildUsers != null && guildUsers.Any(a => a.BlockedFromWhoKnows && (!crownBlockedOnly || a.BlockedFromCrowns)))
+        if (!string.IsNullOrWhiteSpace(searchValue))
+        {
+            searchValue = searchValue.ToLower();
+
+            guildUsers = guildUsers
+                .Where(w => w.UserName.ToLower().Contains(searchValue) ||
+                            w.DiscordUserId.ToString().Contains(searchValue) ||
+                            w.UserNameLastFM.ToLower().Contains(searchValue))
+                .ToList();
+        }
+
+        if (guildUsers != null &&
+            guildUsers.Any(a => a.BlockedFromWhoKnows && (!crownBlockedOnly || a.BlockedFromCrowns)))
         {
             guildUsers = guildUsers
                 .Where(w => w.BlockedFromCrowns && (crownBlockedOnly || w.BlockedFromWhoKnows))
@@ -316,8 +337,9 @@ public class GuildSettingBuilder
                     {
                         description.Append("🚫 ");
                     }
+
                     description.AppendLine(
-                        $"**{Format.Sanitize(blockedUser.UserName)}** — `{blockedUser.DiscordUserId}` — `{blockedUser.UserNameLastFM}` (Last.fm)");
+                        $"`{blockedUser.DiscordUserId}` — **{Format.Sanitize(blockedUser.UserName)}** — [`{blockedUser.UserNameLastFM}`]({Constants.LastFMUserUrl}{blockedUser.UserNameLastFM}) ");
                 }
 
                 pages.Add(new PageBuilder()
@@ -331,7 +353,7 @@ public class GuildSettingBuilder
         else
         {
             pages.Add(new PageBuilder()
-                .WithDescription("No blocked users in this server.")
+                .WithDescription("No blocked users in this server or no results for your search.")
                 .WithAuthor(response.Embed.Title)
                 .WithFooter(footer.ToString()));
         }
