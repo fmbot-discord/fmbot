@@ -73,22 +73,21 @@ public class GuildCommands : BaseCommandModule
     }
 
 
-    //[Command("serversettings", RunMode = RunMode.Async)]
+    [Command("serversettings", RunMode = RunMode.Async)]
     [Summary("Shows all the server settings")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    //[Alias("ss")]
+    [Alias("ss")]
     public async Task GuildSettingsAsync([Remainder] string searchValues = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
         try
         {
-            var response = await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, "/", contextUser), guild);
+            var response = await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, "/", contextUser));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

@@ -35,12 +35,15 @@ public class GuildSettingBuilder
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<ResponseModel> GetGuildSettings(ContextModel context, Guild guild)
+    public async Task<ResponseModel> GetGuildSettings(ContextModel context)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed
         };
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         response.Embed.WithTitle($".fmbot settings - {guild.Name}");
         response.Embed.WithFooter($"{guild.DiscordGuildId}");
@@ -61,7 +64,7 @@ public class GuildSettingBuilder
         var whoKnowsSettings = new StringBuilder();
 
         whoKnowsSettings.AppendLine(
-            $"**{guild.GuildBlockedUsers?.Count(c => c.BlockedFromWhoKnows) ?? 0}** users blocked from WhoKnows and server charts.");
+            $"**{guildUsers?.Count(c => c.BlockedFromWhoKnows) ?? 0}** users blocked from WhoKnows and server charts.");
 
         if (guild.ActivityThresholdDays.HasValue)
         {
@@ -86,7 +89,9 @@ public class GuildSettingBuilder
                 "Users earn crowns whenever they're the #1 user for an artist. ");
 
             crownSettings.AppendLine(
-                $"**{guild.GuildBlockedUsers?.Count(c => c.BlockedFromCrowns) ?? 0}** users are blocked from earning crowns.");
+                $"**{guildUsers?.Count(c => c.BlockedFromCrowns) ?? 0}** users are blocked from earning crowns.");
+
+            crownSettings.AppendLine();
 
             crownSettings.Append($"The minimum playcount for a crown is set to **{guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown}** or higher");
 
@@ -96,7 +101,7 @@ public class GuildSettingBuilder
                     " (default)");
             }
 
-            crownSettings.AppendLine(".");
+            crownSettings.Append(". ");
 
             if (guild.CrownsActivityThresholdDays.HasValue)
             {
@@ -164,6 +169,7 @@ public class GuildSettingBuilder
     {
         if (!await UserIsAllowed(context))
         {
+            await UserNotAllowedResponse(context);
             return;
         }
 
@@ -179,6 +185,7 @@ public class GuildSettingBuilder
     {
         if (!await UserIsAllowed(context))
         {
+            await UserNotAllowedResponse(context);
             return;
         }
 
@@ -242,6 +249,11 @@ public class GuildSettingBuilder
         //    return true;
         //}
 
+        return false;
+    }
+
+    private async Task<bool> UserNotAllowedResponse(IInteractionContext context)
+    {
         var response = new StringBuilder();
         response.AppendLine("You are not authorized to change this .fmbot setting.");
         response.AppendLine();
@@ -279,8 +291,6 @@ public class GuildSettingBuilder
             footer.AppendLine($"To remove: {context.Prefix}unblock mention/user id/last.fm username");
         }
 
-        footer.AppendLine($"User mentions might not show properly even if the user is in your server");
-
         var pages = new List<PageBuilder>();
         var pageCounter = 1;
 
@@ -307,7 +317,7 @@ public class GuildSettingBuilder
                         description.Append("🚫 ");
                     }
                     description.AppendLine(
-                        $"<@{blockedUser.DiscordUserId}> - `{blockedUser.DiscordUserId}` - Lfm:**`{blockedUser.UserNameLastFM}`**");
+                        $"**{Format.Sanitize(blockedUser.UserName)}** — `{blockedUser.DiscordUserId}` — `{blockedUser.UserNameLastFM}` (Last.fm)");
                 }
 
                 pages.Add(new PageBuilder()

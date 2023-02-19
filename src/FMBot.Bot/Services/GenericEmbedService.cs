@@ -16,9 +16,9 @@ namespace FMBot.Bot.Services;
 
 public static class GenericEmbedService
 {
-    public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx, string name, ulong? loginCommandId = null)
+    public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx, string name)
     {
-        var loginCommand = loginCommandId.HasValue ? $"</login:{loginCommandId}>" : "`/login`";
+        var loginCommand = PublicProperties.SlashCommands.ContainsKey("login") ? $"</login:{PublicProperties.SlashCommands["login"]}>" : "`/login`";
         embed.WithDescription($"Hi {name}, welcome to .fmbot. \n" +
                               $"To use this bot you first need to add your Last.fm account.\n\n" +
                               $"Please use the {loginCommand} command. The bot will then send you a link so you can connect your Last.fm account.");

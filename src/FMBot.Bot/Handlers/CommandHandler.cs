@@ -243,9 +243,8 @@ public class CommandHandler
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 var userNickname = (context.User as SocketGuildUser)?.Nickname;
-                var loginCommandId = (ulong?)this._cache.Get("login-command-id");
 
-                embed.UsernameNotSetErrorResponse(prfx ?? this._botSettings.Bot.Prefix, userNickname ?? context.User.Username, loginCommandId);
+                embed.UsernameNotSetErrorResponse(prfx ?? this._botSettings.Bot.Prefix, userNickname ?? context.User.Username);
                 await context.Channel.SendMessageAsync("", false, embed.Build());
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;

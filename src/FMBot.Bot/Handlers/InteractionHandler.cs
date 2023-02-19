@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -35,6 +37,8 @@ public class InteractionHandler
 
     private readonly IMemoryCache _cache;
 
+    private InteractiveService Interactivity { get; }
+
 
     public InteractionHandler(DiscordShardedClient client,
         InteractionService interactionService,
@@ -43,7 +47,7 @@ public class InteractionHandler
         GuildService guildService,
         IGuildDisabledCommandService guildDisabledCommandService,
         IChannelDisabledCommandService channelDisabledCommandService,
-        IMemoryCache cache, GuildSettingBuilder guildSettingBuilder)
+        IMemoryCache cache, GuildSettingBuilder guildSettingBuilder, InteractiveService interactivity)
     {
         this._client = client;
         this._interactionService = interactionService;
@@ -54,6 +58,7 @@ public class InteractionHandler
         this._channelDisabledCommandService = channelDisabledCommandService;
         this._cache = cache;
         this._guildSettingBuilder = guildSettingBuilder;
+        this.Interactivity = interactivity;
         this._client.SlashCommandExecuted += SlashCommandAsync;
         this._client.AutocompleteExecuted += AutoCompleteAsync;
         this._client.SelectMenuExecuted += SelectMenuHandler;
@@ -100,8 +105,7 @@ public class InteractionHandler
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 var userNickname = (context.User as SocketGuildUser)?.Nickname;
-                var loginCommandId = (ulong?)this._cache.Get("login-command-id");
-                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username, loginCommandId);
+                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
 
                 await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
@@ -155,11 +159,6 @@ public class InteractionHandler
 
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
-        if (command.Name == "login")
-        {
-            this._cache.Set("login-command-id", socketSlashCommand.CommandId);
-        }
-
         Statistics.SlashCommandsExecuted.WithLabels(command.Name).Inc();
         _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
     }
@@ -195,9 +194,8 @@ public class InteractionHandler
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 var userNickname = (context.User as SocketGuildUser)?.Nickname;
-                var loginCommandId = (ulong?)this._cache.Get("login-command-id");
 
-                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username, loginCommandId);
+                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
                 await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
@@ -255,9 +253,7 @@ public class InteractionHandler
         {
             embed.WithColor(DiscordConstants.LastFmColorRed);
             var userNickname = (arg.User as SocketGuildUser)?.Nickname;
-            var loginCommandId = (ulong?)this._cache.Get("login-command-id");
-
-            embed.UsernameNotSetErrorResponse("/", userNickname ?? arg.User.Username, loginCommandId);
+            embed.UsernameNotSetErrorResponse("/", userNickname ?? arg.User.Username);
             await arg.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
             return;
         }
@@ -340,6 +336,7 @@ public class InteractionHandler
 
             if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out GuildSetting guildSetting))
             {
+                ResponseModel response;
                 switch (guildSetting)
                 {
                     case GuildSetting.TextPrefix:
@@ -355,10 +352,14 @@ public class InteractionHandler
                     case GuildSetting.WhoKnowsActivityThreshold:
                         break;
                     case GuildSetting.WhoKnowsBlockedUsers:
+                        response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(context, userSettings));
+                        await context.SendResponse(this.Interactivity, response, ephemeral: true);
                         break;
                     case GuildSetting.CrownActivityThreshold:
                         break;
                     case GuildSetting.CrownBlockedUsers:
+                        response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(context, userSettings), true);
+                        await context.SendResponse(this.Interactivity, response, ephemeral: true);
                         break;
                     case GuildSetting.CrownMinimumPlaycount:
                         break;
