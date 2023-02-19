@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -40,6 +41,7 @@ public class AdminCommands : BaseCommandModule
     private readonly IIndexService _indexService;
     private readonly IPrefixService _prefixService;
     private readonly StaticBuilders _staticBuilders;
+    private readonly AlbumService _albumService;
 
     private InteractiveService Interactivity { get; }
 
@@ -56,7 +58,7 @@ public class AdminCommands : BaseCommandModule
         FeaturedService featuredService,
         IIndexService indexService,
         IPrefixService prefixService,
-        StaticBuilders staticBuilders, InteractiveService interactivity) : base(botSettings)
+        StaticBuilders staticBuilders, InteractiveService interactivity, AlbumService albumService) : base(botSettings)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -71,6 +73,7 @@ public class AdminCommands : BaseCommandModule
         this._prefixService = prefixService;
         this._staticBuilders = staticBuilders;
         this.Interactivity = interactivity;
+        this._albumService = albumService;
     }
 
     //[Command("debug")]
@@ -260,28 +263,30 @@ public class AdminCommands : BaseCommandModule
 
     [Command("addcensoredalbum")]
     [Summary("Adds censored album")]
-    [Examples("addcensoredalbum \"No Love Deep Web\" \"Death Grips\"")]
-    public async Task AddCensoredAlbumAsync(string album, string artist)
+    [Examples("addcensoredalbum Death Grips | No Love Deep Web")]
+    public async Task AddCensoredAlbumAsync([Remainder] string albumValues)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            if (string.IsNullOrEmpty(album) || string.IsNullOrEmpty(artist))
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues, userSettings.UserNameLastFM);
+            if (albumSearch.Album == null)
             {
-                await ReplyAsync("Enter a correct album to be censored\n" +
-                                 "Example: `.addcensoredalbum \"No Love Deep Web\" \"Death Grips\"");
+                await this.Context.SendResponse(this.Interactivity, albumSearch.Response);
                 return;
             }
 
-            var currentAlbum = await this._censorService.GetCurrentAlbum(album, artist);
+            var currentAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
             if (currentAlbum is { SafeForCommands: false })
             {
                 await ReplyAsync("That album is already censored");
                 return;
             }
 
-            await this._censorService.AddCensoredAlbum(album, artist);
+            await this._censorService.AddCensoredAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
-            await ReplyAsync($"Added `{album}` by `{artist}` to the list of censored albums.", allowedMentions: AllowedMentions.None);
+            await ReplyAsync($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the list of censored albums.", allowedMentions: AllowedMentions.None);
             this.Context.LogCommandUsed();
         }
         else
@@ -316,27 +321,29 @@ public class AdminCommands : BaseCommandModule
 
     [Command("addnsfwalbum")]
     [Summary("Adds nsfw album")]
-    [Examples("addnsfwalbum \"No Love Deep Web\" \"Death Grips\"")]
-    public async Task AddNsfwAlbumAsync(string album, string artist)
+    [Examples("addnsfwalbum Death Grips | No Love Deep Web")]
+    public async Task AddNsfwAlbumAsync([Remainder] string albumValues)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            if (string.IsNullOrEmpty(album) || string.IsNullOrEmpty(artist))
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues, userSettings.UserNameLastFM);
+            if (albumSearch.Album == null)
             {
-                await ReplyAsync("Enter a correct album to be censored\n" +
-                                 "Example: `.addnsfwalbum \"No Love Deep Web\" \"Death Grips\"");
+                await this.Context.SendResponse(this.Interactivity, albumSearch.Response);
                 return;
             }
 
-            var currentAlbum = await this._censorService.GetCurrentAlbum(album, artist);
+            var currentAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
             if (currentAlbum is { SafeForFeatured: false })
             {
                 await ReplyAsync("That album is already marked as nsfw");
                 return;
             }
-            await this._censorService.AddNsfwAlbum(album, artist);
+            await this._censorService.AddNsfwAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
 
-            await ReplyAsync($"Added `{album}` by `{artist}` to the list of nsfw albums.", allowedMentions: AllowedMentions.None);
+            await ReplyAsync($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the list of nsfw albums.", allowedMentions: AllowedMentions.None);
             this.Context.LogCommandUsed();
         }
         else
@@ -348,7 +355,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("addcensoredartist")]
     [Summary("Adds censored artist")]
-    [Examples("addcensoredartist \"Last Days of Humanity\"")]
+    [Examples("addcensoredartist Last Days of Humanity")]
     public async Task AddCensoredArtistAsync([Remainder] string artist)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
