@@ -231,7 +231,7 @@ public class TimerService
                     var upTime = (double)ticks / Stopwatch.Frequency;
                     var upTimeTimeSpan = TimeSpan.FromSeconds(upTime);
 
-                    if (upTimeTimeSpan.Minutes > 10)
+                    if (upTimeTimeSpan.Minutes > 8)
                     {
                         Statistics.DiscordServerCount.Set(client.Guilds.Count);
                     }
@@ -258,7 +258,7 @@ public class TimerService
                         if (!PublicProperties.IssuesAtLastFm)
                         {
                             await client.SetGameAsync(
-                                $"{this._botSettings.Bot.Prefix}fm | {client.Guilds.Count} servers | fmbot.xyz");
+                                $"{this._botSettings.Bot.Prefix}fm | {client.Guilds.Count} servers | fmbot.xyz", type: ActivityType.Listening);
                         }
                         else
                         {
@@ -276,7 +276,7 @@ public class TimerService
 
             },
             null,
-            TimeSpan.FromSeconds(30),
+            TimeSpan.FromSeconds(10),
             TimeSpan.FromMinutes(2));
 
         this._shardReconnectTimer = new Timer(async _ =>
