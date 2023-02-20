@@ -268,7 +268,7 @@ public class StartupService
 
         foreach (var cmd in commands)
         {
-            PublicProperties.SlashCommands.Add(cmd.Name, cmd.Id);
+            PublicProperties.SlashCommands.TryAdd(cmd.Name, cmd.Id);
         }
     }
 }
