@@ -119,7 +119,7 @@ public class StartupService
                 Assembly.GetEntryAssembly(),
                 this._provider);
 
-        var shardTimeOut = 3000;
+        var shardTimeOut = 2500;
         foreach (var shard in this._client.Shards)
         {
             Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
