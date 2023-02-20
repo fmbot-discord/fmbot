@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -15,7 +15,6 @@ using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork.Migrations;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Builders;
@@ -173,12 +172,16 @@ public class GuildSettingBuilder
             return;
         }
 
-        var mb = new ModalBuilder()
-            .WithTitle("Set .fmbot text command prefix")
-            .WithCustomId($"gs-set-{Enum.GetName(GuildSetting.TextPrefix)}")
-            .AddTextInput("Enter new prefix", "prefix", placeholder: ".", minLength: 1, maxLength: 15, required: true);
+        await context.Interaction.RespondWithModalAsync<PrefixModal>(Constants.TextPrefixModal);
+    }
 
-        await context.Interaction.RespondWithModalAsync(mb.Build());
+    public class PrefixModal : IModal
+    {
+        public string Title => "Set .fmbot text command prefix";
+
+        [InputLabel("Enter new prefix")]
+        [ModalTextInput("new_prefix", placeholder: ".", minLength: 1, maxLength: 15)]
+        public string NewPrefix { get; set; }
     }
 
     public async Task RespondWithPrefixSet(IInteractionContext context, string newPrefix)

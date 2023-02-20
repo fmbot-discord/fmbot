@@ -120,7 +120,7 @@ public class StartupService
                 Assembly.GetEntryAssembly(),
                 this._provider);
 
-        Log.Information("Loading slash command modules");
+        Log.Information("Loading interaction modules");
         await this._interactions
             .AddModulesAsync(
                 Assembly.GetEntryAssembly(),

@@ -239,6 +239,10 @@ public class TimerService
                     Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
                     Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
                     Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
+
+                    Statistics.OneDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(1));
+                    Statistics.SevenDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(7));
+                    Statistics.ThirtyDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(30));
                 }
                 catch (Exception e)
                 {

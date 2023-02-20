@@ -21,7 +21,6 @@ public class ServerSlashCommands : InteractionModuleBase
     private readonly AlbumBuilders _albumBuilders;
     private readonly TrackBuilders _trackBuilders;
     private readonly GenreBuilders _genreBuilders;
-    private readonly SettingService _settingService;
     private readonly GuildService _guildService;
 
     private InteractiveService Interactivity { get; }
@@ -38,7 +37,6 @@ public class ServerSlashCommands : InteractionModuleBase
         this._userService = userService;
         this._artistBuilders = artistBuilders;
         this.Interactivity = interactivity;
-        this._settingService = settingService;
         this._guildService = guildService;
         this._albumBuilders = albumBuilders;
         this._trackBuilders = trackBuilders;

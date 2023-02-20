@@ -17,7 +17,6 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
-using DiscordConfig = Discord.DiscordConfig;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Builders;
@@ -182,9 +181,8 @@ public class UserBuilder
         var fmSupporterOptions = new SelectMenuBuilder()
             .WithPlaceholder("Select supporter-exclusive footer option")
             .WithCustomId(Constants.FmSettingFooterSupporter)
+            .WithMinValues(0)
             .WithMaxValues(1);
-
-        fmSupporterOptions.AddOption(new SelectMenuOptionBuilder("None", "none"));
 
         foreach (var option in ((FmFooterOption[])Enum.GetValues(typeof(FmFooterOption))).Where(w => w != FmFooterOption.None))
         {

@@ -15,10 +15,10 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
-using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.SlashCommands;
@@ -203,6 +203,112 @@ public class UserSlashCommands : InteractionModuleBase
 
         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
         this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction(Constants.FmSettingType)]
+    public async Task SetEmbedType(string[] inputs)
+    {
+        var embed = new EmbedBuilder();
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
+        {
+            var newUserSettings = await this._userService.SetSettings(userSettings, embedType, FmCountType.None);
+
+            embed.WithDescription($"Your `fm` mode has been set to **{newUserSettings.FmEmbedType}**.");
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            await RespondAsync(embed: embed.Build(), ephemeral: true);
+        }
+    }
+
+    [ComponentInteraction(Constants.FmSettingFooter)]
+    public async Task SetFooterOptions(string[] inputs)
+    {
+        var embed = new EmbedBuilder();
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var maxOptions = userSettings.UserType == UserType.User ? Constants.MaxFooterOptions : Constants.MaxFooterOptionsSupporter;
+        var amountSelected = 0;
+
+        foreach (var option in Enum.GetNames(typeof(FmFooterOption)))
+        {
+            if (Enum.TryParse(option, out FmFooterOption flag))
+            {
+                var supporterOnly = flag.GetAttribute<OptionAttribute>().SupporterOnly;
+                if (!supporterOnly)
+                {
+                    if (inputs.Any(a => a == option) && amountSelected <= maxOptions)
+                    {
+                        userSettings.FmFooterOptions |= flag;
+                        amountSelected++;
+                    }
+                    else
+                    {
+                        userSettings.FmFooterOptions &= ~flag;
+                    }
+                }
+            }
+        }
+
+        await SaveFooterOptions(userSettings, embed);
+    }
+
+    [ComponentInteraction(Constants.FmSettingFooterSupporter)]
+    public async Task SetSupporterFooterOptions(string[] inputs)
+    {
+        var embed = new EmbedBuilder();
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (userSettings.UserType == UserType.User)
+        {
+            return;
+        }
+
+        var maxOptions = userSettings.UserType == UserType.User ? 0 : 1;
+        var amountSelected = 0;
+
+        foreach (var option in Enum.GetNames(typeof(FmFooterOption)))
+        {
+            if (Enum.TryParse(option, out FmFooterOption flag))
+            {
+                var supporterOnly = flag.GetAttribute<OptionAttribute>().SupporterOnly;
+                if (supporterOnly)
+                {
+                    if (inputs.Any(a => a == option) && amountSelected <= maxOptions && option != "none")
+                    {
+                        userSettings.FmFooterOptions |= flag;
+                        amountSelected++;
+                    }
+                    else
+                    {
+                        userSettings.FmFooterOptions &= ~flag;
+                    }
+                }
+            }
+        }
+
+        await SaveFooterOptions(userSettings, embed);
+    }
+
+    private async Task SaveFooterOptions(User userSettings, EmbedBuilder embed)
+    {
+        userSettings = await this._userService.SetFooterOptions(userSettings, userSettings.FmFooterOptions);
+
+        var description = new StringBuilder();
+        description.AppendLine("Your `fm` footer options have been set to:");
+
+        foreach (var flag in userSettings.FmFooterOptions.GetUniqueFlags())
+        {
+            if (userSettings.FmFooterOptions.HasFlag(flag) && flag != FmFooterOption.None)
+            {
+                var name = flag.GetAttribute<OptionAttribute>().Name;
+                description.AppendLine($"- **{name}**");
+            }
+        }
+
+        embed.WithDescription(description.ToString());
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+        await RespondAsync(embed: embed.Build(), ephemeral: true);
     }
 
     [SlashCommand("wkmode", "Changes your default whoknows mode")]

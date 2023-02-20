@@ -77,7 +77,20 @@ public static class Statistics
             {
                 LabelNames = new[] { "name" }
             });
-        
+
+
+    public static readonly Counter UserCommandsExecuted = Metrics
+        .CreateCounter("bot_user_commands_executed", "Amount of user commands executed");
+
+    public static readonly Counter AutoCompletesExecuted = Metrics
+        .CreateCounter("bot_autocompletes_executed", "Amount of autocompletes executed");
+
+    public static readonly Counter SelectMenusExecuted = Metrics
+        .CreateCounter("bot_select_menus_executed", "Amount of selectmenus executed");
+
+    public static readonly Counter ModalsExecuted = Metrics
+        .CreateCounter("bot_modals_executed", "Amount of modals executed");
+
 
     public static readonly Gauge RegisteredUserCount = Metrics
         .CreateGauge("bot_registered_users_count", "Total count of all users in the database");
@@ -87,7 +100,17 @@ public static class Statistics
 
     public static readonly Gauge RegisteredGuildCount = Metrics
         .CreateGauge("bot_registered_guilds_count", "Total count of all guilds in the database");
-        
+
+
+    public static readonly Gauge OneDayActiveUserCount = Metrics
+        .CreateGauge("bot_active_users_count_1d", "Total count of users who've used the bot in the last day");
+
+    public static readonly Gauge SevenDayActiveUserCount = Metrics
+        .CreateGauge("bot_active_users_count_7d", "Total count of users who've used the bot in the last 7 days");
+
+    public static readonly Gauge ThirtyDayActiveUserCount = Metrics
+        .CreateGauge("bot_active_users_count_30d", "Total count of users who've used the bot in the last 30 days");
+
 
     public static readonly Counter IndexedUsers = Metrics
         .CreateCounter("bot_indexed_users", "Amount of indexed users");

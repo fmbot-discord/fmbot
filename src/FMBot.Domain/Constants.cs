@@ -63,6 +63,8 @@ public static class Constants
     public const string FmSettingFooter = "fm-footer-menu";
     public const string FmSettingFooterSupporter = "fm-footer-menu-supporter";
 
+    public const string TextPrefixModal = "text-prefix-modal";
+
     public static readonly int[] PlayCountBreakPoints = {
         50,
         100,

@@ -13,6 +13,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -869,6 +870,17 @@ public class UserService
         return await db.Users
             .AsQueryable()
             .CountAsync();
+    }
+
+    public async Task<int> GetTotalActiveUserCountAsync(int daysToGoBack)
+    {
+        var filterDate = DateTime.UtcNow.AddDays(-daysToGoBack);
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Users
+            .AsQueryable()
+            .CountAsync(c => c.LastUsed != null &&
+                             c.LastUsed >= filterDate);
     }
 
     public async Task<int> GetTotalAuthorizedUserCountAsync()
