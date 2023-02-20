@@ -117,6 +117,8 @@ public class GuildService
                            "gu.user_name, " +
                            "gu.bot, " +
                            "gu.who_knows_whitelisted, " +
+                           "gu.who_knows_blocked, " +
+                           "gu.last_message, " +
                            "u.user_name_last_fm, " +
                            "u.discord_user_id, " +
                            "u.last_used, " +
@@ -136,6 +138,15 @@ public class GuildService
         {
             discordGuildId = Convert.ToInt64(discordGuildId)
         })).ToList();
+    }
+
+    public async Task<List<Persistence.Domain.Models.Guild>> GetPremiumGuilds()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Guilds
+            .AsNoTracking()
+            .Where(w => w.SpecialGuild == true)
+            .ToListAsync();
     }
 
     private async Task RemoveGuildFromCache(ulong discordGuildId)
@@ -1015,5 +1026,31 @@ public class GuildService
         }
 
         return guildSettings;
+    }
+
+    public async Task UpdateGuildUserLastMessageDate(IGuildUser discordGuildUser, int userId, int guildId)
+    {
+        try
+        {
+            const string sql = "UPDATE guild_users " +
+                               "SET user_name = @UserName, last_message = @LastMessage " +
+                               "WHERE guild_id = @GuildId AND user_id = @UserId ";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            await connection.ExecuteAsync(sql, new
+            {
+                UserName = discordGuildUser.DisplayName,
+                LastMessage = DateTime.UtcNow,
+                GuildId = guildId,
+                UserId = userId
+            });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Exception in UpdateGuildUserLastMessageDate!");
+        }
     }
 }

@@ -13,6 +13,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -36,6 +37,8 @@ public class StartupService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
     private readonly InteractionService _interactionService;
+    private readonly GuildService _guildService;
+    private readonly UserService _userService;
 
 
     public StartupService(
@@ -48,7 +51,9 @@ public class StartupService
         IDbContextFactory<FMBotDbContext> contextFactory,
         IOptions<BotSettings> botSettings,
         InteractionService interactionService,
-        InteractionService interactions)
+        InteractionService interactions,
+        GuildService guildService,
+        UserService userService)
     {
         this._provider = provider;
         this._client = discord;
@@ -59,6 +64,8 @@ public class StartupService
         this._contextFactory = contextFactory;
         this._interactionService = interactionService;
         this._interactions = interactions;
+        this._guildService = guildService;
+        this._userService = userService;
         this._botSettings = botSettings.Value;
     }
 
@@ -132,7 +139,9 @@ public class StartupService
 
         await this.StartMetricsPusher();
         await this.RegisterSlashCommands();
-        await this.StoreSlashCommandIds();
+        await this.CacheSlashCommandIds();
+        await this.CachePremiumGuilds();
+        await this.CacheDiscordUserIds();
         await this.StartBotSiteUpdater();
     }
 
@@ -261,7 +270,7 @@ public class StartupService
         }
     }
 
-    private async Task StoreSlashCommandIds()
+    private async Task CacheSlashCommandIds()
     {
         var commands = await this._client.Rest.GetGlobalApplicationCommands();
         Log.Information("Found {slashCommandCount} registered slash commands", commands.Count);
@@ -269,6 +278,28 @@ public class StartupService
         foreach (var cmd in commands)
         {
             PublicProperties.SlashCommands.TryAdd(cmd.Name, cmd.Id);
+        }
+    }
+
+    private async Task CachePremiumGuilds()
+    {
+        var guilds = await this._guildService.GetPremiumGuilds();
+        Log.Information("Found {slashCommandCount} premium servers", guilds.Count);
+
+        foreach (var guild in guilds)
+        {
+            PublicProperties.PremiumServers.TryAdd(guild.DiscordGuildId, guild.GuildId);
+        }
+    }
+
+    private async Task CacheDiscordUserIds()
+    {
+        var users = await this._userService.GetAllDiscordUserIds();
+        Log.Information("Found {slashCommandCount} registered users", users.Count);
+
+        foreach (var user in users)
+        {
+            PublicProperties.RegisteredUsers.TryAdd(user.DiscordUserId, user.UserId);
         }
     }
 }

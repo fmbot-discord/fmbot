@@ -84,7 +84,7 @@ public class IndexService : IIndexService
             var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = discordGuild.Id,
-                Name = discordGuild.Name,
+                Name = discordGuild.Name
             };
 
             await db.Guilds.AddAsync(newGuild);
@@ -107,10 +107,10 @@ public class IndexService : IIndexService
             })
             .ToListAsync();
 
-        int? whoKnowsWhitelistedCount = null;
+        int? whoKnowsHasAllowedRoleCount = null;
         if (existingGuild.WhoKnowsWhitelistRoleId.HasValue)
         {
-            whoKnowsWhitelistedCount = 0;
+            whoKnowsHasAllowedRoleCount = 0;
         }
 
         foreach (var user in users)
@@ -120,13 +120,22 @@ public class IndexService : IIndexService
             user.UserName = name;
             user.Bot = discordUser.IsBot;
 
+            if (existingGuild.GuildUsers != null && existingGuild.GuildUsers.Any())
+            {
+                var existingGuildUser = existingGuild.GuildUsers.FirstOrDefault(f => f.UserId == user.UserId);
+                if (existingGuildUser != null)
+                {
+                    user.LastMessage = existingGuildUser.LastMessage;
+                }
+            }
+
             if (existingGuild.WhoKnowsWhitelistRoleId.HasValue)
             {
                 var isWhitelisted = discordUser.RoleIds.Contains(existingGuild.WhoKnowsWhitelistRoleId.Value);
                 user.WhoKnowsWhitelisted = isWhitelisted;
                 if (isWhitelisted)
                 {
-                    whoKnowsWhitelistedCount++;
+                    whoKnowsHasAllowedRoleCount++;
                 }
             }
         }
@@ -137,13 +146,15 @@ public class IndexService : IIndexService
             .MapInteger("user_id", x => x.UserId)
             .MapText("user_name", x => x.UserName)
             .MapBoolean("bot", x => x.Bot == true)
-            .MapBoolean("who_knows_whitelisted", x => x.WhoKnowsWhitelisted);
+            .MapBoolean("who_knows_whitelisted", x => x.WhoKnowsWhitelisted)
+            .MapBoolean("who_knows_blocked", x => x.WhoKnowsBlocked)
+            .MapTimeStampTz("last_message", x => x.LastMessage.HasValue ? DateTime.SpecifyKind(x.LastMessage.Value, DateTimeKind.Utc) : null);
 
         await using var connection = new NpgsqlConnection(connString);
         await connection.OpenAsync();
 
-        await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.guild_users WHERE guild_id = {existingGuild.GuildId};", connection);
-        await deleteCurrentArtists.ExecuteNonQueryAsync();
+        await using var deleteCurrentUsers = new NpgsqlCommand($"DELETE FROM public.guild_users WHERE guild_id = {existingGuild.GuildId};", connection);
+        await deleteCurrentUsers.ExecuteNonQueryAsync();
 
         await copyHelper.SaveAllAsync(connection, users);
 
@@ -151,7 +162,7 @@ public class IndexService : IIndexService
 
         await connection.CloseAsync();
 
-        return (users.Count, whoKnowsWhitelistedCount);
+        return (users.Count, whoKnowsHasAllowedRoleCount);
     }
 
     public async Task<GuildUser> GetOrAddUserToGuild(ICollection<WhoKnowsObjectWithUser> users,
@@ -248,8 +259,6 @@ public class IndexService : IIndexService
             {
                 return;
             }
-
-            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             const string sql = "UPDATE guild_users " +
                                "SET user_name =  @UserName, " +

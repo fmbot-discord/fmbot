@@ -99,7 +99,14 @@ public class CommandHandler
             {
                 await this._musicBotService.ScrobbleSoundCloud(msg, context);
             }
-            return; // Ignore other bots
+            return;
+        }
+
+        if (context.Guild != null &&
+            PublicProperties.PremiumServers.ContainsKey(context.Guild.Id) &&
+            PublicProperties.RegisteredUsers.ContainsKey(context.User.Id))
+        {
+            _ = UpdateUserLastMessageDate(context);
         }
 
         var argPos = 0; // Check if the message has a valid command prefix
@@ -386,13 +393,36 @@ public class CommandHandler
         return true;
     }
 
-    private async Task UserBlockedResponse(SocketCommandContext shardedCommandContext, string s)
+    private async Task UserBlockedResponse(SocketCommandContext context, string s)
     {
         var embed = new EmbedBuilder()
             .WithColor(DiscordConstants.LastFmColorRed);
         embed.UserBlockedResponse(s ?? this._botSettings.Bot.Prefix);
-        await shardedCommandContext.Channel.SendMessageAsync("", false, embed.Build());
-        shardedCommandContext.LogCommandUsed(CommandResponse.UserBlocked);
+        await context.Channel.SendMessageAsync("", false, embed.Build());
+        context.LogCommandUsed(CommandResponse.UserBlocked);
         return;
+    }
+
+    private async Task UpdateUserLastMessageDate(SocketCommandContext context)
+    {
+        var cacheKey = $"{context.User.Id}-{context.Guild.Id}-last-message-updated";
+        if (this._cache.TryGetValue(cacheKey, out _))
+        {
+            return;
+        }
+
+        this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(15));
+
+        var guildSuccess = PublicProperties.PremiumServers.TryGetValue(context.Guild.Id, out var guildId);
+        var userSuccess = PublicProperties.RegisteredUsers.TryGetValue(context.User.Id, out var userId);
+
+        var guildUser = await ((IGuild)context.Guild).GetUserAsync(context.User.Id, CacheMode.CacheOnly);
+
+        if (!guildSuccess || !userSuccess || guildUser == null)
+        {
+            return;
+        }
+
+        await this._guildService.UpdateGuildUserLastMessageDate(guildUser, userId, guildId);
     }
 }

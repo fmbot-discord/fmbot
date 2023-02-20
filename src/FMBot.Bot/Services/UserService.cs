@@ -11,6 +11,7 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
@@ -159,7 +160,14 @@ public class UserService
             .FirstOrDefaultAsync(f => f.UserId == userId);
     }
 
-    // User settings
+    public async Task<List<User>> GetAllDiscordUserIds()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Users
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
     public async Task<User> GetFullUserAsync(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -186,7 +194,7 @@ public class UserService
 
     public async Task<UserType> GetRankAsync(IUser discordUser)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
@@ -625,6 +633,12 @@ public class UserService
             {
                 Log.Error(e, "Error in SetLastFM");
                 throw;
+            }
+
+            var createdUser = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+            if (createdUser != null)
+            {
+                PublicProperties.RegisteredUsers.TryAdd(createdUser.DiscordUserId, createdUser.UserId);
             }
         }
         else

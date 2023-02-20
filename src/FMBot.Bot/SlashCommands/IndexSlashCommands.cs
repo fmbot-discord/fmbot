@@ -42,7 +42,6 @@ public class IndexSlashCommands : InteractionModuleBase
             Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
                 guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
 
-            var usersToFullyUpdate = await this._indexService.GetUsersToFullyUpdate(guildUsers);
             var reply = new StringBuilder();
 
             var (registeredUserCount, whoKnowsWhitelistedUserCount) = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
