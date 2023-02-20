@@ -344,7 +344,7 @@ public class UpdateRepository
 
             var existingUserAlbum =
                 userAlbums.FirstOrDefault(a => a.Name.ToLower() == album.Key.AlbumName.ToLower() &&
-                                               a.ArtistName.ToLower() == album.Key.ArtistName.ToLower());
+                                               a.ArtistName.ToLower() == artistName.ToLower());
 
             if (existingUserAlbum != null)
             {
@@ -413,7 +413,7 @@ public class UpdateRepository
 
             var existingUserTrack =
                 userTracks.FirstOrDefault(a => a.Name.ToLower() == track.Key.TrackName.ToLower() &&
-                                               a.ArtistName.ToLower() == track.Key.ArtistName.ToLower());
+                                               a.ArtistName.ToLower() == artistName.ToLower());
 
             if (existingUserTrack != null)
             {

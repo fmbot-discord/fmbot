@@ -1,3 +1,5 @@
+using System;
+
 namespace FMBot.Persistence.Domain.Models;
 
 public class GuildUser
@@ -9,5 +11,6 @@ public class GuildUser
     public string UserName { get; set; }
     public bool? Bot { get; set; }
     public bool? WhoKnowsWhitelisted { get; set; }
-
+    public bool? WhoKnowsBlocked { get; set; }
+    public DateTime? LastMessage { get; set; }
 }

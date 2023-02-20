@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Webhook;
+using FMBot.Bot.Interfaces;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.OpenCollective.Models;
@@ -23,12 +24,14 @@ public class SupporterService
     private readonly OpenCollectiveService _openCollectiveService;
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
+    private readonly IIndexService _indexService;
 
-    public SupporterService(IDbContextFactory<FMBotDbContext> contextFactory, OpenCollectiveService openCollectiveService, IOptions<BotSettings> botSettings, IMemoryCache cache)
+    public SupporterService(IDbContextFactory<FMBotDbContext> contextFactory, OpenCollectiveService openCollectiveService, IOptions<BotSettings> botSettings, IMemoryCache cache, IIndexService indexService)
     {
         this._contextFactory = contextFactory;
         this._openCollectiveService = openCollectiveService;
         this._cache = cache;
+        this._indexService = indexService;
         this._botSettings = botSettings.Value;
     }
 
@@ -111,7 +114,7 @@ public class SupporterService
             return null;
         }
 
-        var randomHintNumber = new Random().Next(0, 18);
+        var randomHintNumber = new Random().Next(0, 22);
 
         switch (randomHintNumber)
         {
@@ -123,7 +126,7 @@ public class SupporterService
             case 2:
                 SetGuildPromoCache(guildId);
                 return
-                    $"*Supporters get extra statistics like first listen dates in artist/album/track, full history in `stats`, artist discoveries in `year` and more. " +
+                    $"*Supporters get extra statistics like first listen dates, full history in `stats`, artist discoveries in `year`, extra options in their `fm` footer and more. " +
                     $"[See all the perks of getting supporter here.]({Constants.GetSupporterOverviewLink})*";
             case 3:
                 {
@@ -138,6 +141,19 @@ public class SupporterService
 
                     return
                         $"*Using Discogs to keep track of your vinyl collection? Connect your account with the `{prfx}discogs` command.*";
+                }
+            case 4:
+                {
+                    if (user.FmFooterOptions == FmFooterOption.TotalScrobbles)
+                    {
+                        return
+                            $"*Customize your `{prfx}fm` with the new custom footer options. Get started by using `/fmmode`.*";
+                    }
+
+                    SetGuildPromoCache(guildId);
+                    return
+                        $"*Want more custom options in your `{prfx}fm` footer? Supporters can set up to 8 options. " +
+                        $"[Get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})*";
                 }
             default:
                 return null;
@@ -375,10 +391,12 @@ public class SupporterService
 
                             if (user != null)
                             {
-                                user.UserType = UserType.User;
+                                user.UserType = UserType.Supporter;
                                 db.Update(user);
 
                                 Log.Information("Re-activated supporter status from Discord account {discordUserId} - {lastFmUsername}", user.DiscordUserId, user.UserNameLastFM);
+
+                               _ = this._indexService.IndexUser(user);
                             }
                         }
 
@@ -390,9 +408,11 @@ public class SupporterService
                         reactivateEmbed.WithTitle("Re-activated supporter");
                         reactivateEmbed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
                                                         $"LastPayment: `{existingSupporter.LastPayment}`\n" +
-                                                        $"Subscription type: `{Enum.GetName(existingSupporter.SubscriptionType.GetValueOrDefault())}`");
+                                                        $"Subscription type: `{Enum.GetName(existingSupporter.SubscriptionType.GetValueOrDefault())}`\n" +
+                                                        $"Notes: `{existingSupporter.Notes}`");
 
                         await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { reactivateEmbed.Build() });
+
                     }
 
                     db.Update(existingSupporter);
@@ -402,7 +422,8 @@ public class SupporterService
                     embed.WithTitle("Updated supporter");
                     embed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
                                           $"LastPayment: `{existingSupporter.LastPayment}`\n" +
-                                          $"Subscription type: `{Enum.GetName(existingSupporter.SubscriptionType.GetValueOrDefault())}`");
+                                          $"Subscription type: `{Enum.GetName(existingSupporter.SubscriptionType.GetValueOrDefault())}`\n" +
+                                          $"Notes: `{existingSupporter.Notes}`");
 
                     await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
                 }
@@ -410,7 +431,7 @@ public class SupporterService
 
             if (existingSupporter.SubscriptionType == SubscriptionType.Monthly)
             {
-                if (existingSupporter.Expired != true && existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-40) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-38))
+                if (existingSupporter.Expired != true && existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-42) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-40))
                 {
                     Log.Information("Monthly supporter expiration detected for {supporterName} - {discordUserId}", existingSupporter.Name, existingSupporter.DiscordUserId);
 
@@ -427,7 +448,8 @@ public class SupporterService
 
                     embed.WithTitle("Monthly supporter expired");
                     embed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
-                                          $"ID: `{existingSupporter.OpenCollectiveId}`");
+                                          $"ID: `{existingSupporter.OpenCollectiveId}`\n" +
+                                          $"Notes: `{existingSupporter.Notes}`");
 
                     await supporterAuditLogChannel.SendMessageAsync($"`.removesupporter {existingSupporter.DiscordUserId}`", false, new[] { embed.Build() });
                     await supporterUpdateChannel.SendMessageAsync($"`.removesupporter {existingSupporter.DiscordUserId}`", false, new[] { embed.Build() });
@@ -455,7 +477,8 @@ public class SupporterService
 
                     embed.WithTitle("Yearly supporter expired");
                     embed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
-                                          $"ID: `{existingSupporter.OpenCollectiveId}`");
+                                          $"ID: `{existingSupporter.OpenCollectiveId}`\n" +
+                                          $"Notes: `{existingSupporter.Notes}`");
 
                     await supporterAuditLogChannel.SendMessageAsync($"`.removesupporter {existingSupporter.DiscordUserId}`", false, new[] { embed.Build() });
                     await supporterUpdateChannel.SendMessageAsync(null, false, new[] { embed.Build() });

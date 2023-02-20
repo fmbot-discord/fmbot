@@ -9,6 +9,7 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
@@ -18,6 +19,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using Genius.Models.User;
 
 namespace FMBot.Bot.Services;
 
@@ -297,12 +299,23 @@ public class PlayService
             .ToListAsync();
     }
 
+    public async Task DeleteStreak(long streakId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var streak = await db.UserStreaks
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.UserStreakId == streakId);
+
+        db.UserStreaks.Remove(streak);
+        await db.SaveChangesAsync();
+    }
+
     public async Task<UserStreak> GetStreak(int userId, Response<RecentTrackList> recentTracks)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var lastPlays = await PlayRepository.GetUserPlays(userId, connection, 10000);
+        var lastPlays = await PlayRepository.GetUserPlays(userId, connection, 20000);
 
         if (!lastPlays.Any())
         {
@@ -348,7 +361,8 @@ public class PlayService
                 artistContinue = false;
             }
 
-            if (firstPlay.AlbumName != null && play.AlbumName != null && firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
+            if (firstPlay.AlbumName != null && play.AlbumName != null &&
+                firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
             {
                 streak.AlbumPlaycount++;
                 streak.StreakStarted = play.TimePlayed;
@@ -419,12 +433,11 @@ public class PlayService
 
     public async Task<string> UpdateOrInsertStreak(UserStreak streak)
     {
-        const int saveThreshold = 25;
-        if (streak.TrackPlaycount is null or < saveThreshold &&
-            streak.AlbumPlaycount is null or < saveThreshold &&
-            streak.ArtistPlaycount is null or < saveThreshold)
+        if (streak.TrackPlaycount is null or < Constants.StreakSaveThreshold &&
+            streak.AlbumPlaycount is null or < Constants.StreakSaveThreshold &&
+            streak.ArtistPlaycount is null or < Constants.StreakSaveThreshold)
         {
-            return $"Only streaks with {saveThreshold} plays or higher are saved.";
+            return $"Only streaks with {Constants.StreakSaveThreshold} plays or higher are saved.";
         }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();

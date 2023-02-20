@@ -7,9 +7,12 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -27,7 +30,9 @@ public class GuildCommands : BaseCommandModule
     private readonly AdminService _adminService;
     private readonly GuildService _guildService;
     private readonly SettingService _settingService;
+    private readonly UserService _userService;
     private readonly CommandService _service;
+    private readonly GuildSettingBuilder _guildSettingBuilder;
 
     private readonly IMemoryCache _cache;
 
@@ -37,6 +42,8 @@ public class GuildCommands : BaseCommandModule
 
     private readonly CommandService _commands;
 
+    private InteractiveService Interactivity { get; }
+
     public GuildCommands(IPrefixService prefixService,
         GuildService guildService,
         CommandService commands,
@@ -45,7 +52,11 @@ public class GuildCommands : BaseCommandModule
         IChannelDisabledCommandService channelDisabledCommandService,
         SettingService settingService,
         IOptions<BotSettings> botSettings,
-        CommandService service, IMemoryCache cache) : base(botSettings)
+        CommandService service,
+        IMemoryCache cache,
+        GuildSettingBuilder guildSettingBuilder,
+        UserService userService,
+        InteractiveService interactivity) : base(botSettings)
     {
         this._prefixService = prefixService;
         this._guildService = guildService;
@@ -55,7 +66,36 @@ public class GuildCommands : BaseCommandModule
         this._settingService = settingService;
         this._service = service;
         this._cache = cache;
+        this._guildSettingBuilder = guildSettingBuilder;
+        this._userService = userService;
+        this.Interactivity = interactivity;
         this._adminService = adminService;
+    }
+
+
+    [Command("serversettings", RunMode = RunMode.Async)]
+    [Summary("Shows all the server settings")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.ThirdParty)]
+    [Alias("ss")]
+    public async Task GuildSettingsAsync([Remainder] string searchValues = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
+
+        try
+        {
+            var response = await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, "/", contextUser));
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [Command("keepdata", RunMode = RunMode.Async)]
@@ -311,9 +351,9 @@ public class GuildCommands : BaseCommandModule
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
-        if (prefix.Contains("*") || prefix.Contains("`") || prefix.Contains("~"))
+        if (prefix.Contains("*") || prefix.Contains("`") || prefix.Contains("~") || prefix.Contains("|"))
         {
-            await ReplyAsync("You can't have a custom prefix that contains ** * **or **`** or **~**");
+            await ReplyAsync("You can't have a custom prefix that contains ** * **, **`**, **~** or **|**");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }

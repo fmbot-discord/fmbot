@@ -132,6 +132,7 @@ public class StartupService
 
         await this.StartMetricsPusher();
         await this.RegisterSlashCommands();
+        await this.StoreSlashCommandIds();
         await this.StartBotSiteUpdater();
     }
 
@@ -257,6 +258,17 @@ public class StartupService
         if (!Directory.Exists(path))
         {
             Directory.CreateDirectory(path);
+        }
+    }
+
+    private async Task StoreSlashCommandIds()
+    {
+        var commands = await this._client.Rest.GetGlobalApplicationCommands();
+        Log.Information("Found {slashCommandCount} registered slash commands", commands.Count);
+
+        foreach (var cmd in commands)
+        {
+            PublicProperties.SlashCommands.TryAdd(cmd.Name, cmd.Id);
         }
     }
 }

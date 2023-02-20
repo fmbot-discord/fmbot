@@ -161,7 +161,7 @@ public class UserBuilder
 
         var fmType = new SelectMenuBuilder()
                 .WithPlaceholder("Select embed type")
-                .WithCustomId("fm-type-menu")
+                .WithCustomId(Constants.FmSettingType)
                 .WithMinValues(1)
                 .WithMaxValues(1);
 
@@ -176,12 +176,12 @@ public class UserBuilder
 
         var fmOptions = new SelectMenuBuilder()
             .WithPlaceholder("Select footer options")
-            .WithCustomId("fm-footer-menu")
+            .WithCustomId(Constants.FmSettingFooter)
             .WithMaxValues(maxOptions);
 
         var fmSupporterOptions = new SelectMenuBuilder()
             .WithPlaceholder("Select supporter-exclusive footer option")
-            .WithCustomId("fm-footer-menu-supporter")
+            .WithCustomId(Constants.FmSettingFooterSupporter)
             .WithMaxValues(1);
 
         fmSupporterOptions.AddOption(new SelectMenuOptionBuilder("None", "none"));

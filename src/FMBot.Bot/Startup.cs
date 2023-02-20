@@ -146,6 +146,7 @@ public class Startup
             .AddSingleton<GenreBuilders>()
             .AddSingleton<GenreService>()
             .AddSingleton<GuildService>()
+            .AddSingleton<GuildSettingBuilder>()
             .AddSingleton<IGuildDisabledCommandService, GuildDisabledCommandService>()
             .AddSingleton<IChannelDisabledCommandService, ChannelDisabledCommandService>()
             .AddSingleton<IIndexService, IndexService>()

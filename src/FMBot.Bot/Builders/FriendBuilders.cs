@@ -52,7 +52,8 @@ public class FriendBuilders
         if (friends?.Any() != true)
         {
             response.Embed.WithDescription("We couldn't find any friends. To add friends:\n" +
-                                           $"`{context.Prefix}friendsadd {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
+                                           $"`{context.Prefix}friendsadd {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`\n\n" +
+                                           $"Or right-click a user, go to apps and click 'Add as friend'");
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }

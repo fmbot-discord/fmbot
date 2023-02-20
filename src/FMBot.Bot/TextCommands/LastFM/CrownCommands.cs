@@ -89,7 +89,7 @@ public class CrownCommands : BaseCommandModule
             CrownOrderType = CrownOrderType.Playcount
         };
 
-        crownViewSettings = SettingService.SetCrownViewSettings(crownViewSettings, extraOptions);
+        crownViewSettings = SettingService.SetCrownViewSettings(crownViewSettings, userSettings.NewSearchValue);
         var userCrowns = await this._crownService.GetCrownsForUser(guild, userSettings.UserId, crownViewSettings.CrownOrderType);
 
         var title = userSettings.DifferentUser
@@ -184,8 +184,10 @@ public class CrownCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Crowns)]
     public async Task CrownLeaderboardAsync()
     {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
         if (guild.CrownsDisabled == true)
         {
@@ -196,6 +198,7 @@ public class CrownCommands : BaseCommandModule
 
         var topCrownUsers = await this._crownService.GetTopCrownUsersForGuild(guild.GuildId);
         var guildCrownCount = await this._crownService.GetTotalCrownCountForGuild(guild.GuildId);
+        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
 
         if (!topCrownUsers.Any())
         {
@@ -217,9 +220,7 @@ public class CrownCommands : BaseCommandModule
             var crownPageString = new StringBuilder();
             foreach (var crownUser in crownPage)
             {
-                var guildUser = guild
-                    .GuildUsers
-                    .FirstOrDefault(f => f.UserId == crownUser.Key);
+                var guildUser = guildUsers.FirstOrDefault(f => f.UserId == crownUser.Key);
 
                 string name = null;
 

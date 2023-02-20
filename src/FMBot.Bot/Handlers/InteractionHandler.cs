@@ -1,25 +1,25 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
-using Newtonsoft.Json.Linq;
 using Serilog;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace FMBot.Bot.Handlers;
 
@@ -30,11 +30,14 @@ public class InteractionHandler
     private readonly IServiceProvider _provider;
     private readonly UserService _userService;
     private readonly GuildService _guildService;
+    private readonly GuildSettingBuilder _guildSettingBuilder;
 
     private readonly IGuildDisabledCommandService _guildDisabledCommandService;
     private readonly IChannelDisabledCommandService _channelDisabledCommandService;
 
     private readonly IMemoryCache _cache;
+
+    private InteractiveService Interactivity { get; }
 
 
     public InteractionHandler(DiscordShardedClient client,
@@ -44,7 +47,7 @@ public class InteractionHandler
         GuildService guildService,
         IGuildDisabledCommandService guildDisabledCommandService,
         IChannelDisabledCommandService channelDisabledCommandService,
-        IMemoryCache cache)
+        IMemoryCache cache, GuildSettingBuilder guildSettingBuilder, InteractiveService interactivity)
     {
         this._client = client;
         this._interactionService = interactionService;
@@ -54,9 +57,12 @@ public class InteractionHandler
         this._guildDisabledCommandService = guildDisabledCommandService;
         this._channelDisabledCommandService = channelDisabledCommandService;
         this._cache = cache;
+        this._guildSettingBuilder = guildSettingBuilder;
+        this.Interactivity = interactivity;
         this._client.SlashCommandExecuted += SlashCommandAsync;
         this._client.AutocompleteExecuted += AutoCompleteAsync;
         this._client.SelectMenuExecuted += SelectMenuHandler;
+        this._client.ModalSubmitted += ModalSubmitted;
         client.UserCommandExecuted += UserCommandAsync;
 
     }
@@ -99,8 +105,7 @@ public class InteractionHandler
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 var userNickname = (context.User as SocketGuildUser)?.Nickname;
-                var loginCommandId = (ulong?)this._cache.Get("login-command-id");
-                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username, loginCommandId);
+                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
 
                 await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
@@ -154,11 +159,6 @@ public class InteractionHandler
 
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
-        if (command.Name == "login")
-        {
-            this._cache.Set("login-command-id", socketSlashCommand.CommandId);
-        }
-
         Statistics.SlashCommandsExecuted.WithLabels(command.Name).Inc();
         _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
     }
@@ -194,9 +194,8 @@ public class InteractionHandler
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 var userNickname = (context.User as SocketGuildUser)?.Nickname;
-                var loginCommandId = (ulong?)this._cache.Get("login-command-id");
 
-                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username, loginCommandId);
+                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
                 await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
@@ -238,29 +237,28 @@ public class InteractionHandler
 
     public async Task SelectMenuHandler(SocketMessageComponent arg)
     {
-        if (arg.Data.CustomId != "fm-type-menu" &&
-            arg.Data.CustomId != "fm-footer-menu" &&
-            arg.Data.CustomId != "fm-footer-menu-supporter")
+#if DEBUG
+        Log.Information("Received SelectMenuHandler");
+#endif
+
+        if (arg.Data.CustomId == null)
         {
             return;
         }
 
         var userSettings = await this._userService.GetUserSettingsAsync(arg.User);
-
         var embed = new EmbedBuilder();
 
         if (userSettings == null)
         {
             embed.WithColor(DiscordConstants.LastFmColorRed);
             var userNickname = (arg.User as SocketGuildUser)?.Nickname;
-            var loginCommandId = (ulong?)this._cache.Get("login-command-id");
-
-            embed.UsernameNotSetErrorResponse("/", userNickname ?? arg.User.Username, loginCommandId);
+            embed.UsernameNotSetErrorResponse("/", userNickname ?? arg.User.Username);
             await arg.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
             return;
         }
 
-        if (arg.Data.CustomId == "fm-type-menu")
+        if (arg.Data.CustomId == Constants.FmSettingType)
         {
             if (Enum.TryParse(arg.Data.Values.FirstOrDefault(), out FmEmbedType embedType))
             {
@@ -274,7 +272,7 @@ public class InteractionHandler
             return;
         }
 
-        if (arg.Data.CustomId == "fm-footer-menu")
+        if (arg.Data.CustomId == Constants.FmSettingFooter)
         {
             var maxOptions = userSettings.UserType == UserType.User ? Constants.MaxFooterOptions : Constants.MaxFooterOptionsSupporter;
             var amountSelected = 0;
@@ -298,8 +296,11 @@ public class InteractionHandler
                     }
                 }
             }
+
+            await SaveFooterOptions(arg, userSettings, embed);
+            return;
         }
-        if (arg.Data.CustomId == "fm-footer-menu-supporter" && userSettings.UserType != UserType.User)
+        if (arg.Data.CustomId == Constants.FmSettingFooterSupporter && userSettings.UserType != UserType.User)
         {
             var maxOptions = userSettings.UserType == UserType.User ? 0 : 1;
             var amountSelected = 0;
@@ -323,8 +324,60 @@ public class InteractionHandler
                     }
                 }
             }
-        }
 
+            await SaveFooterOptions(arg, userSettings, embed);
+            return;
+        }
+        if (arg.Data.CustomId == Constants.GuildSetting && arg.Data.Values.Any())
+        {
+            var setting = arg.Data.Values.First().Replace("gs-", "");
+
+            var context = new ShardedInteractionContext(this._client, arg);
+
+            if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out GuildSetting guildSetting))
+            {
+                ResponseModel response;
+                switch (guildSetting)
+                {
+                    case GuildSetting.TextPrefix:
+                        if (setting.Contains("view"))
+                        {
+                            await this._guildSettingBuilder.RespondToPrefixSetter(context);
+                        }
+                        break;
+                    case GuildSetting.EmoteReactions:
+                        break;
+                    case GuildSetting.DefaultEmbedType:
+                        break;
+                    case GuildSetting.WhoKnowsActivityThreshold:
+                        break;
+                    case GuildSetting.WhoKnowsBlockedUsers:
+                        response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(context, userSettings));
+                        await context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    case GuildSetting.CrownActivityThreshold:
+                        break;
+                    case GuildSetting.CrownBlockedUsers:
+                        response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(context, userSettings), true);
+                        await context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    case GuildSetting.CrownMinimumPlaycount:
+                        break;
+                    case GuildSetting.CrownsDisabled:
+                        break;
+                    case GuildSetting.DisabledCommands:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            return;
+        }
+    }
+
+    private async Task SaveFooterOptions(IDiscordInteraction arg, User userSettings, EmbedBuilder embed)
+    {
         userSettings = await this._userService.SetFooterOptions(userSettings, userSettings.FmFooterOptions);
 
 
@@ -343,6 +396,52 @@ public class InteractionHandler
         embed.WithDescription(description.ToString());
         embed.WithColor(DiscordConstants.InformationColorBlue);
         await arg.RespondAsync(embed: embed.Build(), ephemeral: true);
+    }
+
+    public async Task ModalSubmitted(SocketModal socketModal)
+    {
+        if (!socketModal.Data.CustomId.StartsWith("gs-"))
+        {
+            return;
+        }
+
+        var setting = socketModal.Data.CustomId.Replace("gs-", "");
+
+        var context = new ShardedInteractionContext(this._client, socketModal);
+
+        if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out GuildSetting guildSetting))
+        {
+            switch (guildSetting)
+            {
+                case GuildSetting.TextPrefix:
+                    if (setting.Contains("set"))
+                    {
+                        var value = socketModal.Data.Components.First().Value;
+                        await this._guildSettingBuilder.RespondWithPrefixSet(context, value);
+                    }
+                    break;
+                case GuildSetting.EmoteReactions:
+                    break;
+                case GuildSetting.DefaultEmbedType:
+                    break;
+                case GuildSetting.WhoKnowsActivityThreshold:
+                    break;
+                case GuildSetting.WhoKnowsBlockedUsers:
+                    break;
+                case GuildSetting.CrownActivityThreshold:
+                    break;
+                case GuildSetting.CrownBlockedUsers:
+                    break;
+                case GuildSetting.CrownMinimumPlaycount:
+                    break;
+                case GuildSetting.CrownsDisabled:
+                    break;
+                case GuildSetting.DisabledCommands:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
     }
 
     private static async Task UserBlockedResponse(ShardedInteractionContext shardedCommandContext)

@@ -14,13 +14,7 @@ public class Guild
 
     public string Prefix { get; set; }
 
-    public bool? Blacklisted { get; set; }
-
-    public bool? TitlesEnabled { get; set; }
-
     public FmEmbedType? FmEmbedType { get; set; }
-
-    public TimePeriod? ChartTimePeriod { get; set; }
 
     public string[] EmoteReactions { get; set; }
 
@@ -39,6 +33,10 @@ public class Guild
     public int? CrownsMinimumPlaycountThreshold { get; set; }
 
     public bool? CrownsDisabled { get; set; }
+
+    public ulong[] AllowedRoles { get; set; }
+    public ulong[] BlockedRoles { get; set; }
+    public ulong[] BotManagementRoles { get; set; }
 
     public ICollection<GuildUser> GuildUsers { get; set; }
 
