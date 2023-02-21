@@ -289,7 +289,7 @@ public class UserCommands : BaseCommandModule
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var response = await this._userBuilder.ModeAsync(new ContextModel(this.Context, prfx, contextUser), guild);
+            var response = UserBuilder.Mode(new ContextModel(this.Context, prfx, contextUser), guild);
 
             await this.Context.User.SendMessageAsync(embed: response.Embed.Build(),
                 components: response.Components.Build());

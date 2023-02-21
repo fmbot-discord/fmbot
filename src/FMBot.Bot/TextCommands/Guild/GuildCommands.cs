@@ -133,48 +133,11 @@ public class GuildCommands : BaseCommandModule
         }
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        if (otherSettings != null && otherSettings.Any() && otherSettings.First() == "info")
-        {
-            var replyString = $"Use {prfx}mode to force an .fm mode for everyone in the server.";
+        var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context, prfx));
 
-            this._embed.AddField("Options",
-                "**Modes**: `embedtiny/embedmini/embedfull/textmini/textfull`\n");
-
-            this._embed.AddField("Examples",
-                $"`{prfx}servermode embedmini` \n" +
-                $"`{prfx}servermode` (no option disables it)");
-
-            this._embed.WithTitle("Setting a server-wide .fm mode");
-            this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
-
-            var guildMode = !guild.FmEmbedType.HasValue ? "No forced mode" : guild.FmEmbedType.ToString();
-            this._embed.WithFooter($"Current .fm server mode: {guildMode}");
-            this._embed.WithDescription(replyString);
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
-
-        var newGuildSettings = this._guildService.SetSettings(guild, otherSettings);
-
-        await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, newGuildSettings);
-
-        if (newGuildSettings.FmEmbedType.HasValue)
-        {
-            await ReplyAsync($"The default .fm mode for your server has been set to {newGuildSettings.FmEmbedType}.\n\n" +
-                             $"All .fm commands in this server will use this mode regardless of user settings, so make sure to inform your users of this change.");
-        }
-        else
-        {
-            await ReplyAsync(
-                $"The default .fm mode has been disabled for this server. Users can now set their mode using `{prfx}mode`.\n\n" +
-                $"To view all available modes, use `{prfx}servermode help`.");
-        }
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("serverreactions", RunMode = RunMode.Async)]
@@ -231,11 +194,11 @@ public class GuildCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("togglesupportermessages", RunMode = RunMode.Async)]
-    [Summary("Enables/ disables the supporter messages on the `chart` command")]
-    [Alias("togglesupporter", "togglesupporters", "togglesupport")]
-    [GuildOnly]
-    [CommandCategories(CommandCategory.ServerSettings)]
+    //[Command("togglesupportermessages", RunMode = RunMode.Async)]
+    //[Summary("Enables/ disables the supporter messages on the `chart` command")]
+    //[Alias("togglesupporter", "togglesupporters", "togglesupport")]
+    //[GuildOnly]
+    //[CommandCategories(CommandCategory.ServerSettings)]
     public async Task ToggleSupportMessagesAsync()
     {
         _ = this.Context.Channel.TriggerTypingAsync();

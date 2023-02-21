@@ -239,7 +239,7 @@ public class GuildService
         await RemoveGuildFromCache(discordGuild.Id);
     }
 
-    public async Task ChangeGuildSettingAsync(IGuild discordGuild, Persistence.Domain.Models.Guild newGuildSettings)
+    public async Task ChangeGuildSettingAsync(IGuild discordGuild, FmEmbedType? embedType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -251,7 +251,8 @@ public class GuildService
             var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = discordGuild.Id,
-                Name = discordGuild.Name
+                Name = discordGuild.Name,
+                FmEmbedType = embedType
             };
 
             await db.Guilds.AddAsync(newGuild);
@@ -261,7 +262,7 @@ public class GuildService
         else
         {
             existingGuild.Name = discordGuild.Name;
-            existingGuild.FmEmbedType = newGuildSettings.FmEmbedType;
+            existingGuild.FmEmbedType = embedType;
 
             db.Entry(existingGuild).State = EntityState.Modified;
 

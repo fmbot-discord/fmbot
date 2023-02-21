@@ -199,7 +199,7 @@ public class UserSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
 
-        var response = await this._userBuilder.ModeAsync(new ContextModel(this.Context, contextUser), guild);
+        var response = UserBuilder.Mode(new ContextModel(this.Context, contextUser), guild);
 
         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
         this.Context.LogCommandUsed(response.CommandResponse);

@@ -9,12 +9,12 @@ using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Builders;
@@ -160,6 +160,8 @@ public class GuildSettingBuilder
         response.Components = new ComponentBuilder()
             .WithSelectMenu(guildSettings);
 
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
         return response;
 
     }
@@ -184,28 +186,25 @@ public class GuildSettingBuilder
         public string NewPrefix { get; set; }
     }
 
-    public async Task RespondWithPrefixSet(IInteractionContext context, string newPrefix)
+    public async Task<ResponseModel> SetPrefix(IInteractionContext context, string newPrefix)
     {
-        if (!await UserIsAllowed(context))
+        var response = new ResponseModel
         {
-            await UserNotAllowedResponse(context);
-            return;
-        }
+            ResponseType = ResponseType.Embed,
+        };
 
-        var embed = new EmbedBuilder();
         var description = new StringBuilder();
 
-        Guild guild;
         if (newPrefix != this._botSettings.Bot.Prefix)
         {
-            description.AppendLine("Prefix for all text commands has successfully been changed.");
-            guild = await this._guildService.SetGuildPrefixAsync(context.Guild, newPrefix);
+            description.AppendLine("Prefix has successfully been changed.");
+            await this._guildService.SetGuildPrefixAsync(context.Guild, newPrefix);
             this._prefixService.StorePrefix(newPrefix, context.Guild.Id);
         }
         else
         {
-            description.AppendLine("Prefix for all text commands has been set to default.");
-            guild = await this._guildService.SetGuildPrefixAsync(context.Guild, null);
+            description.AppendLine("Prefix has been set to default.");
+            await this._guildService.SetGuildPrefixAsync(context.Guild, null);
             this._prefixService.RemovePrefix(context.Guild.Id);
         }
 
@@ -219,12 +218,14 @@ public class GuildSettingBuilder
         description.AppendLine("The bot will no longer respond to any text commands without this prefix. " +
                                "Consider letting other users in your server know.");
 
-        embed.WithDescription(description.ToString());
+        response.Embed.WithTitle("Set text command prefix");
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        await context.Interaction.RespondAsync(embed: embed.Build(), ephemeral: true);
+        return response;
     }
 
-    private async Task<bool> UserIsAllowed(IInteractionContext context)
+    public async Task<bool> UserIsAllowed(IInteractionContext context)
     {
         if (context.Guild == null)
         {
@@ -255,7 +256,7 @@ public class GuildSettingBuilder
         return false;
     }
 
-    private static async Task<bool> UserNotAllowedResponse(IInteractionContext context)
+    public async Task<bool> UserNotAllowedResponse(IInteractionContext context)
     {
         var response = new StringBuilder();
         response.AppendLine("You are not authorized to change this .fmbot setting.");
@@ -347,6 +348,7 @@ public class GuildSettingBuilder
 
                 pages.Add(new PageBuilder()
                     .WithDescription(description.ToString())
+                    .WithColor(DiscordConstants.InformationColorBlue)
                     .WithAuthor(response.Embed.Title)
                     .WithFooter($"Page {pageCounter}/{userPages.Count()} - {guildUsers.Count} total\n" +
                                 footer));
@@ -362,6 +364,77 @@ public class GuildSettingBuilder
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        return response;
+    }
+
+    public async Task<ResponseModel> GuildMode(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+
+        var fmType = new SelectMenuBuilder()
+            .WithPlaceholder("Select embed type")
+            .WithCustomId(Constants.FmGuildSettingType)
+            .WithMinValues(0)
+            .WithMaxValues(1);
+
+        foreach (var name in Enum.GetNames(typeof(FmEmbedType)).OrderBy(o => o))
+        {
+            fmType.AddOption(new SelectMenuOptionBuilder(name, name));
+        }
+
+        response.Embed.WithTitle("Set server 'fm' mode");
+
+        var description = new StringBuilder();
+        description.AppendLine("Select a forced mode for the `fm` command for everyone in this server.");
+        description.AppendLine("This will override whatever mode a user has set themselves.");
+        description.AppendLine();
+        description.AppendLine("To disable, simply de-select the mode you have selected.");
+        description.AppendLine();
+
+        if (guild.FmEmbedType.HasValue)
+        {
+            description.AppendLine($"Current mode: **{guild.FmEmbedType}**.");
+        }
+        else
+        {
+            description.AppendLine($"Current mode: None");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        response.Components = new ComponentBuilder().WithSelectMenu(fmType);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> SetGuildMode(ContextModel context, FmEmbedType? embedType)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        await this._guildService.ChangeGuildSettingAsync(context.DiscordGuild, embedType);
+
+        if (embedType.HasValue)
+        {
+            response.Embed.WithDescription($"The default .fm mode for your server has been set to **{embedType}**.\n\n" +
+                             $"All .fm commands in this server will use this mode regardless of user settings, so make sure to inform your users of this change.");
+        }
+        else
+        {
+            response.Embed.WithDescription(
+                $"The default .fm mode has been disabled for this server. Users can now set their own mode using `fmmode`.");
+        }
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
         return response;
     }
 }

@@ -149,7 +149,7 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ModeAsync(
+    public static ResponseModel Mode(
         ContextModel context,
         Guild guild = null)
     {
