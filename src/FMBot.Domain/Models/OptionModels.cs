@@ -34,7 +34,7 @@ public class UserSettingsModel
     public string SessionKeyLastFm { get; set; }
     public bool DifferentUser { get; set; }
     public ulong DiscordUserId { get; set; }
-    public string DiscordUserName { get; set; }
+    public string DisplayName { get; set; }
     public int UserId { get; set; }
     public UserType UserType { get; set; }
     public DateTime? RegisteredLastFm { get; set; }

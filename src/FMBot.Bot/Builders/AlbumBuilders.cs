@@ -858,7 +858,7 @@ public class AlbumBuilders
 
         footer.AppendLine($"{albumTracks.Count} total tracks");
         footer.Append(spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ");
-        footer.Append($"{userSettings.DiscordUserName} has {albumSearch.Album.UserPlaycount} total scrobbles on this album");
+        footer.Append($"{userSettings.DisplayName} has {albumSearch.Album.UserPlaycount} total scrobbles on this album");
 
         var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/" +
                   $"{UrlEncoder.Default.Encode(albumSearch.Album.ArtistName)}/" +
@@ -950,7 +950,7 @@ public class AlbumBuilders
         }
 
         var reply =
-            $"**{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}** has `{albumSearch.Album.UserPlaycount}` {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} " +
+            $"**{Format.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has `{albumSearch.Album.UserPlaycount}` {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} " +
             $"for **{Format.Sanitize(albumSearch.Album.AlbumName)}** by **{Format.Sanitize(albumSearch.Album.ArtistName)}**";
 
         if (albumSearch.Album.UserPlaycount.HasValue && !userSettings.DifferentUser)

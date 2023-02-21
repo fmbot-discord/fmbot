@@ -5,6 +5,8 @@ namespace FMBot.Bot.Models;
 public class TasteSettings
 {
     public TasteType TasteType { get; set; }
+
+    public bool ExtraLarge { get; set; }
 }
 
 public class TasteModels
@@ -23,6 +25,19 @@ public class TasteTwoUserModel
     public long OwnPlaycount { get; set; }
 
     public long OtherPlaycount { get; set; }
+}
+
+public class TasteItem
+{
+    public TasteItem(string name, long playcount)
+    {
+        this.Name = name;
+        this.Playcount = playcount;
+    }
+
+    public string Name { get; set; }
+
+    public long Playcount { get; set; }
 }
 
 public enum TasteType

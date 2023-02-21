@@ -168,7 +168,7 @@ public class PlayBuilder
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"
-            : $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
+            : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
         var fmText = "";
         var footerText = await this._userService.GetFooterAsync(context.ContextUser.FmFooterOptions, userSettings,
@@ -332,7 +332,7 @@ public class PlayBuilder
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"
-            : $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
+            : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
         response.EmbedAuthor.WithName($"Latest tracks for {embedTitle}");
 
@@ -426,7 +426,7 @@ public class PlayBuilder
         var streakText = PlayService.StreakToText(streak);
         response.Embed.WithDescription(streakText);
 
-        response.EmbedAuthor.WithName($"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
+        response.EmbedAuthor.WithName($"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
         if (!userSettings.DifferentUser)
         {
             response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
@@ -590,7 +590,7 @@ public class PlayBuilder
 
         response.Embed.WithDescription(description);
 
-        response.EmbedAuthor.WithName($"Daily overview for {Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}");
+        response.EmbedAuthor.WithName($"Daily overview for {Format.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}");
 
         response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?date_preset=LAST_7_DAYS");
         response.Embed.WithAuthor(response.EmbedAuthor);
@@ -695,7 +695,7 @@ public class PlayBuilder
 
         reply.AppendLine(StringService.TrackToLinkedString(mileStonePlay.Content));
 
-        var userTitle = $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}";
+        var userTitle = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}";
 
         response.Embed.WithTitle($"{mileStoneAmount}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
 
@@ -751,7 +751,7 @@ public class PlayBuilder
             return response;
         }
 
-        var userTitle = $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}'s";
+        var userTitle = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s";
         var pages = new List<PageBuilder>();
 
         var description = new StringBuilder();

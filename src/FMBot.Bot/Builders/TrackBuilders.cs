@@ -599,7 +599,7 @@ public class TrackBuilders
         }
 
         var reply =
-            $"**{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}** has `{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} " +
+            $"**{Format.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has `{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} " +
             $"for **{Format.Sanitize(trackSearch.Track.TrackName)}** by **{Format.Sanitize(trackSearch.Track.ArtistName)}**";
 
         if (trackSearch.Track.UserPlaycount.HasValue && !userSettings.DifferentUser)

@@ -383,7 +383,7 @@ public class PlayCommands : BaseCommandModule
 
         var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
-        var userTitle = $"{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()}";
+        var userTitle = $"{Format.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {

@@ -261,7 +261,7 @@ public class UserBuilder
         };
 
         response.Embed.WithTitle(
-                    $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}'s featured history");
+                    $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s featured history");
 
         var featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId);
 

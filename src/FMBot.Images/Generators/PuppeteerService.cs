@@ -346,7 +346,7 @@ public class PuppeteerService
         content = content.Replace("{{time-period}}", sanitizer.Sanitize(timeSettings.Description));
         content = content.Replace("{{date-generated}}", DateTime.UtcNow.ToLongDateString());
         content = content.Replace("{{lfm-username}}", sanitizer.Sanitize(user.UserNameLastFm));
-        content = content.Replace("{{discord-username}}", sanitizer.Sanitize(user.DiscordUserName));
+        content = content.Replace("{{discord-username}}", sanitizer.Sanitize(user.DisplayName));
         content = content.Replace("{{auth-code}}", user.UserId.ToString());
         content = content.Replace("{{background-offset}}", new Random().Next(10, 1000).ToString());
         content = content.Replace("{{year}}", timeSettings.EndDateTime.HasValue ? timeSettings.EndDateTime.Value.Year.ToString() : DateTime.UtcNow.Year.ToString());

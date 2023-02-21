@@ -230,7 +230,8 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("User", "The user to compare your taste with")] string user,
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Type", "Taste view type")] TasteType tasteType = TasteType.Table,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [Summary("Private", "Only show response to you")] bool privateResponse = false,
+        [Summary("XXL", "Show extra large comparison")] bool extraLarge = false)
     {
         _ = DeferAsync(privateResponse);
 
@@ -242,7 +243,7 @@ public class ArtistSlashCommands : InteractionModuleBase
             var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
 
             var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
-                new TasteSettings { TasteType = tasteType }, timeSettings, userSettings);
+                new TasteSettings { TasteType = tasteType, ExtraLarge = extraLarge }, timeSettings, userSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
             this.Context.LogCommandUsed(response.CommandResponse);

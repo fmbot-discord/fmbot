@@ -40,10 +40,11 @@ public class ArtistBuilders
     private readonly IIndexService _indexService;
     private readonly CrownService _crownService;
     private readonly WhoKnowsService _whoKnowsService;
-    private readonly SettingService _settingService;
     private readonly SmallIndexRepository _smallIndexRepository;
     private readonly SupporterService _supporterService;
     private readonly PuppeteerService _puppeteerService;
+    private readonly CountryService _countryService;
+    private readonly GenreService _genreService;
 
     public ArtistBuilders(ArtistsService artistsService,
         LastFmRepository lastFmRepository,
@@ -57,9 +58,11 @@ public class ArtistBuilders
         WhoKnowsPlayService whoKnowsPlayService,
         CrownService crownService,
         WhoKnowsService whoKnowsService,
-        SettingService settingService,
         SmallIndexRepository smallIndexRepository,
-        SupporterService supporterService, PuppeteerService puppeteerService)
+        SupporterService supporterService,
+        PuppeteerService puppeteerService,
+        CountryService countryService,
+        GenreService genreService)
     {
         this._artistsService = artistsService;
         this._lastFmRepository = lastFmRepository;
@@ -73,10 +76,11 @@ public class ArtistBuilders
         this._whoKnowsPlayService = whoKnowsPlayService;
         this._crownService = crownService;
         this._whoKnowsService = whoKnowsService;
-        this._settingService = settingService;
         this._smallIndexRepository = smallIndexRepository;
         this._supporterService = supporterService;
         this._puppeteerService = puppeteerService;
+        this._countryService = countryService;
+        this._genreService = genreService;
     }
 
     public async Task<ResponseModel> ArtistAsync(
@@ -363,7 +367,7 @@ public class ArtistBuilders
         if (topTracks.Count == 0)
         {
             response.Embed.WithDescription(
-                $"{Format.Sanitize(userSettings.DiscordUserName)}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{Format.Sanitize(artistSearch.Artist.ArtistName)}** in .fmbot.");
+                $"{Format.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{Format.Sanitize(artistSearch.Artist.ArtistName)}** in .fmbot.");
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -402,7 +406,7 @@ public class ArtistBuilders
             {
                 footer.AppendLine($"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
-                title.Append($"{userSettings.DiscordUserName}'s top tracks for '{artistSearch.Artist.ArtistName}'");
+                title.Append($"{userSettings.DisplayName}'s top tracks for '{artistSearch.Artist.ArtistName}'");
             }
             else
             {
@@ -1087,7 +1091,7 @@ public class ArtistBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.Paginator,
         };
 
         var ownLastFmUsername = context.ContextUser.UserNameLastFM;
@@ -1105,6 +1109,7 @@ public class ArtistBuilders
                                         $"- `{context.Prefix}taste fm-bot`\n" +
                                         $"- `{context.Prefix}taste @.fmbot`");
             response.CommandResponse = CommandResponse.WrongInput;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
         if (lastfmToCompare.ToLower() == ownLastFmUsername)
@@ -1115,6 +1120,7 @@ public class ArtistBuilders
                                         $"- `{context.Prefix}taste fm-bot`\n" +
                                         $"- `{context.Prefix}taste @.fmbot`");
             response.CommandResponse = CommandResponse.WrongInput;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -1124,11 +1130,11 @@ public class ArtistBuilders
         var ownArtists = await ownArtistsTask;
         var otherArtists = await otherArtistsTask;
 
-
         if (!ownArtists.Success || ownArtists.Content == null)
         {
             response.Embed.ErrorResponse(ownArtists.Error, ownArtists.Message, "taste", context.DiscordUser, "artist list");
             response.CommandResponse = CommandResponse.LastFmError;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -1136,6 +1142,7 @@ public class ArtistBuilders
         {
             response.Embed.ErrorResponse(otherArtists.Error, otherArtists.Message, "taste", context.DiscordUser, "artist list");
             response.CommandResponse = CommandResponse.LastFmError;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -1147,28 +1154,86 @@ public class ArtistBuilders
             return response;
         }
 
-        if (!context.SlashCommand)
-        {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
-        }
-        response.EmbedAuthor.WithName($"Top artist comparison - {ownLastFmUsername} vs {lastfmToCompare}");
-        response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?{timeSettings.UrlParameter}");
-        response.Embed.WithAuthor(response.EmbedAuthor);
+        var amount = tasteSettings.ExtraLarge ? 28 : 14;
+        var pages = new List<PageBuilder>();
+        var url = $"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?{timeSettings.UrlParameter}";
 
-        const int amount = 14;
+        var ownName = context.DiscordUser.Username;
+        var otherName = userSettings.DisplayName;
+
+        if (context.DiscordGuild != null)
+        {
+            var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId, CacheMode.CacheOnly);
+            if (discordGuildUser != null)
+            {
+                ownName = discordGuildUser.DisplayName;
+            }
+        }
+
+        var ownTopArtists =
+            ownArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount.Value)).ToList();
+        var otherTopArtists =
+            otherArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount.Value)).ToList();
+
+        var artistPage = new PageBuilder();
+        artistPage.WithTitle($"Top artist comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
+        artistPage.WithUrl(url);
+
         if (tasteSettings.TasteType == TasteType.FullEmbed)
         {
-            var taste = this._artistsService.GetEmbedTaste(ownArtists.Content, otherArtists.Content, amount, timeSettings.TimePeriod);
+            var taste = this._artistsService.GetEmbedTaste(ownTopArtists, otherTopArtists, amount, timeSettings.TimePeriod);
 
-            response.Embed.WithDescription(taste.Description);
-            response.Embed.AddField("Artist", taste.LeftDescription, true);
-            response.Embed.AddField("Plays", taste.RightDescription, true);
+            artistPage.WithDescription(taste.Description);
+            artistPage.AddField("Artist", taste.LeftDescription, true);
+            artistPage.AddField("Plays", taste.RightDescription, true);
         }
         else
         {
-            var taste = this._artistsService.GetTableTaste(ownArtists.Content, otherArtists.Content, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare);
+            var taste = this._artistsService.GetTableTaste(ownTopArtists, otherTopArtists, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Artist");
 
-            response.Embed.WithDescription(taste);
+            artistPage.WithDescription(taste.result);
+        }
+
+        pages.Add(artistPage);
+
+        var ownTopGenres = await this._genreService.GetTopGenresForTopArtists(ownArtists.Content.TopArtists);
+        var otherTopGenres = await this._genreService.GetTopGenresForTopArtists(otherArtists.Content.TopArtists);
+
+        if (ownTopGenres.Any() && otherTopGenres.Any())
+        {
+            var genrePage = new PageBuilder();
+            genrePage.WithTitle($"Top genre comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
+            genrePage.WithUrl(url);
+
+            var ownTopGenresTaste =
+                ownTopGenres.Select(s => new TasteItem(s.GenreName, s.UserPlaycount.Value)).ToList();
+            var otherTopGenresTaste =
+                otherTopGenres.Select(s => new TasteItem(s.GenreName, s.UserPlaycount.Value)).ToList();
+
+            var taste = this._artistsService.GetTableTaste(ownTopGenresTaste, otherTopGenresTaste, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Genre");
+
+            genrePage.WithDescription(taste.result);
+            pages.Add(genrePage);
+        }
+
+        var ownTopCountries = await this._countryService.GetTopCountriesForTopArtists(ownArtists.Content.TopArtists, true);
+        var otherTopCountries = await this._countryService.GetTopCountriesForTopArtists(otherArtists.Content.TopArtists, true);
+
+        if (ownTopCountries.Any() && otherTopCountries.Any())
+        {
+            var countryPage = new PageBuilder();
+            countryPage.WithTitle($"Top country comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
+            countryPage.WithUrl(url);
+
+            var ownTopCountriesTaste =
+                ownTopCountries.Select(s => new TasteItem(s.CountryName, s.UserPlaycount.Value)).ToList();
+            var otherTopCountriesTaste =
+                otherTopCountries.Select(s => new TasteItem(s.CountryName, s.UserPlaycount.Value)).ToList();
+
+            var taste = this._artistsService.GetTableTaste(ownTopCountriesTaste, otherTopCountriesTaste, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Country");
+
+            countryPage.WithDescription(taste.result);
+            pages.Add(countryPage);
         }
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
@@ -1176,6 +1241,7 @@ public class ArtistBuilders
             await this._smallIndexRepository.UpdateUserArtists(context.ContextUser, ownArtists.Content.TopArtists);
         }
 
+        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
         return response;
     }
 

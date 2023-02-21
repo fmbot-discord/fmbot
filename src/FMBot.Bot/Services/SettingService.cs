@@ -417,7 +417,7 @@ public class SettingService
             UserNameLastFm = user.UserNameLastFM,
             SessionKeyLastFm = user.SessionKeyLastFm,
             DiscordUserId = discordUser.Id,
-            DiscordUserName = discordUserName,
+            DisplayName = discordUserName,
             UserId = user.UserId,
             UserType = user.UserType,
             RegisteredLastFm = user.RegisteredLastFm,
@@ -439,7 +439,7 @@ public class SettingService
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { options.First() }, true);
 
-                settingsModel.DiscordUserName = otherUser.UserNameLastFM;
+                settingsModel.DisplayName = otherUser.UserNameLastFM;
                 settingsModel.DifferentUser = true;
                 settingsModel.DiscordUserId = otherUser.DiscordUserId;
                 settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
@@ -457,7 +457,7 @@ public class SettingService
 
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
                 settingsModel.UserNameLastFm = lfmUserName;
-                settingsModel.DiscordUserName = lfmUserName;
+                settingsModel.DisplayName = lfmUserName;
                 settingsModel.SessionKeyLastFm = null;
                 settingsModel.RegisteredLastFm = null;
                 settingsModel.UserId = 0;
@@ -480,11 +480,11 @@ public class SettingService
                 if (discordGuild != null)
                 {
                     var discordGuildUser = await discordGuild.GetUserAsync(otherUser.DiscordUserId);
-                    settingsModel.DiscordUserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : otherUser.UserNameLastFM;
+                    settingsModel.DisplayName = discordGuildUser != null ? discordGuildUser.DisplayName : otherUser.UserNameLastFM;
                 }
                 else
                 {
-                    settingsModel.DiscordUserName = otherUser.UserNameLastFM;
+                    settingsModel.DisplayName = otherUser.UserNameLastFM;
                 }
 
                 settingsModel.DifferentUser = true;
@@ -507,7 +507,7 @@ public class SettingService
                 {
                     settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName, $"lfm:{lfmUserName}" }, true);
 
-                    settingsModel.DiscordUserName = foundLfmUser.UserNameLastFM;
+                    settingsModel.DisplayName = foundLfmUser.UserNameLastFM;
                     settingsModel.DifferentUser = true;
                     settingsModel.DiscordUserId = foundLfmUser.DiscordUserId;
                     settingsModel.UserNameLastFm = foundLfmUser.UserNameLastFM;
@@ -521,7 +521,7 @@ public class SettingService
 
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
                 settingsModel.UserNameLastFm = lfmUserName;
-                settingsModel.DiscordUserName = lfmUserName;
+                settingsModel.DisplayName = lfmUserName;
                 settingsModel.SessionKeyLastFm = null;
                 settingsModel.RegisteredLastFm = null;
                 settingsModel.UserId = 0;

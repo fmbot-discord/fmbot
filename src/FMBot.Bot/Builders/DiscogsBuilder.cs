@@ -152,7 +152,7 @@ public class DiscogsBuilder
 
         response.EmbedAuthor.WithName(!userSettings.DifferentUser
             ? $"Discogs collection for {userTitle}"
-            : $"Discogs collection for {userSettings.DiscordUserName}, requested by {userTitle}");
+            : $"Discogs collection for {userSettings.DisplayName}, requested by {userTitle}");
 
         response.EmbedAuthor.WithUrl($"https://www.discogs.com/user/{user.UserDiscogs.Username}/collection");
         response.Embed.WithAuthor(response.EmbedAuthor);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
@@ -253,16 +254,16 @@ public class ArtistsService
     }
 
     // Top artists for 2 users
-    public TasteModels GetEmbedTaste(TopArtistList leftUserArtists,
-        TopArtistList rightUserArtists, int amount, TimePeriod timePeriod)
+    public TasteModels GetEmbedTaste(ICollection<TasteItem> leftUserArtists,
+        ICollection<TasteItem> rightUserArtists, int amount, TimePeriod timePeriod)
     {
-        var matchedArtists = ArtistsToShow(leftUserArtists.TopArtists, rightUserArtists.TopArtists);
+        var matchedArtists = ArtistsToShow(leftUserArtists, rightUserArtists);
 
         var left = "";
         var right = "";
         foreach (var artist in matchedArtists.Take(amount))
         {
-            var name = artist.ArtistName;
+            var name = artist.Name;
             if (!string.IsNullOrWhiteSpace(name) && name.Length > 24)
             {
                 left += $"**{name.Substring(0, 24)}..**\n";
@@ -272,8 +273,8 @@ public class ArtistsService
                 left += $"**{name}**\n";
             }
 
-            var ownPlaycount = artist.UserPlaycount.Value;
-            var otherPlaycount = rightUserArtists.TopArtists.First(f => f.ArtistName.Equals(name)).UserPlaycount.Value;
+            var ownPlaycount = artist.Playcount;
+            var otherPlaycount = rightUserArtists.First(f => f.Name.Equals(name)).Playcount;
 
             if (ownPlaycount > otherPlaycount)
             {
@@ -297,7 +298,7 @@ public class ArtistsService
             right += $"\n";
         }
 
-        var description = Description(leftUserArtists.TopArtists, timePeriod, matchedArtists);
+        var description = Description(leftUserArtists, timePeriod, matchedArtists);
 
         return new TasteModels
         {
@@ -336,19 +337,19 @@ public class ArtistsService
     }
 
     // Top artists for 2 users
-    public string GetTableTaste(TopArtistList leftUserArtists,
-        TopArtistList rightUserArtists, int amount, TimePeriod timePeriod, string mainUser, string userToCompare)
+    public (string result, int matches) GetTableTaste(IReadOnlyCollection<TasteItem> leftUserArtists, IReadOnlyCollection<TasteItem> rightUserArtists,
+        int amount, TimePeriod timePeriod, string mainUser, string userToCompare, string type)
     {
-        var artistsToShow = ArtistsToShow(leftUserArtists.TopArtists, rightUserArtists.TopArtists);
+        var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
 
         var artists = artistsToShow.Select(s =>
         {
-            var ownPlaycount = s.UserPlaycount.Value;
-            var otherPlaycount = rightUserArtists.TopArtists.First(f => f.ArtistName.Equals(s.ArtistName)).UserPlaycount.Value;
+            var ownPlaycount = s.Playcount;
+            var otherPlaycount = rightUserArtists.First(f => f.Name == s.Name).Playcount;
 
             return new TasteTwoUserModel
             {
-                Artist = !string.IsNullOrWhiteSpace(s.ArtistName) && s.ArtistName.Length > AllowedCharacterCount(s.ArtistName) ? $"{s.ArtistName.Substring(0, AllowedCharacterCount(s.ArtistName) - 2)}.." : s.ArtistName,
+                Artist = !string.IsNullOrWhiteSpace(s.Name) && s.Name.Length > AllowedCharacterCount(s.Name) ? $"{s.Name.Substring(0, AllowedCharacterCount(s.Name) - 2)}.." : s.Name,
                 OwnPlaycount = ownPlaycount,
                 OtherPlaycount = otherPlaycount
             };
@@ -359,7 +360,8 @@ public class ArtistsService
             }
         }).ToList();
 
-        var description = $"{Description(leftUserArtists.TopArtists, timePeriod, artistsToShow)}\n";
+        var description = new StringBuilder();
+        description.AppendLine($"{Description(leftUserArtists, timePeriod, artistsToShow)}");
 
         var filterAmount = 0;
         for (var i = 0; i < 100; i++)
@@ -373,25 +375,33 @@ public class ArtistsService
 
         artists = artists.Where(w => w.OwnPlaycount >= filterAmount && w.OtherPlaycount >= filterAmount).ToList();
 
-        var customTable = artists
-            .Take(amount)
-            .ToTasteTable(new[] { "Artist", mainUser, "   ", userToCompare },
-                u => u.Artist,
-                u => u.OwnPlaycount,
-                u => GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
-                u => u.OtherPlaycount
-            );
+        if (artistsToShow.Count > 0)
+        {
+            var customTable = artists
+                .Take(amount)
+                .ToTasteTable(new[] { type, mainUser, "   ", userToCompare },
+                    u => u.Artist,
+                    u => u.OwnPlaycount,
+                    u => GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
+                    u => u.OtherPlaycount
+                );
 
-        description += $"```{customTable}```";
+            description.Append($"```{customTable}```");
+        }
+        else
+        {
+            description.AppendLine();
+            description.AppendLine($"No {type.ToLower()} matches... <:404:882220605783560222>");
+        }
 
-        return description;
+        return (description.ToString(), artistsToShow.Count);
     }
 
-    private static string Description(IEnumerable<TopArtist> mainUserArtists, TimePeriod chartTimePeriod, ICollection<TopArtist> matchedArtists)
+    private static string Description(IEnumerable<TasteItem> mainUserArtists, TimePeriod chartTimePeriod, IReadOnlyCollection<TasteItem> matchedArtists)
     {
         var percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
         var description =
-            $"**{matchedArtists.Count()}** ({percentage:0.0}%)  out of top **{mainUserArtists.Count()}** {chartTimePeriod.ToString().ToLower()} artists match";
+            $"**{matchedArtists.Count()}** ({percentage:0.0}%)  out of top **{mainUserArtists.Count()}** {chartTimePeriod.ToString().ToLower()} match";
 
         return description;
     }
@@ -401,12 +411,12 @@ public class ArtistsService
         return ownPlaycount == otherPlaycount ? " • " : ownPlaycount > otherPlaycount ? " > " : " < ";
     }
 
-    private static IList<TopArtist> ArtistsToShow(IEnumerable<TopArtist> leftUserArtists, IEnumerable<TopArtist> rightUserArtists)
+    private static List<TasteItem> ArtistsToShow(IEnumerable<TasteItem> leftUserArtists, IEnumerable<TasteItem> rightUserArtists)
     {
         var artistsToShow =
             leftUserArtists
-                .Where(w => rightUserArtists.Select(s => s.ArtistName).Contains(w.ArtistName))
-                .OrderByDescending(o => o.UserPlaycount)
+                .Where(w => rightUserArtists.Any(a => a.Name == w.Name))
+                .OrderByDescending(o => o.Playcount)
                 .ToList();
         return artistsToShow;
     }
@@ -427,6 +437,10 @@ public class ArtistsService
         if (extraOptions.Contains("e") || extraOptions.Contains("embed") || extraOptions.Contains("embedfull") || extraOptions.Contains("fullembed"))
         {
             tasteSettings.TasteType = TasteType.FullEmbed;
+        }
+        if (extraOptions.Contains("xl") || extraOptions.Contains("xxl") || extraOptions.Contains("extralarge"))
+        {
+            tasteSettings.ExtraLarge = true;
         }
 
         return tasteSettings;
