@@ -83,6 +83,7 @@ public class CountryService
 
         var foundCountry = this._countries
             .FirstOrDefault(f => f.Name.Replace(" ", "").Replace("-", "").ToLower() == searchQuery ||
+                                 f.Emoji == searchQuery ||
                                  f.Code.ToLower() == searchQuery);
 
         return foundCountry;
