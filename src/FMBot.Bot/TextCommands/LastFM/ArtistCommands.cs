@@ -344,8 +344,8 @@ public class ArtistCommands : BaseCommandModule
     }
 
     [Command("taste", RunMode = RunMode.Async)]
-    [Summary("Compares your top artists to another users top artists.")]
-    [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`")]
+    [Summary("Compares your top artists, genres and countries to those from another user.")]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`", "XXL")]
     [Examples("t frikandel_", "t @user", "taste bitldev", "taste @user monthly embed")]
     [UsernameSetRequired]
     [Alias("t")]

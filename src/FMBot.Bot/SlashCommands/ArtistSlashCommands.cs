@@ -224,7 +224,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         await TasteAsync(user.Id.ToString(), privateResponse: true);
     }
 
-    [SlashCommand("taste", "Compares your top artists to another users top artists.")]
+    [SlashCommand("taste", "Compares your top artist, genres and countries to those from another user.")]
     [UsernameSetRequired]
     public async Task TasteAsync(
         [Summary("User", "The user to compare your taste with")] string user,
