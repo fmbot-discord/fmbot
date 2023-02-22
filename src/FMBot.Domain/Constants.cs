@@ -57,15 +57,6 @@ public static class Constants
 
     public const int StreakSaveThreshold = 25;
 
-    public const string GuildSetting = "guild-setting-picker";
-
-    public const string FmSettingType = "fm-type-menu";
-    public const string FmSettingFooter = "fm-footer-menu";
-    public const string FmSettingFooterSupporter = "fm-footer-menu-supporter";
-
-    public const string TextPrefixModal = "text-prefix-modal";
-    public const string FmGuildSettingType = "fm-guild-type-menu";
-
     public static readonly int[] PlayCountBreakPoints = {
         50,
         100,

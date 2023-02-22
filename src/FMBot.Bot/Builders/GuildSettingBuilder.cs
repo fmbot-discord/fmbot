@@ -145,7 +145,7 @@ public class GuildSettingBuilder
 
         var guildSettings = new SelectMenuBuilder()
             .WithPlaceholder("Select server setting you want to change")
-            .WithCustomId(Constants.GuildSetting)
+            .WithCustomId(InteractionConstants.GuildSetting)
             .WithMaxValues(1);
 
         foreach (var setting in ((GuildSetting[])Enum.GetValues(typeof(GuildSetting))))
@@ -164,17 +164,6 @@ public class GuildSettingBuilder
 
         return response;
 
-    }
-
-    public async Task RespondToPrefixSetter(IInteractionContext context)
-    {
-        if (!await UserIsAllowed(context))
-        {
-            await UserNotAllowedResponse(context);
-            return;
-        }
-
-        await context.Interaction.RespondWithModalAsync<PrefixModal>(Constants.TextPrefixModal);
     }
 
     public class PrefixModal : IModal
@@ -367,6 +356,41 @@ public class GuildSettingBuilder
         return response;
     }
 
+    public async Task<ResponseModel> ActivityThreshold(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+
+        response.Embed.WithTitle("Set server activity threshold");
+
+        var description = new StringBuilder();
+        description.AppendLine("Select a forced mode for the `fm` command for everyone in this server.");
+        description.AppendLine("This will override whatever mode a user has set themselves.");
+        description.AppendLine();
+        description.AppendLine("To disable, simply de-select the mode you have selected.");
+        description.AppendLine();
+
+        if (guild.FmEmbedType.HasValue)
+        {
+            description.AppendLine($"Current mode: **{guild.FmEmbedType}**.");
+        }
+        else
+        {
+            description.AppendLine($"Current mode: None");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        response.Components = new ComponentBuilder().WithButton();
+
+        return response;
+    }
+
     public async Task<ResponseModel> GuildMode(ContextModel context)
     {
         var response = new ResponseModel
@@ -378,7 +402,7 @@ public class GuildSettingBuilder
 
         var fmType = new SelectMenuBuilder()
             .WithPlaceholder("Select embed type")
-            .WithCustomId(Constants.FmGuildSettingType)
+            .WithCustomId(InteractionConstants.FmGuildSettingType)
             .WithMinValues(0)
             .WithMaxValues(1);
 

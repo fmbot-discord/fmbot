@@ -205,7 +205,7 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction(Constants.FmSettingType)]
+    [ComponentInteraction(InteractionConstants.FmSettingType)]
     public async Task SetEmbedType(string[] inputs)
     {
         var embed = new EmbedBuilder();
@@ -221,7 +221,7 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction(Constants.FmSettingFooter)]
+    [ComponentInteraction(InteractionConstants.FmSettingFooter)]
     public async Task SetFooterOptions(string[] inputs)
     {
         var embed = new EmbedBuilder();
@@ -253,7 +253,7 @@ public class UserSlashCommands : InteractionModuleBase
         await SaveFooterOptions(userSettings, embed);
     }
 
-    [ComponentInteraction(Constants.FmSettingFooterSupporter)]
+    [ComponentInteraction(InteractionConstants.FmSettingFooterSupporter)]
     public async Task SetSupporterFooterOptions(string[] inputs)
     {
         var embed = new EmbedBuilder();

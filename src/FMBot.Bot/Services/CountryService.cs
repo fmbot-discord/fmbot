@@ -79,10 +79,10 @@ public class CountryService
             return null;
         }
 
-        var searchQuery = countryValues.ToLower().Replace(" ", "").Replace("-", "");
+        var searchQuery = TrimCountry(countryValues);
 
         var foundCountry = this._countries
-            .FirstOrDefault(f => f.Name.Replace(" ", "").Replace("-", "").ToLower() == searchQuery ||
+            .FirstOrDefault(f => TrimCountry(f.Name) == searchQuery ||
                                  f.Emoji == searchQuery ||
                                  f.Code.ToLower() == searchQuery);
 
@@ -96,7 +96,7 @@ public class CountryService
             return null;
         }
 
-        var searchQuery = countryValues.ToLower().Replace(" ", "").Replace("-", "");
+        var searchQuery = TrimCountry(countryValues);
 
         var foundCountries = this._countries
             .Where(f => TrimCountry(f.Name) == searchQuery ||

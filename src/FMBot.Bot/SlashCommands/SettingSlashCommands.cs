@@ -4,11 +4,12 @@ using System;
 using Discord.Interactions;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Bot.Models;
 using Fergun.Interactive;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using static FMBot.Bot.Builders.GuildSettingBuilder;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -27,7 +28,7 @@ public class SettingSlashCommands : InteractionModuleBase
         this._userService = userService;
     }
 
-    [ComponentInteraction(Constants.GuildSetting)]
+    [ComponentInteraction(InteractionConstants.GuildSetting)]
     public async Task GetGuildSetting(string[] inputs)
     {
         var setting = inputs.First().Replace("gs-", "");
@@ -40,17 +41,31 @@ public class SettingSlashCommands : InteractionModuleBase
             switch (guildSetting)
             {
                 case GuildSetting.TextPrefix:
-                    if (setting.Contains("view"))
                     {
-                        await this._guildSettingBuilder.RespondToPrefixSetter(this.Context);
+                        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+                        {
+                            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+                            return;
+                        }
+
+                        await this.Context.Interaction.RespondWithModalAsync<PrefixModal>(InteractionConstants.TextPrefixModal);
                     }
                     break;
                 case GuildSetting.EmoteReactions:
                     await RespondAsync("Not implemented yet", ephemeral: true);
                     break;
                 case GuildSetting.DefaultEmbedType:
-                    response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context));
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    {
+                        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+                        {
+                            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+                            return;
+                        }
+
+                        response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    }
                     break;
                 case GuildSetting.WhoKnowsActivityThreshold:
                     await RespondAsync("Not implemented yet", ephemeral: true);
@@ -81,7 +96,7 @@ public class SettingSlashCommands : InteractionModuleBase
         }
     }
 
-    [ModalInteraction(Constants.TextPrefixModal)]
+    [ModalInteraction(InteractionConstants.TextPrefixModal)]
     public async Task SetNewTextPrefix(GuildSettingBuilder.PrefixModal modal)
     {
         if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
@@ -95,7 +110,7 @@ public class SettingSlashCommands : InteractionModuleBase
         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
     }
 
-    [ComponentInteraction(Constants.FmGuildSettingType)]
+    [ComponentInteraction(InteractionConstants.FmGuildSettingType)]
     public async Task SetGuildEmbedType(string[] inputs)
     {
         if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
