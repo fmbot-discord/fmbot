@@ -1,3 +1,5 @@
+using FMBot.Domain.Models;
+
 namespace FMBot.Persistence.Domain.Models;
 
 public class CensoredMusic
@@ -19,4 +21,6 @@ public class CensoredMusic
     public bool? FeaturedBanOnly { get; set; }
 
     public bool Artist { get; set; }
+
+    public CensorType CensorType { get; set; }
 }
