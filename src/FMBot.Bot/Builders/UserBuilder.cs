@@ -16,6 +16,7 @@ using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Google.Apis.Discovery;
 using Microsoft.Extensions.Options;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -70,7 +71,7 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
-        var guild = await this._guildService.GetGuildWithGuildUsers(context.DiscordGuild?.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
 
         if (this._timer._currentFeatured == null)
         {
@@ -83,14 +84,20 @@ public class UserBuilder
         response.Embed.WithThumbnailUrl(this._timer._currentFeatured.ImageUrl);
         response.Embed.AddField("Featured:", this._timer._currentFeatured.Description);
 
-        if (guild?.GuildUsers != null && guild.GuildUsers.Any() && this._timer._currentFeatured.UserId.HasValue && this._timer._currentFeatured.UserId.Value != 0)
+        if (context.DiscordGuild != null && guildUsers.Any() && this._timer._currentFeatured.UserId.HasValue && this._timer._currentFeatured.UserId.Value != 0)
         {
-            var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == this._timer._currentFeatured.UserId);
+            var guildUser = guildUsers.FirstOrDefault(f => f.UserId == this._timer._currentFeatured.UserId);
 
             if (guildUser != null)
             {
                 response.Text = "in-server";
-                response.Embed.AddField("🥳 Congratulations!", $"This user is in your server under the name {guildUser.UserName}.");
+
+                var dateValue = ((DateTimeOffset)this._timer._currentFeatured.DateTime.AddHours(1)).ToUnixTimeSeconds();
+
+                response.Embed.AddField("🥳 Congratulations!",
+                    guildUser.DiscordUserId == context.DiscordUser.Id
+                        ? $"Oh hey, it's you! You'll be featured until <t:{dateValue}:t>."
+                        : $"This user is in this server as **{guildUser.UserName}**.");
             }
         }
 
