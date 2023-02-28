@@ -8,7 +8,7 @@ namespace FMBot.Bot.Models.MusicBot;
 internal class JockieMusicBot : MusicBot
 {
     private const string StartedPlaying = " ​ Started playing ";
-    public JockieMusicBot() : base("Jockie Music", false)
+    public JockieMusicBot() : base("Jockie Music", true)
     {
     }
 
