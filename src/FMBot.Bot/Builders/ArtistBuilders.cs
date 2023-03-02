@@ -1192,6 +1192,7 @@ public class ArtistBuilders
             var taste = this._artistsService.GetTableTaste(ownTopArtists, otherTopArtists, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Artist");
 
             artistPage.WithDescription(taste.result);
+            artistPage.WithFooter("➡️ Genres");
         }
 
         pages.Add(artistPage);
@@ -1213,6 +1214,9 @@ public class ArtistBuilders
             var taste = this._artistsService.GetTableTaste(ownTopGenresTaste, otherTopGenresTaste, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Genre");
 
             genrePage.WithDescription(taste.result);
+            genrePage.WithFooter("⬅️ Artists\n" +
+                                  "➡️ Countries");
+
             pages.Add(genrePage);
         }
 
@@ -1233,6 +1237,8 @@ public class ArtistBuilders
             var taste = this._artistsService.GetTableTaste(ownTopCountriesTaste, otherTopCountriesTaste, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Country");
 
             countryPage.WithDescription(taste.result);
+
+            countryPage.WithFooter("⬅️ Genres");
             pages.Add(countryPage);
         }
 
