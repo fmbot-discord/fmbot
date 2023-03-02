@@ -80,6 +80,12 @@ public class FeaturedService
         try
         {
             var user = await GetUserToFeatureAsync(Constants.DaysLastUsedForFeatured + (supporterDay ? 6 : 0), supporterDay);
+
+            if (user == null)
+            {
+                return null;
+            }
+
             Log.Information($"Featured: Picked user {user.UserId} / {user.UserNameLastFM}");
 
             switch (featuredMode)

@@ -112,6 +112,11 @@ public class GuildService
 
     public async Task<IList<FullGuildUser>> GetGuildUsers(ulong? discordGuildId = null)
     {
+        if (discordGuildId == null)
+        {
+            return new List<FullGuildUser>();
+        }
+
         const string sql = "SELECT gu.user_id, " +
                            "gu.guild_id, " +
                            "gu.user_name, " +
