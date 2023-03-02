@@ -35,13 +35,31 @@ public class CensorService
         NotSafe = 3
     }
 
-    public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embed = null)
+    public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embedToUpdate = null)
     {
         var result = await AlbumResult(albumName, artistName);
         if (result == CensorResult.NotSafe)
         {
-            embed?.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
+            embedToUpdate?.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
                                    $"You can view the [album cover here]({url}).");
+            return result;
+        }
+
+        if (result == CensorResult.Nsfw && (guild == null || ((SocketTextChannel)channel).IsNsfw))
+        {
+            return CensorResult.Safe;
+        }
+
+        return result;
+    }
+
+    public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string artistName, string url, EmbedBuilder embedToUpdate = null)
+    {
+        var result = await ArtistResult(artistName);
+        if (result == CensorResult.NotSafe)
+        {
+            embedToUpdate?.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
+                                           $"You can view the [album cover here]({url}).");
             return result;
         }
 
@@ -85,7 +103,7 @@ public class CensorService
         if (!featured)
         {
             censoredMusic = censoredMusic
-                .Where(w => w.FeaturedBanOnly != true)
+                .Where(w => w.FeaturedBanOnly != true || w.CensorType.HasFlag(CensorType.ArtistFeaturedBan))
                 .ToList();
         }
 
@@ -112,6 +130,24 @@ public class CensorService
                 await IncreaseCensoredCount(album.CensoredMusicId);
                 return album.SafeForCommands ? CensorResult.Nsfw : CensorResult.NotSafe;
             }
+        }
+
+        return CensorResult.Safe;
+    }
+
+
+    public async Task<CensorResult> ArtistResult(string artistName)
+    {
+        var censoredMusic = await GetCachedCensoredMusic();
+        
+        var censoredArtist = censoredMusic
+            .Where(w => w.Artist && (w.CensorType.HasFlag(CensorType.ArtistImageNsfw) || w.CensorType.HasFlag(CensorType.ArtistImageCensored)))
+            .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower());
+
+        if (censoredArtist != null)
+        {
+            await IncreaseCensoredCount(censoredArtist.CensoredMusicId);
+            return censoredArtist.SafeForCommands ? CensorResult.Nsfw : CensorResult.NotSafe;
         }
 
         return CensorResult.Safe;
@@ -150,7 +186,8 @@ public class CensorService
             ArtistName = artistName,
             Artist = false,
             SafeForCommands = false,
-            SafeForFeatured = false
+            SafeForFeatured = false,
+            CensorType = CensorType.AlbumCoverCensored
         });
 
         await db.SaveChangesAsync();
@@ -167,13 +204,14 @@ public class CensorService
             ArtistName = artistName,
             Artist = false,
             SafeForCommands = true,
-            SafeForFeatured = false
+            SafeForFeatured = false,
+            CensorType = CensorType.AlbumCoverNsfw
         });
 
         await db.SaveChangesAsync();
     }
 
-    public async Task AddCensoredArtist(string artistName)
+    public async Task AddCensoredArtistAlbums(string artistName)
     {
         ClearCensoredCache();
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -183,7 +221,8 @@ public class CensorService
             ArtistName = artistName,
             Artist = true,
             SafeForCommands = false,
-            SafeForFeatured = false
+            SafeForFeatured = false,
+            CensorType = CensorType.ArtistAlbumsCensored
         });
 
         await db.SaveChangesAsync();

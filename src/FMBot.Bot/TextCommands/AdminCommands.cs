@@ -369,7 +369,7 @@ public class AdminCommands : BaseCommandModule
 
             artist = artist.Replace("\"","");
 
-            await this._censorService.AddCensoredArtist(artist);
+            await this._censorService.AddCensoredArtistAlbums(artist);
 
             await ReplyAsync($"Added `{artist}` to the list of censored artists.");
             this.Context.LogCommandUsed();
