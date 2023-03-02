@@ -40,7 +40,7 @@ public class CensorService
         var result = await AlbumResult(albumName, artistName);
         if (result == CensorResult.NotSafe)
         {
-            embedToUpdate?.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
+            embedToUpdate?.WithDescription("Sorry, this album or artist can't be posted due to it possibly violating Discord ToS.\n" +
                                    $"You can view the [album cover here]({url}).");
             return result;
         }
@@ -58,7 +58,7 @@ public class CensorService
         var result = await ArtistResult(artistName);
         if (result == CensorResult.NotSafe)
         {
-            embedToUpdate?.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
+            embedToUpdate?.WithDescription("Sorry, this album or artist can't be posted due to it possibly violating Discord ToS.\n" +
                                            $"You can view the [album cover here]({url}).");
             return result;
         }
