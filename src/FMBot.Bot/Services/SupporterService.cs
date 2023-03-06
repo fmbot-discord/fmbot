@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Webhook;
@@ -369,6 +370,9 @@ public class SupporterService
 
             if (openCollectiveSupporter != null)
             {
+                var currentSubscriptionType = existingSupporter.SubscriptionType.GetValueOrDefault();
+                var newSubscriptionType = openCollectiveSupporter.SubscriptionType;
+
                 if (existingSupporter.LastPayment != openCollectiveSupporter.LastPayment ||
                     existingSupporter.Name != openCollectiveSupporter.Name)
                 {
@@ -404,26 +408,47 @@ public class SupporterService
                         existingSupporter.SupporterMessagesEnabled = true;
                         existingSupporter.VisibleInOverview = true;
 
+                        var reActivateDescription = new StringBuilder();
+                        reActivateDescription.AppendLine($"Name: `{existingSupporter.Name}`");
+                        reActivateDescription.AppendLine($"LastPayment: `{existingSupporter.LastPayment}`");
+                        if (currentSubscriptionType != newSubscriptionType)
+                        {
+                            reActivateDescription.AppendLine($"Subscription type: `{Enum.GetName(newSubscriptionType)}` **(updated from `{Enum.GetName(currentSubscriptionType)}`)**");
+                        }
+                        else
+                        {
+                            reActivateDescription.AppendLine($"Subscription type: `{Enum.GetName(newSubscriptionType)}`");
+                        }
+                        reActivateDescription.AppendLine($"Notes: `{existingSupporter.Notes}`");
+
                         var reactivateEmbed = new EmbedBuilder();
                         reactivateEmbed.WithTitle("Re-activated supporter");
-                        reactivateEmbed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
-                                                        $"LastPayment: `{existingSupporter.LastPayment}`\n" +
-                                                        $"Subscription type: `{Enum.GetName(existingSupporter.SubscriptionType.GetValueOrDefault())}`\n" +
-                                                        $"Notes: `{existingSupporter.Notes}`");
+                        reactivateEmbed.WithDescription(reActivateDescription.ToString());
 
                         await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { reactivateEmbed.Build() });
-
                     }
+
+                    var updatedDescription = new StringBuilder();
+                    updatedDescription.AppendLine($"Name: `{existingSupporter.Name}`");
+                    updatedDescription.AppendLine($"LastPayment: `{existingSupporter.LastPayment}`");
+                    if (currentSubscriptionType != newSubscriptionType)
+                    {
+                        updatedDescription.AppendLine($"Subscription type: `{Enum.GetName(newSubscriptionType)}` **(updated from `{Enum.GetName(currentSubscriptionType)}`)**");
+                        existingSupporter.SubscriptionType = newSubscriptionType;
+                    }
+                    else
+                    {
+                        updatedDescription.AppendLine($"Subscription type: `{Enum.GetName(newSubscriptionType)}`");
+                    }
+
+                    updatedDescription.AppendLine($"Notes: `{existingSupporter.Notes}`");
 
                     db.Update(existingSupporter);
                     await db.SaveChangesAsync();
 
                     var embed = new EmbedBuilder();
                     embed.WithTitle("Updated supporter");
-                    embed.WithDescription($"Name: `{existingSupporter.Name}`\n" +
-                                          $"LastPayment: `{existingSupporter.LastPayment}`\n" +
-                                          $"Subscription type: `{Enum.GetName(existingSupporter.SubscriptionType.GetValueOrDefault())}`\n" +
-                                          $"Notes: `{existingSupporter.Notes}`");
+                    embed.WithDescription(updatedDescription.ToString());
 
                     await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
                 }
