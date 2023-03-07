@@ -327,7 +327,13 @@ public class ArtistCommands : BaseCommandModule
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
+
+            if (topListSettings.Discogs)
+            {
+                userSettings.RegisteredLastFm = DateTime.MinValue;
+            }
+
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly, registeredLastFm: userSettings.RegisteredLastFm);
 
             var response = topListSettings.Discogs
                 ? await this._discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),

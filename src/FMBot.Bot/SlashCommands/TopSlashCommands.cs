@@ -61,7 +61,7 @@ public class TopSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly, discogs ? DateTime.MinValue : null);
 
         var topListSettings = new TopListSettings(extraLarge, billboard, discogs);
 

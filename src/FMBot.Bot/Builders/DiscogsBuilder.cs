@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -14,7 +13,6 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Builders;
 
@@ -284,34 +282,39 @@ public class DiscogsBuilder
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} Discogs artists for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
-        var topArtists = new Dictionary<String, TopDiscogsArtist>();
+        var topArtists = new List<TopDiscogsArtist>();
 
-        foreach (UserDiscogsReleases item in user.DiscogsReleases)
+        foreach (var item in user.DiscogsReleases)
         {
-            if (item.DateAdded < timeSettings.StartDateTime || item.DateAdded >= timeSettings.EndDateTime) {
+            if (timeSettings.StartDateTime >= item.DateAdded && item.DateAdded <= timeSettings.EndDateTime)
+            {
                 continue;
             }
 
-            if (topArtists.TryGetValue(item.Release.Artist, out var artist))
+            var existingTopArtist = topArtists
+                .FirstOrDefault(f => f.ArtistName == item.Release.Artist);
+
+            if (existingTopArtist == null)
             {
-                artist.UserReleasesInCollection += 1;
-                if (item.DateAdded < artist.FirstAdded)
+                topArtists.Add(new TopDiscogsArtist
                 {
-                    artist.FirstAdded = item.DateAdded;
-                }
-                topArtists[artist.ArtistName] = artist;
+                    ArtistName = item.Release.Artist,
+                    ArtistUrl = $"https://www.discogs.com/artist/{item.Release.ArtistDiscogsId}",
+                    UserReleasesInCollection = 1,
+                    FirstAdded = item.DateAdded
+                });
             }
-            else {
-                topArtists[item.Release.Artist] = new TopDiscogsArtist{
-                    ArtistName=item.Release.Artist,
-                    ArtistUrl=$"https://www.discogs.com/artist/{item.Release.ArtistDiscogsId}",
-                    UserReleasesInCollection=1,
-                    FirstAdded=item.DateAdded
-                };
+            else
+            {
+                existingTopArtist.UserReleasesInCollection += 1;
+                if (item.DateAdded < existingTopArtist.FirstAdded)
+                {
+                    existingTopArtist.FirstAdded = item.DateAdded;
+                }
             }
         }
 
-        var artistPages = topArtists.Values.OrderByDescending(s => s.UserReleasesInCollection).ToList()
+        var artistPages = topArtists.OrderByDescending(s => s.UserReleasesInCollection).ToList()
             .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
 
         var counter = 1;
@@ -339,7 +342,12 @@ public class DiscogsBuilder
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString()));
             pageCounter++;
-
+        }
+        if (!pages.Any())
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription("No Discogs artists added in this time period.")
+                .WithAuthor(response.EmbedAuthor));
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
