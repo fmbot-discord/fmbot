@@ -367,7 +367,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            artist = artist.Replace("\"","");
+            artist = artist.Replace("\"", "");
 
             await this._censorService.AddCensoredArtist(artist);
 
@@ -438,6 +438,10 @@ public class AdminCommands : BaseCommandModule
             if (bottedUser != null)
             {
                 this._embed.AddField("Reason / additional notes", bottedUser.Notes ?? "*No reason/notes*");
+                if (bottedUser.LastFmRegistered != null)
+                {
+                    this._embed.AddField("Last.fm join date banned", "Yes (This means that the gwk ban will survive username changes)");
+                }
             }
 
             this._embed.WithFooter("Command not intended for use in public channels");
@@ -538,29 +542,40 @@ public class AdminCommands : BaseCommandModule
             }
 
             var bottedUser = await this._adminService.GetBottedUserAsync(user);
+
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user);
+
+            DateTimeOffset? age = null;
+            if (userInfo != null && userInfo.Subscriber != 0)
+            {
+                age = DateTimeOffset.FromUnixTimeSeconds(userInfo.Registered.Text);
+            }
+
             if (bottedUser == null)
             {
-                if (!await this._adminService.AddBottedUserAsync(user, reason))
+                if (!await this._adminService.AddBottedUserAsync(user, reason, age?.DateTime))
                 {
                     await ReplyAsync("Something went wrong while adding this user to the gwk banlist");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 }
                 else
                 {
-                    await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason `{reason.FilterOutMentions()}`", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason `{reason}`" + (age.HasValue ? " (+ join date so username change resilient)" : ""),
+                        allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed();
                 }
             }
             else
             {
-                if (!await this._adminService.EnableBottedUserBanAsync(user, reason))
+                if (!await this._adminService.EnableBottedUserBanAsync(user, reason, age?.DateTime))
                 {
                     await ReplyAsync("Something went wrong while adding this user to the gwk banlist");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 }
                 else
                 {
-                    await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason `{reason.FilterOutMentions()}`", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason `{reason}`" + (age.HasValue ? " (+ join date so username change resilient)" : ""),
+                        allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed();
                 }
             }
