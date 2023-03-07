@@ -1260,7 +1260,7 @@ public class ArtistBuilders
         if (willCreateDiscogsPage)
         {
             var discogsPage = new PageBuilder();
-            discogsPage.WithTitle($"Top Discogs artist collection comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
+            discogsPage.WithTitle($"Top Discogs comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
             discogsPage.WithUrl($"https://www.discogs.com/user/{otherWithDiscogs.UserDiscogs.Username}/collection");
 
             var ownReleases = await this._discogsService.GetUserCollection(ownWithDiscogs.UserId);
