@@ -45,6 +45,7 @@ public class ArtistBuilders
     private readonly PuppeteerService _puppeteerService;
     private readonly CountryService _countryService;
     private readonly GenreService _genreService;
+    private readonly DiscogsService _discogsService;
 
     public ArtistBuilders(ArtistsService artistsService,
         LastFmRepository lastFmRepository,
@@ -62,7 +63,8 @@ public class ArtistBuilders
         SupporterService supporterService,
         PuppeteerService puppeteerService,
         CountryService countryService,
-        GenreService genreService)
+        GenreService genreService,
+        DiscogsService discogsService)
     {
         this._artistsService = artistsService;
         this._lastFmRepository = lastFmRepository;
@@ -81,6 +83,7 @@ public class ArtistBuilders
         this._puppeteerService = puppeteerService;
         this._countryService = countryService;
         this._genreService = genreService;
+        this._discogsService = discogsService;
     }
 
     public async Task<ResponseModel> ArtistAsync(
@@ -1175,6 +1178,22 @@ public class ArtistBuilders
         var otherTopArtists =
             otherArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount.Value)).ToList();
 
+        var ownTopGenres = await this._genreService.GetTopGenresForTopArtists(ownArtists.Content.TopArtists);
+        var otherTopGenres = await this._genreService.GetTopGenresForTopArtists(otherArtists.Content.TopArtists);
+
+        var ownTopCountries = await this._countryService.GetTopCountriesForTopArtists(ownArtists.Content.TopArtists, true);
+        var otherTopCountries = await this._countryService.GetTopCountriesForTopArtists(otherArtists.Content.TopArtists, true);
+
+        var ownWithDiscogs = await this._userService.GetUserWithDiscogs(context.ContextUser.DiscordUserId);
+        var otherWithDiscogs = await this._userService.GetUserWithDiscogs(userSettings.DiscordUserId);
+
+        var pagesToBeCreated = new Dictionary<string, bool>(){
+            {"Genres", ownTopGenres.Any() && otherTopGenres.Any()},
+            {"Countries", ownTopCountries.Any() && otherTopCountries.Any()},
+            {"Discogs", ownWithDiscogs.UserDiscogs != null && otherWithDiscogs.UserDiscogs != null}
+        };
+        var previousPage = "Artists";
+
         var artistPage = new PageBuilder();
         artistPage.WithTitle($"Top artist comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
         artistPage.WithUrl(url);
@@ -1192,15 +1211,24 @@ public class ArtistBuilders
             var taste = this._artistsService.GetTableTaste(ownTopArtists, otherTopArtists, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Artist");
 
             artistPage.WithDescription(taste.result);
-            artistPage.WithFooter("➡️ Genres");
+
+            if (pagesToBeCreated["Genres"])
+            {
+                artistPage.WithFooter("➡️ Genres");
+            }
+            else if (pagesToBeCreated["Countries"])
+            {
+                artistPage.WithFooter("➡️ Countries");
+            }
+            else if (pagesToBeCreated["Discogs"])
+            {
+                artistPage.WithFooter("➡️ Discogs");
+            }
         }
 
         pages.Add(artistPage);
 
-        var ownTopGenres = await this._genreService.GetTopGenresForTopArtists(ownArtists.Content.TopArtists);
-        var otherTopGenres = await this._genreService.GetTopGenresForTopArtists(otherArtists.Content.TopArtists);
-
-        if (ownTopGenres.Any() && otherTopGenres.Any())
+        if (pagesToBeCreated["Genres"])
         {
             var genrePage = new PageBuilder();
             genrePage.WithTitle($"Top genre comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
@@ -1214,16 +1242,25 @@ public class ArtistBuilders
             var taste = this._artistsService.GetTableTaste(ownTopGenresTaste, otherTopGenresTaste, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Genre");
 
             genrePage.WithDescription(taste.result);
-            genrePage.WithFooter("⬅️ Artists\n" +
-                                  "➡️ Countries");
+            if (pagesToBeCreated["Countries"])
+            {
+                genrePage.WithFooter($"⬅️ {previousPage}\n" +
+                                      "➡️ Countries");
+            }
+            else if (pagesToBeCreated["Discogs"])
+            {
+                genrePage.WithFooter($"⬅️ {previousPage}\n" +
+                                      "➡️ Discogs");
+            }
+            else {
+                genrePage.WithFooter($"⬅️ {previousPage}");
+            }
+            previousPage = "Genres";
 
             pages.Add(genrePage);
         }
 
-        var ownTopCountries = await this._countryService.GetTopCountriesForTopArtists(ownArtists.Content.TopArtists, true);
-        var otherTopCountries = await this._countryService.GetTopCountriesForTopArtists(otherArtists.Content.TopArtists, true);
-
-        if (ownTopCountries.Any() && otherTopCountries.Any())
+        if (pagesToBeCreated["Countries"])
         {
             var countryPage = new PageBuilder();
             countryPage.WithTitle($"Top country comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
@@ -1238,8 +1275,44 @@ public class ArtistBuilders
 
             countryPage.WithDescription(taste.result);
 
-            countryPage.WithFooter("⬅️ Genres");
+            if (pagesToBeCreated["Discogs"])
+            {
+                countryPage.WithFooter($"⬅️ {previousPage}\n" +
+                                      "➡️ Discogs");
+            }
+            else {
+                countryPage.WithFooter($"⬅️ {previousPage}");
+            }
+            
+            previousPage = "Countries";
             pages.Add(countryPage);
+        }
+
+        if (pagesToBeCreated["Discogs"])
+        {
+            var discogsPage = new PageBuilder();
+            discogsPage.WithTitle($"Top Discogs artist collection comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
+            discogsPage.WithUrl($"https://www.discogs.com/user/{otherWithDiscogs.UserDiscogs.Username}/collection");
+
+            var ownReleases = await this._discogsService.GetUserCollection(ownWithDiscogs.UserId);
+            var otherReleases = await this._discogsService.GetUserCollection(otherWithDiscogs.UserId);
+
+            var ownTopArtistsTaste = ownReleases.GroupBy(s => s.Release.Artist).Select(g => new TasteItem(g.Key, g.Count())).ToList();
+            var otherTopArtistsTaste = otherReleases.GroupBy(s => s.Release.Artist).Select(g => new TasteItem(g.Key, g.Count())).ToList();
+
+            var taste = this._artistsService.GetTableTaste(
+                ownTopArtistsTaste,
+                otherTopArtistsTaste,
+                amount,
+                timeSettings.TimePeriod,
+                ownWithDiscogs.UserDiscogs.Username,
+                otherWithDiscogs.UserDiscogs.Username,
+                "Artist");
+
+            discogsPage.WithDescription(taste.result);
+            discogsPage.WithFooter($"⬅️ {previousPage}");
+            previousPage = "Discogs";
+            pages.Add(discogsPage);
         }
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
