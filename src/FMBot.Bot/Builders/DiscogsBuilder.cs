@@ -13,6 +13,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using static SpotifyAPI.Web.PlaylistRemoveItemsRequest;
 
 namespace FMBot.Bot.Builders;
 
@@ -281,37 +282,19 @@ public class DiscogsBuilder
 
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} Discogs artists for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
-
         var topArtists = new List<TopDiscogsArtist>();
 
-        foreach (var item in user.DiscogsReleases)
+        foreach (var item in user.DiscogsReleases
+                     .Where(w => timeSettings.StartDateTime == null ||  timeSettings.StartDateTime <= w.DateAdded && w.DateAdded <= timeSettings.EndDateTime)
+                     .GroupBy(g => g.Release.Artist))
         {
-            if (timeSettings.StartDateTime >= item.DateAdded && item.DateAdded <= timeSettings.EndDateTime)
+            topArtists.Add(new TopDiscogsArtist
             {
-                continue;
-            }
-
-            var existingTopArtist = topArtists
-                .FirstOrDefault(f => f.ArtistName == item.Release.Artist);
-
-            if (existingTopArtist == null)
-            {
-                topArtists.Add(new TopDiscogsArtist
-                {
-                    ArtistName = item.Release.Artist,
-                    ArtistUrl = $"https://www.discogs.com/artist/{item.Release.ArtistDiscogsId}",
-                    UserReleasesInCollection = 1,
-                    FirstAdded = item.DateAdded
-                });
-            }
-            else
-            {
-                existingTopArtist.UserReleasesInCollection += 1;
-                if (item.DateAdded < existingTopArtist.FirstAdded)
-                {
-                    existingTopArtist.FirstAdded = item.DateAdded;
-                }
-            }
+                ArtistName = item.Key,
+                ArtistUrl = $"https://www.discogs.com/artist/{item.First().Release.ArtistDiscogsId}",
+                UserReleasesInCollection = item.Count(),
+                FirstAdded = item.OrderBy(o => o.DateAdded).First().DateAdded
+            });
         }
 
         var artistPages = topArtists.OrderByDescending(s => s.UserReleasesInCollection).ToList()

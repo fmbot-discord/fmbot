@@ -333,7 +333,7 @@ public class ArtistCommands : BaseCommandModule
                 userSettings.RegisteredLastFm = DateTime.MinValue;
             }
 
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly, registeredLastFm: userSettings.RegisteredLastFm);
+            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly, registeredLastFm: userSettings.RegisteredLastFm);
 
             var response = topListSettings.Discogs
                 ? await this._discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
