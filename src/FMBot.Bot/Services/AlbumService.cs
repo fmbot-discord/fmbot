@@ -111,7 +111,7 @@ public class AlbumService
 
                 if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
                 {
-                    response.Embed.WithDescription($"Album `{searchAlbumName}` by `{searchArtistName}`could not be found, please check your search values and try again.");
+                    response.Embed.WithDescription($"Album `{searchAlbumName}` by `{searchArtistName}` could not be found, please check your search values and try again.");
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
                     return new AlbumSearch(null, response);

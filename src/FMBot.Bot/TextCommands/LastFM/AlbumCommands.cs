@@ -465,7 +465,7 @@ public class AlbumCommands : BaseCommandModule
 
                 if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
                 {
-                    this._embed.WithDescription($"Album `{searchAlbumName}` by `{searchArtistName}`could not be found, please check your search values and try again.");
+                    this._embed.WithDescription($"Album `{searchAlbumName}` by `{searchArtistName}` could not be found, please check your search values and try again.");
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return null;
