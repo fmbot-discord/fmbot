@@ -82,7 +82,7 @@ public class CommandHandler
         // Create the command context
         var context = new ShardedCommandContext(this._discord, msg);
 
-        if (msg.Author != null && msg.Author.IsBot)
+        if (msg.Author != null && msg.Author.IsBot && msg.Flags != MessageFlags.Loading)
         {
             if (string.IsNullOrWhiteSpace(msg.Author.Username))
             {
