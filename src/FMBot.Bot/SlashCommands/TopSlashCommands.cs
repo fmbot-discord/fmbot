@@ -23,6 +23,7 @@ public class TopSlashCommands : InteractionModuleBase
     private readonly TrackBuilders _trackBuilders;
     private readonly GenreBuilders _genreBuilders;
     private readonly CountryBuilders _countryBuilders;
+    private readonly DiscogsBuilder _discogsBuilders;
 
     private InteractiveService Interactivity { get; }
 
@@ -33,7 +34,8 @@ public class TopSlashCommands : InteractionModuleBase
         AlbumBuilders albumBuilders,
         TrackBuilders trackBuilders,
         GenreBuilders genreBuilders,
-        CountryBuilders countryBuilders)
+        CountryBuilders countryBuilders,
+        DiscogsBuilder discogsBuilders)
     {
         this._userService = userService;
         this._artistBuilders = artistBuilders;
@@ -43,6 +45,7 @@ public class TopSlashCommands : InteractionModuleBase
         this._trackBuilders = trackBuilders;
         this._genreBuilders = genreBuilders;
         this._countryBuilders = countryBuilders;
+        this._discogsBuilders = discogsBuilders;
     }
 
     [SlashCommand("artists", "Shows your top artists")]
@@ -52,16 +55,21 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Billboard", "Show top artists billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("XXL", "Show extra top artists")] bool extraLarge = false,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [Summary("Private", "Only show response to you")] bool privateResponse = false,
+        [Summary("Discogs", "Show top artists in Discogs collection")] bool discogs = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
-        var topListSettings = new TopListSettings(extraLarge, billboard);
+        var topListSettings = new TopListSettings(extraLarge, billboard, discogs);
 
-        var response = await this._artistBuilders.TopArtistsAsync(new ContextModel(this.Context, contextUser), topListSettings, timeSettings, userSettings);
+        var response = topListSettings.Discogs
+            ? await this._discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, contextUser),
+                topListSettings, timeSettings, userSettings)
+            : await this._artistBuilders.TopArtistsAsync(new ContextModel(this.Context, contextUser),
+                topListSettings, timeSettings, userSettings);
 
         await this.Context.SendResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);

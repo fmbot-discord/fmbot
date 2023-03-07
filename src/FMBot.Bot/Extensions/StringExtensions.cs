@@ -161,6 +161,11 @@ public static class StringExtensions
         return days == 1 ? "day" : "days";
     }
 
+    public static string GetReleasesString(long? releases)
+    {
+        return releases == 1 ? "release" : "releases";
+    }
+
     public static string GetChangeString(decimal oldValue, decimal newValue)
     {
         if (oldValue < newValue)
