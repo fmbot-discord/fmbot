@@ -291,26 +291,26 @@ public class DiscogsBuilder
             if (item.DateAdded < timeSettings.StartDateTime || item.DateAdded >= timeSettings.EndDateTime) {
                 continue;
             }
-            TopDiscogsArtist artist = null;
-            if (!topArtists.TryGetValue(item.Release.Artist, out artist))
-            {
-                artist = new TopDiscogsArtist{
-                    ArtistName=item.Release.Artist,
-                    ArtistUrl=$"https://www.discogs.com/artist/{item.Release.ArtistDiscogsId}",
-                    UserReleasesInCollection=1,
-                    FirstAdded=item.DateAdded
-                };
-            }
-            else
+
+            if (topArtists.TryGetValue(item.Release.Artist, out var artist))
             {
                 artist.UserReleasesInCollection += 1;
                 if (item.DateAdded < artist.FirstAdded)
                 {
                     artist.FirstAdded = item.DateAdded;
                 }
+                topArtists[artist.ArtistName] = artist;
             }
-            topArtists[artist.ArtistName] = artist;
+            else {
+                topArtists[item.Release.Artist] = new TopDiscogsArtist{
+                    ArtistName=item.Release.Artist,
+                    ArtistUrl=$"https://www.discogs.com/artist/{item.Release.ArtistDiscogsId}",
+                    UserReleasesInCollection=1,
+                    FirstAdded=item.DateAdded
+                };
+            }
         }
+
         var artistPages = topArtists.Values.OrderByDescending(s => s.UserReleasesInCollection).ToList()
             .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
 
