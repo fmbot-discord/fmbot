@@ -8,6 +8,7 @@ using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models.MusicBot;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -87,18 +88,7 @@ public class CommandHandler
             {
                 return;
             }
-            if (msg.Author.Username.StartsWith("Hydra"))
-            {
-                await this._musicBotService.ScrobbleHydra(msg, context);
-            }
-            if (msg.Author.Username.StartsWith("Cakey Bot"))
-            {
-                await this._musicBotService.ScrobbleCakeyBot(msg, context);
-            }
-            if (msg.Author.Username.StartsWith("SoundCloud"))
-            {
-                await this._musicBotService.ScrobbleSoundCloud(msg, context);
-            }
+            TryScrobbling(msg, context);
             return;
         }
 
@@ -150,6 +140,18 @@ public class CommandHandler
         }
     }
 
+    private async void TryScrobbling(SocketUserMessage msg, ICommandContext context)
+    {
+        foreach (var musicBot in MusicBot.SupportedBots)
+        {
+            if (musicBot.IsAuthor(msg.Author))
+            {
+                await this._musicBotService.Scrobble(musicBot, msg, context);
+                break;
+            }
+        }
+    }
+
     private async Task OnMessageUpdatedAsync(Cacheable<IMessage, ulong> originalMessage, SocketMessage updatedMessage, ISocketMessageChannel sourceChannel)
     {
         var msg = updatedMessage as SocketUserMessage;
@@ -164,18 +166,7 @@ public class CommandHandler
 
         if (msg.Flags != MessageFlags.Loading)
         {
-            if (msg.Author.Username.StartsWith("SoundCloud"))
-            {
-                await this._musicBotService.ScrobbleSoundCloud(msg, context);
-            }
-            if (msg.Author.Username.StartsWith("Cakey"))
-            {
-                await this._musicBotService.ScrobbleCakeyBot(msg, context);
-            }
-            if (msg.Author.Username.StartsWith("Hydra"))
-            {
-                await this._musicBotService.ScrobbleHydra(msg, context);
-            }
+            TryScrobbling(msg, context);
         }
     }
 

@@ -10,6 +10,7 @@ using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Models.MusicBot;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.LastFM.Repositories;
@@ -45,22 +46,15 @@ public class MusicBotService
         this.BotScrobblingLogs = new List<BotScrobblingLog>();
     }
 
-    public async Task ScrobbleHydra(SocketUserMessage msg, ICommandContext context)
+    public async Task Scrobble(MusicBot musicBot, SocketUserMessage msg, ICommandContext context)
     {
         try
         {
-            if (context.Guild == null ||
-                msg.Embeds == null ||
-                !msg.Embeds.Any() ||
-                msg.Embeds.Any(a => a.Title == null) ||
-                (msg.Embeds.Any(a => a.Title != "Now playing") && msg.Embeds.Any(a => a.Title != "Speelt nu")) ||
-                msg.Embeds.Any(a => a.Description == null))
+            if (context.Guild == null || musicBot.ShouldIgnoreMessage(msg))
             {
                 return;
             }
-
-            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, "Found 'now playing' message from Hydra"));
-
+            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Found 'now playing' message from {musicBot.Name}"));
             var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
 
             if (usersInChannel == null || usersInChannel.Count == 0)
@@ -68,122 +62,22 @@ public class MusicBotService
                 return;
             }
 
-            var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description, false);
-
+            var trackDescription = musicBot.GetTrackQuery(msg);
+            var trackResult = await this._trackService.GetTrackFromLink(trackDescription, musicBot.PossiblyIncludesLinks, musicBot.SkipUploaderName);
             if (trackResult == null)
             {
-                Log.Information("BotScrobbling: Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
-                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because no found track for `{msg.Embeds.First().Description}`"));
+                Log.Information("BotScrobbling({botName}): Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", musicBot.Name, usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
+                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped {musicBot.Name} scrobble because no found track for `{msg.Embeds.First().Description}`"));
                 return;
             }
-
             _ = RegisterTrack(usersInChannel, trackResult);
-
             _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
-            Log.Error("BotScrobbling: Error in music bot scrobbler (hydra)", e);
+            Log.Error($"BotScrobbling: Error in music bot scrobbler ({musicBot.Name})", e);
             this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, "Skipped scrobble because error"));
         }
-    }
 
-    public async Task ScrobbleCakeyBot(SocketUserMessage msg, ICommandContext context)
-    {
-        try
-        {
-            if (context.Guild == null ||
-                msg.Embeds == null ||
-                !msg.Embeds.Any() ||
-                msg.Embeds.Any(a => a.Title == null) ||
-                msg.Embeds.Any(a => a.Description == null) ||
-                !msg.Embeds.Any(a => a.Description.Contains("Now playing:")))
-            {
-                return;
-            }
-
-            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, "Found 'now playing' message from Cakey"));
-
-            var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
-
-            if (usersInChannel == null || usersInChannel.Count == 0)
-            {
-                return;
-            }
-
-            var pFrom = msg.Embeds.First().Description.IndexOf("Now playing: ", StringComparison.Ordinal) + "Now playing: ".Length;
-            var pTo = msg.Embeds.First().Description.LastIndexOf(" [", StringComparison.Ordinal);
-
-            var result = msg.Embeds.First().Description.Substring(pFrom, pTo - pFrom);
-
-            var trackResult = await this._trackService.GetTrackFromLink(result);
-
-            if (trackResult == null)
-            {
-                Log.Information("BotScrobbling: Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
-                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because no found track for `{msg.Embeds.First().Description}`"));
-                return;
-            }
-
-            _ = RegisterTrack(usersInChannel, trackResult);
-
-            _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
-        }
-        catch (Exception e)
-        {
-            Log.Error("BotScrobbling: Error in music bot scrobbler (Cakey Bot)", e);
-            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because error"));
-        }
-    }
-
-    public async Task ScrobbleSoundCloud(SocketUserMessage msg, ICommandContext context)
-    {
-        try
-        {
-            // Bot sends only single embed per request
-            if (msg.Embeds.Count != 1)
-            {
-                return;
-            }
-
-            var targetEmbed = msg.Embeds.First();
-
-            if (targetEmbed.Title == null ||
-                !targetEmbed.Title.Contains("Now Playing") ||
-                string.IsNullOrEmpty(targetEmbed.Description))
-            {
-                return;
-            }
-
-            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, "Found 'now playing' message from SoundCloud"));
-
-            // Skip when no one in the voice channel
-            var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
-            if (usersInChannel == null || usersInChannel.Count == 0)
-            {
-                return;
-            }
-
-            // Bot sending only link with track in the embed description
-            var trackResult = await this._trackService.GetTrackFromLink(targetEmbed.Description, skipUploaderName: true);
-
-            if (trackResult == null)
-            {
-                Log.Information("BotScrobbling: Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
-                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because no found track for `{msg.Embeds.First().Description}`"));
-
-                return;
-            }
-
-            _ = RegisterTrack(usersInChannel, trackResult);
-
-            _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
-        }
-        catch (Exception e)
-        {
-            Log.Error("BotScrobbling: Error in music bot scrobbler (SoundCloud)", e);
-            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because error"));
-        }
     }
 
     private async Task SendScrobbleMessage(ICommandContext context, TrackSearchResult trackResult,
