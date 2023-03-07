@@ -342,7 +342,7 @@ public class SettingService
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraLarge);
             topListSettings.ExtraLarge = true;
         }
-        var discogs = new[] { "discogs" };
+        var discogs = new[] { "dc", "discogs" };
         if (Contains(extraOptions, discogs))
         {
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, discogs);

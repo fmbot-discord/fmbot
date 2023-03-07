@@ -88,7 +88,7 @@ public class DiscogsBuilder
         {
             await this._discogsService.StoreDiscogsAuth(context.ContextUser.UserId, user.Auth, user.Identity);
 
-            response.Embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}]({Constants.DiscogsUserURL}{user.Identity.Username})' has been connected.\n" +
+            response.Embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}]({Constants.DiscogsUserUrl}{user.Identity.Username})' has been connected.\n" +
                                         $"Run the `{context.Prefix}collection` command to view your collection.");
             response.CommandResponse = CommandResponse.Ok;
             await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
@@ -156,7 +156,7 @@ public class DiscogsBuilder
             ? $"Discogs collection for {userTitle}"
             : $"Discogs collection for {userSettings.DisplayName}, requested by {userTitle}");
 
-        response.EmbedAuthor.WithUrl($"{Constants.DiscogsUserURL}{user.UserDiscogs.Username}/collection");
+        response.EmbedAuthor.WithUrl($"{Constants.DiscogsUserUrl}{user.UserDiscogs.Username}/collection");
         response.Embed.WithAuthor(response.EmbedAuthor);
 
         var pages = new List<PageBuilder>();
@@ -279,7 +279,7 @@ public class DiscogsBuilder
                 $"{user.UserDiscogs.Username}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
         }
         var userUrl =
-            $"{Constants.DiscogsUserURL}{user.UserDiscogs.Username}/collection";
+            $"{Constants.DiscogsUserUrl}{user.UserDiscogs.Username}/collection";
 
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} Discogs artists for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
@@ -291,24 +291,25 @@ public class DiscogsBuilder
             if (item.DateAdded < timeSettings.StartDateTime || item.DateAdded >= timeSettings.EndDateTime) {
                 continue;
             }
-            TopDiscogsArtist value = null;
-            if (!topArtists.TryGetValue(item.Release.Artist, out value))
+            TopDiscogsArtist artist = null;
+            if (!topArtists.TryGetValue(item.Release.Artist, out artist))
             {
-                value.ArtistName = item.Release.Artist;
-                value.ArtistUrl = $"https://www.discogs.com/artist/{item.Release.ArtistDiscogsId}";
-                value.UserReleasesInCollection = 1;
-                value.FirstAdded = item.DateAdded;
-                topArtists.Add(value.ArtistName, value);
+                artist = new TopDiscogsArtist{
+                    ArtistName=item.Release.Artist,
+                    ArtistUrl=$"https://www.discogs.com/artist/{item.Release.ArtistDiscogsId}",
+                    UserReleasesInCollection=1,
+                    FirstAdded=item.DateAdded
+                };
             }
             else
             {
-                value.UserReleasesInCollection += 1;
-                if (item.DateAdded < value.FirstAdded)
+                artist.UserReleasesInCollection += 1;
+                if (item.DateAdded < artist.FirstAdded)
                 {
-                    value.FirstAdded = item.DateAdded;
+                    artist.FirstAdded = item.DateAdded;
                 }
-                topArtists[value.ArtistName] = value;
             }
+            topArtists[artist.ArtistName] = artist;
         }
         var artistPages = topArtists.Values.OrderByDescending(s => s.UserReleasesInCollection).ToList()
             .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);

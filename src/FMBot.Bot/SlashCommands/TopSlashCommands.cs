@@ -56,7 +56,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("XXL", "Show extra top artists")] bool extraLarge = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
-        [Summary("Discogs", "Show top artists in Discord collection")] bool discogs = false)
+        [Summary("Discogs", "Show top artists in Discogs collection")] bool discogs = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
