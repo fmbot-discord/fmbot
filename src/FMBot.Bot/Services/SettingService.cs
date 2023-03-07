@@ -320,6 +320,7 @@ public class SettingService
         {
             Billboard = false,
             ExtraLarge = false,
+            Discogs = false,
             NewSearchValue = extraOptions
         };
 
@@ -340,6 +341,12 @@ public class SettingService
         {
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraLarge);
             topListSettings.ExtraLarge = true;
+        }
+        var discogs = new[] { "discogs" };
+        if (Contains(extraOptions, discogs))
+        {
+            topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, discogs);
+            topListSettings.Discogs = true;
         }
 
         return topListSettings;

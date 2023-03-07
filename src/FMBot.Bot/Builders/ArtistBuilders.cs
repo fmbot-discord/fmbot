@@ -1261,7 +1261,7 @@ public class ArtistBuilders
         {
             var discogsPage = new PageBuilder();
             discogsPage.WithTitle($"Top Discogs comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
-            discogsPage.WithUrl($"https://www.discogs.com/user/{otherWithDiscogs.UserDiscogs.Username}/collection");
+            discogsPage.WithUrl($"{Constants.DiscogsUserURL}{otherWithDiscogs.UserDiscogs.Username}/collection");
 
             var ownReleases = await this._discogsService.GetUserCollection(ownWithDiscogs.UserId);
             var otherReleases = await this._discogsService.GetUserCollection(otherWithDiscogs.UserId);

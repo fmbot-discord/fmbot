@@ -29,3 +29,11 @@ public class TopArtist
 
     public List<string> Genres { get; set; }
 }
+
+public class TopDiscogsArtist
+{
+    public string ArtistName { get; set; }
+    public string ArtistUrl { get; set; }
+    public long? UserReleasesInCollection { get; set; }
+    public DateTime? FirstAdded { get; set; }
+}
