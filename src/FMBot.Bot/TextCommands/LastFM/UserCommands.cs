@@ -155,6 +155,7 @@ public class UserCommands : BaseCommandModule
         if (user.UserType != UserType.Admin && user.UserType != UserType.Owner)
         {
             await ReplyAsync("Nothing to see here!");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
 
@@ -184,6 +185,23 @@ public class UserCommands : BaseCommandModule
 
             var result = await this.Interactivity.SendSelectionAsync(selection, this.Context.Channel, TimeSpan.FromMinutes(10));
 
+            if (result.IsTimeout || !result.IsSuccess)
+            {
+                var embed = new EmbedBuilder()
+                    .WithDescription("Judgement command timed out. Try again.")
+                    .WithColor(DiscordConstants.InformationColorBlue);
+
+                await result.Message.ModifyAsync(x =>
+                {
+                    x.Embed = embed.Build();
+                    x.Components = new ComponentBuilder().Build();
+                });
+
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+
+                return;
+            }
+
             var selected = result.Value.Name;
 
             if (selected == "Compliment")
@@ -205,8 +223,10 @@ public class UserCommands : BaseCommandModule
                     x.Embed = complimentResponse.Embed.Build();
                     x.Components = new ComponentBuilder().Build();
                 });
+
+                this.Context.LogCommandUsed();
             }
-            else
+            if (selected == "Roast")
             {
                 var embed = new EmbedBuilder()
                     .WithDescription("<a:loading:821676038102056991> Loading your roast (don't take it personally)...")
@@ -225,6 +245,8 @@ public class UserCommands : BaseCommandModule
                     x.Embed = complimentResponse.Embed.Build();
                     x.Components = new ComponentBuilder().Build();
                 });
+
+                this.Context.LogCommandUsed();
             }
         }
         catch (Exception e)

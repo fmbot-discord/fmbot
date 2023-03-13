@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -17,7 +18,6 @@ using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
-using Google.Apis.Discovery;
 using Microsoft.Extensions.Options;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -633,9 +633,11 @@ public class UserBuilder
         };
 
         var openAiResponse =
-            await this._openAiService.GetResponse(topArtists.Take(15).ToList(), true);
+            await this._openAiService.GetResponse(topArtists.Take(16).ToList(), true);
 
-        response.Embed.WithAuthor(".fmbot AI judgement - Compliment 🙂");
+        var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
+
+        response.Embed.WithAuthor($"{userNickname ?? context.DiscordUser.Username}'s .fmbot AI judgement - Compliment 🙂");
         response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
         response.Embed.WithColor(new Color(186, 237, 169));
 
@@ -650,9 +652,11 @@ public class UserBuilder
         };
 
         var openAiResponse =
-            await this._openAiService.GetResponse(topArtists.Take(15).ToList(), false);
+            await this._openAiService.GetResponse(topArtists.Take(16).ToList(), false);
 
-        response.Embed.WithAuthor(".fmbot AI judgement - Roast 🔥");
+        var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
+
+        response.Embed.WithAuthor($"{userNickname ?? context.DiscordUser.Username}'s .fmbot AI judgement - Roast 🔥");
         response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
         response.Embed.WithColor(new Color(255, 122, 1));
 

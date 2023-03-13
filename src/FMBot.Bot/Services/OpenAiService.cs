@@ -7,6 +7,7 @@ using static FMBot.Bot.Models.OpenAIModels;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using System;
+using FMBot.Domain;
 
 namespace FMBot.Bot.Services;
 
@@ -31,7 +32,7 @@ public class OpenAiService
         var artistList = new List<string>();
         foreach (var artist in artists)
         {
-             artistList.Add(artist[..Math.Min(artist.Length, 24)]);
+             artistList.Add(artist[..Math.Min(artist.Length, 28)]);
         }
 
         var content = new OpenAiRequest
@@ -51,6 +52,7 @@ public class OpenAiService
 
         request.Content = new StringContent(requestContent, null, "application/json");
         var response = await this._httpClient.SendAsync(request);
+        Statistics.OpenAiCalls.Inc();
 
         var responseContent = await response.Content.ReadAsStringAsync();
 
