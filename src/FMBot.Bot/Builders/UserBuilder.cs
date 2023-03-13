@@ -614,7 +614,8 @@ public class UserBuilder
         description.AppendLine("Want your music taste to be judged by AI?");
         description.AppendLine("Pick using the buttons below..");
         description.AppendLine();
-        description.AppendLine("You can use this command `3` more times today.");
+        description.AppendLine("This command costs money and is staff only right now - don't spam it pls");
+        //description.AppendLine("You can use this command `3` more times today.");
         description.AppendLine();
         description.AppendLine("Some of your top artists might be sent to OpenAI. No other data is sent.");
         description.AppendLine("Keep in mind that music taste is subjective, and that no matter what this command or anyone else says you're free to like whatever artist you want.");
@@ -632,7 +633,7 @@ public class UserBuilder
         };
 
         var openAiResponse =
-            await this._openAiService.GetCompliment(topArtists.Take(15).ToList(), true);
+            await this._openAiService.GetResponse(topArtists.Take(15).ToList(), true);
 
         response.Embed.WithAuthor(".fmbot AI judgement - Compliment 🙂");
         response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
@@ -649,7 +650,7 @@ public class UserBuilder
         };
 
         var openAiResponse =
-            await this._openAiService.GetCompliment(topArtists.Take(15).ToList(), false);
+            await this._openAiService.GetResponse(topArtists.Take(15).ToList(), false);
 
         response.Embed.WithAuthor(".fmbot AI judgement - Roast 🔥");
         response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using static FMBot.Bot.Models.OpenAIModels;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using System;
 
 namespace FMBot.Bot.Services;
 
@@ -20,21 +21,28 @@ public class OpenAiService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<string> GetCompliment(IEnumerable<string> artists, bool compliment)
+    public async Task<string> GetResponse(List<string> artists, bool compliment)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
         request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
 
         var prompt = compliment ? this._botSettings.OpenAi.ComplimentPrompt : this._botSettings.OpenAi.RoastPrompt;
+
+        var artistList = new List<string>();
+        foreach (var artist in artists)
+        {
+             artistList.Add(artist[..Math.Min(artist.Length, 24)]);
+        }
+
         var content = new OpenAiRequest
         {
             Model = "gpt-3.5-turbo",
             Messages = new List<RequestMessage>
             {
-                new RequestMessage
+                new()
                 {
-                    Role = "user",
-                    Content = $"{prompt} {string.Join(", ", artists)}"
+                    Role = "system",
+                    Content = $"{prompt} {string.Join(", ", artistList)}"
                 }
             }
         };

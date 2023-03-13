@@ -142,14 +142,20 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    //[Command("judge", RunMode = RunMode.Async)]
-    //[Summary("Judges your music taste using AI")]
+    [Command("judge", RunMode = RunMode.Async)]
+    [Summary("Judges your music taste using AI")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
+    [ExcludeFromHelp]
     public async Task JudgeAsync([Remainder] string userOptions = null)
     {
         var user = await this._userService.GetUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        if (user.UserType != UserType.Admin && user.UserType != UserType.Owner)
+        {
+            await ReplyAsync("Nothing to see here!");
+        }
 
         var topArtists = await this._artistsService.GetRecentTopArtists(this.Context.User.Id, daysToGoBack: 60);
 
