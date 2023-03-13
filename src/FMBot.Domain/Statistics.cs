@@ -91,6 +91,9 @@ public static class Statistics
     public static readonly Counter ModalsExecuted = Metrics
         .CreateCounter("bot_modals_executed", "Amount of modals executed");
 
+    public static readonly Counter ButtonExecuted = Metrics
+        .CreateCounter("bot_button_executed", "Amount of buttons executed");
+
 
     public static readonly Gauge RegisteredUserCount = Metrics
         .CreateGauge("bot_registered_users_count", "Total count of all users in the database");

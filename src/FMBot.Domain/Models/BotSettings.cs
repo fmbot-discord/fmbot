@@ -23,6 +23,7 @@ public class BotSettings
     public BotListConfig BotLists { get; set; }
 
     public DiscogsConfig Discogs { get; set; }
+    public OpenAiConfig OpenAi { get; set; }
 }
 
 public class DiscordConfig
@@ -99,6 +100,14 @@ public class DiscogsConfig
     public string Key { get; set; }
 
     public string Secret { get; set; }
+}
+
+public class OpenAiConfig
+{
+    public string Key { get; set; }
+
+    public string ComplimentPrompt { get; set; }
+    public string RoastPrompt { get; set; }
 }
 
 public class GeniusConfig

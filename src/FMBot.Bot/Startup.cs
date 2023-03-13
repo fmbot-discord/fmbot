@@ -194,6 +194,7 @@ public class Startup
         services.AddHttpClient<LastFmRepository>();
         services.AddHttpClient<TrackService>();
         services.AddHttpClient<OpenCollectiveService>();
+        services.AddHttpClient<OpenAiService>();
 
         services.AddHttpClient<SpotifyService>(client =>
         {

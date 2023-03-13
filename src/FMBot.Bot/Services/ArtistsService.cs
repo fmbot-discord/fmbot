@@ -560,7 +560,7 @@ public class ArtistsService
         }
     }
 
-    public async Task<List<string>> GetRecentTopArtists(ulong discordUserId, bool cacheEnabled = true)
+    public async Task<List<string>> GetRecentTopArtists(ulong discordUserId, bool cacheEnabled = true, int daysToGoBack = 20)
     {
         try
         {
@@ -583,7 +583,7 @@ public class ArtistsService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-20));
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-daysToGoBack));
 
             var artists = plays
                 .GroupBy(g => g.ArtistName)
