@@ -52,11 +52,13 @@ public class OpenCollectiveService
 
     private static SubscriptionType GetSubscriptionType(IReadOnlyCollection<Node> transactionsNodes)
     {
-        if (transactionsNodes.Any(a => a.Description.ToLower().Contains("monthly")))
+        var lastDescription = transactionsNodes.OrderByDescending(o => o.CreatedAt).First().Description;
+
+        if (lastDescription.ToLower().Contains("monthly"))
         {
             return SubscriptionType.Monthly;
         }
-        if (transactionsNodes.Any(a => a.Description.ToLower().Contains("yearly")))
+        if (lastDescription.ToLower().Contains("yearly"))
         {
             return SubscriptionType.Yearly;
         }

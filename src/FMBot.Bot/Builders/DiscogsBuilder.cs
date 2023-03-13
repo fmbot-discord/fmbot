@@ -1,18 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using static SpotifyAPI.Web.PlaylistRemoveItemsRequest;
 
 namespace FMBot.Bot.Builders;
 
@@ -86,7 +87,7 @@ public class DiscogsBuilder
         {
             await this._discogsService.StoreDiscogsAuth(context.ContextUser.UserId, user.Auth, user.Identity);
 
-            response.Embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}](https://www.discogs.com/user/{user.Identity.Username})' has been connected.\n" +
+            response.Embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}]({Constants.DiscogsUserUrl}{user.Identity.Username})' has been connected.\n" +
                                         $"Run the `{context.Prefix}collection` command to view your collection.");
             response.CommandResponse = CommandResponse.Ok;
             await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
@@ -125,7 +126,7 @@ public class DiscogsBuilder
             {
                 response.Embed.WithDescription("The user you're trying to look up has not setup their Discogs account yet.");
             }
-            
+
             response.CommandResponse = CommandResponse.UsernameNotSet;
             return response;
         }
@@ -154,7 +155,7 @@ public class DiscogsBuilder
             ? $"Discogs collection for {userTitle}"
             : $"Discogs collection for {userSettings.DisplayName}, requested by {userTitle}");
 
-        response.EmbedAuthor.WithUrl($"https://www.discogs.com/user/{user.UserDiscogs.Username}/collection");
+        response.EmbedAuthor.WithUrl($"{Constants.DiscogsUserUrl}{user.UserDiscogs.Username}/collection");
         response.Embed.WithAuthor(response.EmbedAuthor);
 
         var pages = new List<PageBuilder>();
@@ -216,6 +217,119 @@ public class DiscogsBuilder
         {
             pages.Add(new PageBuilder()
                 .WithDescription("No collection could be found or there are no results.")
+                .WithAuthor(response.EmbedAuthor));
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
+    public async Task<ResponseModel> DiscogsTopArtistsAsync(
+        ContextModel context,
+        TopListSettings topListSettings,
+        TimeSettingsModel timeSettings,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var user = await this._userService.GetUserWithDiscogs(userSettings.DiscordUserId);
+
+        if (user.UserDiscogs == null)
+        {
+            if (!userSettings.DifferentUser)
+            {
+                response.Embed.WithDescription("To use the top artists commands with Discogs you have to connect a Discogs account.\n\n" +
+                                               $"Use the `{context.Prefix}discogs` command to get started.");
+            }
+            else
+            {
+                response.Embed.WithDescription("The user you're trying to look up has not setup their Discogs account yet.");
+            }
+
+            response.CommandResponse = CommandResponse.UsernameNotSet;
+            return response;
+        }
+
+        if (user.UserDiscogs.ReleasesLastUpdated == null ||
+            user.UserDiscogs.ReleasesLastUpdated <= DateTime.UtcNow.AddHours(-1))
+        {
+            user.UserDiscogs = await this._discogsService.StoreUserReleases(user);
+            user.UserDiscogs = await this._discogsService.UpdateCollectionValue(user.UserId);
+        }
+
+        var pages = new List<PageBuilder>();
+
+        string userTitle;
+        if (!userSettings.DifferentUser)
+        {
+            if (!context.SlashCommand)
+            {
+                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            }
+            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        }
+        else
+        {
+            userTitle =
+                $"{user.UserDiscogs.Username}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+        }
+        var userUrl =
+            $"{Constants.DiscogsUserUrl}{user.UserDiscogs.Username}/collection";
+
+        response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} Discogs artists for {userTitle}");
+        response.EmbedAuthor.WithUrl(userUrl);
+        var topArtists = new List<TopDiscogsArtist>();
+
+        foreach (var item in user.DiscogsReleases
+                     .Where(w => timeSettings.StartDateTime == null ||  timeSettings.StartDateTime <= w.DateAdded && w.DateAdded <= timeSettings.EndDateTime)
+                     .GroupBy(g => g.Release.Artist))
+        {
+            topArtists.Add(new TopDiscogsArtist
+            {
+                ArtistName = item.Key,
+                ArtistUrl = $"https://www.discogs.com/artist/{item.First().Release.ArtistDiscogsId}",
+                UserReleasesInCollection = item.Count(),
+                FirstAdded = item.OrderBy(o => o.DateAdded).First().DateAdded
+            });
+        }
+
+        var artistPages = topArtists.OrderByDescending(s => s.UserReleasesInCollection).ToList()
+            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+
+        var counter = 1;
+        var pageCounter = 1;
+
+        foreach (var artistPage in artistPages)
+        {
+            var artistPageString = new StringBuilder();
+            foreach (var artist in artistPage)
+            {
+                var name =
+                    $"**[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserReleasesInCollection} {StringExtensions.GetReleasesString(artist.UserReleasesInCollection)})";
+
+                // TODO for those who know how to deal with this: honor Billboard :)
+                artistPageString.Append($"{counter}. ");
+                artistPageString.AppendLine(name);
+
+                counter++;
+            }
+            var footer = new StringBuilder();
+            footer.Append($"Page {pageCounter}/{artistPages.Count}");
+            footer.Append($" - {topArtists.Count} different artists added to collection in this time period");
+            pages.Add(new PageBuilder()
+                .WithDescription(artistPageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString()));
+            pageCounter++;
+        }
+        if (!pages.Any())
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription("No Discogs artists added in this time period.")
                 .WithAuthor(response.EmbedAuthor));
         }
 

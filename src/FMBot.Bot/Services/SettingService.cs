@@ -37,6 +37,7 @@ public class SettingService
         options ??= "";
         settingsModel.NewSearchValue = options;
         settingsModel.UsePlays = false;
+        settingsModel.UseCustomTimePeriod = false;
         settingsModel.EndDateTime = DateTime.UtcNow;
         settingsModel.DefaultPicked = false;
 
@@ -96,6 +97,8 @@ public class SettingService
 
             settingsModel.TimeFrom = ((DateTimeOffset)settingsModel.StartDateTime).ToUnixTimeSeconds();
             settingsModel.TimeUntil = ((DateTimeOffset)settingsModel.EndDateTime).ToUnixTimeSeconds();
+
+            settingsModel.UseCustomTimePeriod = true;
 
             return settingsModel;
         }
@@ -192,6 +195,7 @@ public class SettingService
             settingsModel.AltDescription = "last 6 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
+            settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 6;
             settingsModel.StartDateTime = DateTime.Today.AddDays(-6);
         }
@@ -203,6 +207,7 @@ public class SettingService
             settingsModel.AltDescription = "last 5 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
+            settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 5;
             settingsModel.StartDateTime = DateTime.Today.AddDays(-5);
         }
@@ -214,6 +219,7 @@ public class SettingService
             settingsModel.AltDescription = "last 4 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
+            settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 4;
             settingsModel.StartDateTime = DateTime.Today.AddDays(-4);
         }
@@ -225,6 +231,7 @@ public class SettingService
             settingsModel.AltDescription = "last 3 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
+            settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 3;
             settingsModel.StartDateTime = DateTime.Today.AddDays(-3);
         }
@@ -236,6 +243,7 @@ public class SettingService
             settingsModel.AltDescription = "last 2 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
+            settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 2;
             settingsModel.StartDateTime = DateTime.Today.AddDays(-2);
         }
@@ -247,6 +255,7 @@ public class SettingService
             settingsModel.AltDescription = "last 24 hours";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
+            settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 1;
             settingsModel.StartDateTime = DateTime.Today.AddDays(-1);
         }
@@ -304,6 +313,7 @@ public class SettingService
         if (settingsModel.TimePeriod != TimePeriod.AllTime && settingsModel.PlayDays != null && settingsModel.StartDateTime == null)
         {
             var dateAgo = DateTime.UtcNow.AddDays(-settingsModel.PlayDays.Value);
+            settingsModel.StartDateTime = dateAgo;
             settingsModel.TimeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
         }
         else if (settingsModel.StartDateTime.HasValue)
@@ -320,6 +330,7 @@ public class SettingService
         {
             Billboard = false,
             ExtraLarge = false,
+            Discogs = false,
             NewSearchValue = extraOptions
         };
 
@@ -340,6 +351,12 @@ public class SettingService
         {
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraLarge);
             topListSettings.ExtraLarge = true;
+        }
+        var discogs = new[] { "dc", "discogs" };
+        if (Contains(extraOptions, discogs))
+        {
+            topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, discogs);
+            topListSettings.Discogs = true;
         }
 
         return topListSettings;

@@ -3,6 +3,10 @@ namespace FMBot.Domain;
 public static class Constants
 {
 
+    public const string DiscogsUserUrl = "https://www.discogs.com/user/";
+
+    public const string DiscordReleaseUrl = "https://www.discogs.com/release/";
+
     public const string LastFMUserUrl = "https://www.last.fm/user/";
 
     public const string LastFmNonExistentImageName = "2a96cbd8b46e442fc41c2b86b821562f.png";

@@ -1,16 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
+using Fergun.Interactive.Extensions;
 using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -22,13 +19,10 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
-using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
@@ -147,6 +141,121 @@ public class UserCommands : BaseCommandModule
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [Command("judge", RunMode = RunMode.Async)]
+    [Summary("Judges your music taste using AI")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Other)]
+    [ExcludeFromHelp]
+    public async Task JudgeAsync([Remainder] string userOptions = null)
+    {
+        var user = await this._userService.GetUserAsync(this.Context.User.Id);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        if (user.UserType != UserType.Admin && user.UserType != UserType.Owner)
+        {
+            await ReplyAsync("Nothing to see here!");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
+        var topArtists = await this._artistsService.GetRecentTopArtists(this.Context.User.Id, daysToGoBack: 60);
+
+        try
+        {
+            var response =
+                await this._userBuilder.JudgeAsync(new ContextModel(this.Context, prfx, user));
+
+            var pageBuilder = new PageBuilder()
+                .WithDescription(response.Embed.Description)
+                .WithColor(DiscordConstants.InformationColorBlue);
+
+            var items = new Item[]
+            {
+                new("Compliment", new Emoji("🙂")),
+                new("Roast", new Emoji("🔥")),
+            };
+
+            var selection = new SelectionBuilder<Item>()
+                .WithOptions(items)
+                .WithStringConverter(item => item.Name)
+                .WithEmoteConverter(item => item.Emote)
+                .WithSelectionPage(pageBuilder)
+                .Build();
+
+            var result = await this.Interactivity.SendSelectionAsync(selection, this.Context.Channel, TimeSpan.FromMinutes(10));
+
+            if (result.IsTimeout || !result.IsSuccess)
+            {
+                var embed = new EmbedBuilder()
+                    .WithDescription("Judgement command timed out. Try again.")
+                    .WithColor(DiscordConstants.InformationColorBlue);
+
+                await result.Message.ModifyAsync(x =>
+                {
+                    x.Embed = embed.Build();
+                    x.Components = new ComponentBuilder().Build();
+                });
+
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+
+                return;
+            }
+
+            var selected = result.Value.Name;
+
+            if (selected == "Compliment")
+            {
+                var embed = new EmbedBuilder()
+                    .WithDescription("<a:loading:821676038102056991> Loading your compliment...")
+                    .WithColor(new Color(186, 237, 169));
+
+                await result.Message.ModifyAsync(x =>
+                {
+                    x.Embed = embed.Build();
+                    x.Components = new ComponentBuilder().Build();
+                });
+
+                var complimentResponse = await this._userBuilder.JudgeComplimentAsync(new ContextModel(this.Context, prfx, user), topArtists);
+
+                await result.Message.ModifyAsync(x =>
+                {
+                    x.Embed = complimentResponse.Embed.Build();
+                    x.Components = new ComponentBuilder().Build();
+                });
+
+                this.Context.LogCommandUsed();
+            }
+            if (selected == "Roast")
+            {
+                var embed = new EmbedBuilder()
+                    .WithDescription("<a:loading:821676038102056991> Loading your roast (don't take it personally)...")
+                    .WithColor(new Color(255, 122, 1));
+
+                await result.Message.ModifyAsync(x =>
+                {
+                    x.Embed = embed.Build();
+                    x.Components = new ComponentBuilder().Build();
+                });
+
+                var complimentResponse = await this._userBuilder.JudgeRoastAsync(new ContextModel(this.Context, prfx, user), topArtists);
+
+                await result.Message.ModifyAsync(x =>
+                {
+                    x.Embed = complimentResponse.Embed.Build();
+                    x.Components = new ComponentBuilder().Build();
+                });
+
+                this.Context.LogCommandUsed();
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    private sealed record Item(string Name, IEmote Emote);
 
     [Command("featured", RunMode = RunMode.Async)]
     [Summary("Displays the currently picked feature and the user.\n\n" +
@@ -305,7 +414,7 @@ public class UserCommands : BaseCommandModule
         {
             await ReplyAsync("Error occurred while trying to send DM, maybe you have DMs disabled. \n" +
                              "Try using the slash command version `/fmmode` instead.");
-            await this.Context.HandleCommandException(e,sendReply: false);
+            await this.Context.HandleCommandException(e, sendReply: false);
         }
     }
 

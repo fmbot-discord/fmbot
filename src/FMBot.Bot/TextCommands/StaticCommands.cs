@@ -282,7 +282,7 @@ public class StaticCommands : BaseCommandModule
             if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnecting) > 0)
             {
                 var disconnecting = new StringBuilder();
-                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(10))
+                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(8))
                 {
                     disconnecting.Append($"`{shard.ShardId}` - ");
                 }
@@ -292,7 +292,7 @@ public class StaticCommands : BaseCommandModule
             if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnected) > 0)
             {
                 var disconnected = new StringBuilder();
-                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(10))
+                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(8))
                 {
                     disconnected.Append($"`{shard.ShardId}` - ");
                 }

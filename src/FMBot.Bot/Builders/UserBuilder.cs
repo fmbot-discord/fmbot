@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -16,7 +18,6 @@ using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
-using Google.Apis.Discovery;
 using Microsoft.Extensions.Options;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -36,6 +37,7 @@ public class UserBuilder
     private readonly ArtistsService _artistsService;
     private readonly SupporterService _supporterService;
     private readonly DiscogsService _discogsService;
+    private readonly OpenAiService _openAiService;
 
     public UserBuilder(UserService userService,
         GuildService guildService,
@@ -48,7 +50,8 @@ public class UserBuilder
         TimeService timeService,
         ArtistsService artistsService,
         SupporterService supporterService,
-        DiscogsService discogsService)
+        DiscogsService discogsService,
+        OpenAiService openAiService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -61,6 +64,7 @@ public class UserBuilder
         this._artistsService = artistsService;
         this._supporterService = supporterService;
         this._discogsService = discogsService;
+        this._openAiService = openAiService;
         this._botSettings = botSettings.Value;
     }
 
@@ -594,6 +598,76 @@ public class UserBuilder
         if (footer.Length > 0)
         {
             response.Embed.WithFooter(footer.ToString());
+        }
+
+        return response;
+    }
+
+    public async Task<ResponseModel> JudgeAsync(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var description = new StringBuilder();
+        description.AppendLine("Want your music taste to be judged by AI?");
+        description.AppendLine("Pick using the buttons below..");
+        description.AppendLine();
+        description.AppendLine("This command costs money and is staff only right now - don't spam it pls");
+        //description.AppendLine("You can use this command `3` more times today.");
+        description.AppendLine();
+        description.AppendLine("Some of your top artists might be sent to OpenAI. No other data is sent.");
+        description.AppendLine("Keep in mind that music taste is subjective, and that no matter what this command or anyone else says you're free to like whatever artist you want.");
+
+        response.Embed.WithDescription(description.ToString());
+
+        return response;
+    }
+
+    public async Task<ResponseModel> JudgeComplimentAsync(ContextModel context, List<string> topArtists)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var openAiResponse =
+            await this._openAiService.GetResponse(topArtists.Take(16).ToList(), true);
+
+        var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
+
+        response.Embed.WithAuthor($"{userNickname ?? context.DiscordUser.Username}'s .fmbot AI judgement - Compliment 🙂");
+        response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
+        response.Embed.WithColor(new Color(186, 237, 169));
+
+        return response;
+    }
+
+    public async Task<ResponseModel> JudgeRoastAsync(ContextModel context, List<string> topArtists)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var openAiResponse =
+            await this._openAiService.GetResponse(topArtists.Take(16).ToList(), false);
+
+        var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
+
+        response.Embed.WithAuthor($"{userNickname ?? context.DiscordUser.Username}'s .fmbot AI judgement - Roast 🔥");
+        response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
+        response.Embed.WithColor(new Color(255, 122, 1));
+
+        return response;
+    }
+
+    private string ImproveAiResponse(string response, List<string> artists)
+    {
+        foreach (var artist in artists)
+        {
+            response = response.Replace(artist, $"*{artist}*");
         }
 
         return response;

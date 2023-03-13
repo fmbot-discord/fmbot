@@ -12,6 +12,7 @@ public class TimeSettingsModel
     public LastStatsTimeSpan LastStatsTimeSpan { get; set; }
     public TimePeriod TimePeriod { get; set; }
     public bool UsePlays { get; set; }
+    public bool UseCustomTimePeriod { get; set; }
     public DateTime? StartDateTime { get; set; }
     public DateTime? EndDateTime { get; set; }
 

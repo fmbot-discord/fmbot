@@ -63,6 +63,9 @@ public static class Statistics
     public static readonly Counter OpenCollectiveApiCalls = Metrics
         .CreateCounter("opencollective_api_calls", "Amount of OpenCollective API calls");
 
+    public static readonly Counter OpenAiCalls = Metrics
+        .CreateCounter("openai_api_calls", "Amount of OpenAI API calls");
+
 
     public static readonly Counter CommandsExecuted = Metrics
         .CreateCounter("bot_commands_executed", "Amount of commands executed",
@@ -90,6 +93,9 @@ public static class Statistics
 
     public static readonly Counter ModalsExecuted = Metrics
         .CreateCounter("bot_modals_executed", "Amount of modals executed");
+
+    public static readonly Counter ButtonExecuted = Metrics
+        .CreateCounter("bot_button_executed", "Amount of buttons executed");
 
 
     public static readonly Gauge RegisteredUserCount = Metrics

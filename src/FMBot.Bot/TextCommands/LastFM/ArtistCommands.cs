@@ -38,6 +38,7 @@ public class ArtistCommands : BaseCommandModule
     private readonly PlayService _playService;
     private readonly SettingService _settingService;
     private readonly UserService _userService;
+    private readonly DiscogsBuilder _discogsBuilders;
 
     private InteractiveService Interactivity { get; }
 
@@ -53,7 +54,8 @@ public class ArtistCommands : BaseCommandModule
         UserService userService,
         InteractiveService interactivity,
         IOptions<BotSettings> botSettings,
-        ArtistBuilders artistBuilders) : base(botSettings)
+        ArtistBuilders artistBuilders,
+        DiscogsBuilder discogsBuilders) : base(botSettings)
     {
         this._artistsService = artistsService;
         this._guildService = guildService;
@@ -66,6 +68,7 @@ public class ArtistCommands : BaseCommandModule
         this._userService = userService;
         this.Interactivity = interactivity;
         this._artistBuilders = artistBuilders;
+        this._discogsBuilders = discogsBuilders;
     }
 
     [Command("artist", RunMode = RunMode.Async)]
@@ -324,10 +327,19 @@ public class ArtistCommands : BaseCommandModule
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
 
-            var response = await this._artistBuilders.TopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
-                topListSettings, timeSettings, userSettings);
+            if (topListSettings.Discogs)
+            {
+                userSettings.RegisteredLastFm = DateTime.MinValue;
+            }
+
+            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly, registeredLastFm: userSettings.RegisteredLastFm);
+
+            var response = topListSettings.Discogs
+                ? await this._discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
+                    topListSettings, timeSettings, userSettings)
+                : await this._artistBuilders.TopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
+                    topListSettings, timeSettings, userSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

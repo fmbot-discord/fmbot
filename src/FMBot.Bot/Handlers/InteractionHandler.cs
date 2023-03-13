@@ -55,6 +55,7 @@ public class InteractionHandler
         this._client.SelectMenuExecuted += SelectMenuExecuted;
         this._client.ModalSubmitted += ModalSubmitted;
         this._client.UserCommandExecuted += UserCommandAsync;
+        this._client.ButtonExecuted += ButtonExecuted;
     }
 
     private async Task SlashCommandAsync(SocketInteraction socketInteraction)
@@ -217,6 +218,14 @@ public class InteractionHandler
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
         Statistics.ModalsExecuted.Inc();
+    }
+
+    private async Task ButtonExecuted(SocketMessageComponent arg)
+    {
+        var context = new ShardedInteractionContext(this._client, arg);
+        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+
+        Statistics.ButtonExecuted.Inc();
     }
 
     private async Task<bool> CommandDisabled(ShardedInteractionContext context, SlashCommandInfo searchResult)

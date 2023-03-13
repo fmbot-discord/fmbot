@@ -7,6 +7,7 @@ using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
@@ -229,7 +230,7 @@ public static class StringService
 
         description.Append($" - ");
 
-        description.Append($"[{discogsRelease.Release.Title}](https://www.discogs.com/release/{discogsRelease.Release.DiscogsId})");
+        description.Append($"[{discogsRelease.Release.Title}]({Constants.DiscordReleaseUrl}/{discogsRelease.Release.DiscogsId})");
         description.Append("**");
 
         description.AppendLine();
@@ -264,7 +265,7 @@ public static class StringService
 
         description.Append(GetDiscogsFormatEmote(discogsRelease.Release.Format));
 
-        description.Append($" [{discogsRelease.Release.Format}](https://www.discogs.com/release/{discogsRelease.Release.DiscogsId})");
+        description.Append($" [{discogsRelease.Release.Format}]({Constants.DiscordReleaseUrl}{discogsRelease.Release.DiscogsId})");
         if (discogsRelease.Release.FormatText != null)
         {
             description.Append($" - *{discogsRelease.Release.FormatText}*");
@@ -317,7 +318,7 @@ public static class StringService
         description.Append(formatEmote ?? discogsRelease.Release.Format);
 
         description.Append(
-            $" - **[{discogsRelease.Release.Title}](https://www.discogs.com/release/{discogsRelease.Release.DiscogsId})**");
+            $" - **[{discogsRelease.Release.Title}]({Constants.DiscordReleaseUrl}{discogsRelease.Release.DiscogsId})**");
 
         if (discogsRelease.Release.FormatText != null)
         {

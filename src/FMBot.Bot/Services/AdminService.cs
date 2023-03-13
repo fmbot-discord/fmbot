@@ -185,9 +185,9 @@ public class AdminService
         return true;
     }
 
-    public async Task<bool> EnableBottedUserBanAsync(string lastFmUserName, string reason)
+    public async Task<bool> EnableBottedUserBanAsync(string lastFmUserName, string reason, DateTime? registeredDate = null)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var bottedUser = await db.BottedUsers
             .AsQueryable()
@@ -199,6 +199,11 @@ public class AdminService
         }
 
         bottedUser.BanActive = true;
+
+        if (registeredDate.HasValue)
+        {
+            bottedUser.LastFmRegistered = DateTime.SpecifyKind(registeredDate.Value, DateTimeKind.Utc);
+        }
 
         var stringToAdd = $"*[Re-banned <t:{DateTime.UtcNow.ToUnixEpochDate()}:F>]*";
 
@@ -230,9 +235,9 @@ public class AdminService
         return true;
     }
 
-    public async Task<bool> AddBottedUserAsync(string lastFmUserName, string reason)
+    public async Task<bool> AddBottedUserAsync(string lastFmUserName, string reason, DateTime? registeredDate = null)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var bottedUser = await db.BottedUsers
             .AsQueryable()
@@ -243,11 +248,17 @@ public class AdminService
             return false;
         }
 
+        if (registeredDate.HasValue)
+        {
+            registeredDate = DateTime.SpecifyKind(registeredDate.Value, DateTimeKind.Utc);
+        }
+
         var newBottedUser = new BottedUser
         {
             UserNameLastFM = lastFmUserName,
             BanActive = true,
-            Notes = reason
+            Notes = reason,
+            LastFmRegistered = registeredDate
         };
 
         await db.BottedUsers.AddAsync(newBottedUser);
