@@ -155,6 +155,7 @@ public class UserCommands : BaseCommandModule
         if (user.UserType != UserType.Admin && user.UserType != UserType.Owner)
         {
             await ReplyAsync("Nothing to see here!");
+            return;
         }
 
         var topArtists = await this._artistsService.GetRecentTopArtists(this.Context.User.Id, daysToGoBack: 60);
