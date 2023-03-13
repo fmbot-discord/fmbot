@@ -58,7 +58,7 @@ public class CensorService
         var result = await ArtistResult(artistName);
         if (result == CensorResult.NotSafe)
         {
-            embedToUpdate?.WithDescription("Sorry, this album or artist can't be posted due to it possibly violating Discord ToS.\n" +
+            embedToUpdate?.WithDescription("Sorry, this artist can't be posted due to it possibly violating Discord ToS.\n" +
                                            $"You can view the [album cover here]({url}).");
             return result;
         }
@@ -135,7 +135,6 @@ public class CensorService
         return CensorResult.Safe;
     }
 
-
     public async Task<CensorResult> ArtistResult(string artistName)
     {
         var censoredMusic = await GetCachedCensoredMusic();
@@ -172,7 +171,41 @@ public class CensorService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        return await db.CensoredMusic.FirstOrDefaultAsync(f => f.AlbumName == albumName && f.ArtistName == artistName);
+        return await db.CensoredMusic
+            .OrderByDescending(o => o.TimesCensored)
+            .FirstOrDefaultAsync(f => f.AlbumName.ToLower() == albumName.ToLower() &&
+                                      f.ArtistName.ToLower() == artistName.ToLower());
+    }
+
+    public async Task<CensoredMusic> GetCurrentArtist(string artistName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.CensoredMusic
+            .OrderByDescending(o => o.TimesCensored)
+            .FirstOrDefaultAsync(f => f.ArtistName.ToLower() == artistName.ToLower() && f.Artist);
+    }
+
+    public async Task<CensoredMusic> GetForId(int id)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.CensoredMusic
+            .FirstOrDefaultAsync(f => f.CensoredMusicId == id);
+    }
+
+    public async Task<CensoredMusic> SetCensorType(CensoredMusic musicToUpdate, CensorType censorType)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var music = await db.CensoredMusic.FirstAsync(f => f.CensoredMusicId == musicToUpdate.CensoredMusicId);
+
+        music.CensorType = censorType;
+
+        db.Update(music);
+
+        await db.SaveChangesAsync();
+
+        return music;
     }
 
     public async Task AddCensoredAlbum(string albumName, string artistName)

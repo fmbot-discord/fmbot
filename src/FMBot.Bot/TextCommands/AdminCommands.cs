@@ -14,9 +14,11 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
@@ -378,6 +380,83 @@ public class AdminCommands : BaseCommandModule
         {
             await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored artists.");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("addartist")]
+    [Summary("Adds censored artist")]
+    [Examples("addcensoredartist Last Days of Humanity")]
+    public async Task AddArtistAsync([Remainder] string artist)
+    {
+        try
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(artist))
+                {
+                    await ReplyAsync("Enter a correct artist to be censored\n" +
+                                     "Example: `.addcensoredartist \"Last Days of Humanity\"");
+                    return;
+                }
+
+                artist = artist.Replace("\"", "");
+
+                var existingArtist = await this._censorService.GetCurrentArtist(artist);
+                if (existingArtist == null)
+                {
+                    await this._censorService.AddCensoredArtistAlbums(artist);
+                    existingArtist = await this._censorService.GetCurrentArtist(artist);
+                }
+
+                var censorOptions = new SelectMenuBuilder()
+                    .WithPlaceholder("Select censor types")
+                    .WithCustomId($"admin-censor-{existingArtist.CensoredMusicId}")
+                    .WithMaxValues(5);
+
+                var censorDescription = new StringBuilder();
+                foreach (var option in ((CensorType[])Enum.GetValues(typeof(CensorType))))
+                {
+                    var name = option.GetAttribute<OptionAttribute>().Name;
+                    var description = option.GetAttribute<OptionAttribute>().Description;
+                    var value = Enum.GetName(option);
+
+                    var active = existingArtist.CensorType.HasFlag(option);
+
+                    if (name.ToLower().Contains("artist"))
+                    {
+                        censorDescription.Append(active ? "✅" : "❌");
+                        censorDescription.Append(" - ");
+                        censorDescription.AppendLine(name);
+
+                        censorOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+                    }
+                }
+
+                var builder = new ComponentBuilder()
+                    .WithSelectMenu(censorOptions);
+
+                this._embed.WithTitle("Artist - Censor information");
+
+                this._embed.AddField("Name", existingArtist.ArtistName);
+                this._embed.AddField("Times censored", existingArtist.TimesCensored ?? 0);
+                this._embed.AddField("Types", censorDescription.ToString());
+
+                this._embed.WithDescription($"Added `{artist}` to the list of censored artists.");
+
+                await ReplyAsync(embed: this._embed.Build(), components: builder.Build());
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored artists.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
         }
     }
 

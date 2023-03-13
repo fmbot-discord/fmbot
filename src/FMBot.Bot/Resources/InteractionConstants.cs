@@ -10,4 +10,6 @@ public static class InteractionConstants
 
     public const string TextPrefixModal = "text-prefix-modal";
     public const string FmGuildSettingType = "fm-guild-type-menu";
+
+    public const string CensorTypes = "admin-censor-*";
 }
