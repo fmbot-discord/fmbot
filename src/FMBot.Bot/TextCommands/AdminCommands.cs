@@ -295,91 +295,88 @@ public class AdminCommands : BaseCommandModule
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-                var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues, userSettings.UserNameLastFM);
-                if (albumSearch.Album == null)
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot admins can manage albums.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues, userSettings.UserNameLastFM);
+            if (albumSearch.Album == null)
+            {
+                await this.Context.SendResponse(this.Interactivity, albumSearch.Response);
+                return;
+            }
+
+            var existingAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+            if (existingAlbum == null)
+            {
+                if (this.Context.Message.Content[..12].Contains("nsfw"))
                 {
-                    await this.Context.SendResponse(this.Interactivity, albumSearch.Response);
-                    return;
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.ArtistAlbumsNsfw);
+                    this._embed.WithDescription($"Marked `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` as NSFW.");
                 }
-
-                var existingAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
-                if (existingAlbum == null)
+                else if (this.Context.Message.Content[..12].Contains("censored"))
                 {
-                    if (this.Context.Message.Content[..12].Contains("nsfw"))
-                    {
-                        await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.ArtistAlbumsNsfw);
-                        this._embed.WithDescription($"Marked `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` as NSFW.");
-                    }
-                    else if (this.Context.Message.Content[..12].Contains("censored"))
-                    {
-                        await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.ArtistAlbumsCensored);
-                        this._embed.WithDescription($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored albums.");
-                    }
-                    else
-                    {
-                        await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.None);
-                        this._embed.WithDescription($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored music list, however not banned anywhere.");
-                    }
-
-                    existingAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.ArtistAlbumsCensored);
+                    this._embed.WithDescription($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored albums.");
                 }
                 else
                 {
-                    this._embed.WithDescription($"Showing existing album entry (no modifications made).");
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.None);
+                    this._embed.WithDescription($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored music list, however not banned anywhere.");
                 }
 
-                var censorOptions = new SelectMenuBuilder()
-                    .WithPlaceholder("Select censor types")
-                    .WithCustomId($"admin-censor-{existingAlbum.CensoredMusicId}")
-                    .WithMinValues(0)
-                    .WithMaxValues(2);
-
-                var censorDescription = new StringBuilder();
-                foreach (var option in ((CensorType[])Enum.GetValues(typeof(CensorType))))
-                {
-                    var name = option.GetAttribute<OptionAttribute>().Name;
-                    var description = option.GetAttribute<OptionAttribute>().Description;
-                    var value = Enum.GetName(option);
-
-                    var active = existingAlbum.CensorType.HasFlag(option);
-
-                    if ((name.ToLower().Contains("album cover") || active) && name != "None")
-                    {
-                        censorDescription.Append(active ? "✅" : "❌");
-                        censorDescription.Append(" - ");
-                        censorDescription.AppendLine(name);
-
-                        censorOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
-                    }
-                }
-
-                var builder = new ComponentBuilder()
-                    .WithSelectMenu(censorOptions);
-
-                this._embed.WithTitle("Album - Censor information");
-
-                this._embed.AddField("Album name", existingAlbum.AlbumName);
-                this._embed.AddField("Artist name", existingAlbum.ArtistName);
-                this._embed.AddField("Times censored", existingAlbum.TimesCensored ?? 0);
-                this._embed.AddField("Types", censorDescription.ToString());
-
-                await ReplyAsync(embed: this._embed.Build(), components: builder.Build());
-                this.Context.LogCommandUsed();
+                existingAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
             }
             else
             {
-                await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored artists.");
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                this._embed.WithDescription($"Showing existing album entry (no modifications made).");
             }
 
+            var censorOptions = new SelectMenuBuilder()
+                .WithPlaceholder("Select censor types")
+                .WithCustomId($"admin-censor-{existingAlbum.CensoredMusicId}")
+                .WithMinValues(0)
+                .WithMaxValues(2);
+
+            var censorDescription = new StringBuilder();
+            foreach (var option in ((CensorType[])Enum.GetValues(typeof(CensorType))))
+            {
+                var name = option.GetAttribute<OptionAttribute>().Name;
+                var description = option.GetAttribute<OptionAttribute>().Description;
+                var value = Enum.GetName(option);
+
+                var active = existingAlbum.CensorType.HasFlag(option);
+
+                if ((name.ToLower().Contains("album cover") || active) && name != "None")
+                {
+                    censorDescription.Append(active ? "✅" : "❌");
+                    censorDescription.Append(" - ");
+                    censorDescription.AppendLine(name);
+
+                    censorOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+                }
+            }
+
+            var builder = new ComponentBuilder()
+                .WithSelectMenu(censorOptions);
+
+            this._embed.WithTitle("Album - Censor information");
+
+            this._embed.AddField("Album name", existingAlbum.AlbumName);
+            this._embed.AddField("Artist name", existingAlbum.ArtistName);
+            this._embed.AddField("Times censored", existingAlbum.TimesCensored ?? 0);
+            this._embed.AddField("Types", censorDescription.ToString());
+
+            await ReplyAsync(embed: this._embed.Build(), components: builder.Build());
+            this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -391,96 +388,93 @@ public class AdminCommands : BaseCommandModule
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                if (string.IsNullOrEmpty(artist))
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot admins can manage artists.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(artist))
+            {
+                await ReplyAsync("Enter a correct artist to manage\n" +
+                                 "Example: `.addartist \"Last Days of Humanity\"");
+                return;
+            }
+
+            artist = artist.Replace("\"", "");
+
+            var existingArtist = await this._censorService.GetCurrentArtist(artist);
+            if (existingArtist == null)
+            {
+                if (this.Context.Message.Content[..12].Contains("nsfw"))
                 {
-                    await ReplyAsync("Enter a correct artist to be censored\n" +
-                                     "Example: `.addartist \"Last Days of Humanity\"");
-                    return;
+                    await this._censorService.AddArtist(artist, CensorType.ArtistAlbumsNsfw);
+                    this._embed.WithDescription($"Added `{artist}` to the album nsfw marked artists.");
                 }
-
-                artist = artist.Replace("\"", "");
-
-                var existingArtist = await this._censorService.GetCurrentArtist(artist);
-                if (existingArtist == null)
+                else if (this.Context.Message.Content[..12].Contains("censored"))
                 {
-                    if (this.Context.Message.Content[..12].Contains("nsfw"))
-                    {
-                        await this._censorService.AddArtist(artist, CensorType.ArtistAlbumsNsfw);
-                        this._embed.WithDescription($"Added `{artist}` to the album nsfw marked artists.");
-                    }
-                    else if (this.Context.Message.Content[..12].Contains("censored"))
-                    {
-                        await this._censorService.AddArtist(artist, CensorType.ArtistAlbumsCensored);
-                        this._embed.WithDescription($"Added `{artist}` to the album censored artists.");
-                    }
-                    else if (this.Context.Message.Content[..12].Contains("featured"))
-                    {
-                        await this._censorService.AddArtist(artist, CensorType.ArtistFeaturedBan);
-                        this._embed.WithDescription($"Added `{artist}` to the list of featured banned artists.");
-                    }
-                    else
-                    {
-                        await this._censorService.AddArtist(artist, CensorType.None);
-                        this._embed.WithDescription($"Added `{artist}` to the censored music list, however not banned anywhere.");
-                    }
-
-                    existingArtist = await this._censorService.GetCurrentArtist(artist);
+                    await this._censorService.AddArtist(artist, CensorType.ArtistAlbumsCensored);
+                    this._embed.WithDescription($"Added `{artist}` to the album censored artists.");
+                }
+                else if (this.Context.Message.Content[..12].Contains("featured"))
+                {
+                    await this._censorService.AddArtist(artist, CensorType.ArtistFeaturedBan);
+                    this._embed.WithDescription($"Added `{artist}` to the list of featured banned artists.");
                 }
                 else
                 {
-                    this._embed.WithDescription($"Showing existing artist entry (no modifications made).");
+                    await this._censorService.AddArtist(artist, CensorType.None);
+                    this._embed.WithDescription($"Added `{artist}` to the censored music list, however not banned anywhere.");
                 }
 
-                var censorOptions = new SelectMenuBuilder()
-                    .WithPlaceholder("Select censor types")
-                    .WithCustomId($"admin-censor-{existingArtist.CensoredMusicId}")
-                    .WithMinValues(0)
-                    .WithMaxValues(5);
-
-                var censorDescription = new StringBuilder();
-                foreach (var option in ((CensorType[])Enum.GetValues(typeof(CensorType))))
-                {
-                    var name = option.GetAttribute<OptionAttribute>().Name;
-                    var description = option.GetAttribute<OptionAttribute>().Description;
-                    var value = Enum.GetName(option);
-
-                    var active = existingArtist.CensorType.HasFlag(option);
-
-                    if ((name.ToLower().Contains("artist") || active) && name != "None")
-                    {
-                        censorDescription.Append(active ? "✅" : "❌");
-                        censorDescription.Append(" - ");
-                        censorDescription.AppendLine(name);
-
-                        censorOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
-                    }
-                }
-
-                var builder = new ComponentBuilder()
-                    .WithSelectMenu(censorOptions);
-
-                this._embed.WithTitle("Artist - Censor information");
-
-                this._embed.AddField("Name", existingArtist.ArtistName);
-                this._embed.AddField("Times censored", existingArtist.TimesCensored ?? 0);
-                this._embed.AddField("Types", censorDescription.ToString());
-
-                await ReplyAsync(embed: this._embed.Build(), components: builder.Build());
-                this.Context.LogCommandUsed();
+                existingArtist = await this._censorService.GetCurrentArtist(artist);
             }
             else
             {
-                await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored artists.");
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                this._embed.WithDescription($"Showing existing artist entry (no modifications made).");
             }
 
+            var censorOptions = new SelectMenuBuilder()
+                .WithPlaceholder("Select censor types")
+                .WithCustomId($"admin-censor-{existingArtist.CensoredMusicId}")
+                .WithMinValues(0)
+                .WithMaxValues(5);
+
+            var censorDescription = new StringBuilder();
+            foreach (var option in ((CensorType[])Enum.GetValues(typeof(CensorType))))
+            {
+                var name = option.GetAttribute<OptionAttribute>().Name;
+                var description = option.GetAttribute<OptionAttribute>().Description;
+                var value = Enum.GetName(option);
+
+                var active = existingArtist.CensorType.HasFlag(option);
+
+                if ((name.ToLower().Contains("artist") || active) && name != "None")
+                {
+                    censorDescription.Append(active ? "✅" : "❌");
+                    censorDescription.Append(" - ");
+                    censorDescription.AppendLine(name);
+
+                    censorOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+                }
+            }
+
+            var builder = new ComponentBuilder()
+                .WithSelectMenu(censorOptions);
+
+            this._embed.WithTitle("Artist - Censor information");
+
+            this._embed.AddField("Name", existingArtist.ArtistName);
+            this._embed.AddField("Times censored", existingArtist.TimesCensored ?? 0);
+            this._embed.AddField("Types", censorDescription.ToString());
+
+            await ReplyAsync(embed: this._embed.Build(), components: builder.Build());
+            this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -491,6 +485,7 @@ public class AdminCommands : BaseCommandModule
         {
             await this._censorService.Migrate();
             await ReplyAsync("Done! Check logs 🤠");
+            this.Context.LogCommandUsed();
         }
     }
 
