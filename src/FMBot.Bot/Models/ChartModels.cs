@@ -79,7 +79,7 @@ public class ChartSettings
     public bool UsePlays { get; set; }
 
     public bool ContainsNsfw { get; set; }
-    public int? CensoredAlbums { get; set; }
+    public int? CensoredItems { get; set; }
 }
 
 public class ChartImage

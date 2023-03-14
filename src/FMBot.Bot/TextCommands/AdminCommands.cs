@@ -334,6 +334,7 @@ public class AdminCommands : BaseCommandModule
                 var censorOptions = new SelectMenuBuilder()
                     .WithPlaceholder("Select censor types")
                     .WithCustomId($"admin-censor-{existingAlbum.CensoredMusicId}")
+                    .WithMinValues(0)
                     .WithMaxValues(2);
 
                 var censorDescription = new StringBuilder();
@@ -435,6 +436,7 @@ public class AdminCommands : BaseCommandModule
                 var censorOptions = new SelectMenuBuilder()
                     .WithPlaceholder("Select censor types")
                     .WithCustomId($"admin-censor-{existingArtist.CensoredMusicId}")
+                    .WithMinValues(0)
                     .WithMaxValues(5);
 
                 var censorDescription = new StringBuilder();

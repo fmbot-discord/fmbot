@@ -141,6 +141,16 @@ public static class StringExtensions
         return scrobbles == 1 ? "scrobble" : "scrobbles";
     }
 
+    public static string GetArtistsString(long? artists)
+    {
+        return artists == 1 ? "artist" : "artists";
+    }
+
+    public static string GetAlbumsString(long? albums)
+    {
+        return albums == 1 ? "album" : "albums";
+    }
+
     public static string GetListenersString(long? listeners)
     {
         return listeners == 1 ? "listener" : "listeners";
