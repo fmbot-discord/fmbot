@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
@@ -14,9 +15,11 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
@@ -261,41 +264,6 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("addcensoredalbum")]
-    [Summary("Adds censored album")]
-    [Examples("addcensoredalbum Death Grips | No Love Deep Web")]
-    public async Task AddCensoredAlbumAsync([Remainder] string albumValues)
-    {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues, userSettings.UserNameLastFM);
-            if (albumSearch.Album == null)
-            {
-                await this.Context.SendResponse(this.Interactivity, albumSearch.Response);
-                return;
-            }
-
-            var currentAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
-            if (currentAlbum is { SafeForCommands: false })
-            {
-                await ReplyAsync("That album is already censored");
-                return;
-            }
-
-            await this._censorService.AddCensoredAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
-
-            await ReplyAsync($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the list of censored albums.", allowedMentions: AllowedMentions.None);
-            this.Context.LogCommandUsed();
-        }
-        else
-        {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored albums.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-        }
-    }
-
     [Command("opencollectivesupporters", RunMode = RunMode.Async)]
     [Summary("Displays all .fmbot supporters.")]
     [Alias("ocsupporters")]
@@ -319,15 +287,22 @@ public class AdminCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("addnsfwalbum")]
-    [Summary("Adds nsfw album")]
-    [Examples("addnsfwalbum Death Grips | No Love Deep Web")]
-    public async Task AddNsfwAlbumAsync([Remainder] string albumValues)
+    [Command("addalbum")]
+    [Summary("Manage album censoring")]
+    [Examples("addcensoredalbum Death Grips No Love Deep Web")]
+    [Alias("addcensoredalbum", "addnsfwalbum", "checkalbum")]
+    public async Task AddAlbumAsync([Remainder] string albumValues)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        try
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot admins can manage albums.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
 
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues, userSettings.UserNameLastFM);
             if (albumSearch.Album == null)
             {
@@ -335,49 +310,182 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var currentAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
-            if (currentAlbum is { SafeForFeatured: false })
+            var existingAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+            if (existingAlbum == null)
             {
-                await ReplyAsync("That album is already marked as nsfw");
-                return;
-            }
-            await this._censorService.AddNsfwAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+                if (this.Context.Message.Content[..12].Contains("nsfw"))
+                {
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.ArtistAlbumsNsfw);
+                    this._embed.WithDescription($"Marked `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` as NSFW.");
+                }
+                else if (this.Context.Message.Content[..12].Contains("censored"))
+                {
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.ArtistAlbumsCensored);
+                    this._embed.WithDescription($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored albums.");
+                }
+                else
+                {
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.None);
+                    this._embed.WithDescription($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored music list, however not banned anywhere.");
+                }
 
-            await ReplyAsync($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the list of nsfw albums.", allowedMentions: AllowedMentions.None);
+                existingAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+            }
+            else
+            {
+                this._embed.WithDescription($"Showing existing album entry (no modifications made).");
+            }
+
+            var censorOptions = new SelectMenuBuilder()
+                .WithPlaceholder("Select censor types")
+                .WithCustomId($"admin-censor-{existingAlbum.CensoredMusicId}")
+                .WithMinValues(0)
+                .WithMaxValues(2);
+
+            var censorDescription = new StringBuilder();
+            foreach (var option in ((CensorType[])Enum.GetValues(typeof(CensorType))))
+            {
+                var name = option.GetAttribute<OptionAttribute>().Name;
+                var description = option.GetAttribute<OptionAttribute>().Description;
+                var value = Enum.GetName(option);
+
+                var active = existingAlbum.CensorType.HasFlag(option);
+
+                if ((name.ToLower().Contains("album cover") || active) && name != "None")
+                {
+                    censorDescription.Append(active ? "✅" : "❌");
+                    censorDescription.Append(" - ");
+                    censorDescription.AppendLine(name);
+
+                    censorOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+                }
+            }
+
+            var builder = new ComponentBuilder()
+                .WithSelectMenu(censorOptions);
+
+            this._embed.WithTitle("Album - Censor information");
+
+            this._embed.AddField("Album name", existingAlbum.AlbumName);
+            this._embed.AddField("Artist name", existingAlbum.ArtistName);
+            this._embed.AddField("Times censored", existingAlbum.TimesCensored ?? 0);
+            this._embed.AddField("Types", censorDescription.ToString());
+
+            await ReplyAsync(embed: this._embed.Build(), components: builder.Build());
             this.Context.LogCommandUsed();
         }
-        else
+        catch (Exception e)
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot admins add nsfw albums.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.HandleCommandException(e);
         }
     }
 
-    [Command("addcensoredartist")]
-    [Summary("Adds censored artist")]
+    [Command("addartist")]
+    [Summary("Manage artist censoring")]
     [Examples("addcensoredartist Last Days of Humanity")]
-    public async Task AddCensoredArtistAsync([Remainder] string artist)
+    [Alias("addcensoredartist", "addnsfwartist", "addfeaturedban", "checkartist")]
+    public async Task AddArtistAsync([Remainder] string artist)
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        try
         {
+            if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot admins can manage artists.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
             if (string.IsNullOrEmpty(artist))
             {
-                await ReplyAsync("Enter a correct artist to be censored\n" +
-                                 "Example: `.addcensoredartist \"Last Days of Humanity\"");
+                await ReplyAsync("Enter a correct artist to manage\n" +
+                                 "Example: `.addartist \"Last Days of Humanity\"");
                 return;
             }
 
             artist = artist.Replace("\"", "");
 
-            await this._censorService.AddCensoredArtist(artist);
+            var existingArtist = await this._censorService.GetCurrentArtist(artist);
+            if (existingArtist == null)
+            {
+                if (this.Context.Message.Content[..12].Contains("nsfw"))
+                {
+                    await this._censorService.AddArtist(artist, CensorType.ArtistAlbumsNsfw);
+                    this._embed.WithDescription($"Added `{artist}` to the album nsfw marked artists.");
+                }
+                else if (this.Context.Message.Content[..12].Contains("censored"))
+                {
+                    await this._censorService.AddArtist(artist, CensorType.ArtistAlbumsCensored);
+                    this._embed.WithDescription($"Added `{artist}` to the album censored artists.");
+                }
+                else if (this.Context.Message.Content[..12].Contains("featured"))
+                {
+                    await this._censorService.AddArtist(artist, CensorType.ArtistFeaturedBan);
+                    this._embed.WithDescription($"Added `{artist}` to the list of featured banned artists.");
+                }
+                else
+                {
+                    await this._censorService.AddArtist(artist, CensorType.None);
+                    this._embed.WithDescription($"Added `{artist}` to the censored music list, however not banned anywhere.");
+                }
 
-            await ReplyAsync($"Added `{artist}` to the list of censored artists.");
+                existingArtist = await this._censorService.GetCurrentArtist(artist);
+            }
+            else
+            {
+                this._embed.WithDescription($"Showing existing artist entry (no modifications made).");
+            }
+
+            var censorOptions = new SelectMenuBuilder()
+                .WithPlaceholder("Select censor types")
+                .WithCustomId($"admin-censor-{existingArtist.CensoredMusicId}")
+                .WithMinValues(0)
+                .WithMaxValues(5);
+
+            var censorDescription = new StringBuilder();
+            foreach (var option in ((CensorType[])Enum.GetValues(typeof(CensorType))))
+            {
+                var name = option.GetAttribute<OptionAttribute>().Name;
+                var description = option.GetAttribute<OptionAttribute>().Description;
+                var value = Enum.GetName(option);
+
+                var active = existingArtist.CensorType.HasFlag(option);
+
+                if ((name.ToLower().Contains("artist") || active) && name != "None")
+                {
+                    censorDescription.Append(active ? "✅" : "❌");
+                    censorDescription.Append(" - ");
+                    censorDescription.AppendLine(name);
+
+                    censorOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+                }
+            }
+
+            var builder = new ComponentBuilder()
+                .WithSelectMenu(censorOptions);
+
+            this._embed.WithTitle("Artist - Censor information");
+
+            this._embed.AddField("Name", existingArtist.ArtistName);
+            this._embed.AddField("Times censored", existingArtist.TimesCensored ?? 0);
+            this._embed.AddField("Types", censorDescription.ToString());
+
+            await ReplyAsync(embed: this._embed.Build(), components: builder.Build());
             this.Context.LogCommandUsed();
         }
-        else
+        catch (Exception e)
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored artists.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("migratecensored")]
+    public async Task MigrateCensoredAsync()
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            await this._censorService.Migrate();
+            await ReplyAsync("Done! Check logs 🤠");
+            this.Context.LogCommandUsed();
         }
     }
 

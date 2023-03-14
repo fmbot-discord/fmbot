@@ -38,6 +38,8 @@ public class Guild
     public ulong[] BlockedRoles { get; set; }
     public ulong[] BotManagementRoles { get; set; }
 
+    public string CustomLogo { get; set; }
+
     public ICollection<GuildUser> GuildUsers { get; set; }
 
     public ICollection<GuildBlockedUser> GuildBlockedUsers { get; set; }

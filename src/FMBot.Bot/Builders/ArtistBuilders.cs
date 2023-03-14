@@ -46,6 +46,7 @@ public class ArtistBuilders
     private readonly CountryService _countryService;
     private readonly GenreService _genreService;
     private readonly DiscogsService _discogsService;
+    private readonly CensorService _censorService;
 
     public ArtistBuilders(ArtistsService artistsService,
         LastFmRepository lastFmRepository,
@@ -64,7 +65,8 @@ public class ArtistBuilders
         PuppeteerService puppeteerService,
         CountryService countryService,
         GenreService genreService,
-        DiscogsService discogsService)
+        DiscogsService discogsService,
+        CensorService censorService)
     {
         this._artistsService = artistsService;
         this._lastFmRepository = lastFmRepository;
@@ -84,6 +86,7 @@ public class ArtistBuilders
         this._countryService = countryService;
         this._genreService = genreService;
         this._discogsService = discogsService;
+        this._censorService = censorService;
     }
 
     public async Task<ResponseModel> ArtistAsync(
@@ -753,6 +756,15 @@ public class ArtistBuilders
         }
 
         var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+
+        var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
+        var imgUrl = cachedArtist.SpotifyImageUrl;
+
+        if (safeForChannel == CensorService.CensorResult.NotSafe)
+        {
+            imgUrl = null;
+        }
+
         var contextGuild = await guildTask;
 
         var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, contextGuild.GuildId, artistSearch.Artist.ArtistName);
@@ -774,13 +786,20 @@ public class ArtistBuilders
 
         if (mode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>{context.DiscordGuild.Name}</b>", cachedArtist.SpotifyImageUrl, artistSearch.Artist.ArtistName,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>{context.DiscordGuild.Name}</b>", imgUrl, artistSearch.Artist.ArtistName,
                 filteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, crownModel?.Crown, crownModel?.CrownHtmlResult);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
             response.FileName = $"whoknows-{artistSearch.Artist.ArtistName}";
             response.ResponseType = ResponseType.ImageOnly;
+
+            if (safeForChannel == CensorService.CensorResult.Nsfw)
+            {
+                response.Spoiler = true;
+                response.Embed.WithTitle("⚠️ NSFW - Click to reveal");
+                response.ResponseType = ResponseType.ImageWithEmbed;
+            }
 
             return response;
         }
@@ -852,9 +871,9 @@ public class ArtistBuilders
         response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
-        if (cachedArtist.SpotifyImageUrl != null)
+        if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
-            response.Embed.WithThumbnailUrl(cachedArtist.SpotifyImageUrl);
+            response.Embed.WithThumbnailUrl(imgUrl);
         }
 
         return response;
@@ -878,6 +897,14 @@ public class ArtistBuilders
 
         var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
 
+        var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
+        var imgUrl = cachedArtist.SpotifyImageUrl;
+
+        if (safeForChannel == CensorService.CensorResult.NotSafe)
+        {
+            imgUrl = null;
+        }
+
         var usersWithArtist = await this._whoKnowsArtistService.GetGlobalUsersForArtists(context.DiscordGuild, artistSearch.Artist.ArtistName);
 
         var filteredUsersWithArtist = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
@@ -900,13 +927,20 @@ public class ArtistBuilders
 
         if (settings.WhoKnowsMode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>.fmbot 🌐</b>", cachedArtist?.SpotifyImageUrl, artistSearch.Artist.ArtistName,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>.fmbot 🌐</b>", imgUrl, artistSearch.Artist.ArtistName,
                 filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
             response.FileName = $"global-whoknows-{artistSearch.Artist.ArtistName}";
             response.ResponseType = ResponseType.ImageOnly;
+
+            if (safeForChannel == CensorService.CensorResult.Nsfw)
+            {
+                response.Spoiler = true;
+                response.Embed.WithTitle("⚠️ NSFW - Click to reveal");
+                response.ResponseType = ResponseType.ImageWithEmbed;
+            }
 
             return response;
         }
@@ -975,9 +1009,9 @@ public class ArtistBuilders
         response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
-        if (cachedArtist?.SpotifyImageUrl != null)
+        if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
-            response.Embed.WithThumbnailUrl(cachedArtist.SpotifyImageUrl);
+            response.Embed.WithThumbnailUrl(imgUrl);
         }
 
         return response;
@@ -1014,6 +1048,15 @@ public class ArtistBuilders
 
         var cachedArtist =
             await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+
+        var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
+        var imgUrl = cachedArtist.SpotifyImageUrl;
+
+        if (safeForChannel == CensorService.CensorResult.NotSafe)
+        {
+            imgUrl = null;
+        }
+
         var contextGuild = await guildTask;
 
         var usersWithArtist = await this._whoKnowsArtistService.GetFriendUsersForArtists(context.DiscordGuild, contextGuild?.GuildId ?? 0, context.ContextUser.UserId, artistSearch.Artist.ArtistName);
@@ -1023,13 +1066,20 @@ public class ArtistBuilders
 
         if (mode == WhoKnowsMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"from <b>{userTitle}</b>'s friends", cachedArtist.SpotifyImageUrl, artistSearch.Artist.ArtistName,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"from <b>{userTitle}</b>'s friends", imgUrl, artistSearch.Artist.ArtistName,
                 usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
             response.FileName = $"friends-whoknow-{artistSearch.Artist.ArtistName}";
             response.ResponseType = ResponseType.ImageOnly;
+
+            if (safeForChannel == CensorService.CensorResult.Nsfw)
+            {
+                response.Spoiler = true;
+                response.Embed.WithTitle("⚠️ NSFW - Click to reveal");
+                response.ResponseType = ResponseType.ImageWithEmbed;
+            }
 
             return response;
         }
@@ -1078,9 +1128,9 @@ public class ArtistBuilders
         response.EmbedFooter.WithText(footer);
         response.Embed.WithFooter(response.EmbedFooter);
 
-        if (cachedArtist.SpotifyImageUrl != null)
+        if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
-            response.Embed.WithThumbnailUrl(cachedArtist.SpotifyImageUrl);
+            response.Embed.WithThumbnailUrl(imgUrl);
         }
 
         return response;
@@ -1250,7 +1300,8 @@ public class ArtistBuilders
                 countryPage.WithFooter("⬅️ Genres\n" +
                                         "➡️ Discogs");
             }
-            else {
+            else
+            {
                 countryPage.WithFooter("⬅️ Genres");
             }
 

@@ -165,6 +165,18 @@ public class ChartService
             {
                 foreach (var artist in chart.Artists)
                 {
+                    var censor = false;
+                    var cacheEnabled = true;
+                    var censorResult = await this._censorService.ArtistResult(artist.ArtistName);
+
+                    if (censorResult == CensorService.CensorResult.NotSafe)
+                    {
+                        cacheEnabled = false;
+                        censor = true;
+                    }
+
+                    var nsfw = censorResult == CensorService.CensorResult.Nsfw;
+
                     var encodedId = StringExtensions.ReplaceInvalidChars(
                         artist.ArtistUrl.Replace("https://www.last.fm/music/", ""));
                     var localArtistId = StringExtensions.TruncateLongString($"artist_{encodedId}", 60);
@@ -175,7 +187,7 @@ public class ChartService
                     var fileName = localArtistId + ".png";
                     var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
 
-                    if (File.Exists(localPath))
+                    if (File.Exists(localPath) && cacheEnabled)
                     {
                         chartImage = SKBitmap.Decode(localPath);
                     }
@@ -203,7 +215,7 @@ public class ChartService
                                 validImage = false;
                             }
 
-                            if (validImage)
+                            if (validImage && cacheEnabled)
                             {
                                 await SaveImageToCache(chartImage, localPath);
                             }
@@ -215,7 +227,13 @@ public class ChartService
                         }
                     }
 
-                    AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, artist: artist);
+                    if (censor)
+                    {
+                        chartImage = SKBitmap.Decode(this._censoredImagePath);
+                        validImage = false;
+                    }
+
+                    AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, artist: artist, nsfw: nsfw, censored: censor);
                 }
             }
 
@@ -276,13 +294,13 @@ public class ChartService
                     }
                     if (chartImage.Censored)
                     {
-                        if (chart.CensoredAlbums.HasValue)
+                        if (chart.CensoredItems.HasValue)
                         {
-                            chart.CensoredAlbums++;
+                            chart.CensoredItems++;
                         }
                         else
                         {
-                            chart.CensoredAlbums = 1;
+                            chart.CensoredItems = 1;
                         }
                     }
                 }
