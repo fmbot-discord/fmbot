@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -56,6 +57,17 @@ public class AdminSlashCommands : InteractionModuleBase
         censoredMusic = await this._censorService.SetCensorType(censoredMusic, censoredMusic.CensorType);
 
         var description = new StringBuilder();
+
+        if (censoredMusic.Artist)
+        {
+            description.AppendLine($"Artist: `{censoredMusic.ArtistName}`");
+        }
+        else
+        {
+            description.AppendLine($"Album: `{censoredMusic.AlbumName}` by `{censoredMusic.ArtistName}`");
+        }
+
+        description.AppendLine();
         description.AppendLine("Censored music entry has been updated to:");
 
         foreach (var flag in censoredMusic.CensorType.GetUniqueFlags())

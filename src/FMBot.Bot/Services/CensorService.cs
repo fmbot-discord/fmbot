@@ -8,10 +8,12 @@ using Discord.WebSocket;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using Genius.Models.Song;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using Serilog;
 
 namespace FMBot.Bot.Services;
 
@@ -53,13 +55,12 @@ public class CensorService
         return result;
     }
 
-    public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string artistName, string url, EmbedBuilder embedToUpdate = null)
+    public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string artistName, EmbedBuilder embedToUpdate = null)
     {
         var result = await ArtistResult(artistName);
         if (result == CensorResult.NotSafe)
         {
-            embedToUpdate?.WithDescription("Sorry, this artist can't be posted due to it possibly violating Discord ToS.\n" +
-                                           $"You can view the [album cover here]({url}).");
+            embedToUpdate?.WithDescription("Sorry, this artist image can't be posted due to it possibly violating Discord ToS.");
             return result;
         }
 
@@ -99,21 +100,28 @@ public class CensorService
     public async Task<CensorResult> AlbumResult(string albumName, string artistName, bool featured = false)
     {
         var censoredMusic = await GetCachedCensoredMusic();
-
-        if (!featured)
-        {
-            censoredMusic = censoredMusic
-                .Where(w => w.FeaturedBanOnly != true || w.CensorType.HasFlag(CensorType.ArtistFeaturedBan))
-                .ToList();
-        }
-
+        
         var censoredArtist = censoredMusic
             .Where(w => w.Artist)
             .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower());
         if (censoredArtist != null)
         {
             await IncreaseCensoredCount(censoredArtist.CensoredMusicId);
-            return censoredArtist.SafeForCommands ? CensorResult.Nsfw : CensorResult.NotSafe;
+
+            if (censoredArtist.CensorType.HasFlag(CensorType.ArtistAlbumsCensored))
+            {
+                return CensorResult.NotSafe;
+            }
+            if (censoredArtist.CensorType.HasFlag(CensorType.ArtistAlbumsNsfw))
+            {
+                return CensorResult.Nsfw;
+            }
+            if (featured && censoredArtist.CensorType.HasFlag(CensorType.ArtistFeaturedBan))
+            {
+                return CensorResult.NotSafe;
+            }
+
+            return CensorResult.Safe;
         }
 
         if (censoredMusic
@@ -128,7 +136,16 @@ public class CensorService
             if (album != null)
             {
                 await IncreaseCensoredCount(album.CensoredMusicId);
-                return album.SafeForCommands ? CensorResult.Nsfw : CensorResult.NotSafe;
+                if (album.CensorType.HasFlag(CensorType.AlbumCoverCensored))
+                {
+                    return CensorResult.NotSafe;
+                }
+                if (album.CensorType.HasFlag(CensorType.AlbumCoverNsfw))
+                {
+                    return CensorResult.Nsfw;
+                }
+
+                return CensorResult.Safe;
             }
         }
 
@@ -140,13 +157,22 @@ public class CensorService
         var censoredMusic = await GetCachedCensoredMusic();
         
         var censoredArtist = censoredMusic
-            .Where(w => w.Artist && (w.CensorType.HasFlag(CensorType.ArtistImageNsfw) || w.CensorType.HasFlag(CensorType.ArtistImageCensored)))
+            .Where(w => w.Artist)
             .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower());
 
         if (censoredArtist != null)
         {
             await IncreaseCensoredCount(censoredArtist.CensoredMusicId);
-            return censoredArtist.SafeForCommands ? CensorResult.Nsfw : CensorResult.NotSafe;
+            if (censoredArtist.CensorType.HasFlag(CensorType.ArtistImageCensored))
+            {
+                return CensorResult.NotSafe;
+            }
+            if (censoredArtist.CensorType.HasFlag(CensorType.ArtistImageNsfw))
+            {
+                return CensorResult.Nsfw;
+            }
+
+            return CensorResult.Safe;
         }
 
         return CensorResult.Safe;
@@ -204,47 +230,12 @@ public class CensorService
         db.Update(music);
 
         await db.SaveChangesAsync();
+        ClearCensoredCache();
 
         return music;
     }
 
-    public async Task AddCensoredAlbum(string albumName, string artistName)
-    {
-        ClearCensoredCache();
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-
-        await db.CensoredMusic.AddAsync(new CensoredMusic
-        {
-            AlbumName = albumName,
-            ArtistName = artistName,
-            Artist = false,
-            SafeForCommands = false,
-            SafeForFeatured = false,
-            CensorType = CensorType.AlbumCoverCensored
-        });
-
-        await db.SaveChangesAsync();
-    }
-
-    public async Task AddNsfwAlbum(string albumName, string artistName)
-    {
-        ClearCensoredCache();
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-
-        await db.CensoredMusic.AddAsync(new CensoredMusic
-        {
-            AlbumName = albumName,
-            ArtistName = artistName,
-            Artist = false,
-            SafeForCommands = true,
-            SafeForFeatured = false,
-            CensorType = CensorType.AlbumCoverNsfw
-        });
-
-        await db.SaveChangesAsync();
-    }
-
-    public async Task AddCensoredArtistAlbums(string artistName)
+    public async Task AddArtist(string artistName, CensorType censorType)
     {
         ClearCensoredCache();
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -255,8 +246,82 @@ public class CensorService
             Artist = true,
             SafeForCommands = false,
             SafeForFeatured = false,
-            CensorType = CensorType.ArtistAlbumsCensored
+            CensorType = censorType
         });
+
+        await db.SaveChangesAsync();
+    }
+
+    public async Task AddAlbum(string albumName, string artistName,  CensorType censorType)
+    {
+        ClearCensoredCache();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        await db.CensoredMusic.AddAsync(new CensoredMusic
+        {
+            ArtistName = artistName,
+            AlbumName = albumName,
+            Artist = false,
+            SafeForCommands = false,
+            SafeForFeatured = false,
+            CensorType = censorType
+        });
+
+        await db.SaveChangesAsync();
+    }
+
+    public async Task Migrate()
+    {
+        ClearCensoredCache();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var all = await db.CensoredMusic.Where(w => w.CensorType == CensorType.None).ToListAsync();
+        Log.Information($"Found {all.Count} censored things");
+
+        var nsfwArtists = 0;
+        var censoredArtists = 0;
+        
+        var nsfwAlbums = 0;
+        var censoredAlbums = 0;
+        foreach (var item in all)
+        {
+            if (item.Artist && item.FeaturedBanOnly != true)
+            {
+                if (item.SafeForCommands)
+                {
+                    item.CensorType |= CensorType.ArtistAlbumsNsfw;
+                    nsfwArtists++;
+                }
+                if (!item.SafeForCommands)
+                {
+                    item.CensorType |= CensorType.ArtistAlbumsCensored;
+                    censoredArtists++;
+                }
+            }
+            if (!item.Artist && item.FeaturedBanOnly != true)
+            {
+                if (item.SafeForCommands)
+                {
+                    item.CensorType |= CensorType.AlbumCoverNsfw;
+                    nsfwAlbums++;
+                }
+                if (!item.SafeForCommands)
+                {
+                    item.CensorType |= CensorType.AlbumCoverCensored;
+                    censoredAlbums++;
+                }
+            }
+            if (item.FeaturedBanOnly == true && item.Artist)
+            {
+                item.CensorType |= CensorType.ArtistFeaturedBan;
+            }
+        }
+
+        Log.Information($"Marked {nsfwArtists} artists as NSFW");
+        Log.Information($"Marked {censoredArtists} artists as censored");
+
+        Log.Information($"Marked {nsfwAlbums} albums as NSFW");
+        Log.Information($"Marked {censoredAlbums} albums as censored");
 
         await db.SaveChangesAsync();
     }
