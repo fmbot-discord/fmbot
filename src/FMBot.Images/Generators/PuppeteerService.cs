@@ -78,14 +78,13 @@ public class PuppeteerService
         return skImg;
     }
 
-    public async Task<SKBitmap> GetWhoKnows(string type, string location, string imageUrl, IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
+    public async Task<SKBitmap> GetWhoKnows(string type, string location, string imageUrl, string title, IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
         PrivacyLevel minPrivacyLevel, UserCrown userCrown = null, string crownText = null, bool hidePrivateUsers = false)
     {
         await this._initializationTask;
 
         await using var page = await this._browser.NewPageAsync();
 
-        var title = whoKnowsObjects.FirstOrDefault()?.Name ?? "Unknown";
         var extraHeight = 0;
         if (title.Length > 38)
         {
