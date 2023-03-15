@@ -159,12 +159,29 @@ public class UserCommands : BaseCommandModule
             return;
         }
 
-        var topArtists = await this._artistsService.GetRecentTopArtists(this.Context.User.Id, daysToGoBack: 60);
+        var differentUserButNotAllowed = false;
+        var userSettings = await this._settingService.GetUser(userOptions, user, this.Context, true);
+
+        if (userSettings.DifferentUser && user.UserType == UserType.User)
+        {
+            userSettings = await this._settingService.GetUser("", user, this.Context, true);
+            differentUserButNotAllowed = true;
+        }
+
+        var topArtists = await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 60);
+        var commandUsesLeft = 1;
 
         try
         {
             var response =
-                await this._userBuilder.JudgeAsync(new ContextModel(this.Context, prfx, user));
+                await this._userBuilder.JudgeAsync(new ContextModel(this.Context, prfx, user), userSettings, user.UserType, commandUsesLeft, differentUserButNotAllowed);
+
+            if (commandUsesLeft == 0)
+            {
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                return;
+            }
 
             var pageBuilder = new PageBuilder()
                 .WithDescription(response.Embed.Description)

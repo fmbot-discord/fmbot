@@ -315,12 +315,12 @@ public class AdminCommands : BaseCommandModule
             {
                 if (this.Context.Message.Content[..12].Contains("nsfw"))
                 {
-                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.ArtistAlbumsNsfw);
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.AlbumCoverNsfw);
                     this._embed.WithDescription($"Marked `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` as NSFW.");
                 }
                 else if (this.Context.Message.Content[..12].Contains("censored"))
                 {
-                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.ArtistAlbumsCensored);
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.AlbumCoverCensored);
                     this._embed.WithDescription($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored albums.");
                 }
                 else
