@@ -363,7 +363,7 @@ public class UserService
             {
                 var albumCollection = discogsUser.DiscogsReleases.Where(w =>
                     (w.Release.Title.ToLower().StartsWith(albumName.ToLower()) ||
-                     albumName.ToLower().StartsWith(w.Release.Title))
+                     albumName.ToLower().StartsWith(w.Release.Title.ToLower()))
                     &&
                     (w.Release.Artist.ToLower().StartsWith(artistName.ToLower()) ||
                      artistName.ToLower().StartsWith(w.Release.Artist.ToLower()))).ToList();
