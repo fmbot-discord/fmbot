@@ -376,6 +376,7 @@ public class UserSlashCommands : InteractionModuleBase
     [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)")]
     public async Task FeaturedAsync()
     {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var response = await this._userBuilder.FeaturedAsync(new ContextModel(this.Context));
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -383,9 +384,16 @@ public class UserSlashCommands : InteractionModuleBase
 
         var message = await this.Context.Interaction.GetOriginalResponseAsync();
 
-        if (message != null && response.CommandResponse == CommandResponse.Ok && this.Context.Guild != null)
+        if (message != null && response.CommandResponse == CommandResponse.Ok)
         {
-            await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+            if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any())
+            {
+                await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
+            }
+            else if (this.Context.Guild != null)
+            {
+                await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+            }
         }
     }
 

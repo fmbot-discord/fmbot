@@ -203,7 +203,7 @@ public class GuildCommands : BaseCommandModule
         {
             this._embed.WithColor(DiscordConstants.WarningColorOrange);
             this._embed.WithDescription("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
-                                        "Please check if you have a space between every emote.");
+                                        "Please check if you have a space between every emoji.");
             await ReplyAsync(embed: this._embed.Build());
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
 
@@ -212,7 +212,7 @@ public class GuildCommands : BaseCommandModule
 
         await this._guildService.SetGuildReactionsAsync(this.Context.Guild, emoteArray);
 
-        this._embed.WithTitle("Emoji reactions set");
+        this._embed.WithTitle("Automatic emoji reactions set");
         this._embed.WithDescription("Please check if all reactions have been applied to this message correctly.");
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 

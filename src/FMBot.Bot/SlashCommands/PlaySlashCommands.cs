@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord.Interactions;
 using Fergun.Interactive;
@@ -91,16 +92,23 @@ public class PlaySlashCommands : InteractionModuleBase
 
         try
         {
-            if (message != null && response.CommandResponse == CommandResponse.Ok && this.Context.Guild != null)
+            if (message != null && response.CommandResponse == CommandResponse.Ok)
             {
-                await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild);
+                if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any())
+                {
+                    await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
+                }
+                else if (this.Context.Guild != null)
+                {
+                    await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild);
+                }
             }
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
             await ReplyAsync(
-                $"Couldn't add emote reactions to `/fm`. If you have recently changed changed any of the configured emotes please use `/serverreactions` to reset the automatic emote reactions.");
+                $"Could not add automatic emoji reactions to `/fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.");
         }
     }
 

@@ -306,7 +306,6 @@ public class GuildService
         await db.SaveChangesAsync();
 
         await RemoveGuildFromCache(discordGuild.Id);
-
     }
 
     public async Task<bool?> ToggleSupporterMessagesAsync(IGuild discordGuild)

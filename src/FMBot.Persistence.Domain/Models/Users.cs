@@ -48,6 +48,8 @@ public class User
 
     public DateTime? LastUsed { get; set; }
 
+    public string[] EmoteReactions { get; set; }
+
     public UserDiscogs UserDiscogs { get; set; }
     public ICollection<UserDiscogsReleases> DiscogsReleases { get; set; }
 

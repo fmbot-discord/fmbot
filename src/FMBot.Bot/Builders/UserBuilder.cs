@@ -670,7 +670,7 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> JudgeComplimentAsync(ContextModel context, List<string> topArtists)
+    public async Task<ResponseModel> JudgeComplimentAsync(ContextModel context, UserSettingsModel userSettings, List<string> topArtists)
     {
         var response = new ResponseModel
         {
@@ -682,14 +682,14 @@ public class UserBuilder
 
         var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
 
-        response.Embed.WithAuthor($"{userNickname ?? context.DiscordUser.Username}'s .fmbot AI judgement - Compliment 🙂");
+        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Compliment 🙂");
         response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
         response.Embed.WithColor(new Color(186, 237, 169));
 
         return response;
     }
 
-    public async Task<ResponseModel> JudgeRoastAsync(ContextModel context, List<string> topArtists)
+    public async Task<ResponseModel> JudgeRoastAsync(ContextModel context, UserSettingsModel userSettings, List<string> topArtists)
     {
         var response = new ResponseModel
         {
@@ -701,7 +701,7 @@ public class UserBuilder
 
         var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
 
-        response.Embed.WithAuthor($"{userNickname ?? context.DiscordUser.Username}'s .fmbot AI judgement - Roast 🔥");
+        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Roast 🔥");
         response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
         response.Embed.WithColor(new Color(255, 122, 1));
 

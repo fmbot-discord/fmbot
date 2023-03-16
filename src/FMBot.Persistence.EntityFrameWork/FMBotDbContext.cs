@@ -156,6 +156,11 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasIndex(i => i.UserId);
 
                 entity.HasIndex(i => i.DiscordUserId);
+
+                entity.Property(e => e.EmoteReactions)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
 

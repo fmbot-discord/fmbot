@@ -116,6 +116,20 @@ public class UserService
         }
     }
 
+    public async Task SetUserReactionsAsync(int userId, string[] reactions)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users
+            .AsQueryable()
+            .FirstAsync(f => f.UserId == userId);
+
+        user.EmoteReactions = reactions;
+
+        db.Entry(user).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+    }
+
     public async Task<User> GetUserSettingsAsync(IUser discordUser)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
