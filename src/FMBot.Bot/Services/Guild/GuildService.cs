@@ -306,7 +306,6 @@ public class GuildService
         await db.SaveChangesAsync();
 
         await RemoveGuildFromCache(discordGuild.Id);
-
     }
 
     public async Task<bool?> ToggleSupporterMessagesAsync(IGuild discordGuild)
@@ -912,7 +911,7 @@ public class GuildService
         }
     }
 
-    public bool ValidateReactions(string[] emoteString)
+    public static bool ValidateReactions(IEnumerable<string> emoteString)
     {
         foreach (var emote in emoteString)
         {
@@ -943,7 +942,7 @@ public class GuildService
         return true;
     }
 
-    public async Task AddReactionsAsync(IUserMessage message, IGuild guild, bool partyingFace = false)
+    public async Task AddGuildReactionsAsync(IUserMessage message, IGuild guild, bool partyingFace = false)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var dbGuild = await db.Guilds
@@ -955,7 +954,18 @@ public class GuildService
             return;
         }
 
-        foreach (var emoteString in dbGuild.EmoteReactions)
+        await AddReactionsAsync(message, dbGuild.EmoteReactions);
+
+        if (partyingFace)
+        {
+            var emote = new Emoji("🥳");
+            await message.AddReactionAsync(emote);
+        }
+    }
+
+    public static async Task AddReactionsAsync(IUserMessage message, IEnumerable<string> reactions)
+    {
+        foreach (var emoteString in reactions)
         {
             if (emoteString.Length is 2 or 3)
             {
@@ -968,13 +978,8 @@ public class GuildService
                 await message.AddReactionAsync(emote);
             }
         }
-
-        if (partyingFace)
-        {
-            var emote = new Emoji("🥳");
-            await message.AddReactionAsync(emote);
-        }
     }
+
 
     public async Task RemoveGuildAsync(ulong discordGuildId)
     {

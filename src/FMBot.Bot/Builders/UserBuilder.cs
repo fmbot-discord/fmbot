@@ -603,21 +603,66 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> JudgeAsync(ContextModel context)
+    public async Task<ResponseModel> JudgeAsync(
+        ContextModel context,
+        UserSettingsModel userSettings,
+        UserType userType,
+        int usesLeftToday,
+        bool differentUserButNotAllowed)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed
         };
 
+        var enabled = usesLeftToday > 0;
+
         var description = new StringBuilder();
-        description.AppendLine("Want your music taste to be judged by AI?");
-        description.AppendLine("Pick using the buttons below..");
+
+        if (enabled)
+        {
+            if (!userSettings.DifferentUser)
+            {
+                description.AppendLine("Want your music taste to be judged by AI?");
+            }
+            else
+            {
+                description.AppendLine($"Judging music taste for **{userSettings.DisplayName}**");
+            }
+
+            description.AppendLine("Pick using the buttons below..");
+        }
+
         description.AppendLine();
-        description.AppendLine("This command costs money and is staff only right now - don't spam it pls");
-        //description.AppendLine("You can use this command `3` more times today.");
+        if (userType == UserType.User)
+        {
+            if (enabled)
+            {
+                description.AppendLine($"You can use this command `{usesLeftToday}` more times today.");
+            }
+            else
+            {
+                description.Append($"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
+                description.AppendLine($"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and the possibility to use the command on others.");
+            }
+        }
+        else
+        {
+            if (usesLeftToday is <= 30 and > 0)
+            {
+                description.AppendLine($"You can use this command `{usesLeftToday}` more times today.");
+            }
+            if (!enabled)
+            {
+                description.AppendLine($"You've ran out of command uses for today.");
+            }
+        }
+        if (differentUserButNotAllowed)
+        {
+            description.AppendLine($"*Sorry, only [.fmbot supporters]({Constants.GetSupporterOverviewLink}) can use this command on others.*");
+        }
         description.AppendLine();
-        description.AppendLine("Some of your top artists might be sent to OpenAI. No other data is sent.");
+        description.AppendLine("Some top artists might be sent to OpenAI. No other data is sent.");
         description.AppendLine("Keep in mind that music taste is subjective, and that no matter what this command or anyone else says you're free to like whatever artist you want.");
 
         response.Embed.WithDescription(description.ToString());
@@ -625,7 +670,7 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> JudgeComplimentAsync(ContextModel context, List<string> topArtists)
+    public async Task<ResponseModel> JudgeComplimentAsync(ContextModel context, UserSettingsModel userSettings, List<string> topArtists)
     {
         var response = new ResponseModel
         {
@@ -637,14 +682,14 @@ public class UserBuilder
 
         var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
 
-        response.Embed.WithAuthor($"{userNickname ?? context.DiscordUser.Username}'s .fmbot AI judgement - Compliment 🙂");
+        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Compliment 🙂");
         response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
         response.Embed.WithColor(new Color(186, 237, 169));
 
         return response;
     }
 
-    public async Task<ResponseModel> JudgeRoastAsync(ContextModel context, List<string> topArtists)
+    public async Task<ResponseModel> JudgeRoastAsync(ContextModel context, UserSettingsModel userSettings, List<string> topArtists)
     {
         var response = new ResponseModel
         {
@@ -656,7 +701,7 @@ public class UserBuilder
 
         var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
 
-        response.Embed.WithAuthor($"{userNickname ?? context.DiscordUser.Username}'s .fmbot AI judgement - Roast 🔥");
+        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Roast 🔥");
         response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
         response.Embed.WithColor(new Color(255, 122, 1));
 

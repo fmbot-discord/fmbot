@@ -159,12 +159,29 @@ public class UserCommands : BaseCommandModule
             return;
         }
 
-        var topArtists = await this._artistsService.GetRecentTopArtists(this.Context.User.Id, daysToGoBack: 60);
+        var differentUserButNotAllowed = false;
+        var userSettings = await this._settingService.GetUser(userOptions, user, this.Context, true);
+
+        if (userSettings.DifferentUser && user.UserType == UserType.User)
+        {
+            userSettings = await this._settingService.GetUser("", user, this.Context, true);
+            differentUserButNotAllowed = true;
+        }
+
+        var topArtists = await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 60);
+        var commandUsesLeft = 1;
 
         try
         {
             var response =
-                await this._userBuilder.JudgeAsync(new ContextModel(this.Context, prfx, user));
+                await this._userBuilder.JudgeAsync(new ContextModel(this.Context, prfx, user), userSettings, user.UserType, commandUsesLeft, differentUserButNotAllowed);
+
+            if (commandUsesLeft == 0)
+            {
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                return;
+            }
 
             var pageBuilder = new PageBuilder()
                 .WithDescription(response.Embed.Description)
@@ -216,7 +233,7 @@ public class UserCommands : BaseCommandModule
                     x.Components = new ComponentBuilder().Build();
                 });
 
-                var complimentResponse = await this._userBuilder.JudgeComplimentAsync(new ContextModel(this.Context, prfx, user), topArtists);
+                var complimentResponse = await this._userBuilder.JudgeComplimentAsync(new ContextModel(this.Context, prfx, user), userSettings, topArtists);
 
                 await result.Message.ModifyAsync(x =>
                 {
@@ -238,7 +255,7 @@ public class UserCommands : BaseCommandModule
                     x.Components = new ComponentBuilder().Build();
                 });
 
-                var complimentResponse = await this._userBuilder.JudgeRoastAsync(new ContextModel(this.Context, prfx, user), topArtists);
+                var complimentResponse = await this._userBuilder.JudgeRoastAsync(new ContextModel(this.Context, prfx, user), userSettings, topArtists);
 
                 await result.Message.ModifyAsync(x =>
                 {
@@ -257,6 +274,118 @@ public class UserCommands : BaseCommandModule
 
     private sealed record Item(string Name, IEmote Emote);
 
+    [Command("userreactions", RunMode = RunMode.Async)]
+    [Summary("Sets the automatic emoji reactions for the `fm` and `featured` command.\n\n" +
+             "Use this command without any emojis to disable.")]
+    [Examples("userreactions :PagChomp: :PensiveBlob:", "userreactions 😀 😯 🥵", "userreactions 😀 😯 :PensiveBlob:", "userreactions")]
+    [Alias("usersetreactions", "useremojis", "userreacts")]
+    [UsernameSetRequired]
+    public async Task SetUserReactionsAsync([Remainder] string emojis = null)
+    {
+        var user = await this._userService.GetUserAsync(this.Context.User.Id);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        if (user.UserType == UserType.User)
+        {
+            this._embed.WithDescription($"Only supporters can set their own automatic emoji reactions.\n\n" +
+                                        $"[Get supporter here]({Constants.GetSupporterOverviewLink}), or alternatively use the `{prfx}serverreactions` command to set server-wide automatic emoji reactions.");
+
+            var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink);
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+            await ReplyAsync(embed: this._embed.Build(), components: components.Build());
+
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(emojis))
+        {
+            await this._userService.SetUserReactionsAsync(user.UserId, null);
+
+            if (user?.EmoteReactions == null || !user.EmoteReactions.Any())
+            {
+                this._embed.WithDescription("Use this command with emojis to set the default reactions to `fm` and `featured`.\n\n" +
+                                            "For example:\n" +
+                                            $"`{prfx}userreactions ⬆️ ⬇️`");
+            }
+            else
+            {
+                this._embed.WithDescription("Removed all user reactions!");
+            }
+
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+            await ReplyAsync(embed: this._embed.Build());
+
+            this.Context.LogCommandUsed();
+
+            return;
+        }
+
+        emojis = emojis.Replace("><", "> <");
+        var emoteArray = emojis.Split(" ");
+
+        if (emoteArray.Count() > 5)
+        {
+            this._embed.WithColor(DiscordConstants.WarningColorOrange);
+            this._embed.WithDescription("Sorry, you can't set more then 5 emoji reacts. Please try again.");
+            await ReplyAsync(embed: this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+
+            return;
+        }
+
+        if (!GuildService.ValidateReactions(emoteArray))
+        {
+            this._embed.WithColor(DiscordConstants.WarningColorOrange);
+            this._embed.WithDescription("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
+                                        "Please check if you have a space between every emoji.");
+            await ReplyAsync(embed: this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+
+            return;
+        }
+
+        await this._userService.SetUserReactionsAsync(user.UserId, emoteArray);
+
+        this._embed.WithTitle("Automatic user emoji reactions set");
+        this._embed.WithDescription("This will apply these emotes to all your `fm` and `featured` commands, regardless of server. " +
+                                    "Please check if all reactions have been applied to this message correctly.");
+        this._embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var message = await ReplyAsync(embed: this._embed.Build());
+        this.Context.LogCommandUsed();
+
+        try
+        {
+            await GuildService.AddReactionsAsync(message, emoteArray);
+        }
+        catch (Exception e)
+        {
+            this._embed.WithTitle("Error in set emoji reactions");
+            this._embed.WithColor(DiscordConstants.WarningColorOrange);
+
+            if (e.Message.ToLower().Contains("permission"))
+            {
+                this._embed.WithDescription("Emojis could not be added to the message correctly.\n\n" +
+                                            "The bot does not have the `Add Reactions` permission in this server. Make sure that the permissions for the bot and channel are set correctly.");
+            }
+            else if (e.Message.ToLower().Contains("unknown emoji"))
+            {
+                this._embed.WithDescription("Emojis could not be added to the message correctly.\n\n" +
+                                            "One or more of the emojis you used are from a server that doesn't have .fmbot. Make sure you only use emojis from servers that have .fmbot.");
+            }
+            else
+            {
+                this._embed.WithDescription("Emojis could not be added to the message correctly.\n\n" +
+                                            "Make sure the permissions are set correctly and the emojis are from a server that .fmbot is in.");
+            }
+
+            await ReplyAsync(embed: this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.Error);
+        }
+    }
+
     [Command("featured", RunMode = RunMode.Async)]
     [Summary("Displays the currently picked feature and the user.\n\n" +
              "This command will also show something special if the user is in your server")]
@@ -267,6 +396,7 @@ public class UserCommands : BaseCommandModule
         try
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var response = await this._userBuilder.FeaturedAsync(new ContextModel(this.Context, prfx));
 
             IUserMessage message;
@@ -279,9 +409,16 @@ public class UserCommands : BaseCommandModule
                 message = await ReplyAsync(response.Text);
             }
 
-            if (message != null && this.Context.Guild != null && response.CommandResponse == CommandResponse.Ok)
+            if (message != null && response.CommandResponse == CommandResponse.Ok)
             {
-                await this._guildService.AddReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+                if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any())
+                {
+                    await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
+                }
+                else if (this.Context.Guild != null)
+                {
+                    await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+                }
             }
 
             this.Context.LogCommandUsed(response.CommandResponse);

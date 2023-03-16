@@ -461,4 +461,27 @@ public class GuildSettingBuilder
 
         return response;
     }
+
+    public static ResponseModel GuildReactionsAsync(ContextModel context, string prfx)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var description = new StringBuilder();
+        description.Append(
+            $"Use the `{prfx}serverreactions` command for automatic emoji reacts for `fm` and `featured`. ");
+        description.AppendLine("To disable, use without any emojis.");
+        description.AppendLine();
+        description.AppendLine("Make sure that you have a space between each emoji.");
+        description.AppendLine();
+        description.AppendLine("Examples:");
+        description.AppendLine($"`{prfx}serverreactions :PagChomp: :PensiveBlob:`");
+        description.AppendLine($"`{prfx}serverreactions 😀 😯 🥵`");
+
+        response.Embed.WithDescription(description.ToString());
+
+        return response;
+    }
 }

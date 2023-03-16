@@ -172,7 +172,7 @@ public class WebhookService
 
                             if(localFeaturedMsg != null)
                             {
-                                await this._guildService.AddReactionsAsync(localFeaturedMsg, guild, true);
+                                await this._guildService.AddGuildReactionsAsync(localFeaturedMsg, guild, true);
                             }
 
                             return;
@@ -184,7 +184,7 @@ public class WebhookService
 
                 if (message != null)
                 {
-                    await this._guildService.AddReactionsAsync(message, guild);
+                    await this._guildService.AddGuildReactionsAsync(message, guild);
                 }
             }
         }

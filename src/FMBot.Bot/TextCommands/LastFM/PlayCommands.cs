@@ -196,16 +196,23 @@ public class PlayCommands : BaseCommandModule
 
             try
             {
-                if (message != null && response.CommandResponse == CommandResponse.Ok && this.Context.Guild != null)
+                if (message != null && response.CommandResponse == CommandResponse.Ok)
                 {
-                    await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+                    if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any())
+                    {
+                        await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
+                    }
+                    else if (this.Context.Guild != null)
+                    {
+                        await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild);
+                    }
                 }
             }
             catch (Exception e)
             {
                 await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
                 await ReplyAsync(
-                    $"Couldn't add emote reactions to `{prfx}fm`. If you have recently changed changed any of the configured emotes please use `{prfx}serverreactions` to reset the automatic emote reactions.");
+                    $"Could not add automatic emoji reactions to `{prfx}fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.");
             }
 
             this.Context.LogCommandUsed(response.CommandResponse);

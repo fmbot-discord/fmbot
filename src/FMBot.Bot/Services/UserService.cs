@@ -116,6 +116,20 @@ public class UserService
         }
     }
 
+    public async Task SetUserReactionsAsync(int userId, string[] reactions)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users
+            .AsQueryable()
+            .FirstAsync(f => f.UserId == userId);
+
+        user.EmoteReactions = reactions;
+
+        db.Entry(user).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+    }
+
     public async Task<User> GetUserSettingsAsync(IUser discordUser)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -363,7 +377,7 @@ public class UserService
             {
                 var albumCollection = discogsUser.DiscogsReleases.Where(w =>
                     (w.Release.Title.ToLower().StartsWith(albumName.ToLower()) ||
-                     albumName.ToLower().StartsWith(w.Release.Title))
+                     albumName.ToLower().StartsWith(w.Release.Title.ToLower()))
                     &&
                     (w.Release.Artist.ToLower().StartsWith(artistName.ToLower()) ||
                      artistName.ToLower().StartsWith(w.Release.Artist.ToLower()))).ToList();
