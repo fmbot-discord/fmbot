@@ -471,10 +471,10 @@ public class GuildSettingBuilder
 
         var description = new StringBuilder();
         description.Append(
-            $"Use the `{prfx}serverreactions` command for automatic emote reacts for `fm` and `featured`. ");
-        description.AppendLine("To disable, use without any emotes.");
+            $"Use the `{prfx}serverreactions` command for automatic emoji reacts for `fm` and `featured`. ");
+        description.AppendLine("To disable, use without any emojis.");
         description.AppendLine();
-        description.AppendLine("Make sure that you have a space between each emote.");
+        description.AppendLine("Make sure that you have a space between each emoji.");
         description.AppendLine();
         description.AppendLine("Examples:");
         description.AppendLine($"`{prfx}serverreactions :PagChomp: :PensiveBlob:`");

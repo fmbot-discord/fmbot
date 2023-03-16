@@ -93,7 +93,7 @@ public class PlaySlashCommands : InteractionModuleBase
         {
             if (message != null && response.CommandResponse == CommandResponse.Ok && this.Context.Guild != null)
             {
-                await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+                await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild);
             }
         }
         catch (Exception e)

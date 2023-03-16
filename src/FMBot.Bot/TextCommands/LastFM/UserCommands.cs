@@ -298,7 +298,7 @@ public class UserCommands : BaseCommandModule
 
             if (message != null && this.Context.Guild != null && response.CommandResponse == CommandResponse.Ok)
             {
-                await this._guildService.AddReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+                await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
             }
 
             this.Context.LogCommandUsed(response.CommandResponse);

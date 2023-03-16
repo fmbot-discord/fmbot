@@ -147,10 +147,8 @@ public class GuildCommands : BaseCommandModule
     [Alias("serversetreactions", "serveremojis", "serverreacts")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task SetGuildReactionsAsync([Remainder] string emojis)
+    public async Task SetGuildReactionsAsync([Remainder] string emojis = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-
         var serverUser = (IGuildUser)this.Context.Message.Author;
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -158,6 +156,33 @@ public class GuildCommands : BaseCommandModule
             await ReplyAsync(
                 "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
+
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(emojis))
+        {
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            await this._guildService.SetGuildReactionsAsync(this.Context.Guild, null);
+
+            if (guild?.EmoteReactions == null || !guild.EmoteReactions.Any())
+            {
+                this._embed.WithDescription("Use this command with emojis to set the default reactions to `fm` and `featured`.\n\n" +
+                                            "For example:\n" +
+                                            $"`{prfx}serverreactions ⬆️ ⬇️`");
+            }
+            else
+            {
+                this._embed.WithDescription("Removed all server reactions!");
+            }
+
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+            await ReplyAsync(embed: this._embed.Build());
+
+            this.Context.LogCommandUsed();
+
             return;
         }
 
@@ -166,24 +191,22 @@ public class GuildCommands : BaseCommandModule
 
         if (emoteArray.Count() > 3)
         {
-            await ReplyAsync("Sorry, max amount emoji reactions you can set is 3!");
+            this._embed.WithColor(DiscordConstants.WarningColorOrange);
+            this._embed.WithDescription("Sorry, you can't set more then 3 emoji reacts. Please try again.");
+            await ReplyAsync(embed: this._embed.Build());
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
 
-        if (emoteArray.Length == 0)
-        {
-            await this._guildService.SetGuildReactionsAsync(this.Context.Guild, null);
-            await ReplyAsync("Removed all server reactions!");
-            this.Context.LogCommandUsed();
             return;
         }
 
         if (!GuildService.ValidateReactions(emoteArray))
         {
-            await ReplyAsync("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
-                             "Please check if you have a space between every emote.");
+            this._embed.WithColor(DiscordConstants.WarningColorOrange);
+            this._embed.WithDescription("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
+                                        "Please check if you have a space between every emote.");
+            await ReplyAsync(embed: this._embed.Build());
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
+
             return;
         }
 
@@ -191,13 +214,14 @@ public class GuildCommands : BaseCommandModule
 
         this._embed.WithTitle("Emoji reactions set");
         this._embed.WithDescription("Please check if all reactions have been applied to this message correctly.");
+        this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var message = await ReplyAsync(embed: this._embed.Build());
         this.Context.LogCommandUsed();
 
         try
         {
-            await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+            await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild);
         }
         catch (Exception e)
         {
@@ -213,7 +237,6 @@ public class GuildCommands : BaseCommandModule
             {
                 this._embed.WithDescription("Emojis could not be added to the message correctly.\n\n" +
                                             "You've used an emoji from a different server. Make sure you only use emojis from this server, or from servers that have .fmbot.");
-
             }
             else
             {
