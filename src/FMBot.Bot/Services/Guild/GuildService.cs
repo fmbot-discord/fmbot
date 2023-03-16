@@ -912,7 +912,7 @@ public class GuildService
         }
     }
 
-    public bool ValidateReactions(string[] emoteString)
+    public static bool ValidateReactions(IEnumerable<string> emoteString)
     {
         foreach (var emote in emoteString)
         {

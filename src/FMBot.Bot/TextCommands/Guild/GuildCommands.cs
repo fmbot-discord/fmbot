@@ -141,13 +141,13 @@ public class GuildCommands : BaseCommandModule
     }
 
     [Command("serverreactions", RunMode = RunMode.Async)]
-    [Summary("Sets the automatic emote reactions for the `fm` command.\n\n" +
-             "Use this command without any emotes to disable.")]
+    [Summary("Sets the automatic emoji reactions for the `fm` and `featured` command.\n\n" +
+             "Use this command without any emojis to disable.")]
     [Examples("serverreactions :PagChomp: :PensiveBlob:", "serverreactions 😀 😯 🥵", "serverreactions 😀 😯 :PensiveBlob:", "serverreactions")]
-    [Alias("serversetreactions")]
+    [Alias("serversetreactions", "serveremojis", "serverreacts")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task SetGuildReactionsAsync(params string[] emotes)
+    public async Task SetGuildReactionsAsync([Remainder] string emojis)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -161,37 +161,69 @@ public class GuildCommands : BaseCommandModule
             return;
         }
 
-        if (emotes.Count() > 3)
+        emojis = emojis.Replace("><", "> <");
+        var emoteArray = emojis.Split(" ");
+
+        if (emoteArray.Count() > 3)
         {
-            await ReplyAsync("Sorry, max amount emote reactions you can set is 3!");
+            await ReplyAsync("Sorry, max amount emoji reactions you can set is 3!");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
 
-        if (emotes.Length == 0)
+        if (emoteArray.Length == 0)
         {
             await this._guildService.SetGuildReactionsAsync(this.Context.Guild, null);
-            await ReplyAsync(
-                "Removed all server reactions!");
+            await ReplyAsync("Removed all server reactions!");
             this.Context.LogCommandUsed();
             return;
         }
 
-        if (!this._guildService.ValidateReactions(emotes))
+        if (!GuildService.ValidateReactions(emoteArray))
         {
-            await ReplyAsync(
-                "Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
-                "Please check if you have a space between every emote.");
+            await ReplyAsync("Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
+                             "Please check if you have a space between every emote.");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
 
-        await this._guildService.SetGuildReactionsAsync(this.Context.Guild, emotes);
+        await this._guildService.SetGuildReactionsAsync(this.Context.Guild, emoteArray);
 
-        var message = await ReplyAsync("Emote reactions have been set! \n" +
-                                       "Please check if all reactions have been applied to this message correctly. If not, you might have used an emote from a different server.");
-        await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+        this._embed.WithTitle("Emoji reactions set");
+        this._embed.WithDescription("Please check if all reactions have been applied to this message correctly.");
+
+        var message = await ReplyAsync(embed: this._embed.Build());
         this.Context.LogCommandUsed();
+
+        try
+        {
+            await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+        }
+        catch (Exception e)
+        {
+            this._embed.WithTitle("Error in set emoji reactions");
+            this._embed.WithColor(DiscordConstants.WarningColorOrange);
+
+            if (e.Message.ToLower().Contains("permission"))
+            {
+                this._embed.WithDescription("Emojis could not be added to the message correctly.\n\n" +
+                                            "The bot does not have the `Add Reactions` permission. Please make sure that your permissions for the bot and channel are set correctly.");
+            }
+            else if (e.Message.ToLower().Contains("unknown emoji"))
+            {
+                this._embed.WithDescription("Emojis could not be added to the message correctly.\n\n" +
+                                            "You've used an emoji from a different server. Make sure you only use emojis from this server, or from servers that have .fmbot.");
+
+            }
+            else
+            {
+                this._embed.WithDescription("Emojis could not be added to the message correctly.\n\n" +
+                                            "Make sure the permissions are set correctly and the emoji are from this server.");
+            }
+
+            await ReplyAsync(embed: this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.Error);
+        }
     }
 
     //[Command("togglesupportermessages", RunMode = RunMode.Async)]

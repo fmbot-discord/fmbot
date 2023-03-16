@@ -7,6 +7,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Bot.Models;
 using Fergun.Interactive;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using static FMBot.Bot.Builders.GuildSettingBuilder;
@@ -18,14 +19,16 @@ public class SettingSlashCommands : InteractionModuleBase
     private readonly UserService _userService;
 
     private readonly GuildSettingBuilder _guildSettingBuilder;
+    private readonly IPrefixService _prefixService;
 
     private InteractiveService Interactivity { get; }
 
-    public SettingSlashCommands(GuildSettingBuilder guildSettingBuilder, InteractiveService interactivity, UserService userService)
+    public SettingSlashCommands(GuildSettingBuilder guildSettingBuilder, InteractiveService interactivity, UserService userService, IPrefixService prefixService)
     {
         this._guildSettingBuilder = guildSettingBuilder;
         this.Interactivity = interactivity;
         this._userService = userService;
+        this._prefixService = prefixService;
     }
 
     [ComponentInteraction(InteractionConstants.GuildSetting)]
@@ -34,6 +37,7 @@ public class SettingSlashCommands : InteractionModuleBase
         var setting = inputs.First().Replace("gs-", "");
 
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out GuildSetting guildSetting))
         {
@@ -52,8 +56,10 @@ public class SettingSlashCommands : InteractionModuleBase
                     }
                     break;
                 case GuildSetting.EmoteReactions:
-                    await RespondAsync("Not implemented yet", ephemeral: true);
-                    break;
+                    response = GuildReactionsAsync(new ContextModel(this.Context), prfx);
+
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    return;
                 case GuildSetting.DefaultEmbedType:
                     {
                         if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
