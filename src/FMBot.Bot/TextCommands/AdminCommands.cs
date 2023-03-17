@@ -855,7 +855,8 @@ public class AdminCommands : BaseCommandModule
                                            "- `artist`, `album` and `track` with first listen dates\n" +
                                            "- `stats` command with overall history\n" +
                                            "- `year` with artist discoveries and monthly overview\n" +
-                                           "- `fm` footer with up to 8 options (configured with `/fmmode`)\n" +
+                                           "- `fm` footer with up to 8 + 1 options (configured with `/fmmode`)\n" +
+                                           "- `userreactions` setting available\n" +
                                            "- More coming soon");
 
                 thankYouMessage.AppendLine();
@@ -1205,76 +1206,78 @@ public class AdminCommands : BaseCommandModule
             description.AppendLine("Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology]");
             description.AppendLine();
             description.AppendLine("**Fully censored / NSFL**");
-            description.AppendLine("Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and adult content [actual porn, people having sex, cum]");
+            description.AppendLine("Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]");
             this._embed.WithDescription(description.ToString());
 
             var components = new ComponentBuilder()
-                .WithButton("Report NSFW content", style: ButtonStyle.Secondary, customId: InteractionConstants.NsfwReport)
-                .WithButton("Report NSFL content", style: ButtonStyle.Secondary, customId: InteractionConstants.NsflReport);
+                .WithButton("Report artist image", style: ButtonStyle.Secondary, customId: InteractionConstants.ReportArtist)
+                .WithButton("Report album cover", style: ButtonStyle.Secondary, customId: InteractionConstants.ReportAlbum);
 
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
         }
     }
 
+
+
     //[Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link.")]
-        //[Alias("fmsetavatar")]
-        //public async Task fmavataroverrideAsync(string link, string desc = "Custom FMBot Avatar", int ievent = 0)
-        //{
-        //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
-        //    {
-        //        JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+    //[Alias("fmsetavatar")]
+    //public async Task fmavataroverrideAsync(string link, string desc = "Custom FMBot Avatar", int ievent = 0)
+    //{
+    //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+    //    {
+    //        JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
-        //        if (link == "help")
-        //        {
-        //            await ReplyAsync(cfgjson.Prefix + "fmavataroverride <image link> [message in quotation marks] [event 0 or 1]");
-        //            return;
-        //        }
+    //        if (link == "help")
+    //        {
+    //            await ReplyAsync(cfgjson.Prefix + "fmavataroverride <image link> [message in quotation marks] [event 0 or 1]");
+    //            return;
+    //        }
 
-        //        try
-        //        {
-        //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
+    //        try
+    //        {
+    //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
 
-        //            if (ievent == 1)
-        //            {
-        //                _timer.UseCustomAvatarFromLink(client, link, desc, true);
-        //                await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
-        //            }
-        //            else
-        //            {
-        //                _timer.UseCustomAvatarFromLink(client, link, desc, false);
-        //                await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is not an event.");
-        //            }
-        //        }
-        //        catch (Exception e)
-        //        {
-        //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
-        //            ExceptionReporter.ReportException(client, e);
-        //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
-        //        }
-        //    }
-        //}
+    //            if (ievent == 1)
+    //            {
+    //                _timer.UseCustomAvatarFromLink(client, link, desc, true);
+    //                await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
+    //            }
+    //            else
+    //            {
+    //                _timer.UseCustomAvatarFromLink(client, link, desc, false);
+    //                await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is not an event.");
+    //            }
+    //        }
+    //        catch (Exception e)
+    //        {
+    //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
+    //            ExceptionReporter.ReportException(client, e);
+    //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+    //        }
+    //    }
+    //}
 
-        //[Command("fmresetavatar"), Summary("Changes the avatar to be the default.")]
-        //public async Task fmresetavatar()
-        //{
-        //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
-        //    {
-        //        try
-        //        {
-        //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
-        //            _timer.UseDefaultAvatar(client);
-        //            await ReplyAsync("Set avatar to 'FMBot Default'");
-        //        }
-        //        catch (Exception e)
-        //        {
-        //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
-        //            ExceptionReporter.ReportException(client, e);
-        //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
-        //        }
-        //    }
-        //}
+    //[Command("fmresetavatar"), Summary("Changes the avatar to be the default.")]
+    //public async Task fmresetavatar()
+    //{
+    //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+    //    {
+    //        try
+    //        {
+    //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
+    //            _timer.UseDefaultAvatar(client);
+    //            await ReplyAsync("Set avatar to 'FMBot Default'");
+    //        }
+    //        catch (Exception e)
+    //        {
+    //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
+    //            ExceptionReporter.ReportException(client, e);
+    //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+    //        }
+    //    }
+    //}
 
-        [Command("resetfeatured")]
+    [Command("resetfeatured")]
     [Summary("Restarts the featured timer.")]
     [Alias("restarttimer", "timerstart", "timerrestart")]
     public async Task RestartTimerAsync([Remainder] int? id = null)

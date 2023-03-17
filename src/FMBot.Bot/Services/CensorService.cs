@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using Discord.WebSocket;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -324,5 +325,42 @@ public class CensorService
         Log.Information($"Marked {censoredAlbums} albums as censored");
 
         await db.SaveChangesAsync();
+    }
+
+    public async Task<CensoredMusicReport> CreateArtistReport(ulong discordUserId, string artistName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var report = new CensoredMusicReport
+        {
+            Artist = true,
+            ArtistName = artistName,
+            ReportStatus = ReportStatus.Pending,
+            ReportedAt = DateTime.UtcNow,
+            ReportedByDiscordUserId = discordUserId
+        };
+
+        //todo save to db
+
+        return report;
+    }
+
+    public async Task<CensoredMusicReport> CreateAlbumReport(ulong discordUserId, string albumName, string artistName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var report = new CensoredMusicReport
+        {
+            Artist = false,
+            ArtistName = artistName,
+            AlbumName = albumName,
+            ReportStatus = ReportStatus.Pending,
+            ReportedAt = DateTime.UtcNow,
+            ReportedByDiscordUserId = discordUserId
+        };
+
+        //todo save to db
+
+        return report;
     }
 }
