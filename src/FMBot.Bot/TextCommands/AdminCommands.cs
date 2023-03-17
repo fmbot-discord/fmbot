@@ -1157,65 +1157,124 @@ public class AdminCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
+    [Command("postembed"), Summary("Changes the avatar to be an album.")]
+    [Examples("postembed \"gwkreporter\"")]
+    public async Task PostAdminEmbed([Remainder] string type = null)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await this.Context.Channel.SendMessageAsync($"No permissions mate");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace("type"))
+        {
+            await ReplyAsync("Pick an embed type that you want to post. Currently available: `gwkreporter` or `nsfwreporter`");
+            return;
+        }
+
+        this._embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        if (type == "gwkreporter")
+        {
+            this._embed.WithTitle("GlobalWhoKnows report form");
+
+            var description = new StringBuilder();
+            description.AppendLine("Want staff to take a look at someone that might be adding artificial or fake scrobbles? Report their profile here.");
+            description.AppendLine();
+            description.AppendLine("Optionally you can add a note to your report. Keep in mind that everyone is kept to the same standard regardless of the added note.");
+            description.AppendLine();
+            description.AppendLine("Note that we are currently not taking reports for sleep or 24/7 scrobbling, we plan to do automated bans for those accounts in the future.");
+            this._embed.WithDescription(description.ToString());
+
+            var components = new ComponentBuilder().WithButton("Report user", style: ButtonStyle.Secondary, customId: InteractionConstants.GlobalWhoKnowsReport);
+            await ReplyAsync(embed: this._embed.Build(), components: components.Build());
+        }
+
+        if (type == "nsfwreporter")
+        {
+            this._embed.WithTitle("NSFW and NSFL artwork report form");
+
+            var description = new StringBuilder();
+            description.AppendLine("Found album artwork or an artist image that should be marked NSFW or censored entirely? Please report that here.");
+            description.AppendLine();
+            description.AppendLine("Note that artwork is censored according to Discord guidelines and only as required by Discord. .fmbot is fundamentally opposed to artistic censorship.");
+            description.AppendLine();
+            description.AppendLine("**Marked NSFW**");
+            description.AppendLine("Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology]");
+            description.AppendLine();
+            description.AppendLine("**Fully censored / NSFL**");
+            description.AppendLine("Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and adult content [actual porn, people having sex, cum]");
+            this._embed.WithDescription(description.ToString());
+
+            var components = new ComponentBuilder()
+                .WithButton("Report NSFW content", style: ButtonStyle.Secondary, customId: InteractionConstants.NsfwReport)
+                .WithButton("Report NSFL content", style: ButtonStyle.Secondary, customId: InteractionConstants.NsflReport);
+
+            await ReplyAsync(embed: this._embed.Build(), components: components.Build());
+        }
+    }
+
     //[Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link.")]
-    //[Alias("fmsetavatar")]
-    //public async Task fmavataroverrideAsync(string link, string desc = "Custom FMBot Avatar", int ievent = 0)
-    //{
-    //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
-    //    {
-    //        JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+        //[Alias("fmsetavatar")]
+        //public async Task fmavataroverrideAsync(string link, string desc = "Custom FMBot Avatar", int ievent = 0)
+        //{
+        //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+        //    {
+        //        JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
-    //        if (link == "help")
-    //        {
-    //            await ReplyAsync(cfgjson.Prefix + "fmavataroverride <image link> [message in quotation marks] [event 0 or 1]");
-    //            return;
-    //        }
+        //        if (link == "help")
+        //        {
+        //            await ReplyAsync(cfgjson.Prefix + "fmavataroverride <image link> [message in quotation marks] [event 0 or 1]");
+        //            return;
+        //        }
 
-    //        try
-    //        {
-    //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
+        //        try
+        //        {
+        //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
 
-    //            if (ievent == 1)
-    //            {
-    //                _timer.UseCustomAvatarFromLink(client, link, desc, true);
-    //                await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
-    //            }
-    //            else
-    //            {
-    //                _timer.UseCustomAvatarFromLink(client, link, desc, false);
-    //                await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is not an event.");
-    //            }
-    //        }
-    //        catch (Exception e)
-    //        {
-    //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
-    //            ExceptionReporter.ReportException(client, e);
-    //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
-    //        }
-    //    }
-    //}
+        //            if (ievent == 1)
+        //            {
+        //                _timer.UseCustomAvatarFromLink(client, link, desc, true);
+        //                await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
+        //            }
+        //            else
+        //            {
+        //                _timer.UseCustomAvatarFromLink(client, link, desc, false);
+        //                await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is not an event.");
+        //            }
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
+        //            ExceptionReporter.ReportException(client, e);
+        //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+        //        }
+        //    }
+        //}
 
-    //[Command("fmresetavatar"), Summary("Changes the avatar to be the default.")]
-    //public async Task fmresetavatar()
-    //{
-    //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
-    //    {
-    //        try
-    //        {
-    //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
-    //            _timer.UseDefaultAvatar(client);
-    //            await ReplyAsync("Set avatar to 'FMBot Default'");
-    //        }
-    //        catch (Exception e)
-    //        {
-    //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
-    //            ExceptionReporter.ReportException(client, e);
-    //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
-    //        }
-    //    }
-    //}
+        //[Command("fmresetavatar"), Summary("Changes the avatar to be the default.")]
+        //public async Task fmresetavatar()
+        //{
+        //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+        //    {
+        //        try
+        //        {
+        //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
+        //            _timer.UseDefaultAvatar(client);
+        //            await ReplyAsync("Set avatar to 'FMBot Default'");
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
+        //            ExceptionReporter.ReportException(client, e);
+        //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+        //        }
+        //    }
+        //}
 
-    [Command("resetfeatured")]
+        [Command("resetfeatured")]
     [Summary("Restarts the featured timer.")]
     [Alias("restarttimer", "timerstart", "timerrestart")]
     public async Task RestartTimerAsync([Remainder] int? id = null)

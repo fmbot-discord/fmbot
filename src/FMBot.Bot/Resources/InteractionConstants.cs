@@ -12,4 +12,8 @@ public static class InteractionConstants
     public const string FmGuildSettingType = "fm-guild-type-menu";
 
     public const string CensorTypes = "admin-censor-*";
+
+    public const string GlobalWhoKnowsReport = "gwk-report";
+    public const string NsfwReport = "nsfw-report";
+    public const string NsflReport = "nsfl-report";
 }
