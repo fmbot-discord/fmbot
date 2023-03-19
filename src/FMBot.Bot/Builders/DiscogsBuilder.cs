@@ -180,6 +180,22 @@ public class DiscogsBuilder
 
             footer.AppendLine($"Page {pageCounter}/{collectionPages.Count()} - {releases.Count} total");
 
+            if (collectionSettings.Formats.Any())
+            {
+                footer.Append("Format filter: ");
+                for (var index = 0; index < collectionSettings.Formats.Count; index++)
+                {
+                    if (index > 0)
+                    {
+                        footer.Append(", ");
+                    }
+                    var format = collectionSettings.Formats[index];
+                    footer.Append(format.ToString());
+                }
+
+                footer.AppendLine();
+            }
+
             if (!string.IsNullOrWhiteSpace(searchValues))
             {
                 footer.AppendLine($"Searching for '{Format.Sanitize(searchValues)}'");
@@ -291,7 +307,7 @@ public class DiscogsBuilder
         var topArtists = new List<TopDiscogsArtist>();
 
         foreach (var item in user.DiscogsReleases
-                     .Where(w => timeSettings.StartDateTime == null ||  timeSettings.StartDateTime <= w.DateAdded && w.DateAdded <= timeSettings.EndDateTime)
+                     .Where(w => timeSettings.StartDateTime == null || timeSettings.StartDateTime <= w.DateAdded && w.DateAdded <= timeSettings.EndDateTime)
                      .GroupBy(g => g.Release.Artist))
         {
             topArtists.Add(new TopDiscogsArtist
