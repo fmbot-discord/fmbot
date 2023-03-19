@@ -9,7 +9,6 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using Genius.Models.Song;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -23,11 +22,13 @@ public class CensorService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
+    private readonly DiscordShardedClient _client;
 
-    public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings)
+    public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, DiscordShardedClient client)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
+        this._client = client;
         this._botSettings = botSettings.Value;
     }
 
@@ -101,7 +102,7 @@ public class CensorService
     public async Task<CensorResult> AlbumResult(string albumName, string artistName, bool featured = false)
     {
         var censoredMusic = await GetCachedCensoredMusic();
-        
+
         var censoredArtist = censoredMusic
             .Where(w => w.Artist)
             .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower());
@@ -156,7 +157,7 @@ public class CensorService
     public async Task<CensorResult> ArtistResult(string artistName)
     {
         var censoredMusic = await GetCachedCensoredMusic();
-        
+
         var censoredArtist = censoredMusic
             .Where(w => w.Artist)
             .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower());
@@ -253,7 +254,7 @@ public class CensorService
         await db.SaveChangesAsync();
     }
 
-    public async Task AddAlbum(string albumName, string artistName,  CensorType censorType)
+    public async Task AddAlbum(string albumName, string artistName, CensorType censorType)
     {
         ClearCensoredCache();
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -281,7 +282,7 @@ public class CensorService
 
         var nsfwArtists = 0;
         var censoredArtists = 0;
-        
+
         var nsfwAlbums = 0;
         var censoredAlbums = 0;
         foreach (var item in all)
@@ -327,17 +328,19 @@ public class CensorService
         await db.SaveChangesAsync();
     }
 
-    public async Task<CensoredMusicReport> CreateArtistReport(ulong discordUserId, string artistName)
+    public async Task<CensoredMusicReport> CreateArtistReport(ulong discordUserId, string artistName, Artist artist)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var report = new CensoredMusicReport
         {
-            Artist = true,
+            IsArtist = true,
             ArtistName = artistName,
             ReportStatus = ReportStatus.Pending,
             ReportedAt = DateTime.UtcNow,
-            ReportedByDiscordUserId = discordUserId
+            ReportedByDiscordUserId = discordUserId,
+            ArtistId = artist.Id,
+            Artist = artist
         };
 
         //todo save to db
@@ -345,22 +348,95 @@ public class CensorService
         return report;
     }
 
-    public async Task<CensoredMusicReport> CreateAlbumReport(ulong discordUserId, string albumName, string artistName)
+    public async Task<CensoredMusicReport> CreateAlbumReport(ulong discordUserId, string albumName, string artistName, Album album)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var report = new CensoredMusicReport
         {
-            Artist = false,
+            IsArtist = false,
             ArtistName = artistName,
             AlbumName = albumName,
             ReportStatus = ReportStatus.Pending,
             ReportedAt = DateTime.UtcNow,
-            ReportedByDiscordUserId = discordUserId
+            ReportedByDiscordUserId = discordUserId,
+            AlbumId = album.Id,
+            Album = album
         };
 
         //todo save to db
 
         return report;
+    }
+
+    public async Task PostReport(CensoredMusicReport report)
+    {
+        try
+        {
+            if (this._botSettings.Bot.BaseServerId == 0 && this._botSettings.Bot.CensorReportChannelId == 0)
+            {
+                Log.Warning("A censored music report was sent but the base server and/or report channel are not set in the config");
+                return;
+            }
+
+            var guild = this._client.GetGuild(this._botSettings.Bot.BaseServerId);
+            var channel = guild?.GetTextChannel(this._botSettings.Bot.CensorReportChannelId);
+
+            if (channel == null)
+            {
+                Log.Warning("A censored music report was sent but the base server and report channel could not be found");
+                return;
+            }
+
+            var embed = new EmbedBuilder();
+            var type = report.IsArtist ? "Artist" : "Album";
+            embed.WithTitle($"New censor report - {type}");
+            embed.AddField("Artist", $"`{report.ArtistName}`");
+
+            var components = new ComponentBuilder()
+                .WithButton("NSFW", $"censor-report-mark-nsfw-{report.Id}", style: ButtonStyle.Success)
+                .WithButton("Censor", $"censor-report-mark-nsfl-{report.Id}", style: ButtonStyle.Success)
+                .WithButton("Deny", $"censor-report-deny-{report.Id}", style: ButtonStyle.Danger);
+
+            if (!string.IsNullOrWhiteSpace(report.ProvidedNote))
+            {
+                embed.AddField("Provided note", report.ProvidedNote);
+            }
+
+            if (!report.IsArtist)
+            {
+                embed.AddField("Album", $"`{report.AlbumName}`");
+                if (report.Album?.LastfmImageUrl != null)
+                {
+                    components.WithButton("Last.fm image", url: report.Album.LastfmImageUrl, row: 1, style: ButtonStyle.Link);
+                }
+                if (report.Album?.SpotifyImageUrl != null)
+                {
+                    components.WithButton("Spotify image", url: report.Album.SpotifyImageUrl, row: 1, style: ButtonStyle.Link);
+                }
+            }
+            else
+            {
+                if (report.Artist?.SpotifyImageUrl != null)
+                {
+                    components.WithButton("Spotify image", url: report.Artist.SpotifyImageUrl, row: 1, style: ButtonStyle.Link);
+                }
+            }
+
+            var reporter = guild.GetUser(report.ReportedByDiscordUserId);
+            embed.AddField("Reporter",
+                $"**{reporter?.DisplayName}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
+
+            embed.WithFooter(
+                "Reports may have images that are not nice to see. \n" +
+                "Feel free to skip handling these if you don't feel comfortable doing so.");
+
+            await channel.SendMessageAsync(embed: embed.Build(), components: components.Build());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }

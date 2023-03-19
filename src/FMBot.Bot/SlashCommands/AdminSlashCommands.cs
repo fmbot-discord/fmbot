@@ -17,11 +17,15 @@ public class AdminSlashCommands : InteractionModuleBase
 {
     private readonly AdminService _adminService;
     private readonly CensorService _censorService;
+    private readonly AlbumService _albumService;
+    private readonly ArtistsService _artistService;
 
-    public AdminSlashCommands(AdminService adminService, CensorService censorService)
+    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService)
     {
         this._adminService = adminService;
         this._censorService = censorService;
+        this._albumService = albumService;
+        this._artistService = artistService;
     }
 
     [ComponentInteraction(InteractionConstants.CensorTypes)]
@@ -124,9 +128,19 @@ public class AdminSlashCommands : InteractionModuleBase
             return;
         }
 
-        await RespondAsync($"You reported {modal.AlbumName} by {modal.ArtistName} with note {modal.Note}", ephemeral: true);
+        var album = await this._albumService.GetAlbumFromDatabase(modal.ArtistName, modal.AlbumName);
 
-        var report = await this._censorService.CreateAlbumReport(this.Context.User.Id,modal.AlbumName, modal.ArtistName);
+        if (album == null)
+        {
+            await RespondAsync($"The artist you tried to report does not exist in the .fmbot database (`{modal.AlbumName}` by `{modal.ArtistName}`)", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            return;
+        }
+
+        await RespondAsync($"You reported `{modal.AlbumName}` by `{modal.ArtistName}` with note {modal.Note}", ephemeral: true);
+
+        var report = await this._censorService.CreateAlbumReport(this.Context.User.Id,modal.AlbumName, modal.ArtistName, album);
+        await this._censorService.PostReport(report);
     }
 
     [ComponentInteraction(InteractionConstants.ReportArtist)]
@@ -146,9 +160,20 @@ public class AdminSlashCommands : InteractionModuleBase
             return;
         }
 
-        await RespondAsync($"You reported {modal.ArtistName} with note {modal.Note}", ephemeral: true);
+        var artist = await this._artistService.GetArtistFromDatabase(modal.ArtistName);
 
-        var report = await this._censorService.CreateArtistReport(this.Context.User.Id, modal.ArtistName);
+        if (artist == null)
+        {
+            await RespondAsync($"The artist you tried to report does not exist in the .fmbot database (`{modal.ArtistName}`)", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            return;
+        }
+
+        await RespondAsync($"You reported `{modal.ArtistName}` with note {modal.Note}", ephemeral: true);
+
+        var report = await this._censorService.CreateArtistReport(this.Context.User.Id, modal.ArtistName, artist);
+
+        await this._censorService.PostReport(report);
     }
 
 }

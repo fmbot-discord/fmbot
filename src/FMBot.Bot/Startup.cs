@@ -77,8 +77,6 @@ public class Startup
             .Enrich.WithProperty("BotUserId", botUserId)
             .WriteTo.Console(consoleLevel)
             .WriteTo.Seq(this.Configuration.GetSection("Logging:SeqServerUrl")?.Value, LogEventLevel.Information, apiKey: this.Configuration.GetSection("Logging:SeqApiKey")?.Value)
-            .WriteTo.Conditional(c => ConfigData.Data.Bot.ExceptionChannelWebhookId != 0,
-                wt => wt.Discord(ConfigData.Data.Bot.ExceptionChannelWebhookId, ConfigData.Data.Bot.ExceptionChannelWebhookToken, null, LogEventLevel.Fatal))
             .CreateLogger();
 
         AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;

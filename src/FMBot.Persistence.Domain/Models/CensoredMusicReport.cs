@@ -5,7 +5,9 @@ namespace FMBot.Persistence.Domain.Models;
 
 public class CensoredMusicReport
 {
-    public bool Artist { get; set; }
+    public int Id { get; set; }
+
+    public bool IsArtist { get; set; }
 
     public string ArtistName { get; set; }
     public string AlbumName { get; set; }
@@ -17,6 +19,12 @@ public class CensoredMusicReport
     public ulong ReportedByDiscordUserId { get; set; }
     public ulong ProcessedByDiscordUserId { get; set; }
 
+    public int? ArtistId { get; set; }
+    public int? AlbumId { get; set; }
+
     public DateTime? ReportedAt { get; set; }
     public DateTime? ProcessedAt { get; set; }
+
+    public Artist Artist { get; set; }
+    public Album Album { get; set; }
 }

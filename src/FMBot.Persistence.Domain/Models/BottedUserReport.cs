@@ -5,6 +5,8 @@ namespace FMBot.Persistence.Domain.Models;
 
 public class BottedUserReport
 {
+    public int Id { get; set; }
+
     public string UserNameLastFM { get; set; }
     public string ProvidedNote { get; set; }
 
