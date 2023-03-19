@@ -152,7 +152,6 @@ public class DiscogsBuilder
 
         if (collectionSettings.Formats.Count > 0)
         {
-            
             releases = releases.Where(w => collectionSettings.Formats.Contains(DiscogsCollectionSettings.ToDiscogsFormat(w.Release.Format))).ToList();
         }
 

@@ -337,25 +337,32 @@ public class SettingService
             return collectionSettings;
         }
 
-        var vinylFormats = new[] { "format:vinyl", "f:vinyl" };
+        var vinylFormats = new[] { "vinyl", "vinyls", "records" };
         if (Contains(extraOptions, vinylFormats))
         {
             collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, vinylFormats);
             collectionSettings.Formats.Add(DiscogsFormat.Vinyl);
         }
 
-        var tapeFormats = new[] { "format:cassette", "format:cassettes", "f:cassette", "f:cassettes", "format:tape", "f:tape", "format:tapes", "f:tapes" };
+        var tapeFormats = new[] { "cassette", "cassettes", "tape", "tapes" };
         if (Contains(extraOptions, tapeFormats))
         {
             collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, tapeFormats);
             collectionSettings.Formats.Add(DiscogsFormat.Cassette);
         }
 
-        var cdFormats = new[] { "format:cd", "format:CD", "f:cd", "f:CD" };
+        var cdFormats = new[] { "cd", "CD", "cds", "CDs" };
         if (Contains(extraOptions, cdFormats))
         {
             collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, cdFormats);
             collectionSettings.Formats.Add(DiscogsFormat.Cd);
+        }
+
+        var miscFormats = new[] { "misc", "miscellaneous" };
+        if (Contains(extraOptions, miscFormats))
+        {
+            collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, miscFormats);
+            collectionSettings.Formats.Add(DiscogsFormat.Miscellaneous);
         }
 
         return collectionSettings;
