@@ -11,22 +11,24 @@ public class DiscogsCollectionSettings
 
     public DiscogsCollectionSettings(List<string> formats)
     {
-        this.Formats = formats.ConvertAll(format => ToDiscogsFormat(format));
+        this.Formats = formats.ConvertAll(format => ToDiscogsFormat(format).format);
     }
 
     public List<DiscogsFormat> Formats { get; set; }
     public string NewSearchValue { get; set; }
 
-    public static DiscogsFormat ToDiscogsFormat(string format) {
+    public static (DiscogsFormat format, string value) ToDiscogsFormat(string format) {
+        format = format.ToLower();
+
         switch (format) {
             case "vinyl" or "vinyls" or "records":
-                return DiscogsFormat.Vinyl;
+                return (DiscogsFormat.Vinyl, format);
             case "tape" or "tapes" or "cassette" or "cassettes":
-                return DiscogsFormat.Cassette;
-            case "cd" or "CD" or "cds" or "CDs":
-                return DiscogsFormat.Cd;
+                return (DiscogsFormat.Cassette, format);
+            case "cd" or "cds":
+                return (DiscogsFormat.Cd, format);
             default:
-                return DiscogsFormat.Miscellaneous;
+                return (DiscogsFormat.Miscellaneous, null);
         }
     }
 }

@@ -337,25 +337,16 @@ public class SettingService
             return collectionSettings;
         }
 
-        var vinylFormats = new[] { "vinyl", "vinyls", "records" };
-        if (Contains(extraOptions, vinylFormats))
-        {
-            collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, vinylFormats);
-            collectionSettings.Formats.Add(DiscogsFormat.Vinyl);
-        }
+        var searchTerms = collectionSettings.NewSearchValue.Split(' ');
 
-        var tapeFormats = new[] { "cassette", "cassettes", "tape", "tapes" };
-        if (Contains(extraOptions, tapeFormats))
+        foreach (var word in searchTerms)
         {
-            collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, tapeFormats);
-            collectionSettings.Formats.Add(DiscogsFormat.Cassette);
-        }
-
-        var cdFormats = new[] { "cd", "CD", "cds", "CDs" };
-        if (Contains(extraOptions, cdFormats))
-        {
-            collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, cdFormats);
-            collectionSettings.Formats.Add(DiscogsFormat.Cd);
+            var discogsFormat = DiscogsCollectionSettings.ToDiscogsFormat(word);
+            if (discogsFormat.value != null)
+            {
+                collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, new[] { word });
+                collectionSettings.Formats.Add(discogsFormat.format);
+            }
         }
 
         var miscFormats = new[] { "misc", "miscellaneous" };
@@ -364,6 +355,8 @@ public class SettingService
             collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, miscFormats);
             collectionSettings.Formats.Add(DiscogsFormat.Miscellaneous);
         }
+
+        collectionSettings.Formats = collectionSettings.Formats.Distinct().ToList();
 
         return collectionSettings;
     }

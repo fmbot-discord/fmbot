@@ -152,7 +152,7 @@ public class DiscogsBuilder
 
         if (collectionSettings.Formats.Count > 0)
         {
-            releases = releases.Where(w => collectionSettings.Formats.Contains(DiscogsCollectionSettings.ToDiscogsFormat(w.Release.Format))).ToList();
+            releases = releases.Where(w => collectionSettings.Formats.Contains(DiscogsCollectionSettings.ToDiscogsFormat(w.Release.Format).format)).ToList();
         }
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
