@@ -63,13 +63,16 @@ public class DiscogsSlashCommands : InteractionModuleBase
     public async Task AlbumAsync(
         [Summary("Search", "Search query to filter on")] string search = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Formats", "Formats to include")] params string[] formats)
+        [Summary("Format", "Media format to include")] DiscogsFormat? format = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
-        var collectionSettings = new DiscogsCollectionSettings(new List<string>(formats));
+        var collectionSettings = new DiscogsCollectionSettings
+        {
+            Formats = format != null ? new List<DiscogsFormat>{(DiscogsFormat)format} : new()
+        };
 
         try
         {
