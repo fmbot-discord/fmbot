@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -61,16 +62,21 @@ public class DiscogsSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task AlbumAsync(
         [Summary("Search", "Search query to filter on")] string search = null,
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Format", "Media format to include")] DiscogsFormat? format = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var collectionSettings = new DiscogsCollectionSettings
+        {
+            Formats = format != null ? new List<DiscogsFormat>{(DiscogsFormat)format} : new()
+        };
 
         try
         {
-            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser), userSettings, search);
+            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser), userSettings, collectionSettings, search);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

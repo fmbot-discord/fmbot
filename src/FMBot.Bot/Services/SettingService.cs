@@ -324,6 +324,43 @@ public class SettingService
         return settingsModel;
     }
 
+    public static DiscogsCollectionSettings SetDiscogsCollectionSettings(string extraOptions = null)
+    {
+        var collectionSettings = new DiscogsCollectionSettings
+        {
+            Formats = new List<DiscogsFormat>(),
+            NewSearchValue = extraOptions
+        };
+        
+        if (extraOptions == null)
+        {
+            return collectionSettings;
+        }
+
+        var searchTerms = collectionSettings.NewSearchValue.Split(' ');
+
+        foreach (var word in searchTerms)
+        {
+            var discogsFormat = DiscogsCollectionSettings.ToDiscogsFormat(word);
+            if (discogsFormat.value != null)
+            {
+                collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, new[] { word });
+                collectionSettings.Formats.Add(discogsFormat.format);
+            }
+        }
+
+        var miscFormats = new[] { "misc", "miscellaneous" };
+        if (Contains(extraOptions, miscFormats))
+        {
+            collectionSettings.NewSearchValue = ContainsAndRemove(collectionSettings.NewSearchValue, miscFormats);
+            collectionSettings.Formats.Add(DiscogsFormat.Miscellaneous);
+        }
+
+        collectionSettings.Formats = collectionSettings.Formats.Distinct().ToList();
+
+        return collectionSettings;
+    }
+
     public static TopListSettings SetTopListSettings(string extraOptions = null)
     {
         var topListSettings = new TopListSettings

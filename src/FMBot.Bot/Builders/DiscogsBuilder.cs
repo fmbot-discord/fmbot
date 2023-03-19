@@ -106,6 +106,7 @@ public class DiscogsBuilder
 
     public async Task<ResponseModel> DiscogsCollectionAsync(ContextModel context,
         UserSettingsModel userSettings,
+        DiscogsCollectionSettings collectionSettings,
         string searchValues)
     {
         var response = new ResponseModel
@@ -147,6 +148,11 @@ public class DiscogsBuilder
 
             releases = releases.Where(w => w.Release.Title.ToLower().Contains(searchValues) ||
                                            w.Release.Artist.ToLower().Contains(searchValues)).ToList();
+        }
+
+        if (collectionSettings.Formats.Count > 0)
+        {
+            releases = releases.Where(w => collectionSettings.Formats.Contains(DiscogsCollectionSettings.ToDiscogsFormat(w.Release.Format).format)).ToList();
         }
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
