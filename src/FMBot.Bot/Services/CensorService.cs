@@ -222,6 +222,17 @@ public class CensorService
             .FirstOrDefaultAsync(f => f.CensoredMusicId == id);
     }
 
+    public async Task<CensoredMusicReport> GetReportForId(int id)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+
+        return new CensoredMusicReport();
+
+        //return await db.CensoredMusic
+        //    .FirstOrDefaultAsync(f => f.CensoredMusicId == id);
+    }
+
     public async Task<CensoredMusic> SetCensorType(CensoredMusic musicToUpdate, CensorType censorType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -428,7 +439,7 @@ public class CensorService
                 $"**{reporter?.DisplayName}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
 
             embed.WithFooter(
-                "Reports may have images that are not nice to see. \n" +
+                "Reports might contain images that are not nice to see. \n" +
                 "Feel free to skip handling these if you don't feel comfortable doing so.");
 
             await channel.SendMessageAsync(embed: embed.Build(), components: components.Build());
@@ -438,5 +449,16 @@ public class CensorService
             Console.WriteLine(e);
             throw;
         }
+    }
+
+    public async Task UpdateReport(CensoredMusicReport report, ReportStatus status, ulong handlerDiscordId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        report.ReportStatus = status;
+        report.ProcessedAt = DateTime.UtcNow;
+        report.ProcessedByDiscordUserId = handlerDiscordId;
+
+        // todo db update
     }
 }

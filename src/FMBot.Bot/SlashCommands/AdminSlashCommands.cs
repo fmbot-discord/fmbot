@@ -9,6 +9,7 @@ using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
@@ -34,7 +35,6 @@ public class AdminSlashCommands : InteractionModuleBase
         var embed = new EmbedBuilder();
 
         var id = int.Parse(censoredId);
-
         var censoredMusic = await this._censorService.GetForId(id);
 
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -132,14 +132,14 @@ public class AdminSlashCommands : InteractionModuleBase
 
         if (album == null)
         {
-            await RespondAsync($"The artist you tried to report does not exist in the .fmbot database (`{modal.AlbumName}` by `{modal.ArtistName}`)", ephemeral: true);
+            await RespondAsync($"The album you tried to report does not exist in the .fmbot database (`{modal.AlbumName}` by `{modal.ArtistName}`)", ephemeral: true);
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
 
         await RespondAsync($"You reported `{modal.AlbumName}` by `{modal.ArtistName}` with note {modal.Note}", ephemeral: true);
 
-        var report = await this._censorService.CreateAlbumReport(this.Context.User.Id,modal.AlbumName, modal.ArtistName, album);
+        var report = await this._censorService.CreateAlbumReport(this.Context.User.Id, modal.AlbumName, modal.ArtistName, album);
         await this._censorService.PostReport(report);
     }
 
@@ -174,6 +174,38 @@ public class AdminSlashCommands : InteractionModuleBase
         var report = await this._censorService.CreateArtistReport(this.Context.User.Id, modal.ArtistName, artist);
 
         await this._censorService.PostReport(report);
+    }
+
+    [ComponentInteraction("censor-report-mark-nsfw-*")]
+    public async Task MarkReportNsfw(string reportId, string[] inputs)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        var id = int.Parse(reportId);
+        var report = await this._censorService.GetReportForId(id);
+
+        if (report.IsArtist)
+        {
+            await this._censorService.AddArtist(report.ArtistName, CensorType.ArtistImageNsfw);
+        }
+        else
+        {
+            await this._censorService.AddAlbum(report.AlbumName, report.ArtistName, CensorType.AlbumCoverNsfw);
+        }
+
+        await this._censorService.UpdateReport(report, ReportStatus.Accepted, this.Context.User.Id);
+
+        var msg = await Context.Channel.GetMessageAsync(this.Context.Interaction.Id);
+
+        if (msg is IUserMessage message)
+        {
+            var components =
+                new ComponentBuilder().WithButton($"Marked NSFW by {this.Context.Interaction.User.Username}", disabled: true);
+            await message.ModifyAsync(m => m.Components = components.Build());
+        }
     }
 
 }

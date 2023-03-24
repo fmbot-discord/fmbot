@@ -49,3 +49,14 @@ public class ReportAlbumModal : IModal
     [RequiredInput(false)]
     public string Note { get; set; }
 }
+
+
+public class DenyReportModal : IModal
+{
+    public string Title => "Deny report";
+
+    [InputLabel("Add note to send to user (optional)")]
+    [ModalTextInput("note", maxLength: 300, style: TextInputStyle.Paragraph)]
+    [RequiredInput(false)]
+    public string Note { get; set; }
+}
