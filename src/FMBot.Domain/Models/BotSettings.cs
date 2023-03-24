@@ -61,8 +61,8 @@ public class BotConfig
     public string SupporterUpdatesWebhookUrl { get; set; }
     public string SupporterAuditLogWebhookUrl { get; set; }
 
-    public ulong ExceptionChannelWebhookId { get; set; }
-    public string ExceptionChannelWebhookToken { get; set; }
+    public ulong CensorReportChannelId { get; set; }
+    public ulong GlobalWhoKnowsReportChannelId { get; set; }
 
     public string Status { get; set; }
 

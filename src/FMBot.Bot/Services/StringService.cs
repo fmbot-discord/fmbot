@@ -230,7 +230,7 @@ public static class StringService
 
         description.Append($" - ");
 
-        description.Append($"[{discogsRelease.Release.Title}]({Constants.DiscordReleaseUrl}/{discogsRelease.Release.DiscogsId})");
+        description.Append($"[{discogsRelease.Release.Title}]({Constants.DiscogsReleaseUrl}{discogsRelease.Release.DiscogsId})");
         description.Append("**");
 
         description.AppendLine();
@@ -265,7 +265,7 @@ public static class StringService
 
         description.Append(GetDiscogsFormatEmote(discogsRelease.Release.Format));
 
-        description.Append($" [{discogsRelease.Release.Format}]({Constants.DiscordReleaseUrl}{discogsRelease.Release.DiscogsId})");
+        description.Append($" [{discogsRelease.Release.Format}]({Constants.DiscogsReleaseUrl}{discogsRelease.Release.DiscogsId})");
         if (discogsRelease.Release.FormatText != null)
         {
             description.Append($" - *{discogsRelease.Release.FormatText}*");
@@ -318,7 +318,7 @@ public static class StringService
         description.Append(formatEmote ?? discogsRelease.Release.Format);
 
         description.Append(
-            $" - **[{discogsRelease.Release.Title}]({Constants.DiscordReleaseUrl}{discogsRelease.Release.DiscogsId})**");
+            $" - **[{discogsRelease.Release.Title}]({Constants.DiscogsReleaseUrl}{discogsRelease.Release.DiscogsId})**");
 
         if (discogsRelease.Release.FormatText != null)
         {

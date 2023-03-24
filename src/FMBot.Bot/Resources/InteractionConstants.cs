@@ -12,4 +12,13 @@ public static class InteractionConstants
     public const string FmGuildSettingType = "fm-guild-type-menu";
 
     public const string CensorTypes = "admin-censor-*";
+
+    public const string GlobalWhoKnowsReport = "gwk-report";
+    public const string GlobalWhoKnowsReportModal = "gwk-report-modal";
+
+    public const string ReportArtist = "report-artist";
+    public const string ReportArtistModal = "report-artist-modal";
+
+    public const string ReportAlbum = "report-album";
+    public const string ReportAlbumModal = "report-album-modal";
 }

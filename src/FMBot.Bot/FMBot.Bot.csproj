@@ -78,6 +78,7 @@
     <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Models\Modals\" />
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>

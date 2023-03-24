@@ -855,7 +855,8 @@ public class AdminCommands : BaseCommandModule
                                            "- `artist`, `album` and `track` with first listen dates\n" +
                                            "- `stats` command with overall history\n" +
                                            "- `year` with artist discoveries and monthly overview\n" +
-                                           "- `fm` footer with up to 8 options (configured with `/fmmode`)\n" +
+                                           "- `fm` footer with up to 8 + 1 options (configured with `/fmmode`)\n" +
+                                           "- `userreactions` setting available\n" +
                                            "- More coming soon");
 
                 thankYouMessage.AppendLine();
@@ -1156,6 +1157,67 @@ public class AdminCommands : BaseCommandModule
 
         this.Context.LogCommandUsed();
     }
+
+    [Command("postembed"), Summary("Changes the avatar to be an album.")]
+    [Examples("postembed \"gwkreporter\"")]
+    public async Task PostAdminEmbed([Remainder] string type = null)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await this.Context.Channel.SendMessageAsync($"No permissions mate");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace("type"))
+        {
+            await ReplyAsync("Pick an embed type that you want to post. Currently available: `gwkreporter` or `nsfwreporter`");
+            return;
+        }
+
+        this._embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        if (type == "gwkreporter")
+        {
+            this._embed.WithTitle("GlobalWhoKnows report form");
+
+            var description = new StringBuilder();
+            description.AppendLine("Want staff to take a look at someone that might be adding artificial or fake scrobbles? Report their profile here.");
+            description.AppendLine();
+            description.AppendLine("Optionally you can add a note to your report. Keep in mind that everyone is kept to the same standard regardless of the added note.");
+            description.AppendLine();
+            description.AppendLine("Note that we are currently not taking reports for sleep or 24/7 scrobbling, we plan to do automated bans for those accounts in the future.");
+            this._embed.WithDescription(description.ToString());
+
+            var components = new ComponentBuilder().WithButton("Report user", style: ButtonStyle.Secondary, customId: InteractionConstants.GlobalWhoKnowsReport);
+            await ReplyAsync(embed: this._embed.Build(), components: components.Build());
+        }
+
+        if (type == "nsfwreporter")
+        {
+            this._embed.WithTitle("NSFW and NSFL artwork report form");
+
+            var description = new StringBuilder();
+            description.AppendLine("Found album artwork or an artist image that should be marked NSFW or censored entirely? Please report that here.");
+            description.AppendLine();
+            description.AppendLine("Note that artwork is censored according to Discord guidelines and only as required by Discord. .fmbot is fundamentally opposed to artistic censorship.");
+            description.AppendLine();
+            description.AppendLine("**Marked NSFW**");
+            description.AppendLine("Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology]");
+            description.AppendLine();
+            description.AppendLine("**Fully censored / NSFL**");
+            description.AppendLine("Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]");
+            this._embed.WithDescription(description.ToString());
+
+            var components = new ComponentBuilder()
+                .WithButton("Report artist image", style: ButtonStyle.Secondary, customId: InteractionConstants.ReportArtist)
+                .WithButton("Report album cover", style: ButtonStyle.Secondary, customId: InteractionConstants.ReportAlbum);
+
+            await ReplyAsync(embed: this._embed.Build(), components: components.Build());
+        }
+    }
+
+
 
     //[Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link.")]
     //[Alias("fmsetavatar")]

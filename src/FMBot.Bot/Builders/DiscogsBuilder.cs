@@ -106,6 +106,7 @@ public class DiscogsBuilder
 
     public async Task<ResponseModel> DiscogsCollectionAsync(ContextModel context,
         UserSettingsModel userSettings,
+        DiscogsCollectionSettings collectionSettings,
         string searchValues)
     {
         var response = new ResponseModel
@@ -149,6 +150,11 @@ public class DiscogsBuilder
                                            w.Release.Artist.ToLower().Contains(searchValues)).ToList();
         }
 
+        if (collectionSettings.Formats.Count > 0)
+        {
+            releases = releases.Where(w => collectionSettings.Formats.Contains(DiscogsCollectionSettings.ToDiscogsFormat(w.Release.Format).format)).ToList();
+        }
+
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
         response.EmbedAuthor.WithName(!userSettings.DifferentUser
@@ -173,6 +179,22 @@ public class DiscogsBuilder
             var footer = new StringBuilder();
 
             footer.AppendLine($"Page {pageCounter}/{collectionPages.Count()} - {releases.Count} total");
+
+            if (collectionSettings.Formats.Any())
+            {
+                footer.Append("Format filter: ");
+                for (var index = 0; index < collectionSettings.Formats.Count; index++)
+                {
+                    if (index > 0)
+                    {
+                        footer.Append(", ");
+                    }
+                    var format = collectionSettings.Formats[index];
+                    footer.Append(format.ToString());
+                }
+
+                footer.AppendLine();
+            }
 
             if (!string.IsNullOrWhiteSpace(searchValues))
             {
@@ -285,7 +307,7 @@ public class DiscogsBuilder
         var topArtists = new List<TopDiscogsArtist>();
 
         foreach (var item in user.DiscogsReleases
-                     .Where(w => timeSettings.StartDateTime == null ||  timeSettings.StartDateTime <= w.DateAdded && w.DateAdded <= timeSettings.EndDateTime)
+                     .Where(w => timeSettings.StartDateTime == null || timeSettings.StartDateTime <= w.DateAdded && w.DateAdded <= timeSettings.EndDateTime)
                      .GroupBy(g => g.Release.Artist))
         {
             topArtists.Add(new TopDiscogsArtist
