@@ -3,6 +3,7 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230328123027_AddReportsAndGenerations")]
+    partial class AddReportsAndGenerations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,10 +52,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<string>("Prompt")
                         .HasColumnType("text")
                         .HasColumnName("prompt");
-
-                    b.Property<int?>("TargetedUserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("targeted_user_id");
 
                     b.Property<int>("TotalTokens")
                         .HasColumnType("integer")

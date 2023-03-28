@@ -27,6 +27,8 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<BottedUser> BottedUsers { get; set; }
         public virtual DbSet<InactiveUsers> InactiveUsers { get; set; }
+        public virtual DbSet<BottedUserReport> BottedUserReport { get; set; }
+        public virtual DbSet<CensoredMusicReport> CensoredMusicReport { get; set; }
 
         public virtual DbSet<UserArtist> UserArtists { get; set; }
         public virtual DbSet<UserAlbum> UserAlbums { get; set; }
@@ -34,6 +36,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<UserPlay> UserPlays { get; set; }
         public virtual DbSet<UserCrown> UserCrowns { get; set; }
         public virtual DbSet<UserStreak> UserStreaks { get; set; }
+        public virtual DbSet<AiGeneration> AiGenerations { get; set; }
 
         public virtual DbSet<Artist> Artists { get; set; }
         public virtual DbSet<Album> Albums { get; set; }
@@ -59,7 +62,7 @@ namespace FMBot.Persistence.EntityFrameWork
                 optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 // Uncomment below connection string when creating migrations, and also comment out the above iconfiguration stuff
-                //optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
+                //optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
@@ -163,7 +166,6 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
-
             modelBuilder.Entity<Supporter>(entity =>
             {
                 entity.HasKey(e => e.SupporterId);
@@ -172,6 +174,11 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<BottedUser>(entity =>
             {
                 entity.HasKey(e => e.BottedUserId);
+            });
+
+            modelBuilder.Entity<BottedUserReport>(entity =>
+            {
+                entity.HasKey(e => e.Id);
             });
 
             modelBuilder.Entity<InactiveUsers>(entity =>
@@ -316,6 +323,18 @@ namespace FMBot.Persistence.EntityFrameWork
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
+            modelBuilder.Entity<AiGeneration>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(i => i.UserId);
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.AiGenerations)
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
             modelBuilder.Entity<FeaturedLog>(entity =>
             {
                 entity.HasKey(e => e.FeaturedLogId);
@@ -384,6 +403,11 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<CensoredMusic>(entity =>
             {
                 entity.HasKey(a => a.CensoredMusicId);
+            });
+
+            modelBuilder.Entity<CensoredMusicReport>(entity =>
+            {
+                entity.HasKey(a => a.Id);
             });
 
             modelBuilder.Entity<ArtistAlias>(entity =>

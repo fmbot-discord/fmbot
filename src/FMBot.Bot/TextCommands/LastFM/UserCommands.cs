@@ -44,6 +44,7 @@ public class UserCommands : BaseCommandModule
     private readonly PlayService _playService;
     private readonly TimeService _timeService;
     private readonly CommandService _commands;
+    private readonly OpenAiService _openAiService;
 
 
     private InteractiveService Interactivity { get; }
@@ -64,7 +65,12 @@ public class UserCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         FeaturedService featuredService,
         UserBuilder userBuilder,
-        InteractiveService interactivity, ArtistsService artistsService, PlayService playService, TimeService timeService, CommandService commands) : base(botSettings)
+        InteractiveService interactivity,
+        ArtistsService artistsService,
+        PlayService playService,
+        TimeService timeService,
+        CommandService commands,
+        OpenAiService openAiService) : base(botSettings)
     {
         this._friendsService = friendsService;
         this._guildService = guildService;
@@ -82,6 +88,7 @@ public class UserCommands : BaseCommandModule
         this._playService = playService;
         this._timeService = timeService;
         this._commands = commands;
+        this._openAiService = openAiService;
     }
 
     [Command("stats", RunMode = RunMode.Async)]
@@ -169,14 +176,17 @@ public class UserCommands : BaseCommandModule
         }
 
         var topArtists = await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 60);
-        var commandUsesLeft = 1;
+        var generationsToday = await this._openAiService.GetAmountGeneratedToday(user.UserId);
+
+        var dailyAmount = user.UserType != UserType.User ? 30 : 3;
+        var commandUsesLeft = dailyAmount - generationsToday;
 
         try
         {
             var response =
                 await this._userBuilder.JudgeAsync(new ContextModel(this.Context, prfx, user), userSettings, user.UserType, commandUsesLeft, differentUserButNotAllowed);
 
-            if (commandUsesLeft == 0)
+            if (commandUsesLeft <= 0)
             {
                 await this.Context.SendResponse(this.Interactivity, response);
                 this.Context.LogCommandUsed(CommandResponse.Cooldown);
@@ -198,6 +208,7 @@ public class UserCommands : BaseCommandModule
                 .WithStringConverter(item => item.Name)
                 .WithEmoteConverter(item => item.Emote)
                 .WithSelectionPage(pageBuilder)
+                .AddUser(Context.User)
                 .Build();
 
             var result = await this.Interactivity.SendSelectionAsync(selection, this.Context.Channel, TimeSpan.FromMinutes(10));

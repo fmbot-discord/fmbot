@@ -8,6 +8,9 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using System;
 using FMBot.Domain;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services;
 
@@ -15,14 +18,16 @@ public class OpenAiService
 {
     private readonly HttpClient _httpClient;
     private readonly BotSettings _botSettings;
+    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-    public OpenAiService(HttpClient httpClient, IOptions<BotSettings> botSettings)
+    public OpenAiService(HttpClient httpClient, IOptions<BotSettings> botSettings, IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._httpClient = httpClient;
+        this._contextFactory = contextFactory;
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<string> GetResponse(List<string> artists, bool compliment)
+    public async Task<OpenAiResponse> GetResponse(List<string> artists, bool compliment)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
         request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
@@ -57,7 +62,38 @@ public class OpenAiService
         var responseContent = await response.Content.ReadAsStringAsync();
 
         var responseModel = JsonSerializer.Deserialize<OpenAiResponse>(responseContent);
+        responseModel.Prompt = prompt;
 
-        return responseModel?.Choices?.FirstOrDefault()?.ChoiceMessage?.Content;
+        return responseModel;
+    }
+
+    public async Task<AiGeneration> StoreAiGeneration(OpenAiResponse response, int userId, int? targetedUserId)
+    {
+        var generation = new AiGeneration
+        {
+            DateGenerated = DateTime.UtcNow,
+            Model = response.Model,
+            Output = response.Choices?.FirstOrDefault()?.ChoiceMessage?.Content,
+            TotalTokens = response.Usage.TotalTokens,
+            Prompt = response.Prompt,
+            UserId = userId,
+            TargetedUserId = targetedUserId
+        };
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        await db.AiGenerations.AddAsync(generation);
+
+        await db.SaveChangesAsync();
+
+        return generation;
+    }
+
+    public async Task<int> GetAmountGeneratedToday(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var filterDate = DateTime.UtcNow.Date;
+        return await db.AiGenerations.CountAsync(c => c.UserId == userId && c.DateGenerated >= filterDate);
     }
 }

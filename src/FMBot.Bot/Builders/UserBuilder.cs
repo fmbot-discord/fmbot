@@ -680,10 +680,13 @@ public class UserBuilder
         var openAiResponse =
             await this._openAiService.GetResponse(topArtists.Take(16).ToList(), true);
 
+        var aiGeneration =
+            await this._openAiService.StoreAiGeneration(openAiResponse, context.ContextUser.UserId, userSettings.DifferentUser ? userSettings.UserId : null);
+
         var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
 
         response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Compliment 🙂");
-        response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
+        response.Embed.WithDescription(ImproveAiResponse(aiGeneration.Output, topArtists));
         response.Embed.WithColor(new Color(186, 237, 169));
 
         return response;
@@ -699,10 +702,13 @@ public class UserBuilder
         var openAiResponse =
             await this._openAiService.GetResponse(topArtists.Take(16).ToList(), false);
 
+        var aiGeneration =
+            await this._openAiService.StoreAiGeneration(openAiResponse, context.ContextUser.UserId, userSettings.DifferentUser ? userSettings.UserId : null);
+
         var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
 
         response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Roast 🔥");
-        response.Embed.WithDescription(ImproveAiResponse(openAiResponse, topArtists));
+        response.Embed.WithDescription(ImproveAiResponse(aiGeneration.Output, topArtists));
         response.Embed.WithColor(new Color(255, 122, 1));
 
         return response;

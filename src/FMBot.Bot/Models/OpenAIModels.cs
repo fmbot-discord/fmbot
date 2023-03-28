@@ -63,6 +63,8 @@ public class OpenAIModels
 
         [JsonPropertyName("choices")]
         public List<Choice> Choices { get; set; }
+
+        public string Prompt { get; set; }
     }
 
     public class Usage

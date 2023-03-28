@@ -17,12 +17,12 @@ public class CensoredMusicReport
     public ReportStatus ReportStatus { get; set; }
 
     public ulong ReportedByDiscordUserId { get; set; }
-    public ulong ProcessedByDiscordUserId { get; set; }
+    public ulong? ProcessedByDiscordUserId { get; set; }
 
     public int? ArtistId { get; set; }
     public int? AlbumId { get; set; }
 
-    public DateTime? ReportedAt { get; set; }
+    public DateTime ReportedAt { get; set; }
     public DateTime? ProcessedAt { get; set; }
 
     public Artist Artist { get; set; }

@@ -74,4 +74,6 @@ public class User
     public ICollection<FeaturedLog> FeaturedLogs { get; set; }
 
     public ICollection<UserStreak> Streaks { get; set; }
+
+    public ICollection<AiGeneration> AiGenerations { get; set; }
 }
