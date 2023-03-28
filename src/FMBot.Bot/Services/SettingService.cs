@@ -286,6 +286,16 @@ public class SettingService
                 settingsModel.ApiParameter = "1month";
                 settingsModel.PlayDays = 30;
             }
+            else if (defaultTimePeriod == TimePeriod.Quarterly)
+            {
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
+                settingsModel.TimePeriod = TimePeriod.Quarterly;
+                settingsModel.Description = "Quarterly";
+                settingsModel.AltDescription = "last quarter";
+                settingsModel.UrlParameter = "date_preset=LAST_90_DAYS";
+                settingsModel.ApiParameter = "3month";
+                settingsModel.PlayDays = 90;
+            }
             else
             {
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;

@@ -89,11 +89,14 @@ public class OpenAiService
         return generation;
     }
 
-    public async Task<int> GetAmountGeneratedToday(int userId)
+    public async Task<int> GetCommandUsesLeft(User user)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var filterDate = DateTime.UtcNow.Date;
-        return await db.AiGenerations.CountAsync(c => c.UserId == userId && c.DateGenerated >= filterDate);
+        var generatedToday = await db.AiGenerations.CountAsync(c => c.UserId == user.UserId && c.DateGenerated >= filterDate);
+
+        var dailyAmount = user.UserType != UserType.User ? 25 : 3;
+        return dailyAmount - generatedToday;
     }
 }

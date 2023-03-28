@@ -152,14 +152,14 @@ public class UserCommands : BaseCommandModule
     [Command("judge", RunMode = RunMode.Async)]
     [Summary("Judges your music taste using AI")]
     [UsernameSetRequired]
-    [CommandCategories(CommandCategory.Other)]
     [ExcludeFromHelp]
-    public async Task JudgeAsync([Remainder] string userOptions = null)
+    public async Task JudgeAsync([Remainder] string extraOptions = null)
     {
-        var user = await this._userService.GetUserAsync(this.Context.User.Id);
+        var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.Quarterly);
 
-        if (user.UserType != UserType.Admin && user.UserType != UserType.Owner)
+        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
         {
             await ReplyAsync("Nothing to see here!");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -167,24 +167,39 @@ public class UserCommands : BaseCommandModule
         }
 
         var differentUserButNotAllowed = false;
-        var userSettings = await this._settingService.GetUser(userOptions, user, this.Context, true);
+        var userSettings = await this._settingService.GetUser(timeSettings.NewSearchValue, contextUser, this.Context);
 
-        if (userSettings.DifferentUser && user.UserType == UserType.User)
+        if (userSettings.DifferentUser && contextUser.UserType == UserType.User)
         {
-            userSettings = await this._settingService.GetUser("", user, this.Context, true);
+            userSettings = await this._settingService.GetUser("", contextUser, this.Context, true);
             differentUserButNotAllowed = true;
         }
 
-        var topArtists = await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 60);
-        var generationsToday = await this._openAiService.GetAmountGeneratedToday(user.UserId);
+        List<string> topArtists;
+        if (timeSettings.TimePeriod == TimePeriod.Quarterly)
+        {
+            topArtists = await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 90);
+        }
+        else
+        {
+            var lfmTopArtists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 16);
+            topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
+        }
 
-        var dailyAmount = user.UserType != UserType.User ? 30 : 3;
-        var commandUsesLeft = dailyAmount - generationsToday;
+        if (topArtists == null || !topArtists.Any())
+        {
+            this._embed.WithDescription($"Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
+            this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+            await ReplyAsync(embed: this._embed.Build());
+            return;
+        }
+
+        var commandUsesLeft = await this._openAiService.GetCommandUsesLeft(contextUser);
 
         try
         {
             var response =
-                await this._userBuilder.JudgeAsync(new ContextModel(this.Context, prfx, user), userSettings, user.UserType, commandUsesLeft, differentUserButNotAllowed);
+                await this._userBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings, contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
 
             if (commandUsesLeft <= 0)
             {
@@ -195,6 +210,7 @@ public class UserCommands : BaseCommandModule
 
             var pageBuilder = new PageBuilder()
                 .WithDescription(response.Embed.Description)
+                .WithFooter(response.Embed.Footer)
                 .WithColor(DiscordConstants.InformationColorBlue);
 
             var items = new Item[]
@@ -208,7 +224,7 @@ public class UserCommands : BaseCommandModule
                 .WithStringConverter(item => item.Name)
                 .WithEmoteConverter(item => item.Emote)
                 .WithSelectionPage(pageBuilder)
-                .AddUser(Context.User)
+                .AddUser(this.Context.User)
                 .Build();
 
             var result = await this.Interactivity.SendSelectionAsync(selection, this.Context.Channel, TimeSpan.FromMinutes(10));
@@ -230,6 +246,30 @@ public class UserCommands : BaseCommandModule
                 return;
             }
 
+            commandUsesLeft = await this._openAiService.GetCommandUsesLeft(contextUser);
+
+            if (commandUsesLeft <= 0)
+            {
+                var description = new StringBuilder();
+                if (contextUser.UserType == UserType.User)
+                {
+                    description.Append($"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
+                    description.AppendLine($"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and the possibility to use the command on others.");
+                }
+                else
+                {
+                    description.Append($"You've ran out of command uses for today. ");
+                }
+
+                await result.Message.ModifyAsync(x =>
+                {
+                    x.Embed = new EmbedBuilder().WithDescription(description.ToString()).Build();
+                    x.Components = new ComponentBuilder().Build();
+                });
+
+                return;
+            }
+
             var selected = result.Value.Name;
 
             if (selected == "Compliment")
@@ -244,7 +284,7 @@ public class UserCommands : BaseCommandModule
                     x.Components = new ComponentBuilder().Build();
                 });
 
-                var complimentResponse = await this._userBuilder.JudgeComplimentAsync(new ContextModel(this.Context, prfx, user), userSettings, topArtists);
+                var complimentResponse = await this._userBuilder.JudgeComplimentAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, topArtists);
 
                 await result.Message.ModifyAsync(x =>
                 {
@@ -266,7 +306,7 @@ public class UserCommands : BaseCommandModule
                     x.Components = new ComponentBuilder().Build();
                 });
 
-                var complimentResponse = await this._userBuilder.JudgeRoastAsync(new ContextModel(this.Context, prfx, user), userSettings, topArtists);
+                var complimentResponse = await this._userBuilder.JudgeRoastAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, topArtists);
 
                 await result.Message.ModifyAsync(x =>
                 {

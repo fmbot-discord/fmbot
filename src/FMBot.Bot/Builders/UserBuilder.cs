@@ -603,9 +603,9 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> JudgeAsync(
-        ContextModel context,
+    public async Task<ResponseModel> JudgeAsync(ContextModel context,
         UserSettingsModel userSettings,
+        TimeSettingsModel timeSettings,
         UserType userType,
         int usesLeftToday,
         bool differentUserButNotAllowed)
@@ -664,6 +664,11 @@ public class UserBuilder
         description.AppendLine();
         description.AppendLine("Some top artists might be sent to OpenAI. No other data is sent.");
         description.AppendLine("Keep in mind that music taste is subjective, and that no matter what this command or anyone else says you're free to like whatever artist you want.");
+
+        if (!timeSettings.DefaultPicked)
+        {
+            response.Embed.WithFooter($"Time period: {timeSettings.Description}");
+        }
 
         response.Embed.WithDescription(description.ToString());
 
