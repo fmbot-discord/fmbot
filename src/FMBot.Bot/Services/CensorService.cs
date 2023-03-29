@@ -226,12 +226,8 @@ public class CensorService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-
-        return new CensoredMusicReport();
-
-        //todo return db
-        //return await db.CensoredMusic
-        //    .FirstOrDefaultAsync(f => f.CensoredMusicId == id);
+        return await db.CensoredMusicReport
+            .FirstOrDefaultAsync(f => f.Id == id);
     }
 
     public async Task<CensoredMusic> SetCensorType(CensoredMusic musicToUpdate, CensorType censorType)
@@ -355,7 +351,8 @@ public class CensorService
             Artist = artist
         };
 
-        //todo save to db
+        await db.CensoredMusicReport.AddAsync(report);
+        await db.SaveChangesAsync();
 
         return report;
     }
@@ -376,7 +373,8 @@ public class CensorService
             Album = album
         };
 
-        //todo save to db
+        await db.CensoredMusicReport.AddAsync(report);
+        await db.SaveChangesAsync();
 
         return report;
     }

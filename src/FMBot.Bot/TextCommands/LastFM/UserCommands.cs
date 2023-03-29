@@ -271,11 +271,12 @@ public class UserCommands : BaseCommandModule
             }
 
             var selected = result.Value.Name;
+            var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
 
             if (selected == "Compliment")
             {
                 var embed = new EmbedBuilder()
-                    .WithDescription("<a:loading:821676038102056991> Loading your compliment...")
+                    .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} compliment...")
                     .WithColor(new Color(186, 237, 169));
 
                 await result.Message.ModifyAsync(x =>
@@ -297,7 +298,7 @@ public class UserCommands : BaseCommandModule
             if (selected == "Roast")
             {
                 var embed = new EmbedBuilder()
-                    .WithDescription("<a:loading:821676038102056991> Loading your roast (don't take it personally)...")
+                    .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...")
                     .WithColor(new Color(255, 122, 1));
 
                 await result.Message.ModifyAsync(x =>
