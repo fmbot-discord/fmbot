@@ -152,19 +152,14 @@ public class UserCommands : BaseCommandModule
     [Command("judge", RunMode = RunMode.Async)]
     [Summary("Judges your music taste using AI")]
     [UsernameSetRequired]
-    [ExcludeFromHelp]
+    [Alias("roast", "compliment")]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
+    [CommandCategories(CommandCategory.Other)]
     public async Task JudgeAsync([Remainder] string extraOptions = null)
     {
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.Quarterly);
-
-        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
-        {
-            await ReplyAsync("Nothing to see here!");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
 
         var differentUserButNotAllowed = false;
         var userSettings = await this._settingService.GetUser(timeSettings.NewSearchValue, contextUser, this.Context);
