@@ -725,7 +725,7 @@ public class UserBuilder
 
         foreach (var artist in artists)
         {
-            response = response.Replace($" {artist}", $" *{artist}*");
+            response = response.Replace(artist, $"*{artist}*");
         }
 
         return response;
