@@ -721,6 +721,8 @@ public class UserBuilder
 
     private string ImproveAiResponse(string response, List<string> artists)
     {
+        response = Format.Sanitize(response);
+
         foreach (var artist in artists)
         {
             response = response.Replace(artist, $"*{artist}*");
