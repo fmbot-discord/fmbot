@@ -171,13 +171,14 @@ public class UserCommands : BaseCommandModule
         }
 
         List<string> topArtists;
+        const int artistLimit = 15;
         if (timeSettings.TimePeriod == TimePeriod.Quarterly)
         {
             topArtists = await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 90);
         }
         else
         {
-            var lfmTopArtists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 16);
+            var lfmTopArtists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, artistLimit);
             topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
         }
 
@@ -188,6 +189,8 @@ public class UserCommands : BaseCommandModule
             await ReplyAsync(embed: this._embed.Build());
             return;
         }
+
+        topArtists = topArtists.Take(artistLimit).ToList();
 
         var commandUsesLeft = await this._openAiService.GetCommandUsesLeft(contextUser);
 

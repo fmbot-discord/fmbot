@@ -683,7 +683,7 @@ public class UserBuilder
         };
 
         var openAiResponse =
-            await this._openAiService.GetResponse(topArtists.Take(16).ToList(), true);
+            await this._openAiService.GetResponse(topArtists, true);
 
         var aiGeneration =
             await this._openAiService.StoreAiGeneration(openAiResponse, context.ContextUser.UserId, userSettings.DifferentUser ? userSettings.UserId : null);
@@ -705,7 +705,7 @@ public class UserBuilder
         };
 
         var openAiResponse =
-            await this._openAiService.GetResponse(topArtists.Take(16).ToList(), false);
+            await this._openAiService.GetResponse(topArtists, false);
 
         var aiGeneration =
             await this._openAiService.StoreAiGeneration(openAiResponse, context.ContextUser.UserId, userSettings.DifferentUser ? userSettings.UserId : null);
@@ -719,13 +719,13 @@ public class UserBuilder
         return response;
     }
 
-    private string ImproveAiResponse(string response, List<string> artists)
+    private static string ImproveAiResponse(string response, List<string> artists)
     {
         response = Format.Sanitize(response);
 
         foreach (var artist in artists)
         {
-            response = response.Replace(artist, $"*{artist}*");
+            response = response.Replace($" {artist}", $" *{artist}*");
         }
 
         return response;
