@@ -172,7 +172,7 @@ public class UserCommands : BaseCommandModule
 
         List<string> topArtists;
         const int artistLimit = 15;
-        if (timeSettings.TimePeriod == TimePeriod.Quarterly)
+        if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
         {
             topArtists = await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 90);
         }
