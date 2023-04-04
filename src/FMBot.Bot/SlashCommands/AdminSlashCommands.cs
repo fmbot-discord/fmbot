@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
@@ -96,8 +97,6 @@ public class AdminSlashCommands : InteractionModuleBase
     [ModalInteraction(InteractionConstants.GlobalWhoKnowsReportModal)]
     public async Task ReportGlobalWhoKnowsButton(ReportGlobalWhoKnowsModal modal)
     {
-        await RespondAsync($"You reported `{modal.UserNameLastFM}` with note `{modal.Note}`", ephemeral: true);
-
         var existingBottedUser = await this._adminService.GetBottedUserAsync(modal.UserNameLastFM);
         if (existingBottedUser is { BanActive: true })
         {
@@ -105,10 +104,58 @@ public class AdminSlashCommands : InteractionModuleBase
             return;
         }
 
+        var existingReport = await this._adminService.UserReportAlreadyExists(modal.UserNameLastFM);
+        if (existingReport)
+        {
+            await RespondAsync($"Thanks, but there is already a pending report for the user you reported.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            return;
+        }
 
+        await RespondAsync($"Thanks, your report for the user `{modal.UserNameLastFM}` has been received. \n" +
+                           $"You will currently not be notified if your report is processed.", ephemeral: true);
 
+        var report =
+            await this._adminService.CreateBottedUserReportAsync(this.Context.User.Id, modal.UserNameLastFM, modal.Note);
+        await this._adminService.PostReport(report);
+    }
 
+    [ComponentInteraction("gwk-report-ban-*")]
+    public async Task GwkReportBan(string reportId)
+    {
+        await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsBanModal>($"gwk-report-ban-confirmed-{reportId}");
+    }
 
+    [ComponentInteraction("gwk-report-ban-confirmed-*")]
+    public async Task GwkReportBanConfirmed(string reportId, ReportGlobalWhoKnowsBanModal modal)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        var id = int.Parse(reportId);
+        var report = await this._adminService.GetReportForId(id);
+
+        if (report.ReportStatus != ReportStatus.Pending)
+        {
+            return;
+        }
+
+        await this._adminService.UpdateReport(report, ReportStatus.AcceptedWithComment, this.Context.User.Id);
+
+        await RespondAsync("Report processed, thank you.", ephemeral: true);
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var components =
+            new ComponentBuilder().WithButton($"Banned by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
+        await message.ModifyAsync(m => m.Components = components.Build());
     }
 
     [ComponentInteraction(InteractionConstants.ReportAlbum)]
@@ -137,9 +184,18 @@ public class AdminSlashCommands : InteractionModuleBase
             return;
         }
 
-        await RespondAsync($"You reported `{modal.AlbumName}` by `{modal.ArtistName}` with note {modal.Note}", ephemeral: true);
+        var alreadyExists = await this._censorService.AlbumReportAlreadyExists(modal.ArtistName, modal.AlbumName);
+        if (alreadyExists)
+        {
+            await RespondAsync($"Thanks, but there is already a pending report for the album you reported.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            return;
+        }
 
-        var report = await this._censorService.CreateAlbumReport(this.Context.User.Id, modal.AlbumName, modal.ArtistName, album);
+        await RespondAsync($"Thanks, your report for the album `{modal.AlbumName}` by `{modal.ArtistName}` has been received.\n" +
+                           $"You will currently not be notified if your report is processed.", ephemeral: true);
+
+        var report = await this._censorService.CreateAlbumReport(this.Context.User.Id, modal.AlbumName, modal.ArtistName, modal.Note, album);
         await this._censorService.PostReport(report);
     }
 
@@ -169,15 +225,23 @@ public class AdminSlashCommands : InteractionModuleBase
             return;
         }
 
-        await RespondAsync($"You reported `{modal.ArtistName}` with note {modal.Note}", ephemeral: true);
+        var alreadyExists = await this._censorService.ArtistReportAlreadyExists(modal.ArtistName);
+        if (alreadyExists)
+        {
+            await RespondAsync($"Thanks, but there is already a pending report for the artist image you reported.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            return;
+        }
 
-        var report = await this._censorService.CreateArtistReport(this.Context.User.Id, modal.ArtistName, artist);
+        await RespondAsync($"Thanks, your report for the artist `{modal.ArtistName}` has been received.\n" +
+                           $"You will currently not be notified if your report is processed.", ephemeral: true);
 
+        var report = await this._censorService.CreateArtistReport(this.Context.User.Id, modal.ArtistName, modal.Note, artist);
         await this._censorService.PostReport(report);
     }
 
     [ComponentInteraction("censor-report-mark-nsfw-*")]
-    public async Task MarkReportNsfw(string reportId, string[] inputs)
+    public async Task MarkReportNsfw(string reportId)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -187,25 +251,134 @@ public class AdminSlashCommands : InteractionModuleBase
         var id = int.Parse(reportId);
         var report = await this._censorService.GetReportForId(id);
 
+        if (report.ReportStatus != ReportStatus.Pending)
+        {
+            return;
+        }
+
         if (report.IsArtist)
         {
+            var existing = await this._censorService.GetCurrentArtist(report.ArtistName);
+            if (existing != null)
+            {
+                await RespondAsync("This artist already exists in the censor db, use `.checkartist` instead!", ephemeral: true);
+                return;
+            }
+
             await this._censorService.AddArtist(report.ArtistName, CensorType.ArtistImageNsfw);
         }
         else
         {
+            var existing = await this._censorService.GetCurrentAlbum(report.AlbumName, report.ArtistName);
+            if (existing != null)
+            {
+                await RespondAsync("This album already exists in the censor db, use `.checkalbum` instead!", ephemeral: true);
+                return;
+            }
+
             await this._censorService.AddAlbum(report.AlbumName, report.ArtistName, CensorType.AlbumCoverNsfw);
         }
 
         await this._censorService.UpdateReport(report, ReportStatus.Accepted, this.Context.User.Id);
 
-        var msg = await Context.Channel.GetMessageAsync(this.Context.Interaction.Id);
+        await RespondAsync("Report processed, thank you.", ephemeral: true);
 
-        if (msg is IUserMessage message)
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
         {
-            var components =
-                new ComponentBuilder().WithButton($"Marked NSFW by {this.Context.Interaction.User.Username}", disabled: true);
-            await message.ModifyAsync(m => m.Components = components.Build());
+            return;
         }
+
+        var components =
+            new ComponentBuilder().WithButton($"Marked NSFW by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
+        await message.ModifyAsync(m => m.Components = components.Build());
     }
 
+    [ComponentInteraction("censor-report-mark-censored-*")]
+    public async Task MarkReportCensored(string reportId)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        var id = int.Parse(reportId);
+        var report = await this._censorService.GetReportForId(id);
+
+        if (report.ReportStatus != ReportStatus.Pending)
+        {
+            return;
+        }
+
+        if (report.IsArtist)
+        {
+            var existing = await this._censorService.GetCurrentArtist(report.ArtistName);
+            if (existing != null)
+            {
+                await RespondAsync("This artist already exists in the censor db, use `.checkartist` instead!", ephemeral: true);
+                return;
+            }
+
+            await this._censorService.AddArtist(report.ArtistName, CensorType.ArtistImageCensored);
+        }
+        else
+        {
+            var existing = await this._censorService.GetCurrentAlbum(report.AlbumName, report.ArtistName);
+            if (existing != null)
+            {
+                await RespondAsync("This album already exists in the censor db, use `.checkalbum` instead!", ephemeral: true);
+                return;
+            }
+
+            await this._censorService.AddAlbum(report.AlbumName, report.ArtistName, CensorType.AlbumCoverCensored);
+        }
+
+        await this._censorService.UpdateReport(report, ReportStatus.Accepted, this.Context.User.Id);
+
+        await RespondAsync("Report processed, thank you.", ephemeral: true);
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var components =
+            new ComponentBuilder().WithButton($"Marked Censored by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
+        await message.ModifyAsync(m => m.Components = components.Build());
+    }
+
+    [ComponentInteraction("censor-report-deny-*")]
+    public async Task MarkReportDenied(string reportId)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        var id = int.Parse(reportId);
+        var report = await this._censorService.GetReportForId(id);
+
+        if (report.ReportStatus != ReportStatus.Pending)
+        {
+            return;
+        }
+
+        await this._censorService.UpdateReport(report, ReportStatus.Denied, this.Context.User.Id);
+
+        await RespondAsync("Report processed, thank you.", ephemeral: true);
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var components =
+            new ComponentBuilder().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
+        await message.ModifyAsync(m => m.Components = components.Build());
+    }
 }

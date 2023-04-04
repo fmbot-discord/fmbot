@@ -18,6 +18,15 @@ public class ReportGlobalWhoKnowsModal : IModal
     public string Note { get; set; }
 }
 
+public class ReportGlobalWhoKnowsBanModal : IModal
+{
+    public string Title => "Confirm GlobalWhoKnows ban";
+
+    [InputLabel("Add admin note")]
+    [ModalTextInput("note", placeholder: "8 days listening time in a week", maxLength: 300, style: TextInputStyle.Paragraph)]
+    public string Note { get; set; }
+}
+
 public class ReportArtistModal : IModal
 {
     public string Title => "Report artist";

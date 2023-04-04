@@ -336,7 +336,7 @@ public class CensorService
         await db.SaveChangesAsync();
     }
 
-    public async Task<CensoredMusicReport> CreateArtistReport(ulong discordUserId, string artistName, Artist artist)
+    public async Task<CensoredMusicReport> CreateArtistReport(ulong discordUserId, string artistName, string note, Artist artist)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -347,17 +347,19 @@ public class CensorService
             ReportStatus = ReportStatus.Pending,
             ReportedAt = DateTime.UtcNow,
             ReportedByDiscordUserId = discordUserId,
-            ArtistId = artist.Id,
-            Artist = artist
+            ProvidedNote = note,
+            ArtistId = artist.Id
         };
 
         await db.CensoredMusicReport.AddAsync(report);
         await db.SaveChangesAsync();
 
+        report.Artist = artist;
+
         return report;
     }
 
-    public async Task<CensoredMusicReport> CreateAlbumReport(ulong discordUserId, string albumName, string artistName, Album album)
+    public async Task<CensoredMusicReport> CreateAlbumReport(ulong discordUserId, string albumName, string artistName, string note, Album album)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -369,14 +371,40 @@ public class CensorService
             ReportStatus = ReportStatus.Pending,
             ReportedAt = DateTime.UtcNow,
             ReportedByDiscordUserId = discordUserId,
-            AlbumId = album.Id,
-            Album = album
+            ProvidedNote = note,
+            AlbumId = album.Id
         };
 
         await db.CensoredMusicReport.AddAsync(report);
         await db.SaveChangesAsync();
 
+        report.Album = album;
+
         return report;
+    }
+
+    public async Task<bool> ArtistReportAlreadyExists(string artistName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        artistName = artistName.ToLower();
+
+        return await db.CensoredMusicReport.AnyAsync(a => a.IsArtist &&
+                                                       a.ReportStatus == ReportStatus.Pending &&
+                                                       a.ArtistName.ToLower() == artistName);
+    }
+
+    public async Task<bool> AlbumReportAlreadyExists(string artistName, string albumName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        artistName = artistName.ToLower();
+        albumName = albumName.ToLower();
+
+        return await db.CensoredMusicReport.AnyAsync(a => !a.IsArtist &&
+                                                       a.ReportStatus == ReportStatus.Pending &&
+                                                       a.ArtistName.ToLower() == artistName &&
+                                                       a.AlbumName.ToLower() == albumName);
     }
 
     public async Task PostReport(CensoredMusicReport report)
@@ -405,13 +433,8 @@ public class CensorService
 
             var components = new ComponentBuilder()
                 .WithButton("NSFW", $"censor-report-mark-nsfw-{report.Id}", style: ButtonStyle.Success)
-                .WithButton("Censor", $"censor-report-mark-nsfl-{report.Id}", style: ButtonStyle.Success)
+                .WithButton("Censor", $"censor-report-mark-censored-{report.Id}", style: ButtonStyle.Success)
                 .WithButton("Deny", $"censor-report-deny-{report.Id}", style: ButtonStyle.Danger);
-
-            if (!string.IsNullOrWhiteSpace(report.ProvidedNote))
-            {
-                embed.AddField("Provided note", report.ProvidedNote);
-            }
 
             if (!report.IsArtist)
             {
@@ -431,6 +454,11 @@ public class CensorService
                 {
                     components.WithButton("Spotify image", url: report.Artist.SpotifyImageUrl, row: 1, style: ButtonStyle.Link);
                 }
+            }
+
+            if (!string.IsNullOrWhiteSpace(report.ProvidedNote))
+            {
+                embed.AddField("Provided note", report.ProvidedNote);
             }
 
             var reporter = guild.GetUser(report.ReportedByDiscordUserId);
@@ -458,6 +486,8 @@ public class CensorService
         report.ProcessedAt = DateTime.UtcNow;
         report.ProcessedByDiscordUserId = handlerDiscordId;
 
-        // todo db update
+        db.CensoredMusicReport.Update(report);
+
+        await db.SaveChangesAsync();
     }
 }

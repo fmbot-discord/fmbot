@@ -9,6 +9,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Swan;
 using System.Linq;
+using FMBot.Domain.Enums;
+using Genius.Models.Song;
+using Serilog;
+using Microsoft.Extensions.Options;
+using Discord.WebSocket;
+using FMBot.Domain;
 
 namespace FMBot.Bot.Services;
 
@@ -16,11 +22,15 @@ public class AdminService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
+    private readonly BotSettings _botSettings;
+    private readonly DiscordShardedClient _client;
 
-    public AdminService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
+    public AdminService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, IMemoryCache cache, DiscordShardedClient client)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
+        this._client = client;
+        this._botSettings = botSettings.Value;
     }
 
     public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
@@ -114,7 +124,7 @@ public class AdminService
 
     public async Task<bool> RemoveUserFromBlocklistAsync(ulong discordUserId)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
@@ -268,22 +278,105 @@ public class AdminService
         return true;
     }
 
-    public string FormatBytes(long bytes)
+    public async Task<BottedUserReport> CreateBottedUserReportAsync(ulong discordUserId, string lastFmUserName, string note)
     {
-        string[] suffix = { "B", "KB", "MB", "GB", "TB" };
-        int i;
-        double dblSByte = bytes;
-        for (i = 0; i < suffix.Length && bytes >= 1024; i++, bytes /= 1024)
-        {
-            dblSByte = bytes / 1024.0;
-        }
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        return string.Format("{0:0.##} {1}", dblSByte, suffix[i]);
+        var report = new BottedUserReport
+        {
+            ReportStatus = ReportStatus.Pending,
+            ReportedAt = DateTime.UtcNow,
+            ReportedByDiscordUserId = discordUserId,
+            ProvidedNote = note,
+            UserNameLastFM = lastFmUserName
+        };
+
+        await db.BottedUserReport.AddAsync(report);
+        await db.SaveChangesAsync();
+
+        return report;
+    }
+
+    public async Task<BottedUserReport> GetReportForId(int id)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.BottedUserReport
+            .FirstOrDefaultAsync(f => f.Id == id);
+    }
+
+    public async Task<bool> UserReportAlreadyExists(string userNameLastFM)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        userNameLastFM = userNameLastFM.ToLower();
+
+        return await db.BottedUserReport.AnyAsync(a => a.ReportStatus == ReportStatus.Pending &&
+                                                       a.UserNameLastFM == userNameLastFM);
+    }
+
+    public async Task PostReport(BottedUserReport report)
+    {
+        try
+        {
+            if (this._botSettings.Bot.BaseServerId == 0 && this._botSettings.Bot.GlobalWhoKnowsReportChannelId == 0)
+            {
+                Log.Warning("A botted user report was sent but the base server and/or report channel are not set in the config");
+                return;
+            }
+
+            var guild = this._client.GetGuild(this._botSettings.Bot.BaseServerId);
+            var channel = guild?.GetTextChannel(this._botSettings.Bot.CensorReportChannelId);
+
+            if (channel == null)
+            {
+                Log.Warning("A botted user report was sent but the base server and report channel could not be found");
+                return;
+            }
+
+            var embed = new EmbedBuilder();
+            embed.WithTitle($"New gwk botted user report");
+
+            var components = new ComponentBuilder()
+                .WithButton("Ban", $"gwk-report-ban-{report.Id}", style: ButtonStyle.Success)
+                .WithButton("Deny", $"gwk-report-deny-{report.Id}", style: ButtonStyle.Danger);
+
+            components.WithButton("User", url: $"{Constants.LastFMUserUrl}{report.UserNameLastFM}", row: 1, style: ButtonStyle.Link);
+
+            if (!string.IsNullOrWhiteSpace(report.ProvidedNote))
+            {
+                embed.AddField("Provided note", report.ProvidedNote);
+            }
+
+            var reporter = guild.GetUser(report.ReportedByDiscordUserId);
+            embed.AddField("Reporter",
+                $"**{reporter?.DisplayName}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
+
+            await channel.SendMessageAsync(embed: embed.Build(), components: components.Build());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    public async Task UpdateReport(BottedUserReport report, ReportStatus status, ulong handlerDiscordId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        report.ReportStatus = status;
+        report.ProcessedAt = DateTime.UtcNow;
+        report.ProcessedByDiscordUserId = handlerDiscordId;
+
+        db.BottedUserReport.Update(report);
+
+        await db.SaveChangesAsync();
     }
 
     public async Task<bool?> ToggleSpecialGuildAsync(IGuild guild)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
             .AsQueryable()
             .FirstAsync(f => f.DiscordGuildId == guild.Id);
