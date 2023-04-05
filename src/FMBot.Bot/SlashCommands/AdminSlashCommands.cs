@@ -126,7 +126,7 @@ public class AdminSlashCommands : InteractionModuleBase
         await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsBanModal>($"gwk-report-ban-confirmed-{reportId}");
     }
 
-    [ComponentInteraction("gwk-report-ban-confirmed-*")]
+    [ModalInteraction("gwk-report-ban-confirmed-*")]
     public async Task GwkReportBanConfirmed(string reportId, ReportGlobalWhoKnowsBanModal modal)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
