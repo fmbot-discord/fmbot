@@ -326,7 +326,7 @@ public class AdminService
             }
 
             var guild = this._client.GetGuild(this._botSettings.Bot.BaseServerId);
-            var channel = guild?.GetTextChannel(this._botSettings.Bot.CensorReportChannelId);
+            var channel = guild?.GetTextChannel(this._botSettings.Bot.GlobalWhoKnowsReportChannelId);
 
             if (channel == null)
             {
