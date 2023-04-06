@@ -343,6 +343,8 @@ public class AdminService
 
             components.WithButton("User", url: $"{Constants.LastFMUserUrl}{report.UserNameLastFM}", row: 1, style: ButtonStyle.Link);
 
+            embed.AddField("User", $"**[{report.UserNameLastFM}]({Constants.LastFMUserUrl}{report.UserNameLastFM})**");
+
             if (!string.IsNullOrWhiteSpace(report.ProvidedNote))
             {
                 embed.AddField("Provided note", report.ProvidedNote);
@@ -351,6 +353,8 @@ public class AdminService
             var reporter = guild.GetUser(report.ReportedByDiscordUserId);
             embed.AddField("Reporter",
                 $"**{reporter?.DisplayName}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
+
+            embed.WithFooter("Once you've pressed 'Ban' do not close the modal or it will go wrong.");
 
             await channel.SendMessageAsync(embed: embed.Build(), components: components.Build());
         }

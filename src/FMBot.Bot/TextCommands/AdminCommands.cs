@@ -340,7 +340,7 @@ public class AdminCommands : BaseCommandModule
                 .WithPlaceholder("Select censor types")
                 .WithCustomId($"admin-censor-{existingAlbum.CensoredMusicId}")
                 .WithMinValues(0)
-                .WithMaxValues(1);
+                .WithMaxValues(2);
 
             var censorDescription = new StringBuilder();
             foreach (var option in ((CensorType[])Enum.GetValues(typeof(CensorType))))

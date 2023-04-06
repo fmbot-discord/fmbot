@@ -12,6 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Repositories;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -21,13 +22,15 @@ public class AdminSlashCommands : InteractionModuleBase
     private readonly CensorService _censorService;
     private readonly AlbumService _albumService;
     private readonly ArtistsService _artistService;
+    private readonly LastFmRepository _lastFmRepository;
 
-    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService)
+    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, LastFmRepository lastFmRepository)
     {
         this._adminService = adminService;
         this._censorService = censorService;
         this._albumService = albumService;
         this._artistService = artistService;
+        this._lastFmRepository = lastFmRepository;
     }
 
     [ComponentInteraction(InteractionConstants.CensorTypes)]
@@ -85,7 +88,8 @@ public class AdminSlashCommands : InteractionModuleBase
 
         embed.WithDescription(description.ToString());
         embed.WithColor(DiscordConstants.InformationColorBlue);
-        await RespondAsync(embed: embed.Build(), ephemeral: true);
+        embed.WithFooter($"Adjusted by {this.Context.Interaction.User.Username}");
+        await RespondAsync(embed: embed.Build());
     }
 
     [ComponentInteraction(InteractionConstants.GlobalWhoKnowsReport)]
@@ -97,9 +101,13 @@ public class AdminSlashCommands : InteractionModuleBase
     [ModalInteraction(InteractionConstants.GlobalWhoKnowsReportModal)]
     public async Task ReportGlobalWhoKnowsButton(ReportGlobalWhoKnowsModal modal)
     {
+        var positiveResponse = $"Thanks, your report for the user `{modal.UserNameLastFM}` has been received. \n" +
+                               $"You will currently not be notified if your report is processed.";
+
         var existingBottedUser = await this._adminService.GetBottedUserAsync(modal.UserNameLastFM);
         if (existingBottedUser is { BanActive: true })
         {
+            await RespondAsync(positiveResponse, ephemeral: true);
             this.Context.LogCommandUsed(CommandResponse.Censored);
             return;
         }
@@ -112,8 +120,7 @@ public class AdminSlashCommands : InteractionModuleBase
             return;
         }
 
-        await RespondAsync($"Thanks, your report for the user `{modal.UserNameLastFM}` has been received. \n" +
-                           $"You will currently not be notified if your report is processed.", ephemeral: true);
+        await RespondAsync(positiveResponse, ephemeral: true);
 
         var report =
             await this._adminService.CreateBottedUserReportAsync(this.Context.User.Id, modal.UserNameLastFM, modal.Note);
@@ -123,6 +130,52 @@ public class AdminSlashCommands : InteractionModuleBase
     [ComponentInteraction("gwk-report-ban-*")]
     public async Task GwkReportBan(string reportId)
     {
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var components =
+            new ComponentBuilder().WithButton($"Banned by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
+        await message.ModifyAsync(m => m.Components = components.Build());
+
+        await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsBanModal>($"gwk-report-ban-confirmed-{reportId}");
+    }
+
+    [ComponentInteraction("gwk-report-deny-*")]
+    public async Task GwkReportDeny(string reportId)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        var id = int.Parse(reportId);
+        var report = await this._adminService.GetReportForId(id);
+
+        if (report.ReportStatus != ReportStatus.Pending)
+        {
+            await RespondAsync("Error, report was already processed.", ephemeral: true);
+            return;
+        }
+
+        await this._adminService.UpdateReport(report, ReportStatus.Denied, this.Context.User.Id);
+
+        await RespondAsync("Report response processed, thank you.", ephemeral: true);
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var components =
+            new ComponentBuilder().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
+        await message.ModifyAsync(m => m.Components = components.Build());
+
         await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsBanModal>($"gwk-report-ban-confirmed-{reportId}");
     }
 
@@ -139,23 +192,29 @@ public class AdminSlashCommands : InteractionModuleBase
 
         if (report.ReportStatus != ReportStatus.Pending)
         {
+            await RespondAsync("Error, report was already processed.", ephemeral: true);
             return;
         }
 
         await this._adminService.UpdateReport(report, ReportStatus.AcceptedWithComment, this.Context.User.Id);
 
-        await RespondAsync("Report processed, thank you.", ephemeral: true);
-
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
-
-        if (message == null)
+        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(report.UserNameLastFM);
+        DateTimeOffset? age = null;
+        if (userInfo != null && userInfo.Subscriber != 0)
         {
-            return;
+            age = DateTimeOffset.FromUnixTimeSeconds(userInfo.Registered.Text);
         }
 
-        var components =
-            new ComponentBuilder().WithButton($"Banned by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
-        await message.ModifyAsync(m => m.Components = components.Build());
+        var result = await this._adminService.AddBottedUserAsync(report.UserNameLastFM, modal.Note, age?.DateTime);
+
+        if (result)
+        {
+            await RespondAsync("Report response processed, thank you.", ephemeral: true);
+        }
+        else
+        {
+            await RespondAsync($"Something went wrong. Try checking with `.checkbotted {report.UserNameLastFM}`", ephemeral: true);
+        }
     }
 
     [ComponentInteraction(InteractionConstants.ReportAlbum)]
@@ -281,7 +340,7 @@ public class AdminSlashCommands : InteractionModuleBase
 
         await this._censorService.UpdateReport(report, ReportStatus.Accepted, this.Context.User.Id);
 
-        await RespondAsync("Report processed, thank you.", ephemeral: true);
+        await RespondAsync("Report response processed, thank you.", ephemeral: true);
 
         var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
 
