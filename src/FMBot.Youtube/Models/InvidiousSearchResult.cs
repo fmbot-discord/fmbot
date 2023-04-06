@@ -9,6 +9,8 @@ namespace FMBot.Youtube.Models
 
     public class InvidiousSearchResult
     {
+        public string Type { get; set; }
+
         public string Title { get; set; }
 
         public string VideoId { get; set; }

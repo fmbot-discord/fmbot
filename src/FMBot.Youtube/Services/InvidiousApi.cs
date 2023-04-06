@@ -63,9 +63,9 @@ namespace FMBot.Youtube.Services
 
                 var result = JsonSerializer.Deserialize<List<InvidiousSearchResult>>(requestBody, jsonSerializerOptions);
 
-                if (result != null && result.Any())
+                if (result != null && result.Any(a => a.Type == "video"))
                 {
-                    return result.First();
+                    return result.First(f => f.Type == "video");
                 }
 
                 return null;
