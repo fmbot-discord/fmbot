@@ -36,4 +36,16 @@ public class JockieMusicBotTest
         Assert.That(Jockie.ShouldIgnoreMessage(this._mockedMessage.Object), Is.False);
     }
 
+    [Test]
+    [TestCase(" ​ Started playing **[Constant Headache by Joyce Manor](https://www.deezer.com/track/67220083)**")]
+    [TestCase("<:deezer:837244412492513312> ​ Started playing **[UWU by KEAN DYSSO](https://www.deezer.com/track/1659395942)**")]
+    [TestCase("<:apple_music:837244414531076106> ​ Started playing **[River by Anonymouz](https://music.apple.com/us/album/river/1658961980?i=1658961985)**")]
+    [TestCase("<:apple_music:837244414531076106> ​ Started playing **[Modern Love by All Time Low](https://music.apple.com/us/album/modern-love/1664275076?i=1664275308)**")]
+    public void TestGetTrackQuery(string description)
+    {
+        this._mockedEmbed.Setup(m => m.Description).Returns(description);
+        var expected = description[description.IndexOf(" ​ Started playing ", StringComparison.Ordinal)..];
+        Assert.That(expected, Is.EqualTo(Jockie.GetTrackQuery(this._mockedMessage.Object)));
+    }
+
 }

@@ -300,6 +300,21 @@ public class TrackService
                 description = description.Split('[', ']')[1];
             }
 
+            var trackAndArtist = ParseBoldDelimitedTrackAndArtist(description);
+            if (trackAndArtist != null)
+            {
+                var lastFmResult = await this._lastFmRepository.GetTrackInfoAsync(trackAndArtist.Track, trackAndArtist.Artist);
+                if (lastFmResult.Success && lastFmResult.Content != null)
+                {
+                    return new TrackSearchResult
+                    {
+                        AlbumName = lastFmResult.Content.AlbumName,
+                        ArtistName = lastFmResult.Content.ArtistName,
+                        TrackName = lastFmResult.Content.TrackName
+                    };
+                }
+            }
+
             if (!description.Contains("-"))
             {
                 var lastFmResult = await this._lastFmRepository.SearchTrackAsync(description);
@@ -400,6 +415,43 @@ public class TrackService
     {
         public string status { get; set; }
         public CleanedUpResponseTrack data { get; set; }
+    }
+
+    internal static TrackAndArtist ParseBoldDelimitedTrackAndArtist(string description)
+    {
+        const string byDelimiter = " **by** ";
+        var delimiterIndex = description.IndexOf(byDelimiter, 0, StringComparison.Ordinal);
+        if (delimiterIndex != -1)
+        {
+            string UnBold(string s)
+            {
+                var split = s.Split("**");
+                //**text** => text
+                return split.Length == 3 ? split[1] : null;
+            }
+            var left = UnBold(description[..delimiterIndex]);
+            var right = UnBold(description[(delimiterIndex + byDelimiter.Length)..]);
+            if (left != null && right != null)
+            {
+                return new TrackAndArtist
+                {
+                    Track = left,
+                    Artist = right
+                };
+            }
+        }
+        return null;
+    }
+
+    internal record TrackAndArtist
+    {
+        internal string Track { get; init; }
+        internal string Artist { get; init; }
+
+        public override string ToString()
+        {
+            return $"{nameof(this.Track)}: {this.Track}, {nameof(this.Artist)}: {this.Artist}";
+        }
     }
 
     public async Task<List<UserTrack>> GetArtistUserTracks(int userId, string artistName)

@@ -141,7 +141,9 @@ public class UserBuilder
                                     "Currently supported bots:\n" +
                                     "- Hydra (Only with Now Playing messages enabled in English)\n" +
                                     "- Cakey Bot (Only with Now Playing messages enabled in English)\n" +
-                                    "- SoundCloud");
+                                    "- Jockie Music (Only with Started Playing messages enabled in English)\n" +
+                                    "- SoundCloud"
+                                    );
 
         if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(context.ContextUser.SessionKeyLastFm))
         {
