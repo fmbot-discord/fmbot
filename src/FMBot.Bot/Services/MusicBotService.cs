@@ -70,9 +70,11 @@ public class MusicBotService
                 this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped {musicBot.Name} scrobble because no found track for `{msg.Embeds.First().Description}`"));
                 return;
             }
-            _ = RegisterTrack(usersInChannel, trackResult);
+
+            _ = RegisterTrack(usersInChannel, trackResult, musicBot);
             _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             Log.Error($"BotScrobbling: Error in music bot scrobbler ({musicBot.Name})", e);
             this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, "Skipped scrobble because error"));
@@ -99,15 +101,15 @@ public class MusicBotService
     }
 
 
-    private async Task RegisterTrack(IEnumerable<User> users, TrackSearchResult result)
+    private async Task RegisterTrack(IEnumerable<User> users, TrackSearchResult result, MusicBot musicBot)
     {
         foreach (var user in users)
         {
-            _ = RegisterTrackForUser(user, result);
+            _ = RegisterTrackForUser(user, result, musicBot);
         }
     }
 
-    private async Task RegisterTrackForUser(User user, TrackSearchResult result)
+    private async Task RegisterTrackForUser(User user, TrackSearchResult result, MusicBot musicBot)
     {
         try
         {
@@ -118,7 +120,8 @@ public class MusicBotService
             Log.Error("BotScrobbling: Error while setting now playing for bot scrobbling", e);
             throw;
         }
-        Statistics.LastfmNowPlayingUpdates.Inc();
+
+        Statistics.LastfmNowPlayingUpdates.WithLabels(musicBot.Name).Inc();
 
         this._cache.Set($"now-playing-{user.UserId}", true, TimeSpan.FromSeconds(59));
         await Task.Delay(TimeSpan.FromSeconds(60));
@@ -126,7 +129,7 @@ public class MusicBotService
         if (!this._cache.TryGetValue($"now-playing-{user.UserId}", out bool _))
         {
             await this._lastFmRepository.ScrobbleAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
-            Statistics.LastfmScrobbles.Inc();
+            Statistics.LastfmScrobbles.WithLabels(musicBot.Name).Inc();
         }
 
     }
@@ -147,8 +150,8 @@ public class MusicBotService
 
                 if (guildUser is null)
                 {
-                    Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found guild user",context.Guild.Name, context.Guild.Id);
-                    this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,$"Skipped scrobble because no found guild user"));
+                    Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found guild user", context.Guild.Name, context.Guild.Id);
+                    this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because no found guild user"));
                     return null;
                 }
             }

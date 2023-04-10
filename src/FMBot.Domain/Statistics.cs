@@ -33,11 +33,18 @@ public static class Statistics
 
 
     public static readonly Counter LastfmNowPlayingUpdates = Metrics
-        .CreateCounter("lastfm_scrobbling_nowplaying", "Amount of now playing updates sent to Last.fm");
+        .CreateCounter("lastfm_scrobbling_nowplaying", "Amount of now playing updates sent to Last.fm",
+            new CounterConfiguration
+            {
+                LabelNames = new[] { "bot" }
+            });
 
     public static readonly Counter LastfmScrobbles = Metrics
-        .CreateCounter("lastfm_scrobbling_scrobbled", "Amount of scrobbles sent to Last.fm");
-
+        .CreateCounter("lastfm_scrobbling_scrobbled", "Amount of scrobbles sent to Last.fm",
+            new CounterConfiguration
+            {
+                LabelNames = new[] { "bot" }
+            });
 
     public static readonly Counter LastfmErrors = Metrics
         .CreateCounter("lastfm_errors", "Amount of errors Last.fm is returning");
