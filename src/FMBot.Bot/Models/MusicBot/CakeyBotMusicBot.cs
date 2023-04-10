@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Discord;
 
@@ -6,7 +6,7 @@ namespace FMBot.Bot.Models.MusicBot;
 
 internal class CakeyBotMusicBot : MusicBot
 {
-    public CakeyBotMusicBot() : base("CakeyBot", false)
+    public CakeyBotMusicBot() : base("Cakey Bot", true)
     {
     }
 
