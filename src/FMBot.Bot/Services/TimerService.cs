@@ -276,7 +276,7 @@ public class TimerService
 
             },
             null,
-            TimeSpan.FromSeconds(30),
+            TimeSpan.FromMinutes(3),
             TimeSpan.FromMinutes(2));
 
         this._shardReconnectTimer = new Timer(async _ =>
