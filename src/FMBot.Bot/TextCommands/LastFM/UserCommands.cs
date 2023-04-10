@@ -725,12 +725,12 @@ public class UserCommands : BaseCommandModule
 
         if (existingUserSettings == null)
         {
-            reply.AppendLine($"**[Click here add your Last.fm account to .fmbot]({link})**");
+            reply.AppendLine($"**[Click here to add your Last.fm account to .fmbot]({link})**");
             reply.AppendLine();
             reply.AppendLine("Link will expire after 5 minutes, please wait a moment after allowing access...");
             reply.AppendLine();
-            reply.AppendLine("Don't have a Last.fm account yet? \n" +
-                             "[Sign up here](https://last.fm/join) and see [how to track your music here](https://last.fm/about/trackmymusic).");
+            reply.AppendLine("Don't have a Last.fm account yet? " +
+                             $"[Sign up here](https://last.fm/join) and see [how to track your music here](https://last.fm/about/trackmymusic). After that you can [authorize .fmbot]({link}).");
         }
         else
         {
