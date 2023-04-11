@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using Discord;
 using Discord.WebSocket;
 
@@ -6,7 +6,7 @@ namespace FMBot.Bot.Models.MusicBot;
 
 internal class SoundCloudMusicBot : MusicBot
 {
-    public SoundCloudMusicBot() : base("SoundCloud", false, true)
+    public SoundCloudMusicBot() : base("SoundCloud", true, true)
     {
     }
 
