@@ -314,6 +314,12 @@ public class TrackService
                         TrackName = track.Name
                     };
                 }
+
+                return new TrackSearchResult
+                {
+                    ArtistName = trackAndArtist.Artist,
+                    TrackName = trackAndArtist.Track
+                };
             }
 
             if (!description.Contains("-"))
