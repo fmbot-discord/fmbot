@@ -83,8 +83,8 @@ public class UserSlashCommands : InteractionModuleBase
             else
             {
                 reply.AppendLine(
-                    $"You have already logged in before. If you want to change or reconnect your connected Last.fm account, [click here.]({link}) " +
-                    $"Note that this link will expire after 5 minutes.");
+                    $"You have already logged in before. If you want to change or reconnect your connected Last.fm account, **[click here.]({link})** " +
+                    $"Note that this link will expire after 5 minutes. Also use this link if the bot says you have to re-login.");
                 reply.AppendLine();
                 reply.AppendLine(
                     $"Using Spotify and having problems with your music not being tracked or it lagging behind? " +
