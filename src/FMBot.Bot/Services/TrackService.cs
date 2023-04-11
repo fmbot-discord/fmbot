@@ -46,7 +46,6 @@ public class TrackService
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
     private readonly UpdateRepository _updateRepository;
     private readonly ArtistsService _artistsService;
-    private readonly TrackService _trackService;
 
     public TrackService(HttpClient httpClient,
         LastFmRepository lastFmRepository,
@@ -59,8 +58,7 @@ public class TrackService
         AlbumService albumService,
         WhoKnowsTrackService whoKnowsTrackService,
         UpdateRepository updateRepository,
-        ArtistsService artistsService,
-        TrackService trackService)
+        ArtistsService artistsService)
     {
         this._lastFmRepository = lastFmRepository;
         this._spotifyService = spotifyService;
@@ -74,7 +72,6 @@ public class TrackService
         this._whoKnowsTrackService = whoKnowsTrackService;
         this._updateRepository = updateRepository;
         this._artistsService = artistsService;
-        this._trackService = trackService;
     }
 
     public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string trackValues,
@@ -306,7 +303,7 @@ public class TrackService
             var trackAndArtist = ParseBoldDelimitedTrackAndArtist(description);
             if (trackAndArtist != null)
             {
-                var track = await this._trackService.GetTrackFromDatabase(trackAndArtist.Artist, trackAndArtist.Track);
+                var track = await GetTrackFromDatabase(trackAndArtist.Artist, trackAndArtist.Track);
 
                 if (track != null)
                 {
