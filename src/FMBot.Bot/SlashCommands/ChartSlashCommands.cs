@@ -11,7 +11,7 @@ using FMBot.Bot.Services;
 
 namespace FMBot.Bot.SlashCommands;
 
-[Group("chart", "Commands for generating image charts")]
+[Group("chart", "Generate charts with album covers or artist images")]
 public class ChartSlashCommands : InteractionModuleBase
 {
     private readonly UserService _userService;

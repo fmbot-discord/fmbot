@@ -13,7 +13,7 @@ using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
 
-[Group("top", "Top lists for a user")]
+[Group("top", "Top lists - Artist/Albums/Tracks/Genres/Countries")]
 public class TopSlashCommands : InteractionModuleBase
 {
     private readonly UserService _userService;
