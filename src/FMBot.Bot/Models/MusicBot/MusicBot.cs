@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Discord;
 using Discord.WebSocket;
 
@@ -15,8 +15,7 @@ public abstract class MusicBot
     {
         new JockieMusicBot(),
         new CakeyBotMusicBot(),
-        new SoundCloudMusicBot(),
-        new HydraMusicBot()
+        new SoundCloudMusicBot()
     };
 
     protected MusicBot(string name, bool possiblyIncludesLinks = true, bool skipUploaderName = false)
