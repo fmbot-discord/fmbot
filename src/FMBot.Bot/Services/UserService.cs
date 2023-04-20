@@ -858,24 +858,17 @@ public class UserService
         return user.RymEnabled;
     }
 
-    public async Task<bool?> ToggleBotScrobblingAsync(User user, string option)
+    public async Task ToggleBotScrobblingAsync(int userId, bool? disabled)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        if (option != null && (option.ToLower() == "on" || option.ToLower() == "true" || option.ToLower() == "yes"))
-        {
-            user.MusicBotTrackingDisabled = false;
-        }
-        else if (option != null && (option.ToLower() == "off" || option.ToLower() == "false" || option.ToLower() == "no"))
-        {
-            user.MusicBotTrackingDisabled = true;
-        }
+        var user = await db.Users.FirstAsync(f => f.UserId == userId);
+
+        user.MusicBotTrackingDisabled = disabled;
 
         db.Update(user);
 
-        await db.SaveChangesAsync();
-
-        return user.MusicBotTrackingDisabled;
+        await db.SaveChangesAsync(); ;
     }
 
     public async Task<int> GetTotalUserCountAsync()
