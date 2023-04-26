@@ -144,7 +144,7 @@ public class UserBuilder
 
         response.Components = new ComponentBuilder()
             .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Success, new Emoji("✅"))
-            .WithButton("Disable", InteractionConstants.BotScrobblingDisable, style: ButtonStyle.Danger, new Emoji("❌"));
+            .WithButton("Disable", InteractionConstants.BotScrobblingDisable, style: ButtonStyle.Danger, new Emoji("✖️"));
 
         return response;
     }

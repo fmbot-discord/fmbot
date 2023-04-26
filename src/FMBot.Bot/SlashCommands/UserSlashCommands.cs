@@ -419,16 +419,17 @@ public class UserSlashCommands : InteractionModuleBase
 
         if (contextUser.MusicBotTrackingDisabled != true)
         {
-            reply.AppendLine("Music bot scrobbling for your account is already enabled.");
+            reply.AppendLine("✅ Music bot scrobbling for your account is already enabled.");
         }
         else
         {
             await this._userService.ToggleBotScrobblingAsync(contextUser.UserId, false);
-            reply.AppendLine("Enabled music bot scrobbling for your account.");
+            reply.AppendLine("✅ Enabled music bot scrobbling for your account.");
         }
 
         var embed = new EmbedBuilder();
         embed.WithDescription(reply.ToString());
+        embed.WithColor(DiscordConstants.SuccessColorGreen);
 
         await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
         this.Context.LogCommandUsed();
@@ -443,16 +444,17 @@ public class UserSlashCommands : InteractionModuleBase
 
         if (contextUser.MusicBotTrackingDisabled == true)
         {
-            reply.AppendLine("Music bot scrobbling for your account is already disabled.");
+            reply.AppendLine("❌ Music bot scrobbling for your account is already disabled.");
         }
         else
         {
             await this._userService.ToggleBotScrobblingAsync(contextUser.UserId, true);
-            reply.AppendLine("Disabled music bot scrobbling for your account.");
+            reply.AppendLine("❌ Disabled music bot scrobbling for your account.");
         }
 
         var embed = new EmbedBuilder();
         embed.WithDescription(reply.ToString());
+        embed.WithColor(DiscordConstants.LastFmColorRed);
 
         await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
         this.Context.LogCommandUsed();
