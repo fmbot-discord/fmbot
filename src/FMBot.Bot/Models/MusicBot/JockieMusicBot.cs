@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Discord;
 using Discord.WebSocket;
@@ -29,6 +29,6 @@ internal class JockieMusicBot : MusicBot
     {
         var description = msg.Embeds.First().Description;
         var songByArtist = description[description.IndexOf(StartedPlaying, StringComparison.Ordinal)..];
-        return songByArtist;
+        return songByArtist.Replace("\\","");
     }
 }

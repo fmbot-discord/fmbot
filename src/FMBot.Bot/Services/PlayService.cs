@@ -493,7 +493,6 @@ public class PlayService
             existingStreak.ArtistPlaycount = null;
             existingStreak.ArtistName = null;
         }
-        
 
         db.Entry(existingStreak).State = EntityState.Modified;
         await db.SaveChangesAsync();
