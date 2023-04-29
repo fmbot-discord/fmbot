@@ -401,14 +401,15 @@ public class GuildSettingBuilder
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
         var fmType = new SelectMenuBuilder()
-            .WithPlaceholder("Select embed type")
+            .WithPlaceholder("Select default server embed type")
             .WithCustomId(InteractionConstants.FmGuildSettingType)
             .WithMinValues(0)
             .WithMaxValues(1);
 
         foreach (var name in Enum.GetNames(typeof(FmEmbedType)).OrderBy(o => o))
         {
-            fmType.AddOption(new SelectMenuOptionBuilder(name, name));
+            var selected = name == guild.FmEmbedType.ToString();
+            fmType.AddOption(new SelectMenuOptionBuilder(name, name, isDefault: selected));
         }
 
         response.Embed.WithTitle("Set server 'fm' mode");

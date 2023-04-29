@@ -10,7 +10,10 @@ using Fergun.Interactive;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using static FMBot.Bot.Builders.GuildSettingBuilder;
+using Discord.WebSocket;
+using Discord;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -20,15 +23,17 @@ public class SettingSlashCommands : InteractionModuleBase
 
     private readonly GuildSettingBuilder _guildSettingBuilder;
     private readonly IPrefixService _prefixService;
+    private readonly GuildService _guildService;
 
     private InteractiveService Interactivity { get; }
 
-    public SettingSlashCommands(GuildSettingBuilder guildSettingBuilder, InteractiveService interactivity, UserService userService, IPrefixService prefixService)
+    public SettingSlashCommands(GuildSettingBuilder guildSettingBuilder, InteractiveService interactivity, UserService userService, IPrefixService prefixService, GuildService guildService)
     {
         this._guildSettingBuilder = guildSettingBuilder;
         this.Interactivity = interactivity;
         this._userService = userService;
         this._prefixService = prefixService;
+        this._guildService = guildService;
     }
 
     [ComponentInteraction(InteractionConstants.GuildSetting)]
@@ -70,7 +75,7 @@ public class SettingSlashCommands : InteractionModuleBase
 
                         response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context));
 
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
                     }
                     break;
                 case GuildSetting.WhoKnowsActivityThreshold:
@@ -125,16 +130,31 @@ public class SettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        ResponseModel response;
         if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
         {
-            response = await this._guildSettingBuilder.SetGuildMode(new ContextModel(this.Context), embedType);
+            await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, embedType);
         }
         else
         {
-            response = await this._guildSettingBuilder.SetGuildMode(new ContextModel(this.Context), null);
+            await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, null);
+
         }
 
-        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+        var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context));
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        await message.ModifyAsync(m =>
+        {
+            m.Embed = response.Embed.Build();
+            m.Components = response.Components.Build();
+        });
+
+        await this.Context.Interaction.RespondAsync();
     }
 }
