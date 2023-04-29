@@ -310,13 +310,8 @@ public class PlayService
         await db.SaveChangesAsync();
     }
 
-    public async Task<UserStreak> GetStreak(int userId, Response<RecentTrackList> recentTracks)
+    public static UserStreak GetStreak(int userId, Response<RecentTrackList> recentTracks, IReadOnlyList<UserPlayTs> lastPlays)
     {
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var lastPlays = await PlayRepository.GetUserPlays(userId, connection, 20000);
-
         if (!lastPlays.Any())
         {
             return null;
@@ -390,6 +385,19 @@ public class PlayService
             }
         }
 
+        if (streak.ArtistPlaycount <= 1)
+        {
+            streak.ArtistName = null;
+        }
+        if (streak.AlbumPlaycount <= 1)
+        {
+            streak.AlbumName = null;
+        }
+        if (streak.TrackPlaycount <= 1)
+        {
+            streak.TrackName = null;
+        }
+
         streak.StreakStarted = DateTime.SpecifyKind(streak.StreakStarted, DateTimeKind.Utc);
 
         return streak;
@@ -398,17 +406,17 @@ public class PlayService
     public static string StreakToText(UserStreak streak, bool includeStart = true)
     {
         var description = new StringBuilder();
-        if (streak.ArtistPlaycount > 1)
+        if (streak.ArtistName != null && streak.ArtistPlaycount.HasValue)
         {
             description.AppendLine($"Artist: **[{streak.ArtistName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)})** - " +
                                    $"{GetEmojiForStreakCount(streak.ArtistPlaycount.Value)}*{streak.ArtistPlaycount} plays in a row*");
         }
-        if (streak.AlbumPlaycount > 1)
+        if (streak.AlbumName != null && streak.AlbumPlaycount.HasValue)
         {
             description.AppendLine($"Album: **[{streak.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/{HttpUtility.UrlEncode(streak.AlbumName)})** - " +
                                    $"{GetEmojiForStreakCount(streak.AlbumPlaycount.Value)}*{streak.AlbumPlaycount} plays in a row*");
         }
-        if (streak.TrackPlaycount > 1)
+        if (streak.TrackName != null && streak.TrackPlaycount.HasValue)
         {
             description.AppendLine($"Track: **[{streak.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/_/{HttpUtility.UrlEncode(streak.TrackName)})** - " +
                                    $"{GetEmojiForStreakCount(streak.TrackPlaycount.Value)}*{streak.TrackPlaycount} plays in a row*");
@@ -452,9 +460,40 @@ public class PlayService
         }
 
         existingStreak.StreakEnded = streak.StreakEnded;
-        existingStreak.TrackPlaycount = streak.TrackPlaycount;
-        existingStreak.AlbumPlaycount = streak.AlbumPlaycount;
-        existingStreak.ArtistPlaycount = streak.ArtistPlaycount;
+
+        if (existingStreak.TrackPlaycount > Constants.StreakSaveThreshold)
+        {
+            existingStreak.TrackPlaycount = streak.TrackPlaycount;
+            existingStreak.TrackName = streak.TrackName;
+        }
+        else
+        {
+            existingStreak.TrackPlaycount = null;
+            existingStreak.TrackName = null;
+        }
+
+        if (existingStreak.AlbumPlaycount > Constants.StreakSaveThreshold)
+        {
+            existingStreak.AlbumPlaycount = streak.AlbumPlaycount;
+            existingStreak.AlbumName = streak.AlbumName;
+        }
+        else
+        {
+            existingStreak.AlbumPlaycount = null;
+            existingStreak.AlbumName = null;
+        }
+
+        if (existingStreak.ArtistPlaycount > Constants.StreakSaveThreshold)
+        {
+            existingStreak.ArtistPlaycount = streak.ArtistPlaycount;
+            existingStreak.ArtistName = streak.ArtistName;
+        }
+        else
+        {
+            existingStreak.ArtistPlaycount = null;
+            existingStreak.ArtistName = null;
+        }
+        
 
         db.Entry(existingStreak).State = EntityState.Modified;
         await db.SaveChangesAsync();
@@ -466,6 +505,13 @@ public class PlayService
     {
         return count switch
         {
+            > 25000 => "🌌 ",
+            > 15000 => "🌠 ",
+            > 10000 => "🪐 ",
+            > 7500 => "🌚 ",
+            > 5000 => "🚀 ",
+            > 2500 => "😵 ",
+            1337 => "🦹‍ ",
             > 1000 => "😲 ",
             420 => "🍃 ",
             100 => "💯 ",

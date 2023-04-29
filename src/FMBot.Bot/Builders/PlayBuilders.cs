@@ -422,7 +422,8 @@ public class PlayBuilder
             return response;
         }
 
-        var streak = await this._playService.GetStreak(userSettings.UserId, recentTracks);
+        var lastPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+        var streak = PlayService.GetStreak(userSettings.UserId, recentTracks, lastPlays);
         var streakText = PlayService.StreakToText(streak);
         response.Embed.WithDescription(streakText);
 
