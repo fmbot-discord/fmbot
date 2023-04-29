@@ -238,7 +238,7 @@ public class AdminSlashCommands : InteractionModuleBase
 
         if (album == null)
         {
-            await RespondAsync($"The album you tried to report does not exist in the .fmbot database (`{modal.AlbumName}` by `{modal.ArtistName}`)", ephemeral: true);
+            await RespondAsync($"The album you tried to report does not exist in the .fmbot database (`{modal.AlbumName}` by `{modal.ArtistName}`). Someone needs to run the `album` command on it first.", ephemeral: true);
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -279,7 +279,7 @@ public class AdminSlashCommands : InteractionModuleBase
 
         if (artist == null)
         {
-            await RespondAsync($"The artist you tried to report does not exist in the .fmbot database (`{modal.ArtistName}`)", ephemeral: true);
+            await RespondAsync($"The artist you tried to report does not exist in the .fmbot database (`{modal.ArtistName}`). Someone needs to run the `artist` command on them first.", ephemeral: true);
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
