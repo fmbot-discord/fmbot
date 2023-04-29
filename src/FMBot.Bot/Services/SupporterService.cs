@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Webhook;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -105,6 +106,70 @@ public class SupporterService
         }
 
         return true;
+    }
+
+    public static async Task SendSupporterWelcomeMessage(IUser discordUser, User user, Supporter supporter)
+    {
+        var thankYouEmbed = new EmbedBuilder();
+        var thankYouMessage = new StringBuilder();
+        thankYouMessage.AppendLine($"**Thank you for getting .fmbot {supporter.SubscriptionType.ToString().ToLower()} supporter!**");
+        thankYouMessage.AppendLine(supporter.SubscriptionType == SubscriptionType.Lifetime
+            ? "Thanks to your purchase we can continue to improve and host the bot, while you get some nice perks in return. Here's a brief reminder of the features available to supporters:"
+            : "Thanks to your subscription we can continue to improve and host the bot, while you get some nice perks in return. Here's a brief reminder of the features available to supporters:");
+
+        thankYouMessage.AppendLine();
+        thankYouMessage.AppendLine("**Expanded statistics**\n" +
+                                   "We've started a full update for you. " +
+                                   "After a few minutes the following commands should be expanded:\n" +
+                                   "- `artist`, `album` and `track` with first listen dates\n" +
+                                   "- `stats` command with overall history\n" +
+                                   "- `year` with artist discoveries and monthly overview");
+        thankYouMessage.AppendLine();
+        thankYouMessage.AppendLine("**Expanded commands**\n" +
+                                   "- `fm` footer with up to 8 + 1 options (configured with `/fmmode`)\n" +
+                                   "- Your own personal `fm` reactions with `userreactions`\n" +
+                                   "- Use the `judge` command up to 25 times a day and on others\n" +
+                                   $"- Friend limit raised to {Constants.MaxFriendsSupporter} (up from {Constants.MaxFriends})");
+
+        thankYouMessage.AppendLine();
+        thankYouMessage.AppendLine("**Get featured**\n" +
+                                   "Every first Sunday of the month is Supporter Sunday, where you have a higher chance of getting featured. " +
+                                   $"The next Supporter Sunday is in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}.");
+
+        if (user.UserDiscogs != null)
+        {
+            thankYouMessage.AppendLine();
+            thankYouMessage.AppendLine("**View your full Discogs collection**\n" +
+                                       "If you use the `collection` command it will fetch your full collection from Discogs.\n" +
+                                       $"This is also visible in other commands, like `artist`, `album`, `track` and `stats`.");
+        }
+
+        thankYouMessage.AppendLine();
+        thankYouMessage.AppendLine("**Your info**\n" +
+                                   $"Your name in the `supporters` command will be shown as `{supporter.Name}`. This is also the name that will be shown when you sponsor charts. ");
+
+        if (supporter.OpenCollectiveId != null)
+        {
+            thankYouMessage.AppendLine("You can update this through your OpenCollective settings.");
+        }
+        
+        thankYouEmbed.WithDescription(thankYouMessage.ToString());
+        await discordUser.SendMessageAsync(embed: thankYouEmbed.Build());
+    }
+
+    public static async Task SendSupporterGoodbyeMessage(IUser discordUser)
+    {
+        var thankYouEmbed = new EmbedBuilder();
+        var goodbyeMessage = new StringBuilder();
+
+        goodbyeMessage.AppendLine("Your .fmbot supporter subscription has expired. Sorry to see you go!");
+        goodbyeMessage.AppendLine();
+        goodbyeMessage.AppendLine("If you ever want to come back in the future you can re-subscribe through the same OpenCollective account. Your supporter will then be automatically re-activated.");
+        goodbyeMessage.AppendLine();
+        goodbyeMessage.AppendLine("Thanks for having supported the bot! If you have any feedback about the bot or the supporter program feel free to open a thread in #help on [our server](https://discord.gg/fmbot). You can also DM the developer who is identified on the server if preferable.");
+
+        thankYouEmbed.WithDescription(goodbyeMessage.ToString());
+        await discordUser.SendMessageAsync(embed: thankYouEmbed.Build());
     }
 
     public async Task<string> GetPromotionalUpdateMessage(User user, string prfx, IDiscordClient contextClient,
@@ -280,16 +345,19 @@ public class SupporterService
 
         await db.SaveChangesAsync();
 
-        var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+        if (this._botSettings.Bot.SupporterAuditLogWebhookUrl != null)
+        {
+            var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
-        var embed = new EmbedBuilder();
+            var embed = new EmbedBuilder();
 
-        embed.WithTitle("Supporter expiry processed");
-        embed.WithDescription($"Name: `{supporter.Name}`\n" +
-                              $"OpenCollective ID: `{supporter.OpenCollectiveId}`\n" +
-                              $"Subscription type: `{supporter.SubscriptionType}`");
+            embed.WithTitle("Supporter expiry processed");
+            embed.WithDescription($"Name: `{supporter.Name}`\n" +
+                                  $"OpenCollective ID: `{supporter.OpenCollectiveId}`\n" +
+                                  $"Subscription type: `{supporter.SubscriptionType}`");
 
-        await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+            await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+        }
 
         return supporter;
     }
