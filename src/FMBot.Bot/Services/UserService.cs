@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -614,6 +615,49 @@ public class UserService
         }
 
         return footer;
+    }
+
+    public static (bool promo, string description) GetIndexCompletedUserStats(User user, IndexedUserStats stats)
+    {
+        var description = new StringBuilder();
+        var promo = false;
+
+        if (stats == null)
+        {
+            description.AppendLine("Full update could not complete, something went wrong. Please try again later.");
+            return (promo, description.ToString());
+        }
+
+        description.AppendLine($"✅ {user.UserNameLastFM} has been fully updated.");
+        description.AppendLine();
+        description.AppendLine("Cached the following playcounts:");
+        if (user.UserType == UserType.User)
+        {
+            description.AppendLine($"- Last **{stats.PlayCount}** plays");
+            description.AppendLine($"- Top **{stats.ArtistCount}** artists");
+            description.AppendLine($"- Top **{stats.AlbumCount}** albums");
+            description.AppendLine($"- Top **{stats.TrackCount}** tracks");
+        }
+        else
+        {
+            description.AppendLine($"- **{stats.PlayCount}** plays");
+            description.AppendLine($"- **{stats.ArtistCount}** top artists");
+            description.AppendLine($"- **{stats.AlbumCount}** top albums");
+            description.AppendLine($"- **{stats.TrackCount}** top tracks");
+        }
+
+        if (user.UserType == UserType.User &&
+            (stats.PlayCount >= 24000 ||
+             stats.TrackCount >= 5500 ||
+             stats.AlbumCount >= 4500 ||
+             stats.ArtistCount >= 3500))
+        {
+            description.AppendLine();
+            description.AppendLine($"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterOverviewLink}).");
+            promo = true;
+        }
+
+        return (promo, description.ToString());
     }
 
     // Set LastFM Name

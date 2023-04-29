@@ -119,7 +119,7 @@ public class IndexCommands : BaseCommandModule
     public async Task UpdateUserAsync(string force = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
         {
@@ -140,15 +140,15 @@ public class IndexCommands : BaseCommandModule
                 return;
             }
 
-            if (userSettings.LastIndexed > DateTime.UtcNow.AddHours(-1))
-            {
-                await ReplyAsync(
-                    "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
-                    $"Experiencing issues with the normal update? Please contact us on the .fmbot support server. \n\n" +
-                    $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.");
-                this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                return;
-            }
+            //if (contextUser.LastIndexed > DateTime.UtcNow.AddHours(-1))
+            //{
+            //    await ReplyAsync(
+            //        "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
+            //        $"Experiencing issues with the normal update? Please contact us on the .fmbot support server. \n\n" +
+            //        $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.");
+            //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            //    return;
+            //}
 
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
@@ -176,45 +176,43 @@ public class IndexCommands : BaseCommandModule
             }
 
             var indexDescription =
-                $"<a:loading:821676038102056991> Fully rebuilding playcount cache for user {userSettings.UserNameLastFM}..." +
+                $"<a:loading:821676038102056991> Fully rebuilding playcount cache for user {contextUser.UserNameLastFM}..." +
                 $"\n\nThis can take a while. Note that you can only do a full update once a day.";
 
-            if (userSettings.UserType != UserType.User)
+            if (contextUser.UserType != UserType.User)
             {
                 indexDescription += "\n\n" +
-                                    $"*As a thank you for being an .fmbot {userSettings.UserType.ToString().ToLower()} the bot will store all of your artists/albums/tracks (up from top 4/5/6k). " +
-                                    $"Additionally your full scrobble history will be stored to provide extra statistics in a few commands.*";
+                                    $"*Thanks for being an .fmbot {contextUser.UserType.ToString().ToLower()}. " +
+                                    $"Your full Last.fm history will now be cached, so this command might take slightly longer...*";
             }
 
             this._embed.WithDescription(indexDescription);
 
             var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
-            await this._indexService.IndexUser(userSettings);
+            var stats = await this._indexService.IndexUser(contextUser);
 
-            var updatedDescription = $"✅ {userSettings.UserNameLastFM} has been fully updated.";
-
-            var supporterPromo =
-                await this._supporterService.GetPromotionalUpdateMessage(userSettings, prfx, this.Context.Client, this.Context.Guild?.Id);
-            if (supporterPromo != null)
-            {
-                updatedDescription += $"\n\n{supporterPromo}";
-            }
+            var description = UserService.GetIndexCompletedUserStats(contextUser, stats);
 
             await message.ModifyAsync(m =>
             {
                 m.Embed = new EmbedBuilder()
-                    .WithDescription(updatedDescription)
+                    .WithDescription(description.description)
                     .WithColor(DiscordConstants.SuccessColorGreen)
-                    .Build();
+                    .Build(); 
+                m.Components = description.promo
+                    ? new ComponentBuilder()
+                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink)
+                        .Build()
+                    : null;
             });
         }
         else
         {
-            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-1))
+            if (contextUser.LastUpdated > DateTime.UtcNow.AddMinutes(-1))
             {
                 var recentlyUpdatedText =
-                    $"Your cached playcounts have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). \n\n" +
+                    $"Your cached playcounts have already been updated recently ({StringExtensions.GetTimeAgoShortString(contextUser.LastUpdated.Value)} ago). \n\n" +
                     $"Any commands that require updating will also update your playcount automatically.\n\n" +
                     $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.";
 
@@ -224,7 +222,7 @@ public class IndexCommands : BaseCommandModule
                 return;
             }
 
-            if (userSettings.LastIndexed == null)
+            if (contextUser.LastIndexed == null)
             {
                 await ReplyAsync(
                     "Just logged in to the bot? Please wait a little bit and try again later, since the bot is still fetching all your Last.fm data.\n\n" +
@@ -234,24 +232,24 @@ public class IndexCommands : BaseCommandModule
             }
 
             this._embed.WithDescription(
-                $"<a:loading:821676038102056991> Fetching {userSettings.UserNameLastFM}'s latest scrobbles...");
+                $"<a:loading:821676038102056991> Fetching {contextUser.UserNameLastFM}'s latest scrobbles...");
             var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
-            var update = await this._updateService.UpdateUserAndGetRecentTracks(userSettings);
+            var update = await this._updateService.UpdateUserAndGetRecentTracks(contextUser);
 
             var supporterPromo =
-                await this._supporterService.GetPromotionalUpdateMessage(userSettings, prfx, this.Context.Client, this.Context.Guild?.Id);
+                await this._supporterService.GetPromotionalUpdateMessage(contextUser, prfx, this.Context.Client, this.Context.Guild?.Id);
             await message.ModifyAsync(m =>
             {
                 if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
                 {
                     var updateDescription = new StringBuilder();
-                    updateDescription.AppendLine($"No new scrobbles found on [your Last.fm profile]({Constants.LastFMUserUrl}{userSettings.UserNameLastFM}) since last update. ");
+                    updateDescription.AppendLine($"No new scrobbles found on [your Last.fm profile]({Constants.LastFMUserUrl}{contextUser.UserNameLastFM}) since last update. ");
                     updateDescription.AppendLine();
 
-                    if (userSettings.LastUpdated.HasValue)
+                    if (contextUser.LastUpdated.HasValue)
                     {
-                        var specifiedDateTime = DateTime.SpecifyKind(userSettings.LastUpdated.Value, DateTimeKind.Utc);
+                        var specifiedDateTime = DateTime.SpecifyKind(contextUser.LastUpdated.Value, DateTimeKind.Utc);
                         var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
 
                         updateDescription.AppendLine($"Last update: <t:{dateValue}:R>.");
@@ -283,11 +281,11 @@ public class IndexCommands : BaseCommandModule
 
                     if (update.Content.RemovedRecentTracksAmount == 0)
                     {
-                        updatedDescription = $"✅ Cached playcounts have been updated for {userSettings.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)}.";
+                        updatedDescription = $"✅ Cached playcounts have been updated for {contextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)}.";
                     }
                     else
                     {
-                        updatedDescription = $"✅ Cached playcounts have been updated for {userSettings.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)} " +
+                        updatedDescription = $"✅ Cached playcounts have been updated for {contextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)} " +
                                              $"and {update.Content.RemovedRecentTracksAmount} removed {StringExtensions.GetScrobblesString(update.Content.RemovedRecentTracksAmount)}.";
                     }
 

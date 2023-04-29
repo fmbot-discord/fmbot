@@ -56,18 +56,20 @@ public class IndexService : IIndexService
         this._userIndexQueue.Publish(users);
     }
 
-    public async Task IndexUser(User user)
+    public async Task<IndexedUserStats> IndexUser(User user)
     {
         Log.Information("Starting index for {UserNameLastFM}", user.UserNameLastFM);
 
         if (!this._cache.TryGetValue($"index-started-{user.UserId}", out bool _))
         {
-            await this._indexRepository.IndexUser(new IndexUserQueueItem(user.UserId));
+            return await this._indexRepository.IndexUser(new IndexUserQueueItem(user.UserId));
         }
         else
         {
             Log.Information("Index for {UserNameLastFM} already in progress, skipping.", user.UserNameLastFM);
         }
+
+        return null;
     }
 
     public async Task<(int, int?)> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)

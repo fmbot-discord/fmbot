@@ -49,7 +49,7 @@ public class IndexRepository
         this._lastFMClient = new LastfmClient(this._key, this._secret);
     }
 
-    public async Task IndexUser(IndexUserQueueItem queueItem)
+    public async Task<IndexedUserStats> IndexUser(IndexUserQueueItem queueItem)
     {
         if (queueItem.IndexQueue)
         {
@@ -66,12 +66,12 @@ public class IndexRepository
         {
             if (user == null)
             {
-                return;
+                return null;
             }
             if (user.LastIndexed > DateTime.UtcNow.AddHours(-24))
             {
                 Log.Debug("Index: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-                return;
+                return null;
             }
         }
 
@@ -109,6 +109,14 @@ public class IndexRepository
 
         Statistics.IndexedUsers.Inc();
         this._cache.Remove(concurrencyCacheKey);
+
+        return new IndexedUserStats
+        {
+            PlayCount = plays.Count,
+            ArtistCount = artists.Count,
+            AlbumCount = albums.Count,
+            TrackCount = tracks.Count
+        };
     }
 
     public async Task<DateTime?> SetUserSignUpTime(User user)
@@ -164,7 +172,7 @@ public class IndexRepository
     {
         Log.Information($"Getting plays for user {user.UserNameLastFM}");
 
-        var pages = UserHasHigherIndexLimit(user) ? 500 : 25;
+        var pages = UserHasHigherIndexLimit(user) ? 750 : 25;
 
         var recentPlays = await this._lastFmRepository.GetRecentTracksAsync(user.UserNameLastFM, 1000,
             sessionKey: user.SessionKeyLastFm, amountOfPages: pages);
