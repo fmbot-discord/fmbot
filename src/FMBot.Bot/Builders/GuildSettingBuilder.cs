@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -438,31 +439,6 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> SetGuildMode(ContextModel context, FmEmbedType? embedType)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed,
-        };
-
-        await this._guildService.ChangeGuildSettingAsync(context.DiscordGuild, embedType);
-
-        if (embedType.HasValue)
-        {
-            response.Embed.WithDescription($"The default .fm mode for your server has been set to **{embedType}**.\n\n" +
-                             $"All .fm commands in this server will use this mode regardless of user settings, so make sure to inform your users of this change.");
-        }
-        else
-        {
-            response.Embed.WithDescription(
-                $"The default .fm mode has been disabled for this server. Users can now set their own mode using `fmmode`.");
-        }
-
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        return response;
-    }
-
     public static ResponseModel GuildReactionsAsync(ContextModel context, string prfx)
     {
         var response = new ResponseModel
@@ -482,6 +458,81 @@ public class GuildSettingBuilder
         description.AppendLine($"`{prfx}serverreactions 😀 😯 🥵`");
 
         response.Embed.WithDescription(description.ToString());
+
+        return response;
+    }
+
+    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong currentChannelId, ulong? currentCategoryId = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var channelDescription = new StringBuilder();
+
+        var currentChannel = await context.DiscordGuild.GetChannelAsync(currentChannelId);
+
+        var categories = await context.DiscordGuild.GetCategoriesAsync();
+
+        foreach (var category in categories.OrderBy(o => o.Position))
+        {
+            if (category is not SocketCategoryChannel socketCategoryChannel)
+            {
+                break;
+            }
+
+            var categoryChannels = socketCategoryChannel.GetCategoryChannelPositions();
+
+            if (!currentCategoryId.HasValue && categoryChannels.Any(a => a.Key.Id == currentChannelId))
+            {
+                currentCategoryId = category.Id;
+            }
+
+            if (currentCategoryId == category.Id)
+            {
+                channelDescription.AppendLine($"***{category.Name}***");
+
+                for (var i = 0; i < categoryChannels.Count; i++)
+                {
+                    var previous = categoryChannels.ElementAtOrDefault(i - 1);
+                    var current = categoryChannels.ElementAt(i);
+                    var next = categoryChannels.ElementAtOrDefault(i + 1);
+                }
+
+                foreach (var channel in categoryChannels)
+                {
+                    if (channel.Key.Id == currentChannelId)
+                    {
+                        channelDescription.AppendLine($"{DiscordConstants.SamePosition} **<#{channel.Key.Id}>**");
+                    }
+                    else
+                    {
+                        channelDescription.AppendLine($"<#{channel.Key.Id}>");
+                    }
+                }
+            }
+
+            channelDescription.AppendLine();
+        }
+
+        response.Embed.WithDescription(channelDescription.ToString());
+
+        var currentChannelCommands = await this._guildService.GetDisabledCommandsForChannel(currentChannel);
+
+        var currentlyDisabled = new StringBuilder();
+        var maxNewCommandsToDisplay = currentChannelCommands.Count > 32 ? 32 : currentChannelCommands.Count;
+        for (var index = 0; index < maxNewCommandsToDisplay; index++)
+        {
+            var newDisabledCommand = currentChannelCommands[index];
+            currentlyDisabled.Append($"`{newDisabledCommand}` ");
+        }
+        if (currentChannelCommands.Count > 32)
+        {
+            currentlyDisabled.Append($" and {currentChannelCommands.Count - 32} other commands");
+        }
+
+        response.Embed.AddField("Commands currently disabled in this channel", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "All commands enabled.");
 
         return response;
     }

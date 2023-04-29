@@ -685,6 +685,21 @@ public class GuildCommands : BaseCommandModule
         }
     }
 
+    //[Command("togglecommandnew", RunMode = RunMode.Async)]
+    //[Summary("Enables or disables a command in a channel")]
+    //[GuildOnly]
+    //[RequiresIndex]
+    //[CommandCategories(CommandCategory.ServerSettings)]
+    public async Task ToggleChannelCommandNew(params string[] commands)
+    {
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context, prfx), this.Context.Channel.Id);
+
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
     [Command("cooldown", RunMode = RunMode.Async)]
     [Summary("Sets a cooldown for the `fm` command in a channel.\n\n" +
              "To pick a channel, simply use this command in the channel you want the cooldown in.")]
