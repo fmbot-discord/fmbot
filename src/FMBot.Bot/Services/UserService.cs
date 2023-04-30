@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +11,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -625,7 +621,7 @@ public class UserService
         if (stats == null)
         {
             description.AppendLine("Full update could not complete, something went wrong. Please try again later.");
-            return (promo, description.ToString());
+            return (false, description.ToString());
         }
 
         description.AppendLine($"✅ {user.UserNameLastFM} has been fully updated.");
@@ -647,10 +643,10 @@ public class UserService
         }
 
         if (user.UserType == UserType.User &&
-            (stats.PlayCount >= 24000 ||
-             stats.TrackCount >= 5500 ||
-             stats.AlbumCount >= 4500 ||
-             stats.ArtistCount >= 3500))
+            (stats.PlayCount >= 24900 ||
+             stats.TrackCount >= 5900 ||
+             stats.AlbumCount >= 4900 ||
+             stats.ArtistCount >= 3900))
         {
             description.AppendLine();
             description.AppendLine($"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterOverviewLink}).");

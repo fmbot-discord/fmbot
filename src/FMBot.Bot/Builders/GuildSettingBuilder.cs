@@ -35,7 +35,7 @@ public class GuildSettingBuilder
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<ResponseModel> GetGuildSettings(ContextModel context)
+    public async Task<ResponseModel> GetGuildSettings(ContextModel context, GuildPermissions guildPermissions)
     {
         var response = new ResponseModel
         {
@@ -143,6 +143,32 @@ public class GuildSettingBuilder
         }
         response.Embed.WithDescription(settings.ToString());
 
+        var serverPermission = new StringBuilder();
+        if (!guildPermissions.SendMessages)
+        {
+            serverPermission.AppendLine("❌ Send messages");
+        }
+        if (!guildPermissions.AttachFiles)
+        {
+            serverPermission.AppendLine("❌ Attach files");
+        }
+        if (!guildPermissions.EmbedLinks)
+        {
+            serverPermission.AppendLine("❌ Embed links");
+        }
+        if (!guildPermissions.AddReactions)
+        {
+            serverPermission.AppendLine("❌ Add reactions");
+        }
+        if (!guildPermissions.UseExternalEmojis)
+        {
+            serverPermission.AppendLine("❌ Use external emojis");
+        }
+
+        if (serverPermission.Length > 0)
+        {
+            response.Embed.AddField("Missing server-wide permissions", serverPermission.ToString());
+        }
 
         var guildSettings = new SelectMenuBuilder()
             .WithPlaceholder("Select server setting you want to change")
@@ -165,15 +191,6 @@ public class GuildSettingBuilder
 
         return response;
 
-    }
-
-    public class PrefixModal : IModal
-    {
-        public string Title => "Set .fmbot text command prefix";
-
-        [InputLabel("Enter new prefix")]
-        [ModalTextInput("new_prefix", placeholder: ".", minLength: 1, maxLength: 15)]
-        public string NewPrefix { get; set; }
     }
 
     public async Task<ResponseModel> SetPrefix(IInteractionContext context, string newPrefix)
@@ -462,54 +479,103 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong currentChannelId, ulong? currentCategoryId = null)
+    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId, ulong? selectedCategoryId = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed
         };
 
-        var channelDescription = new StringBuilder();
+        var selectedChannel = await context.DiscordGuild.GetChannelAsync(selectedChannelId);
 
-        var currentChannel = await context.DiscordGuild.GetChannelAsync(currentChannelId);
+        response.Embed.WithTitle($"Toggle channel commands - #{selectedChannel.Name}");
+        response.Embed.WithFooter("Use the up and down selector to browse through channels");
+
+        var channelDescription = new StringBuilder();
 
         var categories = await context.DiscordGuild.GetCategoriesAsync();
 
-        foreach (var category in categories.OrderBy(o => o.Position))
+        ulong previousChannelId = 0;
+        ulong previousCategoryId = 0;
+        ulong nextChannelId = 0;
+        ulong nextCategoryId = 0;
+
+        var channel = await this._guildService.GetChannel(selectedChannel.Id);
+        var botDisabled = channel?.BotDisabled == true;
+
+        for (var i = 0; i < categories.Count; i++)
         {
-            if (category is not SocketCategoryChannel socketCategoryChannel)
+            var previousCategory = categories.OrderBy(o => o.Position).ElementAtOrDefault(i - 1);
+            var currentCategory = categories.OrderBy(o => o.Position).ElementAt(i);
+            var nextCategory = categories.OrderBy(o => o.Position).ElementAtOrDefault(i + 1);
+
+            if (currentCategory is not SocketCategoryChannel currentSocketCategory)
             {
                 break;
             }
 
-            var categoryChannels = socketCategoryChannel.GetCategoryChannelPositions();
+            var categoryChannels = currentSocketCategory.GetCategoryChannelPositions();
 
-            if (!currentCategoryId.HasValue && categoryChannels.Any(a => a.Key.Id == currentChannelId))
+            if (!selectedCategoryId.HasValue && categoryChannels.Any(a => a.Key.Id == selectedChannelId))
             {
-                currentCategoryId = category.Id;
+                selectedCategoryId = currentCategory.Id;
             }
 
-            if (currentCategoryId == category.Id)
+            if (selectedCategoryId == currentCategory.Id)
             {
-                channelDescription.AppendLine($"***{category.Name}***");
+                channelDescription.AppendLine($"***`{currentCategory.Name.ToUpper()}`*** - {categoryChannels.Count}");
 
-                for (var i = 0; i < categoryChannels.Count; i++)
+                for (var j = 0; j < categoryChannels.Count; j++)
                 {
-                    var previous = categoryChannels.ElementAtOrDefault(i - 1);
-                    var current = categoryChannels.ElementAt(i);
-                    var next = categoryChannels.ElementAtOrDefault(i + 1);
-                }
+                    var previousChannel = categoryChannels.Keys.ElementAtOrDefault(j - 1);
+                    var currentChannel = categoryChannels.Keys.ElementAt(j);
+                    var nextChannel = categoryChannels.Keys.ElementAtOrDefault(j + 1);
 
-                foreach (var channel in categoryChannels)
-                {
-                    if (channel.Key.Id == currentChannelId)
+                    if (currentChannel.Id == selectedChannelId)
                     {
-                        channelDescription.AppendLine($"{DiscordConstants.SamePosition} **<#{channel.Key.Id}>**");
+                        if (previousChannel != null)
+                        {
+                            channelDescription.AppendLine($"{DiscordConstants.OneToFiveUp} **<#{previousChannel.Id}>**");
+                        }
+
+                        channelDescription.AppendLine($"{DiscordConstants.SamePosition} **<#{currentChannel.Id}>** **<**");
+
+                        if (nextChannel != null)
+                        {
+                            channelDescription.AppendLine($"{DiscordConstants.OneToFiveDown} **<#{nextChannel.Id}>**");
+                        }
+
+                        if (previousChannel != null)
+                        {
+                            previousChannelId = previousChannel.Id;
+                            previousCategoryId = currentCategory.Id;
+                        }
+                        else if (previousCategory is SocketCategoryChannel previousSocketCategory)
+                        {
+                            var previousCategoryChannels = previousSocketCategory.GetCategoryChannelPositions();
+                            if (previousCategoryChannels.Keys.Any())
+                            {
+                                previousCategoryId = previousSocketCategory.Id;
+                                previousChannelId = previousCategoryChannels.Keys.Last().Id;
+                            }
+                        }
+
+                        if (nextChannel != null)
+                        {
+                            nextChannelId = nextChannel.Id;
+                            nextCategoryId = currentCategory.Id;
+                        }
+                        else if (nextCategory is SocketCategoryChannel nextSocketCategory)
+                        {
+                            var nextCategoryChannels = nextSocketCategory.GetCategoryChannelPositions();
+                            if (nextCategoryChannels.Keys.Any())
+                            {
+                                nextCategoryId = nextSocketCategory.Id;
+                                nextChannelId = nextCategoryChannels.Keys.First().Id;
+                            }
+                        }
                     }
-                    else
-                    {
-                        channelDescription.AppendLine($"<#{channel.Key.Id}>");
-                    }
+
                 }
             }
 
@@ -518,21 +584,55 @@ public class GuildSettingBuilder
 
         response.Embed.WithDescription(channelDescription.ToString());
 
-        var currentChannelCommands = await this._guildService.GetDisabledCommandsForChannel(currentChannel);
-
         var currentlyDisabled = new StringBuilder();
-        var maxNewCommandsToDisplay = currentChannelCommands.Count > 32 ? 32 : currentChannelCommands.Count;
-        for (var index = 0; index < maxNewCommandsToDisplay; index++)
+
+        var currentDisabledCommands = channel?.DisabledCommands?.ToList();
+
+        if (currentDisabledCommands != null)
         {
-            var newDisabledCommand = currentChannelCommands[index];
-            currentlyDisabled.Append($"`{newDisabledCommand}` ");
-        }
-        if (currentChannelCommands.Count > 32)
-        {
-            currentlyDisabled.Append($" and {currentChannelCommands.Count - 32} other commands");
+            var maxNewCommandsToDisplay = currentDisabledCommands.Count > 32 ? 32 : currentDisabledCommands.Count;
+            for (var index = 0; index < maxNewCommandsToDisplay; index++)
+            {
+                var newDisabledCommand = currentDisabledCommands[index];
+                currentlyDisabled.Append($"`{newDisabledCommand}` ");
+            }
+            if (currentDisabledCommands.Count > 32)
+            {
+                currentlyDisabled.Append($" and {currentDisabledCommands.Count - 32} other commands");
+            }
         }
 
-        response.Embed.AddField("Commands currently disabled in this channel", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "All commands enabled.");
+        if (!botDisabled)
+        {
+            response.Embed.AddField("Disabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
+        }
+        else
+        {
+            response.Embed.AddField("Disabled commands", "🚫 The bot is fully disabled in this channel.");
+        }
+
+        var upDisabled = previousCategoryId == 0 || previousChannelId == 0;
+        var downDisabled = nextCategoryId == 0 || nextChannelId == 0;
+
+        var components = new ComponentBuilder()
+            .WithButton(null, $"{InteractionConstants.ToggleCommandMove}-{previousChannelId}-{previousCategoryId}", style: ButtonStyle.Secondary, Emote.Parse(DiscordConstants.OneToFiveUp), disabled: upDisabled)
+            .WithButton(null, $"{InteractionConstants.ToggleCommandMove}-{nextChannelId}-{nextCategoryId}", style: ButtonStyle.Secondary, Emote.Parse(DiscordConstants.OneToFiveDown), disabled: downDisabled, row: 1)
+            .WithButton("Add", $"{InteractionConstants.ToggleCommandAdd}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: botDisabled)
+            .WithButton("Remove", $"{InteractionConstants.ToggleCommandRemove}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: botDisabled || currentlyDisabled.Length == 0)
+            .WithButton("Clear", $"{InteractionConstants.ToggleCommandClear}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: botDisabled || currentlyDisabled.Length == 0);
+
+        if (!botDisabled)
+        {
+            components
+                .WithButton("Disable bot in channel", $"{InteractionConstants.ToggleCommandDisableAll}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, row: 1);
+        }
+        else
+        {
+            components
+                .WithButton("Enable bot in channel", $"{InteractionConstants.ToggleCommandEnableAll}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Primary, row: 1);
+        }
+
+        response.Components = components;
 
         return response;
     }

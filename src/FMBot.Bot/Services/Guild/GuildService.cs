@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using Discord.Commands;
+using Discord.Interactions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -198,6 +199,13 @@ public class GuildService
     public static async Task<GuildPermissions> GetGuildPermissionsAsync(ICommandContext context)
     {
         var socketCommandContext = (SocketCommandContext)context;
+        var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
+        return guildUser.GuildPermissions;
+    }
+
+    public static async Task<GuildPermissions> GetGuildPermissionsAsync(IInteractionContext context)
+    {
+        var socketCommandContext = (SocketInteractionContext)context;
         var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
         return guildUser.GuildPermissions;
     }
@@ -735,14 +743,24 @@ public class GuildService
         return existingGuild.DisabledCommands;
     }
 
-    public async Task<List<string>> GetDisabledCommandsForChannel(IChannel discordChannel)
+    public async Task<List<string>> GetDisabledCommandsForChannel(ulong discordChannelId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
             .AsQueryable()
-            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
+            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
 
-        return existingChannel?.DisabledCommands.ToList();
+        return existingChannel?.DisabledCommands?.ToList();
+    }
+
+    public async Task<Channel> GetChannel(ulong discordChannelId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingChannel = await db.Channels
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
+
+        return existingChannel;
     }
 
     public async Task DisableChannelCommandsAsync(IChannel discordChannel, int guildId, List<string> commands, ulong discordGuildId)
@@ -763,7 +781,6 @@ public class GuildService
             };
 
             await db.Channels.AddAsync(newChannel);
-
             await db.SaveChangesAsync();
 
             await RemoveGuildFromCache(discordGuildId);
@@ -805,7 +822,6 @@ public class GuildService
             .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
 
         existingChannel.DisabledCommands = existingChannel.DisabledCommands.Where(w => !commands.Contains(w)).ToArray();
-
         existingChannel.Name = discordChannel.Name;
 
         db.Entry(existingChannel).State = EntityState.Modified;
@@ -815,6 +831,82 @@ public class GuildService
         await RemoveGuildFromCache(discordGuildId);
 
         return existingChannel.DisabledCommands;
+    }
+
+    public async Task<string[]> ClearDisabledChannelCommandsAsync(IChannel discordChannel, ulong discordGuildId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingChannel = await db.Channels
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
+
+        existingChannel.DisabledCommands = null;
+        existingChannel.Name = discordChannel.Name;
+
+        db.Entry(existingChannel).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuildId);
+
+        return existingChannel.DisabledCommands;
+    }
+
+    public async Task DisableChannelAsync(IChannel discordChannel, int guildId, ulong discordGuildId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingChannel = await db.Channels
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
+
+        if (existingChannel == null)
+        {
+            var newChannel = new Channel
+            {
+                DiscordChannelId = discordChannel.Id,
+                Name = discordChannel.Name,
+                GuildId = guildId,
+                BotDisabled = true
+            };
+
+            await db.Channels.AddAsync(newChannel);
+            await db.SaveChangesAsync();
+
+            await RemoveGuildFromCache(discordGuildId);
+
+            return;
+        }
+
+        existingChannel.BotDisabled = true;
+        existingChannel.Name = existingChannel.Name;
+
+        db.Entry(existingChannel).State = EntityState.Modified;
+
+        await RemoveGuildFromCache(discordGuildId);
+
+        await db.SaveChangesAsync();
+    }
+
+    public async Task EnableChannelAsync(IChannel discordChannel, ulong discordGuildId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingChannel = await db.Channels
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
+
+        if (existingChannel == null)
+        {
+            return;
+        }
+
+        existingChannel.BotDisabled = false;
+        existingChannel.Name = existingChannel.Name;
+
+        db.Entry(existingChannel).State = EntityState.Modified;
+
+        await RemoveGuildFromCache(discordGuildId);
+
+        await db.SaveChangesAsync();
     }
 
     public async Task<int?> GetChannelCooldown(ulong discordChannelId)
@@ -1002,43 +1094,6 @@ public class GuildService
             .CountAsync();
     }
 
-    public Persistence.Domain.Models.Guild SetSettings(Persistence.Domain.Models.Guild guildSettings, string[] extraOptions)
-    {
-        if (extraOptions == null)
-        {
-            guildSettings.FmEmbedType = null;
-            return guildSettings;
-        }
-
-        extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
-        if (extraOptions.Contains("embedfull") || extraOptions.Contains("ef"))
-        {
-            guildSettings.FmEmbedType = FmEmbedType.EmbedFull;
-        }
-        else if (extraOptions.Contains("embedtiny"))
-        {
-            guildSettings.FmEmbedType = FmEmbedType.EmbedTiny;
-        }
-        else if (extraOptions.Contains("textmini") || extraOptions.Contains("tm"))
-        {
-            guildSettings.FmEmbedType = FmEmbedType.TextMini;
-        }
-        else if (extraOptions.Contains("textfull") || extraOptions.Contains("tf"))
-        {
-            guildSettings.FmEmbedType = FmEmbedType.TextFull;
-        }
-        else if (extraOptions.Contains("embedmini") || extraOptions.Contains("em"))
-        {
-            guildSettings.FmEmbedType = FmEmbedType.EmbedMini;
-        }
-        else
-        {
-            guildSettings.FmEmbedType = null;
-        }
-
-        return guildSettings;
-    }
-
     public async Task UpdateGuildUserLastMessageDate(IGuildUser discordGuildUser, int userId, int guildId)
     {
         try
@@ -1061,7 +1116,7 @@ public class GuildService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Exception in UpdateGuildUserLastMessageDate!");
+            Log.Error(e, $"Exception in {nameof(UpdateGuildUserLastMessageDate)}");
         }
     }
 }

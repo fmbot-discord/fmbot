@@ -24,4 +24,15 @@ public static class InteractionConstants
 
     public const string BotScrobblingEnable = "user-setting-botscrobbling-enable";
     public const string BotScrobblingDisable = "user-setting-botscrobbling-disable";
+
+    public const string ToggleCommandMove = "toggle-command-move";
+    public const string ToggleCommandAdd = "toggle-command-add";
+    public const string ToggleCommandRemove = "toggle-command-remove";
+    public const string ToggleCommandClear = "toggle-command-clear";
+
+    public const string ToggleCommandAddModal = "toggle-command-modal-add";
+    public const string ToggleCommandRemoveModal = "toggle-command-modal-remove";
+
+    public const string ToggleCommandEnableAll = "toggle-command-enable-all";
+    public const string ToggleCommandDisableAll = "toggle-command-disable-all";
 }

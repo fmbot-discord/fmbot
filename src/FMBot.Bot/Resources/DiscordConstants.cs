@@ -52,8 +52,8 @@ public static class DiscordConstants
 
     public const string FiveOrMoreUp = "<:5_or_more_up:912380324841918504>";
     public const string OneToFiveUp = "<:1_to_5_up:912085138232442920>";
-    public const string SamePosition = "<:5_or_more_up:912380324841918504>";
-    public const string OneToFiveDown = "<:5_or_more_up:912380324841918504>";
-    public const string FiveOrMoreDown = "<:5_or_more_up:912380324841918504>";
+    public const string SamePosition = "<:same_position:912374491752046592>";
+    public const string OneToFiveDown = "<:1_to_5_down:912085138245029888>";
+    public const string FiveOrMoreDown = "<:5_or_more_down:912380324753838140>";
     public const string New = "<:new:912087988001980446>";
 }

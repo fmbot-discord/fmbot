@@ -29,8 +29,9 @@ public class StartupService
 {
     private readonly CommandService _commands;
     private readonly InteractionService _interactions;
-    private readonly IGuildDisabledCommandService _guildDisabledCommands;
-    private readonly IChannelDisabledCommandService _channelDisabledCommands;
+    private readonly GuildDisabledCommandService _guildDisabledCommands;
+    private readonly ChannelDisabledCommandService _channelDisabledCommands;
+    private readonly DisabledChannelService _disabledChannelService;
     private readonly DiscordShardedClient _client;
     private readonly IPrefixService _prefixService;
     private readonly IServiceProvider _provider;
@@ -46,14 +47,15 @@ public class StartupService
         DiscordShardedClient discord,
         CommandService commands,
         IPrefixService prefixService,
-        IGuildDisabledCommandService guildDisabledCommands,
-        IChannelDisabledCommandService channelDisabledCommands,
+        GuildDisabledCommandService guildDisabledCommands,
+        ChannelDisabledCommandService channelDisabledCommands,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IOptions<BotSettings> botSettings,
         InteractionService interactionService,
         InteractionService interactions,
         GuildService guildService,
-        UserService userService)
+        UserService userService,
+        DisabledChannelService disabledChannelService)
     {
         this._provider = provider;
         this._client = discord;
@@ -66,6 +68,7 @@ public class StartupService
         this._interactions = interactions;
         this._guildService = guildService;
         this._userService = userService;
+        this._disabledChannelService = disabledChannelService;
         this._botSettings = botSettings.Value;
     }
 
@@ -101,6 +104,9 @@ public class StartupService
 
         Log.Information("Loading all channel disabled commands");
         await this._channelDisabledCommands.LoadAllDisabledCommands();
+
+        Log.Information("Loading all disabled channels");
+        await this._disabledChannelService.LoadAllDisabledChannels();
 
         Log.Information("Logging into Discord");
         await this._client.LoginAsync(TokenType.Bot, discordToken);

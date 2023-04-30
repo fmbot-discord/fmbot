@@ -1,27 +1,24 @@
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using Dasync.Collections;
 using System.Linq;
-using FMBot.Bot.Interfaces;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace FMBot.Bot.Services.Guild;
 
-public class ChannelDisabledCommandService : IChannelDisabledCommandService
+public class ChannelDisabledCommandService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-    private static readonly ConcurrentDictionary<ulong, string[]> ChannelDisabledCommands =
-        new ConcurrentDictionary<ulong, string[]>();
+    private static readonly ConcurrentDictionary<ulong, string[]> ChannelDisabledCommands = new();
 
     public ChannelDisabledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._contextFactory = contextFactory;
     }
 
-    public void StoreDisabledCommands(string[] commands, ulong key)
+    private static void StoreDisabledCommands(string[] commands, ulong key)
     {
         if (ChannelDisabledCommands.ContainsKey(key))
         {
@@ -45,7 +42,7 @@ public class ChannelDisabledCommandService : IChannelDisabledCommandService
         }
     }
 
-    public string[] GetDisabledCommands(ulong? key)
+    public static string[] GetDisabledCommands(ulong? key)
     {
         if (!key.HasValue)
         {
@@ -56,7 +53,7 @@ public class ChannelDisabledCommandService : IChannelDisabledCommandService
     }
 
 
-    public void RemoveDisabledCommands(ulong key)
+    private static void RemoveDisabledCommands(ulong key)
     {
         if (!ChannelDisabledCommands.ContainsKey(key))
         {
@@ -71,7 +68,7 @@ public class ChannelDisabledCommandService : IChannelDisabledCommandService
 
     public async Task LoadAllDisabledCommands()
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var channels = await db
             .Channels
             .AsQueryable()
@@ -86,7 +83,7 @@ public class ChannelDisabledCommandService : IChannelDisabledCommandService
 
     public async Task RemoveDisabledCommandsForGuild(ulong discordGuildId)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var guild = await db
             .Guilds
             .Include(i => i.Channels)
@@ -104,7 +101,7 @@ public class ChannelDisabledCommandService : IChannelDisabledCommandService
 
     public async Task ReloadDisabledCommands(ulong discordGuildId)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var guild = await db
             .Guilds
             .Include(i => i.Channels)

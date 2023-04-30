@@ -15,4 +15,6 @@ public class Channel
     public string[] DisabledCommands { get; set; }
 
     public int? FmCooldown { get; set; }
+
+    public bool? BotDisabled { get; set; }
 }

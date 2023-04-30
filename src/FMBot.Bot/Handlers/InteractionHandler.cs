@@ -28,8 +28,8 @@ public class InteractionHandler
     private readonly UserService _userService;
     private readonly GuildService _guildService;
 
-    private readonly IGuildDisabledCommandService _guildDisabledCommandService;
-    private readonly IChannelDisabledCommandService _channelDisabledCommandService;
+    private readonly GuildDisabledCommandService _guildDisabledCommandService;
+    private readonly ChannelDisabledCommandService _channelDisabledCommandService;
 
     private readonly IMemoryCache _cache;
 
@@ -38,8 +38,8 @@ public class InteractionHandler
         IServiceProvider provider,
         UserService userService,
         GuildService guildService,
-        IGuildDisabledCommandService guildDisabledCommandService,
-        IChannelDisabledCommandService channelDisabledCommandService,
+        GuildDisabledCommandService guildDisabledCommandService,
+        ChannelDisabledCommandService channelDisabledCommandService,
         IMemoryCache cache)
     {
         this._client = client;
@@ -84,7 +84,7 @@ public class InteractionHandler
             return;
         }
 
-        if (!await CommandDisabled(context, command))
+        if (!await CommandEnabled(context, command))
         {
             return;
         }
@@ -228,11 +228,20 @@ public class InteractionHandler
         Statistics.ButtonExecuted.Inc();
     }
 
-    private async Task<bool> CommandDisabled(ShardedInteractionContext context, SlashCommandInfo searchResult)
+    private static async Task<bool> CommandEnabled(ShardedInteractionContext context, ICommandInfo searchResult)
     {
         if (context.Guild != null)
         {
-            var disabledGuildCommands = this._guildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
+            var channelDisabled = DisabledChannelService.GetDisabledChannel(context.Channel.Id);
+            if (channelDisabled)
+            {
+                await context.Interaction.RespondAsync(
+                    "The bot has been disabled in this channel.",
+                    ephemeral: true);
+                return false;
+            }
+
+            var disabledGuildCommands = GuildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
             if (disabledGuildCommands != null &&
                 disabledGuildCommands.Any(searchResult.Name.Equals))
             {
@@ -242,7 +251,7 @@ public class InteractionHandler
                 return false;
             }
 
-            var disabledChannelCommands = this._channelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
+            var disabledChannelCommands = ChannelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
             if (disabledChannelCommands != null &&
                 disabledChannelCommands.Any() &&
                 disabledChannelCommands.Any(searchResult.Name.Equals) &&

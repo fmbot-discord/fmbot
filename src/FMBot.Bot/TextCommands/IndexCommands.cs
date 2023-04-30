@@ -140,15 +140,15 @@ public class IndexCommands : BaseCommandModule
                 return;
             }
 
-            //if (contextUser.LastIndexed > DateTime.UtcNow.AddHours(-1))
-            //{
-            //    await ReplyAsync(
-            //        "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
-            //        $"Experiencing issues with the normal update? Please contact us on the .fmbot support server. \n\n" +
-            //        $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.");
-            //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-            //    return;
-            //}
+            if (contextUser.LastIndexed > DateTime.UtcNow.AddHours(-1))
+            {
+                await ReplyAsync(
+                    "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
+                    $"Experiencing issues with the normal update? Please contact us on the .fmbot support server. \n\n" +
+                    $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.");
+                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                return;
+            }
 
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))

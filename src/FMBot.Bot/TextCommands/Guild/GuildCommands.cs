@@ -37,8 +37,8 @@ public class GuildCommands : BaseCommandModule
     private readonly IMemoryCache _cache;
 
     private readonly IPrefixService _prefixService;
-    private readonly IGuildDisabledCommandService _guildDisabledCommandService;
-    private readonly IChannelDisabledCommandService _channelDisabledCommandService;
+    private readonly GuildDisabledCommandService _guildDisabledCommandService;
+    private readonly ChannelDisabledCommandService _channelDisabledCommandService;
 
     private readonly CommandService _commands;
 
@@ -48,8 +48,8 @@ public class GuildCommands : BaseCommandModule
         GuildService guildService,
         CommandService commands,
         AdminService adminService,
-        IGuildDisabledCommandService guildDisabledCommandService,
-        IChannelDisabledCommandService channelDisabledCommandService,
+        GuildDisabledCommandService guildDisabledCommandService,
+        ChannelDisabledCommandService channelDisabledCommandService,
         SettingService settingService,
         IOptions<BotSettings> botSettings,
         CommandService service,
@@ -87,7 +87,8 @@ public class GuildCommands : BaseCommandModule
 
         try
         {
-            var response = await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, "/", contextUser));
+            var guildPermissions = await GuildService.GetGuildPermissionsAsync(this.Context);
+            var response = await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, "/", contextUser), guildPermissions);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -461,7 +462,7 @@ public class GuildCommands : BaseCommandModule
         {
             var newDisabledCommands = await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, foundCommand.Name.ToLower());
 
-            this._guildDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
+            GuildDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
 
             this._embed.WithDescription($"Re-enabled command `{foundCommand.Name}` for this server.");
         }
@@ -469,7 +470,7 @@ public class GuildCommands : BaseCommandModule
         {
             var newDisabledCommands = await this._guildService.AddGuildDisabledCommandAsync(this.Context.Guild, foundCommand.Name.ToLower());
 
-            this._guildDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
+            GuildDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
 
             this._embed.WithDescription($"Disabled command `{foundCommand.Name}` for this server.");
         }
@@ -478,226 +479,26 @@ public class GuildCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("togglecommand", RunMode = RunMode.Async)]
-    [Summary("Enables or disables a command in this channel. Make sure to enter the command you want to disable without the `{{prfx}}` prefix.")]
-    [Examples("togglecommand chart", "togglecommand whoknows chart taste", "togglecommand all")]
-    [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands")]
     [GuildOnly]
     [RequiresIndex]
-    [Options("All - Replaces your input with all commands to toggle them all at once")]
+    [Command("togglecommand", RunMode = RunMode.Async)]
+    [Summary("Enables or disables a command in a channel")]
+    [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands")]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task ToggleChannelCommand(params string[] commands)
+    public async Task ToggleChannelCommandNew(string _ = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
-
-        var currentDisabledCommands = await this._guildService.GetDisabledCommandsForChannel(this.Context.Channel);
-
-        this._embed.WithFooter(
-            $"Toggling per channel\n" +
-            $"To toggle server-wide use '{prfx}toggleservercommand'");
-
-        if (commands == null || !commands.Any())
-        {
-            if (currentDisabledCommands != null && currentDisabledCommands.Any())
-            {
-                var channelDescription = new StringBuilder();
-                foreach (var disabledCommand in currentDisabledCommands)
-                {
-                    channelDescription.Append($"`{disabledCommand}` ");
-                }
-
-                this._embed.AddField("Commands currently disabled in this channel", channelDescription.ToString());
-            }
-
-            var guildDescription = new StringBuilder();
-            if (currentDisabledCommands == null || !currentDisabledCommands.Any())
-            {
-                guildDescription.AppendLine("This channel currently has all commands enabled. \n" +
-                                            $"To disable a command, enter the command name like this: `{prfx}togglecommand chart`");
-                this._embed.WithDescription(guildDescription.ToString());
-            }
-
-            if (guild.Channels != null && guild.Channels.Any() && guild.Channels.Any(a => a.DisabledCommands != null && a.DisabledCommands.Length > 0))
-            {
-                foreach (var channel in guild.Channels.Where(a => a.DisabledCommands is { Length: > 0 }))
-                {
-                    guildDescription.Append($"**<#{channel.DiscordChannelId}>** - ");
-                    var maxCommandsToDisplay = channel.DisabledCommands.Length > 8 ? 8 : channel.DisabledCommands.Length;
-                    for (var index = 0; index < maxCommandsToDisplay; index++)
-                    {
-                        var disabledCommand = channel.DisabledCommands[index];
-                        guildDescription.Append($"`{disabledCommand}` ");
-                    }
-
-                    if (channel.DisabledCommands.Length > 8)
-                    {
-                        guildDescription.Append($" and {channel.DisabledCommands.Length - 8} other commands");
-                    }
-
-                    guildDescription.AppendLine();
-                }
-
-                this._embed.AddField("Currently disabled commands in this server per channel", guildDescription.ToString());
-            }
-
-            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
-
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            await ReplyAsync(
-                "You are not authorized to toggle commands. Only users with the 'Ban Members' permission or server admins can use this command.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
-
-        var enabledCommands = new List<string>();
-        var unknownCommands = new List<string>();
-        var disabledCommands = new List<string>();
-        if (commands.Any(a => a.ToLower() == "all"))
-        {
-            var commandList = new List<string>();
-            foreach (var module in this._service.Modules
-                         .OrderByDescending(o => o.Commands.Count(w => !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
-                                                                       !w.Attributes.OfType<ServerStaffOnly>().Any()))
-                         .Where(w =>
-                             !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
-                             !w.Attributes.OfType<ServerStaffOnly>().Any()))
-            {
-                foreach (var cmd in module.Commands.Where(w =>
-                             !w.Attributes.OfType<ExcludeFromHelp>().Any()))
-                {
-                    commandList.Add(cmd.Name.ToLower());
-                }
-            }
-
-            commands = commandList.ToArray();
-        }
-
-        foreach (var command in commands)
-        {
-            var searchResult = this._commands.Search(command.ToLower());
-
-            if (searchResult.Commands == null ||
-                !searchResult.Commands.Any() ||
-                searchResult.Commands.Any(a => a.Command.Name.ToLower() == "toggleservercommand") ||
-                searchResult.Commands.Any(a => a.Command.Name.ToLower() == "togglecommand"))
-            {
-                unknownCommands.Add(command);
-                continue;
-            }
-
-            var foundCommand = searchResult.Commands.FirstOrDefault().Command;
-
-            if (currentDisabledCommands != null && currentDisabledCommands.Any(a => a.Equals(foundCommand.Name.ToLower())))
-            {
-                enabledCommands.Add(foundCommand.Name);
-            }
-            else
-            {
-                disabledCommands.Add(foundCommand.Name);
-            }
-        }
-
         try
         {
-            if (enabledCommands.Any())
-            {
-                await this._guildService.EnableChannelCommandsAsync(this.Context.Channel, enabledCommands, this.Context.Guild.Id);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context, prfx), this.Context.Channel.Id);
 
-                var newlyEnabledCommands = new StringBuilder();
-                var maxCommandsToDisplay = enabledCommands.Count > 8 ? 8 : enabledCommands.Count;
-                for (var index = 0; index < maxCommandsToDisplay; index++)
-                {
-                    var enabledCommand = enabledCommands[index];
-                    newlyEnabledCommands.Append($"`{enabledCommand}` ");
-                }
-                if (enabledCommands.Count > 8)
-                {
-                    newlyEnabledCommands.Append($" and {enabledCommands.Count - 8} other commands");
-                }
-
-                this._embed.AddField("Commands enabled", StringExtensions.TruncateLongString(newlyEnabledCommands.ToString(), 1010));
-            }
-
-            if (disabledCommands.Any())
-            {
-                await this._guildService.DisableChannelCommandsAsync(this.Context.Channel, guild.GuildId, disabledCommands, this.Context.Guild.Id);
-
-                var newlyDisabledCommands = new StringBuilder();
-                var maxCommandsToDisplay = disabledCommands.Count > 8 ? 8 : disabledCommands.Count;
-                for (var index = 0; index < maxCommandsToDisplay; index++)
-                {
-                    var disabledCommand = disabledCommands[index];
-                    newlyDisabledCommands.Append($"`{disabledCommand}` ");
-                }
-                if (disabledCommands.Count > 8)
-                {
-                    newlyDisabledCommands.Append($" and {disabledCommands.Count - 8} other commands");
-                }
-
-                this._embed.AddField("Commands disabled", StringExtensions.TruncateLongString(newlyDisabledCommands.ToString(), 1010));
-            }
-
-            if (unknownCommands.Any())
-            {
-                var unavailableCommands = new StringBuilder();
-                foreach (var unknownCommand in unknownCommands)
-                {
-                    unavailableCommands.Append($"`{unknownCommand}` ");
-                }
-
-                this._embed.AddField("Unknown or unavailable commands", StringExtensions.TruncateLongString(unavailableCommands.ToString(), 1010));
-            }
-
-            var newDisabledCommands = await this._guildService.GetDisabledCommandsForChannel(this.Context.Channel);
-            this._channelDisabledCommandService.StoreDisabledCommands(newDisabledCommands.ToArray(), this.Context.Channel.Id);
-
-            var currentlyDisabled = new StringBuilder();
-            var maxNewCommandsToDisplay = newDisabledCommands.Count > 32 ? 32 : newDisabledCommands.Count;
-            for (var index = 0; index < maxNewCommandsToDisplay; index++)
-            {
-                var newDisabledCommand = newDisabledCommands[index];
-                currentlyDisabled.Append($"`{newDisabledCommand}` ");
-            }
-            if (newDisabledCommands.Count > 32)
-            {
-                currentlyDisabled.Append($" and {newDisabledCommands.Count - 32} other commands");
-            }
-
-            this._embed.AddField("Commands currently disabled in this channel", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "All commands enabled.");
-
-            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
-            this.Context.LogCommandUsed();
-
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            await this.Context.HandleCommandException(e);
         }
-    }
-
-    //[Command("togglecommandnew", RunMode = RunMode.Async)]
-    //[Summary("Enables or disables a command in a channel")]
-    //[GuildOnly]
-    //[RequiresIndex]
-    //[CommandCategories(CommandCategory.ServerSettings)]
-    public async Task ToggleChannelCommandNew(params string[] commands)
-    {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context, prfx), this.Context.Channel.Id);
-
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("cooldown", RunMode = RunMode.Async)]
