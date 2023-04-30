@@ -28,9 +28,6 @@ public class InteractionHandler
     private readonly UserService _userService;
     private readonly GuildService _guildService;
 
-    private readonly GuildDisabledCommandService _guildDisabledCommandService;
-    private readonly ChannelDisabledCommandService _channelDisabledCommandService;
-
     private readonly IMemoryCache _cache;
 
     public InteractionHandler(DiscordShardedClient client,
@@ -38,8 +35,6 @@ public class InteractionHandler
         IServiceProvider provider,
         UserService userService,
         GuildService guildService,
-        GuildDisabledCommandService guildDisabledCommandService,
-        ChannelDisabledCommandService channelDisabledCommandService,
         IMemoryCache cache)
     {
         this._client = client;
@@ -47,8 +42,6 @@ public class InteractionHandler
         this._provider = provider;
         this._userService = userService;
         this._guildService = guildService;
-        this._guildDisabledCommandService = guildDisabledCommandService;
-        this._channelDisabledCommandService = channelDisabledCommandService;
         this._cache = cache;
         this._client.SlashCommandExecuted += SlashCommandAsync;
         this._client.AutocompleteExecuted += AutoCompleteAsync;

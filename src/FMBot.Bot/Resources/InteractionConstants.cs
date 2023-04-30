@@ -11,6 +11,14 @@ public static class InteractionConstants
     public const string TextPrefixModal = "text-prefix-modal";
     public const string FmGuildSettingType = "fm-guild-type-menu";
 
+    public const string SetActivityThreshold = "set-activity-threshold";
+    public const string RemoveActivityThreshold = "remove-activity-threshold";
+    public const string SetActivityThresholdModal = "set-activity-threshold-modal";
+
+    public const string SetCrownActivityThreshold = "set-crown-activity-threshold";
+    public const string RemoveCrownActivityThreshold = "remove-crown-activity-threshold";
+    public const string SetCrownActivityThresholdModal = "set-crown-activity-threshold-modal";
+
     public const string CensorTypes = "admin-censor-*";
 
     public const string GlobalWhoKnowsReport = "gwk-report";

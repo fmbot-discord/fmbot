@@ -101,12 +101,20 @@ public class SettingSlashCommands : InteractionModuleBase
                         }
 
                         response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context));
-
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
                     }
                     break;
                 case GuildSetting.WhoKnowsActivityThreshold:
-                    await RespondAsync("Not implemented yet", ephemeral: true);
+                {
+                    if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+                    {
+                        await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+                        return;
+                    }
+
+                    response = await this._guildSettingBuilder.SetWhoKnowsActivityThreshold(this.Context);
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 case GuildSetting.WhoKnowsBlockedUsers:
                     response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, userSettings));
@@ -134,7 +142,6 @@ public class SettingSlashCommands : InteractionModuleBase
                         }
 
                         response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), this.Context.Channel.Id);
-
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
                     }
                     break;
@@ -147,7 +154,6 @@ public class SettingSlashCommands : InteractionModuleBase
                     }
 
                     response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
-
                     await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
                 }
                     break;
@@ -228,6 +234,47 @@ public class SettingSlashCommands : InteractionModuleBase
         }
 
         await this.Context.Interaction.RespondWithModalAsync<AddDisabledChannelCommandModal>($"{InteractionConstants.ToggleCommandAddModal}-{channelId}-{categoryId}-{message.Id}");
+    }
+
+    [ComponentInteraction($"{InteractionConstants.SetActivityThreshold}")]
+    public async Task SetActivityThreshold()
+    {
+        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        {
+            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            return;
+        }
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        await this.Context.Interaction.RespondWithModalAsync<SetActivityThresholdModal>($"{InteractionConstants.SetActivityThresholdModal}-{message.Id}");
+    }
+
+    [ModalInteraction($"{InteractionConstants.SetActivityThresholdModal}-*")]
+    public async Task SetActivityThreshold(string messageId, SetActivityThresholdModal modal)
+    {
+        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        {
+            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            return;
+        }
+
+        if (!int.TryParse(modal.DayAmount, out var result) ||
+            result < 1 ||
+            result > 999)
+        {
+            await RespondAsync($"Please enter a valid number between `1` and `999`.", ephemeral: true);
+            return;
+        }
+
+        var response = await this._guildSettingBuilder.SetWhoKnowsActivityThreshold(this.Context);
+
+        await UpdateMessageEmbed(response, messageId);
     }
 
     [ModalInteraction($"{InteractionConstants.ToggleCommandAddModal}-*-*-*")]

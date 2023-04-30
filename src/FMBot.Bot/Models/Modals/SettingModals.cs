@@ -12,6 +12,15 @@ public class PrefixModal : IModal
     public string NewPrefix { get; set; }
 }
 
+public class SetActivityThresholdModal : IModal
+{
+    public string Title => "Set .fmbot activity threshold";
+
+    [InputLabel("Enter amount of days before someone is marked as inactive")]
+    [ModalTextInput("day_amount", placeholder: "30", minLength: 1, maxLength: 3)]
+    public string DayAmount { get; set; }
+}
+
 public class RemoveDisabledChannelCommandModal : IModal
 {
     public string Title => "Enable command in channel";

@@ -16,6 +16,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Builders;
@@ -228,6 +229,48 @@ public class GuildSettingBuilder
         response.Embed.WithTitle("Set text command prefix");
         response.Embed.WithDescription(description.ToString());
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> SetWhoKnowsActivityThreshold(IInteractionContext context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithTitle("Set WhoKnows activity threshold");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var description = new StringBuilder();
+
+        description.AppendLine($"Setting a WhoKnows activity threshold will filter out people who have not used .fmbot. " +
+                               $"A user counts as active as soon as they use .fmbot anywhere.");
+        description.AppendLine();
+        description.AppendLine("This filtering applies to all server-wide commands.");
+        description.AppendLine();
+
+        var guild = await this._guildService.GetGuildAsync(context.Guild.Id);
+
+        var components = new ComponentBuilder();
+
+
+        if (!guild.ActivityThresholdDays.HasValue)
+        {
+            description.AppendLine("There is currently no activity threshold enabled.");
+            description.AppendLine("To enable, click the button below and enter the amount of days.");
+            components.WithButton("Set activity threshold", $"{InteractionConstants.SetActivityThreshold}", style: ButtonStyle.Secondary);
+        }
+        else
+        {
+            description.AppendLine($"✅ Enabled. Anyone who hasn't used .fmbot in the last **{guild.ActivityThresholdDays.Value}** days is currently filtered out.");
+            components.WithButton("Remove threshold", $"{InteractionConstants.SetActivityThreshold}", style: ButtonStyle.Secondary);
+        }
+
+        response.Embed.WithDescription(description.ToString());
+
+        
 
         return response;
     }
