@@ -665,16 +665,6 @@ public class GuildService
         }
     }
 
-    public async Task<string[]> GetDisabledCommandsForGuild(IGuild discordGuild)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var existingGuild = await db.Guilds
-            .AsQueryable()
-            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
-
-        return existingGuild?.DisabledCommands;
-    }
-
     public async Task<string[]> AddGuildDisabledCommandAsync(IGuild discordGuild, string command)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

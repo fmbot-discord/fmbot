@@ -475,6 +475,7 @@ public class GuildSettingBuilder
         description.AppendLine($"`{prfx}serverreactions 😀 😯 🥵`");
 
         response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         return response;
     }
@@ -486,6 +487,7 @@ public class GuildSettingBuilder
             ResponseType = ResponseType.Embed
         };
 
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Embed.WithTitle($"Toggle server commands - {context.DiscordGuild.Name}");
         response.Embed.WithFooter("Commands disabled here will be disabled throughout the whole server");
 
@@ -529,6 +531,7 @@ public class GuildSettingBuilder
 
         var selectedChannel = await context.DiscordGuild.GetChannelAsync(selectedChannelId);
 
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Embed.WithTitle($"Toggle channel commands - #{selectedChannel.Name}");
         response.Embed.WithFooter("Use the up and down selector to browse through channels");
 
