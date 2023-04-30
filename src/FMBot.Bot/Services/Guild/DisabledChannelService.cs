@@ -86,9 +86,16 @@ public class DisabledChannelService
 
         if (guild != null)
         {
-            foreach (var channel in guild.Channels.Where(w => w.BotDisabled == true))
+            foreach (var channel in guild.Channels)
             {
-                AddDisabledChannel(channel.DiscordChannelId);
+                if (channel.BotDisabled == true)
+                {
+                    AddDisabledChannel(channel.DiscordChannelId);
+                }
+                else
+                {
+                    RemoveDisabledChannel(channel.DiscordChannelId);
+                }
             }
         }
     }

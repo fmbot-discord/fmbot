@@ -25,6 +25,9 @@ public enum GuildSetting
     [Option("Crown functionality", "Completely enable or disable crowns on your server")]
     CrownsDisabled = 23,
 
-    [Option("Disabled commands", "Enable or disable commands server-wide")]
+    [Option("Disabled channel commands", "Toggle commands or the bot per channel")]
     DisabledCommands = 30,
+
+    [Option("Disabled server commands", "Toggle commands server-wide")]
+    DisabledGuildCommands = 31,
 }

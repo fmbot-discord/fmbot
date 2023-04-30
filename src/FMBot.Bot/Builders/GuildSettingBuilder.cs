@@ -479,6 +479,47 @@ public class GuildSettingBuilder
         return response;
     }
 
+    public async Task<ResponseModel> ToggleGuildCommand(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        response.Embed.WithTitle($"Toggle server commands - {context.DiscordGuild.Name}");
+        response.Embed.WithFooter("Commands disabled here will be disabled throughout the whole server");
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var currentlyDisabled = new StringBuilder();
+
+        var currentDisabledCommands = guild?.DisabledCommands?.ToList();
+
+        if (currentDisabledCommands != null)
+        {
+            var maxNewCommandsToDisplay = currentDisabledCommands.Count > 32 ? 32 : currentDisabledCommands.Count;
+            for (var index = 0; index < maxNewCommandsToDisplay; index++)
+            {
+                var newDisabledCommand = currentDisabledCommands[index];
+                currentlyDisabled.Append($"`{newDisabledCommand}` ");
+            }
+            if (currentDisabledCommands.Count > 32)
+            {
+                currentlyDisabled.Append($" and {currentDisabledCommands.Count - 32} other commands");
+            }
+        }
+
+        response.Embed.AddField("Disabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
+
+        var components = new ComponentBuilder()
+            .WithButton("Add", $"{InteractionConstants.ToggleGuildCommandAdd}", style: ButtonStyle.Secondary)
+            .WithButton("Remove", $"{InteractionConstants.ToggleGuildCommandRemove}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
+            .WithButton("Clear", $"{InteractionConstants.ToggleGuildCommandClear}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
+
+        response.Components = components;
+
+        return response;
+    }
+
     public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId, ulong? selectedCategoryId = null)
     {
         var response = new ResponseModel

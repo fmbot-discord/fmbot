@@ -29,3 +29,21 @@ public class AddDisabledChannelCommandModal : IModal
     [ModalTextInput("command", placeholder: "whoknows", minLength: 1, maxLength: 40)]
     public string Command { get; set; }
 }
+
+public class RemoveDisabledGuildCommandModal : IModal
+{
+    public string Title => "Enable command server-wide";
+
+    [InputLabel("Enter command")]
+    [ModalTextInput("command", placeholder: "whoknows", minLength: 1, maxLength: 40)]
+    public string Command { get; set; }
+}
+
+public class AddDisabledGuildCommandModal : IModal
+{
+    public string Title => "Disable command server-wide";
+
+    [InputLabel("Enter command")]
+    [ModalTextInput("command", placeholder: "whoknows", minLength: 1, maxLength: 40)]
+    public string Command { get; set; }
+}

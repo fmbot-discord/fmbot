@@ -37,6 +37,7 @@ public class SettingSlashCommands : InteractionModuleBase
 
     private readonly ChannelDisabledCommandService _channelDisabledCommandService;
     private readonly DisabledChannelService _disabledChannelService;
+    private readonly GuildDisabledCommandService _guildDisabledCommandService;
 
     private InteractiveService Interactivity { get; }
 
@@ -48,7 +49,8 @@ public class SettingSlashCommands : InteractionModuleBase
         GuildService guildService,
         CommandService commands,
         ChannelDisabledCommandService channelDisabledCommandService,
-        DisabledChannelService disabledChannelService)
+        DisabledChannelService disabledChannelService,
+        GuildDisabledCommandService guildDisabledCommandService)
     {
         this._guildSettingBuilder = guildSettingBuilder;
         this.Interactivity = interactivity;
@@ -58,6 +60,7 @@ public class SettingSlashCommands : InteractionModuleBase
         this._commands = commands;
         this._channelDisabledCommandService = channelDisabledCommandService;
         this._disabledChannelService = disabledChannelService;
+        this._guildDisabledCommandService = guildDisabledCommandService;
     }
 
     [ComponentInteraction(InteractionConstants.GuildSetting)]
@@ -123,7 +126,30 @@ public class SettingSlashCommands : InteractionModuleBase
                     await RespondAsync("Not implemented yet", ephemeral: true);
                     break;
                 case GuildSetting.DisabledCommands:
-                    await RespondAsync("Not implemented yet", ephemeral: true);
+                    {
+                        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+                        {
+                            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+                            return;
+                        }
+
+                        response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), this.Context.Channel.Id);
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                    }
+                    break;
+                case GuildSetting.DisabledGuildCommands:
+                {
+                    if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+                    {
+                        await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+                        return;
+                    }
+
+                    response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
+
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -166,20 +192,7 @@ public class SettingSlashCommands : InteractionModuleBase
 
         var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context));
 
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
-
-        if (message == null)
-        {
-            return;
-        }
-
-        await message.ModifyAsync(m =>
-        {
-            m.Embed = response.Embed.Build();
-            m.Components = response.Components.Build();
-        });
-
-        await this.Context.Interaction.DeferAsync();
+        await UpdateInteractionEmbed(response);
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommandMove}-*-*")]
@@ -195,21 +208,7 @@ public class SettingSlashCommands : InteractionModuleBase
         var parsedCategoryId = ulong.Parse(categoryId);
 
         var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
-
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
-
-        if (message == null)
-        {
-            return;
-        }
-
-        await message.ModifyAsync(m =>
-        {
-            m.Embed = response.Embed.Build();
-            m.Components = response.Components.Build();
-        });
-
-        await this.Context.Interaction.DeferAsync();
+        await UpdateInteractionEmbed(response);
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommandAdd}-*-*")]
@@ -276,23 +275,9 @@ public class SettingSlashCommands : InteractionModuleBase
 
         await this._channelDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        var parsedMessageId = ulong.Parse(messageId);
-        var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
-
-        if (msg is not IUserMessage message)
-        {
-            return;
-        }
-
         var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
 
-        await message.ModifyAsync(m =>
-        {
-            m.Components = response.Components.Build();
-            m.Embed = response.Embed.Build();
-        });
-
-        await this.Context.Interaction.DeferAsync();
+        await UpdateMessageEmbed(response, messageId);
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommandRemove}-*-*")]
@@ -349,25 +334,11 @@ public class SettingSlashCommands : InteractionModuleBase
         await this._guildService
             .EnableChannelCommandsAsync(selectedChannel, new List<string> { commandToEnable.Command.Name }, this.Context.Guild.Id);
 
-        var parsedMessageId = ulong.Parse(messageId);
-        var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
-
-        if (msg is not IUserMessage message)
-        {
-            return;
-        }
-
         await this._channelDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
         var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
 
-        await message.ModifyAsync(m =>
-        {
-            m.Components = response.Components.Build();
-            m.Embed = response.Embed.Build();
-        });
-
-        await this.Context.Interaction.DeferAsync();
+        await UpdateMessageEmbed(response, messageId);
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommandClear}-*-*")]
@@ -387,7 +358,8 @@ public class SettingSlashCommands : InteractionModuleBase
 
         await this._channelDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        await RespondWithToggleChannelCommandEmbed(parsedChannelId, parsedCategoryId);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        await UpdateInteractionEmbed(response);
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommandDisableAll}-*-*")]
@@ -408,7 +380,8 @@ public class SettingSlashCommands : InteractionModuleBase
         await this._guildService.DisableChannelAsync(selectedChannel, guild.GuildId, this.Context.Guild.Id);
         await this._disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
 
-        await RespondWithToggleChannelCommandEmbed(parsedChannelId, parsedCategoryId);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        await UpdateInteractionEmbed(response);
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommandEnableAll}-*-*")]
@@ -428,12 +401,18 @@ public class SettingSlashCommands : InteractionModuleBase
         await this._guildService.EnableChannelAsync(selectedChannel, this.Context.Guild.Id);
         await this._disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
 
-        await RespondWithToggleChannelCommandEmbed(parsedChannelId, parsedCategoryId);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        await UpdateInteractionEmbed(response);
     }
 
-    private async Task RespondWithToggleChannelCommandEmbed(ulong parsedChannelId, ulong parsedCategoryId)
+    [ComponentInteraction($"{InteractionConstants.ToggleGuildCommandAdd}")]
+    public async Task AddDisabledGuildCommand()
     {
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        {
+            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            return;
+        }
 
         var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
 
@@ -442,6 +421,154 @@ public class SettingSlashCommands : InteractionModuleBase
             return;
         }
 
+        await this.Context.Interaction.RespondWithModalAsync<AddDisabledGuildCommandModal>($"{InteractionConstants.ToggleGuildCommandAddModal}-{message.Id}");
+    }
+
+    [ModalInteraction($"{InteractionConstants.ToggleGuildCommandAddModal}-*")]
+    public async Task AddDisabledGuildCommand(string messageId, AddDisabledGuildCommandModal modal)
+    {
+        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        {
+            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            return;
+        }
+
+        var searchResult = this._commands.Search(modal.Command.ToLower());
+
+        if (!searchResult.IsSuccess ||
+            !searchResult.Commands.Any())
+        {
+            await RespondAsync($"The command `{modal.Command}` could not be found. Please try again.", ephemeral: true);
+            return;
+        }
+
+        var commandToDisable = searchResult.Commands[0];
+
+        if (commandToDisable.Command.Name is "serversettings" or "togglecommand" or "toggleservercommand")
+        {
+            await RespondAsync($"You can't disable this command. Please try a different command.", ephemeral: true);
+            return;
+        }
+
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var currentlyDisabledCommands = guild.DisabledCommands?.ToList();
+
+        if (currentlyDisabledCommands != null &&
+            currentlyDisabledCommands.Any(a => a == commandToDisable.Command.Name))
+        {
+            await RespondAsync($"The command `{commandToDisable.Command.Name}` is already disabled in this server.", ephemeral: true);
+            return;
+        }
+
+        await this._guildService.AddGuildDisabledCommandAsync(this.Context.Guild, commandToDisable.Command.Name);
+        await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
+
+        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
+
+        await UpdateMessageEmbed(response, messageId);
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ToggleGuildCommandRemove}")]
+    public async Task RemoveDisabledGuildCommand()
+    {
+        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        {
+            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            return;
+        }
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledGuildCommandModal>($"{InteractionConstants.ToggleGuildCommandRemoveModal}-{message.Id}");
+    }
+
+    [ModalInteraction($"{InteractionConstants.ToggleGuildCommandRemoveModal}-*")]
+    public async Task RemoveDisabledChannelCommand(string messageId, RemoveDisabledGuildCommandModal modal)
+    {
+        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        {
+            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            return;
+        }
+
+        var searchResult = this._commands.Search(modal.Command.ToLower());
+
+        if (!searchResult.IsSuccess ||
+            !searchResult.Commands.Any())
+        {
+            await RespondAsync($"The command `{modal.Command}` could not be found. Please try again.", ephemeral: true);
+            return;
+        }
+
+        var commandToEnable = searchResult.Commands[0];
+
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var currentlyDisabledCommands = guild.DisabledCommands?.ToList();
+
+        if (currentlyDisabledCommands == null ||
+            currentlyDisabledCommands.All(a => a != commandToEnable.Command.Name))
+        {
+            await RespondAsync($"The command `{commandToEnable.Command.Name}` is not disabled in this server.", ephemeral: true);
+            return;
+        }
+
+        await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, commandToEnable.Command.Name);
+        await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
+
+        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
+
+        await UpdateMessageEmbed(response, messageId);
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ToggleGuildCommandClear}")]
+    public async Task ClearDisabledChannelCommand()
+    {
+        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        {
+            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            return;
+        }
+
+        await this._guildService.ClearGuildDisabledCommandAsync(this.Context.Guild);
+        await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
+
+        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
+
+        await UpdateInteractionEmbed(response);
+    }
+
+    private async Task UpdateInteractionEmbed(ResponseModel response)
+    {
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        await ModifyMessage(message, response);
+    }
+
+    private async Task UpdateMessageEmbed(ResponseModel response, string messageId)
+    {
+        var parsedMessageId = ulong.Parse(messageId);
+        var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
+
+        if (msg is not IUserMessage message)
+        {
+            return;
+        }
+
+        await ModifyMessage(message, response);
+    }
+
+    private async Task ModifyMessage(IUserMessage message, ResponseModel response)
+    {
         await message.ModifyAsync(m =>
         {
             m.Components = response.Components.Build();

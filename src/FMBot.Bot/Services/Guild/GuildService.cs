@@ -731,7 +731,25 @@ public class GuildService
             .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
         existingGuild.DisabledCommands = existingGuild.DisabledCommands.Where(w => !w.Contains(command)).ToArray();
+        existingGuild.Name = discordGuild.Name;
 
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+
+        return existingGuild.DisabledCommands;
+    }
+
+    public async Task<string[]> ClearGuildDisabledCommandAsync(IGuild discordGuild)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        existingGuild.DisabledCommands = null;
         existingGuild.Name = discordGuild.Name;
 
         db.Entry(existingGuild).State = EntityState.Modified;
@@ -899,7 +917,7 @@ public class GuildService
             return;
         }
 
-        existingChannel.BotDisabled = false;
+        existingChannel.BotDisabled = null;
         existingChannel.Name = existingChannel.Name;
 
         db.Entry(existingChannel).State = EntityState.Modified;

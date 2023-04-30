@@ -393,90 +393,26 @@ public class GuildCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-
     [Command("toggleservercommand", RunMode = RunMode.Async)]
-    [Summary("Enables or disables a command server-wide. Make sure to enter the command you want to disable without the `{{prfx}}` prefix.")]
-    [Examples("toggleservercommand chart", "toggleservercommand whoknows")]
+    [Summary("Enables or disables a command server-wide")]
     [Alias("toggleservercommands", "toggleserver", "servertoggle")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task ToggleGuildCommand(string command = null)
+    public async Task ToggleGuildCommand(string _ = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-
-        var disabledCommandsForGuild = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-        this._embed.WithFooter(
-            $"Toggling server-wide for all channels\n" +
-            $"To toggle per channel use '{prfx}togglecommand'");
-
-        if (string.IsNullOrEmpty(command))
+        try
         {
-            var description = new StringBuilder();
-            if (disabledCommandsForGuild != null && disabledCommandsForGuild.Length > 0)
-            {
-                description.AppendLine("Currently disabled commands in this server:");
-                foreach (var disabledCommand in disabledCommandsForGuild)
-                {
-                    description.Append($"`{disabledCommand}` ");
-                }
-            }
-            else
-            {
-                description.Append("This server currently has all commands enabled. \n" +
-                                   $"To disable a command, enter the command name like this: `{prfx}toggleservercommand chart`");
-            }
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context, prfx));
 
-            this._embed.WithDescription(description.ToString());
-            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
-
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        catch (Exception e)
         {
-            await ReplyAsync(
-                "You are not authorized to toggle commands. Only users with the 'Ban Members' permission or server admins can disable/enable commands.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
+            await this.Context.HandleCommandException(e);
         }
-
-        var searchResult = this._commands.Search(command.ToLower());
-
-        if (searchResult.Commands == null || !searchResult.Commands.Any() || searchResult.Commands.Any(a => a.Command.Name == "toggleservercommand") || searchResult.Commands.Any(a => a.Command.Name == "togglecommand"))
-        {
-            this._embed.WithDescription("No commands found or command can't be disabled.\n" +
-                                        "Remember to remove the `.fm` prefix.");
-            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
-
-        var foundCommand = searchResult.Commands.FirstOrDefault().Command;
-
-        if (disabledCommandsForGuild != null && disabledCommandsForGuild.Any(a => a.Equals(foundCommand.Name.ToLower())))
-        {
-            var newDisabledCommands = await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, foundCommand.Name.ToLower());
-
-            GuildDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
-
-            this._embed.WithDescription($"Re-enabled command `{foundCommand.Name}` for this server.");
-        }
-        else
-        {
-            var newDisabledCommands = await this._guildService.AddGuildDisabledCommandAsync(this.Context.Guild, foundCommand.Name.ToLower());
-
-            GuildDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
-
-            this._embed.WithDescription($"Disabled command `{foundCommand.Name}` for this server.");
-        }
-
-        await ReplyAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
     }
 
     [GuildOnly]
@@ -485,7 +421,7 @@ public class GuildCommands : BaseCommandModule
     [Summary("Enables or disables a command in a channel")]
     [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands")]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task ToggleChannelCommandNew(string _ = null)
+    public async Task ToggleChannelCommand(string _ = null)
     {
         try
         {
