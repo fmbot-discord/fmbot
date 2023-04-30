@@ -238,10 +238,6 @@ public class StartupService
             {
                 listConfig.BotsForDiscord = this._botSettings.BotLists.BotsForDiscordToken;
             }
-            if (!string.IsNullOrWhiteSpace(this._botSettings.BotLists.DiscordBoatsToken))
-            {
-                listConfig.DiscordBoats = this._botSettings.BotLists.DiscordBoatsToken;
-            }
             if (!string.IsNullOrWhiteSpace(this._botSettings.BotLists.BotsOnDiscordToken))
             {
                 listConfig.BotsOnDiscord = this._botSettings.BotLists.BotsOnDiscordToken;

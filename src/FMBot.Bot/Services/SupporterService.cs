@@ -7,6 +7,7 @@ using Discord;
 using Discord.Webhook;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.OpenCollective.Models;
@@ -111,6 +112,8 @@ public class SupporterService
     public static async Task SendSupporterWelcomeMessage(IUser discordUser, User user, Supporter supporter)
     {
         var thankYouEmbed = new EmbedBuilder();
+        thankYouEmbed.WithColor(DiscordConstants.InformationColorBlue);
+
         var thankYouMessage = new StringBuilder();
         thankYouMessage.AppendLine($"**Thank you for getting .fmbot {supporter.SubscriptionType.ToString().ToLower()} supporter!**");
         thankYouMessage.AppendLine(supporter.SubscriptionType == SubscriptionType.Lifetime
@@ -145,12 +148,12 @@ public class SupporterService
         }
 
         thankYouMessage.AppendLine();
-        thankYouMessage.AppendLine("**Your info**\n" +
+        thankYouMessage.Append("**Your info**\n" +
                                    $"Your name in the `supporters` command will be shown as `{supporter.Name}`. This is also the name that will be shown when you sponsor charts. ");
 
         if (supporter.OpenCollectiveId != null)
         {
-            thankYouMessage.AppendLine("You can update this through your OpenCollective settings.");
+            thankYouMessage.Append("You can update this through your OpenCollective settings.");
         }
         
         thankYouEmbed.WithDescription(thankYouMessage.ToString());
@@ -159,7 +162,9 @@ public class SupporterService
 
     public static async Task SendSupporterGoodbyeMessage(IUser discordUser)
     {
-        var thankYouEmbed = new EmbedBuilder();
+        var goodbyeEmbed = new EmbedBuilder();
+        goodbyeEmbed.WithColor(DiscordConstants.InformationColorBlue);
+
         var goodbyeMessage = new StringBuilder();
 
         goodbyeMessage.AppendLine("Your .fmbot supporter subscription has expired. Sorry to see you go!");
@@ -168,8 +173,8 @@ public class SupporterService
         goodbyeMessage.AppendLine();
         goodbyeMessage.AppendLine("Thanks for having supported the bot! If you have any feedback about the bot or the supporter program feel free to open a thread in #help on [our server](https://discord.gg/fmbot). You can also DM the developer who is identified on the server if preferable.");
 
-        thankYouEmbed.WithDescription(goodbyeMessage.ToString());
-        await discordUser.SendMessageAsync(embed: thankYouEmbed.Build());
+        goodbyeEmbed.WithDescription(goodbyeMessage.ToString());
+        await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build());
     }
 
     public async Task<string> GetPromotionalUpdateMessage(User user, string prfx, IDiscordClient contextClient,

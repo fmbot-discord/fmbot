@@ -865,6 +865,7 @@ public class AdminCommands : BaseCommandModule
     }
 
     [Command("sendsupporterwelcome")]
+    [Alias("sendwelcomedm")]
     public async Task SendWelcomeDm(string user = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -912,6 +913,7 @@ public class AdminCommands : BaseCommandModule
     }
 
     [Command("sendsupportergoodbye")]
+    [Alias("sendgoodbyedm")]
     public async Task SendGoodbyeDm(string user = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))

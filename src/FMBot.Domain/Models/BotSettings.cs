@@ -128,7 +128,5 @@ public class BotListConfig
 
     public string BotsForDiscordToken { get; set; }
 
-    public string DiscordBoatsToken { get; set; }
-
     public string BotsOnDiscordToken { get; set; }
 }

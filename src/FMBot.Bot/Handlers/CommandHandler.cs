@@ -349,7 +349,8 @@ public class CommandHandler
     {
         if (context.Guild != null)
         {
-            if (searchResult.Commands.Any(a => a.Command.Name.ToLower() == "togglecommand" ||
+            if (searchResult.Commands != null &&
+                searchResult.Commands.Any(a => a.Command.Name.ToLower() == "togglecommand" ||
                                                a.Command.Name.ToLower() == "toggleservercommand"))
             {
                 return true;
