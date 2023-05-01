@@ -17,17 +17,21 @@ public class ClientLogHandler
 {
     private readonly IMemoryCache _cache;
     private readonly DiscordShardedClient _client;
-    private readonly IChannelDisabledCommandService _channelDisabledCommandService;
-    private readonly IGuildDisabledCommandService _guildDisabledCommandService;
+    private readonly ChannelDisabledCommandService _channelDisabledCommandService;
+    private readonly GuildDisabledCommandService _guildDisabledCommandService;
+    private readonly DisabledChannelService _disabledChannelService;
     private readonly IPrefixService _prefixService;
     private readonly GuildService _guildService;
     private readonly IIndexService _indexService;
 
     public ClientLogHandler(DiscordShardedClient client,
-        IChannelDisabledCommandService channelDisabledCommandService,
-        IGuildDisabledCommandService guildDisabledCommandService,
+        ChannelDisabledCommandService channelDisabledCommandService,
+        GuildDisabledCommandService guildDisabledCommandService,
         GuildService guildService,
-        IPrefixService prefixService, IIndexService indexService, IMemoryCache cache)
+        IPrefixService prefixService,
+        IIndexService indexService,
+        IMemoryCache cache,
+        DisabledChannelService disabledChannelService)
     {
         this._client = client;
         this._channelDisabledCommandService = channelDisabledCommandService;
@@ -36,6 +40,7 @@ public class ClientLogHandler
         this._prefixService = prefixService;
         this._indexService = indexService;
         this._cache = cache;
+        this._disabledChannelService = disabledChannelService;
         this._client.Log += LogEvent;
         this._client.ShardLatencyUpdated += ShardLatencyEvent;
         this._client.ShardDisconnected += ShardDisconnectedEvent;
@@ -125,6 +130,7 @@ public class ClientLogHandler
 
         _ = this._channelDisabledCommandService.ReloadDisabledCommands(guild.Id);
         _ = this._guildDisabledCommandService.ReloadDisabledCommands(guild.Id);
+        _ = this._disabledChannelService.ReloadDisabledChannels(guild.Id);
         _ = this._prefixService.ReloadPrefix(guild.Id);
 
         _ = IndexServer(guild);
@@ -175,6 +181,7 @@ public class ClientLogHandler
                 "LeftGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
 
             _ = this._channelDisabledCommandService.RemoveDisabledCommandsForGuild(guild.Id);
+            _ = this._disabledChannelService.RemoveDisabledChannelsForGuild(guild.Id);
             _ = this._guildService.RemoveGuildAsync(guild.Id);
         }
         else

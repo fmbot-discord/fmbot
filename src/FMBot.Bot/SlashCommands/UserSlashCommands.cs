@@ -375,6 +375,7 @@ public class UserSlashCommands : InteractionModuleBase
     }
 
     [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)")]
+    [UsernameSetRequired]
     public async Task FeaturedAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -399,14 +400,66 @@ public class UserSlashCommands : InteractionModuleBase
     }
 
     [SlashCommand("botscrobbling", "Shows info about music bot scrobbling and allows you to change your settings")]
-    public async Task BotScrobblingAsync([Summary("Enabled", "Whether bot scrobbling should be enabled or not")] bool option = false)
+    [UsernameSetRequired]
+    public async Task BotScrobblingAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var response = await this._userBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser), option.ToString());
+        var response = await this._userBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
+
+    [ComponentInteraction(InteractionConstants.BotScrobblingEnable)]
+    [UserSessionRequired]
+    public async Task EnableBotScrobbling()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var reply = new StringBuilder();
+
+        if (contextUser.MusicBotTrackingDisabled != true)
+        {
+            reply.AppendLine("✅ Music bot scrobbling for your account is already enabled.");
+        }
+        else
+        {
+            await this._userService.ToggleBotScrobblingAsync(contextUser.UserId, false);
+            reply.AppendLine("✅ Enabled music bot scrobbling for your account.");
+        }
+
+        var embed = new EmbedBuilder();
+        embed.WithDescription(reply.ToString());
+        embed.WithColor(DiscordConstants.SuccessColorGreen);
+
+        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+        this.Context.LogCommandUsed();
+    }
+
+    [ComponentInteraction(InteractionConstants.BotScrobblingDisable)]
+    [UserSessionRequired]
+    public async Task DisableBotScrobbling()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var reply = new StringBuilder();
+
+        if (contextUser.MusicBotTrackingDisabled == true)
+        {
+            reply.AppendLine("❌ Music bot scrobbling for your account is already disabled.");
+        }
+        else
+        {
+            await this._userService.ToggleBotScrobblingAsync(contextUser.UserId, true);
+            reply.AppendLine("❌ Disabled music bot scrobbling for your account.");
+        }
+
+        var embed = new EmbedBuilder();
+        embed.WithDescription(reply.ToString());
+        embed.WithColor(DiscordConstants.LastFmColorRed);
+
+        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+        this.Context.LogCommandUsed();
+    }
+
 
     [SlashCommand("featuredlog", "Shows you or someone else their featured history")]
     [UsernameSetRequired]

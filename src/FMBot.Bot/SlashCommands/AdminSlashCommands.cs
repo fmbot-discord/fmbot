@@ -137,11 +137,7 @@ public class AdminSlashCommands : InteractionModuleBase
             return;
         }
 
-        var components =
-            new ComponentBuilder().WithButton($"Banned by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
-        await message.ModifyAsync(m => m.Components = components.Build());
-
-        await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsBanModal>($"gwk-report-ban-confirmed-{reportId}");
+        await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsBanModal>($"gwk-report-ban-confirmed-{reportId}-{message.Id}");
     }
 
     [ComponentInteraction("gwk-report-deny-*")]
@@ -175,12 +171,10 @@ public class AdminSlashCommands : InteractionModuleBase
         var components =
             new ComponentBuilder().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
         await message.ModifyAsync(m => m.Components = components.Build());
-
-        await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsBanModal>($"gwk-report-ban-confirmed-{reportId}");
     }
 
-    [ModalInteraction("gwk-report-ban-confirmed-*")]
-    public async Task GwkReportBanConfirmed(string reportId, ReportGlobalWhoKnowsBanModal modal)
+    [ModalInteraction("gwk-report-ban-confirmed-*-*")]
+    public async Task GwkReportBanConfirmed(string reportId, string messageId, ReportGlobalWhoKnowsBanModal modal)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -215,6 +209,18 @@ public class AdminSlashCommands : InteractionModuleBase
         {
             await RespondAsync($"Something went wrong. Try checking with `.checkbotted {report.UserNameLastFM}`", ephemeral: true);
         }
+
+        var parsedMessageId = ulong.Parse(messageId);
+        var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
+
+        if (msg is not IUserMessage message)
+        {
+            return;
+        }
+
+        var components =
+            new ComponentBuilder().WithButton($"Banned by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
+        await message.ModifyAsync(m => m.Components = components.Build());
     }
 
     [ComponentInteraction(InteractionConstants.ReportAlbum)]
@@ -238,7 +244,7 @@ public class AdminSlashCommands : InteractionModuleBase
 
         if (album == null)
         {
-            await RespondAsync($"The album you tried to report does not exist in the .fmbot database (`{modal.AlbumName}` by `{modal.ArtistName}`)", ephemeral: true);
+            await RespondAsync($"The album you tried to report does not exist in the .fmbot database (`{modal.AlbumName}` by `{modal.ArtistName}`). Someone needs to run the `album` command on it first.", ephemeral: true);
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -279,7 +285,7 @@ public class AdminSlashCommands : InteractionModuleBase
 
         if (artist == null)
         {
-            await RespondAsync($"The artist you tried to report does not exist in the .fmbot database (`{modal.ArtistName}`)", ephemeral: true);
+            await RespondAsync($"The artist you tried to report does not exist in the .fmbot database (`{modal.ArtistName}`). Someone needs to run the `artist` command on them first.", ephemeral: true);
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }

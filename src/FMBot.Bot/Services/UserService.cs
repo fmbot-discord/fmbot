@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -13,7 +11,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -616,6 +613,49 @@ public class UserService
         return footer;
     }
 
+    public static (bool promo, string description) GetIndexCompletedUserStats(User user, IndexedUserStats stats)
+    {
+        var description = new StringBuilder();
+        var promo = false;
+
+        if (stats == null)
+        {
+            description.AppendLine("Full update could not complete, something went wrong. Please try again later.");
+            return (false, description.ToString());
+        }
+
+        description.AppendLine($"✅ {user.UserNameLastFM} has been fully updated.");
+        description.AppendLine();
+        description.AppendLine("Cached the following playcounts:");
+        if (user.UserType == UserType.User)
+        {
+            description.AppendLine($"- Last **{stats.PlayCount}** plays");
+            description.AppendLine($"- Top **{stats.ArtistCount}** artists");
+            description.AppendLine($"- Top **{stats.AlbumCount}** albums");
+            description.AppendLine($"- Top **{stats.TrackCount}** tracks");
+        }
+        else
+        {
+            description.AppendLine($"- **{stats.PlayCount}** plays");
+            description.AppendLine($"- **{stats.ArtistCount}** top artists");
+            description.AppendLine($"- **{stats.AlbumCount}** top albums");
+            description.AppendLine($"- **{stats.TrackCount}** top tracks");
+        }
+
+        if (user.UserType == UserType.User &&
+            (stats.PlayCount >= 24900 ||
+             stats.TrackCount >= 5900 ||
+             stats.AlbumCount >= 4900 ||
+             stats.ArtistCount >= 3900))
+        {
+            description.AppendLine();
+            description.AppendLine($"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterOverviewLink}).");
+            promo = true;
+        }
+
+        return (promo, description.ToString());
+    }
+
     // Set LastFM Name
     public async Task SetLastFm(IUser discordUser, User newUserSettings, bool updateSessionKey = false)
     {
@@ -858,24 +898,17 @@ public class UserService
         return user.RymEnabled;
     }
 
-    public async Task<bool?> ToggleBotScrobblingAsync(User user, string option)
+    public async Task ToggleBotScrobblingAsync(int userId, bool? disabled)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        if (option != null && (option.ToLower() == "on" || option.ToLower() == "true" || option.ToLower() == "yes"))
-        {
-            user.MusicBotTrackingDisabled = false;
-        }
-        else if (option != null && (option.ToLower() == "off" || option.ToLower() == "false" || option.ToLower() == "no"))
-        {
-            user.MusicBotTrackingDisabled = true;
-        }
+        var user = await db.Users.FirstAsync(f => f.UserId == userId);
+
+        user.MusicBotTrackingDisabled = disabled;
 
         db.Update(user);
 
-        await db.SaveChangesAsync();
-
-        return user.MusicBotTrackingDisabled;
+        await db.SaveChangesAsync(); ;
     }
 
     public async Task<int> GetTotalUserCountAsync()

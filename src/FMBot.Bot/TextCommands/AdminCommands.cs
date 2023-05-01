@@ -780,7 +780,7 @@ public class AdminCommands : BaseCommandModule
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
-            if (userSettings.UserType != UserType.User)
+            if (userSettings.UserType != UserType.User && !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
                 await ReplyAsync("`Can only change usertype of normal users`\n\n" + formatError);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
@@ -838,50 +838,11 @@ public class AdminCommands : BaseCommandModule
 
             this._embed.WithFooter("Name changes go through OpenCollective and apply within 24h");
 
-            var discordUser = await this.Context.Guild.GetUserAsync(discordUserId);
+            var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
-                var thankYouEmbed = new EmbedBuilder();
-                var thankYouMessage = new StringBuilder();
-                thankYouMessage.AppendLine($"**Thank you for getting .fmbot {openCollectiveSupporter.SubscriptionType.ToString().ToLower()} supporter!**");
-                thankYouMessage.AppendLine(openCollectiveSupporter.SubscriptionType == SubscriptionType.Lifetime
-                    ? "Thanks to your purchase we can continue to improve and host the bot, while you get some nice perks in return. Here's a brief reminder of the features available to supporters:"
-                    : "Thanks to your subscription we can continue to improve and host the bot, while you get some nice perks in return. Here's a brief reminder of the features available to supporters:");
+                await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings, supporter);
 
-                thankYouMessage.AppendLine();
-                thankYouMessage.AppendLine("**Expanded statistics**\n" +
-                                           "We've started a full update for you. " +
-                                           "After a few minutes the following commands should be expanded:\n" +
-                                           "- `artist`, `album` and `track` with first listen dates\n" +
-                                           "- `stats` command with overall history\n" +
-                                           "- `year` with artist discoveries and monthly overview\n" +
-                                           "- `fm` footer with up to 8 + 1 options (configured with `/fmmode`)\n" +
-                                           "- `userreactions` setting available\n" +
-                                           "- More coming soon");
-
-                thankYouMessage.AppendLine();
-                thankYouMessage.AppendLine("**Get featured**\n" +
-                                           "Every first Sunday of the month is Supporter Sunday, where you have a higher chance of getting featured. " +
-                                           $"The next Supporter Sunday is in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}.");
-
-                if (userSettings.UserDiscogs != null)
-                {
-                    thankYouMessage.AppendLine();
-                    thankYouMessage.AppendLine("**View your full Discogs collection**\n" +
-                                               "If you use the `collection` command it will fetch your full collection from Discogs.\n" +
-                                               $"This is also visible in other commands, like `artist`, `album`, `track` and `stats`.");
-                }
-
-                thankYouMessage.AppendLine();
-                thankYouMessage.AppendLine("**Your info**\n" +
-                                           $"Your name in the `supporters` command will be shown as `{supporter.Name}`. " +
-                                           "This is also the name that will be shown when you sponsor charts. You can update this through your OpenCollective settings.");
-
-                thankYouMessage.AppendLine();
-                thankYouMessage.AppendLine("*You also get a badge after your name, a higher friend limit and more. You can view a full overview of your perks and info anytime by doing the `getsupporter` command.*");
-
-                thankYouEmbed.WithDescription(thankYouMessage.ToString());
-                await discordUser.SendMessageAsync(embed: thankYouEmbed.Build());
                 description.AppendLine("✅ Thank you dm sent");
             }
             else
@@ -903,8 +864,84 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("sendsupporterwelcome")]
+    [Alias("sendwelcomedm")]
+    public async Task SendWelcomeDm(string user = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            if (!ulong.TryParse(user, out var discordUserId))
+            {
+                await ReplyAsync("Wrong discord user id format");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var userSettings = await this._userService.GetUserWithDiscogs(discordUserId);
+
+            if (userSettings == null)
+            {
+                await ReplyAsync("User does not exist in database");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var supporter = await this._supporterService.GetSupporter(discordUserId);
+
+            if (supporter == null)
+            {
+                await ReplyAsync("Supporter not found");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
+
+            if (discordUser == null)
+            {
+                await ReplyAsync("Discord user not found");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings, supporter);
+
+            await ReplyAsync("✅ Thank you dm sent");
+        }
+    }
+
+    [Command("sendsupportergoodbye")]
+    [Alias("sendgoodbyedm")]
+    public async Task SendGoodbyeDm(string user = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            if (!ulong.TryParse(user, out var discordUserId))
+            {
+                await ReplyAsync("Wrong discord user id format");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
+
+            if (discordUser == null)
+            {
+                await ReplyAsync("Discord user not found");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            await SupporterService.SendSupporterGoodbyeMessage(discordUser);
+
+            await ReplyAsync("✅ Goodbye dm sent");
+        }
+    }
+
     [Command("removesupporter")]
-    public async Task RemoveSupporterAsync(string user = null)
+    public async Task RemoveSupporterAsync(string user = null, string sendDm = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -918,14 +955,14 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            if (!ulong.TryParse(user, out var userId))
+            if (!ulong.TryParse(user, out var discordUserId))
             {
                 await ReplyAsync(formatError);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
-            var userSettings = await this._userService.GetUserAsync(userId);
+            var userSettings = await this._userService.GetUserAsync(discordUserId);
 
             if (userSettings == null)
             {
@@ -940,7 +977,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var existingSupporter = await this._supporterService.GetSupporter(userId);
+            var existingSupporter = await this._supporterService.GetSupporter(discordUserId);
             if (existingSupporter == null)
             {
                 await ReplyAsync("`Existing supporter not found`\n\n" + formatError);
@@ -955,7 +992,7 @@ public class AdminCommands : BaseCommandModule
             {
                 try
                 {
-                    var guildUser = await this.Context.Guild.GetUserAsync(userId);
+                    var guildUser = await this.Context.Guild.GetUserAsync(discordUserId);
                     if (guildUser != null)
                     {
                         var role = this.Context.Guild.Roles.FirstOrDefault(x => x.Name == "Supporter");
@@ -965,19 +1002,34 @@ public class AdminCommands : BaseCommandModule
                 }
                 catch (Exception e)
                 {
-                    Log.Error("Removing supporter role failed for {id}", userId, e);
+                    Log.Error("Removing supporter role failed for {id}", discordUserId, e);
                 }
             }
 
             this._embed.WithTitle("Processed supporter expiry");
-            this._embed.WithDescription($"User id: {user} | <@{user}>\n" +
-                                        $"Name: **{supporter.Name}**\n" +
-                                        $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
 
-            this._embed.AddField("Bot was able to remove supporter role?",
-                removedRole ? "Yes" : "No, please remove manually");
+            var description = new StringBuilder();
+            description.AppendLine($"User id: {user} | <@{user}>\n" +
+                                   $"Name: **{supporter.Name}**\n" +
+                                   $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
 
-            this._embed.WithFooter("Full update has been started");
+            description.AppendLine();
+            description.AppendLine(removedRole ? "✅ Supporter role removed" : "❌ Unable to remove supporter role");
+            description.AppendLine("✅ Full update started");
+
+            var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
+            if (discordUser != null && sendDm == null)
+            {
+                await SupporterService.SendSupporterGoodbyeMessage(discordUser);
+
+                description.AppendLine("✅ Goodbye dm sent");
+            }
+            else
+            {
+                description.AppendLine("❌ Did not send goodbye dm");
+            }
+
+            this._embed.WithDescription(description.ToString());
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();

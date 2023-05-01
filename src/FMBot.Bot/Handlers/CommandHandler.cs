@@ -29,8 +29,6 @@ public class CommandHandler
     private readonly GuildService _guildService;
     private readonly IPrefixService _prefixService;
     private readonly InteractiveService _interactiveService;
-    private readonly IGuildDisabledCommandService _guildDisabledCommandService;
-    private readonly IChannelDisabledCommandService _channelDisabledCommandService;
     private readonly IServiceProvider _provider;
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
@@ -41,8 +39,6 @@ public class CommandHandler
         CommandService commands,
         IServiceProvider provider,
         IPrefixService prefixService,
-        IGuildDisabledCommandService guildDisabledCommandService,
-        IChannelDisabledCommandService channelDisabledCommandService,
         UserService userService,
         MusicBotService musicBotService,
         IOptions<BotSettings> botSettings,
@@ -54,8 +50,6 @@ public class CommandHandler
         this._commands = commands;
         this._provider = provider;
         this._prefixService = prefixService;
-        this._guildDisabledCommandService = guildDisabledCommandService;
-        this._channelDisabledCommandService = channelDisabledCommandService;
         this._userService = userService;
         this._musicBotService = musicBotService;
         this._guildService = guildService;
@@ -180,7 +174,7 @@ public class CommandHandler
             return;
         }
 
-        if (!await CommandDisabled(context, searchResult))
+        if (!await CommandEnabled(context, searchResult))
         {
             return;
         }
@@ -203,7 +197,7 @@ public class CommandHandler
                 return;
             }
 
-            if (!await CommandDisabled(context, fmSearchResult))
+            if (!await CommandEnabled(context, fmSearchResult))
             {
                 return;
             }
@@ -294,10 +288,10 @@ public class CommandHandler
                 context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
-            if (lastIndex < DateTime.UtcNow.AddDays(-150))
+            if (lastIndex < DateTime.UtcNow.AddDays(-180))
             {
                 var embed = new EmbedBuilder();
-                embed.WithDescription("Server member cache is out of date, it was last updated over 150 days ago.\n" +
+                embed.WithDescription("Server member cache is out of date, it was last updated over 180 days ago.\n" +
                                       $"Please run `{prfx}refreshmembers` to update the cached memberlist.");
                 await context.Channel.SendMessageAsync("", false, embed.Build());
                 context.LogCommandUsed(CommandResponse.IndexRequired);
@@ -351,12 +345,27 @@ public class CommandHandler
         return true;
     }
 
-
-    private async Task<bool> CommandDisabled(SocketCommandContext context, SearchResult searchResult)
+    private async Task<bool> CommandEnabled(SocketCommandContext context, SearchResult searchResult)
     {
         if (context.Guild != null)
         {
-            var disabledGuildCommands = this._guildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
+            if (searchResult.Commands != null &&
+                searchResult.Commands.Any(a => a.Command.Name.ToLower() == "togglecommand" ||
+                                               a.Command.Name.ToLower() == "toggleservercommand"))
+            {
+                return true;
+            }
+
+            var channelDisabled = DisabledChannelService.GetDisabledChannel(context.Channel.Id);
+            if (channelDisabled)
+            {
+                _ = this._interactiveService.DelayedDeleteMessageAsync(
+                    await context.Channel.SendMessageAsync("The bot has been disabled in this channel."),
+                    TimeSpan.FromSeconds(8));
+                return false;
+            }
+
+            var disabledGuildCommands = GuildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
             if (searchResult.Commands != null &&
                 disabledGuildCommands != null &&
                 disabledGuildCommands.Any(searchResult.Commands[0].Command.Name.Equals))
@@ -367,7 +376,7 @@ public class CommandHandler
                 return false;
             }
 
-            var disabledChannelCommands = this._channelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
+            var disabledChannelCommands = ChannelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
             if (searchResult.Commands != null &&
                 disabledChannelCommands != null &&
                 disabledChannelCommands.Any() &&

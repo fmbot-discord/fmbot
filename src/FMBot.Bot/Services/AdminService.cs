@@ -354,8 +354,6 @@ public class AdminService
             embed.AddField("Reporter",
                 $"**{reporter?.DisplayName}** - <@{report.ReportedByDiscordUserId}> - `{report.ReportedByDiscordUserId}`");
 
-            embed.WithFooter("Once you've pressed 'Ban' do not close the modal or it will go wrong.");
-
             await channel.SendMessageAsync(embed: embed.Build(), components: components.Build());
         }
         catch (Exception e)

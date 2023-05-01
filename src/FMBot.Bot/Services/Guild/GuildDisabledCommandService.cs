@@ -1,26 +1,24 @@
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
-using FMBot.Bot.Interfaces;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace FMBot.Bot.Services.Guild;
 
-public class GuildDisabledCommandService : IGuildDisabledCommandService
+public class GuildDisabledCommandService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-    private static readonly ConcurrentDictionary<ulong, string[]> GuildDisabledCommands =
-        new ConcurrentDictionary<ulong, string[]>();
+    private static readonly ConcurrentDictionary<ulong, string[]> GuildDisabledCommands = new();
 
     public GuildDisabledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._contextFactory = contextFactory;
     }
 
-    public void StoreDisabledCommands(string[] commands, ulong key)
+    public static void StoreDisabledCommands(string[] commands, ulong key)
     {
         if (GuildDisabledCommands.ContainsKey(key))
         {
@@ -45,7 +43,7 @@ public class GuildDisabledCommandService : IGuildDisabledCommandService
     }
 
 
-    public string[] GetDisabledCommands(ulong? key)
+    public static string[] GetDisabledCommands(ulong? key)
     {
         if (!key.HasValue)
         {
@@ -56,7 +54,7 @@ public class GuildDisabledCommandService : IGuildDisabledCommandService
     }
 
 
-    public void RemoveDisabledCommands(ulong key)
+    private static void RemoveDisabledCommands(ulong key)
     {
         if (!GuildDisabledCommands.ContainsKey(key))
         {
@@ -72,7 +70,7 @@ public class GuildDisabledCommandService : IGuildDisabledCommandService
 
     public async Task LoadAllDisabledCommands()
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var servers = await db.Guilds
             .Where(w => w.DisabledCommands != null)
             .ToListAsync();
@@ -89,7 +87,7 @@ public class GuildDisabledCommandService : IGuildDisabledCommandService
 
     public async Task ReloadDisabledCommands(ulong discordGuildId)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var server = await db.Guilds
             .Where(w => w.DiscordGuildId == discordGuildId)
             .FirstOrDefaultAsync();

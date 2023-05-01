@@ -204,7 +204,6 @@ public class StaticBuilders
                     supporterString.AppendLine($"First payment: <t:{firstPaymentValue}:D> - Last payment: <t:{lastPaymentValue}:D>");
                 }
 
-
                 var existingSupporter = existingSupporters.FirstOrDefault(f => f.OpenCollectiveId == supporter.Id);
                 if (existingSupporter != null)
                 {

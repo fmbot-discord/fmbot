@@ -13,7 +13,7 @@ public interface IIndexService
 {
     void AddUsersToIndexQueue(IReadOnlyList<User> users);
 
-    Task IndexUser(User user);
+    Task<IndexedUserStats> IndexUser(User user);
 
     Task<GuildUser> GetOrAddUserToGuild(ICollection<WhoKnowsObjectWithUser> users, Guild contextGuild,
         IGuildUser discordGuildUser,

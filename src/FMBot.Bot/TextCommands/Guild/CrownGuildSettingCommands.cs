@@ -52,112 +52,47 @@ public class CrownGuildSettingCommands : BaseCommandModule
 
     [Command("crownthreshold", RunMode = RunMode.Async)]
     [Summary("Sets amount of plays before someone can earn a crown in your server")]
-    [Options("Amount of plays")]
     [Alias("setcrownthreshold", "setcwthreshold", "cwthreshold", "crowntreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task SetCrownPlaycountThresholdAsync([Remainder] string playcount = null)
+    public async Task SetCrownPlaycountThresholdAsync([Remainder] string _ = null)
     {
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        try
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context, prfx));
 
-        if (string.IsNullOrWhiteSpace(playcount))
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
         {
-            await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, null);
-
-            await ReplyAsync($"Minumum amount of plays for a crown has been set to the default of {Constants.DefaultPlaysForCrown}.");
-            this.Context.LogCommandUsed();
-            return;
+            await this.Context.HandleCommandException(e);
         }
-
-        var maxAmountOfDays = (DateTime.UtcNow - new DateTime(2020, 11, 4)).Days;
-
-        if (int.TryParse(playcount, out var result))
-        {
-            if (result < 10 || result > 1000)
-            {
-                await ReplyAsync(
-                    $"Please pick a value between 10 and 1000 plays.");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
-            }
-        }
-        else
-        {
-            await ReplyAsync("Please enter a valid amount of plays. \n" +
-                             "Any playcount below the amount you enter will not be enough for a crown.");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
-
-        await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, result);
-
-        await ReplyAsync($"Crown playcount threshold has been set for this server.\n" +
-                         $"All users that have less then {result} plays for an artist won't able to gain crowns for that artist.");
-        this.Context.LogCommandUsed();
     }
 
     [Command("crownactivitythreshold", RunMode = RunMode.Async)]
     [Summary("Sets amount of days to filter out users from earning crowns for inactivity. " +
              "Inactivity is counted by the last date that someone has used .fmbot")]
-    [Options("Amount of days to filter someone")]
     [Alias("setcrownactivitythreshold", "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task SetCrownActivityThresholdAsync([Remainder] string days = null)
+    public async Task SetCrownActivityThresholdAsync([Remainder] string _ = null)
     {
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        try
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context, prfx));
 
-        if (string.IsNullOrWhiteSpace(days))
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
         {
-            await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, null);
-
-            await ReplyAsync("All registered users in this server will now be able to gain crowns.");
-            this.Context.LogCommandUsed();
-            return;
+            await this.Context.HandleCommandException(e);
         }
-
-        var maxAmountOfDays = (DateTime.UtcNow - new DateTime(2020, 11, 4)).Days;
-
-        if (int.TryParse(days, out var result))
-        {
-            if (result <= 1 || result > maxAmountOfDays)
-            {
-                await ReplyAsync(
-                    $"Please pick a value between 2 and {maxAmountOfDays} days.\n" +
-                    $".fmbot only started storing user activity after November 4th 2020. It is not possible to set the crown activity filter before this date.\n");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
-            }
-        }
-        else
-        {
-            await ReplyAsync("Please enter a valid amount of days. \n" +
-                             "All users that have not used .fmbot before that will not be able to gain crowns.");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
-
-        await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, result);
-
-        await ReplyAsync($"Crown activity threshold has been set for this server.\n" +
-                         $"All users that have not used .fmbot in the last {result} days won't able to gain crowns.");
-        this.Context.LogCommandUsed();
     }
 
     [Command("crownblock", RunMode = RunMode.Async)]
@@ -251,7 +186,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     [Command("removeusercrowns", RunMode = RunMode.Async)]
     [Summary("Removes crowns from a user")]
     [Options(Constants.UserMentionExample)]
-    [Alias("deleteusercrowns", "deleteusercrown", "removeusercrown", "removeusercws", "deleteusercws", "usercrownsdelete", "usercrownsremove")]
+    [Alias("deleteusercrowns", "deleteusercrown", "removeusercrown", "removeusercws", "deleteusercws", "usercrownsdelete", "usercrownsremove", "killusercrowns")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
@@ -289,6 +224,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         try
         {
             this._embed.WithTitle("Are you sure you want to delete all crowns for this user?");
+            this._embed.WithColor(DiscordConstants.WarningColorOrange);
             this._embed.WithDescription($"Discord user id: `{userToBlock.DiscordUserId}` (<@{userToBlock.DiscordUserId}>)\n" +
                                         $"Last.fm username: `{userToBlock.UserNameLastFM}`");
             this._embed.WithFooter($"Expires in 30 seconds..");
@@ -298,8 +234,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
 
             var msg = await ReplyAsync("", false, this._embed.Build(), components: builder.Build());
 
-            var result = await this.Interactivity.NextInteractionAsync(x => x is SocketMessageComponent c && c.Message.Id == msg.Id && x.User.Id == this.Context.User.Id,
-                timeout: TimeSpan.FromSeconds(30));
+            var result = await this.Interactivity.NextInteractionAsync(x =>
+                    x is SocketMessageComponent c && c.Message.Id == msg.Id && x.User.Id == this.Context.User.Id,
+                    timeout: TimeSpan.FromSeconds(30));
 
             if (result.IsSuccess)
             {
@@ -307,6 +244,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
                 await this._crownService.RemoveAllCrownsFromDiscordUser(userToBlock.DiscordUserId, this.Context.Guild.Id);
 
                 this._embed.WithTitle("Crowns have been removed for:");
+                this._embed.Footer = null;
                 await msg.ModifyAsync(x =>
                 {
                     x.Embed = this._embed.Build();
@@ -406,7 +344,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     }
 
     [Command("killcrown", RunMode = RunMode.Async)]
-    [Summary("Server staff command: Removes all crowns from a specific artist for your server.")]
+    [Summary("Removes all crowns from a specific artist for your server.")]
     [Alias("kcw", "kcrown", "killcw", "kill crown", "crown kill")]
     [GuildOnly]
     [RequiresIndex]
@@ -472,67 +410,20 @@ public class CrownGuildSettingCommands : BaseCommandModule
     }
 
     [Command("crownseeder", RunMode = RunMode.Async)]
-    [Summary("Server staff command: Automatically generates or updates all crowns for your server")]
+    [Summary("Automatically generates or updates all crowns for your server")]
     [Alias("crownseed", "seedcrowns")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task SeedCrownsAsync([Remainder] string helpValues = null)
+    public async Task SeedCrownsAsync([Remainder] string _ = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-
-        if (!string.IsNullOrWhiteSpace(helpValues) && helpValues.ToLower() == "help")
-        {
-            this._embed.WithTitle($"{prfx}crownseeder");
-            this._embed.WithDescription("Automatically adds crowns for your server. If you've done this before, it will update all automatically seeded crowns.\n\n" +
-                                        "Crown seeding only updates automatically seeded crowns, not manually claimed crowns.");
-
-            this._embed.AddField("Examples",
-                $"`{prfx}crownseeder`");
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
-
-        if (guild.CrownsDisabled == true)
-        {
-            await ReplyAsync("Crown functionality has been disabled in this server.");
-            this.Context.LogCommandUsed(CommandResponse.Disabled);
-            return;
-        }
-
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command. This is because some servers prefer the manual crown claiming process.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
-
-        this._embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns for your server, this can take a while on larger servers...");
-        var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
         try
         {
-            var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await this._guildSettingBuilder.CrownSeeder(new ContextModel(this.Context, prfx));
 
-            var amountOfCrownsSeeded = await this._crownService.SeedCrownsForGuild(guild, guildCrowns).ConfigureAwait(false);
-
-            await message.ModifyAsync(m =>
-            {
-                m.Embed = new EmbedBuilder()
-                    .WithDescription($"Seeded {amountOfCrownsSeeded} crowns for your server.\n\n" +
-                                     $"Tip: You can remove all crowns with `{prfx}killallcrowns` or remove all automatically seeded crowns with `{prfx}killallseededcrowns`.")
-                    .WithColor(DiscordConstants.SuccessColorGreen)
-                    .Build();
-            });
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -541,7 +432,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     }
 
     [Command("killallcrowns", RunMode = RunMode.Async)]
-    [Summary("Server Staff Command: Removes all crowns from your server")]
+    [Summary("Removes all crowns from your server")]
     [Alias("removeallcrowns")]
     [GuildOnly]
     [RequiresIndex]

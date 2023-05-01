@@ -116,36 +116,35 @@ public static class StringService
             {
                 if ((Math.Abs(oldPosition.Value - newPosition)) < 5)
                 {
-                    line.Append($"<:1_to_5_down:912085138245029888>");
-
+                    line.Append($"{DiscordConstants.OneToFiveDown}");
                 }
                 else
                 {
-                    line.Append($"<:5_or_more_down:912380324753838140>");
+                    line.Append($"{DiscordConstants.FiveOrMoreDown}");
                 }
             }
             else if (oldPosition > newPosition)
             {
                 if ((Math.Abs(oldPosition.Value - newPosition)) < 5)
                 {
-                    line.Append($"<:1_to_5_up:912085138232442920>");
+                    line.Append($"{DiscordConstants.OneToFiveUp}");
                 }
                 else
                 {
-                    line.Append($"<:5_or_more_up:912380324841918504>");
+                    line.Append($"{DiscordConstants.FiveOrMoreUp}");
                 }
 
             }
             else
             {
-                line.Append($"<:same_position:912374491752046592>");
+                line.Append($"{DiscordConstants.SamePosition}");
             }
 
             line.Append(" ");
         }
         else
         {
-            line.Append($"<:new:912087988001980446> ");
+            line.Append($"{DiscordConstants.New} ");
         }
 
         if (counter)
