@@ -11,7 +11,6 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -29,13 +28,10 @@ public class GenreCommands : BaseCommandModule
     private readonly UserService _userService;
     private readonly SettingService _settingService;
     private readonly LastFmRepository _lastFmRepository;
-    private readonly PlayService _playService;
     private readonly GenreService _genreService;
     private readonly ArtistsService _artistsService;
-    private readonly SpotifyService _spotifyService;
     private readonly GuildService _guildService;
     private readonly IIndexService _indexService;
-    private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly GenreBuilders _genreBuilders;
 
     private InteractiveService Interactivity { get; }
@@ -46,28 +42,22 @@ public class GenreCommands : BaseCommandModule
         UserService userService,
         SettingService settingService,
         LastFmRepository lastFmRepository,
-        PlayService playService,
         InteractiveService interactivity,
         GenreService genreService,
         ArtistsService artistsService,
-        SpotifyService spotifyService,
         GuildService guildService,
         IIndexService indexService,
-        WhoKnowsArtistService whoKnowsArtistService,
         GenreBuilders genreBuilders) : base(botSettings)
     {
         this._prefixService = prefixService;
         this._userService = userService;
         this._settingService = settingService;
         this._lastFmRepository = lastFmRepository;
-        this._playService = playService;
         this.Interactivity = interactivity;
         this._genreService = genreService;
         this._artistsService = artistsService;
-        this._spotifyService = spotifyService;
         this._guildService = guildService;
         this._indexService = indexService;
-        this._whoKnowsArtistService = whoKnowsArtistService;
         this._genreBuilders = genreBuilders;
     }
 
@@ -240,7 +230,7 @@ public class GenreCommands : BaseCommandModule
 
             var rnd = new Random();
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-            if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-100))
+            if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
             {
                 footer += $"\nMissing members? Update with {prfx}refreshmembers";
             }

@@ -205,7 +205,7 @@ public class GuildService
 
     public static async Task<GuildPermissions> GetGuildPermissionsAsync(IInteractionContext context)
     {
-        var socketCommandContext = (SocketInteractionContext)context;
+        var socketCommandContext = (ShardedInteractionContext)context;
         var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
         return guildUser.GuildPermissions;
     }

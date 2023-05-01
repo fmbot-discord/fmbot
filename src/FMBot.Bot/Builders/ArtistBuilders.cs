@@ -827,7 +827,7 @@ public class ArtistBuilders
 
         var rnd = new Random();
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
-        if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-100))
+        if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
             footer.AppendLine($"Missing members? Update with {context.Prefix}refreshmembers");
         }

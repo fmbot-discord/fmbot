@@ -72,23 +72,22 @@ public class GuildCommands : BaseCommandModule
         this._adminService = adminService;
     }
 
-
-    [Command("serversettings", RunMode = RunMode.Async)]
-    [Summary("Shows all the server settings")]
+    [Command("configuration", RunMode = RunMode.Async)]
+    [Summary("Shows server configuration for .fmbot")]
     [UsernameSetRequired]
-    [CommandCategories(CommandCategory.ThirdParty)]
-    [Alias("ss")]
+    [CommandCategories(CommandCategory.ServerSettings)]
+    [Alias("ss", "config", "serversettings", "settings", "fmbotconfig", "serverconfig")]
     public async Task GuildSettingsAsync([Remainder] string searchValues = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
             var guildPermissions = await GuildService.GetGuildPermissionsAsync(this.Context);
-            var response = await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, "/", contextUser), guildPermissions);
+            var response = await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, prfx, contextUser), guildPermissions);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -342,55 +341,18 @@ public class GuildCommands : BaseCommandModule
     [RequiresIndex]
     public async Task SetPrefixAsync(string prefix = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        try
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context, prfx));
 
-        if (string.IsNullOrEmpty(prefix) || prefix.ToLower() == "remove" || prefix.ToLower() == "delete" || prefix.ToLower() == ".")
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
         {
-            await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
-            this._prefixService.RemovePrefix(this.Context.Guild.Id);
-            await ReplyAsync("Reset to default prefix `.`! \n" +
-                             "Commands prefixed with `.fm` and `.` will both work, so for example .fmbot will respond to `.fmwhoknows` and `.whoknows`.");
-            this.Context.LogCommandUsed();
-            return;
+            await this.Context.HandleCommandException(e);
         }
-
-        if (prefix.Length > 20)
-        {
-            await ReplyAsync("Max prefix length is 20 characters...");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
-        if (prefix.Contains("*") || prefix.Contains("`") || prefix.Contains("~") || prefix.Contains("|"))
-        {
-            await ReplyAsync("You can't have a custom prefix that contains ** * **, **`**, **~** or **|**");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
-
-        await this._guildService.SetGuildPrefixAsync(this.Context.Guild, prefix);
-        this._prefixService.StorePrefix(prefix, this.Context.Guild.Id);
-
-        this._embed.WithTitle("Successfully added custom prefix!");
-        this._embed.WithDescription("Examples:\n" +
-                                    $"- `{prefix}fm`\n".Replace("fmfm", "fm") +
-                                    $"- `{prefix}chart 8x8 monthly`\n" +
-                                    $"- `{prefix}whoknows` \n \n" +
-                                    "Reminder that you can always mention the bot followed by your command. \n" +
-                                    $"The [.fmbot docs]({Constants.DocsUrl}) will still have the `.` prefix everywhere.\n\n" +
-                                    $"To remove the custom prefix, do `{prefix}prefix remove`");
-
-        await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
-        this.Context.LogCommandUsed();
     }
 
     [Command("toggleservercommand", RunMode = RunMode.Async)]

@@ -4,11 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
-using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -16,7 +14,6 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Builders;
@@ -24,15 +21,13 @@ namespace FMBot.Bot.Builders;
 public class GuildSettingBuilder
 {
     private readonly GuildService _guildService;
-    private readonly IPrefixService _prefixService;
     private readonly BotSettings _botSettings;
     private readonly AdminService _adminService;
 
-    public GuildSettingBuilder(GuildService guildService, IOptions<BotSettings> botSettings, AdminService adminService, IPrefixService prefixService)
+    public GuildSettingBuilder(GuildService guildService, IOptions<BotSettings> botSettings, AdminService adminService)
     {
         this._guildService = guildService;
         this._adminService = adminService;
-        this._prefixService = prefixService;
         this._botSettings = botSettings.Value;
     }
 
@@ -46,7 +41,7 @@ public class GuildSettingBuilder
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        response.Embed.WithTitle($".fmbot settings - {guild.Name}");
+        response.Embed.WithTitle($".fmbot server configuration - {guild.Name}");
         response.Embed.WithFooter($"{guild.DiscordGuildId}");
 
         var settings = new StringBuilder();
@@ -172,7 +167,7 @@ public class GuildSettingBuilder
         }
 
         var guildSettings = new SelectMenuBuilder()
-            .WithPlaceholder("Select server setting you want to change")
+            .WithPlaceholder("Select setting you want to change")
             .WithCustomId(InteractionConstants.GuildSetting)
             .WithMaxValues(1);
 
@@ -194,46 +189,52 @@ public class GuildSettingBuilder
 
     }
 
-    public async Task<ResponseModel> SetPrefix(IInteractionContext context, string newPrefix)
+    public async Task<ResponseModel> SetPrefix(ContextModel context)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
 
-        var description = new StringBuilder();
+        response.Embed.WithTitle("Set text command prefix");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        if (newPrefix != this._botSettings.Bot.Prefix)
+        var description = new StringBuilder();
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+
+        var prefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
+
+        description.AppendLine();
+        description.AppendLine($"Current prefix: `{prefix}`");
+        description.AppendLine();
+        description.AppendLine("Examples:");
+        description.AppendLine($"`{prefix}fm`");
+        description.AppendLine($"`{prefix}whoknows`");
+        description.AppendLine();
+
+        var components = new ComponentBuilder();
+
+        if (guild.Prefix != null &&
+            guild.Prefix != this._botSettings.Bot.Prefix)
         {
-            description.AppendLine("Prefix has successfully been changed.");
-            await this._guildService.SetGuildPrefixAsync(context.Guild, newPrefix);
-            this._prefixService.StorePrefix(newPrefix, context.Guild.Id);
+            description.AppendLine("This server has set up a custom prefix for .fmbot text commands. " +
+                                   $"Most people are used to having this bot with the `{this._botSettings.Bot.Prefix}` prefix, so consider informing your users.");
+            components.WithButton("Remove text command prefix", $"{InteractionConstants.RemovePrefix}", style: ButtonStyle.Secondary);
         }
         else
         {
-            description.AppendLine("Prefix has been set to default.");
-            await this._guildService.SetGuildPrefixAsync(context.Guild, null);
-            this._prefixService.RemovePrefix(context.Guild.Id);
+            description.AppendLine("This is the default .fmbot prefix.");
+            components.WithButton("Set text command prefix", InteractionConstants.SetPrefix, style: ButtonStyle.Secondary);
         }
 
-        description.AppendLine();
-        description.AppendLine($"New prefix: `{newPrefix}`");
-        description.AppendLine();
-        description.AppendLine("Examples:");
-        description.AppendLine($"`{newPrefix}fm`");
-        description.AppendLine($"`{newPrefix}whoknows`");
-        description.AppendLine();
-        description.AppendLine("The bot will no longer respond to any text commands without this prefix. " +
-                               "Consider letting other users in your server know.");
-
-        response.Embed.WithTitle("Set text command prefix");
         response.Embed.WithDescription(description.ToString());
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        response.Components = components;
 
         return response;
     }
 
-    public async Task<ResponseModel> SetWhoKnowsActivityThreshold(IInteractionContext context)
+    public async Task<ResponseModel> SetWhoKnowsActivityThreshold(ContextModel context)
     {
         var response = new ResponseModel
         {
@@ -245,32 +246,205 @@ public class GuildSettingBuilder
 
         var description = new StringBuilder();
 
-        description.AppendLine($"Setting a WhoKnows activity threshold will filter out people who have not used .fmbot. " +
+        description.AppendLine($"Setting a WhoKnows activity threshold will filter out people who have not used .fmbot in a certain amount of days. " +
                                $"A user counts as active as soon as they use .fmbot anywhere.");
         description.AppendLine();
         description.AppendLine("This filtering applies to all server-wide commands.");
         description.AppendLine();
 
-        var guild = await this._guildService.GetGuildAsync(context.Guild.Id);
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
         var components = new ComponentBuilder();
-
 
         if (!guild.ActivityThresholdDays.HasValue)
         {
             description.AppendLine("There is currently no activity threshold enabled.");
             description.AppendLine("To enable, click the button below and enter the amount of days.");
-            components.WithButton("Set activity threshold", $"{InteractionConstants.SetActivityThreshold}", style: ButtonStyle.Secondary);
+            components.WithButton("Set activity threshold", InteractionConstants.SetActivityThreshold, style: ButtonStyle.Secondary);
         }
         else
         {
-            description.AppendLine($"✅ Enabled. Anyone who hasn't used .fmbot in the last **{guild.ActivityThresholdDays.Value}** days is currently filtered out.");
-            components.WithButton("Remove threshold", $"{InteractionConstants.SetActivityThreshold}", style: ButtonStyle.Secondary);
+            description.AppendLine($"✅ Enabled.");
+            description.AppendLine($"Anyone who hasn't used .fmbot in the last **{guild.ActivityThresholdDays.Value}** days is currently filtered out.");
+            components.WithButton("Remove activity threshold", $"{InteractionConstants.RemoveActivityThreshold}", style: ButtonStyle.Secondary);
         }
 
         response.Embed.WithDescription(description.ToString());
 
-        
+        response.Components = components;
+
+        return response;
+    }
+
+    public async Task<ResponseModel> SetCrownActivityThreshold(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithTitle("👑 Set crown activity threshold");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var description = new StringBuilder();
+
+        description.AppendLine($"Setting a crown activity threshold will filter out people who have not used .fmbot in a certain amount of days from earning crowns. " +
+                               $"A user counts as active as soon as they use the bot anywhere.");
+        description.AppendLine();
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var crownsDisabled = guild.CrownsDisabled == true;
+
+        var components = new ComponentBuilder();
+
+        if (!guild.CrownsActivityThresholdDays.HasValue)
+        {
+            description.AppendLine("There is currently no crown activity threshold enabled.");
+            description.AppendLine("To enable, click the button below and enter the amount of days.");
+            components.WithButton("Set crown activity threshold", InteractionConstants.SetCrownActivityThreshold, style: ButtonStyle.Secondary, disabled: crownsDisabled);
+        }
+        else
+        {
+            description.AppendLine($"✅ Enabled.");
+            description.AppendLine($"Anyone who hasn't used .fmbot in the last **{guild.CrownsActivityThresholdDays.Value}** days can't earn crowns.");
+            components.WithButton("Remove crown activity threshold", $"{InteractionConstants.RemoveCrownActivityThreshold}", style: ButtonStyle.Secondary, disabled: crownsDisabled);
+        }
+
+        if (crownsDisabled)
+        {
+            description.AppendLine();
+            description.AppendLine("⚠️ Note: Crown functionality is disabled in this server.");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+
+        response.Components = components;
+
+        return response;
+    }
+
+    public async Task<ResponseModel> SetCrownMinPlaycount(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithTitle("Set minimum playcount for crowns");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var description = new StringBuilder();
+
+        description.AppendLine($"A crown is something someone earns when they're the #1 listener for an artist on a server. ");
+        description.AppendLine();
+        description.AppendLine($"By default crowns are only applied when someone has **{Constants.DefaultPlaysForCrown}** plays or more, " +
+                               $"but you can customize that amount in this command.");
+        description.AppendLine();
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var crownsDisabled = guild.CrownsDisabled == true;
+
+        var components = new ComponentBuilder();
+
+        if (!guild.CrownsMinimumPlaycountThreshold.HasValue)
+        {
+            description.AppendLine($"Minimum playcount is set to default ({Constants.DefaultPlaysForCrown}).");
+            description.AppendLine("To change this, click the button below and enter the minimum amount of plays.");
+            components.WithButton("Set minimum crown playcount ", InteractionConstants.SetCrownMinPlaycount, style: ButtonStyle.Secondary, disabled: crownsDisabled);
+        }
+        else
+        {
+            description.AppendLine($"✅ Custom minimum playcount set.");
+            description.AppendLine($"Minimum playcount for crowns is set to **{guild.CrownsMinimumPlaycountThreshold.Value}**.");
+            components.WithButton("Revert to default", $"{InteractionConstants.RemoveCrownMinPlaycount}", style: ButtonStyle.Secondary, disabled: crownsDisabled);
+        }
+
+        if (crownsDisabled)
+        {
+            description.AppendLine();
+            description.AppendLine("⚠️ Note: Crown functionality is disabled in this server.");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+
+        response.Components = components;
+
+        return response;
+    }
+
+    public async Task<ResponseModel> CrownSeeder(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithTitle("Crownseeder");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var crownsDisabled = guild.CrownsDisabled == true;
+
+        var description = new StringBuilder();
+
+        description.AppendLine($"Crowns can be earned when someone is the #1 listener for an artist and has {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays or more. ");
+        description.AppendLine();
+        description.AppendLine($"Users can run `whoknows` to claim crowns, but you can also use the crownseeder to generate or update all crowns at once. " +
+                               $"Only server staff can do this, because some people prefer manual crown claiming.");
+        description.AppendLine();
+        description.AppendLine($"To add or update all crowns, press the button below.");
+
+        var components = new ComponentBuilder();
+        components.WithButton("Run crownseeder", $"{InteractionConstants.RunCrownseeder}", style: ButtonStyle.Secondary, disabled: crownsDisabled);
+
+        if (crownsDisabled)
+        {
+            description.AppendLine();
+            description.AppendLine("⚠️ Note: Crown functionality is disabled in this server.");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+
+        response.Components = components;
+
+        return response;
+    }
+
+    public static ResponseModel CrownSeederRunning(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithTitle("Crownseeder");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        response.Embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns, this can take a while on larger servers... ");
+
+        return response;
+    }
+
+    public async Task<ResponseModel> CrownSeederDone(ContextModel context, int amountSeeded)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithTitle("Crownseeder");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var prefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
+
+        var description = new StringBuilder();
+        description.AppendLine($"✅ Seeded **{amountSeeded}** crowns for your server.");
+        description.AppendLine();
+        description.AppendLine($"If you would like to remove crowns, use:");
+        description.AppendLine($"- `{prefix}killallcrowns` (All crowns)");
+        description.AppendLine($"- `{prefix}killallseededcrowns` (Only seeded crowns)");
+
+        response.Embed.WithDescription(description.ToString());
 
         return response;
     }
@@ -330,6 +504,8 @@ public class GuildSettingBuilder
             ResponseType = ResponseType.Paginator,
         };
 
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var prefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         var footer = new StringBuilder();
@@ -344,14 +520,14 @@ public class GuildSettingBuilder
         if (crownBlockedOnly)
         {
             response.Embed.WithTitle($"Crownblocked users in {context.DiscordGuild.Name}");
-            footer.AppendLine($"To add: {context.Prefix}crownblock mention/user id/Last.fm username");
-            footer.AppendLine($"To remove: {context.Prefix}unblock mention/user id/Last.fm username");
+            footer.AppendLine($"To add: {prefix}crownblock mention/user id/Last.fm username");
+            footer.AppendLine($"To remove: {prefix}unblock mention/user id/Last.fm username");
         }
         else
         {
             response.Embed.WithTitle($"Blocked users in {context.DiscordGuild.Name}");
-            footer.AppendLine($"To add: {context.Prefix}block mention/user id/Last.fm username");
-            footer.AppendLine($"To remove: {context.Prefix}unblock mention/user id/Last.fm username");
+            footer.AppendLine($"To add: {prefix}block mention/user id/Last.fm username");
+            footer.AppendLine($"To remove: {prefix}unblock mention/user id/Last.fm username");
         }
 
         var pages = new List<PageBuilder>();
@@ -662,7 +838,6 @@ public class GuildSettingBuilder
                             }
                         }
                     }
-
                 }
             }
 

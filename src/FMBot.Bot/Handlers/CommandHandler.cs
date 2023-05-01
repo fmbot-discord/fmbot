@@ -288,10 +288,10 @@ public class CommandHandler
                 context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
-            if (lastIndex < DateTime.UtcNow.AddDays(-150))
+            if (lastIndex < DateTime.UtcNow.AddDays(-180))
             {
                 var embed = new EmbedBuilder();
-                embed.WithDescription("Server member cache is out of date, it was last updated over 150 days ago.\n" +
+                embed.WithDescription("Server member cache is out of date, it was last updated over 180 days ago.\n" +
                                       $"Please run `{prfx}refreshmembers` to update the cached memberlist.");
                 await context.Channel.SendMessageAsync("", false, embed.Build());
                 context.LogCommandUsed(CommandResponse.IndexRequired);

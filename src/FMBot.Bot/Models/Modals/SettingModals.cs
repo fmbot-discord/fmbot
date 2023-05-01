@@ -3,7 +3,7 @@ using Discord.Interactions;
 namespace FMBot.Bot.Models.Modals;
 
 
-public class PrefixModal : IModal
+public class SetPrefixModal : IModal
 {
     public string Title => "Set .fmbot text command prefix";
 
@@ -16,9 +16,27 @@ public class SetActivityThresholdModal : IModal
 {
     public string Title => "Set .fmbot activity threshold";
 
-    [InputLabel("Enter amount of days before someone is marked as inactive")]
-    [ModalTextInput("day_amount", placeholder: "30", minLength: 1, maxLength: 3)]
-    public string DayAmount { get; set; }
+    [InputLabel("Enter amount of days")]
+    [ModalTextInput("amount", placeholder: "30", minLength: 1, maxLength: 3)]
+    public string Amount { get; set; }
+}
+
+public class SetCrownActivityThresholdModal : IModal
+{
+    public string Title => "Set .fmbot crown activity threshold";
+
+    [InputLabel("Enter amount of days")]
+    [ModalTextInput("amount", placeholder: "30", minLength: 1, maxLength: 3)]
+    public string Amount { get; set; }
+}
+
+public class SetCrownMinPlaycountModal : IModal
+{
+    public string Title => "Set .fmbot crown minimum playcount";
+
+    [InputLabel("Enter minimum amount of plays")]
+    [ModalTextInput("amount", placeholder: "30", minLength: 1, maxLength: 3)]
+    public string Amount { get; set; }
 }
 
 public class RemoveDisabledChannelCommandModal : IModal

@@ -48,57 +48,24 @@ public class UserGuildSettingCommands : BaseCommandModule
 
     [Command("activitythreshold", RunMode = RunMode.Async)]
     [Summary("Sets amount of days to filter out users for inactivity. Inactivity is counted by the last date that someone has used .fmbot")]
-    [Options("Amount of days to filter someone")]
     [Alias("setactivitythreshold", "setthreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
-    public async Task SetWhoKnowsThresholdAsync([Remainder] string days = null)
+    public async Task SetWhoKnowsThresholdAsync([Remainder] string _ = null)
     {
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        try
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var response = await this._guildSettingBuilder.SetWhoKnowsActivityThreshold(new ContextModel(this.Context, prfx));
 
-        if (string.IsNullOrWhiteSpace(days))
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
         {
-            await this._guildService.SetWhoKnowsActivityThresholdDaysAsync(this.Context.Guild, null);
-
-            await ReplyAsync("All registered users in this server will now be visible again in server-wide commands and be able to gain crowns.");
-            this.Context.LogCommandUsed();
-            return;
+            await this.Context.HandleCommandException(e);
         }
-
-        var maxAmountOfDays = (DateTime.UtcNow - new DateTime(2020, 11, 4)).Days;
-
-        if (int.TryParse(days, out var result))
-        {
-            if (result <= 1 || result > maxAmountOfDays)
-            {
-                await ReplyAsync(
-                    $"Please pick a value between 2 and {maxAmountOfDays} days.\n" +
-                    $".fmbot only started storing user activity after November 4th 2020. It is not possible to set the activity filter before this date.\n");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
-            }
-        }
-        else
-        {
-            await ReplyAsync("Please enter a valid amount of days. \n" +
-                             "All users that have not used .fmbot before that will be filtered from server wide commands.");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
-
-        await this._guildService.SetWhoKnowsActivityThresholdDaysAsync(this.Context.Guild, result);
-
-        await ReplyAsync($"Activity threshold has been set for this server.\n" +
-                         $"All users that have not used .fmbot in the last {result} days are now filtered from all server-wide commands and won't able to gain crowns.");
-        this.Context.LogCommandUsed();
     }
 
     [Command("block", RunMode = RunMode.Async)]
@@ -285,15 +252,14 @@ public class UserGuildSettingCommands : BaseCommandModule
     }
 
 
-    [Command("whoknowswhitelist", RunMode = RunMode.Async)]
-    [Summary("Configures the WhoKnows charts to only show members with a specified role.\n\n" +
-             "After changing your whitelist setting, you will most likely need to index the server again for it to take effect.\n\n" +
-             "To remove the current whitelist setting, use this command without an option")]
-    [Examples("whoknowswhitelist", "whoknowswhitelist royals", "whoknowswhitelist 423946236102705154")]
-    [Alias("wkwhitelist", "wkwl")]
-    [GuildOnly]
-    [RequiresIndex]
-    [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
+    //[Command("whoknowswhitelist", RunMode = RunMode.Async)]
+    //[Summary("Configures the WhoKnows charts to only show members with a specified role.\n\n" +
+    //         "After changing your whitelist setting, you will most likely need to index the server again for it to take effect.\n\n" +
+    //         "To remove the current whitelist setting, use this command without an option")]
+    //[Examples("whoknowswhitelist", "whoknowswhitelist royals", "whoknowswhitelist 423946236102705154")]
+    //[Alias("wkwhitelist", "wkwl")]
+    //[GuildOnly]
+    //[RequiresIndex]
     public async Task SetWhoKnowsWhitelistRoleAsync([Remainder] string roleQuery = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

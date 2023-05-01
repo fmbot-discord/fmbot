@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -27,6 +26,7 @@ public class InteractionHandler
     private readonly IServiceProvider _provider;
     private readonly UserService _userService;
     private readonly GuildService _guildService;
+    private readonly GuildSettingBuilder _guildSettingBuilder;
 
     private readonly IMemoryCache _cache;
 
@@ -35,7 +35,8 @@ public class InteractionHandler
         IServiceProvider provider,
         UserService userService,
         GuildService guildService,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        GuildSettingBuilder guildSettingBuilder)
     {
         this._client = client;
         this._interactionService = interactionService;
@@ -43,6 +44,7 @@ public class InteractionHandler
         this._userService = userService;
         this._guildService = guildService;
         this._cache = cache;
+        this._guildSettingBuilder = guildSettingBuilder;
         this._client.SlashCommandExecuted += SlashCommandAsync;
         this._client.AutocompleteExecuted += AutoCompleteAsync;
         this._client.SelectMenuExecuted += SelectMenuExecuted;
@@ -123,10 +125,67 @@ public class InteractionHandler
         Statistics.UserCommandsExecuted.Inc();
     }
 
+    private async Task AutoCompleteAsync(SocketInteraction socketInteraction)
+    {
+        var context = new ShardedInteractionContext(this._client, socketInteraction);
+        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+
+        Statistics.AutoCompletesExecuted.Inc();
+    }
+
+    private async Task SelectMenuExecuted(SocketInteraction socketInteraction)
+    {
+        var context = new ShardedInteractionContext(this._client, socketInteraction);
+        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+
+        Statistics.SelectMenusExecuted.Inc();
+    }
+
+    private async Task ModalSubmitted(SocketModal socketModal)
+    {
+        var context = new ShardedInteractionContext(this._client, socketModal);
+        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+
+        Statistics.ModalsExecuted.Inc();
+    }
+
+    private async Task ButtonExecuted(SocketMessageComponent socketMessageComponent)
+    {
+        var context = new ShardedInteractionContext(this._client, socketMessageComponent);
+
+        var commandSearch = this._interactionService.SearchComponentCommand(socketMessageComponent);
+
+        if (!commandSearch.IsSuccess || commandSearch.Command == null)
+        {
+            Log.Error("Someone tried to execute a non-existent component command!");
+            return;
+        }
+
+        var keepGoing = await CheckAttributes(context, commandSearch.Command.Attributes);
+
+        if (!keepGoing)
+        {
+            return;
+        }
+
+        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+
+        Statistics.ButtonExecuted.Inc();
+    }
+
     private async Task<bool> CheckAttributes(ShardedInteractionContext context, IReadOnlyCollection<Attribute> attributes)
     {
         var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
+        if (attributes.OfType<ServerStaffOnly>().Any())
+        {
+            if (!await this._guildSettingBuilder.UserIsAllowed(context))
+            {
+                await this._guildSettingBuilder.UserNotAllowedResponse(context);
+                context.LogCommandUsed(CommandResponse.NoPermission);
+                return false;
+            }
+        }
         if (attributes.OfType<UsernameSetRequired>().Any())
         {
             if (contextUser == null)
@@ -175,11 +234,11 @@ public class InteractionHandler
                 context.LogCommandUsed(CommandResponse.IndexRequired);
                 return false;
             }
-            if (lastIndex < DateTime.UtcNow.AddDays(-120))
+            if (lastIndex < DateTime.UtcNow.AddDays(-180))
             {
                 var embed = new EmbedBuilder();
-                embed.WithDescription("Server member data is out of date, it was last updated over 120 days ago.\n" +
-                                      $"Please run `/refreshmembers` to update this server.");
+                embed.WithDescription("Server member cache is out of date, it was last updated over 180 days ago.\n" +
+                                      $"Please run `/refreshmembers` to update the cached memberlist");
                 await context.Interaction.RespondAsync(null, new[] { embed.Build() });
                 context.LogCommandUsed(CommandResponse.IndexRequired);
                 return false;
@@ -188,39 +247,7 @@ public class InteractionHandler
 
         return true;
     }
-
-    private async Task AutoCompleteAsync(SocketInteraction socketInteraction)
-    {
-        var context = new ShardedInteractionContext(this._client, socketInteraction);
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
-
-        Statistics.AutoCompletesExecuted.Inc();
-    }
-
-    private async Task SelectMenuExecuted(SocketInteraction socketInteraction)
-    {
-        var context = new ShardedInteractionContext(this._client, socketInteraction);
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
-
-        Statistics.SelectMenusExecuted.Inc();
-    }
-
-    private async Task ModalSubmitted(SocketModal socketModal)
-    {
-        var context = new ShardedInteractionContext(this._client, socketModal);
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
-
-        Statistics.ModalsExecuted.Inc();
-    }
-
-    private async Task ButtonExecuted(SocketMessageComponent arg)
-    {
-        var context = new ShardedInteractionContext(this._client, arg);
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
-
-        Statistics.ButtonExecuted.Inc();
-    }
-
+    
     private static async Task<bool> CommandEnabled(ShardedInteractionContext context, ICommandInfo searchResult)
     {
         if (context.Guild != null)

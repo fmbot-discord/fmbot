@@ -22,8 +22,10 @@ public enum GuildSetting
     CrownBlockedUsers = 21,
     [Option("Crown minimum playcount", "Change the minimum playcount for earning a crown")]
     CrownMinimumPlaycount = 22,
-    [Option("Crown functionality", "Completely enable or disable crowns on your server")]
-    CrownsDisabled = 23,
+    [Option("Crownseeder", "Automatically generate all crowns for your server")]
+    CrownSeeder = 23,
+    //[Option("Crown functionality", "Completely enable or disable crowns on your server")]
+    //CrownsDisabled = 23,
 
     [Option("Disabled channel commands", "Toggle commands or the bot per channel")]
     DisabledCommands = 30,
