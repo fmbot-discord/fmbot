@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Scripts\**" />
+    <EmbeddedResource Remove="Scripts\**" />
+    <None Remove="Scripts\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="HtmlSanitizer" Version="8.0.645" />
     <PackageReference Include="PuppeteerSharp" Version="6.2.0" />
     <PackageReference Include="SkiaSharp" Version="2.80.2" />
@@ -33,10 +39,6 @@
     <None Update="Pages\world.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Scripts\" />
   </ItemGroup>
 
 </Project>

@@ -8,8 +8,12 @@
     <LangVersion>9.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Properties\**" />
+    <EmbeddedResource Remove="Properties\**" />
+    <None Remove="Properties\**" />
+  </ItemGroup>
+  <ItemGroup>
     <Folder Include="Migrations\" />
-    <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="EFCore.NamingConventions" Version="7.0.2" />
