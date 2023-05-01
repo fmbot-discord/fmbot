@@ -107,13 +107,12 @@ public class InteractionHandler
         var context = new ShardedInteractionContext(this._client, socketInteraction);
         var commandSearch = this._interactionService.SearchUserCommand(socketUserCommand);
 
-        if (!commandSearch.IsSuccess || commandSearch.Command == null)
+        if (!commandSearch.IsSuccess)
         {
-            Log.Error("Someone tried to execute a non-existent user command! {slashCommand}", socketUserCommand.CommandName);
             return;
         }
 
-        var keepGoing = await CheckAttributes(context, commandSearch.Command.Attributes);
+        var keepGoing = await CheckAttributes(context, commandSearch.Command?.Attributes);
 
         if (!keepGoing)
         {
@@ -175,7 +174,10 @@ public class InteractionHandler
 
     private async Task<bool> CheckAttributes(ShardedInteractionContext context, IReadOnlyCollection<Attribute> attributes)
     {
-        var contextUser = await this._userService.GetUserAsync(context.User.Id);
+        if (attributes == null)
+        {
+            return true;
+        }
 
         if (attributes.OfType<ServerStaffOnly>().Any())
         {
@@ -188,6 +190,8 @@ public class InteractionHandler
         }
         if (attributes.OfType<UsernameSetRequired>().Any())
         {
+            var contextUser = await this._userService.GetUserAsync(context.User.Id);
+
             if (contextUser == null)
             {
                 var embed = new EmbedBuilder()
@@ -202,6 +206,8 @@ public class InteractionHandler
         }
         if (attributes.OfType<UserSessionRequired>().Any())
         {
+            var contextUser = await this._userService.GetUserAsync(context.User.Id);
+
             if (contextUser?.SessionKeyLastFm == null)
             {
                 var embed = new EmbedBuilder()
@@ -214,6 +220,8 @@ public class InteractionHandler
         }
         if (attributes.OfType<GuildOnly>().Any())
         {
+            var contextUser = await this._userService.GetUserAsync(context.User.Id);
+
             if (context.Guild == null)
             {
                 await context.Interaction.RespondAsync("This command is not supported in DMs.");
