@@ -1,3 +1,4 @@
+using Discord;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Models;
@@ -45,3 +46,5 @@ public enum TasteType
     FullEmbed = 1,
     Table = 2
 }
+
+public sealed record Item(string Name, IEmote Emote);
