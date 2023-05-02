@@ -258,18 +258,19 @@ public class ArtistSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     [RequiresIndex]
     [GuildOnly]
-    public async Task AffinityAsync()
+    public async Task AffinityAsync([Summary("User", "The user to get the affinity for")] string user = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+
+        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
 
         try
         {
-            var response = await this._artistBuilders.AffinityAsync(new ContextModel(this.Context, contextUser),
-                guild, guildTask);
+            var response = await this._artistBuilders.AffinityAsync(new ContextModel(this.Context, contextUser), userSettings, guild, guildUsers);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

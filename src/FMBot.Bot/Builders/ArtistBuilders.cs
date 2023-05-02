@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
@@ -1346,30 +1347,42 @@ public class ArtistBuilders
 
     public async Task<ResponseModel> AffinityAsync(
         ContextModel context,
+        UserSettingsModel userSettings,
         Guild guild,
-        Task<Guild> fullGuildTask)
+        IList<FullGuildUser> guildUsers)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Paginator,
         };
 
-        var currentUserArtists = await this._artistsService.GetUserAllTimeTopArtists(context.ContextUser.UserId, true);
+        var topAllTimeTask = this._whoKnowsArtistService.GetAllTimeTopArtistForGuild(guild.GuildId);
+        var quarterlyAllTimeTask = this._whoKnowsArtistService.GetQuarterlyTopArtistForGuild(guild.GuildId);
 
-        var neighbors = await this._whoKnowsArtistService.GetNeighbors(guild.GuildId, context.ContextUser.UserId, currentUserArtists);
+        var topAllTime = await topAllTimeTask;
+        var quarterlyAllTime = await quarterlyAllTimeTask;
 
-        var fullGuild = await fullGuildTask;
-        var filteredGuildUsers = GuildService.FilterGuildUsersAsync(fullGuild);
+        var ownAllTime = topAllTime.Where(w => w.UserId == userSettings.UserId).ToList();
+        var ownQuarterly = quarterlyAllTime.Where(w => w.UserId == userSettings.UserId).ToList();
+
+        var neighbors = await this._whoKnowsArtistService.GetAffinity(context.ContextUser.UserId, topAllTime, ownAllTime, quarterlyAllTime, ownQuarterly);
+
+        var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild, guildUsers);
         var filteredUserIds = filteredGuildUsers.Select(s => s.UserId).ToList();
 
         neighbors = neighbors
-            .Where(w => filteredUserIds.Contains(w.UserId))
+            .Where(w => filteredUserIds.Contains(w.Key))
+            .ToDictionary(d => d.Key, d => d.Value);
+
+        var neighborPages = neighbors
+            .Where(w => w.Key != userSettings.UserId)
+            .OrderByDescending(o => o.Value.TotalPoints)
+            .Take(120)
+            .Chunk(12)
             .ToList();
 
-        var neighborPages = neighbors.Chunk(12).ToList();
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var self = neighbors.First(f => f.Key == userSettings.UserId);
 
-        var counter = 1;
         var pageCounter = 1;
         var pages = new List<PageBuilder>();
         foreach (var page in neighborPages)
@@ -1377,18 +1390,21 @@ public class ArtistBuilders
             var pageString = new StringBuilder();
             foreach (var neighbor in page)
             {
-                var guildUser = fullGuild.GuildUsers.First(f => f.UserId == neighbor.UserId);
-                pageString.AppendLine($"{counter}. **[{Format.Sanitize(guildUser.UserName)}]({Constants.LastFMUserUrl}{guildUser.User.UserNameLastFM})** " +
-                                      $"- {neighbor.MatchPercentage:0.0}%");
+                var guildUser = guildUsers.First(f => f.UserId == neighbor.Key);
+                pageString.AppendLine(
+                    $"**{neighbor.Value.TotalPoints / self.Value.TotalPoints:P1}** — " +
+                    $"**[{Format.Sanitize(guildUser.UserName)}]({Constants.LastFMUserUrl}{guildUser.UserNameLastFM})** — " +
+                                      $"`{neighbor.Value.ArtistPoints / self.Value.ArtistPoints:P0}` artists, " +
+                                      $"`{neighbor.Value.GenrePoints / self.Value.GenrePoints:P0}` genres, " +
+                                      $"`{neighbor.Value.CountryPoints / self.Value.CountryPoints:P0}` countries");
 
-                counter++;
             }
 
             var pageFooter = new StringBuilder();
-            pageFooter.Append($"Page {pageCounter}/{neighborPages.Count}");
+            pageFooter.Append($"Page {pageCounter}/{neighborPages.Count} - % Match percentage");
 
             pages.Add(new PageBuilder()
-                .WithTitle($"Neighbors for {userTitle}")
+                .WithTitle($"Server neighbors for {userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}")
                 .WithDescription(pageString.ToString())
                 .WithFooter(pageFooter.ToString()));
             pageCounter++;

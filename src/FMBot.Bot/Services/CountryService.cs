@@ -152,6 +152,33 @@ public class CountryService
             .ToList();
     }
 
+    public async Task<List<AffinityItemDto>> GetTopCountriesForTopArtists(IEnumerable<AffinityItemDto> topArtists)
+    {
+        if (topArtists == null)
+        {
+            return new List<AffinityItemDto>();
+        }
+
+        await CacheAllArtistCountries();
+
+        var allCountries = new List<CountryWithPlaycount>();
+        foreach (var artist in topArtists)
+        {
+            allCountries = GetCountryWithPlaycountsForArtist(allCountries, artist.Name, artist.Playcount);
+        }
+
+        return allCountries
+            .GroupBy(g => g.CountryCode)
+            .OrderByDescending(o => o.Sum(s => s.Playcount))
+            .Where(w => w.Key != null)
+            .Select((s, i) => new AffinityItemDto
+            {
+                Playcount = s.Sum(se => se.Playcount),
+                Name = s.Key,
+                Position = i
+            }).ToList();
+    }
+
     public string CountryCodeToCountryName(string code)
     {
         return this._countries.FirstOrDefault(f => f.Code == code)?.Name;

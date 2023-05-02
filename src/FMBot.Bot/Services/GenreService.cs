@@ -183,6 +183,33 @@ public class GenreService
             }).ToList();
     }
 
+    public async Task<List<AffinityItemDto>> GetTopGenresWithPositionForTopArtists(IEnumerable<AffinityItemDto> topArtists)
+    {
+        if (topArtists == null)
+        {
+            return new List<AffinityItemDto>();
+        }
+
+        await CacheAllArtistGenres();
+
+        var allGenres = new List<GenreWithPlaycount>();
+        foreach (var artist in topArtists)
+        {
+            allGenres = GetGenreWithPlaycountsForArtist(allGenres, artist.Name, artist.Playcount);
+        }
+
+        return allGenres
+            .GroupBy(g => g.Name)
+            .OrderByDescending(o => o.Sum(s => s.Playcount))
+            .Where(w => w.Key != null)
+            .Select((s, i) => new AffinityItemDto
+            {
+                Name = s.Key,
+                Playcount = s.Sum(se => se.Playcount),
+                Position = i
+            }).ToList();
+    }
+
     public async Task<List<string>> GetTopGenresForTopArtistsString(IEnumerable<string> topArtists)
     {
         var topGenres = new List<string>();

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
@@ -21,11 +22,15 @@ public class WhoKnowsArtistService
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
+    private readonly GenreService _genreService;
+    private readonly CountryService _countryService;
 
-    public WhoKnowsArtistService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
+    public WhoKnowsArtistService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GenreService genreService, CountryService countryService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
+        this._genreService = genreService;
+        this._countryService = countryService;
         this._botSettings = botSettings.Value;
     }
 
@@ -369,79 +374,233 @@ public class WhoKnowsArtistService
         });
     }
 
-    public async Task<IReadOnlyList<AffinityArtistResultWithUser>> GetNeighbors(int guildId, int userId,
-        List<TopArtist> currentUserArtists)
+    public async Task<ICollection<AffinityItemDto>> GetAllTimeTopArtistForGuild(int guildId)
     {
-        var topArtistsForEveryoneInServer = new List<AffinityArtist>();
+        var cacheKey = $"guild-affinity-top-artist-alltime-{guildId}";
 
-        var allUserArtists = (await GetGuildUserArtists(guildId, 29))
-                .OrderByDescending(o => o.Playcount)
-                .GroupBy(g => g.UserId)
-                .ToList();
-
-        foreach (var userArtists in allUserArtists)
+        var cachedArtistsAvailable = this._cache.TryGetValue(cacheKey, out ICollection<AffinityItemDto> guildArtists);
+        if (cachedArtistsAvailable)
         {
-            var topArtist = userArtists
-                .FirstOrDefault();
+            return guildArtists;
+        }
 
-            var avgPlaycount = userArtists
-                .Average(a => a.Playcount);
+        const string sql = "SELECT * " +
+                           "FROM ( " +
+                               "SELECT ua.user_id, name, playcount, user_artist_id, " +
+                                    "ROW_NUMBER() OVER (PARTITION BY ua.user_id ORDER BY playcount DESC) as pos " +
+                               "FROM public.user_artists AS ua  " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id  " +
+                               "WHERE gu.guild_id = @guildId " +
+                           ") as subquery " +
+                           "WHERE pos <= 300; ";
 
-            if (topArtist != null)
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        guildArtists = (await connection.QueryAsync<AffinityItemDto>(sql, new
+        {
+            guildId
+        })).ToList();
+
+        this._cache.Set(cacheKey, guildArtists, TimeSpan.FromMinutes(10));
+
+        return guildArtists;
+    }
+
+    public async Task<ICollection<AffinityItemDto>> GetQuarterlyTopArtistForGuild(int guildId)
+    {
+        var cacheKey = $"guild-affinity-top-artist-quarterly-{guildId}";
+
+        var cachedArtistsAvailable = this._cache.TryGetValue(cacheKey, out ICollection<AffinityItemDto> guildArtists);
+        if (cachedArtistsAvailable)
+        {
+            return guildArtists;
+        }
+
+        const string sql = "SELECT * " +
+                           "FROM ( " +
+                               "SELECT up.user_id, artist_name AS name, COUNT(*) as playcount, " +
+                                    " ROW_NUMBER() OVER (PARTITION BY up.user_id ORDER BY COUNT(*) DESC) as pos " +
+                               "FROM user_play_ts AS up " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = up.user_id  " +
+                               "WHERE gu.guild_id = @guildId AND time_played > current_date - interval '90' day " +
+                               "GROUP BY up.user_id, artist_name " +
+                           ") as subquery " +
+                           "WHERE pos <= 100; ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        guildArtists = (await connection.QueryAsync<AffinityItemDto>(sql, new
+        {
+            guildId
+        })).ToList();
+
+        this._cache.Set(cacheKey, guildArtists, TimeSpan.FromMinutes(10));
+
+        return guildArtists;
+    }
+
+    public async Task<Dictionary<int, AffinityUser>> GetAffinity(int userId,
+        ICollection<AffinityItemDto> allTimeArtists,
+        List<AffinityItemDto> ownAllTime,
+        ICollection<AffinityItemDto> quarterlyArtists,
+        List<AffinityItemDto> ownQuarterly)
+    {
+        var ownAllTimeTopArtists = ownAllTime
+            .ToDictionary(d => d.Name, d => d.Position);
+
+        var ownAllTimeTopGenres = (await this._genreService.GetTopGenresWithPositionForTopArtists(ownAllTime))
+            .ToDictionary(d => d.Name, d => d.Position);
+
+        var ownAllTimeTopCountries = (await this._countryService.GetTopCountriesForTopArtists(ownAllTime))
+            .ToDictionary(d => d.Name, d => d.Position);
+
+        var results = new Dictionary<int, AffinityUser>();
+        foreach (var userTopArtists in allTimeArtists.GroupBy(g => g.UserId))
+        {
+            var result = await GetAffinityUser(userTopArtists.Key, ownAllTimeTopArtists, ownAllTimeTopGenres, ownAllTimeTopCountries, userTopArtists.ToList());
+            results.Add(result.UserId, result);
+        }
+
+        var ownQuarterlyTopArtists = ownAllTime
+            .ToDictionary(d => d.Name, d => d.Position);
+
+        var ownQuarterlyTopGenres = (await this._genreService.GetTopGenresWithPositionForTopArtists(ownQuarterly))
+            .ToDictionary(d => d.Name, d => d.Position);
+
+        var ownQuarterlyTopCountries = (await this._countryService.GetTopCountriesForTopArtists(ownQuarterly))
+            .ToDictionary(d => d.Name, d => d.Position);
+
+        foreach (var userTopArtists in quarterlyArtists.GroupBy(g => g.UserId))
+        {
+            var result = await GetAffinityUser(userTopArtists.Key, ownQuarterlyTopArtists, ownQuarterlyTopGenres, ownQuarterlyTopCountries, userTopArtists.ToList());
+
+            if (results.TryGetValue(result.UserId, out var value))
             {
-                var topArtistsForUser = userArtists
-                    .Where(w => w.Name != null)
-                    .Select(s => new AffinityArtist
-                    {
-                        ArtistName = s.Name.ToLower(),
-                        Playcount = s.Playcount,
-                        UserId = s.UserId,
-                        Weight = ((decimal)s.Playcount / (decimal)topArtist.Playcount) * (s.Playcount > (avgPlaycount * 2) ? 3 : 1)
-                    })
-                    .ToList();
+                value.ArtistPoints += result.ArtistPoints;
+                value.GenrePoints += result.GenrePoints;
+                value.CountryPoints += result.CountryPoints;
+                value.TotalPoints += result.TotalPoints;
+            }
+            else
+            {
+                results.Add(result.UserId, result);
+            }
+        }
 
-                if (topArtistsForUser.Any())
+        return results;
+    }
+
+    private async Task<AffinityUser> GetAffinityUser(int userId,
+        IReadOnlyDictionary<string, int> artistDictionary,
+        IReadOnlyDictionary<string, int> genreDictionary,
+        IReadOnlyDictionary<string, int> countryDictionary,
+        ICollection<AffinityItemDto> otherTopArtists)
+    {
+        try
+        {
+            var artistPoints = 0;
+            var genrePoints = 0;
+            var countryPoints = 0;
+
+            foreach (var otherArtist in otherTopArtists)
+            {
+                if (artistDictionary.TryGetValue(otherArtist.Name, out var value))
                 {
-                    topArtistsForEveryoneInServer.AddRange(topArtistsForUser);
+                    artistPoints += AddPoints(value, otherArtist.Position);
                 }
             }
+
+            var otherTopGenres = await this._genreService.GetTopGenresWithPositionForTopArtists(otherTopArtists);
+
+            foreach (var otherTopGenre in otherTopGenres)
+            {
+                if (genreDictionary.TryGetValue(otherTopGenre.Name, out var value))
+                {
+                    genrePoints += AddPoints(value, otherTopGenre.Position);
+                }
+            }
+
+            var otherTopCountries = await this._countryService.GetTopCountriesForTopArtists(otherTopArtists);
+
+            foreach (var otherTopCountry in otherTopCountries)
+            {
+                if (countryDictionary.TryGetValue(otherTopCountry.Name, out var value))
+                {
+                    countryPoints += AddPoints(value, otherTopCountry.Position);
+                }
+            }
+
+            return new AffinityUser
+            {
+                ArtistPoints = artistPoints,
+                GenrePoints = genrePoints,
+                CountryPoints = countryPoints,
+                TotalPoints = artistPoints * 0.42 + genrePoints * 0.42 + countryPoints * 0.16,
+                UserId = userId
+            };
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    private static int AddPoints(int ownPosition, int otherPosition)
+    {
+        return otherPosition switch
+        {
+            <= 5 => ownPosition switch
+            {
+                <= 5 => 32,
+                <= 10 => 18,
+                <= 25 => 12,
+                <= 40 => 6,
+                <= 60 => 3,
+                <= 120 => 2,
+                _ => 1
+            },
+            <= 10 => ownPosition switch
+            {
+                <= 10 => 18,
+                <= 25 => 12,
+                <= 40 => 6,
+                <= 60 => 4,
+                <= 120 => 2,
+                _ => 1
+            },
+            <= 25 => ownPosition switch
+            {
+                <= 25 => 12,
+                <= 40 => 6,
+                <= 60 => 4,
+                <= 120 => 2,
+                _ => 1
+            },
+            <= 40 => ownPosition switch
+            {
+                <= 40 => 6,
+                <= 60 => 4,
+                <= 120 => 2,
+                _ => 1
+            },
+            <= 60 => ownPosition switch
+            {
+                <= 60 => 4,
+                <= 120 => 2,
+                _ => 1
+            },
+            <= 120 => ownPosition switch
+            {
+                <= 120 => 2,
+                _ => 1
+            },
+            _ => 1
         };
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-
-        var userTopArtist = currentUserArtists
-            .MaxBy(o => o.UserPlaycount);
-
-        var userAvgPlaycount = currentUserArtists
-            .Where(w => w.UserPlaycount > 29)
-            .Average(a => a.UserPlaycount);
-
-        var topArtists = currentUserArtists
-            .Where(
-                w => w.UserPlaycount > 19 &&
-                     w.ArtistName != null)
-            .OrderByDescending(o => o.UserPlaycount)
-            .Select(s => new AffinityArtist
-            {
-                ArtistName = s.ArtistName.ToLower(),
-                Playcount = s.UserPlaycount,
-                UserId = userId,
-                Weight = ((decimal)s.UserPlaycount / (decimal)userTopArtist.UserPlaycount) * (s.UserPlaycount > (userAvgPlaycount * 2) ? 24 : 8)
-            })
-            .ToList();
-
-        return topArtistsForEveryoneInServer
-            .Where(w => w != null &&
-                        topArtists.Select(s => s.ArtistName).Contains(w.ArtistName))
-            .GroupBy(g => g.UserId)
-            .OrderByDescending(g => g.Sum(s => s.Weight * topArtists.First(f => f.ArtistName == s.ArtistName).Weight))
-            .Select(s => new AffinityArtistResultWithUser
-            {
-                UserId = s.Key,
-                MatchPercentage = Math.Min(
-                    ((decimal)s.Sum(w => w.Weight * topArtists.First(f => f.ArtistName == w.ArtistName).Weight)
-                        / (decimal)topArtists.Sum(w => w.Weight) * 100) * 2, 100)
-            })
-            .ToList();
     }
 }

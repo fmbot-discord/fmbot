@@ -174,14 +174,13 @@ public class GuildService
         return $"guild-full-{discordGuildId}";
     }
 
-    public static IEnumerable<GuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild)
+    public static IEnumerable<FullGuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild, IList<FullGuildUser> guildUsers)
     {
-        var guildUsers = guild.GuildUsers.ToList();
         if (guild.ActivityThresholdDays.HasValue)
         {
             guildUsers = guildUsers.Where(w =>
-                    w.User.LastUsed != null &&
-                    w.User.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
+                    w.LastUsed != null &&
+                    w.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
                 .ToList();
         }
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
