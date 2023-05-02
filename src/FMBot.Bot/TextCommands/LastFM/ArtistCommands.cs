@@ -608,7 +608,17 @@ public class ArtistCommands : BaseCommandModule
         {
             var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
 
-            this._embed.WithDescription($"<a:loading:821676038102056991> Finding {descriptor} server neighbors...");
+            var description = new StringBuilder();
+
+            description.AppendLine($"<a:loading:821676038102056991> Finding {descriptor} server neighbors...");
+
+            if (guildUsers.Count > 2000)
+            {
+                description.AppendLine();
+                description.AppendLine($"This can sometimes take a while on larger servers like this one.");
+            }
+
+            this._embed.WithDescription(description.ToString());
 
             var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
