@@ -1366,14 +1366,14 @@ public class ArtistBuilders
         var ownAllTime = topAllTime.Where(w => w.UserId == userSettings.UserId).ToList();
         var ownQuarterly = quarterlyAllTime.Where(w => w.UserId == userSettings.UserId).ToList();
 
-        var neighbors = await this._whoKnowsArtistService.GetAffinity(userSettings.UserId, topAllTime, ownAllTime, quarterlyAllTime, ownQuarterly);
+        var concurrentNeighbors = await this._whoKnowsArtistService.GetAffinity(topAllTime, ownAllTime, quarterlyAllTime, ownQuarterly);
 
         var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild, guildUsers);
         var filteredUserIds = filteredGuildUsers.Select(s => s.UserId).ToList();
 
-        var self = neighbors.First(f => f.Key == userSettings.UserId);
+        var self = concurrentNeighbors.First(f => f.Key == userSettings.UserId);
 
-        neighbors = neighbors
+        var neighbors = concurrentNeighbors
             .Where(w => filteredUserIds.Contains(w.Key))
             .ToDictionary(d => d.Key, d => d.Value);
 

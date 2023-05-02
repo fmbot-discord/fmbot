@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
@@ -10,6 +11,7 @@ using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using Jil;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -443,42 +445,48 @@ public class WhoKnowsArtistService
         return guildArtists;
     }
 
-    public async Task<Dictionary<int, AffinityUser>> GetAffinity(int userId,
+    public async Task<ConcurrentDictionary<int, AffinityUser>> GetAffinity(
         IEnumerable<AffinityItemDto> allTimeArtists,
         List<AffinityItemDto> ownAllTime,
         IEnumerable<AffinityItemDto> quarterlyArtists,
         List<AffinityItemDto> ownQuarterly)
     {
-        var ownAllTimeTopArtists = ownAllTime
+        var ownAllTimeArtists = ownAllTime.GroupBy(g => g.Name)
+            .ToDictionary(d => d.First().Name, d => d.First().Position);
+        var ownAllTimeArtistsConcurrent = new ConcurrentDictionary<string, int>(ownAllTimeArtists);
+
+        var ownAllTimeGenres = (await this._genreService.GetTopGenresWithPositionForTopArtists(ownAllTime))
+            .ToDictionary(d => d.Name, d => d.Position);
+        var ownAllTimeGenresConcurrent = new ConcurrentDictionary<string, int>(ownAllTimeGenres);
+
+        var ownAllTimeCountries = (await this._countryService.GetTopCountriesForTopArtists(ownAllTime))
+            .ToDictionary(d => d.Name, d => d.Position);
+        var ownAllTimeCountriesConcurrent = new ConcurrentDictionary<string, int>(ownAllTimeCountries);
+
+        var results = new ConcurrentDictionary<int, AffinityUser>();
+        await Parallel.ForEachAsync(allTimeArtists.GroupBy(g => g.UserId), async (userTopArtists, _) =>
+        {
+            var result = await GetAffinityUser(userTopArtists.Key, ownAllTimeArtistsConcurrent, ownAllTimeGenresConcurrent, ownAllTimeCountriesConcurrent, userTopArtists.ToList());
+            results.TryAdd(result.UserId, result);
+        });
+
+        var ownQuarterlyArtists = ownAllTime
             .GroupBy(g => g.Name)
             .ToDictionary(d => d.First().Name, d => d.First().Position);
+        var ownQuarterArtistsConcurrent = new ConcurrentDictionary<string, int>(ownQuarterlyArtists);
 
-        var ownAllTimeTopGenres = (await this._genreService.GetTopGenresWithPositionForTopArtists(ownAllTime))
+        var ownQuarterlyGenres = (await this._genreService.GetTopGenresWithPositionForTopArtists(ownQuarterly))
             .ToDictionary(d => d.Name, d => d.Position);
+        var ownQuarterlyGenresConcurrent = new ConcurrentDictionary<string, int>(ownQuarterlyGenres);
 
-        var ownAllTimeTopCountries = (await this._countryService.GetTopCountriesForTopArtists(ownAllTime))
+        var ownQuarterlyCountries = (await this._countryService.GetTopCountriesForTopArtists(ownQuarterly))
             .ToDictionary(d => d.Name, d => d.Position);
+        var ownQuarterlyCountriesConcurrent = new ConcurrentDictionary<string, int>(ownQuarterlyCountries);
 
-        var results = new Dictionary<int, AffinityUser>();
-        foreach (var userTopArtists in allTimeArtists.GroupBy(g => g.UserId))
+        await Parallel.ForEachAsync(quarterlyArtists.GroupBy(g => g.UserId), async (userTopArtists, _) =>
         {
-            var result = await GetAffinityUser(userTopArtists.Key, ownAllTimeTopArtists, ownAllTimeTopGenres, ownAllTimeTopCountries, userTopArtists.ToList());
-            results.Add(result.UserId, result);
-        }
-
-        var ownQuarterlyTopArtists = ownAllTime
-            .GroupBy(g => g.Name)
-            .ToDictionary(d => d.First().Name, d => d.First().Position);
-
-        var ownQuarterlyTopGenres = (await this._genreService.GetTopGenresWithPositionForTopArtists(ownQuarterly))
-            .ToDictionary(d => d.Name, d => d.Position);
-
-        var ownQuarterlyTopCountries = (await this._countryService.GetTopCountriesForTopArtists(ownQuarterly))
-            .ToDictionary(d => d.Name, d => d.Position);
-
-        foreach (var userTopArtists in quarterlyArtists.GroupBy(g => g.UserId))
-        {
-            var result = await GetAffinityUser(userTopArtists.Key, ownQuarterlyTopArtists, ownQuarterlyTopGenres, ownQuarterlyTopCountries, userTopArtists.ToList());
+            var result = await GetAffinityUser(userTopArtists.Key, ownQuarterArtistsConcurrent,
+                ownQuarterlyGenresConcurrent, ownQuarterlyCountriesConcurrent, userTopArtists.ToList());
 
             if (results.TryGetValue(result.UserId, out var value))
             {
@@ -489,9 +497,9 @@ public class WhoKnowsArtistService
             }
             else
             {
-                results.Add(result.UserId, result);
+                results.TryAdd(result.UserId, result);
             }
-        }
+        });
 
         return results;
     }
@@ -502,55 +510,46 @@ public class WhoKnowsArtistService
         IReadOnlyDictionary<string, int> countryDictionary,
         ICollection<AffinityItemDto> otherTopArtists)
     {
-        try
+        var artistPoints = 0;
+        var genrePoints = 0;
+        var countryPoints = 0;
+
+        foreach (var otherArtist in otherTopArtists)
         {
-            var artistPoints = 0;
-            var genrePoints = 0;
-            var countryPoints = 0;
-
-            foreach (var otherArtist in otherTopArtists)
+            if (artistDictionary.TryGetValue(otherArtist.Name, out var value))
             {
-                if (artistDictionary.TryGetValue(otherArtist.Name, out var value))
-                {
-                    artistPoints += AddPoints(value, otherArtist.Position);
-                }
+                artistPoints += AddPoints(value, otherArtist.Position);
             }
-
-            var otherTopGenres = await this._genreService.GetTopGenresWithPositionForTopArtists(otherTopArtists);
-
-            foreach (var otherTopGenre in otherTopGenres)
-            {
-                if (genreDictionary.TryGetValue(otherTopGenre.Name, out var value))
-                {
-                    genrePoints += AddPoints(value, otherTopGenre.Position);
-                }
-            }
-
-            var otherTopCountries = await this._countryService.GetTopCountriesForTopArtists(otherTopArtists);
-
-            foreach (var otherTopCountry in otherTopCountries)
-            {
-                if (countryDictionary.TryGetValue(otherTopCountry.Name, out var value))
-                {
-                    countryPoints += AddPoints(value, otherTopCountry.Position);
-                }
-            }
-
-            return new AffinityUser
-            {
-                ArtistPoints = artistPoints,
-                GenrePoints = genrePoints,
-                CountryPoints = countryPoints,
-                TotalPoints = artistPoints * 0.42 + genrePoints * 0.42 + countryPoints * 0.16,
-                UserId = userId
-            };
-
         }
-        catch (Exception e)
+
+        var otherTopGenres = await this._genreService.GetTopGenresWithPositionForTopArtists(otherTopArtists);
+
+        foreach (var otherTopGenre in otherTopGenres)
         {
-            Console.WriteLine(e);
-            throw;
+            if (genreDictionary.TryGetValue(otherTopGenre.Name, out var value))
+            {
+                genrePoints += AddPoints(value, otherTopGenre.Position);
+            }
         }
+
+        var otherTopCountries = await this._countryService.GetTopCountriesForTopArtists(otherTopArtists);
+
+        foreach (var otherTopCountry in otherTopCountries)
+        {
+            if (countryDictionary.TryGetValue(otherTopCountry.Name, out var value))
+            {
+                countryPoints += AddPoints(value, otherTopCountry.Position);
+            }
+        }
+
+        return new AffinityUser
+        {
+            ArtistPoints = artistPoints,
+            GenrePoints = genrePoints,
+            CountryPoints = countryPoints,
+            TotalPoints = artistPoints * 0.42 + genrePoints * 0.42 + countryPoints * 0.16,
+            UserId = userId
+        };
     }
 
     private static int AddPoints(int ownPosition, int otherPosition)
