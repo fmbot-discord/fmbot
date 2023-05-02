@@ -359,6 +359,7 @@ public class CrownService
                             .Contains(w.ArtistName.ToLower()))
                     .ToList();
             }
+
             const string deleteOldSeededCrownsSql = "DELETE FROM public.user_crowns " +
                                                     "WHERE guild_id = @guildId AND seeded_crown = true;";
 
