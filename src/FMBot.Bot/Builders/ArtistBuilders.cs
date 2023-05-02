@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
@@ -1383,6 +1384,11 @@ public class ArtistBuilders
 
         var self = neighbors.First(f => f.Key == userSettings.UserId);
 
+        var numberInfo = new NumberFormatInfo
+        {
+            PercentPositivePattern = 1
+        };
+
         var pageCounter = 1;
         var pages = new List<PageBuilder>();
         foreach (var page in neighborPages)
@@ -1392,11 +1398,11 @@ public class ArtistBuilders
             {
                 var guildUser = guildUsers.First(f => f.UserId == neighbor.Key);
                 pageString.AppendLine(
-                    $"**{neighbor.Value.TotalPoints / self.Value.TotalPoints:P1}** — " +
+                    $"**{(neighbor.Value.TotalPoints / self.Value.TotalPoints).ToString("P1", numberInfo)}** — " +
                     $"**[{Format.Sanitize(guildUser.UserName)}]({Constants.LastFMUserUrl}{guildUser.UserNameLastFM})** — " +
-                                      $"`{neighbor.Value.ArtistPoints / self.Value.ArtistPoints:P0}` artists, " +
-                                      $"`{neighbor.Value.GenrePoints / self.Value.GenrePoints:P0}` genres, " +
-                                      $"`{neighbor.Value.CountryPoints / self.Value.CountryPoints:P0}` countries");
+                                      $"`{(neighbor.Value.ArtistPoints / self.Value.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
+                                      $"`{(neighbor.Value.GenrePoints / self.Value.GenrePoints).ToString("P0", numberInfo)}` genres, " +
+                                      $"`{(neighbor.Value.CountryPoints / self.Value.CountryPoints).ToString("P0", numberInfo)}` countries");
 
             }
 

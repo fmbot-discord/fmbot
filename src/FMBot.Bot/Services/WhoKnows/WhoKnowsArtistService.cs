@@ -444,9 +444,9 @@ public class WhoKnowsArtistService
     }
 
     public async Task<Dictionary<int, AffinityUser>> GetAffinity(int userId,
-        ICollection<AffinityItemDto> allTimeArtists,
+        IEnumerable<AffinityItemDto> allTimeArtists,
         List<AffinityItemDto> ownAllTime,
-        ICollection<AffinityItemDto> quarterlyArtists,
+        IEnumerable<AffinityItemDto> quarterlyArtists,
         List<AffinityItemDto> ownQuarterly)
     {
         var ownAllTimeTopArtists = ownAllTime
