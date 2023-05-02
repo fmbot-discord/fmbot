@@ -467,7 +467,7 @@ public class SettingService
         string discordUserName;
         if (discordGuild != null)
         {
-            var discordGuildUser = await discordGuild.GetUserAsync(user.DiscordUserId);
+            var discordGuildUser = await discordGuild.GetUserAsync(user.DiscordUserId, CacheMode.CacheOnly);
             discordUserName = discordGuildUser?.Nickname ?? discordGuildUser?.Username ?? discordUser.Username;
         }
         else
@@ -543,7 +543,7 @@ public class SettingService
 
                 if (discordGuild != null)
                 {
-                    var discordGuildUser = await discordGuild.GetUserAsync(otherUser.DiscordUserId);
+                    var discordGuildUser = await discordGuild.GetUserAsync(otherUser.DiscordUserId, CacheMode.CacheOnly);
                     settingsModel.DisplayName = discordGuildUser != null ? discordGuildUser.DisplayName : otherUser.UserNameLastFM;
                 }
                 else
