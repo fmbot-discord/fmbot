@@ -57,7 +57,10 @@ public class SpotifyService
         searchValue = searchValue.Replace("- Single", "");
         searchValue = searchValue.Replace("- EP", "");
 
-        var searchRequest = new SearchRequest(searchType, searchValue);
+        var searchRequest = new SearchRequest(searchType, searchValue)
+        {
+            Limit = 50
+        };
 
         Statistics.SpotifyApiCalls.Inc();
         return await spotify.Search.Item(searchRequest);
@@ -217,7 +220,10 @@ public class SpotifyService
     {
         var spotify = GetSpotifyWebApi();
 
-        var searchRequest = new SearchRequest(SearchRequest.Types.Artist, artistName);
+        var searchRequest = new SearchRequest(SearchRequest.Types.Artist, artistName)
+        {
+            Limit = 50
+        };
 
         var results = await spotify.Search.Item(searchRequest);
         Statistics.SpotifyApiCalls.Inc();
