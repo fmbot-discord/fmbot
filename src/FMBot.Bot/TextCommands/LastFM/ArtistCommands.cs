@@ -599,46 +599,54 @@ public class ArtistCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
-
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context, firstOptionIsLfmUsername: true);
-
-        ResponseModel response;
-        if (guildUsers.Count > 250)
+        try
         {
-            var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
+            var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
 
-            var description = new StringBuilder();
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context, firstOptionIsLfmUsername: true);
 
-            description.AppendLine($"<a:loading:821676038102056991> Finding {descriptor} server neighbors...");
-
-            if (guildUsers.Count > 2000)
+            ResponseModel response;
+            if (guildUsers.Count > 250)
             {
-                description.AppendLine();
-                description.AppendLine($"This can sometimes take a while on larger servers like this one.");
+                var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
+
+                var description = new StringBuilder();
+
+                description.AppendLine($"<a:loading:821676038102056991> Finding {descriptor} server neighbors...");
+
+                if (guildUsers.Count > 2000)
+                {
+                    description.AppendLine();
+                    description.AppendLine($"This can sometimes take a while on larger servers like this one.");
+                }
+
+                this._embed.WithDescription(description.ToString());
+
+                var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                response = await this._artistBuilders
+                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers);
+
+                _ = this.Interactivity.SendPaginatorAsync(
+                    response.StaticPaginator,
+                    message,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+            }
+            else
+            {
+                response = await this._artistBuilders
+                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers);
+
+                await this.Context.SendResponse(this.Interactivity, response);
             }
 
-            this._embed.WithDescription(description.ToString());
+            this.Context.LogCommandUsed(response.CommandResponse);
 
-            var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            response = await this._artistBuilders
-                .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                response.StaticPaginator,
-                message,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
         }
-        else
+        catch (Exception e)
         {
-            response = await this._artistBuilders
-                .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers);
-
-            await this.Context.SendResponse(this.Interactivity, response);
+            await this.Context.HandleCommandException(e);
         }
-
-        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     private async Task<ArtistInfo> GetArtist(string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null, User user = null)

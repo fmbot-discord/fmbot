@@ -450,7 +450,8 @@ public class WhoKnowsArtistService
         List<AffinityItemDto> ownQuarterly)
     {
         var ownAllTimeTopArtists = ownAllTime
-            .ToDictionary(d => d.Name, d => d.Position);
+            .GroupBy(g => g.Name)
+            .ToDictionary(d => d.First().Name, d => d.First().Position);
 
         var ownAllTimeTopGenres = (await this._genreService.GetTopGenresWithPositionForTopArtists(ownAllTime))
             .ToDictionary(d => d.Name, d => d.Position);
@@ -466,7 +467,8 @@ public class WhoKnowsArtistService
         }
 
         var ownQuarterlyTopArtists = ownAllTime
-            .ToDictionary(d => d.Name, d => d.Position);
+            .GroupBy(g => g.Name)
+            .ToDictionary(d => d.First().Name, d => d.First().Position);
 
         var ownQuarterlyTopGenres = (await this._genreService.GetTopGenresWithPositionForTopArtists(ownQuarterly))
             .ToDictionary(d => d.Name, d => d.Position);

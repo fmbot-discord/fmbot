@@ -1366,10 +1366,12 @@ public class ArtistBuilders
         var ownAllTime = topAllTime.Where(w => w.UserId == userSettings.UserId).ToList();
         var ownQuarterly = quarterlyAllTime.Where(w => w.UserId == userSettings.UserId).ToList();
 
-        var neighbors = await this._whoKnowsArtistService.GetAffinity(context.ContextUser.UserId, topAllTime, ownAllTime, quarterlyAllTime, ownQuarterly);
+        var neighbors = await this._whoKnowsArtistService.GetAffinity(userSettings.UserId, topAllTime, ownAllTime, quarterlyAllTime, ownQuarterly);
 
         var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild, guildUsers);
         var filteredUserIds = filteredGuildUsers.Select(s => s.UserId).ToList();
+
+        var self = neighbors.First(f => f.Key == userSettings.UserId);
 
         neighbors = neighbors
             .Where(w => filteredUserIds.Contains(w.Key))
@@ -1381,8 +1383,6 @@ public class ArtistBuilders
             .Take(120)
             .Chunk(12)
             .ToList();
-
-        var self = neighbors.First(f => f.Key == userSettings.UserId);
 
         var numberInfo = new NumberFormatInfo
         {
