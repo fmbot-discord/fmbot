@@ -21,7 +21,7 @@ public class TopArtist
 
     public long? Rank { get; set; }
 
-    public long? UserPlaycount { get; set; }
+    public long UserPlaycount { get; set; }
 
     public Guid? Mbid { get; set; }
 

@@ -369,7 +369,8 @@ public class WhoKnowsArtistService
         });
     }
 
-    public async Task<IReadOnlyList<AffinityArtistResultWithUser>> GetNeighbors(int guildId, int userId)
+    public async Task<IReadOnlyList<AffinityArtistResultWithUser>> GetNeighbors(int guildId, int userId,
+        List<TopArtist> currentUserArtists)
     {
         var topArtistsForEveryoneInServer = new List<AffinityArtist>();
 
@@ -408,28 +409,24 @@ public class WhoKnowsArtistService
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var currentUserArtists = await db.UserArtists
-            .Where(w => w.UserId == userId)
-            .ToListAsync();
-
         var userTopArtist = currentUserArtists
-            .MaxBy(o => o.Playcount);
+            .MaxBy(o => o.UserPlaycount);
 
         var userAvgPlaycount = currentUserArtists
-            .Where(w => w.Playcount > 29)
-            .Average(a => a.Playcount);
+            .Where(w => w.UserPlaycount > 29)
+            .Average(a => a.UserPlaycount);
 
         var topArtists = currentUserArtists
             .Where(
-                w => w.Playcount > 29 &&
-                     w.Name != null)
-            .OrderByDescending(o => o.Playcount)
+                w => w.UserPlaycount > 19 &&
+                     w.ArtistName != null)
+            .OrderByDescending(o => o.UserPlaycount)
             .Select(s => new AffinityArtist
             {
-                ArtistName = s.Name.ToLower(),
-                Playcount = s.Playcount,
-                UserId = s.UserId,
-                Weight = ((decimal)s.Playcount / (decimal)userTopArtist.Playcount) * (s.Playcount > (userAvgPlaycount * 2) ? 24 : 8)
+                ArtistName = s.ArtistName.ToLower(),
+                Playcount = s.UserPlaycount,
+                UserId = userId,
+                Weight = ((decimal)s.UserPlaycount / (decimal)userTopArtist.UserPlaycount) * (s.UserPlaycount > (userAvgPlaycount * 2) ? 24 : 8)
             })
             .ToList();
 

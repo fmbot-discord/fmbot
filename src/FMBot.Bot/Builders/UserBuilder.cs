@@ -465,7 +465,7 @@ public class UserBuilder
         if (topArtists.Any())
         {
             var amount = topArtists.OrderByDescending(o => o.UserPlaycount).Take(10).Sum(s => s.UserPlaycount);
-            stats.AppendLine($"Top **10** artists make up **{Math.Round((double)amount.GetValueOrDefault(0) / userInfo.Playcount * 100, 1)}%** of scrobbles");
+            stats.AppendLine($"Top **10** artists make up **{Math.Round((double)amount / userInfo.Playcount * 100, 1)}%** of scrobbles");
         }
 
         var topDay = allPlays.GroupBy(g => g.TimePlayed.DayOfWeek).MaxBy(o => o.Count());

@@ -781,7 +781,7 @@ public class LastFmRepository
                 {
                     ArtistName = s.Name,
                     ArtistUrl = s.Url.ToString(),
-                    UserPlaycount = s.PlayCount,
+                    UserPlaycount = s.PlayCount.GetValueOrDefault(),
                     Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
                         ? Guid.Parse(s.Mbid)
                         : null

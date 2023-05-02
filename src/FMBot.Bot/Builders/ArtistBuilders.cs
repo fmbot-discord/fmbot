@@ -1224,9 +1224,9 @@ public class ArtistBuilders
         }
 
         var ownTopArtists =
-            ownArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount.Value)).ToList();
+            ownArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount)).ToList();
         var otherTopArtists =
-            otherArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount.Value)).ToList();
+            otherArtists.Content.TopArtists.Select(s => new TasteItem(s.ArtistName, s.UserPlaycount)).ToList();
 
         var ownTopGenres = await this._genreService.GetTopGenresForTopArtists(ownArtists.Content.TopArtists);
         var otherTopGenres = await this._genreService.GetTopGenresForTopArtists(otherArtists.Content.TopArtists);
@@ -1354,7 +1354,9 @@ public class ArtistBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        var neighbors = await this._whoKnowsArtistService.GetNeighbors(guild.GuildId, context.ContextUser.UserId);
+        var currentUserArtists = await this._artistsService.GetUserAllTimeTopArtists(context.ContextUser.UserId, true);
+
+        var neighbors = await this._whoKnowsArtistService.GetNeighbors(guild.GuildId, context.ContextUser.UserId, currentUserArtists);
 
         var fullGuild = await fullGuildTask;
         var filteredGuildUsers = GuildService.FilterGuildUsersAsync(fullGuild);
