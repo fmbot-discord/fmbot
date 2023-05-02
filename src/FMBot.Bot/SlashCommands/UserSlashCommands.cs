@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -6,7 +7,9 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
+using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -32,6 +35,8 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly IIndexService _indexService;
     private readonly UserBuilder _userBuilder;
     private readonly SettingService _settingService;
+    private readonly ArtistsService _artistsService;
+    private readonly OpenAiService _openAiService;
 
     private readonly BotSettings _botSettings;
 
@@ -45,7 +50,8 @@ public class UserSlashCommands : InteractionModuleBase
         InteractiveService interactivity,
         FriendsService friendsService,
         UserBuilder userBuilder,
-        SettingService settingService)
+        SettingService settingService,
+        ArtistsService artistsService, OpenAiService openAiService)
     {
         this._userService = userService;
         this._lastFmRepository = lastFmRepository;
@@ -55,6 +61,8 @@ public class UserSlashCommands : InteractionModuleBase
         this._friendsService = friendsService;
         this._userBuilder = userBuilder;
         this._settingService = settingService;
+        this._artistsService = artistsService;
+        this._openAiService = openAiService;
         this._botSettings = botSettings.Value;
     }
 
@@ -207,6 +215,7 @@ public class UserSlashCommands : InteractionModuleBase
     }
 
     [ComponentInteraction(InteractionConstants.FmSettingType)]
+    [UsernameSetRequired]
     public async Task SetEmbedType(string[] inputs)
     {
         var embed = new EmbedBuilder();
@@ -223,6 +232,7 @@ public class UserSlashCommands : InteractionModuleBase
     }
 
     [ComponentInteraction(InteractionConstants.FmSettingFooter)]
+    [UsernameSetRequired]
     public async Task SetFooterOptions(string[] inputs)
     {
         var embed = new EmbedBuilder();
@@ -372,6 +382,97 @@ public class UserSlashCommands : InteractionModuleBase
 
         await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
         this.Context.LogCommandUsed();
+    }
+
+    [SlashCommand("judge", "Judges your music taste using AI")]
+    [UsernameSetRequired]
+    public async Task JudgeAsync(
+        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [Summary("User", "The user to judge (Supporter-only option)")] string user = null)
+    {
+        var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
+
+        var differentUserButNotAllowed = false;
+
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        if (userSettings.DifferentUser && contextUser.UserType == UserType.User)
+        {
+            userSettings = await this._settingService.GetUser("", contextUser, this.Context.Guild, this.Context.User, true);
+
+            differentUserButNotAllowed = true;
+        }
+
+        List<string> topArtists;
+        const int artistLimit = 15;
+        if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
+        {
+            topArtists = await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 90);
+        }
+        else
+        {
+            var lfmTopArtists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, artistLimit);
+            topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
+        }
+
+        if (topArtists == null || !topArtists.Any())
+        {
+            var embed = new EmbedBuilder();
+            embed.WithColor(DiscordConstants.LastFmColorRed);
+            embed.WithDescription(
+                $"Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
+            this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+            await RespondAsync(embed: embed.Build());
+            return;
+        }
+
+        topArtists = topArtists.Take(artistLimit).ToList();
+
+        var commandUsesLeft = await this._openAiService.GetCommandUsesLeft(contextUser);
+
+        try
+        {
+            var response =
+                await this._userBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings, contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
+
+            if (commandUsesLeft <= 0)
+            {
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                return;
+            }
+
+            var pageBuilder = new PageBuilder()
+                .WithDescription(response.Embed.Description)
+                .WithFooter(response.Embed.Footer)
+                .WithColor(DiscordConstants.InformationColorBlue);
+
+            var items = new Item[]
+            {
+                new("Compliment", new Emoji("🙂")),
+                new("Roast", new Emoji("🔥")),
+            };
+
+            var selection = new SelectionBuilder<Item>()
+                .WithOptions(items)
+                .WithStringConverter(item => item.Name)
+                .WithEmoteConverter(item => item.Emote)
+                .WithSelectionPage(pageBuilder)
+                .AddUser(this.Context.User)
+                .Build();
+
+            var result = await this.Interactivity.SendSelectionAsync(selection, this.Context.Interaction, TimeSpan.FromMinutes(10));
+
+            var handledResponse = await this._userBuilder.JudgeHandleAsync(new ContextModel(this.Context, contextUser),
+                userSettings, result, topArtists);
+
+            this.Context.LogCommandUsed(handledResponse.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)")]

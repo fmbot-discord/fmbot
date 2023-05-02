@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -13,6 +14,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Bot.TextCommands.LastFM;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
@@ -604,11 +606,11 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
-        var enabled = usesLeftToday > 0;
+        var hasUsesLeft = usesLeftToday > 0;
 
         var description = new StringBuilder();
 
-        if (enabled)
+        if (hasUsesLeft)
         {
             if (!userSettings.DifferentUser)
             {
@@ -625,7 +627,7 @@ public class UserBuilder
         description.AppendLine();
         if (userType == UserType.User)
         {
-            if (enabled)
+            if (hasUsesLeft)
             {
                 description.AppendLine($"You can use this command `{usesLeftToday}` more times today.");
             }
@@ -633,6 +635,9 @@ public class UserBuilder
             {
                 description.Append($"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
                 description.AppendLine($"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and the possibility to use the command on others.");
+
+                response.Components = new ComponentBuilder()
+                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink);
             }
         }
         else
@@ -641,7 +646,7 @@ public class UserBuilder
             {
                 description.AppendLine($"You can use this command `{usesLeftToday}` more times today.");
             }
-            if (!enabled)
+            if (!hasUsesLeft)
             {
                 description.AppendLine($"You've ran out of command uses for today.");
             }
@@ -664,7 +669,105 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> JudgeComplimentAsync(ContextModel context, UserSettingsModel userSettings, List<string> topArtists)
+    public async Task<ResponseModel> JudgeHandleAsync(ContextModel context,
+        UserSettingsModel userSettings,
+        InteractiveMessageResult<Item> result,
+        List<string> topArtists)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (result.IsTimeout || !result.IsSuccess)
+        {
+            var embed = new EmbedBuilder()
+                .WithDescription("Judgement command timed out. Try again.")
+                .WithColor(DiscordConstants.InformationColorBlue);
+
+            await result.Message.ModifyAsync(x =>
+            {
+                x.Embed = embed.Build();
+                x.Components = new ComponentBuilder().Build();
+            });
+
+            response.CommandResponse = CommandResponse.WrongInput;
+            return response;
+        }
+
+        var commandUsesLeft = await this._openAiService.GetCommandUsesLeft(context.ContextUser);
+
+        if (commandUsesLeft <= 0)
+        {
+            var description = new StringBuilder();
+            if (context.ContextUser.UserType == UserType.User)
+            {
+                description.Append($"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
+                description.AppendLine($"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and the possibility to use the command on others.");
+            }
+            else
+            {
+                description.Append($"You've ran out of command uses for today. ");
+            }
+
+            await result.Message.ModifyAsync(x =>
+            {
+                x.Embed = new EmbedBuilder().WithDescription(description.ToString()).Build();
+                x.Components = new ComponentBuilder().Build();
+            });
+
+            response.CommandResponse = CommandResponse.Cooldown;
+            return response;
+        }
+
+        var selected = result.Value.Name;
+        var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
+
+        if (selected == "Compliment")
+        {
+            var embed = new EmbedBuilder()
+                .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} compliment...")
+                .WithColor(new Color(186, 237, 169));
+
+            await result.Message.ModifyAsync(x =>
+            {
+                x.Embed = embed.Build();
+                x.Components = new ComponentBuilder().Build();
+            });
+
+            var complimentResponse = await this.JudgeComplimentAsync(context, userSettings, topArtists);
+
+            await result.Message.ModifyAsync(x =>
+            {
+                x.Embed = complimentResponse.Embed.Build();
+                x.Components = new ComponentBuilder().Build();
+            });
+        }
+        if (selected == "Roast")
+        {
+            var embed = new EmbedBuilder()
+                .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...")
+                .WithColor(new Color(255, 122, 1));
+
+            await result.Message.ModifyAsync(x =>
+            {
+                x.Embed = embed.Build();
+                x.Components = new ComponentBuilder().Build();
+            });
+
+            var complimentResponse = await this.JudgeRoastAsync(context, userSettings, topArtists);
+
+            await result.Message.ModifyAsync(x =>
+            {
+                x.Embed = complimentResponse.Embed.Build();
+                x.Components = new ComponentBuilder().Build();
+            });
+        }
+
+        return response;
+    }
+
+    private async Task<ResponseModel> JudgeComplimentAsync(ContextModel context, UserSettingsModel userSettings, List<string> topArtists)
     {
         var response = new ResponseModel
         {
@@ -686,7 +789,7 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> JudgeRoastAsync(ContextModel context, UserSettingsModel userSettings, List<string> topArtists)
+    private async Task<ResponseModel> JudgeRoastAsync(ContextModel context, UserSettingsModel userSettings, List<string> topArtists)
     {
         var response = new ResponseModel
         {

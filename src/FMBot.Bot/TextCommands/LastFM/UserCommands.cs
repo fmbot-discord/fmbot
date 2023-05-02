@@ -227,102 +227,16 @@ public class UserCommands : BaseCommandModule
 
             var result = await this.Interactivity.SendSelectionAsync(selection, this.Context.Channel, TimeSpan.FromMinutes(10));
 
-            if (result.IsTimeout || !result.IsSuccess)
-            {
-                var embed = new EmbedBuilder()
-                    .WithDescription("Judgement command timed out. Try again.")
-                    .WithColor(DiscordConstants.InformationColorBlue);
+            var handledResponse = await this._userBuilder.JudgeHandleAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, result, topArtists);
 
-                await result.Message.ModifyAsync(x =>
-                {
-                    x.Embed = embed.Build();
-                    x.Components = new ComponentBuilder().Build();
-                });
-
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-
-                return;
-            }
-
-            commandUsesLeft = await this._openAiService.GetCommandUsesLeft(contextUser);
-
-            if (commandUsesLeft <= 0)
-            {
-                var description = new StringBuilder();
-                if (contextUser.UserType == UserType.User)
-                {
-                    description.Append($"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
-                    description.AppendLine($"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and the possibility to use the command on others.");
-                }
-                else
-                {
-                    description.Append($"You've ran out of command uses for today. ");
-                }
-
-                await result.Message.ModifyAsync(x =>
-                {
-                    x.Embed = new EmbedBuilder().WithDescription(description.ToString()).Build();
-                    x.Components = new ComponentBuilder().Build();
-                });
-
-                return;
-            }
-
-            var selected = result.Value.Name;
-            var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
-
-            if (selected == "Compliment")
-            {
-                var embed = new EmbedBuilder()
-                    .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} compliment...")
-                    .WithColor(new Color(186, 237, 169));
-
-                await result.Message.ModifyAsync(x =>
-                {
-                    x.Embed = embed.Build();
-                    x.Components = new ComponentBuilder().Build();
-                });
-
-                var complimentResponse = await this._userBuilder.JudgeComplimentAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, topArtists);
-
-                await result.Message.ModifyAsync(x =>
-                {
-                    x.Embed = complimentResponse.Embed.Build();
-                    x.Components = new ComponentBuilder().Build();
-                });
-
-                this.Context.LogCommandUsed();
-            }
-            if (selected == "Roast")
-            {
-                var embed = new EmbedBuilder()
-                    .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...")
-                    .WithColor(new Color(255, 122, 1));
-
-                await result.Message.ModifyAsync(x =>
-                {
-                    x.Embed = embed.Build();
-                    x.Components = new ComponentBuilder().Build();
-                });
-
-                var complimentResponse = await this._userBuilder.JudgeRoastAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, topArtists);
-
-                await result.Message.ModifyAsync(x =>
-                {
-                    x.Embed = complimentResponse.Embed.Build();
-                    x.Components = new ComponentBuilder().Build();
-                });
-
-                this.Context.LogCommandUsed();
-            }
+            this.Context.LogCommandUsed(handledResponse.CommandResponse);
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
     }
-
-    private sealed record Item(string Name, IEmote Emote);
 
     [Command("userreactions", RunMode = RunMode.Async)]
     [Summary("Sets the automatic emoji reactions for the `fm` and `featured` command.\n\n" +

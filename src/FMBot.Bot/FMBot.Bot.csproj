@@ -57,8 +57,8 @@
     <PackageReference Include="SkiaSharp" Version="2.80.2" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.80.2" />
     <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="2.80.2" />
-    <PackageReference Include="SpotifyAPI.Web" Version="6.3.0" />
-    <PackageReference Include="SpotifyAPI.Web.Auth" Version="6.3.0" />
+    <PackageReference Include="SpotifyAPI.Web" Version="7.0.0" />
+    <PackageReference Include="SpotifyAPI.Web.Auth" Version="7.0.0" />
     <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
     <PackageReference Include="System.Reactive" Version="5.0.0" />
     <PackageReference Include="System.Reactive.Linq" Version="5.0.0" />

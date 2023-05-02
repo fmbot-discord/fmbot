@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 using Discord;
@@ -147,5 +148,41 @@ public static class InteractionContextExtensions
             default:
                 throw new ArgumentOutOfRangeException();
         }
+    }
+
+    public static async Task UpdateInteractionEmbed(this IInteractionContext context, ResponseModel response)
+    {
+        var message = (context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        await context.ModifyMessage(message, response);
+    }
+
+    public static async Task UpdateMessageEmbed(this IInteractionContext context, ResponseModel response, string messageId)
+    {
+        var parsedMessageId = ulong.Parse(messageId);
+        var msg = await context.Channel.GetMessageAsync(parsedMessageId);
+
+        if (msg is not IUserMessage message)
+        {
+            return;
+        }
+
+        await context.ModifyMessage(message, response);
+    }
+
+    private static async Task ModifyMessage(this IInteractionContext context, IUserMessage message, ResponseModel response)
+    {
+        await message.ModifyAsync(m =>
+        {
+            m.Components = response.Components?.Build();
+            m.Embed = response.Embed.Build();
+        });
+
+        await context.Interaction.DeferAsync();
     }
 }
