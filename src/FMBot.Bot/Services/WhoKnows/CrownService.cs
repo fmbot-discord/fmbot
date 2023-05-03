@@ -352,11 +352,13 @@ public class CrownService
 
             if (existingCrowns != null && existingCrowns.Any())
             {
+                var existingCrownArtists = existingCrowns
+                    .Where(wh => !wh.SeededCrown)
+                    .Select(s => s.ArtistName.ToLower())
+                    .ToHashSet();
+
                 crownsToSeed = crownsToSeed.Where(w =>
-                        !existingCrowns
-                            .Where(wh => !wh.SeededCrown)
-                            .Select(s => s.ArtistName.ToLower())
-                            .Contains(w.ArtistName.ToLower()))
+                        !existingCrownArtists.Contains(w.ArtistName.ToLower()))
                     .ToList();
             }
 

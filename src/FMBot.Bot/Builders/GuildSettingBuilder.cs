@@ -419,7 +419,7 @@ public class GuildSettingBuilder
 
         response.Embed.WithTitle("Crownseeder");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        response.Embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns, this can take a while on larger servers... ");
+        response.Embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns... ");
 
         return response;
     }

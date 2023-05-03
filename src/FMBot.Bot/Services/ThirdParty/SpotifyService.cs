@@ -212,7 +212,11 @@ public class SpotifyService
         catch (Exception e)
         {
             Log.Error(e, "Something went wrong while retrieving artist image");
-            return null;
+            return new Artist
+            {
+                Name = artistInfo.ArtistName,
+                LastFmUrl = artistInfo.ArtistUrl
+            };
         }
     }
 
