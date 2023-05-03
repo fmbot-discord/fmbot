@@ -104,11 +104,13 @@ public class WhoKnowsService
             .ToListAsync();
 
         var userNamesToFilter = bottedUsers
+            .DistinctBy(d => d.UserNameLastFM)
             .Select(s => s.UserNameLastFM.ToLower())
             .ToHashSet();
 
         var userDatesToFilter = bottedUsers
             .Where(we => we.LastFmRegistered != null)
+            .DistinctBy(d => d.LastFmRegistered)
             .Select(s => s.LastFmRegistered)
             .ToHashSet();
 
