@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -251,20 +252,25 @@ public class UpdateRepository
         return $"artist-alias-{aliasName}";
     }
 
-    private static async Task<IReadOnlyCollection<UserArtist>> GetUserArtists(int userId, NpgsqlConnection connection)
+    private static async Task<IReadOnlyDictionary<string, UserArtist>> GetUserArtists(int userId, IDbConnection connection)
     {
-        const string sql = "SELECT * FROM public.user_artists where user_id = @userId";
+        const string sql = "SELECT DISTINCT ON (LOWER(name)) user_id, name, playcount, user_artist_id " +
+                           "FROM public.user_artists where user_id = @userId " +
+                           "ORDER BY LOWER(name), playcount DESC";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-        return (await connection.QueryAsync<UserArtist>(sql, new
+
+        var result = await connection.QueryAsync<UserArtist>(sql, new
         {
             userId
-        })).ToList();
+        });
+
+        return result.ToDictionary(d => d.Name.ToLower(), d => d);
     }
 
     private async Task UpdateArtistsForUser(User user,
         IEnumerable<UserPlayTs> newScrobbles,
         NpgsqlConnection connection,
-        IReadOnlyCollection<UserArtist> userArtists)
+        IReadOnlyDictionary<string, UserArtist> userArtists)
     {
         var updateExistingArtists = new StringBuilder();
 
@@ -274,8 +280,7 @@ public class UpdateRepository
 
             var artistName = alias ?? artist.First().ArtistName;
 
-            var existingUserArtist =
-                userArtists.FirstOrDefault(a => a.Name.ToLower() == artistName.ToLower());
+            userArtists.TryGetValue(artistName.ToLower(), out var existingUserArtist);
 
             if (existingUserArtist != null)
             {
@@ -313,20 +318,25 @@ public class UpdateRepository
 
     }
 
-    private static async Task<IReadOnlyCollection<UserAlbum>> GetUserAlbums(int userId, NpgsqlConnection connection)
+    private static async Task<IReadOnlyDictionary<string, List<UserAlbum>>> GetUserAlbums(int userId, IDbConnection connection)
     {
         const string sql = "SELECT * FROM public.user_albums where user_id = @userId";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-        return (await connection.QueryAsync<UserAlbum>(sql, new
+
+        var result = await connection.QueryAsync<UserAlbum>(sql, new
         {
             userId
-        })).ToList();
+        });
+
+        return result
+            .GroupBy(g => g.ArtistName.ToLower())
+            .ToDictionary(d => d.Key, d => d.ToList());
     }
 
     private async Task UpdateAlbumsForUser(User user,
         IEnumerable<UserPlayTs> newScrobbles,
         NpgsqlConnection connection,
-        IReadOnlyCollection<UserAlbum> userAlbums)
+        IReadOnlyDictionary<string, List<UserAlbum>> userAlbums)
     {
         var updateExistingAlbums = new StringBuilder();
 
@@ -342,9 +352,10 @@ public class UpdateRepository
 
             var artistName = alias ?? album.First().ArtistName;
 
+            userAlbums.TryGetValue(artistName.ToLower(), out var userArtistAlbums);
+
             var existingUserAlbum =
-                userAlbums.FirstOrDefault(a => a.Name.ToLower() == album.Key.AlbumName.ToLower() &&
-                                               a.ArtistName.ToLower() == artistName.ToLower());
+                userArtistAlbums?.FirstOrDefault(a => a.Name.ToLower() == album.Key.AlbumName.ToLower());
 
             if (existingUserAlbum != null)
             {
@@ -384,20 +395,25 @@ public class UpdateRepository
         Log.Debug("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
     }
 
-    private async Task<IReadOnlyCollection<UserTrack>> GetUserTracks(int userId, NpgsqlConnection connection)
+    private static async Task<IReadOnlyDictionary<string, List<UserTrack>>> GetUserTracks(int userId, IDbConnection connection)
     {
         const string sql = "SELECT * FROM public.user_tracks where user_id = @userId";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-        return (await connection.QueryAsync<UserTrack>(sql, new
+
+        var result = await connection.QueryAsync<UserTrack>(sql, new
         {
             userId
-        })).ToList();
+        });
+
+        return result
+            .GroupBy(g => g.ArtistName.ToLower())
+            .ToDictionary(d => d.Key, d => d.ToList());
     }
 
     private async Task UpdateTracksForUser(User user,
         IEnumerable<UserPlayTs> newScrobbles,
         NpgsqlConnection connection,
-        IReadOnlyCollection<UserTrack> userTracks)
+        IReadOnlyDictionary<string, List<UserTrack>> userTracks)
     {
         var updateExistingTracks = new StringBuilder();
 
@@ -411,9 +427,10 @@ public class UpdateRepository
 
             var artistName = alias ?? track.First().ArtistName;
 
+            userTracks.TryGetValue(artistName.ToLower(), out var userArtistTracks);
+
             var existingUserTrack =
-                userTracks.FirstOrDefault(a => a.Name.ToLower() == track.Key.TrackName.ToLower() &&
-                                               a.ArtistName.ToLower() == artistName.ToLower());
+                userArtistTracks?.FirstOrDefault(a => a.Name.ToLower() == track.Key.TrackName.ToLower());
 
             if (existingUserTrack != null)
             {
