@@ -1369,7 +1369,10 @@ public class ArtistBuilders
         var concurrentNeighbors = await this._whoKnowsArtistService.GetAffinity(topAllTime, ownAllTime, quarterlyAllTime, ownQuarterly);
 
         var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild, guildUsers);
-        var filteredUserIds = filteredGuildUsers.Select(s => s.UserId).ToList();
+        var filteredUserIds = filteredGuildUsers
+            .Select(s => s.UserId)
+            .Distinct()
+            .ToHashSet();
 
         var self = concurrentNeighbors.First(f => f.Key == userSettings.UserId);
 

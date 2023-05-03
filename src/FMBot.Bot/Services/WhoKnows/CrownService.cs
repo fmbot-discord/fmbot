@@ -32,7 +32,7 @@ public class CrownService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<Models.CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
+    public async Task<CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
     {
         var eligibleUsers = users.ToList();
 
@@ -45,10 +45,14 @@ public class CrownService
         }
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromCrowns))
         {
+            var usersToFilter = guild.GuildBlockedUsers
+                .Where(wh => wh.BlockedFromCrowns)
+                .Select(s => s.UserId)
+                .Distinct()
+                .ToHashSet();
+
             eligibleUsers = eligibleUsers.Where(w =>
-                    !guild.GuildBlockedUsers
-                        .Where(wh => wh.BlockedFromCrowns)
-                        .Select(s => s.UserId).Contains(w.UserId))
+                    !usersToFilter.Contains(w.UserId))
                 .ToList();
         }
         if (guild.WhoKnowsWhitelistRoleId.HasValue)
@@ -57,8 +61,13 @@ public class CrownService
                 .ToList();
         }
 
+        var eligibleUserIds = eligibleUsers
+            .Select(s => s.UserId)
+            .Distinct()
+            .ToHashSet();
+
         var topUser = users
-            .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId) &&
+            .Where(w => eligibleUserIds.Contains(w.UserId) &&
                         (guild.CrownsMinimumPlaycountThreshold.HasValue ? w.Playcount >= guild.CrownsMinimumPlaycountThreshold : w.Playcount >= Constants.DefaultPlaysForCrown))
             .MaxBy(o => o.Playcount);
 
@@ -116,7 +125,7 @@ public class CrownService
 
             if (PublicProperties.IssuesAtLastFm)
             {
-                return new Models.CrownModel
+                return new CrownModel
                 {
                     Crown = currentCrownHolder,
                     CrownResult = "*Crown stealing is currently disabled due to issues with the Last.fm API*",
@@ -127,7 +136,7 @@ public class CrownService
             var currentCrownHolderIndex = users.IndexOf(currentCrownHolderUser);
 
             // Current crownholder playcount is still higher after extra check
-            if (eligibleUsers.Select(s => s.UserId).Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
+            if (eligibleUserIds.Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
             {
                 currentCrownHolder.CurrentPlaycount = topUser.Playcount;
                 currentCrownHolder.Modified = DateTime.UtcNow;
@@ -139,7 +148,7 @@ public class CrownService
 
                 await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
-                return new Models.CrownModel
+                return new CrownModel
                 {
                     Crown = currentCrownHolder
                 };

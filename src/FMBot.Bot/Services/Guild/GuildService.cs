@@ -185,10 +185,14 @@ public class GuildService
         }
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
         {
+            var usersToFilter = guild.GuildBlockedUsers
+                .Where(wh => wh.BlockedFromWhoKnows)
+                .Select(s => s.UserId)
+                .Distinct()
+                .ToHashSet();
+
             guildUsers = guildUsers.Where(w =>
-                    !guild.GuildBlockedUsers
-                        .Where(wh => wh.BlockedFromWhoKnows)
-                        .Select(s => s.UserId).Contains(w.UserId))
+                    !usersToFilter.Contains(w.UserId))
                 .ToList();
         }
 
