@@ -105,12 +105,12 @@ public class WhoKnowsService
 
         var userNamesToFilter = bottedUsers
             .Select(s => s.UserNameLastFM.ToLower())
-            .ToList();
+            .ToHashSet();
 
         var userDatesToFilter = bottedUsers
             .Where(we => we.LastFmRegistered != null)
             .Select(s => s.LastFmRegistered)
-            .ToList();
+            .ToHashSet();
 
         return users
             .Where(w =>
