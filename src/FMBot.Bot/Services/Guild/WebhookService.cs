@@ -7,9 +7,11 @@ using Discord.Commands;
 using Discord.Webhook;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using Genius.Models.User;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -22,11 +24,13 @@ public class WebhookService
     private readonly string _avatarImagePath;
     private readonly BotSettings _botSettings;
     private readonly GuildService _guildService;
+    private readonly OpenAiService _openAiService;
 
-    public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService)
+    public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService, OpenAiService openAiService)
     {
         this._contextFactory = contextFactory;
         this._guildService = guildService;
+        this._openAiService = openAiService;
         this._botSettings = botSettings.Value;
 
         this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "default-avatar.png");
@@ -121,7 +125,7 @@ public class WebhookService
         }
     }
 
-    public static async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
+    public async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
     {
         var embed = new EmbedBuilder();
         embed.WithImageUrl(featured.ImageUrl);
@@ -132,6 +136,23 @@ public class WebhookService
         embed.AddField("Resetting", $"`.resetfeatured {featured.FeaturedLogId}`");
 
         embed.WithFooter(featured.ImageUrl);
+
+        if (featured.UserId.HasValue)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var user = await db.Users.FindAsync(featured.UserId.Value);
+
+            var possiblyOffensive = await this._openAiService.CheckIfUsernameOffensive(user?.UserNameLastFM);
+
+            if (possiblyOffensive)
+            {
+                embed.AddField("⚠️ Warning",
+                    "Possibly offensive username detected");
+                embed.WithColor(DiscordConstants.WarningColorOrange);
+            }
+        }
+        
+
 
         var webhookClient = new DiscordWebhookClient(webhook);
         await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
