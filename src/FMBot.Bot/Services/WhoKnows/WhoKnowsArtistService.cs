@@ -376,7 +376,7 @@ public class WhoKnowsArtistService
         });
     }
 
-    public async Task<ICollection<AffinityItemDto>> GetAllTimeTopArtistForGuild(int guildId)
+    public async Task<ICollection<AffinityItemDto>> GetAllTimeTopArtistForGuild(int guildId, bool largeGuild)
     {
         var cacheKey = $"guild-affinity-top-artist-alltime-{guildId}";
 
@@ -386,15 +386,17 @@ public class WhoKnowsArtistService
             return guildArtists;
         }
 
-        const string sql = "SELECT * " +
-                           "FROM ( " +
-                               "SELECT ua.user_id, name, playcount, user_artist_id, " +
-                                    "ROW_NUMBER() OVER (PARTITION BY ua.user_id ORDER BY playcount DESC) as pos " +
-                               "FROM public.user_artists AS ua  " +
-                               "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id  " +
-                               "WHERE gu.guild_id = @guildId " +
-                           ") as subquery " +
-                           "WHERE pos <= 300; ";
+        var amount = largeGuild ? 200 : 300;
+
+        var sql = "SELECT * " +
+                  "FROM ( " +
+                  "SELECT ua.user_id, name, playcount, user_artist_id, " +
+                  "ROW_NUMBER() OVER (PARTITION BY ua.user_id ORDER BY playcount DESC) as pos " +
+                  "FROM public.user_artists AS ua  " +
+                  "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id  " +
+                  "WHERE gu.guild_id = @guildId " +
+                  ") as subquery " +
+                  $"WHERE pos <= {amount}; ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -410,7 +412,7 @@ public class WhoKnowsArtistService
         return guildArtists;
     }
 
-    public async Task<ICollection<AffinityItemDto>> GetQuarterlyTopArtistForGuild(int guildId)
+    public async Task<ICollection<AffinityItemDto>> GetQuarterlyTopArtistForGuild(int guildId, bool largeGuild)
     {
         var cacheKey = $"guild-affinity-top-artist-quarterly-{guildId}";
 
@@ -420,16 +422,19 @@ public class WhoKnowsArtistService
             return guildArtists;
         }
 
-        const string sql = "SELECT * " +
-                           "FROM ( " +
-                               "SELECT up.user_id, artist_name AS name, COUNT(*) as playcount, " +
-                                    " ROW_NUMBER() OVER (PARTITION BY up.user_id ORDER BY COUNT(*) DESC) as pos " +
-                               "FROM user_play_ts AS up " +
-                               "INNER JOIN guild_users AS gu ON gu.user_id = up.user_id  " +
-                               "WHERE gu.guild_id = @guildId AND time_played > current_date - interval '90' day " +
-                               "GROUP BY up.user_id, artist_name " +
-                           ") as subquery " +
-                           "WHERE pos <= 100; ";
+        var amount = largeGuild ? 60 : 120;
+        var amountOfDays = largeGuild ? 28 : 91;
+
+        var sql = "SELECT * " +
+                  "FROM ( " +
+                  "SELECT up.user_id, artist_name AS name, COUNT(*) as playcount, " +
+                  " ROW_NUMBER() OVER (PARTITION BY up.user_id ORDER BY COUNT(*) DESC) as pos " +
+                  "FROM user_play_ts AS up " +
+                  "INNER JOIN guild_users AS gu ON gu.user_id = up.user_id  " +
+                  $"WHERE gu.guild_id = @guildId AND time_played > current_date - interval '{amountOfDays}' day " +
+                  "GROUP BY up.user_id, artist_name " +
+                  ") as subquery " +
+                  $"WHERE pos <= {amount}; ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -463,14 +468,13 @@ public class WhoKnowsArtistService
             .ToDictionary(d => d.Name, d => d.Position);
         var ownAllTimeCountriesConcurrent = new ConcurrentDictionary<string, int>(ownAllTimeCountries);
 
-        var options = new ParallelOptions
+        var parallelOptions = new ParallelOptions
         {
-            MaxDegreeOfParallelism = 4
-
+            MaxDegreeOfParallelism = 6
         };
 
         var results = new ConcurrentDictionary<int, AffinityUser>();
-        await Parallel.ForEachAsync(allTimeArtists.GroupBy(g => g.UserId), options, async (userTopArtists, _) =>
+        await Parallel.ForEachAsync(allTimeArtists.GroupBy(g => g.UserId), parallelOptions, async (userTopArtists, _) =>
         {
             var result = await GetAffinityUser(userTopArtists.Key, ownAllTimeArtistsConcurrent, ownAllTimeGenresConcurrent, ownAllTimeCountriesConcurrent, userTopArtists.ToList());
             results.TryAdd(result.UserId, result);
@@ -489,17 +493,17 @@ public class WhoKnowsArtistService
             .ToDictionary(d => d.Name, d => d.Position);
         var ownQuarterlyCountriesConcurrent = new ConcurrentDictionary<string, int>(ownQuarterlyCountries);
 
-        await Parallel.ForEachAsync(quarterlyArtists.GroupBy(g => g.UserId), options, async (userTopArtists, _) =>
+        await Parallel.ForEachAsync(quarterlyArtists.GroupBy(g => g.UserId), parallelOptions, async (userTopArtists, _) =>
         {
             var result = await GetAffinityUser(userTopArtists.Key, ownQuarterArtistsConcurrent,
                 ownQuarterlyGenresConcurrent, ownQuarterlyCountriesConcurrent, userTopArtists.ToList());
 
             if (results.TryGetValue(result.UserId, out var value))
             {
-                value.ArtistPoints += result.ArtistPoints;
-                value.GenrePoints += result.GenrePoints;
-                value.CountryPoints += result.CountryPoints;
-                value.TotalPoints += result.TotalPoints;
+                value.ArtistPoints += result.ArtistPoints * 2;
+                value.GenrePoints += result.GenrePoints * 2;
+                value.CountryPoints += result.CountryPoints * 2;
+                value.TotalPoints += result.TotalPoints * 2;
             }
             else
             {

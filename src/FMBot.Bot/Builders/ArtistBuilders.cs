@@ -1346,19 +1346,19 @@ public class ArtistBuilders
         return response;
     }
 
-    public async Task<ResponseModel> AffinityAsync(
-        ContextModel context,
+    public async Task<ResponseModel> AffinityAsync(ContextModel context,
         UserSettingsModel userSettings,
         Guild guild,
-        IList<FullGuildUser> guildUsers)
+        IList<FullGuildUser> guildUsers,
+        bool largeGuild)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Paginator,
         };
 
-        var topAllTimeTask = this._whoKnowsArtistService.GetAllTimeTopArtistForGuild(guild.GuildId);
-        var quarterlyAllTimeTask = this._whoKnowsArtistService.GetQuarterlyTopArtistForGuild(guild.GuildId);
+        var topAllTimeTask = this._whoKnowsArtistService.GetAllTimeTopArtistForGuild(guild.GuildId, largeGuild);
+        var quarterlyAllTimeTask = this._whoKnowsArtistService.GetQuarterlyTopArtistForGuild(guild.GuildId, largeGuild);
 
         var topAllTime = await topAllTimeTask;
         var quarterlyAllTime = await quarterlyAllTimeTask;
@@ -1410,7 +1410,7 @@ public class ArtistBuilders
             }
 
             var pageFooter = new StringBuilder();
-            pageFooter.Append($"Page {pageCounter}/{neighborPages.Count} - % Match percentage");
+            pageFooter.Append($"Page {pageCounter}/{neighborPages.Count} - {filteredUserIds.Count} .fmbot members in this server");
 
             pages.Add(new PageBuilder()
                 .WithTitle($"Server neighbors for {userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}")

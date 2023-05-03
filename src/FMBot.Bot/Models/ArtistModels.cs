@@ -84,24 +84,6 @@ public class ArtistSpotifyCoverDto
     public string SpotifyImageUrl { get; set; }
 }
 
-public class AffinityArtist
-{
-    public int UserId { get; set; }
-
-    public string ArtistName { get; set; }
-
-    public long Playcount { get; set; }
-
-    public decimal Weight { get; set; }
-}
-
-public class AffinityArtistResultWithUser
-{
-    public decimal MatchPercentage { get; set; }
-
-    public int UserId { get; set; }
-}
-
 public class AffinityItemDto
 {
     public int UserId { get; set; }

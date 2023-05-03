@@ -605,6 +605,8 @@ public class ArtistCommands : BaseCommandModule
 
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context, firstOptionIsLfmUsername: true);
 
+            var largeGuild = guildUsers.Count > 2000;
+
             ResponseModel response;
             if (guildUsers.Count > 250)
             {
@@ -614,7 +616,7 @@ public class ArtistCommands : BaseCommandModule
 
                 description.AppendLine($"<a:loading:821676038102056991> Finding {descriptor} server neighbors...");
 
-                if (guildUsers.Count > 2000)
+                if (largeGuild)
                 {
                     description.AppendLine();
                     description.AppendLine($"This can sometimes take a while on larger servers like this one.");
@@ -625,7 +627,7 @@ public class ArtistCommands : BaseCommandModule
                 var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 response = await this._artistBuilders
-                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers);
+                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers, largeGuild);
 
                 _ = this.Interactivity.SendPaginatorAsync(
                     response.StaticPaginator,
@@ -635,7 +637,7 @@ public class ArtistCommands : BaseCommandModule
             else
             {
                 response = await this._artistBuilders
-                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers);
+                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers, largeGuild);
 
                 await this.Context.SendResponse(this.Interactivity, response);
             }

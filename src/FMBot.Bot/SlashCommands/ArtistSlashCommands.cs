@@ -270,7 +270,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._artistBuilders.AffinityAsync(new ContextModel(this.Context, contextUser), userSettings, guild, guildUsers);
+            var response = await this._artistBuilders.AffinityAsync(new ContextModel(this.Context, contextUser), userSettings, guild, guildUsers, guildUsers.Count > 2000);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
