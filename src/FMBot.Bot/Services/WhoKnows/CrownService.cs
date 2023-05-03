@@ -32,7 +32,7 @@ public class CrownService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<Models.CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
+    public async Task<CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
     {
         var eligibleUsers = users.ToList();
 
@@ -45,10 +45,14 @@ public class CrownService
         }
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromCrowns))
         {
+            var usersToFilter = guild.GuildBlockedUsers
+                .Where(wh => wh.BlockedFromCrowns)
+                .Select(s => s.UserId)
+                .Distinct()
+                .ToHashSet();
+
             eligibleUsers = eligibleUsers.Where(w =>
-                    !guild.GuildBlockedUsers
-                        .Where(wh => wh.BlockedFromCrowns)
-                        .Select(s => s.UserId).Contains(w.UserId))
+                    !usersToFilter.Contains(w.UserId))
                 .ToList();
         }
         if (guild.WhoKnowsWhitelistRoleId.HasValue)
@@ -57,8 +61,13 @@ public class CrownService
                 .ToList();
         }
 
+        var eligibleUserIds = eligibleUsers
+            .Select(s => s.UserId)
+            .Distinct()
+            .ToHashSet();
+
         var topUser = users
-            .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId) &&
+            .Where(w => eligibleUserIds.Contains(w.UserId) &&
                         (guild.CrownsMinimumPlaycountThreshold.HasValue ? w.Playcount >= guild.CrownsMinimumPlaycountThreshold : w.Playcount >= Constants.DefaultPlaysForCrown))
             .MaxBy(o => o.Playcount);
 
@@ -116,7 +125,7 @@ public class CrownService
 
             if (PublicProperties.IssuesAtLastFm)
             {
-                return new Models.CrownModel
+                return new CrownModel
                 {
                     Crown = currentCrownHolder,
                     CrownResult = "*Crown stealing is currently disabled due to issues with the Last.fm API*",
@@ -127,7 +136,7 @@ public class CrownService
             var currentCrownHolderIndex = users.IndexOf(currentCrownHolderUser);
 
             // Current crownholder playcount is still higher after extra check
-            if (eligibleUsers.Select(s => s.UserId).Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
+            if (eligibleUserIds.Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
             {
                 currentCrownHolder.CurrentPlaycount = topUser.Playcount;
                 currentCrownHolder.Modified = DateTime.UtcNow;
@@ -139,7 +148,7 @@ public class CrownService
 
                 await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
-                return new Models.CrownModel
+                return new CrownModel
                 {
                     Crown = currentCrownHolder
                 };
@@ -323,53 +332,75 @@ public class CrownService
             minPlaycount
         });
 
-        var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-        var crownsToSeed = topUsersForPlaycount.Select(s =>
-            new UserCrown
+        try
+        {
+            var existingCrownsDict = existingCrowns?
+                .OrderByDescending(o => o.CurrentPlaycount)
+                .Where(w => w.Active)
+                .DistinctBy(d => new { d.UserId, d.ArtistName })
+                .ToDictionary(c => (c.UserId, c.ArtistName.ToLower()));
+
+            var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+            var crownsToSeed = topUsersForPlaycount.Select(s =>
             {
-                UserId = s.UserId,
-                Active = true,
-                ArtistName = s.Name,
-                Created = existingCrowns.FirstOrDefault(f => f.UserId == s.UserId && f.ArtistName.ToLower() == s.Name.ToLower())?.Created ?? now,
-                Modified = now,
-                CurrentPlaycount = s.Playcount,
-                StartPlaycount = existingCrowns.FirstOrDefault(f => f.UserId == s.UserId && f.ArtistName.ToLower() == s.Name.ToLower())?.StartPlaycount ?? s.Playcount,
-                GuildId = guild.GuildId,
-                SeededCrown = true
+                UserCrown existingCrown = null;
+                existingCrownsDict?.TryGetValue((s.UserId, s.Name.ToLower()), out existingCrown);
+                return new UserCrown
+                {
+                    UserId = s.UserId,
+                    Active = true,
+                    ArtistName = s.Name,
+                    Created = existingCrown?.Created ?? now,
+                    Modified = now,
+                    CurrentPlaycount = s.Playcount,
+                    StartPlaycount = existingCrown?.StartPlaycount ?? s.Playcount,
+                    GuildId = guild.GuildId,
+                    SeededCrown = true
+                };
             }).ToList();
 
-        if (existingCrowns != null && existingCrowns.Any())
-        {
-            crownsToSeed = crownsToSeed.Where(w =>
-                    !existingCrowns
-                        .Where(wh => !wh.SeededCrown)
-                        .Select(s => s.ArtistName.ToLower())
-                        .Contains(w.ArtistName.ToLower()))
-                .ToList();
+            if (existingCrowns != null && existingCrowns.Any())
+            {
+                var existingCrownArtists = existingCrowns
+                    .Where(wh => !wh.SeededCrown)
+                    .Select(s => s.ArtistName.ToLower())
+                    .ToHashSet();
+
+                crownsToSeed = crownsToSeed.Where(w =>
+                        !existingCrownArtists.Contains(w.ArtistName.ToLower()))
+                    .ToList();
+            }
+
+            const string deleteOldSeededCrownsSql = "DELETE FROM public.user_crowns " +
+                                                    "WHERE guild_id = @guildId AND seeded_crown = true;";
+
+            await connection.ExecuteAsync(deleteOldSeededCrownsSql, new
+            {
+                guildId = guild.GuildId,
+            });
+
+            var copyHelper = new PostgreSQLCopyHelper<UserCrown>("public", "user_crowns")
+                .MapInteger("guild_id", x => x.GuildId)
+                .MapInteger("user_id", x => x.UserId)
+                .MapText("artist_name", x => x.ArtistName)
+                .MapInteger("current_playcount", x => x.CurrentPlaycount)
+                .MapInteger("start_playcount", x => x.StartPlaycount)
+                .MapTimeStampTz("created", x => DateTime.SpecifyKind(x.Created, DateTimeKind.Utc))
+                .MapTimeStampTz("modified", x => DateTime.SpecifyKind(x.Created, DateTimeKind.Utc))
+                .MapBoolean("active", x => x.Active)
+                .MapBoolean("seeded_crown", x => x.SeededCrown);
+
+            await copyHelper.SaveAllAsync(connection, crownsToSeed);
+            await connection.CloseAsync();
+
+            return crownsToSeed.Count;
+
         }
-        const string deleteOldSeededCrownsSql = "DELETE FROM public.user_crowns " +
-                                                "WHERE guild_id = @guildId AND seeded_crown = true;";
-
-        await connection.ExecuteAsync(deleteOldSeededCrownsSql, new
+        catch (Exception e)
         {
-            guildId = guild.GuildId,
-        });
-
-        var copyHelper = new PostgreSQLCopyHelper<UserCrown>("public", "user_crowns")
-            .MapInteger("guild_id", x => x.GuildId)
-            .MapInteger("user_id", x => x.UserId)
-            .MapText("artist_name", x => x.ArtistName)
-            .MapInteger("current_playcount", x => x.CurrentPlaycount)
-            .MapInteger("start_playcount", x => x.StartPlaycount)
-            .MapTimeStampTz("created", x => DateTime.SpecifyKind(x.Created, DateTimeKind.Utc))
-            .MapTimeStampTz("modified", x => DateTime.SpecifyKind(x.Created, DateTimeKind.Utc))
-            .MapBoolean("active", x => x.Active)
-            .MapBoolean("seeded_crown", x => x.SeededCrown);
-
-        await copyHelper.SaveAllAsync(connection, crownsToSeed);
-        await connection.CloseAsync();
-
-        return crownsToSeed.Count;
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     private async Task<long?> GetCurrentPlaycountForUser(string artistName, string lastFmUserName, int userId)
@@ -465,7 +496,6 @@ public class CrownService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.UserCrowns
             .AsQueryable()
-            .Include(i => i.User)
             .Where(w => w.GuildId == guildId)
             .ToListAsync();
     }

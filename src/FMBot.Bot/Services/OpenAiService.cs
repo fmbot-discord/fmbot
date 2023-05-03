@@ -20,6 +20,8 @@ public class OpenAiService
     private readonly BotSettings _botSettings;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
+    private const string Model = "gpt-3.5-turbo";
+
     public OpenAiService(HttpClient httpClient, IOptions<BotSettings> botSettings, IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._httpClient = httpClient;
@@ -42,7 +44,7 @@ public class OpenAiService
 
         var content = new OpenAiRequest
         {
-            Model = "gpt-3.5-turbo",
+            Model = Model,
             Messages = new List<RequestMessage>
             {
                 new()
@@ -98,5 +100,37 @@ public class OpenAiService
 
         var dailyAmount = user.UserType != UserType.User ? 25 : 3;
         return dailyAmount - generatedToday;
+    }
+
+    public async Task<bool> CheckIfUsernameOffensive(string username)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
+        request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
+
+        var content = new OpenAiRequest
+        {
+            Model = Model,
+            Messages = new List<RequestMessage>
+            {
+                new()
+                {
+                    Role = "system",
+                    Content = $"Is the username '{username}' offensive? Only reply with 'true' or 'false'."
+                }
+            }
+        };
+
+        var requestContent = JsonSerializer.Serialize(content);
+
+        request.Content = new StringContent(requestContent, null, "application/json");
+        var response = await this._httpClient.SendAsync(request);
+        Statistics.OpenAiCalls.Inc();
+
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        var responseModel = JsonSerializer.Deserialize<OpenAiResponse>(responseContent);
+
+        var output = responseModel.Choices.FirstOrDefault()?.ChoiceMessage?.Content;
+        return output != null && output.ToLower().Contains("true");
     }
 }

@@ -154,9 +154,8 @@ public class InteractionHandler
 
         var commandSearch = this._interactionService.SearchComponentCommand(socketMessageComponent);
 
-        if (!commandSearch.IsSuccess || commandSearch.Command == null)
+        if (!commandSearch.IsSuccess)
         {
-            Log.Error("Someone tried to execute a non-existent component command!");
             return;
         }
 

@@ -467,7 +467,7 @@ public class SettingService
         string discordUserName;
         if (discordGuild != null)
         {
-            var discordGuildUser = await discordGuild.GetUserAsync(user.DiscordUserId);
+            var discordGuildUser = await discordGuild.GetUserAsync(user.DiscordUserId, CacheMode.CacheOnly);
             discordUserName = discordGuildUser?.Nickname ?? discordGuildUser?.Username ?? discordUser.Username;
         }
         else
@@ -533,7 +533,7 @@ public class SettingService
 
         foreach (var option in options)
         {
-            var otherUser = await StringWithDiscordIdForUser(option);
+            var otherUser = await DiscordIdToUser(option);
 
             if (otherUser != null)
             {
@@ -543,7 +543,7 @@ public class SettingService
 
                 if (discordGuild != null)
                 {
-                    var discordGuildUser = await discordGuild.GetUserAsync(otherUser.DiscordUserId);
+                    var discordGuildUser = await discordGuild.GetUserAsync(otherUser.DiscordUserId, CacheMode.CacheOnly);
                     settingsModel.DisplayName = discordGuildUser != null ? discordGuildUser.DisplayName : otherUser.UserNameLastFM;
                 }
                 else
@@ -600,7 +600,7 @@ public class SettingService
 
     public async Task<User> GetDifferentUser(string searchValue)
     {
-        var otherUser = await StringWithDiscordIdForUser(searchValue);
+        var otherUser = await DiscordIdToUser(searchValue);
 
         if (otherUser == null)
         {
@@ -616,7 +616,7 @@ public class SettingService
         return otherUser;
     }
 
-    public async Task<User> StringWithDiscordIdForUser(string value)
+    private async Task<User> DiscordIdToUser(string value)
     {
         if (!value.Contains("<@") && value.Length is < 17 or > 19)
         {

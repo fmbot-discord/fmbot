@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
@@ -498,7 +499,7 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
     public async Task FriendWhoKnowsAsync([Remainder] string artistValues = null)
     {
-            _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel.TriggerTypingAsync();
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
@@ -585,12 +586,12 @@ public class ArtistCommands : BaseCommandModule
 
     [Command("affinity", RunMode = RunMode.Async)]
     [Summary("Shows users from this server with similar top artists.")]
-    [Alias("n", "aff", "neighbors", "soulmates")]
+    [Alias("n", "aff", "neighbors", "soulmates", "neighbours")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists)]
-    public async Task AffinityAsync()
+    public async Task AffinityAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -598,13 +599,54 @@ public class ArtistCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        var fullGuildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+        try
+        {
+            var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
 
-        var response = await this._artistBuilders
-            .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), guild, fullGuildTask);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context, firstOptionIsLfmUsername: true);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            ResponseModel response;
+            if (guildUsers.Count > 250)
+            {
+                var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
+
+                var description = new StringBuilder();
+
+                description.AppendLine($"<a:loading:821676038102056991> Finding {descriptor} server neighbors...");
+
+                if (guildUsers.Count > 2000)
+                {
+                    description.AppendLine();
+                    description.AppendLine($"This can sometimes take a while on larger servers like this one.");
+                }
+
+                this._embed.WithDescription(description.ToString());
+
+                var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                response = await this._artistBuilders
+                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers);
+
+                _ = this.Interactivity.SendPaginatorAsync(
+                    response.StaticPaginator,
+                    message,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+            }
+            else
+            {
+                response = await this._artistBuilders
+                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers);
+
+                await this.Context.SendResponse(this.Interactivity, response);
+            }
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     private async Task<ArtistInfo> GetArtist(string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null, User user = null)

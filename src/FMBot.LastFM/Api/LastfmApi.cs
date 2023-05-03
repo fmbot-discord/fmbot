@@ -153,7 +153,7 @@ public class LastfmApi : ILastfmApi
                 errorParameters += $"{parameter.Key}: {parameter.Value} - ";
             }
 
-            Log.Error($"Object error - Call: {call} - Parameters: {errorParameters}");
+            Log.Error("Object error - Call: {call} - Parameters: {errorParameters} - RequestBody {requestBody}", call, errorParameters, requestBody);
             Statistics.LastfmErrors.Inc();
         }
 

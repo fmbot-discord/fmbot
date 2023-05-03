@@ -78,11 +78,13 @@ public class WhoKnowsService
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
         {
             var usersToFilter = guild.GuildBlockedUsers
+                .DistinctBy(d => d.UserId)
                 .Where(w => w.BlockedFromWhoKnows)
-                .ToList();
+                .Select(s => s.UserId)
+                .ToHashSet();
 
             users = users
-                .Where(w => !usersToFilter.Select(s => s.UserId).Contains(w.UserId))
+                .Where(w => !usersToFilter.Contains(w.UserId))
                 .ToList();
         }
         if (guild.WhoKnowsWhitelistRoleId.HasValue)
@@ -104,13 +106,15 @@ public class WhoKnowsService
             .ToListAsync();
 
         var userNamesToFilter = bottedUsers
+            .DistinctBy(d => d.UserNameLastFM.ToLower())
             .Select(s => s.UserNameLastFM.ToLower())
-            .ToList();
+            .ToHashSet();
 
         var userDatesToFilter = bottedUsers
             .Where(we => we.LastFmRegistered != null)
+            .DistinctBy(d => d.LastFmRegistered)
             .Select(s => s.LastFmRegistered)
-            .ToList();
+            .ToHashSet();
 
         return users
             .Where(w =>
@@ -124,7 +128,11 @@ public class WhoKnowsService
 
     public static IList<WhoKnowsObjectWithUser> ShowGuildMembersInGlobalWhoKnowsAsync(IList<WhoKnowsObjectWithUser> users, IList<GuildUser> guildUsers)
     {
-        var guildUserIds = guildUsers.Select(s => s.UserId).ToList();
+        var guildUserIds = guildUsers
+            .DistinctBy(d => d.UserId)
+            .Select(s => s.UserId)
+            .ToHashSet();
+
         foreach (var user in users.Where(w => guildUserIds.Contains(w.UserId)))
         {
             user.PrivacyLevel = PrivacyLevel.Global;
