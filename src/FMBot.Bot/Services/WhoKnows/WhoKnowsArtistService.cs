@@ -463,8 +463,14 @@ public class WhoKnowsArtistService
             .ToDictionary(d => d.Name, d => d.Position);
         var ownAllTimeCountriesConcurrent = new ConcurrentDictionary<string, int>(ownAllTimeCountries);
 
+        var options = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = 4
+
+        };
+
         var results = new ConcurrentDictionary<int, AffinityUser>();
-        await Parallel.ForEachAsync(allTimeArtists.GroupBy(g => g.UserId), async (userTopArtists, _) =>
+        await Parallel.ForEachAsync(allTimeArtists.GroupBy(g => g.UserId), options, async (userTopArtists, _) =>
         {
             var result = await GetAffinityUser(userTopArtists.Key, ownAllTimeArtistsConcurrent, ownAllTimeGenresConcurrent, ownAllTimeCountriesConcurrent, userTopArtists.ToList());
             results.TryAdd(result.UserId, result);
@@ -483,7 +489,7 @@ public class WhoKnowsArtistService
             .ToDictionary(d => d.Name, d => d.Position);
         var ownQuarterlyCountriesConcurrent = new ConcurrentDictionary<string, int>(ownQuarterlyCountries);
 
-        await Parallel.ForEachAsync(quarterlyArtists.GroupBy(g => g.UserId), async (userTopArtists, _) =>
+        await Parallel.ForEachAsync(quarterlyArtists.GroupBy(g => g.UserId), options, async (userTopArtists, _) =>
         {
             var result = await GetAffinityUser(userTopArtists.Key, ownQuarterArtistsConcurrent,
                 ownQuarterlyGenresConcurrent, ownQuarterlyCountriesConcurrent, userTopArtists.ToList());
