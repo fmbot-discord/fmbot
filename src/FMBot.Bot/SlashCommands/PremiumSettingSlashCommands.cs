@@ -17,15 +17,15 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
     private readonly UserService _userService;
     private readonly GuildService _guildService;
 
-    private readonly GuildSettingBuilder _guildSettingBuilder;
+    private readonly PremiumSettingBuilder _premiumSettingBuilder;
 
     public PremiumSettingSlashCommands(UserService userService,
         GuildService guildService,
-        GuildSettingBuilder guildSettingBuilder)
+        PremiumSettingBuilder premiumSettingBuilder)
     {
         this._userService = userService;
         this._guildService = guildService;
-        this._guildSettingBuilder = guildSettingBuilder;
+        this._premiumSettingBuilder = premiumSettingBuilder;
     }
 
     [ComponentInteraction(InteractionConstants.SetAllowedRoleMenu)]
@@ -44,8 +44,28 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
             await this._guildService.ChangeGuildAllowedRoles(this.Context.Guild, roleIds.ToArray());
         }
 
+        var response = await this._premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context));
 
-        var response = await this._guildSettingBuilder.AllowedRoles(new ContextModel(this.Context));
+        await this.Context.UpdateInteractionEmbed(response);
+    }
+
+    [ComponentInteraction(InteractionConstants.SetBlockedRoleMenu)]
+    [ServerStaffOnly]
+    public async Task SetGuildBlockedRoles(string[] inputs)
+    {
+        if (inputs != null && inputs.Any())
+        {
+            var roleIds = new List<ulong>();
+            foreach (var input in inputs)
+            {
+                var roleId = ulong.Parse(input);
+                roleIds.Add(roleId);
+            }
+
+            await this._guildService.ChangeGuildBlockedRoles(this.Context.Guild, roleIds.ToArray());
+        }
+
+        var response = await this._premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context));
 
         await this.Context.UpdateInteractionEmbed(response);
     }

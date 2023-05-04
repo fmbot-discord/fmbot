@@ -23,7 +23,7 @@ public class PremiumGuildCommands : BaseCommandModule
     private readonly GuildService _guildService;
     private readonly UserService _userService;
 
-    private readonly GuildSettingBuilder _guildSettingBuilder;
+    private readonly PremiumSettingBuilder _premiumSettingBuilder;
 
     private readonly IPrefixService _prefixService;
 
@@ -35,15 +35,16 @@ public class PremiumGuildCommands : BaseCommandModule
         InteractiveService interactivity,
         GuildService guildService,
         UserService userService,
-        GuildSettingBuilder guildSettingBuilder,
-        AdminService adminService, IPrefixService prefixService) : base(botSettings)
+        AdminService adminService,
+        IPrefixService prefixService,
+        PremiumSettingBuilder premiumSettingBuilder) : base(botSettings)
     {
         this.Interactivity = interactivity;
         this._guildService = guildService;
         this._userService = userService;
-        this._guildSettingBuilder = guildSettingBuilder;
         this._adminService = adminService;
         this._prefixService = prefixService;
+        this._premiumSettingBuilder = premiumSettingBuilder;
     }
 
     [Command("allowedroles", RunMode = RunMode.Async)]
@@ -51,11 +52,12 @@ public class PremiumGuildCommands : BaseCommandModule
     [Alias("wkwhitelist", "wkroles", "whoknowswhitelist", "whoknowsroles")]
     [GuildOnly]
     [ExcludeFromHelp]
+    [RequiresIndex]
     public async Task SetAllowedRoles([Remainder] string unused = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -66,7 +68,7 @@ public class PremiumGuildCommands : BaseCommandModule
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._guildSettingBuilder.AllowedRoles(new ContextModel(this.Context, prfx));
+            var response = await this._premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context, prfx));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -75,6 +77,37 @@ public class PremiumGuildCommands : BaseCommandModule
         {
             await this.Context.HandleCommandException(e);
         }
+    }
 
+    [Command("blockedroles", RunMode = RunMode.Async)]
+    [Summary("Sets roles that are allowed to be in server-wide charts")]
+    [Alias("wkwblacklist", "wkblocklist", "whoknowsblaccklist", "whoknowsblocklist")]
+    [GuildOnly]
+    [ExcludeFromHelp]
+    [RequiresIndex]
+    public async Task SetBlockedRoles([Remainder] string unused = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
+        try
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            var response = await this._premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context, prfx));
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 }

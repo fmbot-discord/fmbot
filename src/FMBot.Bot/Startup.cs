@@ -155,6 +155,7 @@ public class Startup
             .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
             .AddSingleton<PlayService>()
             .AddSingleton<PlayBuilder>()
+            .AddSingleton<PremiumSettingBuilder>()
             .AddSingleton<PuppeteerService>()
             .AddSingleton<Random>()
             .AddSingleton<StaticBuilders>()

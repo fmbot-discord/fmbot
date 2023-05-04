@@ -272,6 +272,23 @@ public class GuildService
         await RemoveGuildFromCache(discordGuild.Id);
     }
 
+    public async Task ChangeGuildBlockedRoles(IGuild discordGuild, ulong[] blockedRoles)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.BlockedRoles = blockedRoles;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+    }
+
     public async Task ChangeGuildSettingAsync(IGuild discordGuild, FmEmbedType? embedType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
