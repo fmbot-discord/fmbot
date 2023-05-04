@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 using Discord.Interactions;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -31,12 +32,18 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task SetGuildAllowedRoles(string[] inputs)
     {
-        List<ulong> roleIds = new List<ulong>();
-        foreach (var input in inputs)
+        if (inputs != null && inputs.Any())
         {
-            var roleId = ulong.Parse(input);
-            roleIds.Add(roleId);
+            var roleIds = new List<ulong>();
+            foreach (var input in inputs)
+            {
+                var roleId = ulong.Parse(input);
+                roleIds.Add(roleId);
+            }
+
+            await this._guildService.ChangeGuildAllowedRoles(this.Context.Guild, roleIds.ToArray());
         }
+
 
         var response = await this._guildSettingBuilder.AllowedRoles(new ContextModel(this.Context));
 
