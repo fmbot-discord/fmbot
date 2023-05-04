@@ -32,6 +32,7 @@ public static class Constants
 
     public const string AutoCompleteLoginRequired = "Connect your Last.fm account with /login first to see results..";
     public const string ServerStaffOnly = "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.";
+    public const string FmbotStaffOnly = "Unauthorized, only .fmbot staff can use this command.";
 
     public const string GetSupporterButton = "Get .fmbot supporter";
     public const string GetSupporterLink = "https://opencollective.com/fmbot/contribute";

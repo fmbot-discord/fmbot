@@ -29,30 +29,19 @@ public class GuildCommands : BaseCommandModule
 {
     private readonly AdminService _adminService;
     private readonly GuildService _guildService;
-    private readonly SettingService _settingService;
     private readonly UserService _userService;
-    private readonly CommandService _service;
     private readonly GuildSettingBuilder _guildSettingBuilder;
 
     private readonly IMemoryCache _cache;
 
     private readonly IPrefixService _prefixService;
-    private readonly GuildDisabledCommandService _guildDisabledCommandService;
-    private readonly ChannelDisabledCommandService _channelDisabledCommandService;
-
-    private readonly CommandService _commands;
 
     private InteractiveService Interactivity { get; }
 
     public GuildCommands(IPrefixService prefixService,
         GuildService guildService,
-        CommandService commands,
         AdminService adminService,
-        GuildDisabledCommandService guildDisabledCommandService,
-        ChannelDisabledCommandService channelDisabledCommandService,
-        SettingService settingService,
         IOptions<BotSettings> botSettings,
-        CommandService service,
         IMemoryCache cache,
         GuildSettingBuilder guildSettingBuilder,
         UserService userService,
@@ -60,11 +49,6 @@ public class GuildCommands : BaseCommandModule
     {
         this._prefixService = prefixService;
         this._guildService = guildService;
-        this._commands = commands;
-        this._guildDisabledCommandService = guildDisabledCommandService;
-        this._channelDisabledCommandService = channelDisabledCommandService;
-        this._settingService = settingService;
-        this._service = service;
         this._cache = cache;
         this._guildSettingBuilder = guildSettingBuilder;
         this._userService = userService;
@@ -126,8 +110,7 @@ public class GuildCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -153,8 +136,7 @@ public class GuildCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
 
             return;
@@ -263,8 +245,7 @@ public class GuildCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -296,8 +277,7 @@ public class GuildCommands : BaseCommandModule
         if (!serverUser.GuildPermissions.Administrator &&
             !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. For privacy reasons only server admins can use this command.");
+            await ReplyAsync(Constants.ServerStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -409,6 +389,15 @@ public class GuildCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task SetFmCooldownCommand(string command = null)
     {
+        var serverUser = (IGuildUser)this.Context.Message.Author;
+        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await ReplyAsync(Constants.ServerStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -425,15 +414,6 @@ public class GuildCommands : BaseCommandModule
         }
 
         var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel.Id);
-
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            await ReplyAsync(Constants.ServerStaffOnly);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
 
         this._embed.AddField("Previous .fm cooldown",
             existingFmCooldown.HasValue ? $"{existingFmCooldown.Value} seconds" : "No cooldown");

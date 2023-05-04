@@ -675,6 +675,53 @@ public class GuildSettingBuilder
         return response;
     }
 
+    public async Task<ResponseModel> AllowedRoles(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+
+        var fmType = new SelectMenuBuilder()
+            .WithPlaceholder("Pick roles")
+            .WithCustomId(InteractionConstants.SetAllowedRoleMenu)
+            .WithType(ComponentType.RoleSelect);
+
+        response.Embed.WithTitle("Set server allowed roles");
+
+        var description = new StringBuilder();
+        description.AppendLine("Select the roles that you want to be visible in .fmbot.");
+        description.AppendLine("This affects WhoKnows, but also all server-wide charts and other commands.");
+        description.AppendLine();
+
+        if (guild.AllowedRoles != null && guild.AllowedRoles.Any())
+        {
+            description.AppendLine($"Picked roles:");
+            foreach (var roleId in guild.AllowedRoles)
+            {
+                var role = await context.DiscordGuild.GetChannelAsync(roleId);
+                if (role != null)
+                {
+                    description.AppendLine($"- <@{roleId}>");
+                }
+            }
+        }
+        else
+        {
+            description.AppendLine($"Picked roles: None");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithFooter("✨ Premium server");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        response.Components = new ComponentBuilder().WithSelectMenu(fmType);
+
+        return response;
+    }
+
     public static ResponseModel GuildReactionsAsync(ContextModel context, string prfx)
     {
         var response = new ResponseModel

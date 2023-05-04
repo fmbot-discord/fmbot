@@ -10,6 +10,9 @@ public static class InteractionConstants
 
     public const string FmGuildSettingType = "fm-guild-type-menu";
 
+    public const string SetAllowedRoleMenu = "guild-allowed-roles-menu";
+
+
     public const string CensorTypes = "admin-censor-*";
 
     public const string GlobalWhoKnowsReport = "gwk-report";
