@@ -82,7 +82,7 @@ public class OpenCollectiveService
               account(slug: $slug) {
                 name
                 slug
-                members(role: BACKER, limit: 5000) {
+                members(role: BACKER, limit: 1000) {
                   totalCount
                   nodes {
                     account {
