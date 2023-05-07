@@ -111,11 +111,11 @@ public class GuildService
             .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
     }
 
-    public async Task<IList<FullGuildUser>> GetGuildUsers(ulong? discordGuildId = null)
+    public async Task<IDictionary<int, FullGuildUser>> GetGuildUsers(ulong? discordGuildId = null)
     {
         if (discordGuildId == null)
         {
-            return new List<FullGuildUser>();
+            return new Dictionary<int, FullGuildUser>();
         }
 
         const string sql = "SELECT gu.user_id, " +
@@ -140,10 +140,12 @@ public class GuildService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return (await connection.QueryAsync<FullGuildUser>(sql, new
+        var result = await connection.QueryAsync<FullGuildUser>(sql, new
         {
             discordGuildId = Convert.ToInt64(discordGuildId)
-        })).ToList();
+        });
+
+        return result.ToDictionary(d => d.UserId, d => d);
     }
 
     public async Task<List<Persistence.Domain.Models.Guild>> GetPremiumGuilds()
@@ -174,14 +176,14 @@ public class GuildService
         return $"guild-full-{discordGuildId}";
     }
 
-    public static IEnumerable<FullGuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild, IList<FullGuildUser> guildUsers)
+    public static IEnumerable<FullGuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild, IDictionary<int, FullGuildUser> guildUsers)
     {
         if (guild.ActivityThresholdDays.HasValue)
         {
             guildUsers = guildUsers.Where(w =>
-                    w.LastUsed != null &&
-                    w.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
-                .ToList();
+                    w.Value.LastUsed != null &&
+                    w.Value.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
+                .ToDictionary(i => i.Key, i => i.Value);
         }
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
         {
@@ -192,7 +194,7 @@ public class GuildService
                 .ToHashSet();
 
             guildUsers = guildUsers.Where(w =>
-                    !usersToFilter.Contains(w.UserId))
+                    !usersToFilter.Contains(w.Key))
                 .ToList();
         }
 

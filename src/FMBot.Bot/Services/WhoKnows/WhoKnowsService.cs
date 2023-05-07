@@ -87,10 +87,10 @@ public class WhoKnowsService
                 .Where(w => !usersToFilter.Contains(w.UserId))
                 .ToList();
         }
-        if (guild.WhoKnowsWhitelistRoleId.HasValue)
+        if (guild.AllowedRoles != null && guild.AllowedRoles.Any())
         {
             users = users
-                .Where(w => w.WhoKnowsWhitelisted != false)
+                .Where(w => w.)
                 .ToList();
         }
 

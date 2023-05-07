@@ -108,12 +108,12 @@ public class UserGuildSettingCommands : BaseCommandModule
 
         var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
 
-        if (!guildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
+        if (!guildUsers.ContainsKey(userToBlock.UserId))
         {
             var similarUsers = await this._adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
 
             var userInThisServer = similarUsers.FirstOrDefault(f =>
-                f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.Select(s => s.UserId).Contains(f.UserId));
+                f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.ContainsKey(f.UserId));
 
             if (userInThisServer == null)
             {
@@ -127,8 +127,8 @@ public class UserGuildSettingCommands : BaseCommandModule
         }
 
         if (guildUsers
-                .Where(w => w.BlockedFromWhoKnows)
-                .Select(s => s.UserId)
+                .Where(w => w.Value.BlockedFromWhoKnows)
+                .Select(s => s.Key)
                 .Contains(userToBlock.UserId))
         {
             await ReplyAsync("The user you're trying to block has already been blocked on this server.");
@@ -196,7 +196,7 @@ public class UserGuildSettingCommands : BaseCommandModule
 
         var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
 
-        if (guildUsers == null || !guildUsers.OrderByDescending(o => o.LastUsed).Select(s => s.UserId).Contains(userToUnblock.UserId))
+        if (guildUsers == null || !guildUsers.ContainsKey(userToUnblock.UserId))
         {
             await ReplyAsync("The user you're trying to unblock was not blocked on this server.");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);

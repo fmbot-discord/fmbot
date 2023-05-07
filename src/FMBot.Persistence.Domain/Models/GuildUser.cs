@@ -12,5 +12,7 @@ public class GuildUser
     public bool? Bot { get; set; }
     public bool? WhoKnowsWhitelisted { get; set; }
     public bool? WhoKnowsBlocked { get; set; }
+    public ulong[] Roles { get; set; }
+
     public DateTime? LastMessage { get; set; }
 }

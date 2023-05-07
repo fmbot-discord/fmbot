@@ -29,7 +29,7 @@ public interface IIndexService
 
     Task<DateTime?> AddUserRegisteredLfmDate(int userId);
 
-    Task<(int, int?)> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
+    Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
     Task<IReadOnlyList<User>> GetUsersToFullyUpdate(IReadOnlyCollection<IGuildUser> discordGuildUsers);
 

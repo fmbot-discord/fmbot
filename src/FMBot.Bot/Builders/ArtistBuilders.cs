@@ -1349,7 +1349,7 @@ public class ArtistBuilders
     public async Task<ResponseModel> AffinityAsync(ContextModel context,
         UserSettingsModel userSettings,
         Guild guild,
-        IList<FullGuildUser> guildUsers,
+        IDictionary<int, FullGuildUser> guildUsers,
         bool largeGuild)
     {
         var response = new ResponseModel
@@ -1399,7 +1399,7 @@ public class ArtistBuilders
             var pageString = new StringBuilder();
             foreach (var neighbor in page)
             {
-                var guildUser = guildUsers.First(f => f.UserId == neighbor.Key);
+                guildUsers.TryGetValue(neighbor.Key, out var guildUser);
                 pageString.AppendLine(
                     $"**{(neighbor.Value.TotalPoints / self.Value.TotalPoints).ToString("P1", numberInfo)}** — " +
                     $"**[{Format.Sanitize(guildUser.UserName)}]({Constants.LastFMUserUrl}{guildUser.UserNameLastFM})** — " +

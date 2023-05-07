@@ -92,7 +92,7 @@ public class UserBuilder
 
         if (context.DiscordGuild != null && guildUsers.Any() && this._timer._currentFeatured.UserId.HasValue && this._timer._currentFeatured.UserId.Value != 0)
         {
-            var guildUser = guildUsers.FirstOrDefault(f => f.UserId == this._timer._currentFeatured.UserId);
+            guildUsers.TryGetValue(this._timer._currentFeatured.UserId.Value, out var guildUser);
 
             if (guildUser != null)
             {

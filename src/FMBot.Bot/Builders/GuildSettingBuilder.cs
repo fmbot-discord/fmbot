@@ -60,7 +60,7 @@ public class GuildSettingBuilder
         var whoKnowsSettings = new StringBuilder();
 
         whoKnowsSettings.AppendLine(
-            $"**{guildUsers?.Count(c => c.BlockedFromWhoKnows) ?? 0}** users blocked from WhoKnows and server charts.");
+            $"**{guildUsers?.Count(c => c.Value.BlockedFromWhoKnows) ?? 0}** users blocked from WhoKnows and server charts.");
 
         if (guild.ActivityThresholdDays.HasValue)
         {
@@ -85,7 +85,7 @@ public class GuildSettingBuilder
                 "Users earn crowns whenever they're the #1 user for an artist. ");
 
             crownSettings.AppendLine(
-                $"**{guildUsers?.Count(c => c.BlockedFromCrowns) ?? 0}** users are blocked from earning crowns.");
+                $"**{guildUsers?.Count(c => c.Value.BlockedFromCrowns) ?? 0}** users are blocked from earning crowns.");
 
             crownSettings.AppendLine();
 
@@ -538,20 +538,20 @@ public class GuildSettingBuilder
             searchValue = searchValue.ToLower();
 
             guildUsers = guildUsers
-                .Where(w => w.UserName.ToLower().Contains(searchValue) ||
-                            w.DiscordUserId.ToString().Contains(searchValue) ||
-                            w.UserNameLastFM.ToLower().Contains(searchValue))
-                .ToList();
+                .Where(w => w.Value.UserName.ToLower().Contains(searchValue) ||
+                            w.Value.DiscordUserId.ToString().Contains(searchValue) ||
+                            w.Value.UserNameLastFM.ToLower().Contains(searchValue))
+                .ToDictionary(i => i.Key, i => i.Value);
         }
 
         if (guildUsers != null &&
-            guildUsers.Any(a => a.BlockedFromWhoKnows && (!crownBlockedOnly || a.BlockedFromCrowns)))
+            guildUsers.Any(a => a.Value.BlockedFromWhoKnows && (!crownBlockedOnly || a.Value.BlockedFromCrowns)))
         {
             guildUsers = guildUsers
-                .Where(w => w.BlockedFromCrowns && (crownBlockedOnly || w.BlockedFromWhoKnows))
-                .ToList();
+                .Where(w => w.Value.BlockedFromCrowns && (crownBlockedOnly || w.Value.BlockedFromWhoKnows))
+                .ToDictionary(i => i.Key, i => i.Value);
 
-            var userPages = guildUsers.Chunk(15);
+            var userPages = guildUsers.Select(s => s.Value).Chunk(15);
 
             foreach (var userPage in userPages)
             {

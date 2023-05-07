@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
@@ -72,7 +74,7 @@ public class IndexService : IIndexService
         return null;
     }
 
-    public async Task<(int, int?)> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
+    public async Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
     {
         var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
@@ -109,18 +111,17 @@ public class IndexService : IIndexService
             })
             .ToListAsync();
 
-        int? whoKnowsHasAllowedRoleCount = null;
-        if (existingGuild.WhoKnowsWhitelistRoleId.HasValue)
-        {
-            whoKnowsHasAllowedRoleCount = 0;
-        }
-
         foreach (var user in users)
         {
             var discordUser = discordGuildUsers.First(f => f.Id == user.User.DiscordUserId);
-            var name = discordUser.Nickname ?? discordUser.Username;
-            user.UserName = name;
+
+            user.UserName = discordUser.DisplayName;
             user.Bot = discordUser.IsBot;
+
+            if (PublicProperties.PremiumServers.ContainsKey(discordGuild.Id))
+            {
+                user.Roles = discordUser.RoleIds.ToArray();
+            }
 
             if (existingGuild.GuildUsers != null && existingGuild.GuildUsers.Any())
             {
@@ -128,16 +129,6 @@ public class IndexService : IIndexService
                 if (existingGuildUser != null)
                 {
                     user.LastMessage = existingGuildUser.LastMessage;
-                }
-            }
-
-            if (existingGuild.WhoKnowsWhitelistRoleId.HasValue)
-            {
-                var isWhitelisted = discordUser.RoleIds.Contains(existingGuild.WhoKnowsWhitelistRoleId.Value);
-                user.WhoKnowsWhitelisted = isWhitelisted;
-                if (isWhitelisted)
-                {
-                    whoKnowsHasAllowedRoleCount++;
                 }
             }
         }
@@ -148,8 +139,7 @@ public class IndexService : IIndexService
             .MapInteger("user_id", x => x.UserId)
             .MapText("user_name", x => x.UserName)
             .MapBoolean("bot", x => x.Bot == true)
-            .MapBoolean("who_knows_whitelisted", x => x.WhoKnowsWhitelisted)
-            .MapBoolean("who_knows_blocked", x => x.WhoKnowsBlocked)
+            .MapArray("roles", x => x.Roles?.Select(s => (decimal)s).ToArray())
             .MapTimeStampTz("last_message", x => x.LastMessage.HasValue ? DateTime.SpecifyKind(x.LastMessage.Value, DateTimeKind.Utc) : null);
 
         await using var connection = new NpgsqlConnection(connString);
@@ -164,7 +154,7 @@ public class IndexService : IIndexService
 
         await connection.CloseAsync();
 
-        return (users.Count, whoKnowsHasAllowedRoleCount);
+        return users.Count();
     }
 
     public async Task<GuildUser> GetOrAddUserToGuild(ICollection<WhoKnowsObjectWithUser> users,
