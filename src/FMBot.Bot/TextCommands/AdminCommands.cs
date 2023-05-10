@@ -598,7 +598,7 @@ public class AdminCommands : BaseCommandModule
             this._embed.WithTitle($"All .fmbot users with Last.fm username {userString}");
             this._embed.WithUrl($"https://www.last.fm/user/{userString}");
 
-            foreach (var user in users)
+            foreach (var user in users.OrderByDescending(o => o.LastUsed))
             {
                 var userDescription = new StringBuilder();
 
@@ -618,7 +618,7 @@ public class AdminCommands : BaseCommandModule
                     userDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
                 }
 
-                this._embed.AddField($"{user.UserId}", userDescription.ToString());
+                this._embed.AddField($"{user.UserId} {user.UserType.UserTypeToIcon()}", userDescription.ToString());
             }
 
             this._embed.WithFooter("Command not intended for use in public channels");
