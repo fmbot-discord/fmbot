@@ -445,7 +445,7 @@ public class PlayService
             streak.AlbumName == null &&
             streak.ArtistName == null)
         {
-            
+            return null;
         }
 
         if (streak.TrackPlaycount is null or < Constants.StreakSaveThreshold &&
