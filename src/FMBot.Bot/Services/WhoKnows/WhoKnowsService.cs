@@ -66,7 +66,9 @@ public class WhoKnowsService
         return users.OrderByDescending(o => o.Playcount).ToList();
     }
 
-    public static List<WhoKnowsObjectWithUser> FilterGuildUsersAsync(ICollection<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild)
+    public static List<WhoKnowsObjectWithUser> FilterGuildUsersAsync(
+        ICollection<WhoKnowsObjectWithUser> users,
+        Persistence.Domain.Models.Guild guild)
     {
         if (guild.ActivityThresholdDays.HasValue)
         {
@@ -90,7 +92,7 @@ public class WhoKnowsService
         if (guild.AllowedRoles != null && guild.AllowedRoles.Any())
         {
             users = users
-                .Where(w => w.)
+                .Where(w => w.Roles != null && guild.AllowedRoles.Any(a => w.Roles.Contains(a)))
                 .ToList();
         }
 
