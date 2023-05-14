@@ -441,6 +441,13 @@ public class PlayService
 
     public async Task<string> UpdateOrInsertStreak(UserStreak streak)
     {
+        if (streak.TrackName == null &&
+            streak.AlbumName == null &&
+            streak.ArtistName == null)
+        {
+            
+        }
+
         if (streak.TrackPlaycount is null or < Constants.StreakSaveThreshold &&
             streak.AlbumPlaycount is null or < Constants.StreakSaveThreshold &&
             streak.ArtistPlaycount is null or < Constants.StreakSaveThreshold)
