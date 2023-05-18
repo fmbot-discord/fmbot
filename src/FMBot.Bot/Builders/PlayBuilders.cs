@@ -432,7 +432,10 @@ public class PlayBuilder
         {
             response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
             var saved = await this._playService.UpdateOrInsertStreak(streak);
-            response.Embed.WithFooter(saved);
+            if (saved != null)
+            {
+                response.Embed.WithFooter(saved);
+            }
         }
 
         response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");
