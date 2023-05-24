@@ -128,10 +128,10 @@ public class WhoKnowsPlayService
         };
     }
 
-    public string GuildAlsoPlayingArtist(int userId, Persistence.Domain.Models.Guild guild,
+    public string GuildAlsoPlayingArtist(int userId, IDictionary<int, FullGuildUser> guildUsers,
         IEnumerable<WhoKnowsObjectWithUser> users, string artistName)
     {
-        if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
+        if (guildUsers == null || !guildUsers.Any())
         {
             return null;
         }
@@ -139,7 +139,7 @@ public class WhoKnowsPlayService
         var foundUsers = new List<WhoKnowsObjectWithUser>();
         var userPlays = new List<UserPlayTs>();
 
-        foreach (var user in users.Where(w => w.UserId != userId))
+        foreach (var user in users)
         {
             var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlayTs userPlay);
 

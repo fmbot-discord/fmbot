@@ -238,7 +238,9 @@ public class ArtistBuilders
 
             if (guild?.LastIndexed != null)
             {
-                var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, guild.GuildId, artistSearch.Artist.ArtistName);
+                var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+                
+                var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, guildUsers, guild.GuildId, artistSearch.Artist.ArtistName);
                 var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
 
                 if (filteredUsersWithArtist.Count != 0)
@@ -747,7 +749,7 @@ public class ArtistBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+        var contextGuild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
@@ -767,9 +769,9 @@ public class ArtistBuilders
             imgUrl = null;
         }
 
-        var contextGuild = await guildTask;
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, contextGuild.GuildId, artistSearch.Artist.ArtistName);
+        var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, guildUsers, contextGuild.GuildId, artistSearch.Artist.ArtistName);
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
         var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithArtist, contextGuild, discordGuildUser, context.ContextUser);
