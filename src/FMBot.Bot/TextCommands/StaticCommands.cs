@@ -588,8 +588,8 @@ public class StaticCommands : BaseCommandModule
         description.AppendLine();
 
         description.AppendLine($"**Commands**");
-        description.AppendLine($" - View all commands on [our website](https://fmbot.xyz/commands/)");
-        description.AppendLine($" - Or use the dropdown below this message to pick a category");
+        description.AppendLine($"- View all commands on [our website](https://fmbot.xyz/commands/)");
+        description.AppendLine($"- Or use the dropdown below this message to pick a category");
 
 
         if (prefix != this._botSettings.Bot.Prefix)
@@ -770,7 +770,7 @@ public class StaticCommands : BaseCommandModule
                 }
             }
 
-            var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $" - {module.Summary}";
+            var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $"- {module.Summary}";
 
             if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
             {
@@ -821,7 +821,7 @@ public class StaticCommands : BaseCommandModule
                 }
             }
 
-            var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $" - {module.Summary}";
+            var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $"- {module.Summary}";
 
             if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
             {
@@ -870,7 +870,7 @@ public class StaticCommands : BaseCommandModule
                 }
             }
 
-            var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $" - {module.Summary}";
+            var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $"- {module.Summary}";
 
             if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
             {

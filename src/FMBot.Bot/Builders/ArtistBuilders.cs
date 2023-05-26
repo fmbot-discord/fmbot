@@ -616,7 +616,7 @@ public class ArtistBuilders
                 }
                 else
                 {
-                    artistPageString.Append($"{counter}. ");
+                    artistPageString.Append($"{counter}\\. ");
                     artistPageString.AppendLine(name);
                 }
 

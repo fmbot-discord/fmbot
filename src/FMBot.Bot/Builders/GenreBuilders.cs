@@ -250,7 +250,7 @@ public class GenreBuilders
                 }
                 else
                 {
-                    genrePageString.Append($"{counter}. ");
+                    genrePageString.Append($"{counter}\\. ");
                     genrePageString.AppendLine(name);
                 }
 
