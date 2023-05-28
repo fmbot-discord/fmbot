@@ -42,8 +42,8 @@ public class StaticBuilders
         embedDescription.AppendLine("This means that this is a Last.fm issue and **not an .fmbot issue**. __We can't fix it for you__, but we can give you some tips that worked for others.");
         embedDescription.AppendLine();
         embedDescription.AppendLine("Some things you can try that usually work:");
-        embedDescription.AppendLine(" - Restarting your Spotify application");
-        embedDescription.AppendLine(" - Disconnecting and **reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)**");
+        embedDescription.AppendLine("- Restarting your Spotify application");
+        embedDescription.AppendLine("- Disconnecting and **reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)**");
         embedDescription.AppendLine();
         embedDescription.AppendLine("If the two options above don't work, check out **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
 

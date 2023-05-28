@@ -166,7 +166,7 @@ public class TimerService
                 }
             },
             null,
-            TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds),
+            TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds + 15),
             TimeSpan.FromHours(12));
 
         this._checkNewSupporterTimer = new Timer(async _ =>
