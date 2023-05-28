@@ -11,6 +11,7 @@ using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace FMBot.Bot.Services;
 
@@ -104,33 +105,41 @@ public class OpenAiService
 
     public async Task<bool> CheckIfUsernameOffensive(string username)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
-        request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
-
-        var content = new OpenAiRequest
+        try
         {
-            Model = Model,
-            Messages = new List<RequestMessage>
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
+            request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
+
+            var content = new OpenAiRequest
             {
-                new()
+                Model = Model,
+                Messages = new List<RequestMessage>
                 {
-                    Role = "system",
-                    Content = $"Is the username '{username}' offensive? Only reply with 'true' or 'false'."
+                    new()
+                    {
+                        Role = "system",
+                        Content = $"Is the username '{username}' offensive? Only reply with 'true' or 'false'."
+                    }
                 }
-            }
-        };
+            };
 
-        var requestContent = JsonSerializer.Serialize(content);
+            var requestContent = JsonSerializer.Serialize(content);
 
-        request.Content = new StringContent(requestContent, null, "application/json");
-        var response = await this._httpClient.SendAsync(request);
-        Statistics.OpenAiCalls.Inc();
+            request.Content = new StringContent(requestContent, null, "application/json");
+            var response = await this._httpClient.SendAsync(request);
+            Statistics.OpenAiCalls.Inc();
 
-        var responseContent = await response.Content.ReadAsStringAsync();
+            var responseContent = await response.Content.ReadAsStringAsync();
 
-        var responseModel = JsonSerializer.Deserialize<OpenAiResponse>(responseContent);
+            var responseModel = JsonSerializer.Deserialize<OpenAiResponse>(responseContent);
 
-        var output = responseModel.Choices.FirstOrDefault()?.ChoiceMessage?.Content;
-        return output != null && output.ToLower().Contains("true");
+            var output = responseModel.Choices.FirstOrDefault()?.ChoiceMessage?.Content;
+            return output != null && output.ToLower().Contains("true");
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error in OpenAI call");
+            return false;
+        }
     }
 }
