@@ -138,7 +138,7 @@ public class OpenAiService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error in OpenAI call");
+            Log.Error(e, "Feature: Error in OpenAI call");
             return false;
         }
     }

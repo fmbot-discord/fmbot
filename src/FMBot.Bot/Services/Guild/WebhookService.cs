@@ -142,6 +142,8 @@ public class WebhookService
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var user = await db.Users.FindAsync(featured.UserId.Value);
 
+            Log.Information("Featured: Checking is username is offensive");
+
             var possiblyOffensive = await this._openAiService.CheckIfUsernameOffensive(user?.UserNameLastFM);
 
             if (possiblyOffensive)
@@ -151,8 +153,6 @@ public class WebhookService
                 embed.WithColor(DiscordConstants.WarningColorOrange);
             }
         }
-        
-
 
         var webhookClient = new DiscordWebhookClient(webhook);
         await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
