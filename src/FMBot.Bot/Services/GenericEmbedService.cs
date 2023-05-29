@@ -192,7 +192,7 @@ public static class GenericEmbedService
             var optionsString = new StringBuilder();
             foreach (var option in options.Options)
             {
-                optionsString.AppendLine($" - {option}");
+                optionsString.AppendLine($"- {option}");
             }
 
             embed.AddField("Options", optionsString.ToString());
