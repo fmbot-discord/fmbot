@@ -138,7 +138,7 @@ public class TimeService
         return $"artist-length-avg-{artistName}";
     }
 
-    public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(ICommandContext context, List<UserPlayTs> userPlays, ICollection<GuildUser> guildUsers)
+    public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(ICommandContext context, List<UserPlayTs> userPlays, IDictionary<int, FullGuildUser> guildUsers)
     {
         var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 
@@ -152,15 +152,14 @@ public class TimeService
 
             var timeListened = await GetPlayTimeForPlays(user);
 
-            var guildUser = guildUsers.FirstOrDefault(f => f.UserId == user.Key);
 
-            if (guildUser != null)
+            if (guildUsers.TryGetValue(user.Key, out var guildUser))
             {
-                var userName = guildUser.UserName ?? guildUser.User.UserNameLastFM;
+                var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
                 if (i <= 10)
                 {
-                    var discordUser = await context.Guild.GetUserAsync(guildUser.User.DiscordUserId);
+                    var discordUser = await context.Guild.GetUserAsync(guildUser.DiscordUserId);
                     if (discordUser != null)
                     {
                         userName = discordUser.Nickname ?? discordUser.Username;
@@ -171,10 +170,11 @@ public class TimeService
                 {
                     DiscordName = userName,
                     Playcount = (int)timeListened.TotalMinutes,
-                    LastFMUsername = guildUser.User.UserNameLastFM,
+                    LastFMUsername = guildUser.UserNameLastFM,
                     UserId = user.Key,
-                    WhoKnowsWhitelisted = guildUser.WhoKnowsWhitelisted,
-                    LastUsed = guildUser.User.LastUsed,
+                    LastUsed = guildUser.LastUsed,
+                    LastMessage = guildUser.LastMessage,
+                    Roles = guildUser.Roles,
                     Name = StringExtensions.GetListeningTimeString(timeListened)
                 });
             }

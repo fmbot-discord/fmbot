@@ -12,6 +12,9 @@ public class FullGuildUser
     public bool? WhoKnowsBlocked { get; set; }
     public DateTime? LastMessage { get; set; }
 
+    public ulong[] Roles { get; set; }
+    public decimal[] DtoRoles { get; set; }
+
     public ulong DiscordUserId { get; set; }
     public string UserNameLastFM { get; set; }
     public DateTime? LastUsed { get; set; }

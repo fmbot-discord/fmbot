@@ -189,7 +189,7 @@ public class GuildSettingBuilder
 
     }
 
-    public async Task<ResponseModel> SetPrefix(ContextModel context)
+    public async Task<ResponseModel> SetPrefix(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -229,12 +229,17 @@ public class GuildSettingBuilder
 
         response.Embed.WithDescription(description.ToString());
 
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
+
         response.Components = components;
 
         return response;
     }
 
-    public async Task<ResponseModel> SetWhoKnowsActivityThreshold(ContextModel context)
+    public async Task<ResponseModel> SetWhoKnowsActivityThreshold(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -271,12 +276,17 @@ public class GuildSettingBuilder
 
         response.Embed.WithDescription(description.ToString());
 
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
+
         response.Components = components;
 
         return response;
     }
 
-    public async Task<ResponseModel> SetCrownActivityThreshold(ContextModel context)
+    public async Task<ResponseModel> SetCrownActivityThreshold(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -318,12 +328,17 @@ public class GuildSettingBuilder
 
         response.Embed.WithDescription(description.ToString());
 
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
+
         response.Components = components;
 
         return response;
     }
 
-    public async Task<ResponseModel> SetCrownMinPlaycount(ContextModel context)
+    public async Task<ResponseModel> SetCrownMinPlaycount(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -366,6 +381,11 @@ public class GuildSettingBuilder
         }
 
         response.Embed.WithDescription(description.ToString());
+
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
 
         response.Components = components;
 
@@ -443,6 +463,8 @@ public class GuildSettingBuilder
         description.AppendLine($"If you would like to remove crowns, use:");
         description.AppendLine($"- `{prefix}killallcrowns` (All crowns)");
         description.AppendLine($"- `{prefix}killallseededcrowns` (Only seeded crowns)");
+
+        response.Embed.WithFooter($"Last crownseeder initiated by {context.ContextUser}");
 
         response.Embed.WithDescription(description.ToString());
 
@@ -628,7 +650,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> GuildMode(ContextModel context)
+    public async Task<ResponseModel> GuildMode(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -670,6 +692,11 @@ public class GuildSettingBuilder
         response.Embed.WithDescription(description.ToString());
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
+
         response.Components = new ComponentBuilder().WithSelectMenu(fmType);
 
         return response;
@@ -700,7 +727,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ToggleGuildCommand(ContextModel context)
+    public async Task<ResponseModel> ToggleGuildCommand(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -737,12 +764,17 @@ public class GuildSettingBuilder
             .WithButton("Remove", $"{InteractionConstants.ToggleGuildCommandRemove}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
             .WithButton("Clear", $"{InteractionConstants.ToggleGuildCommandClear}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
 
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
+
         response.Components = components;
 
         return response;
     }
 
-    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId, ulong? selectedCategoryId = null)
+    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId, ulong? selectedCategoryId = null, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -753,7 +785,16 @@ public class GuildSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Embed.WithTitle($"Toggle channel commands - #{selectedChannel.Name}");
-        response.Embed.WithFooter("Use the up and down selector to browse through channels");
+
+        var footer = new StringBuilder();
+
+        footer.AppendLine("Use the up and down selector to browse through channels");
+        if (lastModifier != null)
+        {
+            footer.AppendLine($"Last modified by {lastModifier.Username}");
+        }
+
+        response.Embed.WithFooter(footer.ToString());
 
         var channelDescription = new StringBuilder();
 

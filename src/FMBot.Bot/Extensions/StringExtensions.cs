@@ -176,6 +176,11 @@ public static class StringExtensions
         return releases == 1 ? "release" : "releases";
     }
 
+    public static string GetUsersString(long? users)
+    {
+        return users == 1 ? "user" : "users";
+    }
+
     public static string GetChangeString(decimal oldValue, decimal newValue)
     {
         if (oldValue < newValue)

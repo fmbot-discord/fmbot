@@ -2,16 +2,13 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
-using Discord.Commands;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using Jil;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -41,7 +38,7 @@ public class WhoKnowsArtistService
     {
         const string sql = "SELECT ua.user_id, " +
                            "ua.name, " +
-                           "ua.playcount, " +
+                           "ua.playcount " +
                            "FROM user_artists AS ua " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id " +
                            "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
@@ -72,10 +69,10 @@ public class WhoKnowsArtistService
 
             if (i < 15)
             {
-                var discordUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
-                if (discordUser != null)
+                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
+                if (discordGuildUser != null)
                 {
-                    userName = discordUser.Nickname ?? discordUser.Username;
+                    userName = discordGuildUser.DisplayName;
                 }
             }
 
@@ -87,7 +84,8 @@ public class WhoKnowsArtistService
                 LastFMUsername = guildUser.UserNameLastFM,
                 UserId = guildUser.UserId,
                 LastUsed = guildUser.LastUsed,
-                LastMessage = guildUser.LastUsed
+                LastMessage = guildUser.LastMessage,
+                Roles = guildUser.Roles
             });
         }
 
@@ -207,17 +205,14 @@ public class WhoKnowsArtistService
         }).ToList();
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForArtists(IGuild discordGuild, int guildId, int userId, string artistName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForArtists(IGuild discordGuild,
+        IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, string artistName)
     {
         const string sql = "SELECT * " +
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ua.user_id, " +
                            "ua.name, " +
-                           "ua.playcount, " +
-                           "u.user_name_last_fm, " +
-                           "u.discord_user_id, " +
-                           "gu.user_name, " +
-                           "gu.who_knows_whitelisted " +
+                           "ua.playcount " +
                            "FROM user_artists AS ua " +
                            "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
                            "INNER JOIN friends AS fr ON fr.friend_user_id = ua.user_id " +
@@ -241,14 +236,19 @@ public class WhoKnowsArtistService
 
         foreach (var userArtist in userArtists)
         {
-            var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
+            if (!guildUsers.TryGetValue(userArtist.UserId, out var guildUser))
+            {
+                continue;
+            }
+
+            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
             if (discordGuild != null)
             {
-                var guildUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
-                if (guildUser != null)
+                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
+                if (discordGuildUser != null)
                 {
-                    userName = guildUser.DisplayName;
+                    userName = discordGuildUser.DisplayName;
                 }
             }
 
@@ -257,7 +257,7 @@ public class WhoKnowsArtistService
                 Name = userArtist.Name,
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
-                LastFMUsername = userArtist.UserNameLastFm,
+                LastFMUsername = guildUser.UserNameLastFM,
                 UserId = userArtist.UserId,
             });
         }

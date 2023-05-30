@@ -138,11 +138,12 @@ public class AlbumBuilders
         {
             var serverStats = "";
             var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+            var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
             if (guild?.LastIndexed != null)
             {
-                var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guild.GuildId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
-                var filteredUsersWithAlbum = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
+                var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guildUsers, guild.GuildId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+                var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
 
                 if (filteredUsersWithAlbum.Count != 0)
                 {
@@ -159,10 +160,9 @@ public class AlbumBuilders
                     serverStats += $"\nNo listeners in this server.";
                 }
 
-                if (usersWithAlbum.Count > filteredUsersWithAlbum.Count)
+                if (filterStats.BasicDescription != null)
                 {
-                    var filteredAmount = usersWithAlbum.Count - filteredUsersWithAlbum.Count;
-                    serverStats += $"\n`{filteredAmount}` users filtered";
+                    serverStats += $"\n{filterStats.BasicDescription}";
                 }
             }
             else
@@ -319,12 +319,11 @@ public class AlbumBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
 
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId);
-        if (album == null)
+        if (album.Album == null)
         {
             return album.Response;
         }
@@ -332,17 +331,18 @@ public class AlbumBuilders
         var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album.Album);
         var fullAlbumName = $"{album.Album.AlbumName} by {album.Album.ArtistName}";
 
-        var guild = await guildTask;
+        var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guild.GuildId, album.Album.ArtistName, album.Album.AlbumName);
+        var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guildUsers, guild.GuildId, album.Album.ArtistName, album.Album.AlbumName);
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
-        var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithAlbum, guild, discordGuildUser, context.ContextUser);
+        var currentUser = await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
         await this._indexService.UpdateGuildUser(discordGuildUser, currentUser.UserId, guild);
 
         usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser, fullAlbumName, context.DiscordGuild, album.Album.UserPlaycount);
 
-        var filteredUsersWithAlbum = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
+        var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
 
         var albumCoverUrl = album.Album.AlbumCoverUrl;
         if (databaseAlbum.SpotifyImageUrl != null)
@@ -405,10 +405,9 @@ public class AlbumBuilders
             footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
         }
 
-        if (usersWithAlbum.Count > filteredUsersWithAlbum.Count && !guild.WhoKnowsWhitelistRoleId.HasValue)
+        if (filterStats.FullDescription != null)
         {
-            var filteredAmount = usersWithAlbum.Count - filteredUsersWithAlbum.Count;
-            footer += $"\n{filteredAmount} inactive/blocked users filtered";
+            footer += $"\n{filterStats.FullDescription}";
         }
 
         if (guild.WhoKnowsWhitelistRoleId.HasValue)
@@ -461,7 +460,6 @@ public class AlbumBuilders
             return response;
         }
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
@@ -474,9 +472,10 @@ public class AlbumBuilders
         var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album.Album);
         var albumName = $"{album.Album.AlbumName} by {album.Album.ArtistName}";
 
-        var guild = await guildTask;
+        var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
 
-        var usersWithAlbum = await this._whoKnowsAlbumService.GetFriendUsersForAlbum(context.DiscordGuild, guild?.GuildId ?? 0, context.ContextUser.UserId, album.Album.ArtistName, album.Album.AlbumName);
+        var usersWithAlbum = await this._whoKnowsAlbumService.GetFriendUsersForAlbum(context.DiscordGuild, guildUsers, guild?.GuildId ?? 0, context.ContextUser.UserId, album.Album.ArtistName, album.Album.AlbumName);
 
         usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser, albumName, context.DiscordGuild, album.Album.UserPlaycount);
 
@@ -566,12 +565,10 @@ public class AlbumBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var guildTask = this._guildService.GetGuildWithGuildUsers(context.DiscordGuild?.Id);
-
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId);
-        if (album == null)
+        if (album.Album == null)
         {
             return album.Response;
         }
@@ -590,12 +587,12 @@ public class AlbumBuilders
 
         if (context.DiscordGuild != null)
         {
-            var guild = await guildTask;
+            var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
             filteredUsersWithAlbum =
-                WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
+                WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guildUsers);
 
-            if (settings.AdminView && guild.SpecialGuild == true)
+            if (settings.AdminView)
             {
                 privacyLevel = PrivacyLevel.Server;
             }

@@ -634,15 +634,12 @@ public class PlayService
             .ToList();
     }
 
-    public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(ICommandContext context, int guildId)
+    public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(ICommandContext context,
+        IDictionary<int, FullGuildUser> guildUsers,
+        int guildId)
     {
         const string sql = "SELECT u.total_playcount AS playcount, " +
-                           "u.user_id, " +
-                           "u.user_name_last_fm, " +
-                           "u.discord_user_id, " +
-                           "u.last_used, " +
-                           "gu.user_name, " +
-                           "gu.who_knows_whitelisted " +
+                           "u.user_id " +
                            "FROM users AS u " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                            "WHERE gu.guild_id = @guildId AND u.total_playcount is not null " +
@@ -663,11 +660,16 @@ public class PlayService
         {
             var userAlbum = userAlbums[i];
 
-            var userName = userAlbum.UserName ?? userAlbum.UserNameLastFm;
+            if (!guildUsers.TryGetValue(userAlbum.UserId, out var guildUser))
+            {
+                continue;
+            }
+
+            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
             if (i <= 10)
             {
-                var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(guildUser.DiscordUserId);
                 if (discordUser != null)
                 {
                     userName = discordUser.Nickname ?? discordUser.Username;
@@ -678,10 +680,11 @@ public class PlayService
             {
                 DiscordName = userName,
                 Playcount = userAlbum.Playcount,
-                LastFMUsername = userAlbum.UserNameLastFm,
+                LastFMUsername = guildUser.UserNameLastFM,
                 UserId = userAlbum.UserId,
-                LastUsed = userAlbum.LastUsed,
-                WhoKnowsWhitelisted = userAlbum.WhoKnowsWhitelisted,
+                LastUsed = guildUser.LastUsed,
+                LastMessage = guildUser.LastMessage,
+                Roles = guildUser.Roles
             });
         }
 

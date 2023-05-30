@@ -102,7 +102,7 @@ public class GuildCommands : BaseCommandModule
     [Alias("guildmode")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task SetServerModeAsync(params string[] otherSettings)
+    public async Task SetServerModeAsync([Remainder] string unused = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 

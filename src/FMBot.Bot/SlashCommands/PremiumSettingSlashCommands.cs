@@ -32,7 +32,7 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task SetGuildAllowedRoles(string[] inputs)
     {
-        if (inputs != null && inputs.Any())
+        if (inputs != null)
         {
             var roleIds = new List<ulong>();
             foreach (var input in inputs)
@@ -44,7 +44,9 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
             await this._guildService.ChangeGuildAllowedRoles(this.Context.Guild, roleIds.ToArray());
         }
 
-        var response = await this._premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context));
+        var response = await this._premiumSettingBuilder.AllowedRoles(new ContextModel(this.Context), this.Context.User);
+
+        await this.DeferAsync();
 
         await this.Context.UpdateInteractionEmbed(response);
     }
@@ -53,7 +55,7 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task SetGuildBlockedRoles(string[] inputs)
     {
-        if (inputs != null && inputs.Any())
+        if (inputs != null)
         {
             var roleIds = new List<ulong>();
             foreach (var input in inputs)
@@ -65,7 +67,9 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
             await this._guildService.ChangeGuildBlockedRoles(this.Context.Guild, roleIds.ToArray());
         }
 
-        var response = await this._premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context));
+        var response = await this._premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context), this.Context.User);
+
+        await this.DeferAsync();
 
         await this.Context.UpdateInteractionEmbed(response);
     }

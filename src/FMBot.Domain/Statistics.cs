@@ -105,6 +105,14 @@ public static class Statistics
         .CreateCounter("bot_button_executed", "Amount of buttons executed");
 
 
+    public static readonly Counter DiscordEvents = Metrics
+        .CreateCounter("bot_discord_events", "Amount of events through the Discord gateway",
+            new CounterConfiguration
+            {
+                LabelNames = new[] { "name" }
+            });
+
+
     public static readonly Gauge RegisteredUserCount = Metrics
         .CreateGauge("bot_registered_users_count", "Total count of all users in the database");
 

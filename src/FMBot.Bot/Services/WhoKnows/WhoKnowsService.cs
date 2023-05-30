@@ -66,19 +66,42 @@ public class WhoKnowsService
         return users.OrderByDescending(o => o.Playcount).ToList();
     }
 
-    public static List<WhoKnowsObjectWithUser> FilterGuildUsersAsync(
+    public static (FilterStats stats, List<WhoKnowsObjectWithUser>) FilterGuildUsersAsync(
         ICollection<WhoKnowsObjectWithUser> users,
         Persistence.Domain.Models.Guild guild)
     {
+        var stats = new FilterStats
+        {
+            StartCount = users.Count,
+            RequesterFiltered = false
+        };
+
         if (guild.ActivityThresholdDays.HasValue)
         {
+            var preFilterCount = users.Count;
+
             users = users.Where(w =>
                     w.LastUsed != null &&
                     w.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
                 .ToList();
+
+            stats.ActivityThresholdFiltered = preFilterCount - users.Count;
+        }
+        if (guild.UserActivityThresholdDays.HasValue)
+        {
+            var preFilterCount = users.Count;
+
+            users = users.Where(w =>
+                    w.LastMessage != null &&
+                    w.LastMessage >= DateTime.UtcNow.AddDays(-guild.UserActivityThresholdDays.Value))
+                .ToList();
+
+            stats.GuildActivityThresholdFiltered = preFilterCount - users.Count;
         }
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
         {
+            var preFilterCount = users.Count;
+
             var usersToFilter = guild.GuildBlockedUsers
                 .DistinctBy(d => d.UserId)
                 .Where(w => w.BlockedFromWhoKnows)
@@ -88,15 +111,33 @@ public class WhoKnowsService
             users = users
                 .Where(w => !usersToFilter.Contains(w.UserId))
                 .ToList();
+
+            stats.BlockedFiltered = preFilterCount - users.Count;
         }
         if (guild.AllowedRoles != null && guild.AllowedRoles.Any())
         {
+            var preFilterCount = users.Count;
+
             users = users
                 .Where(w => w.Roles != null && guild.AllowedRoles.Any(a => w.Roles.Contains(a)))
                 .ToList();
+
+            stats.AllowedRolesFiltered = preFilterCount - users.Count;
+        }
+        if (guild.BlockedRoles != null && guild.BlockedRoles.Any())
+        {
+            var preFilterCount = users.Count;
+
+            users = users
+                .Where(w => w.Roles != null && !guild.BlockedRoles.Any(a => w.Roles.Contains(a)))
+                .ToList();
+
+            stats.BlockedRolesFiltered = preFilterCount - users.Count;
         }
 
-        return users.ToList();
+        stats.EndCount = users.Count;
+
+        return (stats, users.ToList());
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IEnumerable<WhoKnowsObjectWithUser> users)
@@ -128,14 +169,9 @@ public class WhoKnowsService
             .ToList();
     }
 
-    public static IList<WhoKnowsObjectWithUser> ShowGuildMembersInGlobalWhoKnowsAsync(IList<WhoKnowsObjectWithUser> users, IList<GuildUser> guildUsers)
+    public static IList<WhoKnowsObjectWithUser> ShowGuildMembersInGlobalWhoKnowsAsync(IList<WhoKnowsObjectWithUser> users, IDictionary<int, FullGuildUser> guildUsers)
     {
-        var guildUserIds = guildUsers
-            .DistinctBy(d => d.UserId)
-            .Select(s => s.UserId)
-            .ToHashSet();
-
-        foreach (var user in users.Where(w => guildUserIds.Contains(w.UserId)))
+        foreach (var user in users.Where(w => guildUsers.ContainsKey(w.UserId)))
         {
             user.PrivacyLevel = PrivacyLevel.Global;
             user.SameServer = true;

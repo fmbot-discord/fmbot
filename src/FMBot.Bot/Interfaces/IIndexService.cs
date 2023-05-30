@@ -15,7 +15,9 @@ public interface IIndexService
 
     Task<IndexedUserStats> IndexUser(User user);
 
-    Task<GuildUser> GetOrAddUserToGuild(ICollection<WhoKnowsObjectWithUser> users, Guild contextGuild,
+    Task<GuildUser> GetOrAddUserToGuild(
+        IDictionary<int, FullGuildUser> guildUsers,
+        Guild guild,
         IGuildUser discordGuildUser,
         User user);
 

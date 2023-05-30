@@ -455,7 +455,6 @@ public class ArtistCommands : BaseCommandModule
 
         try
         {
-            var guildTask = this._guildService.GetGuildWithGuildUsers(this.Context.Guild?.Id);
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var currentSettings = new WhoKnowsSettings
@@ -470,7 +469,7 @@ public class ArtistCommands : BaseCommandModule
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
             var response = await this._artistBuilders
-                .GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), guildTask, settings);
+                .GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), settings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

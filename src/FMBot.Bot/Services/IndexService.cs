@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
@@ -150,46 +149,33 @@ public class IndexService : IIndexService
 
         await copyHelper.SaveAllAsync(connection, users);
 
-        Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
+        Log.Information("GuildUserUpdate: Stored guild users for guild with id {guildId}", existingGuild.GuildId);
 
         await connection.CloseAsync();
 
         return users.Count();
     }
 
-    public async Task<GuildUser> GetOrAddUserToGuild(ICollection<WhoKnowsObjectWithUser> users,
+    public async Task<GuildUser> GetOrAddUserToGuild(
+        IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,
         IGuildUser discordGuildUser,
         User user)
     {
         try
         {
-            var foundUser = users.FirstOrDefault(f => f.UserId == user.UserId);
-
-            if (foundUser == null)
+            if (!guildUsers.TryGetValue(user.UserId, out var guildUser))
             {
-                await using var db = await this._contextFactory.CreateDbContextAsync();
-                var existingGuildUser = await db.GuildUsers
-                    .AsQueryable()
-                    .FirstOrDefaultAsync(a => a.GuildId == guild.GuildId && a.UserId == user.UserId);
-
-                if (existingGuildUser != null)
-                {
-                    existingGuildUser.User = user;
-                    existingGuildUser.UserName = discordGuildUser.DisplayName;
-                    return existingGuildUser;
-                }
-
                 var guildUserToAdd = new GuildUser
                 {
                     GuildId = guild.GuildId,
                     UserId = user.UserId,
-                    UserName = discordGuildUser.Nickname ?? discordGuildUser.Username
+                    UserName = discordGuildUser.DisplayName
                 };
 
-                if (guild.WhoKnowsWhitelistRoleId.HasValue)
+                if (PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
                 {
-                    guildUserToAdd.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                    guildUserToAdd.Roles = discordGuildUser.RoleIds.ToArray();
                 }
 
                 await AddGuildUserToDatabase(guildUserToAdd);
@@ -198,20 +184,25 @@ public class IndexService : IIndexService
 
                 return guildUserToAdd;
             }
-
-            return new GuildUser
+            else
             {
-                Bot = false,
-                GuildId = guild.GuildId,
-                UserId = user.UserId,
-                UserName = discordGuildUser?.DisplayName ?? foundUser.DiscordName,
-                WhoKnowsWhitelisted = foundUser.WhoKnowsWhitelisted,
-                User = user
-            };
+                guildUser.UserName = discordGuildUser.DisplayName;
+
+                return new GuildUser
+                {
+                    GuildId = guild.GuildId,
+                    UserId = user.UserId,
+                    UserName = discordGuildUser.DisplayName,
+                    Roles = discordGuildUser.RoleIds.ToArray(),
+                    Bot = false,
+                    LastMessage = DateTime.UtcNow,
+                    User = user
+                };
+            }
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error while attempting to add user {userId} to guild {guildId}", user.UserId, guild.GuildId);
+            Log.Error(e, "GuildUserUpdate: Error while attempting to add user {userId} to guild {guildId}", user.UserId, guild.GuildId);
             return new GuildUser
             {
                 GuildId = guild.GuildId,
@@ -224,7 +215,7 @@ public class IndexService : IIndexService
 
     public async Task AddGuildUserToDatabase(GuildUser guildUserToAdd)
     {
-        const string sql = "INSERT INTO guild_users (guild_id, user_id, user_name, bot, who_knows_whitelisted) " +
+        const string sql = "INSERT INTO guild_users (guild_id, user_id, user_name, bot, roles, last_message) " +
                            "VALUES (@guildId, @userId, @userName, false, @whoKnowsWhitelisted) " +
                            "ON CONFLICT DO NOTHING";
 
@@ -237,7 +228,7 @@ public class IndexService : IIndexService
             guildId = guildUserToAdd.GuildId,
             userId = guildUserToAdd.UserId,
             userName = guildUserToAdd.UserName,
-            whoKnowsWhitelisted = guildUserToAdd.WhoKnowsWhitelisted
+            roles = guildUserToAdd.Roles?.Select(s => (decimal)s).ToArray()
         });
 
         Log.Information("Added user {guildUserName} | {userId} to guild {guildName}", guildUserToAdd.UserName, guildUserToAdd.UserId, guildUserToAdd.GuildId);
@@ -254,7 +245,7 @@ public class IndexService : IIndexService
 
             const string sql = "UPDATE guild_users " +
                                "SET user_name =  @UserName, " +
-                               "who_knows_whitelisted =  @WhoKnowsWhitelisted " +
+                               "roles =  @Roles " +
                                "WHERE guild_id = @GuildId AND user_id = @UserId ";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -268,16 +259,16 @@ public class IndexService : IIndexService
                 UserId = userId
             };
 
-            if (guild.WhoKnowsWhitelistRoleId.HasValue)
+            if (PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
             {
-                dto.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                dto.Roles = discordGuildUser.RoleIds.Select(s => (decimal)s).ToArray();
             }
 
             await connection.ExecuteAsync(sql, dto);
         }
         catch (Exception e)
         {
-            Log.Error(e, "Exception in UpdateUser!");
+            Log.Error(e, "GuildUserUpdate: Exception in UpdateUser!");
         }
     }
 
@@ -286,17 +277,14 @@ public class IndexService : IIndexService
         try
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
-            var user = await db.Users
-                .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordUserId == discordGuildUser.Id);
 
-            if (user == null)
+            if (!PublicProperties.RegisteredUsers.TryGetValue(discordGuildUser.Id, out var userId))
             {
                 return;
             }
 
             var guild = await db.Guilds
-                .Include(i => i.GuildUsers)
+                .Include(i => i.GuildUsers.Where(w => w.UserId == userId))
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildUser.GuildId);
 
             if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
@@ -304,7 +292,7 @@ public class IndexService : IIndexService
                 return;
             }
 
-            var existingGuildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == user.UserId);
+            var existingGuildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == userId);
 
             if (existingGuildUser == null)
             {
@@ -312,13 +300,13 @@ public class IndexService : IIndexService
                 {
                     Bot = false,
                     GuildId = guild.GuildId,
-                    UserId = user.UserId,
+                    UserId = userId,
                     UserName = discordGuildUser?.DisplayName,
                 };
 
-                if (guild.WhoKnowsWhitelistRoleId.HasValue && discordGuildUser != null)
+                if (PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
                 {
-                    newGuildUser.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                    newGuildUser.Roles = discordGuildUser.RoleIds.ToArray();
                 }
 
                 await AddGuildUserToDatabase(newGuildUser);
@@ -327,7 +315,7 @@ public class IndexService : IIndexService
 
             const string sql = "UPDATE guild_users " +
                                "SET user_name =  @UserName, " +
-                               "who_knows_whitelisted =  @whoKnowsWhitelisted " +
+                               "roles =  @Roles " +
                                "WHERE guild_id = @guildId AND user_id = @userId ";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -338,19 +326,19 @@ public class IndexService : IIndexService
             {
                 UserName = discordGuildUser.DisplayName,
                 GuildId = guild.GuildId,
-                UserId = user.UserId
+                UserId = userId
             };
 
-            if (guild.WhoKnowsWhitelistRoleId.HasValue)
+            if (PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
             {
-                dto.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                dto.Roles = discordGuildUser.RoleIds.Select(s => (decimal)s).ToArray();
             }
 
             await connection.ExecuteAsync(sql, dto);
         }
         catch (Exception e)
         {
-            Log.Error(e, "Exception in UpdateDiscordUser!");
+            Log.Error(e, "GuildUserUpdate: Exception in UpdateDiscordUser!");
         }
     }
 

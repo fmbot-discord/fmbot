@@ -192,7 +192,6 @@ public class ArtistSlashCommands : InteractionModuleBase
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var guildTask = this._guildService.GetGuildWithGuildUsers(this.Context.Guild.Id);
 
         var currentSettings = new WhoKnowsSettings
         {
@@ -205,8 +204,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._artistBuilders.GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, contextUser),
-                guildTask, currentSettings);
+            var response = await this._artistBuilders.GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), currentSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

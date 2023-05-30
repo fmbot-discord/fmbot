@@ -1,9 +1,9 @@
-using System;
 using System.Threading.Tasks;
+using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.WhoKnows;
-using Serilog;
+using FMBot.Domain;
 
 namespace FMBot.Bot.Handlers;
 
@@ -18,19 +18,44 @@ public class UserEventHandler
         this._client = client;
         this._indexService = indexService;
         this._crownService = crownService;
-        this._client.UserLeft += UserLeftGuild;
+        this._client.UserLeft += UserLeft;
         this._client.UserBanned += UserBanned;
-        //this._client.GuildMemberUpdated += GuildUserUpdated;
+        this._client.GuildMemberUpdated += GuildMemberUpdated;
     }
 
-    private async Task GuildUserUpdated(SocketGuildUser oldGuildUser, SocketGuildUser newGuildUser)
+    private async Task GuildMemberUpdated(Cacheable<SocketGuildUser, ulong> cacheable, SocketGuildUser newGuildUser)
     {
-        Log.Information($"GuildUserUpdated {oldGuildUser.Nickname} - {newGuildUser.Nickname}");
+        Statistics.DiscordEvents.WithLabels(nameof(GuildMemberUpdated)).Inc();
+
+        if (!PublicProperties.RegisteredUsers.ContainsKey(cacheable.Id) ||
+            !PublicProperties.RegisteredUsers.ContainsKey(newGuildUser.Id))
+        {
+            return;
+        }
+
+        if (PublicProperties.PremiumServers.ContainsKey(newGuildUser.Guild.Id))
+        {
+            if (cacheable.Value?.DisplayName == newGuildUser.DisplayName &&
+                Equals(cacheable.Value?.Roles, newGuildUser.Roles))
+            {
+                return;
+            }
+        }
+        else
+        {
+            if (cacheable.Value?.DisplayName == newGuildUser.DisplayName)
+            {
+                return;
+            }
+        }
+
         _ = this._indexService.UpdateGuildUserEvent(newGuildUser);
     }
 
-    private async Task UserLeftGuild(SocketGuild socketGuild, SocketUser socketUser)
+    private async Task UserLeft(SocketGuild socketGuild, SocketUser socketUser)
     {
+        Statistics.DiscordEvents.WithLabels(nameof(UserLeft)).Inc();
+
         if (socketGuild != null && socketUser != null)
         {
             _ = this._indexService.RemoveUserFromGuild(socketUser.Id, socketGuild.Id);
@@ -40,6 +65,8 @@ public class UserEventHandler
 
     private async Task UserBanned(SocketUser guildUser, SocketGuild guild)
     {
+        Statistics.DiscordEvents.WithLabels(nameof(UserBanned)).Inc();
+
         _ = this._indexService.RemoveUserFromGuild(guildUser.Id, guild.Id);
         _ = this._crownService.RemoveAllCrownsFromDiscordUser(guildUser.Id, guild.Id);
     }

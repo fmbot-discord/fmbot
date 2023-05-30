@@ -200,20 +200,19 @@ public class GenreCommands : BaseCommandModule
                 return;
             }
 
-            var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
+            var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
+            var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild?.Id);
 
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var guild = await guildTask;
-
             var guildTopUserArtists = await this._genreService.GetTopUserArtistsForGuildAsync(guild.GuildId, genre);
-            var usersWithGenre = await this._genreService.GetUsersWithGenreForUserArtists(guildTopUserArtists, guild.GuildUsers);
+            var usersWithGenre = await this._genreService.GetUsersWithGenreForUserArtists(guildTopUserArtists, guildUsers);
                 
             var discordGuildUser = await this.Context.Guild.GetUserAsync(user.DiscordUserId);
-            var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithGenre, guild, discordGuildUser, user);
+            var currentUser = await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, user);
             await this._indexService.UpdateGuildUser(discordGuildUser, currentUser.UserId, guild);
 
-            var filteredUsersWithGenre = WhoKnowsService.FilterGuildUsersAsync(usersWithGenre, guild);
+            var (filterStats, filteredUsersWithGenre) = WhoKnowsService.FilterGuildUsersAsync(usersWithGenre, guild);
 
             var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, user.UserId, PrivacyLevel.Server);
             if (filteredUsersWithGenre.Count == 0)
@@ -246,14 +245,9 @@ public class GenreCommands : BaseCommandModule
                 footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
             }
 
-            if (usersWithGenre.Count > filteredUsersWithGenre.Count && !guild.WhoKnowsWhitelistRoleId.HasValue)
+            if (filterStats.FullDescription != null)
             {
-                var filteredAmount = usersWithGenre.Count - filteredUsersWithGenre.Count;
-                footer += $"\n{filteredAmount} inactive/blocked users filtered";
-            }
-            if (guild.WhoKnowsWhitelistRoleId.HasValue)
-            {
-                footer += $"\nUsers with WhoKnows whitelisted role only";
+                footer += $"\n{filterStats.FullDescription}";
             }
 
             this._embed.WithTitle($"{genre.Transform(To.TitleCase)} in {this.Context.Guild.Name}");

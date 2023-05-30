@@ -125,6 +125,7 @@ public class GuildService
                            "gu.who_knows_whitelisted, " +
                            "gu.who_knows_blocked, " +
                            "gu.last_message, " +
+                           "gu.roles AS dto_roles, " +
                            "u.user_name_last_fm, " +
                            "u.discord_user_id, " +
                            "u.last_used, " +
@@ -140,10 +141,15 @@ public class GuildService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var result = await connection.QueryAsync<FullGuildUser>(sql, new
+        var result = (await connection.QueryAsync<FullGuildUser>(sql, new
         {
             discordGuildId = Convert.ToInt64(discordGuildId)
-        });
+        })).ToList();
+
+        foreach (var row in result.Where(w => w.DtoRoles != null))
+        {
+            row.Roles = row.DtoRoles.Select(s => (ulong)s).ToArray();
+        }
 
         return result.ToDictionary(d => d.UserId, d => d);
     }
@@ -176,7 +182,7 @@ public class GuildService
         return $"guild-full-{discordGuildId}";
     }
 
-    public static IEnumerable<FullGuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild, IDictionary<int, FullGuildUser> guildUsers)
+    public static IDictionary<int, FullGuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild, IDictionary<int, FullGuildUser> guildUsers)
     {
         if (guild.ActivityThresholdDays.HasValue)
         {
@@ -195,10 +201,10 @@ public class GuildService
 
             guildUsers = guildUsers.Where(w =>
                     !usersToFilter.Contains(w.Key))
-                .ToList();
+                .ToDictionary(i => i.Key, i => i.Value);
         }
 
-        return guildUsers.ToList();
+        return guildUsers;
     }
 
     public static async Task<GuildPermissions> GetGuildPermissionsAsync(ICommandContext context)

@@ -16,6 +16,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.TextCommands.Guild;
@@ -135,12 +136,12 @@ public class CrownGuildSettingCommands : BaseCommandModule
 
         var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
 
-        if (!guildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
+        if (!guildUsers.TryGetValue(userToBlock.UserId, out var guildUser))
         {
             var similarUsers = await this._adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
 
             var userInThisServer = similarUsers.FirstOrDefault(f =>
-                f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.Select(s => s.UserId).Contains(f.UserId));
+                f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.ContainsKey(f.UserId));
 
             if (userInThisServer == null)
             {
@@ -153,10 +154,15 @@ public class CrownGuildSettingCommands : BaseCommandModule
             userToBlock = userInThisServer;
         }
 
-        if (guildUsers
-                .Where(w => w.BlockedFromCrowns)
-                .Select(s => s.UserId)
-                .Contains(userToBlock.UserId))
+        if (guildUser == null)
+        {
+            await ReplyAsync("User not found. Are you sure they are in this server?\n" +
+                             $"To refresh the cached memberlist on your server, use `{prfx}refreshmembers`.");
+            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            return;
+        }
+
+        if (guildUser.BlockedFromCrowns)
         {
             await ReplyAsync("The user you're trying to block from gaining crowns has already been blocked on this server.");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);

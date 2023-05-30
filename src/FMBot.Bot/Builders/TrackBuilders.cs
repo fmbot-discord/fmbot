@@ -231,8 +231,6 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
-
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
             userId: context.ContextUser.UserId);
@@ -245,17 +243,18 @@ public class TrackBuilders
 
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
-        var guild = await guildTask;
+        var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guild.GuildId, track.Track.ArtistName, track.Track.TrackName);
+        var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers,guild.GuildId, track.Track.ArtistName, track.Track.TrackName);
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.DiscordUser.Id);
-        var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithTrack, guild, discordGuildUser, context.ContextUser);
+        var currentUser = await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
         await this._indexService.UpdateGuildUser(await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId), currentUser.UserId, guild);
 
         usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
-        var filteredUsersWithTrack = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild);
+        var (filterStats, filteredUsersWithTrack) = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild);
 
         string albumCoverUrl = null;
         if (track.Track.AlbumName != null)
@@ -305,14 +304,9 @@ public class TrackBuilders
             footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
         }
 
-        if (usersWithTrack.Count > filteredUsersWithTrack.Count && !guild.WhoKnowsWhitelistRoleId.HasValue)
+        if (filterStats.FullDescription != null)
         {
-            var filteredAmount = usersWithTrack.Count - filteredUsersWithTrack.Count;
-            footer += $"\n{filteredAmount} inactive/blocked users filtered";
-        }
-        if (guild.WhoKnowsWhitelistRoleId.HasValue)
-        {
-            footer += $"\nUsers with WhoKnows whitelisted role only";
+            footer += $"\n{filterStats.FullDescription}";
         }
 
         response.Embed.WithTitle($"{trackName} in {context.DiscordGuild.Name}");
@@ -348,6 +342,7 @@ public class TrackBuilders
         }
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild?.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
@@ -359,7 +354,7 @@ public class TrackBuilders
 
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
-        var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(context.DiscordGuild, guild?.GuildId ?? 0, context.ContextUser.UserId, track.Track.ArtistName, track.Track.TrackName);
+        var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(context.DiscordGuild, guildUsers, guild?.GuildId ?? 0, context.ContextUser.UserId, track.Track.ArtistName, track.Track.TrackName);
 
         usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
@@ -436,8 +431,6 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var guildTask = this._guildService.GetGuildWithGuildUsers(context.DiscordGuild?.Id);
-
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
             userId: context.ContextUser.UserId);
@@ -460,12 +453,12 @@ public class TrackBuilders
 
         if (context.DiscordGuild != null)
         {
-            var guild = await guildTask;
+            var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
             filteredUsersWithTrack =
-                WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithTrack, guild.GuildUsers.ToList());
+                WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithTrack, guildUsers);
 
-            if (settings.AdminView && guild.SpecialGuild == true)
+            if (settings.AdminView)
             {
                 privacyLevel = PrivacyLevel.Server;
             }

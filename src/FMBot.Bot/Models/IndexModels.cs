@@ -1,6 +1,3 @@
-using System;
-using FMBot.Domain.Models;
-
 namespace FMBot.Bot.Models;
 
 public class IndexedUserUpdateDto
@@ -11,5 +8,5 @@ public class IndexedUserUpdateDto
 
     public int UserId { get; set; }
 
-    public bool? WhoKnowsWhitelisted { get; set; }
+    public decimal[] Roles { get; set; }
 }

@@ -18,7 +18,7 @@ public class PremiumSettingBuilder
         this._guildService = guildService;
     }
 
-    public async Task<ResponseModel> AllowedRoles(ContextModel context)
+    public async Task<ResponseModel> AllowedRoles(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -31,6 +31,7 @@ public class PremiumSettingBuilder
             .WithPlaceholder("Pick allowed roles")
             .WithCustomId(InteractionConstants.SetAllowedRoleMenu)
             .WithType(ComponentType.RoleSelect)
+            .WithMinValues(0)
             .WithMaxValues(25);
 
         response.Embed.WithTitle("Set server allowed roles");
@@ -58,7 +59,15 @@ public class PremiumSettingBuilder
         }
 
         response.Embed.WithDescription(description.ToString());
-        response.Embed.WithFooter("✨ Premium server");
+
+        var footer = new StringBuilder();
+        footer.AppendLine("✨ Premium server");
+        if (lastModifier != null)
+        {
+            footer.AppendLine($"Last modified by {lastModifier.Username}");
+        }
+        response.Embed.WithFooter(footer.ToString());
+
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         response.Components = new ComponentBuilder().WithSelectMenu(fmType);
@@ -66,7 +75,7 @@ public class PremiumSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> BlockedRoles(ContextModel context)
+    public async Task<ResponseModel> BlockedRoles(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -77,8 +86,9 @@ public class PremiumSettingBuilder
 
         var fmType = new SelectMenuBuilder()
             .WithPlaceholder("Pick blocked roles")
-            .WithCustomId(InteractionConstants.SetAllowedRoleMenu)
+            .WithCustomId(InteractionConstants.SetBlockedRoleMenu)
             .WithType(ComponentType.RoleSelect)
+            .WithMinValues(0)
             .WithMaxValues(25);
 
         response.Embed.WithTitle("Set server blocked roles");
@@ -106,7 +116,15 @@ public class PremiumSettingBuilder
         }
 
         response.Embed.WithDescription(description.ToString());
-        response.Embed.WithFooter("✨ Premium server");
+
+        var footer = new StringBuilder();
+        footer.AppendLine("✨ Premium server");
+        if (lastModifier != null)
+        {
+            footer.AppendLine($"Last modified by {lastModifier.Username}");
+        }
+        response.Embed.WithFooter(footer.ToString());
+
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         response.Components = new ComponentBuilder().WithSelectMenu(fmType);

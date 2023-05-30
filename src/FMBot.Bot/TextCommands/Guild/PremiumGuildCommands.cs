@@ -55,8 +55,6 @@ public class PremiumGuildCommands : BaseCommandModule
     [RequiresIndex]
     public async Task SetAllowedRoles([Remainder] string unused = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await ReplyAsync(Constants.FmbotStaffOnly);
@@ -87,8 +85,6 @@ public class PremiumGuildCommands : BaseCommandModule
     [RequiresIndex]
     public async Task SetBlockedRoles([Remainder] string unused = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             await ReplyAsync(Constants.FmbotStaffOnly);

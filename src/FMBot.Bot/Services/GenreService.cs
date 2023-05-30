@@ -282,7 +282,7 @@ public class GenreService
 
     public async Task<ICollection<WhoKnowsObjectWithUser>> GetUsersWithGenreForUserArtists(
         IEnumerable<UserArtist> userArtists,
-        ICollection<GuildUser> guildUsers)
+        IDictionary<int, FullGuildUser> guildUsers)
     {
         await CacheAllArtistGenres();
 
@@ -297,8 +297,7 @@ public class GenreService
             }
             else
             {
-                var guildUser = guildUsers.FirstOrDefault(f => f.UserId == user.UserId);
-                if (guildUser == null)
+                if (!guildUsers.TryGetValue(user.UserId, out var guildUser))
                 {
                     continue;
                 }
@@ -308,13 +307,12 @@ public class GenreService
                     UserId = user.UserId,
                     Playcount = user.Playcount,
                     DiscordName = guildUser.UserName,
-                    LastFMUsername = guildUser.User.UserNameLastFM,
+                    LastFMUsername = guildUser.UserNameLastFM,
                     Name = guildUser.UserName,
-                    PrivacyLevel = guildUser.User.PrivacyLevel,
-                    RegisteredLastFm = guildUser.User.RegisteredLastFm,
-                    LastUsed = guildUser.User.LastUsed,
-                    WhoKnowsWhitelisted = guildUser.WhoKnowsWhitelisted
-                });
+                    LastUsed = guildUser.LastUsed,
+                    LastMessage = guildUser.LastMessage,
+                    Roles = guildUser.Roles
+            });
             }
         }
 
@@ -400,20 +398,8 @@ public class GenreService
             .ToList();
     }
 
-    public static string GenresToString(List<ArtistGenre> genres)
+    public static string GenresToString(IEnumerable<ArtistGenre> genres)
     {
-        var genreString = new StringBuilder();
-        for (var i = 0; i < genres.Count; i++)
-        {
-            if (i != 0)
-            {
-                genreString.Append(" - ");
-            }
-
-            var genre = genres[i];
-            genreString.Append($"{genre.Name}");
-        }
-
-        return genreString.ToString();
+        return StringService.StringListToLongString(genres.Select(s => s.Name).ToList());
     }
 }
