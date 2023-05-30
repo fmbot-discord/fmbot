@@ -29,7 +29,7 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var fmType = new SelectMenuBuilder()
+        var allowedRoles = new SelectMenuBuilder()
             .WithPlaceholder("Pick allowed roles")
             .WithCustomId(InteractionConstants.SetAllowedRoleMenu)
             .WithType(ComponentType.RoleSelect)
@@ -72,7 +72,7 @@ public class PremiumSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder().WithSelectMenu(fmType);
+        response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
 
         return response;
     }
@@ -86,7 +86,7 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var fmType = new SelectMenuBuilder()
+        var blockedRoles = new SelectMenuBuilder()
             .WithPlaceholder("Pick blocked roles")
             .WithCustomId(InteractionConstants.SetBlockedRoleMenu)
             .WithType(ComponentType.RoleSelect)
@@ -129,7 +129,7 @@ public class PremiumSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder().WithSelectMenu(fmType);
+        response.Components = new ComponentBuilder().WithSelectMenu(blockedRoles);
 
         return response;
     }
@@ -143,7 +143,7 @@ public class PremiumSettingBuilder
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
-        var fmType = new SelectMenuBuilder()
+        var botManagementRoles = new SelectMenuBuilder()
             .WithPlaceholder("Pick bot management roles")
             .WithCustomId(InteractionConstants.SetBotManagementRoleMenu)
             .WithType(ComponentType.RoleSelect)
@@ -191,7 +191,7 @@ public class PremiumSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        response.Components = new ComponentBuilder().WithSelectMenu(fmType);
+        response.Components = new ComponentBuilder().WithSelectMenu(botManagementRoles);
 
         return response;
     }

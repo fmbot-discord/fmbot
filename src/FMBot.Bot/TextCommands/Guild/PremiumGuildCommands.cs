@@ -56,7 +56,7 @@ public class PremiumGuildCommands : BaseCommandModule
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync("This command is not quite ready yet. Stay tuned!");
+            await ReplyAsync(Constants.GetPremiumServer);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -86,7 +86,7 @@ public class PremiumGuildCommands : BaseCommandModule
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync("This command is not quite ready yet. Stay tuned!");
+            await ReplyAsync(Constants.GetPremiumServer);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -116,7 +116,7 @@ public class PremiumGuildCommands : BaseCommandModule
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync("This command is not quite ready yet. Stay tuned!");
+            await ReplyAsync(Constants.GetPremiumServer);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -146,7 +146,7 @@ public class PremiumGuildCommands : BaseCommandModule
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync("This command is not quite ready yet. Stay tuned!");
+            await ReplyAsync(Constants.GetPremiumServer);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -176,7 +176,7 @@ public class PremiumGuildCommands : BaseCommandModule
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync("This command is not quite ready yet. Stay tuned!");
+            await ReplyAsync(Constants.GetPremiumServer);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }

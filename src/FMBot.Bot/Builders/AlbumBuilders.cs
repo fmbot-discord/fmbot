@@ -312,7 +312,9 @@ public class AlbumBuilders
     public async Task<ResponseModel> WhoKnowsAlbumAsync(
         ContextModel context,
         WhoKnowsMode mode,
-        string albumValues)
+        string albumValues,
+        bool displayRoleSelector = false,
+        List<ulong> roles = null)
     {
         var response = new ResponseModel
         {
@@ -328,7 +330,7 @@ public class AlbumBuilders
             return album.Response;
         }
 
-        var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album.Album);
+        var cachedAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album.Album);
         var fullAlbumName = $"{album.Album.AlbumName} by {album.Album.ArtistName}";
 
         var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
@@ -342,12 +344,12 @@ public class AlbumBuilders
 
         usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser, fullAlbumName, context.DiscordGuild, album.Album.UserPlaycount);
 
-        var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
+        var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild, roles);
 
         var albumCoverUrl = album.Album.AlbumCoverUrl;
-        if (databaseAlbum.SpotifyImageUrl != null)
+        if (cachedAlbum.SpotifyImageUrl != null)
         {
-            albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+            albumCoverUrl = cachedAlbum.SpotifyImageUrl;
         }
         if (albumCoverUrl != null)
         {
@@ -437,6 +439,25 @@ public class AlbumBuilders
 
         response.EmbedFooter.WithText(footer);
         response.Embed.WithFooter(response.EmbedFooter);
+
+        if (displayRoleSelector)
+        {
+            if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+            {
+                var allowedRoles = new SelectMenuBuilder()
+                    .WithPlaceholder("Apply role filter..")
+                    .WithCustomId($"{InteractionConstants.WhoKnowsAlbumRolePicker}-{cachedAlbum.Id}")
+                    .WithType(ComponentType.RoleSelect)
+                    .WithMinValues(0)
+                    .WithMaxValues(25);
+
+                response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+            }
+            else
+            {
+                //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
+            }
+        }
 
         return response;
     }

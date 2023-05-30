@@ -457,6 +457,13 @@ public class ArtistsService
         return correctedArtistName;
     }
 
+    public async Task<Artist> GetArtistForId(int artistId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.Artists.FindAsync(artistId);
+    }
+
     public async Task<Artist> GetArtistFromDatabase(string artistName)
     {
         if (string.IsNullOrWhiteSpace(artistName))

@@ -62,6 +62,8 @@ public static class Constants
 
     public const int StreakSaveThreshold = 25;
 
+    public const string GetPremiumServer = "This feature is not quite ready yet. Stay tuned!";
+
     public static readonly int[] PlayCountBreakPoints = {
         50,
         100,

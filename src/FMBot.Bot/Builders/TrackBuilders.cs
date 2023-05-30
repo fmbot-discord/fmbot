@@ -224,7 +224,9 @@ public class TrackBuilders
     public async Task<ResponseModel> WhoKnowsTrackAsync(
         ContextModel context,
         WhoKnowsMode mode,
-        string trackValues)
+        string trackValues,
+        bool displayRoleSelector = false,
+        List<ulong> roles = null)
     {
         var response = new ResponseModel
         {
@@ -239,7 +241,7 @@ public class TrackBuilders
             return track.Response;
         }
 
-        await this._spotifyService.GetOrStoreTrackAsync(track.Track);
+        var cachedTrack = await this._spotifyService.GetOrStoreTrackAsync(track.Track);
 
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
@@ -254,7 +256,7 @@ public class TrackBuilders
 
         usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
-        var (filterStats, filteredUsersWithTrack) = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild);
+        var (filterStats, filteredUsersWithTrack) = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild, roles);
 
         string albumCoverUrl = null;
         if (track.Track.AlbumName != null)
@@ -318,6 +320,25 @@ public class TrackBuilders
 
         response.EmbedFooter.WithText(footer);
         response.Embed.WithFooter(response.EmbedFooter);
+
+        if (displayRoleSelector)
+        {
+            if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+            {
+                var allowedRoles = new SelectMenuBuilder()
+                    .WithPlaceholder("Apply role filter..")
+                    .WithCustomId($"{InteractionConstants.WhoKnowsTrackRolePicker}-{cachedTrack.Id}")
+                    .WithType(ComponentType.RoleSelect)
+                    .WithMinValues(0)
+                    .WithMaxValues(25);
+
+                response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+            }
+            else
+            {
+                //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
+            }
+        }
 
         return response;
     }

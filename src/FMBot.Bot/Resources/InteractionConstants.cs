@@ -69,4 +69,9 @@ public static class InteractionConstants
 
     public const string ToggleGuildCommandAddModal = "toggle-guild-command-modal-add";
     public const string ToggleGuildCommandRemoveModal = "toggle-guild-command-modal-remove";
+
+    public const string WhoKnowsRolePicker = "whoknows-role-picker";
+    public const string WhoKnowsAlbumRolePicker = "whoknows-album-role-picker";
+    public const string WhoKnowsTrackRolePicker = "whoknows-track-role-picker";
+
 }

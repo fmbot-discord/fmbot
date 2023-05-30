@@ -11,6 +11,7 @@ using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -737,16 +738,16 @@ public class ArtistBuilders
         return response;
     }
 
-    public async Task<ResponseModel> WhoKnowsArtistAsync(
-        ContextModel context,
+    public async Task<ResponseModel> WhoKnowsArtistAsync(ContextModel context,
         WhoKnowsMode mode,
-        string artistValues)
+        string artistValues,
+        bool displayRoleSelector = false,
+        List<ulong> roles = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
-
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
@@ -777,10 +778,10 @@ public class ArtistBuilders
 
         usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
-        var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, contextGuild);
+        var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, contextGuild, roles);
 
         CrownModel crownModel = null;
-        if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1)
+        if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector)
         {
             crownModel =
                 await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, contextGuild, artistSearch.Artist.ArtistName);
@@ -871,6 +872,25 @@ public class ArtistBuilders
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
             response.Embed.WithThumbnailUrl(imgUrl);
+        }
+
+        if (displayRoleSelector)
+        {
+            if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+            {
+                var allowedRoles = new SelectMenuBuilder()
+                    .WithPlaceholder("Apply role filter..")
+                    .WithCustomId($"{InteractionConstants.WhoKnowsRolePicker}-{cachedArtist.Id}")
+                    .WithType(ComponentType.RoleSelect)
+                    .WithMinValues(0)
+                    .WithMaxValues(25);
+
+                response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+            }
+            else
+            {
+                //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
+            }
         }
 
         return response;

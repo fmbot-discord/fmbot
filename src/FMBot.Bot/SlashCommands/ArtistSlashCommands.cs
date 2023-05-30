@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -24,6 +25,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     private readonly SettingService _settingService;
     private readonly LastFmRepository _lastFmRepository;
     private readonly GuildService _guildService;
+    private readonly ArtistsService _artistsService;
 
     private InteractiveService Interactivity { get; }
 
@@ -32,7 +34,8 @@ public class ArtistSlashCommands : InteractionModuleBase
         SettingService settingService,
         InteractiveService interactivity,
         LastFmRepository lastFmRepository,
-        GuildService guildService)
+        GuildService guildService,
+        ArtistsService artistsService)
     {
         this._userService = userService;
         this._artistBuilders = artistBuilders;
@@ -40,6 +43,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         this.Interactivity = interactivity;
         this._lastFmRepository = lastFmRepository;
         this._guildService = guildService;
+        this._artistsService = artistsService;
     }
 
     [SlashCommand("artist", "Shows artist info for the artist you're currently listening to or searching for")]
@@ -129,7 +133,8 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task WhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null)
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false)
     {
         _ = DeferAsync();
 
@@ -139,9 +144,41 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode.Value, name);
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode.Value, name, displayRoleFilter);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.WhoKnowsRolePicker}-*")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task WhoKnowsFilteringAsync(string artistId, string[] inputs)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+
+        var roleIds = new List<ulong>();
+        if (inputs != null)
+        {
+            foreach (var input in inputs)
+            {
+                var roleId = ulong.Parse(input);
+                roleIds.Add(roleId);
+            }
+        }
+
+        try
+        {
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), WhoKnowsMode.Embed, artist.Name, true, roleIds);
+
+            await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

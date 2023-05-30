@@ -445,6 +445,13 @@ public class SettingService
             whoKnowsSettings.AdminView = true;
         }
 
+        var roleFilter = new[] { "rf", "rolefilter", "rolepicker", "roleselector" };
+        if (Contains(extraOptions, roleFilter))
+        {
+            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, roleFilter);
+            whoKnowsSettings.DisplayRoleFilter = true;
+        }
+
         return whoKnowsSettings;
     }
 

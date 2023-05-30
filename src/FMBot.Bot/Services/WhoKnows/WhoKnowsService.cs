@@ -72,12 +72,14 @@ public class WhoKnowsService
 
     public static (FilterStats stats, List<WhoKnowsObjectWithUser>) FilterGuildUsersAsync(
         ICollection<WhoKnowsObjectWithUser> users,
-        Persistence.Domain.Models.Guild guild)
+        Persistence.Domain.Models.Guild guild,
+        List<ulong> roles = null)
     {
         var stats = new FilterStats
         {
             StartCount = users.Count,
-            RequesterFiltered = false
+            RequesterFiltered = false,
+            Roles = roles
         };
 
         if (guild.ActivityThresholdDays.HasValue)
@@ -137,6 +139,16 @@ public class WhoKnowsService
                 .ToList();
 
             stats.BlockedRolesFiltered = preFilterCount - users.Count;
+        }
+        if (roles != null && roles.Any())
+        {
+            var preFilterCount = users.Count;
+
+            users = users
+                .Where(w => w.Roles != null && roles.Any(a => w.Roles.Contains(a)))
+                .ToList();
+
+            stats.ManualRoleFilter = preFilterCount - users.Count;
         }
 
         stats.EndCount = users.Count;
