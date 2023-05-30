@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
@@ -473,14 +474,14 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<bool> UserIsAllowed(IInteractionContext context, bool managersAllowed = true)
+    public async Task<bool> UserIsAllowed(ContextModel context, bool managersAllowed = true)
     {
-        if (context.Guild == null)
+        if (context.DiscordGuild == null)
         {
             return false;
         }
 
-        var guildUser = (IGuildUser)context.User;
+        var guildUser = (IGuildUser)context.DiscordUser;
 
         if (guildUser.GuildPermissions.BanMembers ||
             guildUser.GuildPermissions.Administrator)
@@ -488,14 +489,14 @@ public class GuildSettingBuilder
             return true;
         }
 
-        if (await this._adminService.HasCommandAccessAsync(context.User, UserType.Admin))
+        if (await this._adminService.HasCommandAccessAsync(context.DiscordUser, UserType.Admin))
         {
             return true;
         }
 
         if (managersAllowed)
         {
-            var guild = await this._guildService.GetGuildAsync(context.Guild.Id);
+            var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
             if (guild.BotManagementRoles != null &&
                 guild.BotManagementRoles.Any() &&
                 guildUser.RoleIds.Any(a => guild.BotManagementRoles.Contains(a)))
@@ -507,7 +508,7 @@ public class GuildSettingBuilder
         return false;
     }
 
-    public static async Task UserNotAllowedResponse(IInteractionContext context, bool managersAllowed = true)
+    public static string UserNotAllowedResponseText(bool managersAllowed = true)
     {
         var response = new StringBuilder();
         response.AppendLine("You are not authorized to change this .fmbot setting.");
@@ -520,7 +521,12 @@ public class GuildSettingBuilder
             response.AppendLine("- A role that is allowed to manage the bot");
         }
 
-        await context.Interaction.RespondAsync(response.ToString(), ephemeral: true);
+        return response.ToString();
+    }
+
+    public static async Task UserNotAllowedResponse(IInteractionContext context, bool managersAllowed = true)
+    {
+        await context.Interaction.RespondAsync(UserNotAllowedResponseText(managersAllowed), ephemeral: true);
     }
 
     public async Task<ResponseModel> BlockedUsersAsync(

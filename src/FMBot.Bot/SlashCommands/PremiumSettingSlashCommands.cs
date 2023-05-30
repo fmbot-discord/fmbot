@@ -36,7 +36,7 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task SetGuildAllowedRoles(string[] inputs)
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -66,7 +66,7 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task SetGuildBlockedRoles(string[] inputs)
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
@@ -96,7 +96,7 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task SetBotManagementRoles(string[] inputs)
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context, managersAllowed: false))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context), managersAllowed: false))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context, managersAllowed: false);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);

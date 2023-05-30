@@ -79,11 +79,9 @@ public class UserGuildSettingCommands : BaseCommandModule
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -167,11 +165,9 @@ public class UserGuildSettingCommands : BaseCommandModule
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -234,11 +230,9 @@ public class UserGuildSettingCommands : BaseCommandModule
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -249,106 +243,5 @@ public class UserGuildSettingCommands : BaseCommandModule
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
-    }
-
-
-    //[Command("whoknowswhitelist", RunMode = RunMode.Async)]
-    //[Summary("Configures the WhoKnows charts to only show members with a specified role.\n\n" +
-    //         "After changing your whitelist setting, you will most likely need to index the server again for it to take effect.\n\n" +
-    //         "To remove the current whitelist setting, use this command without an option")]
-    //[Examples("whoknowswhitelist", "whoknowswhitelist royals", "whoknowswhitelist 423946236102705154")]
-    //[Alias("wkwhitelist", "wkwl")]
-    //[GuildOnly]
-    //[RequiresIndex]
-    public async Task SetWhoKnowsWhitelistRoleAsync([Remainder] string roleQuery = null)
-    {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        if (string.IsNullOrWhiteSpace(roleQuery))
-        {
-            _ = this.Context.Channel.TriggerTypingAsync();
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
-            this._embed.WithTitle($"WhoKnows whitelist settings for {this.Context.Guild.Name}");
-
-            if (guild.WhoKnowsWhitelistRoleId.HasValue)
-            {
-                this._embed.AddField("Current setting",
-                    $"WhoKnows whitelist role is <@&{guild.WhoKnowsWhitelistRoleId.Value}>. Only users with this role will show up in WhoKnows and in server charts.");
-
-                this._embed.AddField("Configuring this setting",
-                    $"- To remove the whitelist role, use: \n`{prfx}whoknowswhitelist remove`.\n" +
-                    $"- To change it to a different role, use: \n`{prfx}whoknowswhitelist rolename/roleid`");
-
-                this._embed.AddField("Server statistics",
-                    $"- {guild.GuildUsers.Count} registered .fmbot members | {guild.GuildUsers.Count(c => c.WhoKnowsWhitelisted == true)} whitelisted users");
-            }
-            else
-            {
-                this._embed.AddField("Current setting",
-                    $"WhoKnows whitelist role is not enabled. All users will show up in WhoKnows and server charts.");
-
-                this._embed.AddField("Configuring this setting",
-                    $"- To enable this setting for your server, use: \n`{prfx}whoknowswhitelist rolename/roleid`");
-
-                this._embed.AddField("Server statistics",
-                    $"- {guild.GuildUsers.Count} registered .fmbot members");
-            }
-
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
-            await ReplyAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
-
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            await ReplyAsync(Constants.ServerStaffOnly);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
-
-        if (roleQuery.ToLower() == "remove" || roleQuery.ToLower() == "delete")
-        {
-            await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, null);
-            await this._guildService.StaleGuildLastIndexedAsync(this.Context.Guild);
-
-            this._embed.WithTitle("Removed whitelist role for WhoKnows!");
-            this._embed.WithDescription($"Please run `{prfx}refreshmembers` to refresh the cached memberlist.");
-            this._embed.WithColor(DiscordConstants.SuccessColorGreen);
-
-            await ReplyAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
-            return;
-        }
-
-        var role = this.Context.Guild.Roles.FirstOrDefault(f => f.Name.ToLower().Contains(roleQuery.ToLower()));
-
-        if (role == null && roleQuery.Length is >= 17 and <= 19 && ulong.TryParse(roleQuery, out var discordRoleId))
-        {
-            role = this.Context.Guild.Roles.FirstOrDefault(f => f.Id == discordRoleId);
-        }
-
-        if (role == null)
-        {
-            await ReplyAsync("Could not find a role with that name or Id. Please try again.");
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
-            return;
-        }
-
-        await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, role.Id);
-        await this._guildService.StaleGuildLastIndexedAsync(this.Context.Guild);
-
-        this._embed.WithTitle("Successfully set the server's whitelist role for WhoKnows!");
-        this._embed.WithDescription($"Set to <@&{role.Id}>. Only users with this role will now show up in WhoKnows and in server charts.");
-
-        this._embed.AddField("Some things to keep in mind:",
-            $"Some things to keep in mind:\n" +
-            $"- To check all users for the whitelist role you can run `{prfx}refreshmembers`.\n" +
-            $"- If you give someone the whitelist role they will need to run a command before the bot detects the whitelist role.");
-
-        this._embed.WithColor(DiscordConstants.SuccessColorGreen);
-        await ReplyAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
     }
 }

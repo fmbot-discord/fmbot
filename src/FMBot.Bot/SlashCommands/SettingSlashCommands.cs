@@ -90,7 +90,7 @@ public class SettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task GetGuildSetting(string[] inputs)
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             return;
@@ -254,6 +254,13 @@ public class SettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task SetGuildEmbedType(string[] inputs)
     {
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        {
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
         if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
         {
             await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, embedType);
@@ -287,7 +294,7 @@ public class SettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task SetActivityThreshold(string messageId, SetActivityThresholdModal modal)
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             return;
