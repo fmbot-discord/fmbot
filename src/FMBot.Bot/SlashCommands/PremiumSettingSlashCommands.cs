@@ -10,6 +10,8 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
+using Discord.WebSocket;
+using FMBot.Bot.Models.Modals;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -119,6 +121,54 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
 
         await this.DeferAsync();
 
+        await this.Context.UpdateInteractionEmbed(response);
+    }
+
+    [ComponentInteraction(InteractionConstants.SetGuildActivityThreshold)]
+    [ServerStaffOnly]
+    public async Task SetGuildActivityThreshold()
+    {
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        await this.Context.Interaction.RespondWithModalAsync<SetGuildActivityThresholdModal>($"{InteractionConstants.SetGuildActivityThresholdModal}-{message.Id}");
+    }
+
+    [ModalInteraction($"{InteractionConstants.SetGuildActivityThresholdModal}-*")]
+    [ServerStaffOnly]
+    public async Task SetGuildActivityThreshold(string messageId, SetGuildActivityThresholdModal modal)
+    {
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        {
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            return;
+        }
+
+        if (!int.TryParse(modal.Amount, out var result) ||
+            result < 2 ||
+            result > 999)
+        {
+            await RespondAsync($"Please enter a valid number between `2` and `999`.", ephemeral: true);
+            return;
+        }
+
+        await this._guildService.SetGuildActivityThresholdDaysAsync(this.Context.Guild, result);
+
+        var response = await this._premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        await this.Context.UpdateMessageEmbed(response, messageId);
+    }
+
+    [ComponentInteraction(InteractionConstants.RemoveGuildActivityThreshold)]
+    [ServerStaffOnly]
+    public async Task RemoveGuildActivityThreshold()
+    {
+        await this._guildService.SetGuildActivityThresholdDaysAsync(this.Context.Guild, null);
+
+        var response = await this._premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 }

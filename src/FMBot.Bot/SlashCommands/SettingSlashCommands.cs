@@ -125,7 +125,7 @@ public class SettingSlashCommands : InteractionModuleBase
                     break;
                 case GuildSetting.WhoKnowsActivityThreshold:
                     {
-                        response = await this._guildSettingBuilder.SetWhoKnowsActivityThreshold(new ContextModel(this.Context));
+                        response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context));
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
                     }
                     break;
@@ -276,9 +276,9 @@ public class SettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction(InteractionConstants.SetActivityThreshold)]
+    [ComponentInteraction(InteractionConstants.SetFmbotActivityThreshold)]
     [ServerStaffOnly]
-    public async Task SetActivityThreshold()
+    public async Task SetFmbotActivityThreshold()
     {
         var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
 
@@ -287,12 +287,12 @@ public class SettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetActivityThresholdModal>($"{InteractionConstants.SetActivityThresholdModal}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<SetFmbotActivityThresholdModal>($"{InteractionConstants.SetFmbotActivityThresholdModal}-{message.Id}");
     }
 
-    [ModalInteraction($"{InteractionConstants.SetActivityThresholdModal}-*")]
+    [ModalInteraction($"{InteractionConstants.SetFmbotActivityThresholdModal}-*")]
     [ServerStaffOnly]
-    public async Task SetActivityThreshold(string messageId, SetActivityThresholdModal modal)
+    public async Task SetFmbotActivityThreshold(string messageId, SetFmbotActivityThresholdModal modal)
     {
         if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
@@ -308,19 +308,19 @@ public class SettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this._guildService.SetWhoKnowsActivityThresholdDaysAsync(this.Context.Guild, result);
+        await this._guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, result);
 
-        var response = await this._guildSettingBuilder.SetWhoKnowsActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
-    [ComponentInteraction(InteractionConstants.RemoveActivityThreshold)]
+    [ComponentInteraction(InteractionConstants.RemoveFmbotActivityThreshold)]
     [ServerStaffOnly]
-    public async Task RemoveActivityThreshold()
+    public async Task RemoveFmbotActivityThreshold()
     {
-        await this._guildService.SetWhoKnowsActivityThresholdDaysAsync(this.Context.Guild, null);
+        await this._guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, null);
 
-        var response = await this._guildSettingBuilder.SetWhoKnowsActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 

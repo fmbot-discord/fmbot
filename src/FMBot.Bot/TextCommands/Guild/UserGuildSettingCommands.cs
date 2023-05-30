@@ -46,9 +46,9 @@ public class UserGuildSettingCommands : BaseCommandModule
         this._adminService = adminService;
     }
 
-    [Command("activitythreshold", RunMode = RunMode.Async)]
+    [Command("fmbotactivitythreshold", RunMode = RunMode.Async)]
     [Summary("Sets amount of days to filter out users for inactivity. Inactivity is counted by the last date that someone has used .fmbot")]
-    [Alias("setactivitythreshold", "setthreshold")]
+    [Alias("setfmbotactivitythreshold", "setfmbotthreshold", "setfmbothreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
@@ -57,7 +57,7 @@ public class UserGuildSettingCommands : BaseCommandModule
         try
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await this._guildSettingBuilder.SetWhoKnowsActivityThreshold(new ContextModel(this.Context, prfx));
+            var response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context, prfx));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

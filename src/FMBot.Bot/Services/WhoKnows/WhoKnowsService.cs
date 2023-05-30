@@ -39,6 +39,8 @@ public class WhoKnowsService
         var guildUser = new GuildUser
         {
             UserName = discordGuildUser != null ? discordGuildUser.DisplayName : contextUser.UserNameLastFM,
+            Roles = discordGuildUser?.RoleIds?.ToArray(),
+            LastMessage = DateTime.UtcNow,
             User = contextUser
         };
 
@@ -59,8 +61,10 @@ public class WhoKnowsService
             Playcount = userPlaycount,
             LastFMUsername = guildUser.User.UserNameLastFM,
             LastUsed = guildUser.User.LastUsed,
+            LastMessage = guildUser.LastMessage,
             DiscordName = guildUser.UserName,
-            PrivacyLevel = PrivacyLevel.Global
+            PrivacyLevel = PrivacyLevel.Global,
+            Roles = guildUser.Roles
         });
 
         return users.OrderByDescending(o => o.Playcount).ToList();

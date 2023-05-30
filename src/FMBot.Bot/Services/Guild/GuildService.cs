@@ -449,7 +449,7 @@ public class GuildService
         return existingGuild.CrownsDisabled;
     }
 
-    public async Task<bool> SetWhoKnowsActivityThresholdDaysAsync(IGuild discordGuild, int? days)
+    public async Task<bool> SetFmbotActivityThresholdDaysAsync(IGuild discordGuild, int? days)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -463,6 +463,31 @@ public class GuildService
 
         existingGuild.Name = discordGuild.Name;
         existingGuild.ActivityThresholdDays = days;
+        existingGuild.CrownsActivityThresholdDays = days;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+
+        return true;
+    }
+
+    public async Task<bool> SetGuildActivityThresholdDaysAsync(IGuild discordGuild, int? days)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        if (existingGuild == null)
+        {
+            return false;
+        }
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.UserActivityThresholdDays = days;
         existingGuild.CrownsActivityThresholdDays = days;
 
         db.Entry(existingGuild).State = EntityState.Modified;

@@ -240,19 +240,19 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> SetWhoKnowsActivityThreshold(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetFmbotActivityThreshold(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
 
-        response.Embed.WithTitle("Set WhoKnows activity threshold");
+        response.Embed.WithTitle("Set .fmbot activity threshold");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var description = new StringBuilder();
 
-        description.AppendLine($"Setting a WhoKnows activity threshold will filter out people who have not used .fmbot in a certain amount of days. " +
+        description.AppendLine($"Setting a WhoKnows activity threshold will filter out people who have not used .fmbot in a certain amount of days from all server-wide commands. " +
                                $"A user counts as active as soon as they use .fmbot anywhere.");
         description.AppendLine();
         description.AppendLine("This filtering applies to all server-wide commands.");
@@ -264,15 +264,15 @@ public class GuildSettingBuilder
 
         if (!guild.ActivityThresholdDays.HasValue)
         {
-            description.AppendLine("There is currently no activity threshold enabled.");
+            description.AppendLine("There is currently no .fmbot activity threshold enabled.");
             description.AppendLine("To enable, click the button below and enter the amount of days.");
-            components.WithButton("Set activity threshold", InteractionConstants.SetActivityThreshold, style: ButtonStyle.Secondary);
+            components.WithButton("Set activity threshold", InteractionConstants.SetFmbotActivityThreshold, style: ButtonStyle.Secondary);
         }
         else
         {
             description.AppendLine($"✅ Enabled.");
             description.AppendLine($"Anyone who hasn't used .fmbot in the last **{guild.ActivityThresholdDays.Value}** days is currently filtered out.");
-            components.WithButton("Remove activity threshold", $"{InteractionConstants.RemoveActivityThreshold}", style: ButtonStyle.Secondary);
+            components.WithButton("Remove activity threshold", $"{InteractionConstants.RemoveFmbotActivityThreshold}", style: ButtonStyle.Secondary);
         }
 
         response.Embed.WithDescription(description.ToString());
@@ -626,41 +626,6 @@ public class GuildSettingBuilder
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
-        return response;
-    }
-
-    public async Task<ResponseModel> ActivityThreshold(ContextModel context)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed
-        };
-
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
-
-        response.Embed.WithTitle("Set server activity threshold");
-
-        var description = new StringBuilder();
-        description.AppendLine("Select a forced mode for the `fm` command for everyone in this server.");
-        description.AppendLine("This will override whatever mode a user has set themselves.");
-        description.AppendLine();
-        description.AppendLine("To disable, simply de-select the mode you have selected.");
-        description.AppendLine();
-
-        if (guild.FmEmbedType.HasValue)
-        {
-            description.AppendLine($"Current mode: **{guild.FmEmbedType}**.");
-        }
-        else
-        {
-            description.AppendLine($"Current mode: None");
-        }
-
-        response.Embed.WithDescription(description.ToString());
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        response.Components = new ComponentBuilder().WithButton();
-
         return response;
     }
 

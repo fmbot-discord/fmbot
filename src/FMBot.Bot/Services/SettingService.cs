@@ -609,7 +609,8 @@ public class SettingService
             searchValue = searchValue.ToLower().Replace("lfm:", "");
             return await db.Users
                 .AsQueryable()
-                .OrderByDescending(o => o.LastUsed)
+                .OrderByDescending(o => o.LastUsed != null)
+                .ThenByDescending(o => o.LastUsed)
                 .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == searchValue);
         }
 

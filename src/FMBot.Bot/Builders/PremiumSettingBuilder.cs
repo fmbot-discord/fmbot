@@ -1,7 +1,9 @@
+using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services.Guild;
@@ -190,6 +192,65 @@ public class PremiumSettingBuilder
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         response.Components = new ComponentBuilder().WithSelectMenu(fmType);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> SetGuildActivityThreshold(ContextModel context, IUser lastModifier = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithTitle("Set server activity threshold");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var description = new StringBuilder();
+
+        description.AppendLine($"Setting a WhoKnows activity threshold will filter out people who have not talked in your server for a certain amount of days. " +
+                               $"A user counts as active as soon as they talk in a channel in which .fmbot has access.");
+        description.AppendLine();
+        description.AppendLine("This filtering applies to all server-wide commands. " +
+                           "The bot only starts tracking user activity after Premium Server has been activated. Any messages before that time are not included.");
+        description.AppendLine();
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+
+        var components = new ComponentBuilder();
+
+        if (!guild.UserActivityThresholdDays.HasValue)
+        {
+            description.AppendLine("There is currently no server activity threshold enabled.");
+            description.AppendLine("To enable, click the button below and enter the amount of days.");
+            components.WithButton("Set server activity threshold", InteractionConstants.SetGuildActivityThreshold, style: ButtonStyle.Secondary);
+        }
+        else
+        {
+            var guildMembers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+
+            description.AppendLine($"✅ Enabled.");
+            description.AppendLine($"Anyone who hasn't talked in the last **{guild.UserActivityThresholdDays.Value}** days is currently filtered out.");
+
+            var filterDate = DateTime.UtcNow.AddDays(-guild.UserActivityThresholdDays.Value);
+            var activeUserCount = guildMembers.Count(w => w.Value.LastMessage != null && w.Value.LastMessage >= filterDate);
+
+            description.AppendLine($"The bot has seen **{activeUserCount}** {StringExtensions.GetUsersString(activeUserCount)} talk in this time period.");
+
+            components.WithButton("Remove server activity threshold", $"{InteractionConstants.RemoveGuildActivityThreshold}", style: ButtonStyle.Secondary);
+        }
+
+        response.Embed.WithDescription(description.ToString());
+
+        var footer = new StringBuilder();
+        footer.AppendLine("✨ Premium server");
+        if (lastModifier != null)
+        {
+            footer.AppendLine($"Last modified by {lastModifier.Username}");
+        }
+        response.Embed.WithFooter(footer.ToString());
+
+        response.Components = components;
 
         return response;
     }

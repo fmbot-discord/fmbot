@@ -25,23 +25,23 @@ public class FilterStats
         {
             var descriptionList = new List<string>();
 
-            if (this.ActivityThresholdFiltered.HasValue)
+            if (this.ActivityThresholdFiltered is > 0)
             {
                 descriptionList.Add($"{this.ActivityThresholdFiltered.Value} inactive in .fmbot");
             }
-            if (this.GuildActivityThresholdFiltered.HasValue)
+            if (this.GuildActivityThresholdFiltered is > 0)
             {
                 descriptionList.Add($"{this.GuildActivityThresholdFiltered.Value} inactive in server");
             }
-            if (this.BlockedFiltered.HasValue)
+            if (this.BlockedFiltered is > 0)
             {
                 descriptionList.Add($"{this.BlockedFiltered.Value} blocked");
             }
-            if (this.AllowedRolesFiltered.HasValue)
+            if (this.AllowedRolesFiltered is > 0)
             {
                 descriptionList.Add($"{this.AllowedRolesFiltered.Value} without allowed roles");
             }
-            if (this.BlockedRolesFiltered.HasValue)
+            if (this.BlockedRolesFiltered is > 0)
             {
                 descriptionList.Add($"{this.BlockedRolesFiltered.Value} with blocked roles");
             }

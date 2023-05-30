@@ -135,4 +135,64 @@ public class PremiumGuildCommands : BaseCommandModule
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [Command("botmanagementroles", RunMode = RunMode.Async)]
+    [Summary("Sets roles that are allowed to manage .fmbot in this server")]
+    [Alias("managementroles", "staffroles", "adminroles", "modroles", "botroles", "botmangementroles")]
+    [GuildOnly]
+    [ExcludeFromHelp]
+    [RequiresIndex]
+    public async Task SetUserActivityThreshold([Remainder] string unused = null)
+    {
+        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            await ReplyAsync("This command is not quite ready yet. Stay tuned!");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
+        try
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            var response = await this._premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context, prfx));
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("serveractivitythreshold", RunMode = RunMode.Async)]
+    [Summary("Sets roles that are allowed to manage .fmbot in this server")]
+    [Alias("activitythreshold", "guildactivitythreshold", "activitytreshold")]
+    [GuildOnly]
+    [ExcludeFromHelp]
+    [RequiresIndex]
+    public async Task SetGuildActivityThreshold([Remainder] string unused = null)
+    {
+        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            await ReplyAsync("This command is not quite ready yet. Stay tuned!");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
+        try
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            var response = await this._premiumSettingBuilder.SetGuildActivityThreshold(new ContextModel(this.Context, prfx));
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }
