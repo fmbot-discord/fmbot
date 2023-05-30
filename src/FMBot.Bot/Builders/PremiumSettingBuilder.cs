@@ -131,4 +131,66 @@ public class PremiumSettingBuilder
 
         return response;
     }
+
+    public async Task<ResponseModel> BotManagementRoles(ContextModel context, IUser lastModifier = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+
+        var fmType = new SelectMenuBuilder()
+            .WithPlaceholder("Pick bot management roles")
+            .WithCustomId(InteractionConstants.SetBotManagementRoleMenu)
+            .WithType(ComponentType.RoleSelect)
+            .WithMinValues(0)
+            .WithMaxValues(25);
+
+        response.Embed.WithTitle("Set bot management roles");
+
+        var description = new StringBuilder();
+        description.AppendLine("Select the roles that are allowed to change .fmbot settings on this server.");
+        description.AppendLine();
+        description.AppendLine("Users with these roles will be able to:");
+        description.AppendLine("- Change all bot settings (except for this one)");
+        description.AppendLine("- Block and unblock users");
+        description.AppendLine("- Run crownseeder");
+        description.AppendLine("- Manage crowns");
+        description.AppendLine();
+
+        if (guild.BotManagementRoles != null && guild.BotManagementRoles.Any())
+        {
+            description.AppendLine($"**Picked roles:**");
+            foreach (var roleId in guild.BotManagementRoles)
+            {
+                var role = context.DiscordGuild.GetRole(roleId);
+                if (role != null)
+                {
+                    description.AppendLine($"- <@&{roleId}>");
+                }
+            }
+        }
+        else
+        {
+            description.AppendLine($"Picked roles: None");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+
+        var footer = new StringBuilder();
+        footer.AppendLine("✨ Premium server");
+        if (lastModifier != null)
+        {
+            footer.AppendLine($"Last modified by {lastModifier.Username}");
+        }
+        response.Embed.WithFooter(footer.ToString());
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        response.Components = new ComponentBuilder().WithSelectMenu(fmType);
+
+        return response;
+    }
 }

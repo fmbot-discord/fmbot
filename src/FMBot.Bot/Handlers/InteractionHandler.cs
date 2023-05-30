@@ -182,7 +182,7 @@ public class InteractionHandler
         {
             if (!await this._guildSettingBuilder.UserIsAllowed(context))
             {
-                await this._guildSettingBuilder.UserNotAllowedResponse(context);
+                await GuildSettingBuilder.UserNotAllowedResponse(context);
                 context.LogCommandUsed(CommandResponse.NoPermission);
                 return false;
             }

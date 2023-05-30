@@ -92,7 +92,7 @@ public class SettingSlashCommands : InteractionModuleBase
     {
         if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
         {
-            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             return;
         }
 
@@ -289,7 +289,7 @@ public class SettingSlashCommands : InteractionModuleBase
     {
         if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
         {
-            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             return;
         }
 

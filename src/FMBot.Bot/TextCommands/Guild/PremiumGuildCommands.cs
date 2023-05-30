@@ -29,7 +29,6 @@ public class PremiumGuildCommands : BaseCommandModule
 
     private InteractiveService Interactivity { get; }
 
-
     public PremiumGuildCommands(
         IOptions<BotSettings> botSettings,
         InteractiveService interactivity,
@@ -55,9 +54,9 @@ public class PremiumGuildCommands : BaseCommandModule
     [RequiresIndex]
     public async Task SetAllowedRoles([Remainder] string unused = null)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync(Constants.FmbotStaffOnly);
+            await ReplyAsync("This command is not quite ready yet. Stay tuned!");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -78,16 +77,16 @@ public class PremiumGuildCommands : BaseCommandModule
     }
 
     [Command("blockedroles", RunMode = RunMode.Async)]
-    [Summary("Sets roles that are allowed to be in server-wide charts")]
+    [Summary("Sets roles that are blocked from server-wide charts")]
     [Alias("wkwblacklist", "wkblocklist", "whoknowsblaccklist", "whoknowsblocklist")]
     [GuildOnly]
     [ExcludeFromHelp]
     [RequiresIndex]
     public async Task SetBlockedRoles([Remainder] string unused = null)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
-            await ReplyAsync(Constants.FmbotStaffOnly);
+            await ReplyAsync("This command is not quite ready yet. Stay tuned!");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -97,6 +96,36 @@ public class PremiumGuildCommands : BaseCommandModule
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var response = await this._premiumSettingBuilder.BlockedRoles(new ContextModel(this.Context, prfx));
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("botmanagementroles", RunMode = RunMode.Async)]
+    [Summary("Sets roles that are allowed to manage .fmbot in this server")]
+    [Alias("managementroles", "staffroles", "adminroles", "modroles", "botroles", "botmangementroles")]
+    [GuildOnly]
+    [ExcludeFromHelp]
+    [RequiresIndex]
+    public async Task SetBotManagementRoles([Remainder] string unused = null)
+    {
+        if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
+        {
+            await ReplyAsync("This command is not quite ready yet. Stay tuned!");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
+        try
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            var response = await this._premiumSettingBuilder.BotManagementRoles(new ContextModel(this.Context, prfx));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

@@ -441,6 +441,8 @@ public class GuildSettingBuilder
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns... ");
 
+        response.Embed.WithFooter($"Crownseeder initiated by {context.DiscordUser.Username}");
+
         return response;
     }
 
@@ -464,14 +466,14 @@ public class GuildSettingBuilder
         description.AppendLine($"- `{prefix}killallcrowns` (All crowns)");
         description.AppendLine($"- `{prefix}killallseededcrowns` (Only seeded crowns)");
 
-        response.Embed.WithFooter($"Last crownseeder initiated by {context.ContextUser}");
+        response.Embed.WithFooter($"Crownseeder initiated by {context.DiscordUser.Username}");
 
         response.Embed.WithDescription(description.ToString());
 
         return response;
     }
 
-    public async Task<bool> UserIsAllowed(IInteractionContext context)
+    public async Task<bool> UserIsAllowed(IInteractionContext context, bool managersAllowed = true)
     {
         if (context.Guild == null)
         {
@@ -491,28 +493,34 @@ public class GuildSettingBuilder
             return true;
         }
 
-        //var fmbotManagerRole = context.Guild.Roles
-        //    .FirstOrDefault(f => f.Name?.ToLower() == ".fmbot manager");
-        //if (fmbotManagerRole != null &&
-        //    guildUser.RoleIds.Any(a => a == fmbotManagerRole.Id))
-        //{
-        //    return true;
-        //}
+        if (managersAllowed)
+        {
+            var guild = await this._guildService.GetGuildAsync(context.Guild.Id);
+            if (guild.BotManagementRoles != null &&
+                guild.BotManagementRoles.Any() &&
+                guildUser.RoleIds.Any(a => guild.BotManagementRoles.Contains(a)))
+            {
+                return true;
+            }
+        }
 
         return false;
     }
 
-    public async Task<bool> UserNotAllowedResponse(IInteractionContext context)
+    public static async Task UserNotAllowedResponse(IInteractionContext context, bool managersAllowed = true)
     {
         var response = new StringBuilder();
         response.AppendLine("You are not authorized to change this .fmbot setting.");
         response.AppendLine();
-        response.AppendLine("To change .fmbot settings, you must have the `Ban Members` permission or be an administrator.");
-        //response.AppendLine("- A role with the name `.fmbot manager`");
+        response.AppendLine("To change .fmbot settings, you have at least one of the following:");
+        response.AppendLine("- `Administrator` permission");
+        response.AppendLine("- `Ban Members` permission");
+        if (managersAllowed)
+        {
+            response.AppendLine("- A role that is allowed to manage the bot");
+        }
 
         await context.Interaction.RespondAsync(response.ToString(), ephemeral: true);
-
-        return false;
     }
 
     public async Task<ResponseModel> BlockedUsersAsync(

@@ -122,8 +122,6 @@ public class GuildService
                            "gu.guild_id, " +
                            "gu.user_name, " +
                            "gu.bot, " +
-                           "gu.who_knows_whitelisted, " +
-                           "gu.who_knows_blocked, " +
                            "gu.last_message, " +
                            "gu.roles AS dto_roles, " +
                            "u.user_name_last_fm, " +
@@ -289,6 +287,23 @@ public class GuildService
 
         existingGuild.Name = discordGuild.Name;
         existingGuild.BlockedRoles = blockedRoles;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+    }
+
+    public async Task ChangeGuildBotManagementRoles(IGuild discordGuild, ulong[] botManagementRoles)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.BotManagementRoles = botManagementRoles;
 
         db.Entry(existingGuild).State = EntityState.Modified;
 
