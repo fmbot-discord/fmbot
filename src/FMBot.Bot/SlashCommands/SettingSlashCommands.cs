@@ -90,9 +90,9 @@ public class SettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task GetGuildSetting(string[] inputs)
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
-            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             return;
         }
 
@@ -125,7 +125,7 @@ public class SettingSlashCommands : InteractionModuleBase
                     break;
                 case GuildSetting.WhoKnowsActivityThreshold:
                     {
-                        response = await this._guildSettingBuilder.SetWhoKnowsActivityThreshold(new ContextModel(this.Context));
+                        response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context));
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
                     }
                     break;
@@ -235,7 +235,7 @@ public class SettingSlashCommands : InteractionModuleBase
             this._prefixService.StorePrefix(modal.NewPrefix, this.Context.Guild.Id);
         }
 
-        var response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -246,7 +246,7 @@ public class SettingSlashCommands : InteractionModuleBase
         await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
         this._prefixService.StorePrefix(null, this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -254,6 +254,13 @@ public class SettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task SetGuildEmbedType(string[] inputs)
     {
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        {
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
         if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
         {
             await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, embedType);
@@ -264,14 +271,14 @@ public class SettingSlashCommands : InteractionModuleBase
 
         }
 
-        var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context), this.Context.User);
 
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction(InteractionConstants.SetActivityThreshold)]
+    [ComponentInteraction(InteractionConstants.SetFmbotActivityThreshold)]
     [ServerStaffOnly]
-    public async Task SetActivityThreshold()
+    public async Task SetFmbotActivityThreshold()
     {
         var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
 
@@ -280,16 +287,16 @@ public class SettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetActivityThresholdModal>($"{InteractionConstants.SetActivityThresholdModal}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<SetFmbotActivityThresholdModal>($"{InteractionConstants.SetFmbotActivityThresholdModal}-{message.Id}");
     }
 
-    [ModalInteraction($"{InteractionConstants.SetActivityThresholdModal}-*")]
+    [ModalInteraction($"{InteractionConstants.SetFmbotActivityThresholdModal}-*")]
     [ServerStaffOnly]
-    public async Task SetActivityThreshold(string messageId, SetActivityThresholdModal modal)
+    public async Task SetFmbotActivityThreshold(string messageId, SetFmbotActivityThresholdModal modal)
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(this.Context))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
-            await this._guildSettingBuilder.UserNotAllowedResponse(this.Context);
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             return;
         }
 
@@ -301,19 +308,19 @@ public class SettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this._guildService.SetWhoKnowsActivityThresholdDaysAsync(this.Context.Guild, result);
+        await this._guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, result);
 
-        var response = await this._guildSettingBuilder.SetWhoKnowsActivityThreshold(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
-    [ComponentInteraction(InteractionConstants.RemoveActivityThreshold)]
+    [ComponentInteraction(InteractionConstants.RemoveFmbotActivityThreshold)]
     [ServerStaffOnly]
-    public async Task RemoveActivityThreshold()
+    public async Task RemoveFmbotActivityThreshold()
     {
-        await this._guildService.SetWhoKnowsActivityThresholdDaysAsync(this.Context.Guild, null);
+        await this._guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, null);
 
-        var response = await this._guildSettingBuilder.SetWhoKnowsActivityThreshold(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -345,7 +352,7 @@ public class SettingSlashCommands : InteractionModuleBase
 
         await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, result);
 
-        var response = await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -355,7 +362,7 @@ public class SettingSlashCommands : InteractionModuleBase
     {
         await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, null);
 
-        var response = await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -388,7 +395,7 @@ public class SettingSlashCommands : InteractionModuleBase
 
         await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, result);
 
-        var response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -398,18 +405,18 @@ public class SettingSlashCommands : InteractionModuleBase
     {
         await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, null);
 
-        var response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommandMove}-*-*")]
     [ServerStaffOnly]
-    public async Task SetGuildEmbedType(string channelId, string categoryId)
+    public async Task ToggleChannelCommandMove(string channelId, string categoryId)
     {
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -467,7 +474,7 @@ public class SettingSlashCommands : InteractionModuleBase
 
         await this._channelDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
 
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
@@ -518,7 +525,7 @@ public class SettingSlashCommands : InteractionModuleBase
 
         await this._channelDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
 
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
@@ -535,7 +542,7 @@ public class SettingSlashCommands : InteractionModuleBase
 
         await this._channelDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -552,7 +559,7 @@ public class SettingSlashCommands : InteractionModuleBase
         await this._guildService.DisableChannelAsync(selectedChannel, guild.GuildId, this.Context.Guild.Id);
         await this._disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -568,7 +575,7 @@ public class SettingSlashCommands : InteractionModuleBase
         await this._guildService.EnableChannelAsync(selectedChannel, this.Context.Guild.Id);
         await this._disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -620,7 +627,7 @@ public class SettingSlashCommands : InteractionModuleBase
         await this._guildService.AddGuildDisabledCommandAsync(this.Context.Guild, commandToDisable.Command.Name);
         await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
 
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
@@ -667,7 +674,7 @@ public class SettingSlashCommands : InteractionModuleBase
         await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, commandToEnable.Command.Name);
         await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
 
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
@@ -679,7 +686,7 @@ public class SettingSlashCommands : InteractionModuleBase
         await this._guildService.ClearGuildDisabledCommandAsync(this.Context.Guild);
         await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
+        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
 
         await this.Context.UpdateInteractionEmbed(response);
     }

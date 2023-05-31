@@ -240,12 +240,13 @@ public class AlbumCommands : BaseCommandModule
             var currentSettings = new WhoKnowsSettings
             {
                 WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
-                NewSearchValue = albumValues
+                NewSearchValue = albumValues,
+                DisplayRoleFilter = false
             };
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
-            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, prfx, contextUser), settings.WhoKnowsMode, settings.NewSearchValue);
+            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, prfx, contextUser), settings.WhoKnowsMode, settings.NewSearchValue, settings.DisplayRoleFilter);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

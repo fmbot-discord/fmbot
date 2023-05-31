@@ -111,20 +111,19 @@ public class GuildService
             .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
     }
 
-    public async Task<IList<FullGuildUser>> GetGuildUsers(ulong? discordGuildId = null)
+    public async Task<IDictionary<int, FullGuildUser>> GetGuildUsers(ulong? discordGuildId = null)
     {
         if (discordGuildId == null)
         {
-            return new List<FullGuildUser>();
+            return new Dictionary<int, FullGuildUser>();
         }
 
         const string sql = "SELECT gu.user_id, " +
                            "gu.guild_id, " +
                            "gu.user_name, " +
                            "gu.bot, " +
-                           "gu.who_knows_whitelisted, " +
-                           "gu.who_knows_blocked, " +
                            "gu.last_message, " +
+                           "gu.roles AS dto_roles, " +
                            "u.user_name_last_fm, " +
                            "u.discord_user_id, " +
                            "u.last_used, " +
@@ -140,10 +139,17 @@ public class GuildService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return (await connection.QueryAsync<FullGuildUser>(sql, new
+        var result = (await connection.QueryAsync<FullGuildUser>(sql, new
         {
             discordGuildId = Convert.ToInt64(discordGuildId)
         })).ToList();
+
+        foreach (var row in result.Where(w => w.DtoRoles != null))
+        {
+            row.Roles = row.DtoRoles.Select(s => (ulong)s).ToArray();
+        }
+
+        return result.ToDictionary(d => d.UserId, d => d);
     }
 
     public async Task<List<Persistence.Domain.Models.Guild>> GetPremiumGuilds()
@@ -174,14 +180,14 @@ public class GuildService
         return $"guild-full-{discordGuildId}";
     }
 
-    public static IEnumerable<FullGuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild, IList<FullGuildUser> guildUsers)
+    public static IDictionary<int, FullGuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild, IDictionary<int, FullGuildUser> guildUsers)
     {
         if (guild.ActivityThresholdDays.HasValue)
         {
             guildUsers = guildUsers.Where(w =>
-                    w.LastUsed != null &&
-                    w.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
-                .ToList();
+                    w.Value.LastUsed != null &&
+                    w.Value.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
+                .ToDictionary(i => i.Key, i => i.Value);
         }
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
         {
@@ -192,11 +198,11 @@ public class GuildService
                 .ToHashSet();
 
             guildUsers = guildUsers.Where(w =>
-                    !usersToFilter.Contains(w.UserId))
-                .ToList();
+                    !usersToFilter.Contains(w.Key))
+                .ToDictionary(i => i.Key, i => i.Value);
         }
 
-        return guildUsers.ToList();
+        return guildUsers;
     }
 
     public static async Task<GuildPermissions> GetGuildPermissionsAsync(ICommandContext context)
@@ -247,6 +253,57 @@ public class GuildService
 
         existingGuild.Name = discordGuild.Name;
         existingGuild.LastIndexed = null;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+    }
+
+    public async Task ChangeGuildAllowedRoles(IGuild discordGuild, ulong[] allowedRoles)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.AllowedRoles = allowedRoles;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+    }
+
+    public async Task ChangeGuildBlockedRoles(IGuild discordGuild, ulong[] blockedRoles)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.BlockedRoles = blockedRoles;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+    }
+
+    public async Task ChangeGuildBotManagementRoles(IGuild discordGuild, ulong[] botManagementRoles)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.BotManagementRoles = botManagementRoles;
 
         db.Entry(existingGuild).State = EntityState.Modified;
 
@@ -392,7 +449,7 @@ public class GuildService
         return existingGuild.CrownsDisabled;
     }
 
-    public async Task<bool> SetWhoKnowsActivityThresholdDaysAsync(IGuild discordGuild, int? days)
+    public async Task<bool> SetFmbotActivityThresholdDaysAsync(IGuild discordGuild, int? days)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -406,6 +463,31 @@ public class GuildService
 
         existingGuild.Name = discordGuild.Name;
         existingGuild.ActivityThresholdDays = days;
+        existingGuild.CrownsActivityThresholdDays = days;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+
+        return true;
+    }
+
+    public async Task<bool> SetGuildActivityThresholdDaysAsync(IGuild discordGuild, int? days)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        if (existingGuild == null)
+        {
+            return false;
+        }
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.UserActivityThresholdDays = days;
         existingGuild.CrownsActivityThresholdDays = days;
 
         db.Entry(existingGuild).State = EntityState.Modified;

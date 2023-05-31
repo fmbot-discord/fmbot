@@ -24,19 +24,14 @@ public class WhoKnowsAlbumService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(IGuild discordGuild, int guildId, string artistName, string albumName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(IGuild discordGuild,
+        IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName, string albumName)
     {
         const string sql = "SELECT ub.user_id, " +
                            "ub.name, " +
                            "ub.artist_name, " +
-                           "ub.playcount," +
-                           "u.user_name_last_fm, " +
-                           "u.discord_user_id, " +
-                           "u.last_used, " +
-                           "gu.user_name, " +
-                           "gu.who_knows_whitelisted " +
+                           "ub.playcount " +
                            "FROM user_albums AS ub " +
-                           "FULL OUTER JOIN users AS u ON ub.user_id = u.user_id " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = ub.user_id " +
                            "WHERE gu.guild_id = @guildId AND UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY ub.playcount DESC ";
@@ -58,14 +53,19 @@ public class WhoKnowsAlbumService
         {
             var userAlbum = userAlbums[i];
 
-            var userName = userAlbum.UserName ?? userAlbum.UserNameLastFm;
+            if (!guildUsers.TryGetValue(userAlbum.UserId, out var guildUser))
+            {
+                continue;
+            }
+
+            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
             if (i < 15)
             {
-                var discordUser = await discordGuild.GetUserAsync(userAlbum.DiscordUserId, CacheMode.CacheOnly);
-                if (discordUser != null)
+                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
+                if (discordGuildUser != null)
                 {
-                    userName = discordUser.Nickname ?? discordUser.Username;
+                    userName = discordGuildUser.DisplayName;
                 }
             }
 
@@ -74,10 +74,11 @@ public class WhoKnowsAlbumService
                 DiscordName = userName,
                 Name = $"{albumName} by {artistName}",
                 Playcount = userAlbum.Playcount,
-                LastFMUsername = userAlbum.UserNameLastFm,
+                LastFMUsername = guildUser.UserNameLastFM,
                 UserId = userAlbum.UserId,
-                LastUsed = userAlbum.LastUsed,
-                WhoKnowsWhitelisted = userAlbum.WhoKnowsWhitelisted,
+                Roles = guildUser.Roles,
+                LastUsed = guildUser.LastUsed,
+                LastMessage = guildUser.LastMessage
             });
         }
 
@@ -201,7 +202,8 @@ public class WhoKnowsAlbumService
         }).ToList();
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForAlbum(IGuild discordGuild, int guildId, int userId, string artistName, string albumName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForAlbum(IGuild discordGuild,
+        IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, string artistName, string albumName)
     {
         const string sql = "SELECT ub.user_id, " +
                            "ub.name, " +
@@ -235,14 +237,19 @@ public class WhoKnowsAlbumService
 
         foreach (var userArtist in userArtists)
         {
-            var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
+            if (!guildUsers.TryGetValue(userArtist.UserId, out var guildUser))
+            {
+                continue;
+            }
+
+            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
             if (discordGuild != null)
             {
-                var guildUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
-                if (guildUser != null)
+                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
+                if (discordGuildUser != null)
                 {
-                    userName = guildUser.DisplayName;
+                    userName = discordGuildUser.DisplayName;
                 }
             }
 
@@ -251,7 +258,7 @@ public class WhoKnowsAlbumService
                 Name = $"{albumName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
-                LastFMUsername = userArtist.UserNameLastFm,
+                LastFMUsername = guildUser.UserNameLastFM,
                 UserId = userArtist.UserId,
             });
         }

@@ -9,6 +9,7 @@ using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -180,9 +181,9 @@ public class InteractionHandler
 
         if (attributes.OfType<ServerStaffOnly>().Any())
         {
-            if (!await this._guildSettingBuilder.UserIsAllowed(context))
+            if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(context)))
             {
-                await this._guildSettingBuilder.UserNotAllowedResponse(context);
+                await GuildSettingBuilder.UserNotAllowedResponse(context);
                 context.LogCommandUsed(CommandResponse.NoPermission);
                 return false;
             }

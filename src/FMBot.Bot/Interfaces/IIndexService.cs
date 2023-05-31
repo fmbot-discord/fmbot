@@ -15,7 +15,9 @@ public interface IIndexService
 
     Task<IndexedUserStats> IndexUser(User user);
 
-    Task<GuildUser> GetOrAddUserToGuild(ICollection<WhoKnowsObjectWithUser> users, Guild contextGuild,
+    Task<GuildUser> GetOrAddUserToGuild(
+        IDictionary<int, FullGuildUser> guildUsers,
+        Guild guild,
         IGuildUser discordGuildUser,
         User user);
 
@@ -29,7 +31,7 @@ public interface IIndexService
 
     Task<DateTime?> AddUserRegisteredLfmDate(int userId);
 
-    Task<(int, int?)> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
+    Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
     Task<IReadOnlyList<User>> GetUsersToFullyUpdate(IReadOnlyCollection<IGuildUser> discordGuildUsers);
 

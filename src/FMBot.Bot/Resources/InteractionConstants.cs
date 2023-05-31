@@ -10,6 +10,15 @@ public static class InteractionConstants
 
     public const string FmGuildSettingType = "fm-guild-type-menu";
 
+    public const string SetAllowedRoleMenu = "guild-allowed-roles-menu";
+    public const string SetBlockedRoleMenu = "guild-blocked-roles-menu";
+    public const string SetBotManagementRoleMenu = "guild-bot-management-roles-menu";
+
+    public const string SetGuildActivityThreshold = "set-guild-activity-threshold";
+    public const string SetGuildActivityThresholdModal = "set-guild-activity-threshold-modal";
+    public const string RemoveGuildActivityThreshold = "remove-guild-activity-threshold";
+
+
     public const string CensorTypes = "admin-censor-*";
 
     public const string GlobalWhoKnowsReport = "gwk-report";
@@ -29,9 +38,9 @@ public static class InteractionConstants
     public const string SetPrefixModal = "set-prefix-modal";
     public const string RemovePrefix = "remove-prefix";
 
-    public const string SetActivityThreshold = "set-activity-threshold";
-    public const string SetActivityThresholdModal = "set-activity-threshold-modal";
-    public const string RemoveActivityThreshold = "remove-activity-threshold";
+    public const string SetFmbotActivityThreshold = "set-fmbot-activity-threshold";
+    public const string SetFmbotActivityThresholdModal = "set-fmbot-activity-threshold-modal";
+    public const string RemoveFmbotActivityThreshold = "remove-fmbot-activity-threshold";
 
     public const string SetCrownActivityThreshold = "set-crown-activity-threshold";
     public const string SetCrownActivityThresholdModal = "set-crown-activity-threshold-modal";
@@ -60,4 +69,9 @@ public static class InteractionConstants
 
     public const string ToggleGuildCommandAddModal = "toggle-guild-command-modal-add";
     public const string ToggleGuildCommandRemoveModal = "toggle-guild-command-modal-remove";
+
+    public const string WhoKnowsRolePicker = "whoknows-role-picker";
+    public const string WhoKnowsAlbumRolePicker = "whoknows-album-role-picker";
+    public const string WhoKnowsTrackRolePicker = "whoknows-track-role-picker";
+
 }

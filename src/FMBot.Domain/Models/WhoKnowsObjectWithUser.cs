@@ -19,9 +19,9 @@ public class WhoKnowsObjectWithUser
 
     public PrivacyLevel? PrivacyLevel { get; set; }
 
-    public bool? WhoKnowsWhitelisted { get; set; }
-
+    public ulong[] Roles { get; set; }
     public DateTime? LastUsed { get; set; }
+    public DateTime? LastMessage { get; set; }
 
     public bool? SameServer { get; set; }
 }

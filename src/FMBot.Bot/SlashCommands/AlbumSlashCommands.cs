@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord.Interactions;
 using Fergun.Interactive;
@@ -7,6 +8,7 @@ using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 
@@ -17,15 +19,17 @@ public class AlbumSlashCommands : InteractionModuleBase
     private readonly UserService _userService;
     private readonly AlbumBuilders _albumBuilders;
     private readonly SettingService _settingService;
+    private readonly AlbumService _albumService;
 
     private InteractiveService Interactivity { get; }
 
-    public AlbumSlashCommands(UserService userService, SettingService settingService, AlbumBuilders albumBuilders, InteractiveService interactivity)
+    public AlbumSlashCommands(UserService userService, SettingService settingService, AlbumBuilders albumBuilders, InteractiveService interactivity, AlbumService albumService)
     {
         this._userService = userService;
         this._settingService = settingService;
         this._albumBuilders = albumBuilders;
         this.Interactivity = interactivity;
+        this._albumService = albumService;
     }
 
     [SlashCommand("album", "Shows album info for the album you're currently listening to or searching for")]
@@ -55,9 +59,9 @@ public class AlbumSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task WhoKnowsAlbumAsync(
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(AlbumAutoComplete))]
-        string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null)
+        [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
+        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false)
     {
         _ = DeferAsync();
 
@@ -70,6 +74,38 @@ public class AlbumSlashCommands : InteractionModuleBase
             var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), mode.Value, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.WhoKnowsAlbumRolePicker}-*")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task WhoKnowsFilteringAsync(string albumId, string[] inputs)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var album = await this._albumService.GetAlbumForId(int.Parse(albumId));
+
+        var roleIds = new List<ulong>();
+        if (inputs != null)
+        {
+            foreach (var input in inputs)
+            {
+                var roleId = ulong.Parse(input);
+                roleIds.Add(roleId);
+            }
+        }
+
+        try
+        {
+            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), WhoKnowsMode.Embed, $"{album.ArtistName} | {album.Name}", true, roleIds);
+
+            await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

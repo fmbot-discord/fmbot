@@ -1,12 +1,12 @@
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Services;
+using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 
@@ -16,19 +16,22 @@ namespace FMBot.Bot.TextCommands.Guild;
 [ServerStaffOnly]
 public class WebhookCommands : BaseCommandModule
 {
-    private readonly AdminService _adminService;
     private readonly GuildService _guildService;
     private readonly WebhookService _webhookService;
+    private readonly GuildSettingBuilder _guildSettingBuilder;
+    private readonly IPrefixService _prefixService;
 
     public WebhookCommands(
-        AdminService adminService,
         WebhookService webhookService,
         GuildService guildService,
-        IOptions<BotSettings> botSettings) : base(botSettings)
+        IOptions<BotSettings> botSettings,
+        GuildSettingBuilder guildSettingBuilder,
+        IPrefixService prefixService) : base(botSettings)
     {
-        this._adminService = adminService;
         this._webhookService = webhookService;
         this._guildService = guildService;
+        this._guildSettingBuilder = guildSettingBuilder;
+        this._prefixService = prefixService;
     }
 
     [Command("addwebhook", RunMode = RunMode.Async)]
@@ -40,11 +43,10 @@ public class WebhookCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task AddFeaturedWebhookAsync()
     {
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -90,11 +92,10 @@ public class WebhookCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task TestFeaturedWebhookAsync()
     {
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }

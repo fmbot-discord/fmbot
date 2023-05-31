@@ -14,4 +14,6 @@ public class WhoKnowsSettings
     public string NewSearchValue { get; set; }
 
     public WhoKnowsMode WhoKnowsMode { get; set; }
+
+    public bool DisplayRoleFilter { get; set; }
 }

@@ -353,4 +353,21 @@ public static class StringService
 
         return null;
     }
+
+    public static string StringListToLongString(List<string> name)
+    {
+        var longString = new StringBuilder();
+        for (var i = 0; i < name.Count; i++)
+        {
+            if (i != 0)
+            {
+                longString.Append(" - ");
+            }
+
+            var genre = name[i];
+            longString.Append($"{genre}");
+        }
+
+        return longString.ToString();
+    }
 }
