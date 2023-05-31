@@ -76,6 +76,7 @@ public class WhoKnowsAlbumService
                 Playcount = userAlbum.Playcount,
                 LastFMUsername = guildUser.UserNameLastFM,
                 UserId = userAlbum.UserId,
+                Roles = guildUser.Roles,
                 LastUsed = guildUser.LastUsed,
                 LastMessage = guildUser.LastMessage
             });
