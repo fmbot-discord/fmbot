@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,6 +22,7 @@ using FMBot.Persistence.Domain.Models;
 using Genius.Models.User;
 using Microsoft.Extensions.Options;
 using Swan;
+using Swan.Cryptography;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -423,19 +425,46 @@ public class PlayBuilder
         }
 
         var lastPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
-        var streak = PlayService.GetStreak(userSettings.UserId, recentTracks, lastPlays);
-        var streakText = PlayService.StreakToText(streak);
-        response.Embed.WithDescription(streakText);
+        var streak = PlayService.GetCurrentStreak(userSettings.UserId, recentTracks.Content.RecentTracks.FirstOrDefault(), lastPlays);
+
 
         response.EmbedAuthor.WithName($"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
+
+        if (PlayService.StreakExists(streak))
+        {
+            var streakText = PlayService.StreakToText(streak);
+            response.Embed.WithDescription(streakText);
+
+            if (!userSettings.DifferentUser)
+            {
+                if (PlayService.ShouldSaveStreak(streak))
+                {
+                    var saved = await this._playService.UpdateOrInsertStreak(streak);
+                    if (saved != null)
+                    {
+                        response.Embed.WithFooter(saved);
+                    }
+                }
+                else
+                {
+                    response.Embed.WithFooter($"Only streaks with {Constants.StreakSaveThreshold} plays or higher are saved.");
+                }
+            }
+        }
+        else
+        {
+            response.Embed.WithDescription("No active streak found. \n" +
+                                           "Try scrobbling multiple same songs of an artist, album or track in a row to get started.");
+        }
+
+        
+        
+
+
         if (!userSettings.DifferentUser)
         {
             response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
-            var saved = await this._playService.UpdateOrInsertStreak(streak);
-            if (saved != null)
-            {
-                response.Embed.WithFooter(saved);
-            }
+            
         }
 
         response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");

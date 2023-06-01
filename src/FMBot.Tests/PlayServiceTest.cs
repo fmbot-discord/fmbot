@@ -11,11 +11,11 @@ public class PlayServiceTest
     public void GetStreak_NoLastPlays_ReturnsNull()
     {
         // Arrange
-        var recentTracks = new Response<RecentTrackList>();
+        var recentTracks = new RecentTrack();
         var lastPlays = new List<UserPlayTs>();
 
         // Act
-        var result = PlayService.GetStreak(1, recentTracks, lastPlays);
+        var result = PlayService.GetCurrentStreak(1, recentTracks, lastPlays);
 
         // Assert
         Assert.That(result, Is.Null);
@@ -25,22 +25,15 @@ public class PlayServiceTest
     public void GetStreak_ArtistStreakDetected_ReturnsExpectedStreak()
     {
         // Arrange
-        var recentTracks = new Response<RecentTrackList>
-        {
-            Content = new RecentTrackList
+        var recentTracks =
+            new RecentTrack
             {
-                RecentTracks = new List<RecentTrack>
-                {
-                    new RecentTrack
-                    {
-                        ArtistName = "Artist A",
-                        AlbumName = "Album A",
-                        TrackName = "Track A",
-                        TimePlayed = DateTime.UtcNow
-                    }
-                }
-            }
-        };
+                ArtistName = "Artist A",
+                AlbumName = "Album A",
+                TrackName = "Track A",
+                TimePlayed = DateTime.UtcNow
+            };
+
 
         var lastPlays = new List<UserPlayTs>
         {
@@ -75,7 +68,7 @@ public class PlayServiceTest
         };
 
         // Act
-        var result = PlayService.GetStreak(1, recentTracks, lastPlays);
+        var result = PlayService.GetCurrentStreak(1, recentTracks, lastPlays);
 
         // Assert
         Assert.Multiple(() =>
@@ -92,22 +85,14 @@ public class PlayServiceTest
     public void GetStreak_AlbumChangedHalfway_ReturnsExpectedStreak()
     {
         // Arrange
-        var recentTracks = new Response<RecentTrackList>
-        {
-            Content = new RecentTrackList
-            {
-                RecentTracks = new List<RecentTrack>
-                {
+        var recentTracks = 
                     new RecentTrack
                     {
                         ArtistName = "Artist A",
                         AlbumName = "Album A",
                         TrackName = "Track A",
                         TimePlayed = DateTime.UtcNow
-                    }
-                }
-            }
-        };
+                    };
 
         var lastPlays = new List<UserPlayTs>
         {
@@ -135,7 +120,7 @@ public class PlayServiceTest
         };
 
         // Act
-        var result = PlayService.GetStreak(1, recentTracks, lastPlays);
+        var result = PlayService.GetCurrentStreak(1, recentTracks, lastPlays);
 
         // Assert
         Assert.Multiple(() =>
