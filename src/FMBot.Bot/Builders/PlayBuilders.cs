@@ -427,7 +427,6 @@ public class PlayBuilder
         var lastPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
         var streak = PlayService.GetCurrentStreak(userSettings.UserId, recentTracks.Content.RecentTracks.FirstOrDefault(), lastPlays);
 
-
         response.EmbedAuthor.WithName($"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
 
         if (PlayService.StreakExists(streak))
@@ -456,10 +455,6 @@ public class PlayBuilder
             response.Embed.WithDescription("No active streak found.\n" +
                                            "Try scrobbling multiple of the same artist, album or track in a row to get started.");
         }
-
-        
-        
-
 
         if (!userSettings.DifferentUser)
         {

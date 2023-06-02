@@ -198,7 +198,7 @@ public class IndexCommands : BaseCommandModule
                     .Build(); 
                 m.Components = description.promo
                     ? new ComponentBuilder()
-                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink)
+                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink)
                         .Build()
                     : null;
             });

@@ -361,7 +361,7 @@ public class UserCommands : BaseCommandModule
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var response = await this._userBuilder.FeaturedAsync(new ContextModel(this.Context, prfx));
+            var response = await this._userBuilder.FeaturedAsync(new ContextModel(this.Context, prfx, contextUser));
 
             IUserMessage message;
             if (response.ResponseType == ResponseType.Embed)

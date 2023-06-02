@@ -107,15 +107,9 @@ public class UserBuilder
             }
         }
 
-        if (this._timer._currentFeatured.SupporterDay)
+        if (this._timer._currentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)
         {
-            var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
-            if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
-            {
-                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                response.Embed.AddField("Get featured", $"*Also want a higher chance of getting featured on Supporter Sunday? " +
-                                                            $"[View all perks and get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})*");
-            }
+            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink);
         }
 
         response.Embed.WithFooter($"View your featured history with '{context.Prefix}featuredlog'");

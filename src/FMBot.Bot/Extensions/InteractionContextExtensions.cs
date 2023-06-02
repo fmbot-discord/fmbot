@@ -131,7 +131,8 @@ public static class InteractionContextExtensions
                     ".png",
                     null,
                     new[] { response.Embed.Build() },
-                    ephemeral: ephemeral);
+                    ephemeral: ephemeral,
+                    components: response.Components.Build());
                 await response.Stream.DisposeAsync();
                 break;
             case ResponseType.ImageOnly:
