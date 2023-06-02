@@ -453,8 +453,8 @@ public class PlayBuilder
         }
         else
         {
-            response.Embed.WithDescription("No active streak found. \n" +
-                                           "Try scrobbling multiple same songs of an artist, album or track in a row to get started.");
+            response.Embed.WithDescription("No active streak found.\n" +
+                                           "Try scrobbling multiple of the same artist, album or track in a row to get started.");
         }
 
         
