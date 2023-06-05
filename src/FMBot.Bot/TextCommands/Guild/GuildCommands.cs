@@ -247,11 +247,11 @@ public class GuildCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("export", RunMode = RunMode.Async)]
-    [Summary("Gets Last.fm usernames from your server members in json format.")]
-    [Alias("getmembers", "exportmembers")]
-    [GuildOnly]
-    [CommandCategories(CommandCategory.ServerSettings)]
+    //[Command("export", RunMode = RunMode.Async)]
+    //[Summary("Gets Last.fm usernames from your server members in json format.")]
+    //[Alias("getmembers", "exportmembers")]
+    //[GuildOnly]
+    //[CommandCategories(CommandCategory.ServerSettings)]
     public async Task GetMembersAsync()
     {
         _ = this.Context.Channel.TriggerTypingAsync();
