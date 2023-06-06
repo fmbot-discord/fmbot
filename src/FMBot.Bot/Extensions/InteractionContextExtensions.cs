@@ -100,10 +100,10 @@ public static class InteractionContextExtensions
         switch (response.ResponseType)
         {
             case ResponseType.Text:
-                await context.Interaction.FollowupAsync(response.Text, allowedMentions: AllowedMentions.None, ephemeral: ephemeral, components: response.Components.Build());
+                await context.Interaction.FollowupAsync(response.Text, allowedMentions: AllowedMentions.None, ephemeral: ephemeral, components: response.Components?.Build());
                 break;
             case ResponseType.Embed:
-                await context.Interaction.FollowupAsync(null, new[] { response.Embed.Build() }, ephemeral: ephemeral, components: response.Components.Build());
+                await context.Interaction.FollowupAsync(null, new[] { response.Embed.Build() }, ephemeral: ephemeral, components: response.Components?.Build());
                 break;
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
@@ -132,7 +132,7 @@ public static class InteractionContextExtensions
                     null,
                     new[] { response.Embed.Build() },
                     ephemeral: ephemeral,
-                    components: response.Components.Build());
+                    components: response.Components?.Build());
                 await response.Stream.DisposeAsync();
                 break;
             case ResponseType.ImageOnly:
