@@ -212,7 +212,7 @@ public class AdminCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot admins can change issue mode.");
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -259,7 +259,7 @@ public class AdminCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot admins can change purge cache.");
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -271,7 +271,7 @@ public class AdminCommands : BaseCommandModule
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await ReplyAsync("Error: Insufficient rights.");
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -297,7 +297,7 @@ public class AdminCommands : BaseCommandModule
         {
             if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                await ReplyAsync("Error: Insufficient rights. Only .fmbot admins can manage albums.");
+                await ReplyAsync(Constants.FmbotStaffOnly);
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -390,7 +390,7 @@ public class AdminCommands : BaseCommandModule
         {
             if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                await ReplyAsync("Error: Insufficient rights. Only .fmbot admins can manage artists.");
+                await ReplyAsync(Constants.FmbotStaffOnly);
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -559,7 +559,7 @@ public class AdminCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can check botted users");
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -629,7 +629,7 @@ public class AdminCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can use this command");
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -692,7 +692,7 @@ public class AdminCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can remove botted users");
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -741,7 +741,7 @@ public class AdminCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can remove botted users");
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -859,7 +859,7 @@ public class AdminCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can add supporters");
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -1038,7 +1038,7 @@ public class AdminCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can remove supporters");
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -1097,7 +1097,7 @@ public class AdminCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can add supporters");
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -1160,7 +1160,7 @@ public class AdminCommands : BaseCommandModule
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            await this.Context.Channel.SendMessageAsync($"No permissions mate");
+            await this.Context.Channel.SendMessageAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
@@ -60,7 +61,7 @@ public class GuildSettingBuilder
         var whoKnowsSettings = new StringBuilder();
 
         whoKnowsSettings.AppendLine(
-            $"**{guildUsers?.Count(c => c.BlockedFromWhoKnows) ?? 0}** users blocked from WhoKnows and server charts.");
+            $"**{guildUsers?.Count(c => c.Value.BlockedFromWhoKnows) ?? 0}** users blocked from WhoKnows and server charts.");
 
         if (guild.ActivityThresholdDays.HasValue)
         {
@@ -85,7 +86,7 @@ public class GuildSettingBuilder
                 "Users earn crowns whenever they're the #1 user for an artist. ");
 
             crownSettings.AppendLine(
-                $"**{guildUsers?.Count(c => c.BlockedFromCrowns) ?? 0}** users are blocked from earning crowns.");
+                $"**{guildUsers?.Count(c => c.Value.BlockedFromCrowns) ?? 0}** users are blocked from earning crowns.");
 
             crownSettings.AppendLine();
 
@@ -189,7 +190,7 @@ public class GuildSettingBuilder
 
     }
 
-    public async Task<ResponseModel> SetPrefix(ContextModel context)
+    public async Task<ResponseModel> SetPrefix(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -229,24 +230,29 @@ public class GuildSettingBuilder
 
         response.Embed.WithDescription(description.ToString());
 
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
+
         response.Components = components;
 
         return response;
     }
 
-    public async Task<ResponseModel> SetWhoKnowsActivityThreshold(ContextModel context)
+    public async Task<ResponseModel> SetFmbotActivityThreshold(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
 
-        response.Embed.WithTitle("Set WhoKnows activity threshold");
+        response.Embed.WithTitle("Set .fmbot activity threshold");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var description = new StringBuilder();
 
-        description.AppendLine($"Setting a WhoKnows activity threshold will filter out people who have not used .fmbot in a certain amount of days. " +
+        description.AppendLine($"Setting a WhoKnows activity threshold will filter out people who have not used .fmbot in a certain amount of days from all server-wide commands. " +
                                $"A user counts as active as soon as they use .fmbot anywhere.");
         description.AppendLine();
         description.AppendLine("This filtering applies to all server-wide commands.");
@@ -258,25 +264,30 @@ public class GuildSettingBuilder
 
         if (!guild.ActivityThresholdDays.HasValue)
         {
-            description.AppendLine("There is currently no activity threshold enabled.");
+            description.AppendLine("There is currently no .fmbot activity threshold enabled.");
             description.AppendLine("To enable, click the button below and enter the amount of days.");
-            components.WithButton("Set activity threshold", InteractionConstants.SetActivityThreshold, style: ButtonStyle.Secondary);
+            components.WithButton("Set activity threshold", InteractionConstants.SetFmbotActivityThreshold, style: ButtonStyle.Secondary);
         }
         else
         {
             description.AppendLine($"✅ Enabled.");
             description.AppendLine($"Anyone who hasn't used .fmbot in the last **{guild.ActivityThresholdDays.Value}** days is currently filtered out.");
-            components.WithButton("Remove activity threshold", $"{InteractionConstants.RemoveActivityThreshold}", style: ButtonStyle.Secondary);
+            components.WithButton("Remove activity threshold", $"{InteractionConstants.RemoveFmbotActivityThreshold}", style: ButtonStyle.Secondary);
         }
 
         response.Embed.WithDescription(description.ToString());
+
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
 
         response.Components = components;
 
         return response;
     }
 
-    public async Task<ResponseModel> SetCrownActivityThreshold(ContextModel context)
+    public async Task<ResponseModel> SetCrownActivityThreshold(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -318,12 +329,17 @@ public class GuildSettingBuilder
 
         response.Embed.WithDescription(description.ToString());
 
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
+
         response.Components = components;
 
         return response;
     }
 
-    public async Task<ResponseModel> SetCrownMinPlaycount(ContextModel context)
+    public async Task<ResponseModel> SetCrownMinPlaycount(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -366,6 +382,11 @@ public class GuildSettingBuilder
         }
 
         response.Embed.WithDescription(description.ToString());
+
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
 
         response.Components = components;
 
@@ -421,6 +442,8 @@ public class GuildSettingBuilder
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns... ");
 
+        response.Embed.WithFooter($"Crownseeder initiated by {context.DiscordUser.Username}");
+
         return response;
     }
 
@@ -444,19 +467,21 @@ public class GuildSettingBuilder
         description.AppendLine($"- `{prefix}killallcrowns` (All crowns)");
         description.AppendLine($"- `{prefix}killallseededcrowns` (Only seeded crowns)");
 
+        response.Embed.WithFooter($"Crownseeder initiated by {context.DiscordUser.Username}");
+
         response.Embed.WithDescription(description.ToString());
 
         return response;
     }
 
-    public async Task<bool> UserIsAllowed(IInteractionContext context)
+    public async Task<bool> UserIsAllowed(ContextModel context, bool managersAllowed = true)
     {
-        if (context.Guild == null)
+        if (context.DiscordGuild == null)
         {
             return false;
         }
 
-        var guildUser = (IGuildUser)context.User;
+        var guildUser = (IGuildUser)context.DiscordUser;
 
         if (guildUser.GuildPermissions.BanMembers ||
             guildUser.GuildPermissions.Administrator)
@@ -464,33 +489,44 @@ public class GuildSettingBuilder
             return true;
         }
 
-        if (await this._adminService.HasCommandAccessAsync(context.User, UserType.Admin))
+        if (await this._adminService.HasCommandAccessAsync(context.DiscordUser, UserType.Admin))
         {
             return true;
         }
 
-        //var fmbotManagerRole = context.Guild.Roles
-        //    .FirstOrDefault(f => f.Name?.ToLower() == ".fmbot manager");
-        //if (fmbotManagerRole != null &&
-        //    guildUser.RoleIds.Any(a => a == fmbotManagerRole.Id))
-        //{
-        //    return true;
-        //}
+        if (managersAllowed)
+        {
+            var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+            if (guild.BotManagementRoles != null &&
+                guild.BotManagementRoles.Any() &&
+                guildUser.RoleIds.Any(a => guild.BotManagementRoles.Contains(a)))
+            {
+                return true;
+            }
+        }
 
         return false;
     }
 
-    public async Task<bool> UserNotAllowedResponse(IInteractionContext context)
+    public static string UserNotAllowedResponseText(bool managersAllowed = true)
     {
         var response = new StringBuilder();
         response.AppendLine("You are not authorized to change this .fmbot setting.");
         response.AppendLine();
-        response.AppendLine("To change .fmbot settings, you must have the `Ban Members` permission or be an administrator.");
-        //response.AppendLine("- A role with the name `.fmbot manager`");
+        response.AppendLine("To change .fmbot settings, you have at least one of the following:");
+        response.AppendLine("- `Administrator` permission");
+        response.AppendLine("- `Ban Members` permission");
+        if (managersAllowed)
+        {
+            response.AppendLine("- A role that is allowed to manage the bot");
+        }
 
-        await context.Interaction.RespondAsync(response.ToString(), ephemeral: true);
+        return response.ToString();
+    }
 
-        return false;
+    public static async Task UserNotAllowedResponse(IInteractionContext context, bool managersAllowed = true)
+    {
+        await context.Interaction.RespondAsync(UserNotAllowedResponseText(managersAllowed), ephemeral: true);
     }
 
     public async Task<ResponseModel> BlockedUsersAsync(
@@ -538,20 +574,20 @@ public class GuildSettingBuilder
             searchValue = searchValue.ToLower();
 
             guildUsers = guildUsers
-                .Where(w => w.UserName.ToLower().Contains(searchValue) ||
-                            w.DiscordUserId.ToString().Contains(searchValue) ||
-                            w.UserNameLastFM.ToLower().Contains(searchValue))
-                .ToList();
+                .Where(w => w.Value.UserName.ToLower().Contains(searchValue) ||
+                            w.Value.DiscordUserId.ToString().Contains(searchValue) ||
+                            w.Value.UserNameLastFM.ToLower().Contains(searchValue))
+                .ToDictionary(i => i.Key, i => i.Value);
         }
 
         if (guildUsers != null &&
-            guildUsers.Any(a => a.BlockedFromWhoKnows && (!crownBlockedOnly || a.BlockedFromCrowns)))
+            guildUsers.Any(a => a.Value.BlockedFromWhoKnows && (!crownBlockedOnly || a.Value.BlockedFromCrowns)))
         {
             guildUsers = guildUsers
-                .Where(w => w.BlockedFromCrowns && (crownBlockedOnly || w.BlockedFromWhoKnows))
-                .ToList();
+                .Where(w => w.Value.BlockedFromCrowns && (crownBlockedOnly || w.Value.BlockedFromWhoKnows))
+                .ToDictionary(i => i.Key, i => i.Value);
 
-            var userPages = guildUsers.Chunk(15);
+            var userPages = guildUsers.Select(s => s.Value).Chunk(15);
 
             foreach (var userPage in userPages)
             {
@@ -593,42 +629,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ActivityThreshold(ContextModel context)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed
-        };
-
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
-
-        response.Embed.WithTitle("Set server activity threshold");
-
-        var description = new StringBuilder();
-        description.AppendLine("Select a forced mode for the `fm` command for everyone in this server.");
-        description.AppendLine("This will override whatever mode a user has set themselves.");
-        description.AppendLine();
-        description.AppendLine("To disable, simply de-select the mode you have selected.");
-        description.AppendLine();
-
-        if (guild.FmEmbedType.HasValue)
-        {
-            description.AppendLine($"Current mode: **{guild.FmEmbedType}**.");
-        }
-        else
-        {
-            description.AppendLine($"Current mode: None");
-        }
-
-        response.Embed.WithDescription(description.ToString());
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        response.Components = new ComponentBuilder().WithButton();
-
-        return response;
-    }
-
-    public async Task<ResponseModel> GuildMode(ContextModel context)
+    public async Task<ResponseModel> GuildMode(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -670,10 +671,16 @@ public class GuildSettingBuilder
         response.Embed.WithDescription(description.ToString());
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
+
         response.Components = new ComponentBuilder().WithSelectMenu(fmType);
 
         return response;
     }
+
 
     public static ResponseModel GuildReactionsAsync(ContextModel context, string prfx)
     {
@@ -699,7 +706,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ToggleGuildCommand(ContextModel context)
+    public async Task<ResponseModel> ToggleGuildCommand(ContextModel context, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -736,12 +743,17 @@ public class GuildSettingBuilder
             .WithButton("Remove", $"{InteractionConstants.ToggleGuildCommandRemove}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
             .WithButton("Clear", $"{InteractionConstants.ToggleGuildCommandClear}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
 
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
+        }
+
         response.Components = components;
 
         return response;
     }
 
-    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId, ulong? selectedCategoryId = null)
+    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId, ulong? selectedCategoryId = null, IUser lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -752,7 +764,16 @@ public class GuildSettingBuilder
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Embed.WithTitle($"Toggle channel commands - #{selectedChannel.Name}");
-        response.Embed.WithFooter("Use the up and down selector to browse through channels");
+
+        var footer = new StringBuilder();
+
+        footer.AppendLine("Use the up and down selector to browse through channels");
+        if (lastModifier != null)
+        {
+            footer.AppendLine($"Last modified by {lastModifier.Username}");
+        }
+
+        response.Embed.WithFooter(footer.ToString());
 
         var channelDescription = new StringBuilder();
 

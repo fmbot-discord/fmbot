@@ -295,6 +295,7 @@ public class PlayService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.UserStreaks
             .Where(w => w.UserId == userId)
+            .Where(w => w.ArtistName != null || w.AlbumName != null || w.TrackName != null)
             .OrderByDescending(o => o.ArtistPlaycount)
             .ToListAsync();
     }
@@ -310,97 +311,119 @@ public class PlayService
         await db.SaveChangesAsync();
     }
 
-    public static UserStreak GetStreak(int userId, Response<RecentTrackList> recentTracks, IReadOnlyList<UserPlayTs> lastPlays)
+    public static UserStreak GetCurrentStreak(int userId, RecentTrack lastPlay,
+        IReadOnlyList<UserPlayTs> lastPlays)
     {
-        if (!lastPlays.Any())
+        if (!lastPlays.Any() || lastPlay == null)
         {
             return null;
         }
 
         lastPlays = lastPlays
             .OrderByDescending(o => o.TimePlayed)
+            .Where(w => !lastPlay.TimePlayed.HasValue || w.TimePlayed < lastPlay.TimePlayed.Value)
             .ToList();
-
-        var firstPlay = recentTracks.Content.RecentTracks.First();
 
         var streak = new UserStreak
         {
             ArtistPlaycount = 1,
             AlbumPlaycount = 1,
             TrackPlaycount = 1,
-            StreakEnded = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+            StreakEnded = lastPlay.TimePlayed ?? DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+            StreakStarted = lastPlay.TimePlayed ?? DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
             UserId = userId
         };
 
-        var artistContinue = true;
-        var albumContinue = true;
-        var trackContinue = true;
         for (var i = 1; i < lastPlays.Count; i++)
         {
-            var play = lastPlays[i];
+            var currentPlay = lastPlays[i];
 
-            if (!artistContinue)
-            {
-                streak.ArtistName = null;
-                streak.ArtistPlaycount = null;
-            }
-
-            if (firstPlay.ArtistName.ToLower() == play.ArtistName.ToLower() && artistContinue)
+            if (lastPlay.ArtistName.ToLower() == currentPlay.ArtistName.ToLower())
             {
                 streak.ArtistPlaycount++;
-                streak.StreakStarted = play.TimePlayed;
-                streak.ArtistName = play.ArtistName;
+                streak.ArtistName = currentPlay.ArtistName;
+                if (currentPlay.TimePlayed < streak.StreakStarted)
+                {
+                    streak.StreakStarted = currentPlay.TimePlayed;
+                }
             }
             else
-            {
-                artistContinue = false;
-            }
-
-            if (firstPlay.AlbumName != null && play.AlbumName != null &&
-                firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
-            {
-                streak.AlbumPlaycount++;
-                streak.StreakStarted = play.TimePlayed;
-                streak.AlbumName = play.AlbumName;
-            }
-            else
-            {
-                albumContinue = false;
-            }
-
-            if (firstPlay.TrackName.ToLower() == play.TrackName.ToLower() && trackContinue)
-            {
-                streak.TrackPlaycount++;
-                streak.StreakStarted = play.TimePlayed;
-                streak.TrackName = play.TrackName;
-            }
-            else
-            {
-                trackContinue = false;
-            }
-
-            if (!artistContinue && !albumContinue && !trackContinue)
             {
                 break;
             }
         }
 
-        if (streak.ArtistPlaycount <= 1)
+        for (var i = 1; i < lastPlays.Count; i++)
         {
-            streak.ArtistName = null;
-        }
-        if (streak.AlbumPlaycount <= 1)
-        {
-            streak.AlbumName = null;
-        }
-        if (streak.TrackPlaycount <= 1)
-        {
-            streak.TrackName = null;
+            var currentPlay = lastPlays[i];
+
+            if (lastPlay.AlbumName != null &&
+                currentPlay.AlbumName != null &&
+                lastPlay.AlbumName.ToLower() == currentPlay.AlbumName.ToLower())
+            {
+                streak.AlbumPlaycount++;
+                streak.AlbumName = currentPlay.AlbumName;
+                if (currentPlay.TimePlayed < streak.StreakStarted)
+                {
+                    streak.StreakStarted = currentPlay.TimePlayed;
+                }
+            }
+            else
+            {
+                break;
+            }
         }
 
-        streak.StreakStarted = DateTime.SpecifyKind(streak.StreakStarted, DateTimeKind.Utc);
+        for (var i = 1; i < lastPlays.Count; i++)
+        {
+            var currentPlay = lastPlays[i];
+
+            if (lastPlay.TrackName.ToLower() == currentPlay.TrackName.ToLower() &&
+                lastPlay.ArtistName.ToLower() == currentPlay.ArtistName.ToLower())
+            {
+                streak.TrackPlaycount++;
+                streak.TrackName = currentPlay.TrackName;
+                if (currentPlay.TimePlayed < streak.StreakStarted)
+                {
+                    streak.StreakStarted = currentPlay.TimePlayed;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
 
         return streak;
+    }
+
+    public static bool StreakExists(UserStreak streak)
+    {
+        if (streak.ArtistName == null &&
+            streak.AlbumName == null &&
+            streak.TrackName == null)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static bool ShouldSaveStreak(UserStreak streak)
+    {
+        if (!StreakExists(streak))
+        {
+            return false;
+        }
+
+        if (streak.ArtistPlaycount is < Constants.StreakSaveThreshold &&
+            streak.AlbumPlaycount is < Constants.StreakSaveThreshold &&
+            streak.TrackPlaycount is < Constants.StreakSaveThreshold)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public static string StreakToText(UserStreak streak, bool includeStart = true)
@@ -439,68 +462,33 @@ public class PlayService
         return description.ToString();
     }
 
-    public async Task<string> UpdateOrInsertStreak(UserStreak streak)
+    public async Task<string> UpdateOrInsertStreak(UserStreak currentStreak)
     {
-        if (streak.TrackName == null &&
-            streak.AlbumName == null &&
-            streak.ArtistName == null)
+        if (!ShouldSaveStreak(currentStreak))
         {
             return null;
         }
 
-        if (streak.TrackPlaycount is null or < Constants.StreakSaveThreshold &&
-            streak.AlbumPlaycount is null or < Constants.StreakSaveThreshold &&
-            streak.ArtistPlaycount is null or < Constants.StreakSaveThreshold)
-        {
-            return $"Only streaks with {Constants.StreakSaveThreshold} plays or higher are saved.";
-        }
-
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingStreak = await db.UserStreaks.FirstOrDefaultAsync(f =>
-            f.UserId == streak.UserId && f.StreakStarted == streak.StreakStarted);
+            f.UserId == currentStreak.UserId &&
+            f.StreakStarted == currentStreak.StreakStarted &&
+            (f.ArtistName != null || f.AlbumName != null || f.TrackName != null));
 
         if (existingStreak == null)
         {
-            await db.UserStreaks.AddAsync(streak);
+            await db.UserStreaks.AddAsync(currentStreak);
             await db.SaveChangesAsync();
             return "Streak has been saved!";
         }
 
-        existingStreak.StreakEnded = streak.StreakEnded;
-
-        if (existingStreak.TrackPlaycount > Constants.StreakSaveThreshold)
-        {
-            existingStreak.TrackPlaycount = streak.TrackPlaycount;
-            existingStreak.TrackName = streak.TrackName;
-        }
-        else
-        {
-            existingStreak.TrackPlaycount = null;
-            existingStreak.TrackName = null;
-        }
-
-        if (existingStreak.AlbumPlaycount > Constants.StreakSaveThreshold)
-        {
-            existingStreak.AlbumPlaycount = streak.AlbumPlaycount;
-            existingStreak.AlbumName = streak.AlbumName;
-        }
-        else
-        {
-            existingStreak.AlbumPlaycount = null;
-            existingStreak.AlbumName = null;
-        }
-
-        if (existingStreak.ArtistPlaycount > Constants.StreakSaveThreshold)
-        {
-            existingStreak.ArtistPlaycount = streak.ArtistPlaycount;
-            existingStreak.ArtistName = streak.ArtistName;
-        }
-        else
-        {
-            existingStreak.ArtistPlaycount = null;
-            existingStreak.ArtistName = null;
-        }
-
+        existingStreak.ArtistName = currentStreak.ArtistName;
+        existingStreak.ArtistPlaycount = currentStreak.ArtistPlaycount;
+        existingStreak.AlbumName = currentStreak.AlbumName;
+        existingStreak.AlbumPlaycount = currentStreak.AlbumPlaycount;
+        existingStreak.TrackName = currentStreak.TrackName;
+        existingStreak.TrackPlaycount = currentStreak.TrackPlaycount;
+        
         db.Entry(existingStreak).State = EntityState.Modified;
         await db.SaveChangesAsync();
 
@@ -634,15 +622,12 @@ public class PlayService
             .ToList();
     }
 
-    public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(ICommandContext context, int guildId)
+    public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(ICommandContext context,
+        IDictionary<int, FullGuildUser> guildUsers,
+        int guildId)
     {
         const string sql = "SELECT u.total_playcount AS playcount, " +
-                           "u.user_id, " +
-                           "u.user_name_last_fm, " +
-                           "u.discord_user_id, " +
-                           "u.last_used, " +
-                           "gu.user_name, " +
-                           "gu.who_knows_whitelisted " +
+                           "u.user_id " +
                            "FROM users AS u " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                            "WHERE gu.guild_id = @guildId AND u.total_playcount is not null " +
@@ -663,11 +648,16 @@ public class PlayService
         {
             var userAlbum = userAlbums[i];
 
-            var userName = userAlbum.UserName ?? userAlbum.UserNameLastFm;
+            if (!guildUsers.TryGetValue(userAlbum.UserId, out var guildUser))
+            {
+                continue;
+            }
+
+            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
             if (i <= 10)
             {
-                var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(guildUser.DiscordUserId);
                 if (discordUser != null)
                 {
                     userName = discordUser.Nickname ?? discordUser.Username;
@@ -678,10 +668,11 @@ public class PlayService
             {
                 DiscordName = userName,
                 Playcount = userAlbum.Playcount,
-                LastFMUsername = userAlbum.UserNameLastFm,
+                LastFMUsername = guildUser.UserNameLastFM,
                 UserId = userAlbum.UserId,
-                LastUsed = userAlbum.LastUsed,
-                WhoKnowsWhitelisted = userAlbum.WhoKnowsWhitelisted,
+                LastUsed = guildUser.LastUsed,
+                LastMessage = guildUser.LastMessage,
+                Roles = guildUser.Roles
             });
         }
 

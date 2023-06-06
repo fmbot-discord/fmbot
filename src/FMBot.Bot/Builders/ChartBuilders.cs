@@ -144,7 +144,7 @@ public class ChartBuilders
         embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
         if (supporter != null)
         {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink);
+            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink);
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
@@ -283,7 +283,7 @@ public class ChartBuilders
         embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
         if (supporter != null)
         {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink);
+            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink);
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;

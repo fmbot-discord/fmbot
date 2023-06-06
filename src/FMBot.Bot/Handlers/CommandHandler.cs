@@ -90,7 +90,7 @@ public class CommandHandler
             PublicProperties.PremiumServers.ContainsKey(context.Guild.Id) &&
             PublicProperties.RegisteredUsers.ContainsKey(context.User.Id))
         {
-            _ = UpdateUserLastMessageDate(context);
+            _ = Task.Run(() => UpdateUserLastMessageDate(context));
         }
 
         var argPos = 0; // Check if the message has a valid command prefix

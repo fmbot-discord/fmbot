@@ -27,19 +27,14 @@ public class WhoKnowsTrackService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(IGuild discordGuild, int guildId, string artistName, string trackName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(IGuild discordGuild,
+        IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName, string trackName)
     {
         const string sql = "SELECT ut.user_id, " +
                            "ut.name, " +
                            "ut.artist_name, " +
-                           "ut.playcount," +
-                           "u.user_name_last_fm, " +
-                           "u.discord_user_id, " +
-                           "u.last_used, " +
-                           "gu.user_name, " +
-                           "gu.who_knows_whitelisted " +
+                           "ut.playcount " +
                            "FROM user_tracks AS ut " +
-                           "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id " +
                            "WHERE gu.guild_id = @guildId AND UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY ut.playcount DESC";
@@ -61,11 +56,16 @@ public class WhoKnowsTrackService
         {
             var userTrack = userTracks[i];
 
-            var userName = userTrack.UserName ?? userTrack.UserNameLastFm;
+            if (!guildUsers.TryGetValue(userTrack.UserId, out var guildUser))
+            {
+                continue;
+            }
+
+            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
             if (i < 15)
             {
-                var discordUser = await discordGuild.GetUserAsync(userTrack.DiscordUserId, CacheMode.CacheOnly);
+                var discordUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
                 if (discordUser != null)
                 {
                     userName = discordUser.Nickname ?? discordUser.Username;
@@ -77,10 +77,11 @@ public class WhoKnowsTrackService
                 Name = $"{trackName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userTrack.Playcount,
-                LastFMUsername = userTrack.UserNameLastFm,
+                LastFMUsername = guildUser.UserNameLastFM,
                 UserId = userTrack.UserId,
-                LastUsed = userTrack.LastUsed,
-                WhoKnowsWhitelisted = userTrack.WhoKnowsWhitelisted,
+                LastUsed = guildUser.LastUsed,
+                LastMessage = guildUser.LastMessage,
+                Roles = guildUser.Roles
             });
         }
 
@@ -204,20 +205,16 @@ public class WhoKnowsTrackService
         }).ToList();
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(IGuild discordGuild, int guildId, int userId, string artistName, string trackName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(IGuild discordGuild,
+        IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, string artistName, string trackName)
     {
         const string sql = "SELECT ut.user_id, " +
                            "ut.name, " +
                            "ut.artist_name, " +
-                           "ut.playcount," +
-                           "u.user_name_last_fm, " +
-                           "u.discord_user_id, " +
-                           "gu.user_name, " +
-                           "gu.who_knows_whitelisted " +
+                           "ut.playcount " +
                            "FROM user_tracks AS ut " +
-                           "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
                            "INNER JOIN friends AS fr ON fr.friend_user_id = ut.user_id " +
-                           "LEFT JOIN guild_users AS gu ON gu.user_id = u.user_id AND gu.guild_id = @guildId " +
+                           "LEFT JOIN guild_users AS gu ON gu.user_id = ut.user_id AND gu.guild_id = @guildId " +
                            "WHERE fr.user_id = @userId AND " +
                            "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY ut.playcount DESC ";
@@ -238,14 +235,19 @@ public class WhoKnowsTrackService
 
         foreach (var userArtist in userArtists)
         {
-            var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
+            if (!guildUsers.TryGetValue(userArtist.UserId, out var guildUser))
+            {
+                continue;
+            }
+
+            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
             if (discordGuild != null)
             {
-                var guildUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
-                if (guildUser != null)
+                var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
+                if (discordGuildUser != null)
                 {
-                    userName = guildUser.DisplayName;
+                    userName = discordGuildUser.DisplayName;
                 }
             }
 
@@ -254,7 +256,7 @@ public class WhoKnowsTrackService
                 Name = $"{trackName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
-                LastFMUsername = userArtist.UserNameLastFm,
+                LastFMUsername = guildUser.UserNameLastFM,
                 UserId = userArtist.UserId,
             });
         }

@@ -487,12 +487,14 @@ public class PlayCommands : BaseCommandModule
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
+            var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
+            var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild?.Id);
+
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var topPlaycountUsers = await this._playService.GetGuildUsersTotalPlaycount(this.Context, guild.GuildId);
+            var topPlaycountUsers = await this._playService.GetGuildUsersTotalPlaycount(this.Context, guildUsers, guild.GuildId);
 
-            var filteredTopPlaycountUsers = WhoKnowsService.FilterGuildUsersAsync(topPlaycountUsers, guild);
+            var (filterStats, filteredTopPlaycountUsers) = WhoKnowsService.FilterGuildUsersAsync(topPlaycountUsers, guild);
 
             if (!topPlaycountUsers.Any() && filteredTopPlaycountUsers.Any())
             {
@@ -561,15 +563,17 @@ public class PlayCommands : BaseCommandModule
         {
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
+            var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
+            var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild?.Id);
+
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var userPlays = await this._playService.GetGuildUsersPlaysForTimeLeaderBoard(guild.GuildId);
 
             var userListeningTime =
-                await this._timeService.UserPlaysToGuildLeaderboard(this.Context, userPlays, guild.GuildUsers);
+                await this._timeService.UserPlaysToGuildLeaderboard(this.Context, userPlays, guildUsers);
 
-            var filteredTopListeningTimeUsers = WhoKnowsService.FilterGuildUsersAsync(userListeningTime, guild);
+            var (filterStats, filteredTopListeningTimeUsers) = WhoKnowsService.FilterGuildUsersAsync(userListeningTime, guild);
 
             if (!userListeningTime.Any() && filteredTopListeningTimeUsers.Any())
             {

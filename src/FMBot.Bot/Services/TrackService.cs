@@ -625,6 +625,13 @@ public class TrackService
         return $"audio-features-{trackName.ToLower()}-{artistName.ToLower()}";
     }
 
+    public async Task<Track> GetTrackForId(int trackId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.Tracks.FindAsync(trackId);
+    }
+
     public async Task<Track> GetTrackFromDatabase(string artistName, string trackName)
     {
         if (string.IsNullOrWhiteSpace(artistName) || string.IsNullOrWhiteSpace(trackName))

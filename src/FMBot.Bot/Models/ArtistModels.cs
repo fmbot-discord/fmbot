@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Models;
 
@@ -49,15 +50,6 @@ public class WhoKnowsArtistDto
     public string Name { get; set; }
 
     public int Playcount { get; set; }
-
-    public string UserNameLastFm { get; set; }
-    public DateTime? LastUsed { get; set; }
-
-    public ulong DiscordUserId { get; set; }
-
-    public string UserName { get; set; }
-
-    public bool? WhoKnowsWhitelisted { get; set; }
 }
 
 public class WhoKnowsGlobalArtistDto

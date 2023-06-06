@@ -445,6 +445,13 @@ public class SettingService
             whoKnowsSettings.AdminView = true;
         }
 
+        var roleFilter = new[] { "rf", "rolefilter", "rolepicker", "roleselector" };
+        if (Contains(extraOptions, roleFilter))
+        {
+            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, roleFilter);
+            whoKnowsSettings.DisplayRoleFilter = true;
+        }
+
         return whoKnowsSettings;
     }
 
@@ -609,7 +616,8 @@ public class SettingService
             searchValue = searchValue.ToLower().Replace("lfm:", "");
             return await db.Users
                 .AsQueryable()
-                .OrderByDescending(o => o.LastUsed)
+                .OrderByDescending(o => o.LastUsed != null)
+                .ThenByDescending(o => o.LastUsed)
                 .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == searchValue);
         }
 

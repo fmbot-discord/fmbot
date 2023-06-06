@@ -172,6 +172,9 @@ public class SupporterService
         goodbyeMessage.AppendLine("If you ever want to come back in the future you can re-subscribe through the same OpenCollective account. Your supporter will then be automatically re-activated.");
         goodbyeMessage.AppendLine();
         goodbyeMessage.AppendLine("Thanks for having supported the bot! If you have any feedback about the bot or the supporter program feel free to open a thread in #help on [our server](https://discord.gg/fmbot). You can also DM the developer who is identified on the server if preferable.");
+        goodbyeMessage.AppendLine();
+        goodbyeMessage.AppendLine("Didn't cancel? It could be that there was an issue with your payment going through. Feel free to open a help thread if you need assistance.");
+
 
         goodbyeEmbed.WithDescription(goodbyeMessage.ToString());
         await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build());

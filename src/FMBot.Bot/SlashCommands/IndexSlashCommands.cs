@@ -44,7 +44,7 @@ public class IndexSlashCommands : InteractionModuleBase
 
             var reply = new StringBuilder();
 
-            var (registeredUserCount, whoKnowsWhitelistedUserCount) = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+            var registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
             await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
@@ -53,11 +53,7 @@ public class IndexSlashCommands : InteractionModuleBase
             reply.AppendLine();
             reply.AppendLine($"This server has a total of {registeredUserCount} registered .fmbot members.");
 
-            if (whoKnowsWhitelistedUserCount.HasValue)
-            {
-                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-                reply.AppendLine($" ({whoKnowsWhitelistedUserCount.Value} members whitelisted on WhoKnows, see `{prfx}whoknowswhitelist` to configure)");
-            }
+            // TODO, show premium server role counts
 
             var embed = new EmbedBuilder();
             embed.WithColor(DiscordConstants.InformationColorBlue);

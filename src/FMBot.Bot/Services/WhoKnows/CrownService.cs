@@ -55,11 +55,11 @@ public class CrownService
                     !usersToFilter.Contains(w.UserId))
                 .ToList();
         }
-        if (guild.WhoKnowsWhitelistRoleId.HasValue)
-        {
-            eligibleUsers = eligibleUsers.Where(w => w.WhoKnowsWhitelisted != false)
-                .ToList();
-        }
+        //if (guild.WhoKnowsWhitelistRoleId.HasValue)
+        //{
+        //    eligibleUsers = eligibleUsers.Where(w => w.WhoKnowsWhitelisted != false)
+        //        .ToList();
+        //}
 
         var eligibleUserIds = eligibleUsers
             .Select(s => s.UserId)

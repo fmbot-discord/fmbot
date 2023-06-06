@@ -635,7 +635,7 @@ public class ChartService
         if (!string.IsNullOrEmpty(randomSupporter))
         {
             embedDescription +=
-                $"*This chart was brought to you by .fmbot supporter {Format.Sanitize(randomSupporter)}. Also want to help .fmbot and get some small perks? [Get .fmbot supporter here.](https://opencollective.com/fmbot/contribute)*\n";
+                $"*This chart was brought to you by .fmbot supporter `{Format.Sanitize(randomSupporter)}`.*\n";
         }
 
         return embedDescription;

@@ -220,7 +220,7 @@ public class CrownCommands : BaseCommandModule
             var crownPageString = new StringBuilder();
             foreach (var crownUser in crownPage)
             {
-                var guildUser = guildUsers.FirstOrDefault(f => f.UserId == crownUser.Key);
+                guildUsers.TryGetValue(crownUser.Key, out var guildUser);
 
                 string name = null;
 

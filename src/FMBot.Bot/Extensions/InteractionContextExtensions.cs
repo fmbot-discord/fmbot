@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
@@ -99,10 +100,10 @@ public static class InteractionContextExtensions
         switch (response.ResponseType)
         {
             case ResponseType.Text:
-                await context.Interaction.FollowupAsync(response.Text, allowedMentions: AllowedMentions.None, ephemeral: ephemeral);
+                await context.Interaction.FollowupAsync(response.Text, allowedMentions: AllowedMentions.None, ephemeral: ephemeral, components: response.Components?.Build());
                 break;
             case ResponseType.Embed:
-                await context.Interaction.FollowupAsync(null, new[] { response.Embed.Build() }, ephemeral: ephemeral);
+                await context.Interaction.FollowupAsync(null, new[] { response.Embed.Build() }, ephemeral: ephemeral, components: response.Components?.Build());
                 break;
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
@@ -130,7 +131,8 @@ public static class InteractionContextExtensions
                     ".png",
                     null,
                     new[] { response.Embed.Build() },
-                    ephemeral: ephemeral);
+                    ephemeral: ephemeral,
+                    components: response.Components?.Build());
                 await response.Stream.DisposeAsync();
                 break;
             case ResponseType.ImageOnly:

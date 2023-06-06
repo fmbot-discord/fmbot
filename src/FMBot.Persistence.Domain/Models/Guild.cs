@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models;
@@ -38,7 +39,12 @@ public class Guild
     public ulong[] BlockedRoles { get; set; }
     public ulong[] BotManagementRoles { get; set; }
 
+    public int? UserActivityThresholdDays { get; set; }
+
     public string CustomLogo { get; set; }
+
+    public DateTime? LastCrownSeed { get; set; }
+    public AutomaticCrownSeeder? AutomaticCrownSeeder { get; set; }
 
     public ICollection<GuildUser> GuildUsers { get; set; }
 

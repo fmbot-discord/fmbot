@@ -11,6 +11,7 @@ using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -106,7 +107,6 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
         var spotifyArtistTask = this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue);
 
         var fullArtist = await spotifyArtistTask;
@@ -234,12 +234,14 @@ public class ArtistBuilders
         if (context.DiscordGuild != null)
         {
             var serverStats = "";
-            var guild = await guildTask;
+            var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
             if (guild?.LastIndexed != null)
             {
-                var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, guild.GuildId, artistSearch.Artist.ArtistName);
-                var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
+                var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+                
+                var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, guildUsers, guild.GuildId, artistSearch.Artist.ArtistName);
+                var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
 
                 if (filteredUsersWithArtist.Count != 0)
                 {
@@ -253,10 +255,9 @@ public class ArtistBuilders
                     serverStats += $"\n`{(int)avgServerPlaycount}` avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
                     serverStats += $"\n`{serverPlaycountLastWeek}` {StringExtensions.GetPlaysString(serverPlaycountLastWeek)} last week";
 
-                    if (usersWithArtist.Count > filteredUsersWithArtist.Count)
+                    if (filterStats.BasicDescription != null)
                     {
-                        var filteredAmount = usersWithArtist.Count - filteredUsersWithArtist.Count;
-                        serverStats += $"\n`{filteredAmount}` users filtered";
+                        serverStats += $"\n{filterStats.BasicDescription}";
                     }
                 }
             }
@@ -737,17 +738,16 @@ public class ArtistBuilders
         return response;
     }
 
-    public async Task<ResponseModel> WhoKnowsArtistAsync(
-        ContextModel context,
+    public async Task<ResponseModel> WhoKnowsArtistAsync(ContextModel context,
         WhoKnowsMode mode,
-        string artistValues)
+        string artistValues,
+        bool displayRoleSelector = false,
+        List<ulong> roles = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
-
-        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
@@ -767,20 +767,21 @@ public class ArtistBuilders
             imgUrl = null;
         }
 
-        var contextGuild = await guildTask;
+        var contextGuild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, contextGuild.GuildId, artistSearch.Artist.ArtistName);
+        var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, guildUsers, contextGuild.GuildId, artistSearch.Artist.ArtistName);
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
-        var currentUser = await this._indexService.GetOrAddUserToGuild(usersWithArtist, contextGuild, discordGuildUser, context.ContextUser);
+        await this._indexService.GetOrAddUserToGuild(guildUsers, contextGuild, discordGuildUser, context.ContextUser);
         await this._indexService.UpdateGuildUser(discordGuildUser, context.ContextUser.UserId, contextGuild);
 
         usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
-        var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, contextGuild);
+        var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, contextGuild, roles);
 
         CrownModel crownModel = null;
-        if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1)
+        if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector)
         {
             crownModel =
                 await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, contextGuild, artistSearch.Artist.ArtistName);
@@ -846,21 +847,16 @@ public class ArtistBuilders
         }
 
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
-            contextGuild, usersWithArtist, artistSearch.Artist.ArtistName);
+            guildUsers, usersWithArtist, artistSearch.Artist.ArtistName);
 
         if (guildAlsoPlaying != null)
         {
             footer.AppendLine(guildAlsoPlaying);
         }
 
-        if (usersWithArtist.Count > filteredUsersWithArtist.Count && !contextGuild.WhoKnowsWhitelistRoleId.HasValue)
+        if (filterStats.FullDescription != null)
         {
-            var filteredAmount = usersWithArtist.Count - filteredUsersWithArtist.Count;
-            footer.AppendLine($"{filteredAmount} inactive/blocked users filtered");
-        }
-        if (contextGuild.WhoKnowsWhitelistRoleId.HasValue)
-        {
-            footer.AppendLine($"Users with WhoKnows whitelisted role only");
+            footer.AppendLine(filterStats.FullDescription);
         }
 
         response.Embed.WithTitle($"{artistSearch.Artist.ArtistName}{ArtistsService.IsArtistBirthday(cachedArtist?.StartDate)} in {context.DiscordGuild.Name}");
@@ -878,12 +874,30 @@ public class ArtistBuilders
             response.Embed.WithThumbnailUrl(imgUrl);
         }
 
+        if (displayRoleSelector)
+        {
+            if (PublicProperties.PremiumServers.ContainsKey(context.DiscordGuild.Id))
+            {
+                var allowedRoles = new SelectMenuBuilder()
+                    .WithPlaceholder("Apply role filter..")
+                    .WithCustomId($"{InteractionConstants.WhoKnowsRolePicker}-{cachedArtist.Id}")
+                    .WithType(ComponentType.RoleSelect)
+                    .WithMinValues(0)
+                    .WithMaxValues(25);
+
+                response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
+            }
+            else
+            {
+                //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
+            }
+        }
+
         return response;
     }
 
     public async Task<ResponseModel> GlobalWhoKnowsArtistAsync(
         ContextModel context,
-        Task<Guild> guildTask,
         WhoKnowsSettings settings)
     {
         var response = new ResponseModel
@@ -917,11 +931,12 @@ public class ArtistBuilders
 
         if (context.DiscordGuild != null)
         {
-            var contextGuild = await guildTask;
-            filteredUsersWithArtist =
-                WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithArtist, contextGuild.GuildUsers.ToList());
+            var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-            if (settings.AdminView && contextGuild.SpecialGuild == true)
+            filteredUsersWithArtist =
+                WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithArtist, guildUsers);
+
+            if (settings.AdminView)
             {
                 privacyLevel = PrivacyLevel.Server;
             }
@@ -1038,7 +1053,6 @@ public class ArtistBuilders
             return response;
         }
 
-        var guildTask = this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
@@ -1059,9 +1073,10 @@ public class ArtistBuilders
             imgUrl = null;
         }
 
-        var contextGuild = await guildTask;
+        var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
 
-        var usersWithArtist = await this._whoKnowsArtistService.GetFriendUsersForArtists(context.DiscordGuild, contextGuild?.GuildId ?? 0, context.ContextUser.UserId, artistSearch.Artist.ArtistName);
+        var usersWithArtist = await this._whoKnowsArtistService.GetFriendUsersForArtists(context.DiscordGuild, guildUsers, guild?.GuildId ?? 0, context.ContextUser.UserId, artistSearch.Artist.ArtistName);
 
         usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
@@ -1349,7 +1364,7 @@ public class ArtistBuilders
     public async Task<ResponseModel> AffinityAsync(ContextModel context,
         UserSettingsModel userSettings,
         Guild guild,
-        IList<FullGuildUser> guildUsers,
+        IDictionary<int, FullGuildUser> guildUsers,
         bool largeGuild)
     {
         var response = new ResponseModel
@@ -1370,7 +1385,7 @@ public class ArtistBuilders
 
         var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild, guildUsers);
         var filteredUserIds = filteredGuildUsers
-            .Select(s => s.UserId)
+            .Keys
             .Distinct()
             .ToHashSet();
 
@@ -1399,7 +1414,7 @@ public class ArtistBuilders
             var pageString = new StringBuilder();
             foreach (var neighbor in page)
             {
-                var guildUser = guildUsers.First(f => f.UserId == neighbor.Key);
+                guildUsers.TryGetValue(neighbor.Key, out var guildUser);
                 pageString.AppendLine(
                     $"**{(neighbor.Value.TotalPoints / self.Value.TotalPoints).ToString("P1", numberInfo)}** — " +
                     $"**[{Format.Sanitize(guildUser.UserName)}]({Constants.LastFMUserUrl}{guildUser.UserNameLastFM})** — " +

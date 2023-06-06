@@ -27,32 +27,19 @@ namespace FMBot.Bot.TextCommands.Guild;
 [ServerStaffOnly]
 public class GuildCommands : BaseCommandModule
 {
-    private readonly AdminService _adminService;
     private readonly GuildService _guildService;
-    private readonly SettingService _settingService;
     private readonly UserService _userService;
-    private readonly CommandService _service;
     private readonly GuildSettingBuilder _guildSettingBuilder;
 
     private readonly IMemoryCache _cache;
 
     private readonly IPrefixService _prefixService;
-    private readonly GuildDisabledCommandService _guildDisabledCommandService;
-    private readonly ChannelDisabledCommandService _channelDisabledCommandService;
-
-    private readonly CommandService _commands;
 
     private InteractiveService Interactivity { get; }
 
     public GuildCommands(IPrefixService prefixService,
         GuildService guildService,
-        CommandService commands,
-        AdminService adminService,
-        GuildDisabledCommandService guildDisabledCommandService,
-        ChannelDisabledCommandService channelDisabledCommandService,
-        SettingService settingService,
         IOptions<BotSettings> botSettings,
-        CommandService service,
         IMemoryCache cache,
         GuildSettingBuilder guildSettingBuilder,
         UserService userService,
@@ -60,16 +47,10 @@ public class GuildCommands : BaseCommandModule
     {
         this._prefixService = prefixService;
         this._guildService = guildService;
-        this._commands = commands;
-        this._guildDisabledCommandService = guildDisabledCommandService;
-        this._channelDisabledCommandService = channelDisabledCommandService;
-        this._settingService = settingService;
-        this._service = service;
         this._cache = cache;
         this._guildSettingBuilder = guildSettingBuilder;
         this._userService = userService;
         this.Interactivity = interactivity;
-        this._adminService = adminService;
     }
 
     [Command("configuration", RunMode = RunMode.Async)]
@@ -118,20 +99,9 @@ public class GuildCommands : BaseCommandModule
     [Alias("guildmode")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task SetServerModeAsync(params string[] otherSettings)
+    public async Task SetServerModeAsync([Remainder] string unused = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
-
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
-
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context, prfx));
@@ -149,21 +119,18 @@ public class GuildCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task SetGuildReactionsAsync([Remainder] string emojis = null)
     {
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        {
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(emojis))
         {
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             await this._guildService.SetGuildReactionsAsync(this.Context.Guild, null);
 
@@ -259,12 +226,9 @@ public class GuildCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -283,21 +247,19 @@ public class GuildCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("export", RunMode = RunMode.Async)]
-    [Summary("Gets Last.fm usernames from your server members in json format.")]
-    [Alias("getmembers", "exportmembers")]
-    [GuildOnly]
-    [CommandCategories(CommandCategory.ServerSettings)]
+    //[Command("export", RunMode = RunMode.Async)]
+    //[Summary("Gets Last.fm usernames from your server members in json format.")]
+    //[Alias("getmembers", "exportmembers")]
+    //[GuildOnly]
+    //[CommandCategories(CommandCategory.ServerSettings)]
     public async Task GetMembersAsync()
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. For privacy reasons only server admins can use this command.");
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -409,9 +371,16 @@ public class GuildCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task SetFmCooldownCommand(string command = null)
     {
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
+        {
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
         int? newCooldown = null;
@@ -425,15 +394,6 @@ public class GuildCommands : BaseCommandModule
         }
 
         var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel.Id);
-
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            await ReplyAsync(Constants.ServerStaffOnly);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
 
         this._embed.AddField("Previous .fm cooldown",
             existingFmCooldown.HasValue ? $"{existingFmCooldown.Value} seconds" : "No cooldown");

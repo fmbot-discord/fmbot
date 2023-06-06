@@ -12,9 +12,18 @@ public class SetPrefixModal : IModal
     public string NewPrefix { get; set; }
 }
 
-public class SetActivityThresholdModal : IModal
+public class SetFmbotActivityThresholdModal : IModal
 {
     public string Title => "Set .fmbot activity threshold";
+
+    [InputLabel("Enter amount of days")]
+    [ModalTextInput("amount", placeholder: "30", minLength: 1, maxLength: 3)]
+    public string Amount { get; set; }
+}
+
+public class SetGuildActivityThresholdModal : IModal
+{
+    public string Title => "Set server activity threshold";
 
     [InputLabel("Enter amount of days")]
     [ModalTextInput("amount", placeholder: "30", minLength: 1, maxLength: 3)]

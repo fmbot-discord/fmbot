@@ -39,7 +39,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
         AdminService adminService,
         SettingService settingService,
         CrownService crownService,
-        IOptions<BotSettings> botSettings, InteractiveService interactivity, GuildSettingBuilder guildSettingBuilder) : base(botSettings)
+        IOptions<BotSettings> botSettings,
+        InteractiveService interactivity,
+        GuildSettingBuilder guildSettingBuilder) : base(botSettings)
     {
         this._prefixService = prefixService;
         this._guildService = guildService;
@@ -106,11 +108,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -135,12 +135,12 @@ public class CrownGuildSettingCommands : BaseCommandModule
 
         var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
 
-        if (!guildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
+        if (!guildUsers.TryGetValue(userToBlock.UserId, out var guildUser))
         {
             var similarUsers = await this._adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
 
             var userInThisServer = similarUsers.FirstOrDefault(f =>
-                f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.Select(s => s.UserId).Contains(f.UserId));
+                f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guildUsers.ContainsKey(f.UserId));
 
             if (userInThisServer == null)
             {
@@ -153,10 +153,15 @@ public class CrownGuildSettingCommands : BaseCommandModule
             userToBlock = userInThisServer;
         }
 
-        if (guildUsers
-                .Where(w => w.BlockedFromCrowns)
-                .Select(s => s.UserId)
-                .Contains(userToBlock.UserId))
+        if (guildUser == null)
+        {
+            await ReplyAsync("User not found. Are you sure they are in this server?\n" +
+                             $"To refresh the cached memberlist on your server, use `{prfx}refreshmembers`.");
+            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            return;
+        }
+
+        if (guildUser.BlockedFromCrowns)
         {
             await ReplyAsync("The user you're trying to block from gaining crowns has already been blocked on this server.");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
@@ -194,11 +199,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -282,11 +285,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -311,11 +312,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -376,12 +375,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(
-                "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command. ");
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -464,11 +460,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
@@ -532,11 +526,9 @@ public class CrownGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        var serverUser = (IGuildUser)this.Context.Message.Author;
-        if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-            !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
-            await ReplyAsync(Constants.ServerStaffOnly);
+            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }

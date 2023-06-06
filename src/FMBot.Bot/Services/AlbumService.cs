@@ -311,6 +311,13 @@ public class AlbumService
         return $"album-spotify-cover-{lastFmUrl.ToLower()}";
     }
 
+    public async Task<Album> GetAlbumForId(int albumId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.Albums.FindAsync(albumId);
+    }
+
     public async Task<Album> GetAlbumFromDatabase(string artistName, string albumName)
     {
         if (string.IsNullOrWhiteSpace(artistName) || string.IsNullOrWhiteSpace(albumName))

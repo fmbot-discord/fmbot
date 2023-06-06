@@ -480,7 +480,7 @@ public class UserSlashCommands : InteractionModuleBase
     public async Task FeaturedAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var response = await this._userBuilder.FeaturedAsync(new ContextModel(this.Context));
+        var response = await this._userBuilder.FeaturedAsync(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

@@ -852,9 +852,6 @@ public class UserService
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.UserId == userId);
 
-            this._cache.Remove($"user-settings-{user.DiscordUserId}");
-            this._cache.Remove($"user-isRegistered-{user.DiscordUserId}");
-
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
@@ -871,6 +868,8 @@ public class UserService
             db.Users.Remove(user);
 
             await db.SaveChangesAsync();
+
+            PublicProperties.RegisteredUsers.TryRemove(user.DiscordUserId, out _);
         }
         catch (Exception e)
         {

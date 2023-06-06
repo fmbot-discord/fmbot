@@ -71,7 +71,7 @@ public class IndexCommands : BaseCommandModule
             var usersToFullyUpdate = await this._indexService.GetUsersToFullyUpdate(guildUsers);
             var reply = new StringBuilder();
 
-            var (registeredUserCount, whoKnowsWhitelistedUserCount) = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+            var registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
             await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
@@ -80,11 +80,7 @@ public class IndexCommands : BaseCommandModule
             reply.AppendLine();
             reply.AppendLine($"This server has a total of {registeredUserCount} registered .fmbot members.");
 
-            if (whoKnowsWhitelistedUserCount.HasValue)
-            {
-                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-                reply.AppendLine($" ({whoKnowsWhitelistedUserCount.Value} members whitelisted on WhoKnows, see `{prfx}whoknowswhitelist` to configure)");
-            }
+            // TODO: add way to see role filtering stuff here
 
             await indexMessage.ModifyAsync(m =>
             {
@@ -202,7 +198,7 @@ public class IndexCommands : BaseCommandModule
                     .Build(); 
                 m.Components = description.promo
                     ? new ComponentBuilder()
-                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink)
+                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink)
                         .Build()
                     : null;
             });
