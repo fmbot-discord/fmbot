@@ -216,7 +216,7 @@ public class IndexService : IIndexService
     public async Task AddGuildUserToDatabase(GuildUser guildUserToAdd)
     {
         const string sql = "INSERT INTO guild_users (guild_id, user_id, user_name, bot, roles, last_message) " +
-                           "VALUES (@guildId, @userId, @userName, false, @whoKnowsWhitelisted) " +
+                           "VALUES (@guildId, @userId, @userName, false, @roles, @lastMessage) " +
                            "ON CONFLICT DO NOTHING";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -228,7 +228,8 @@ public class IndexService : IIndexService
             guildId = guildUserToAdd.GuildId,
             userId = guildUserToAdd.UserId,
             userName = guildUserToAdd.UserName,
-            roles = guildUserToAdd.Roles?.Select(s => (decimal)s).ToArray()
+            roles = guildUserToAdd.Roles?.Select(s => (decimal)s).ToArray(),
+            lastMessage = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
         });
 
         Log.Information("Added user {guildUserName} | {userId} to guild {guildName}", guildUserToAdd.UserName, guildUserToAdd.UserId, guildUserToAdd.GuildId);
