@@ -397,8 +397,9 @@ public class UserCommands : BaseCommandModule
     }
 
     [Command("featuredlog", RunMode = RunMode.Async)]
-    [Summary("Shows you or someone else their featured history")]
+    [Summary("Shows featured history")]
     [Alias("featuredhistory", "recentfeatured", "rf", "recentlyfeatured", "fl")]
+    [Options("global/server/friends/self")]
     [CommandCategories(CommandCategory.Other)]
     [UsernameSetRequired]
     public async Task FeaturedLogAsync([Remainder] string options = null)
