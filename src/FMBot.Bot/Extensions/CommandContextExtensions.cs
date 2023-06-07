@@ -71,7 +71,8 @@ public static class CommandContextExtensions
                     null,
                     false,
                     response.Embed.Build(),
-                    isSpoiler: response.Spoiler);
+                    isSpoiler: response.Spoiler,
+                    components: response.Components?.Build());
                 await response.Stream.DisposeAsync();
                 break;
             case ResponseType.ImageOnly:
