@@ -311,7 +311,7 @@ public class TrackBuilders
             footer += $"\n{filterStats.FullDescription}";
         }
 
-        response.Embed.WithTitle($"{trackName} in {context.DiscordGuild.Name}");
+        response.Embed.WithTitle(StringExtensions.TruncateLongString($"{trackName} in {context.DiscordGuild.Name}", 255));
 
         if (track.Track.TrackUrl != null)
         {
@@ -554,7 +554,7 @@ public class TrackBuilders
             footer += "\nAll private users are hidden from results";
         }
 
-        response.Embed.WithTitle($"{trackName} globally");
+        response.Embed.WithTitle(StringExtensions.TruncateLongString($"{trackName} globally", 255));
 
         if (!string.IsNullOrWhiteSpace(track.Track.TrackUrl))
         {

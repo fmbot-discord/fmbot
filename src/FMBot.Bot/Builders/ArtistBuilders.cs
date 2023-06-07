@@ -1417,7 +1417,7 @@ public class ArtistBuilders
                 guildUsers.TryGetValue(neighbor.Key, out var guildUser);
                 pageString.AppendLine(
                     $"**{(neighbor.Value.TotalPoints / self.Value.TotalPoints).ToString("P1", numberInfo)}** — " +
-                    $"**[{Format.Sanitize(guildUser.UserName)}]({Constants.LastFMUserUrl}{guildUser.UserNameLastFM})** — " +
+                    $"**[{Format.Sanitize(guildUser?.UserName)}]({Constants.LastFMUserUrl}{guildUser?.UserNameLastFM})** — " +
                                       $"`{(neighbor.Value.ArtistPoints / self.Value.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
                                       $"`{(neighbor.Value.GenrePoints / self.Value.GenrePoints).ToString("P0", numberInfo)}` genres, " +
                                       $"`{(neighbor.Value.CountryPoints / self.Value.CountryPoints).ToString("P0", numberInfo)}` countries");
