@@ -212,7 +212,8 @@ public class WhoKnowsArtistService
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ua.user_id, " +
                            "ua.name, " +
-                           "ua.playcount " +
+                           "ua.playcount, " +
+                           "u.user_name_last_fm " +
                            "FROM user_artists AS ua " +
                            "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
                            "INNER JOIN friends AS fr ON fr.friend_user_id = ua.user_id " +
@@ -236,15 +237,13 @@ public class WhoKnowsArtistService
 
         foreach (var userArtist in userArtists)
         {
-            if (!guildUsers.TryGetValue(userArtist.UserId, out var guildUser))
-            {
-                continue;
-            }
+            var userName = userArtist.UserNameLastFm;
 
-            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
-
-            if (discordGuild != null)
+            guildUsers.TryGetValue(userArtist.UserId, out var guildUser);
+            if (discordGuild != null && guildUser != null)
             {
+                userName = guildUser.UserName;
+
                 var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
                 if (discordGuildUser != null)
                 {
@@ -257,7 +256,7 @@ public class WhoKnowsArtistService
                 Name = userArtist.Name,
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
-                LastFMUsername = guildUser.UserNameLastFM,
+                LastFMUsername = userArtist.UserNameLastFm,
                 UserId = userArtist.UserId,
             });
         }
