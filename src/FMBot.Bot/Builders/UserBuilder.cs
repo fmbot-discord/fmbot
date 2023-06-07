@@ -568,8 +568,8 @@ public class UserBuilder
                 }
             }
 
-
-            response.Embed.AddField("Your Discogs collection", collection.ToString());
+            var determiner = userSettings.DifferentUser ? "Their" : "Your";
+            response.Embed.AddField($"{determiner} Discogs collection", collection.ToString());
         }
 
         var monthDescription = new StringBuilder();
@@ -577,9 +577,10 @@ public class UserBuilder
             .OrderByDescending(o => o.TimePlayed)
             .GroupBy(g => new { g.TimePlayed.Month, g.TimePlayed.Year });
 
+        var processedPlays = 0;
         foreach (var month in monthGroups.Take(6))
         {
-            if (!allPlays.Any(a => a.TimePlayed < DateTime.UtcNow.AddMonths(-month.Key.Month)))
+            if (userSettings.UserType == UserType.User && processedPlays >= 20000)
             {
                 break;
             }
@@ -589,6 +590,7 @@ public class UserBuilder
                 $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}`** " +
                 $"- **{month.Count()}** plays " +
                 $"- **{StringExtensions.GetLongListeningTimeString(time)}**");
+            processedPlays += month.Count();
         }
         if (monthDescription.Length > 0)
         {
