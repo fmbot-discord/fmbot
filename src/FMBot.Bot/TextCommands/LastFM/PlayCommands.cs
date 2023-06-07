@@ -211,8 +211,11 @@ public class PlayCommands : BaseCommandModule
             catch (Exception e)
             {
                 await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
-                await ReplyAsync(
-                    $"Could not add automatic emoji reactions to `{prfx}fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.");
+                _ = this.Interactivity.DelayedDeleteMessageAsync(
+                    await ReplyAsync(
+                        $"Could not add automatic emoji reactions to `{prfx}fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.",
+                        allowedMentions: AllowedMentions.None),
+                    TimeSpan.FromSeconds(60));
             }
 
             this.Context.LogCommandUsed(response.CommandResponse);
