@@ -249,103 +249,175 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> FeaturedLogAsync(ContextModel context, UserSettingsModel userSettings)
+    public async Task<ResponseModel> FeaturedLogAsync(ContextModel context, UserSettingsModel userSettings, FeaturedView view)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed
         };
 
-        response.Embed.WithTitle(
-                    $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s featured history");
+        List<FeaturedLog> featuredHistory = new();
 
-        var featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId);
+        var odds = await this._featuredService.GetFeaturedOddsAsync();
+        var footer = new StringBuilder();
+
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
+
+        switch (view)
+        {
+            case FeaturedView.Global:
+                {
+                    response.Embed.WithTitle($"🌐 Global featured history");
+
+                    featuredHistory = await this._featuredService.GetGlobalFeaturedHistory();
+                    break;
+                }
+            case FeaturedView.Server:
+                {
+                    response.Embed.WithTitle($"{context.DiscordGuild.Name}'s server featured history");
+
+                    featuredHistory = await this._featuredService.GetFeaturedHistoryForGuild(guildUsers);
+                    break;
+                }
+            case FeaturedView.Friends:
+                {
+                    featuredHistory = await this._featuredService.GetFeaturedHistoryForFriends(context.ContextUser.UserId);
+                    response.Embed.WithTitle(
+                        $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s friends featured history");
+                    break;
+                }
+            case FeaturedView.User:
+                {
+                    featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId);
+                    response.Embed.WithTitle(
+                        $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s featured history");
+
+                    var self = userSettings.DifferentUser ? "They" : "You";
+                    footer.AppendLine(featuredHistory.Count == 1
+                        ? $"{self} have only been featured once. Every hour, that is a chance of 1 in {odds}!"
+                        : $"{self} have been featured {featuredHistory.Count} times");
+
+                    break;
+                }
+            default:
+                throw new ArgumentOutOfRangeException(nameof(view), view, null);
+        }
 
         var description = new StringBuilder();
-        var odds = await this._featuredService.GetFeaturedOddsAsync();
         var nextSupporterSunday = FeaturedService.GetDaysUntilNextSupporterSunday();
+        var pages = new List<PageBuilder>();
 
-        if (!featuredHistory.Any())
+        if (context.ContextUser.UserType == UserType.Supporter)
         {
-            if (!userSettings.DifferentUser)
-            {
-                description.AppendLine("Sorry, you haven't been featured yet... <:404:882220605783560222>");
-                description.AppendLine();
-                description.AppendLine($"But don't give up hope just yet!");
-                description.AppendLine($"Every hour there is a 1 in {odds} chance that you might be picked.");
-
-                if (context.DiscordGuild?.Id != this._botSettings.Bot.BaseServerId)
-                {
-                    description.AppendLine();
-                    description.AppendLine($"Join [our server](https://discord.gg/6y3jJjtDqK) to get pinged if you get featured.");
-                }
-
-                if (context.ContextUser.UserType == UserType.Supporter)
-                {
-                    description.AppendLine();
-                    description.AppendLine($"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday. The next one is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}.");
-                }
-                else
-                {
-                    description.AppendLine();
-                    description.AppendLine($"Become an [.fmbot supporter](https://opencollective.com/fmbot/contribute) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
-                }
-            }
-            else
-            {
-                description.AppendLine("Hmm, they haven't been featured yet... <:404:882220605783560222>");
-                description.AppendLine();
-                description.AppendLine($"But don't let them give up hope just yet!");
-                description.AppendLine($"Every hour there is a 1 in {odds} chance that they might be picked.");
-            }
+            footer.AppendLine($"As a thank you for supporting, you have better odds every first Sunday of the month.");
         }
         else
         {
-            foreach (var featured in featuredHistory.Take(12))
+            footer.AppendLine($"Every first Sunday of the month is Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}). Check '{context.Prefix}getsupporter' for info.");
+        }
+
+        var featuredPages = featuredHistory
+            .Chunk(5)
+            .ToList();
+
+        var pageCounter = 1;
+
+        if (!featuredHistory.Any())
+        {
+            switch (view)
             {
-                var dateValue = ((DateTimeOffset)featured.DateTime).ToUnixTimeSeconds();
-                description.AppendLine($"Mode: `{featured.FeaturedMode}`");
-                if (featured.TrackName != null)
-                {
-                    description.AppendLine($"**{featured.TrackName}**");
-                    description.AppendLine($"**{featured.ArtistName}** | *{featured.AlbumName}*");
-                }
-                else
-                {
-                    description.AppendLine($"**{featured.ArtistName}** - **{featured.AlbumName}**");
-                }
+                case FeaturedView.Global:
+                    description.AppendLine("Sorry, nobody has been featured yet.. that is quite strange now that I'm thinking about it 🤨🤨");
+                    break;
+                case FeaturedView.Server:
+                    description.AppendLine("Sorry, nobody in this server has been featured yet..");
+                    break;
+                case FeaturedView.Friends:
+                    description.AppendLine("Sorry, none of your friends have been featured yet..");
+                    break;
+                case FeaturedView.User:
+                    {
+                        if (!userSettings.DifferentUser)
+                        {
+                            description.AppendLine("Sorry, you haven't been featured yet... <:404:882220605783560222>");
+                            description.AppendLine();
+                            description.AppendLine($"But don't give up hope just yet!");
+                            description.AppendLine($"Every hour there is a 1 in {odds} chance that you might be picked.");
 
-                description.AppendLine($"<t:{dateValue}:F> (<t:{dateValue}:R>)");
+                            if (context.DiscordGuild?.Id != this._botSettings.Bot.BaseServerId)
+                            {
+                                description.AppendLine();
+                                description.AppendLine($"Join [our server](https://discord.gg/6y3jJjtDqK) to get pinged if you get featured.");
+                            }
 
-                if (featured.SupporterDay)
-                {
-                    description.AppendLine($"⭐ On supporter Sunday");
-                }
-
-                description.AppendLine();
+                            if (context.ContextUser.UserType == UserType.Supporter)
+                            {
+                                description.AppendLine();
+                                description.AppendLine($"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday. The next one is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}.");
+                            }
+                            else
+                            {
+                                description.AppendLine();
+                                description.AppendLine($"Become an [.fmbot supporter](https://opencollective.com/fmbot/contribute) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
+                            }
+                        }
+                        else
+                        {
+                            description.AppendLine("Hmm, they haven't been featured yet... <:404:882220605783560222>");
+                            description.AppendLine();
+                            description.AppendLine($"But don't let them give up hope just yet!");
+                            description.AppendLine($"Every hour there is a 1 in {odds} chance that they might be picked.");
+                        }
+                        
+                        break;
+                    }
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(view), view, null);
             }
 
-            var self = userSettings.DifferentUser ? "They" : "You";
-            var footer = new StringBuilder();
+            var page = new PageBuilder()
+                .WithDescription(description.ToString())
+                .WithTitle(response.Embed.Title)
+                .WithFooter(footer.ToString());
 
-            footer.AppendLine(featuredHistory.Count == 1
-                ? $"{self} have only been featured once. Every hour, that is a chance of 1 in {odds}!"
-                : $"{self} have been featured {featuredHistory.Count} times");
+            pages.Add(page);
+        }
+        else
+        {
+            foreach (var featuredPage in featuredPages)
+            {
+                foreach (var featured in featuredPage)
+                {
+                    FullGuildUser guildUser = null;
+                    if (view != FeaturedView.User && featured.UserId.HasValue)
+                    {
+                        guildUsers.TryGetValue(featured.UserId.Value, out guildUser);
+                    }
 
-            if (context.ContextUser.UserType == UserType.Supporter)
-            {
-                footer.AppendLine($"As a thank you for supporting, you have better odds every first Sunday of the month.");
-            }
-            else
-            {
-                footer.AppendLine($"Every first Sunday of the month is Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}). Check '{context.Prefix}getsupporter' for info.");
+                    description.AppendLine(this._featuredService.GetStringForFeatured(featured, view != FeaturedView.User, guildUser));
+                    description.AppendLine();
+                }
+
+                var pageFooter = new StringBuilder();
+                pageFooter.Append($"Page {pageCounter}/{featuredPages.Count}");
+                pageFooter.Append($" - {featuredHistory.Count} total");
+
+                var page = new PageBuilder()
+                    .WithDescription(description.ToString())
+                    .WithTitle(response.Embed.Title)
+                    .WithFooter(pageFooter + "\n" + footer);
+
+                pages.Add(page);
+
+                pageCounter++;
+                description = new StringBuilder();
             }
 
             response.Embed.WithFooter(footer.ToString());
         }
 
-        response.Embed.WithDescription(description.ToString());
-
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
         return response;
     }
 

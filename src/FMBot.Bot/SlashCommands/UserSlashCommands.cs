@@ -561,17 +561,17 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed();
     }
 
-
     [SlashCommand("featuredlog", "Shows you or someone else their featured history")]
     [UsernameSetRequired]
     public async Task FeaturedLogAsync(
+        [Summary("View", "Type of log you want to view")] FeaturedView view = FeaturedView.User,
         [Summary("User", "The user to view the featured log for (defaults to self)")] string user = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
             await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var response = await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, contextUser), userSettings);
+        var response = await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, contextUser), userSettings, view);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

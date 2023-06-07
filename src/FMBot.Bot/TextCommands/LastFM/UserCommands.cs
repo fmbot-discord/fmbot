@@ -409,9 +409,16 @@ public class UserCommands : BaseCommandModule
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
 
+            var view = SettingService.SetFeaturedTypeView(userSettings.NewSearchValue);
+
+            if (view != FeaturedView.User)
+            {
+                userSettings = await this._settingService.GetUser("", contextUser, this.Context);
+            }
+
             var response =
                 await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, prfx, contextUser),
-                    userSettings);
+                    userSettings, view);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

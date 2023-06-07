@@ -2,15 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using Google.Apis.Discovery;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
@@ -180,7 +184,7 @@ public class FeaturedService
                             await AlbumNotFeaturedRecently(currentAlbum.AlbumName, currentAlbum.ArtistName) &&
                             await AlbumPopularEnough(currentAlbum.AlbumName, currentAlbum.ArtistName))
                         {
-                            var artistLink = $"https://www.last.fm/music/{UrlEncoder.Default.Encode(currentAlbum.ArtistName)}";
+                            var artistLink = LastfmUrlExtensions.GetArtistUrl(currentAlbum.ArtistName);
                             if (supporterDay)
                             {
                                 featuredLog.Description = $"[{currentAlbum.AlbumName}]({currentAlbum.AlbumUrl}) \n" +
@@ -251,16 +255,136 @@ public class FeaturedService
 
         return await db.FeaturedLogs
             .AsQueryable()
+            .Include(i => i.User)
             .FirstOrDefaultAsync(w => w.FeaturedLogId == id);
     }
 
-    public async Task<List<FeaturedLog>> GetFeaturedHistoryForUser(int id)
+    public async Task<List<FeaturedLog>> GetGlobalFeaturedHistory()
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.FeaturedLogs
             .AsQueryable()
-            .Where(w => w.UserId == id &&
+            .Include(i => i.User)
+            .Where(w => w.HasFeatured)
+            .OrderByDescending(o => o.DateTime)
+            .Take(240)
+            .ToListAsync();
+    }
+
+    public async Task<List<FeaturedLog>> GetFeaturedHistoryForGuild(IDictionary<int, FullGuildUser> users)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var friendIds = users
+            .Select(s => s.Key)
+            .ToList();
+
+        return await db.FeaturedLogs
+            .AsQueryable()
+            .Include(i => i.User)
+            .Where(w =>
+                w.UserId != null &&
+                friendIds.Contains(w.UserId.Value) &&
+                w.HasFeatured)
+            .OrderByDescending(o => o.DateTime)
+            .ToListAsync();
+    }
+
+    public string GetStringForFeatured(FeaturedLog featured, bool displayUser = true, FullGuildUser user = null)
+    {
+        var description = new StringBuilder();
+
+        if (featured.AlbumName != null)
+        {
+            description.Append(
+                $"**[{featured.AlbumName}]({LastfmUrlExtensions.GetAlbumUrl(featured.ArtistName, featured.AlbumName)})** by " +
+                $"**[{featured.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(featured.ArtistName)})**");
+        }
+        else if (featured.ArtistName != null)
+        {
+            description.Append(
+                $"**[{featured.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(featured.ArtistName)})**");
+        }
+        else
+        {
+            description.Append(
+                $"No artist or album name set.");
+        }
+
+        description.AppendLine();
+
+        description.Append(GetStringForFeaturedMode(featured.FeaturedMode));
+
+        if (displayUser)
+        {
+            if (user != null)
+            {
+                description.Append($" from **[{Format.Sanitize(user.UserName)}]({Constants.LastFMUserUrl}{user.UserNameLastFM})**");
+            }
+            else if (featured.User != null)
+            {
+                description.Append($" from **[{featured.User.UserNameLastFM}]({Constants.LastFMUserUrl}{featured.User.UserNameLastFM})**");
+            }
+        }
+
+        if (featured.SupporterDay)
+        {
+            description.Append(" - Supporter Sunday ⭐");
+        }
+
+        description.AppendLine();
+
+        var dateValue = ((DateTimeOffset)featured.DateTime).ToUnixTimeSeconds();
+        description.Append($"<t:{dateValue}:f> - <t:{dateValue}:R>");
+
+        return description.ToString();
+    }
+
+    public string GetStringForFeaturedMode(FeaturedMode featuredMode)
+    {
+        return featuredMode switch
+        {
+            FeaturedMode.Custom => "Custom",
+            FeaturedMode.RecentPlays => "Recent listens",
+            FeaturedMode.TopAlbumsWeekly => "Weekly albums",
+            FeaturedMode.TopAlbumsMonthly => "Monthly albums",
+            FeaturedMode.TopAlbumsAllTime => "Overall albums",
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+
+    public async Task<List<FeaturedLog>> GetFeaturedHistoryForFriends(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var friends = await db.Friends
+            .Where(w => w.UserId == userId && w.FriendUserId != null)
+            .ToListAsync();
+
+        var friendIds = friends
+            .Select(s => s.FriendUserId)
+            .ToList();
+
+        return await db.FeaturedLogs
+            .AsQueryable()
+            .Include(i => i.User)
+            .Where(w =>
+                w.UserId != null &&
+                friendIds.Contains(w.UserId) &&
+                w.HasFeatured)
+            .OrderByDescending(o => o.DateTime)
+            .ToListAsync();
+    }
+
+    public async Task<List<FeaturedLog>> GetFeaturedHistoryForUser(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.FeaturedLogs
+            .AsQueryable()
+            .Include(i => i.User)
+            .Where(w => w.UserId == userId &&
                         w.HasFeatured)
             .OrderByDescending(o => o.DateTime)
             .ToListAsync();
@@ -287,7 +411,7 @@ public class FeaturedService
             .Where(w => w.BanActive)
             .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
 
-        var recentlyFeaturedFilter = supportersOnly ?  DateTime.UtcNow.AddDays(-45) : DateTime.UtcNow.AddDays(-1);
+        var recentlyFeaturedFilter = supportersOnly ? DateTime.UtcNow.AddDays(-45) : DateTime.UtcNow.AddDays(-1);
         var recentlyFeaturedUsers = await db.FeaturedLogs
             .Include(i => i.User)
             .Where(w => w.DateTime > recentlyFeaturedFilter && w.UserId != null)
