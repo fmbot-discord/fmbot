@@ -239,7 +239,7 @@ public class ArtistBuilders
             if (guild?.LastIndexed != null)
             {
                 var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
-                
+
                 var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, guildUsers, guild.GuildId, artistSearch.Artist.ArtistName);
                 var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
 
@@ -896,6 +896,23 @@ public class ArtistBuilders
         return response;
     }
 
+    public SelectMenuBuilder GetFilterSelectMenu(string customId, Guild guild, IDictionary<int, FullGuildUser> guildUsers)
+    {
+        var builder = new SelectMenuBuilder();
+
+        builder
+            .WithPlaceholder("Set filter options")
+            .WithCustomId(customId)
+            .WithMinValues(0);
+
+        if (guildUsers.Any(a => a.Value.BlockedFromWhoKnows))
+        {
+            builder.AddOption(new SelectMenuOptionBuilder("Blocked users", "blocked-users", "Filter out users you've manually blocked", isDefault: true));
+        }
+
+        return builder;
+    }
+
     public async Task<ResponseModel> GlobalWhoKnowsArtistAsync(
         ContextModel context,
         WhoKnowsSettings settings)
@@ -1361,7 +1378,8 @@ public class ArtistBuilders
         return response;
     }
 
-    public async Task<ResponseModel> AffinityAsync(ContextModel context,
+    public async Task<ResponseModel> AffinityAsync(
+        ContextModel context,
         UserSettingsModel userSettings,
         Guild guild,
         IDictionary<int, FullGuildUser> guildUsers,
@@ -1372,16 +1390,27 @@ public class ArtistBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        var topAllTimeTask = this._whoKnowsArtistService.GetAllTimeTopArtistForGuild(guild.GuildId, largeGuild);
-        var quarterlyAllTimeTask = this._whoKnowsArtistService.GetQuarterlyTopArtistForGuild(guild.GuildId, largeGuild);
+        var bypassCache = false;
+        if (!guildUsers.ContainsKey(userSettings.UserId))
+        {
+            var guildUser = await context.DiscordGuild.GetUserAsync(userSettings.DiscordUserId);
+            if (guildUser != null)
+            {
+                await this._indexService.AddOrUpdateGuildUser(guildUser);
+                bypassCache = true;
+            }
+        }
 
-        var topAllTime = await topAllTimeTask;
-        var quarterlyAllTime = await quarterlyAllTimeTask;
+        var guildTopAllTimeTask = this._whoKnowsArtistService.GetAllTimeTopArtistForGuild(guild.GuildId, largeGuild, bypassCache);
+        var guildTopQuarterlyTask = this._whoKnowsArtistService.GetQuarterlyTopArtistForGuild(guild.GuildId, largeGuild, bypassCache);
 
-        var ownAllTime = topAllTime.Where(w => w.UserId == userSettings.UserId).ToList();
-        var ownQuarterly = quarterlyAllTime.Where(w => w.UserId == userSettings.UserId).ToList();
+        var guildTopAllTime = await guildTopAllTimeTask;
+        var guildTopQuarterly = await guildTopQuarterlyTask;
 
-        var concurrentNeighbors = await this._whoKnowsArtistService.GetAffinity(topAllTime, ownAllTime, quarterlyAllTime, ownQuarterly);
+        var ownAllTime = guildTopAllTime.Where(w => w.UserId == userSettings.UserId).ToList();
+        var ownQuarterly = guildTopQuarterly.Where(w => w.UserId == userSettings.UserId).ToList();
+
+        var concurrentNeighbors = await this._whoKnowsArtistService.GetAffinity(guildTopAllTime, ownAllTime, guildTopQuarterly, ownQuarterly);
 
         var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild, guildUsers);
         var filteredUserIds = filteredGuildUsers
@@ -1389,7 +1418,7 @@ public class ArtistBuilders
             .Distinct()
             .ToHashSet();
 
-        var self = concurrentNeighbors.First(f => f.Key == userSettings.UserId);
+        concurrentNeighbors.TryGetValue(userSettings.UserId, out var self);
 
         var neighbors = concurrentNeighbors
             .Where(w => filteredUserIds.Contains(w.Key))
@@ -1416,11 +1445,11 @@ public class ArtistBuilders
             {
                 guildUsers.TryGetValue(neighbor.Key, out var guildUser);
                 pageString.AppendLine(
-                    $"**{(neighbor.Value.TotalPoints / self.Value.TotalPoints).ToString("P1", numberInfo)}** — " +
+                    $"**{(neighbor.Value.TotalPoints / self.TotalPoints).ToString("P1", numberInfo)}** — " +
                     $"**[{Format.Sanitize(guildUser?.UserName)}]({Constants.LastFMUserUrl}{guildUser?.UserNameLastFM})** — " +
-                                      $"`{(neighbor.Value.ArtistPoints / self.Value.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
-                                      $"`{(neighbor.Value.GenrePoints / self.Value.GenrePoints).ToString("P0", numberInfo)}` genres, " +
-                                      $"`{(neighbor.Value.CountryPoints / self.Value.CountryPoints).ToString("P0", numberInfo)}` countries");
+                                      $"`{(neighbor.Value.ArtistPoints / self.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
+                                      $"`{(neighbor.Value.GenrePoints / self.GenrePoints).ToString("P0", numberInfo)}` genres, " +
+                                      $"`{(neighbor.Value.CountryPoints / self.CountryPoints).ToString("P0", numberInfo)}` countries");
 
             }
 

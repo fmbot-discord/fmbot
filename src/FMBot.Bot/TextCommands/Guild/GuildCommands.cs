@@ -381,7 +381,7 @@ public class GuildCommands : BaseCommandModule
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
+        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
         int? newCooldown = null;
 

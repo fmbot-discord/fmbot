@@ -132,10 +132,18 @@ public class AdminCommands : BaseCommandModule
     [Command("serverdebug")]
     [Summary("Returns server data")]
     [Alias("guilddebug", "debugserver", "debugguild")]
-    public async Task DebugGuildAsync(ulong? guildId = null)
+    public async Task DebugGuildAsync([Remainder] string guildId = null)
     {
-        var chosenGuild = guildId ?? this.Context.Guild.Id;
-        var guild = await this._guildService.GetFullGuildAsync(chosenGuild, enableCache: false);
+        guildId ??= this.Context.Guild.Id.ToString();
+
+        if (!ulong.TryParse(guildId, out var discordGuildId))
+        {
+            await ReplyAsync("Enter a valid discord guild id");
+            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            return;
+        }
+
+        var guild = await this._guildService.GetGuildAsync(discordGuildId);
 
         if (guild == null)
         {
@@ -144,7 +152,7 @@ public class AdminCommands : BaseCommandModule
             return;
         }
 
-        this._embed.WithTitle($"Debug for guild with id {chosenGuild}");
+        this._embed.WithTitle($"Debug for guild with id {discordGuildId}");
 
         var description = "";
         foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(guild))

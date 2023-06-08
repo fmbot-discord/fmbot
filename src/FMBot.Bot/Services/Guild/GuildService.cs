@@ -51,24 +51,16 @@ public class GuildService
             .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
     }
 
-    public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong? discordGuildId = null, bool filterBots = true, bool enableCache = true)
+    public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong? discordGuildId = null, bool filterBots = true)
     {
         if (discordGuildId == null)
         {
             return null;
         }
 
-        var cacheKey = CacheKeyForGuild(discordGuildId.Value);
-
-        var cachedGuildAvailable = this._cache.TryGetValue(cacheKey, out Persistence.Domain.Models.Guild guild);
-        if (cachedGuildAvailable && enableCache)
-        {
-            return guild;
-        }
-
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        guild = await db.Guilds
-            .AsNoTracking()
+        return await db.Guilds
+            //.AsNoTracking()
             .Include(i => i.GuildBlockedUsers)
             .ThenInclude(t => t.User)
             .Include(i => i.GuildUsers.Where(w => !filterBots || w.Bot != true))
@@ -76,10 +68,6 @@ public class GuildService
             .Include(i => i.Channels)
             .Include(i => i.Webhooks)
             .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
-
-        this._cache.Set(cacheKey, guild, TimeSpan.FromMinutes(5));
-
-        return guild;
     }
 
     public async Task<Persistence.Domain.Models.Guild> GetGuildForWhoKnows(ulong? discordGuildId = null)
