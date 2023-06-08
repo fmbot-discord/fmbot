@@ -341,7 +341,7 @@ public class SettingService
             Formats = new List<DiscogsFormat>(),
             NewSearchValue = extraOptions
         };
-        
+
         if (extraOptions == null)
         {
             return collectionSettings;
@@ -797,7 +797,6 @@ public class SettingService
         return goalAmount;
     }
 
-
     public static long GetMilestoneAmount(
         string extraOptions,
         long currentPlaycount)
@@ -884,6 +883,29 @@ public class SettingService
         }
 
         return setGuildRankingSettings;
+    }
+
+    public static FeaturedView SetFeaturedTypeView(string extraOptions)
+    {
+        var featuredView = FeaturedView.User;
+
+        var global = new[] { "g", "global", "gw" };
+        if (Contains(extraOptions, global))
+        {
+            featuredView = FeaturedView.Global;
+        }
+        var friends = new[] { "friends", "f" };
+        if (Contains(extraOptions, friends))
+        {
+            featuredView = FeaturedView.Friends;
+        }
+        var guild = new[] { "server", "guild", "s" };
+        if (Contains(extraOptions, guild))
+        {
+            featuredView = FeaturedView.Server;
+        }
+
+        return featuredView;
     }
 
     public static GuildRankingSettings TimeSettingsToGuildRankingSettings(GuildRankingSettings guildRankingSettings, TimeSettingsModel timeSettings)

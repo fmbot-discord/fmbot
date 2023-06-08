@@ -273,16 +273,16 @@ public class IndexService : IIndexService
         }
     }
 
-    public async Task UpdateGuildUserEvent(IGuildUser discordGuildUser)
+    public async Task AddOrUpdateGuildUser(IGuildUser discordGuildUser)
     {
         try
         {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-
             if (!PublicProperties.RegisteredUsers.TryGetValue(discordGuildUser.Id, out var userId))
             {
                 return;
             }
+
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             var guild = await db.Guilds
                 .Include(i => i.GuildUsers.Where(w => w.UserId == userId))

@@ -63,7 +63,7 @@ public class WebhookCommands : BaseCommandModule
         }
 
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
+        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
         var botType = this.Context.GetBotType();
 
         if (guild.Webhooks != null && guild.Webhooks.Any(a => a.BotType == botType))
@@ -101,7 +101,7 @@ public class WebhookCommands : BaseCommandModule
         }
 
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
+        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
         var botType = this.Context.GetBotType();
 
         if (guild.Webhooks != null && guild.Webhooks.Any(a => a.BotType == botType))

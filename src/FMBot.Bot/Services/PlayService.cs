@@ -12,6 +12,7 @@ using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -431,7 +432,7 @@ public class PlayService
         var description = new StringBuilder();
         if (streak.ArtistName != null && streak.ArtistPlaycount.HasValue)
         {
-            description.AppendLine($"Artist: **[{streak.ArtistName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)})** - " +
+            description.AppendLine($"Artist: **[{streak.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(streak.ArtistName)})** - " +
                                    $"{GetEmojiForStreakCount(streak.ArtistPlaycount.Value)}*{streak.ArtistPlaycount} plays in a row*");
         }
         if (streak.AlbumName != null && streak.AlbumPlaycount.HasValue)

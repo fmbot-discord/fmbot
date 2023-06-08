@@ -12,6 +12,7 @@ using FMBot.LastFM.Api;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Extensions;
 using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
@@ -554,7 +555,7 @@ public class LastFmRepository
                         ? albumCall.Content.Album.Url
                         : null,
                     ArtistName = albumCall.Content.Album.Artist,
-                    ArtistUrl = $"https://www.last.fm/music/{UrlEncoder.Default.Encode(albumCall.Content.Album.Artist)}",
+                    ArtistUrl = LastfmUrlExtensions.GetArtistUrl(albumCall.Content.Album.Artist),
                     Mbid = !string.IsNullOrWhiteSpace(albumCall.Content.Album.Mbid)
                         ? Guid.Parse(albumCall.Content.Album.Mbid)
                         : null,

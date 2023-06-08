@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Web;
 using FMBot.Youtube.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
@@ -31,7 +33,7 @@ namespace FMBot.Youtube.Services
         {
             var queryParams = new Dictionary<string, string>
             {
-                {"q", WebUtility.UrlEncode(searchQuery) },
+                {"q", searchQuery },
             };
 
             var url = this._url + "api/v1/search";

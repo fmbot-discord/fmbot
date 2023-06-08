@@ -25,7 +25,7 @@ public interface IIndexService
 
     Task UpdateGuildUser(IGuildUser discordGuildUser, int userId, Guild guildId);
 
-    Task UpdateGuildUserEvent(IGuildUser discordGuildUser);
+    Task AddOrUpdateGuildUser(IGuildUser discordGuildUser);
 
     Task RemoveUserFromGuild(ulong discordUserId, ulong discordGuildId);
 

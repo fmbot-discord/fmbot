@@ -13,6 +13,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -344,7 +345,7 @@ public class AlbumService
             AlbumCoverUrl = album.SpotifyImageUrl ?? album.LastfmImageUrl,
             AlbumName = album.Name,
             ArtistName = album.ArtistName,
-            ArtistUrl = $"https://www.last.fm/music/{UrlEncoder.Default.Encode(album.ArtistName)}",
+            ArtistUrl = LastfmUrlExtensions.GetArtistUrl(album.ArtistName),
             Mbid = album.Mbid,
             AlbumUrl = album.LastFmUrl
         };

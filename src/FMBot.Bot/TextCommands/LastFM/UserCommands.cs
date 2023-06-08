@@ -397,8 +397,9 @@ public class UserCommands : BaseCommandModule
     }
 
     [Command("featuredlog", RunMode = RunMode.Async)]
-    [Summary("Shows you or someone else their featured history")]
+    [Summary("Shows featured history")]
     [Alias("featuredhistory", "recentfeatured", "rf", "recentlyfeatured", "fl")]
+    [Options("global/server/friends/self")]
     [CommandCategories(CommandCategory.Other)]
     [UsernameSetRequired]
     public async Task FeaturedLogAsync([Remainder] string options = null)
@@ -409,9 +410,16 @@ public class UserCommands : BaseCommandModule
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
 
+            var view = SettingService.SetFeaturedTypeView(userSettings.NewSearchValue);
+
+            if (view != FeaturedView.User)
+            {
+                userSettings = await this._settingService.GetUser("", contextUser, this.Context);
+            }
+
             var response =
                 await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, prfx, contextUser),
-                    userSettings);
+                    userSettings, view);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

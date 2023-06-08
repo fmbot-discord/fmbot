@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Models;
 
@@ -48,6 +47,8 @@ public class WhoKnowsArtistDto
     public int UserId { get; set; }
 
     public string Name { get; set; }
+
+    public string UserNameLastFm { get; set; }
 
     public int Playcount { get; set; }
 }

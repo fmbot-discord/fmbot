@@ -212,7 +212,8 @@ public class WhoKnowsArtistService
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ua.user_id, " +
                            "ua.name, " +
-                           "ua.playcount " +
+                           "ua.playcount, " +
+                           "u.user_name_last_fm " +
                            "FROM user_artists AS ua " +
                            "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
                            "INNER JOIN friends AS fr ON fr.friend_user_id = ua.user_id " +
@@ -236,15 +237,13 @@ public class WhoKnowsArtistService
 
         foreach (var userArtist in userArtists)
         {
-            if (!guildUsers.TryGetValue(userArtist.UserId, out var guildUser))
-            {
-                continue;
-            }
+            var userName = userArtist.UserNameLastFm;
 
-            var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
-
-            if (discordGuild != null)
+            guildUsers.TryGetValue(userArtist.UserId, out var guildUser);
+            if (discordGuild != null && guildUser != null)
             {
+                userName = guildUser.UserName;
+
                 var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
                 if (discordGuildUser != null)
                 {
@@ -257,7 +256,7 @@ public class WhoKnowsArtistService
                 Name = userArtist.Name,
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
-                LastFMUsername = guildUser.UserNameLastFM,
+                LastFMUsername = userArtist.UserNameLastFm,
                 UserId = userArtist.UserId,
             });
         }
@@ -376,12 +375,12 @@ public class WhoKnowsArtistService
         });
     }
 
-    public async Task<ICollection<AffinityItemDto>> GetAllTimeTopArtistForGuild(int guildId, bool largeGuild)
+    public async Task<ICollection<AffinityItemDto>> GetAllTimeTopArtistForGuild(int guildId, bool largeGuild, bool bypassCache = false)
     {
         var cacheKey = $"guild-affinity-top-artist-alltime-{guildId}";
 
         var cachedArtistsAvailable = this._cache.TryGetValue(cacheKey, out ICollection<AffinityItemDto> guildArtists);
-        if (cachedArtistsAvailable)
+        if (cachedArtistsAvailable && !bypassCache)
         {
             return guildArtists;
         }
@@ -412,12 +411,12 @@ public class WhoKnowsArtistService
         return guildArtists;
     }
 
-    public async Task<ICollection<AffinityItemDto>> GetQuarterlyTopArtistForGuild(int guildId, bool largeGuild)
+    public async Task<ICollection<AffinityItemDto>> GetQuarterlyTopArtistForGuild(int guildId, bool largeGuild, bool bypassCache = false)
     {
         var cacheKey = $"guild-affinity-top-artist-quarterly-{guildId}";
 
         var cachedArtistsAvailable = this._cache.TryGetValue(cacheKey, out ICollection<AffinityItemDto> guildArtists);
-        if (cachedArtistsAvailable)
+        if (cachedArtistsAvailable && !bypassCache)
         {
             return guildArtists;
         }
@@ -451,9 +450,9 @@ public class WhoKnowsArtistService
     }
 
     public async Task<ConcurrentDictionary<int, AffinityUser>> GetAffinity(
-        IEnumerable<AffinityItemDto> allTimeArtists,
+        IEnumerable<AffinityItemDto> guildAllTimeArtists,
         List<AffinityItemDto> ownAllTime,
-        IEnumerable<AffinityItemDto> quarterlyArtists,
+        IEnumerable<AffinityItemDto> guildQuarterlyArtists,
         List<AffinityItemDto> ownQuarterly)
     {
         var ownAllTimeArtists = ownAllTime.GroupBy(g => g.Name)
@@ -474,9 +473,9 @@ public class WhoKnowsArtistService
         };
 
         var results = new ConcurrentDictionary<int, AffinityUser>();
-        await Parallel.ForEachAsync(allTimeArtists.GroupBy(g => g.UserId), parallelOptions, async (userTopArtists, _) =>
+        await Parallel.ForEachAsync(guildAllTimeArtists.GroupBy(g => g.UserId), parallelOptions, async (guildUserTopArtists, _) =>
         {
-            var result = await GetAffinityUser(userTopArtists.Key, ownAllTimeArtistsConcurrent, ownAllTimeGenresConcurrent, ownAllTimeCountriesConcurrent, userTopArtists.ToList());
+            var result = await GetAffinityUser(guildUserTopArtists.Key, ownAllTimeArtistsConcurrent, ownAllTimeGenresConcurrent, ownAllTimeCountriesConcurrent, guildUserTopArtists.ToList());
             results.TryAdd(result.UserId, result);
         });
 
@@ -493,10 +492,10 @@ public class WhoKnowsArtistService
             .ToDictionary(d => d.Name, d => d.Position);
         var ownQuarterlyCountriesConcurrent = new ConcurrentDictionary<string, int>(ownQuarterlyCountries);
 
-        await Parallel.ForEachAsync(quarterlyArtists.GroupBy(g => g.UserId), parallelOptions, async (userTopArtists, _) =>
+        await Parallel.ForEachAsync(guildQuarterlyArtists.GroupBy(g => g.UserId), parallelOptions, async (guildUserTopArtists, _) =>
         {
-            var result = await GetAffinityUser(userTopArtists.Key, ownQuarterArtistsConcurrent,
-                ownQuarterlyGenresConcurrent, ownQuarterlyCountriesConcurrent, userTopArtists.ToList());
+            var result = await GetAffinityUser(guildUserTopArtists.Key, ownQuarterArtistsConcurrent,
+                ownQuarterlyGenresConcurrent, ownQuarterlyCountriesConcurrent, guildUserTopArtists.ToList());
 
             if (results.TryGetValue(result.UserId, out var value))
             {

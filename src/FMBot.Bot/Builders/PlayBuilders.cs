@@ -326,7 +326,7 @@ public class PlayBuilder
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
-            GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
+            response.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }
@@ -558,6 +558,8 @@ public class PlayBuilder
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+
+
         return response;
     }
 

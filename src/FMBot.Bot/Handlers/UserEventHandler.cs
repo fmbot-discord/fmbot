@@ -49,7 +49,7 @@ public class UserEventHandler
             }
         }
 
-        _ = this._indexService.UpdateGuildUserEvent(newGuildUser);
+        _ = this._indexService.AddOrUpdateGuildUser(newGuildUser);
     }
 
     private async Task UserLeft(SocketGuild socketGuild, SocketUser socketUser)
