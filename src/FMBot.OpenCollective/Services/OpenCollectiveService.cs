@@ -78,8 +78,8 @@ public class OpenCollectiveService
         var query = new GraphQLRequest
         {
             Query = @"
-            query account($slug: String) {
-              account(slug: $slug) {
+            query account {
+              account(slug: ""fmbot"") {
                 name
                 slug
                 members(role: BACKER, limit: 1000) {
@@ -90,7 +90,7 @@ public class OpenCollectiveService
                       slug
                       id
                       createdAt
-                      transactions(kind: CONTRIBUTION, fromAccount: { slug: $slug }) {
+                      transactions(kind: CONTRIBUTION, fromAccount: { slug: ""fmbot"" }) {
                         nodes {
                           createdAt
                           amount {
@@ -106,8 +106,7 @@ public class OpenCollectiveService
                   }
                 }
               }
-            }",
-            Variables = @"{""slug"": ""fmbot""}"
+            }"
         };
 
         var graphQLClient = new GraphQLHttpClient(new GraphQLHttpClientOptions
@@ -132,7 +131,7 @@ public class OpenCollectiveService
 
             if (httpResponse.StatusCode == HttpStatusCode.OK)
             {
-                this._cache.Set(cacheKey, response.Data, TimeSpan.FromMinutes(2));
+                this._cache.Set(cacheKey, response.Data, TimeSpan.FromMinutes(1));
             }
         }
 
