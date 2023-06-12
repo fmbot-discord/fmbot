@@ -17,6 +17,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Genius.Models.User;
@@ -1011,7 +1012,7 @@ public class PlayBuilder
             {
                 var newArtist = topNewArtists.OrderBy(o => o.FirstPlay).ToList()[i];
 
-                newArtistDescription.AppendLine($"**[{newArtist.ArtistName}]({newArtist})** " +
+                newArtistDescription.AppendLine($"**[{newArtist.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
                                                 $"- **{newArtist.UserPlaycount}** {StringExtensions.GetPlaysString(newArtist.UserPlaycount)} " +
                                                 $"- On **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
             }
