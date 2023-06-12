@@ -621,9 +621,11 @@ public class UserCommands : BaseCommandModule
         {
             if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(1) >= DateTimeOffset.Now)
             {
+                var loginCommand = PublicProperties.SlashCommands.ContainsKey("login") ? $"</login:{PublicProperties.SlashCommands["login"]}>" : "`/login`";
+
                 await ReplyAsync($"A login link has already been sent to your DMs.\n" +
                                  $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
-                                 $"Setting location: Click on the server name (top left) > `Privacy Settings` > `Allow direct messages from server members`.");
+                                 $"You can also try using the slash command version {loginCommand}.");
 
                 this.Context.LogCommandUsed(CommandResponse.Cooldown);
                 StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now.AddMinutes(-5);
@@ -707,12 +709,12 @@ public class UserCommands : BaseCommandModule
                     $"`.fmprivacy` has been set to: `{newUserSettings.PrivacyLevel}`";
 
                 var sourceGuildId = this.Context.Guild?.Id;
-                var sourceChannelId = this.Context.Channel?.Id;
+                var sourceChannel = this.Context.Channel;
 
-                if (sourceGuildId != null && sourceChannelId != null)
+                if (sourceGuildId != null && sourceChannel != null)
                 {
                     description += "\n\n" +
-                                   $"**[Click here to go back to <#{sourceChannelId}>](https://discord.com/channels/{sourceGuildId}/{sourceChannelId}/)**";
+                                   $"**[Click here to go back to #{sourceChannel.Name}](https://discord.com/channels/{sourceGuildId}/{sourceChannel.Id}/)**";
                 }
 
                 m.Embed = new EmbedBuilder()
