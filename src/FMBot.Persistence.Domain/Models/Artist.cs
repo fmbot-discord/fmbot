@@ -10,6 +10,7 @@ public class Artist
     public string Name { get; set; }
 
     public string LastFmUrl { get; set; }
+    public string LastFmDescription { get; set; }
     public DateTime? LastfmDate { get; set; }
 
     public string SpotifyImageUrl { get; set; }
@@ -26,7 +27,6 @@ public class Artist
     public string Disambiguation { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
-
 
     public ICollection<Track> Tracks { get; set; }
 

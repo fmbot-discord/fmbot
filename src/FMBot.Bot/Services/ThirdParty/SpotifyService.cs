@@ -85,6 +85,7 @@ public class SpotifyService
                     Name = artistInfo.ArtistName,
                     LastFmUrl = artistInfo.ArtistUrl,
                     Mbid = artistInfo.Mbid,
+                    LastFmDescription = artistInfo.Description,
                     LastfmDate = DateTime.UtcNow
                 };
 
@@ -156,6 +157,17 @@ public class SpotifyService
             {
                 await this._artistRepository
                     .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
+            }
+
+            if (dbArtist.LastFmDescription == null && artistInfo.Description != null)
+            {
+                await using var db = await this._contextFactory.CreateDbContextAsync();
+
+                dbArtist.LastFmDescription = artistInfo.Description;
+                dbArtist.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                db.Entry(dbArtist).State = EntityState.Modified;
+
+                await db.SaveChangesAsync();
             }
 
             var musicBrainzUpdate = await this._musicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
@@ -268,6 +280,7 @@ public class SpotifyService
                     ArtistName = trackInfo.ArtistName,
                     DurationMs = (int)trackInfo.Duration,
                     LastFmUrl = trackInfo.TrackUrl,
+                    LastFmDescription = trackInfo.Description,
                     LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
                 };
 
@@ -324,6 +337,13 @@ public class SpotifyService
             if (dbTrack.LastFmUrl == null && trackInfo.TrackUrl != null)
             {
                 dbTrack.LastFmUrl = trackInfo.TrackUrl;
+                dbTrack.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                db.Entry(dbTrack).State = EntityState.Modified;
+            }
+
+            if (dbTrack.LastFmDescription == null && trackInfo.Description != null)
+            {
+                dbTrack.LastFmDescription = trackInfo.Description;
                 dbTrack.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 db.Entry(dbTrack).State = EntityState.Modified;
             }
@@ -483,6 +503,7 @@ public class SpotifyService
                 LastFmUrl = albumInfo.AlbumUrl,
                 Mbid = albumInfo.Mbid,
                 LastfmImageUrl = albumInfo.AlbumCoverUrl,
+                LastFmDescription = albumInfo.Description,
                 LastfmDate = DateTime.UtcNow
             };
 
@@ -531,6 +552,13 @@ public class SpotifyService
             db.Entry(dbAlbum).State = EntityState.Modified;
             await db.SaveChangesAsync();
         }
+        if (dbAlbum.LastFmDescription == null && albumInfo.Description != null)
+        {
+            dbAlbum.LastFmDescription = albumInfo.Description;
+            dbAlbum.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+            db.Entry(dbAlbum).State = EntityState.Modified;
+        }
+
         if (dbAlbum.Artist == null)
         {
             var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName, connection);

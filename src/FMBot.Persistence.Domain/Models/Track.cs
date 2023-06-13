@@ -15,6 +15,7 @@ public class Track
     public Guid? Mbid { get; set; }
 
     public string LastFmUrl { get; set; }
+    public string LastFmDescription { get; set; }
     public DateTime? LastfmDate { get; set; }
 
     public string ArtistName { get; set; }
