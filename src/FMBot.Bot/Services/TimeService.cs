@@ -91,6 +91,13 @@ public class TimeService
         if (playsLeft > 0)
         {
             var avgTrackLength = albumTracks.Average(a => a.Duration);
+
+            if (avgTrackLength == null)
+            {
+                var avgArtistTrackLength = (long?)this._cache.Get(CacheKeyForArtist(albumTracks.First().ArtistName));
+                avgTrackLength = avgArtistTrackLength ?? 210000;
+            }
+
             totalPlaytime += (playsLeft * (long)avgTrackLength);
         }
 
