@@ -21,8 +21,6 @@ public class OpenAiService
     private readonly BotSettings _botSettings;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-    private const string Model = "gpt-3.5-turbo";
-
     public OpenAiService(HttpClient httpClient, IOptions<BotSettings> botSettings, IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._httpClient = httpClient;
@@ -30,28 +28,20 @@ public class OpenAiService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<OpenAiResponse> GetResponse(List<string> artists, bool compliment)
+    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-3.5-turbo")
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
         request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
 
-        var prompt = compliment ? this._botSettings.OpenAi.ComplimentPrompt : this._botSettings.OpenAi.RoastPrompt;
-
-        var artistList = new List<string>();
-        foreach (var artist in artists)
-        {
-             artistList.Add(artist[..Math.Min(artist.Length, 28)]);
-        }
-
         var content = new OpenAiRequest
         {
-            Model = Model,
+            Model = model,
             Messages = new List<RequestMessage>
             {
                 new()
                 {
                     Role = "system",
-                    Content = $"{prompt} {string.Join(", ", artistList)}"
+                    Content = prompt
                 }
             }
         };
@@ -68,6 +58,19 @@ public class OpenAiService
         responseModel.Prompt = prompt;
 
         return responseModel;
+    }
+
+    public async Task<OpenAiResponse> GetResponse(List<string> artists, bool compliment)
+    {
+        var prompt = compliment ? this._botSettings.OpenAi.ComplimentPrompt : this._botSettings.OpenAi.RoastPrompt;
+
+        var artistList = new List<string>();
+        foreach (var artist in artists)
+        {
+             artistList.Add(artist[..Math.Min(artist.Length, 34)]);
+        }
+
+        return await SendRequest($"{prompt} {string.Join(", ", artistList)}");
     }
 
     public async Task<AiGeneration> StoreAiGeneration(OpenAiResponse response, int userId, int? targetedUserId)
@@ -107,33 +110,9 @@ public class OpenAiService
     {
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
-            request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
+            var response = await SendRequest($"Is the username '{username}' offensive? Only reply with 'true' or 'false'.");
 
-            var content = new OpenAiRequest
-            {
-                Model = Model,
-                Messages = new List<RequestMessage>
-                {
-                    new()
-                    {
-                        Role = "system",
-                        Content = $"Is the username '{username}' offensive? Only reply with 'true' or 'false'."
-                    }
-                }
-            };
-
-            var requestContent = JsonSerializer.Serialize(content);
-
-            request.Content = new StringContent(requestContent, null, "application/json");
-            var response = await this._httpClient.SendAsync(request);
-            Statistics.OpenAiCalls.Inc();
-
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            var responseModel = JsonSerializer.Deserialize<OpenAiResponse>(responseContent);
-
-            var output = responseModel.Choices.FirstOrDefault()?.ChoiceMessage?.Content;
+            var output = response.Choices.FirstOrDefault()?.ChoiceMessage?.Content;
             return output != null && output.ToLower().Contains("true");
         }
         catch (Exception e)
