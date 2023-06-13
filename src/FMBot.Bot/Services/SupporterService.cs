@@ -476,7 +476,7 @@ public class SupporterService
 
                                 Log.Information("Re-activated supporter status from Discord account {discordUserId} - {lastFmUsername}", user.DiscordUserId, user.UserNameLastFM);
 
-                               _ = this._indexService.IndexUser(user);
+                                _ = this._indexService.IndexUser(user);
                             }
                         }
 
@@ -532,7 +532,7 @@ public class SupporterService
 
             if (existingSupporter.SubscriptionType == SubscriptionType.Monthly)
             {
-                if (existingSupporter.Expired != true && existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-42) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-40))
+                if (existingSupporter.Expired != true && existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-63) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-60))
                 {
                     Log.Information("Monthly supporter expiration detected for {supporterName} - {discordUserId}", existingSupporter.Name, existingSupporter.DiscordUserId);
 
@@ -561,7 +561,7 @@ public class SupporterService
 
             if (existingSupporter.SubscriptionType == SubscriptionType.Yearly)
             {
-                if (existingSupporter.Expired != true && existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-372) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-370))
+                if (existingSupporter.Expired != true && existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-388) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-385))
                 {
                     Log.Information("Yearly supporter expiration detected for {supporterName} - {discordUserId}", existingSupporter.Name, existingSupporter.DiscordUserId);
 
