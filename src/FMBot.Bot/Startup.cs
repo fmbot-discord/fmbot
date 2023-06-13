@@ -31,8 +31,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Events;
 using Serilog.Exceptions;
-using Serilog.Sinks.Discord;
 using RunMode = Discord.Commands.RunMode;
+using Hangfire;
+using Hangfire.MemoryStorage;
 
 namespace FMBot.Bot;
 
@@ -94,6 +95,9 @@ public class Startup
         provider.GetRequiredService<UserEventHandler>();
 
         await provider.GetRequiredService<StartupService>().StartAsync(); // Start the startup service
+
+        // Start hangfire
+        using var server = new BackgroundJobServer();
 
         await Task.Delay(-1); // Keep the program alive
     }
@@ -213,6 +217,11 @@ public class Startup
             b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
 
         services.AddMemoryCache();
+
+        services.AddHangfire(config =>
+        {
+            config.UseMemoryStorage();
+        });
     }
 
     private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)

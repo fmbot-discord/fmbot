@@ -1,9 +1,9 @@
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -13,6 +13,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using Hangfire;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -20,17 +21,9 @@ using Image = Discord.Image;
 
 namespace FMBot.Bot.Services;
 
+[SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
 public class TimerService
 {
-    private readonly Timer _featuredTimer;
-    private readonly Timer _pickNewFeaturedTimer;
-    private readonly Timer _internalStatsTimer;
-    private readonly Timer _shardReconnectTimer;
-    private readonly Timer _userUpdateTimer;
-    private readonly Timer _purgeCacheTimer;
-    private readonly Timer _checkNewSupporterTimer;
-    private readonly Timer _updateSupporterTimer;
-    private readonly Timer _userIndexTimer;
     private readonly UserService _userService;
     private readonly IUpdateService _updateService;
     private readonly IIndexService _indexService;
@@ -42,9 +35,7 @@ public class TimerService
     private readonly SupporterService _supporterService;
     private readonly IMemoryCache _cache;
 
-    private bool _timerEnabled;
-
-    public FeaturedLog _currentFeatured = null;
+    public FeaturedLog CurrentFeatured;
 
     public TimerService(DiscordShardedClient client,
         IUpdateService updateService,
@@ -68,347 +59,210 @@ public class TimerService
         this._updateService = updateService;
         this._botSettings = botSettings.Value;
 
-        this._currentFeatured = this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow).Result;
-
-        this._featuredTimer = new Timer(async _ =>
-            {
-                try
-                {
-                    var newFeatured = await this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow);
-
-                    if (newFeatured == null)
-                    {
-                        Log.Warning("Featured: No new featured ready");
-                        return;
-                    }
-
-                    if (newFeatured.DateTime == this._currentFeatured?.DateTime && newFeatured.HasFeatured)
-                    {
-                        return;
-                    }
-
-                    var cached = (string)this._cache.Get("avatar");
-
-                    if (this._botSettings.Bot.MainInstance == true && cached != newFeatured.ImageUrl)
-                    {
-                        try
-                        {
-                            await ChangeToNewAvatar(client, newFeatured.ImageUrl);
-                            this._cache.Set("avatar", newFeatured.ImageUrl, TimeSpan.FromMinutes(30));
-                        }
-                        catch
-                        {
-                            // ignored
-                        }
-                    }
-
-                    if (this._botSettings.Bot.FeaturedMaster == true && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
-                    {
-                        Log.Warning("Featured: Posting new featured to webhooks");
-
-                        var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
-                        await this._webhookService.PostFeatured(newFeatured, client);
-                        await this._featuredService.SetFeatured(newFeatured);
-                        await this._webhookService.SendFeaturedWebhooks(botType, newFeatured);
-
-                        if (newFeatured.FeaturedMode == FeaturedMode.RecentPlays)
-                        {
-                            await this._featuredService.ScrobbleTrack(client.CurrentUser.Id, newFeatured);
-                        }
-                    }
-
-                    this._currentFeatured = await this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow);
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e, "Featured: Error in featuredTimer");
-                    Console.WriteLine(e);
-                }
-            },
-            null,
-            TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds + this._botSettings.Bot.FeaturedTimerStartupDelayInSeconds),
-            TimeSpan.FromMinutes(1));
-
-        this._pickNewFeaturedTimer = new Timer(async _ =>
-            {
-                try
-                {
-                    if (this._botSettings.Bot.FeaturedMaster != true)
-                    {
-                        Log.Warning("Featured: FeaturedMaster is not true, cancelling pickNewFeaturedTimer");
-                        this._pickNewFeaturedTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                        return;
-                    }
-
-                    for (var i = 0; i <= 28; i++)
-                    {
-                        var dateTime = DateTime.UtcNow.AddHours(i);
-                        var featuredDateTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, Constants.FeaturedMinute, 0);
-                        var hourFeatured = await this._featuredService.GetFeaturedForDateTime(featuredDateTime);
-
-                        if (hourFeatured == null)
-                        {
-                            var newFeatured = await this._featuredService.NewFeatured(client.CurrentUser.Id, featuredDateTime);
-                            await this._featuredService.AddFeatured(newFeatured);
-                            Log.Information("Featured: Added future feature for {dateTime}", featuredDateTime);
-
-                            if (!string.IsNullOrWhiteSpace(this._botSettings.Bot.FeaturedPreviewWebhookUrl))
-                            {
-                                await this._webhookService.SendFeaturedPreview(newFeatured, this._botSettings.Bot.FeaturedPreviewWebhookUrl);
-                            }
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e, "Featured: Error in pickNewFeaturedTimer");
-                    Console.WriteLine(e);
-                }
-            },
-            null,
-            TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds + 15),
-            TimeSpan.FromHours(12));
-
-        this._checkNewSupporterTimer = new Timer(async _ =>
-            {
-                try
-                {
-                    if (this._botSettings.Bot.FeaturedMaster != true)
-                    {
-                        Log.Warning($"Featured: FeaturedMaster is not true, cancelling {nameof(this._checkNewSupporterTimer)}");
-                        this._checkNewSupporterTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                        return;
-                    }
-
-                    await this._supporterService.CheckForNewSupporters();
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e, $"Featured: Error in {nameof(this._checkNewSupporterTimer)}");
-                    Console.WriteLine(e);
-                }
-            },
-            null,
-            TimeSpan.FromSeconds(15),
-            TimeSpan.FromMinutes(3));
-
-        this._updateSupporterTimer = new Timer(async _ =>
-            {
-                try
-                {
-                    if (this._botSettings.Bot.FeaturedMaster != true)
-                    {
-                        Log.Warning($"Featured: FeaturedMaster is not true, cancelling {nameof(this._updateSupporterTimer)}");
-                        this._updateSupporterTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                        return;
-                    }
-
-                    await this._supporterService.UpdateExistingOpenCollectiveSupporters();
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e, $"Featured: Error in {nameof(this._updateSupporterTimer)}");
-                    Console.WriteLine(e);
-                }
-            },
-            null,
-            TimeSpan.FromSeconds(20),
-            TimeSpan.FromHours(1));
-
-        this._internalStatsTimer = new Timer(async _ =>
-            {
-                if (client?.Guilds?.Count == null)
-                {
-                    Log.Information("Client guild count is null, cancelling");
-                    return;
-                }
-
-                Log.Information("Updating metrics");
-
-                try
-                {
-                    var ticks = Stopwatch.GetTimestamp();
-                    var upTime = (double)ticks / Stopwatch.Frequency;
-                    var upTimeTimeSpan = TimeSpan.FromSeconds(upTime);
-
-                    if (upTimeTimeSpan.Minutes > 8)
-                    {
-                        Statistics.DiscordServerCount.Set(client.Guilds.Count);
-                    }
-
-                    Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
-                    Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
-                    Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
-
-                    Statistics.OneDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(1));
-                    Statistics.SevenDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(7));
-                    Statistics.ThirtyDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(30));
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e, "UpdatingMetrics");
-                    Console.WriteLine(e);
-                }
-
-                try
-                {
-                    if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
-                    {
-                        Log.Information("Updating status");
-                        if (!PublicProperties.IssuesAtLastFm)
-                        {
-                            await client.SetGameAsync(
-                                $"{this._botSettings.Bot.Prefix}fm | {client.Guilds.Count} servers | fmbot.xyz", type: ActivityType.Listening);
-                        }
-                        else
-                        {
-                            await client.SetGameAsync(
-                                $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
-                        }
-
-                    }
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e, "UpdatingMetrics");
-                    Console.WriteLine(e);
-                }
-
-            },
-            null,
-            TimeSpan.FromSeconds(10),
-            TimeSpan.FromMinutes(2));
-
-        this._shardReconnectTimer = new Timer(async _ =>
-            {
-                Log.Debug("ShardReconnectTimer: Running shard reconnect timer");
-
-                var shards = this._client.Shards;
-
-                foreach (var shard in shards.Where(w => w.ConnectionState == ConnectionState.Disconnected))
-                {
-                    var cacheKey = $"{shard.ShardId}-shard-disconnected";
-                    if (this._cache.TryGetValue(cacheKey, out int shardDisconnected))
-                    {
-                        if (shardDisconnected > 7 && !this._cache.TryGetValue("shard-connecting", out _))
-                        {
-                            this._cache.Set("shard-connecting", 1, TimeSpan.FromSeconds(15));
-                            Log.Information("ShardReconnectTimer: Reconnecting shard #{shardId}", shard.ShardId);
-                            _ = shard.StartAsync();
-                            this._cache.Remove(cacheKey);
-                        }
-                        else
-                        {
-                            shardDisconnected++;
-                            this._cache.Set(cacheKey, shardDisconnected, TimeSpan.FromMinutes(25 - shardDisconnected));
-                            Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected {shardDisconnected} times", shard.ShardId, shardDisconnected);
-                        }
-                    }
-                    else
-                    {
-                        Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected one time", shard.ShardId);
-                        this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(25));
-                    }
-                }
-            },
-            null,
-            TimeSpan.FromMinutes(15),
-            TimeSpan.FromMinutes(2));
-
-        this._userUpdateTimer = new Timer(async _ =>
-            {
-                if (this._botSettings.LastFm.UserUpdateFrequencyInHours == null || this._botSettings.LastFm.UserUpdateFrequencyInHours == 0)
-                {
-                    Log.Warning("No user update frequency set, cancelling user update timer");
-                    this._userUpdateTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                    return;
-                }
-
-                Log.Information("Getting users to update");
-                var authorizedTimeToUpdate = DateTime.UtcNow.AddHours(-this._botSettings.LastFm.UserUpdateFrequencyInHours.Value);
-                var unauthorizedTimeToUpdate = DateTime.UtcNow.AddHours(-(this._botSettings.LastFm.UserUpdateFrequencyInHours.Value + 48));
-
-                var usersToUpdate = await this._updateService.GetOutdatedUsers(authorizedTimeToUpdate, unauthorizedTimeToUpdate);
-                Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to update queue");
-
-                this._updateService.AddUsersToUpdateQueue(usersToUpdate);
-            },
-            null,
-            TimeSpan.FromMinutes(3),
-            TimeSpan.FromHours(8));
-
-        this._purgeCacheTimer = new Timer(async _ =>
-            {
-                try
-                {
-                    var clients = client.Shards;
-                    foreach (var socketClient in clients)
-                    {
-                        socketClient.PurgeUserCache();
-                    }
-                    Log.Information("Purged discord caches");
-                }
-                catch (Exception e)
-                {
-                    Log.Error(e, "Error while purging cache!");
-                    throw;
-                }
-            },
-            null,
-            TimeSpan.FromMinutes(5),
-            TimeSpan.FromHours(2));
-
-        this._userIndexTimer = new Timer(async _ =>
-            {
-                if (this._botSettings.LastFm.UserIndexFrequencyInDays == null || this._botSettings.LastFm.UserIndexFrequencyInDays == 0)
-                {
-                    Log.Warning("No user index frequency set, cancelling user index timer");
-                    this._userIndexTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                    return;
-                }
-
-                if (PublicProperties.IssuesAtLastFm)
-                {
-                    Log.Information("Skipping index timer - issues at Last.fm");
-                    return;
-                }
-
-                Log.Information("Getting users to index");
-                var timeToIndex = DateTime.UtcNow.AddDays(-this._botSettings.LastFm.UserIndexFrequencyInDays.Value);
-
-                var usersToUpdate = (await this._indexService.GetOutdatedUsers(timeToIndex))
-                    .Take(300)
-                    .ToList();
-
-                Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to index queue");
-
-                this._indexService.AddUsersToIndexQueue(usersToUpdate);
-            },
-            null,
-            TimeSpan.FromMinutes(4),
-            TimeSpan.FromHours(1));
-
-        this._timerEnabled = true;
+        this.CurrentFeatured = this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow).Result;
     }
 
-    public void Stop() // 6) Example to make the timer stop running
+    public void QueueJobs()
     {
-        if (IsTimerActive())
+        Log.Information($"RecurringJob: Adding {nameof(CheckForNewFeatured)}");
+        RecurringJob.AddOrUpdate(nameof(CheckForNewFeatured), () => CheckForNewFeatured(), "* * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(UpdateMetrics)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateMetrics), () => UpdateMetrics(), "* * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(CheckIfShardsNeedReconnect)}");
+        RecurringJob.AddOrUpdate(nameof(CheckIfShardsNeedReconnect), () => CheckIfShardsNeedReconnect(), "*/2 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(ClearUserCache)}");
+        RecurringJob.AddOrUpdate(nameof(ClearUserCache), () => ClearUserCache(), "30 */2 * * *");
+
+        if (this._botSettings.LastFm.UserIndexFrequencyInDays != null && this._botSettings.LastFm.UserIndexFrequencyInDays != 0)
         {
-            this._featuredTimer.Change(Timeout.Infinite, Timeout.Infinite);
-            this._pickNewFeaturedTimer.Change(Timeout.Infinite, Timeout.Infinite);
-            this._timerEnabled = false;
+            Log.Information($"RecurringJob: Adding {nameof(AddUsersToIndexQueue)}");
+            RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 0,12 * * *");
+        }
+        else
+        {
+            Log.Warning("No user index frequency set, not queuing user index job");
+        }
+
+        if (this._botSettings.LastFm.UserUpdateFrequencyInHours != null && this._botSettings.LastFm.UserUpdateFrequencyInHours != 0)
+        {
+            Log.Information($"RecurringJob: Adding {nameof(AddUsersToUpdateQueue)}");
+            RecurringJob.AddOrUpdate(nameof(AddUsersToUpdateQueue), () => AddUsersToUpdateQueue(), "0 * * * *");
+        }
+        else
+        {
+            Log.Warning("No user update frequency set, not queuing user update job");
+        }
+
+        if (this._botSettings.Bot.FeaturedMaster == true)
+        {
+            Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
+            RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 0,12 * * *");
+
+            Log.Information($"RecurringJob: Adding {nameof(CheckForNewSupporters)}");
+            RecurringJob.AddOrUpdate(nameof(CheckForNewSupporters), () => CheckForNewSupporters(), "*/3 * * * *");
+
+            Log.Information($"RecurringJob: Adding {nameof(UpdateExistingSupporters)}");
+            RecurringJob.AddOrUpdate(nameof(UpdateExistingSupporters), () => UpdateExistingSupporters(), "0 * * * *");
+        }
+        else
+        {
+            Log.Warning("FeaturedMaster is not true, not queuing featured and OpenCollective jobs");
         }
     }
 
-    public void Restart()
+    public async Task UpdateMetrics()
     {
-        this._featuredTimer.Change(TimeSpan.FromSeconds(0), TimeSpan.FromMinutes(1));
-        this._pickNewFeaturedTimer.Change(TimeSpan.FromSeconds(0), TimeSpan.FromHours(12));
-        this._timerEnabled = true;
+        if (this._client?.Guilds?.Count == null)
+        {
+            Log.Information($"Client guild count is null, cancelling {nameof(UpdateMetrics)}");
+            return;
+        }
+
+        Log.Information("Updating metrics");
+
+        try
+        {
+            var currentProcess = Process.GetCurrentProcess();
+            var startTime = DateTime.Now - currentProcess.StartTime;
+
+            if (startTime.Minutes > 8)
+            {
+                Statistics.DiscordServerCount.Set(this._client.Guilds.Count);
+            }
+
+            Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
+            Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
+            Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
+
+            Statistics.OneDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(1));
+            Statistics.SevenDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(7));
+            Statistics.ThirtyDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(30));
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, nameof(UpdateMetrics));
+            throw;
+        }
+
+        try
+        {
+            if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
+            {
+                Log.Information("Updating status");
+                if (!PublicProperties.IssuesAtLastFm)
+                {
+                    await this._client.SetGameAsync(
+                        $"{this._botSettings.Bot.Prefix}fm | {this._client.Guilds.Count} servers | fmbot.xyz", type: ActivityType.Listening);
+                }
+                else
+                {
+                    await this._client.SetGameAsync(
+                        $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
+                }
+
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, nameof(UpdateMetrics));
+            throw;
+        }
     }
 
-    public async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
+    public async Task AddUsersToIndexQueue()
+    {
+        if (PublicProperties.IssuesAtLastFm)
+        {
+            Log.Information($"Skipping {nameof(AddUsersToIndexQueue)} - issues at Last.fm");
+            return;
+        }
+
+        Log.Information("Getting users to index");
+        var timeToIndex = DateTime.UtcNow.AddDays(-this._botSettings.LastFm.UserIndexFrequencyInDays.Value);
+
+        var usersToUpdate = (await this._indexService.GetOutdatedUsers(timeToIndex))
+            .Take(300)
+            .ToList();
+
+        Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to index queue");
+
+        this._indexService.AddUsersToIndexQueue(usersToUpdate);
+    }
+
+    public async Task AddUsersToUpdateQueue()
+    {
+        Log.Information("Getting users to update");
+        var authorizedTimeToUpdate = DateTime.UtcNow.AddHours(-this._botSettings.LastFm.UserUpdateFrequencyInHours.Value);
+        var unauthorizedTimeToUpdate = DateTime.UtcNow.AddHours(-(this._botSettings.LastFm.UserUpdateFrequencyInHours.Value + 48));
+
+        var usersToUpdate = await this._updateService.GetOutdatedUsers(authorizedTimeToUpdate, unauthorizedTimeToUpdate);
+        Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to update queue");
+
+        this._updateService.AddUsersToUpdateQueue(usersToUpdate);
+    }
+
+    public async Task CheckForNewFeatured()
+    {
+        var newFeatured = await this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow);
+
+        if (newFeatured == null)
+        {
+            Log.Warning("Featured: No new featured ready");
+            return;
+        }
+
+        if (newFeatured.DateTime == this.CurrentFeatured?.DateTime && newFeatured.HasFeatured)
+        {
+            return;
+        }
+
+        var cached = (string)this._cache.Get("avatar");
+
+        if (this._botSettings.Bot.MainInstance == true && cached != newFeatured.ImageUrl)
+        {
+            try
+            {
+                await ChangeToNewAvatar(this._client, newFeatured.ImageUrl);
+                this._cache.Set("avatar", newFeatured.ImageUrl, TimeSpan.FromMinutes(30));
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        if (this._botSettings.Bot.FeaturedMaster == true && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
+        {
+            Log.Information("Featured: Posting new featured to webhooks");
+
+            var botType = BotTypeExtension.GetBotType(this._client.CurrentUser.Id);
+            await this._webhookService.PostFeatured(newFeatured, this._client);
+            await this._featuredService.SetFeatured(newFeatured);
+            await this._webhookService.SendFeaturedWebhooks(botType, newFeatured);
+
+            if (newFeatured.FeaturedMode == FeaturedMode.RecentPlays)
+            {
+                await this._featuredService.ScrobbleTrack(this._client.CurrentUser.Id, newFeatured);
+            }
+        }
+
+        this.CurrentFeatured = await this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow);
+    }
+
+    public async Task CheckForNewSupporters()
+    {
+        await this._supporterService.CheckForNewSupporters();
+    }
+
+    public async Task UpdateExistingSupporters()
+    {
+        await this._supporterService.UpdateExistingOpenCollectiveSupporters();
+    }
+
+    public static async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
     {
         Log.Information($"Updating avatar to {imageUrl}");
         try
@@ -445,28 +299,84 @@ public class TimerService
         }
     }
 
-    public async void UseDefaultAvatar(DiscordShardedClient client)
+    public async Task PickNewFeatureds()
     {
-        try
+        for (var i = 0; i <= 32; i++)
         {
-            this._currentFeatured = new FeaturedLog
+            var dateTime = DateTime.UtcNow.AddHours(i);
+            var featuredDateTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, Constants.FeaturedMinute, 0);
+            var hourFeatured = await this._featuredService.GetFeaturedForDateTime(featuredDateTime);
+
+            if (hourFeatured == null)
             {
-                Description = ".fmbot"
-            };
-            Log.Information("Changed avatar to default");
-            var fileStream = new FileStream(AppDomain.CurrentDomain.BaseDirectory + "avatar.png", FileMode.Open);
-            var image = new Image(fileStream);
-            await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
-            fileStream.Close();
-        }
-        catch (Exception e)
-        {
-            Log.Error("UseDefaultAvatar", e);
+                var newFeatured = await this._featuredService.NewFeatured(featuredDateTime);
+
+                if (newFeatured == null)
+                {
+                    Log.Warning("Featured: Could not pick a new one for {dateTime}", featuredDateTime);
+                    return;
+                }
+
+                await this._featuredService.AddFeatured(newFeatured);
+                Log.Information("Featured: Added future feature for {dateTime}", featuredDateTime);
+
+                if (!string.IsNullOrWhiteSpace(this._botSettings.Bot.FeaturedPreviewWebhookUrl))
+                {
+                    await this._webhookService.SendFeaturedPreview(newFeatured, this._botSettings.Bot.FeaturedPreviewWebhookUrl);
+                }
+            }
         }
     }
 
-    public bool IsTimerActive()
+    public void CheckIfShardsNeedReconnect()
     {
-        return this._timerEnabled;
+        Log.Debug("ShardReconnectTimer: Running shard reconnect timer");
+
+        var currentProcess = Process.GetCurrentProcess();
+        var startTime = DateTime.Now - currentProcess.StartTime;
+
+        if (startTime.Minutes <= 15)
+        {
+            Log.Information($"Skipping {nameof(CheckIfShardsNeedReconnect)} because bot only just started");
+            return;
+        }
+
+        var shards = this._client.Shards;
+
+        foreach (var shard in shards.Where(w => w.ConnectionState == ConnectionState.Disconnected))
+        {
+            var cacheKey = $"{shard.ShardId}-shard-disconnected";
+            if (this._cache.TryGetValue(cacheKey, out int shardDisconnected))
+            {
+                if (shardDisconnected > 7 && !this._cache.TryGetValue("shard-connecting", out _))
+                {
+                    this._cache.Set("shard-connecting", 1, TimeSpan.FromSeconds(15));
+                    Log.Information("ShardReconnectTimer: Reconnecting shard #{shardId}", shard.ShardId);
+                    _ = shard.StartAsync();
+                    this._cache.Remove(cacheKey);
+                }
+                else
+                {
+                    shardDisconnected++;
+                    this._cache.Set(cacheKey, shardDisconnected, TimeSpan.FromMinutes(25 - shardDisconnected));
+                    Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected {shardDisconnected} times", shard.ShardId, shardDisconnected);
+                }
+            }
+            else
+            {
+                Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected one time", shard.ShardId);
+                this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(25));
+            }
+        }
+    }
+
+    public void ClearUserCache()
+    {
+        var clients = this._client.Shards;
+        foreach (var socketClient in clients)
+        {
+            socketClient.PurgeUserCache();
+        }
+        Log.Information("Purged discord caches");
     }
 }

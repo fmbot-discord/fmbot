@@ -1,9 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -22,6 +20,7 @@ using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
+using Hangfire;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -1120,17 +1119,17 @@ public class AdminCommands : BaseCommandModule
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                await this._featuredService.CustomFeatured(this._timer._currentFeatured, desc, url);
+                await this._featuredService.CustomFeatured(this._timer.CurrentFeatured, desc, url);
 
                 if (stopTimer)
                 {
-                    this._timer.Restart();
+                    RecurringJob.TriggerJob(nameof(this._timer.CheckForNewFeatured));
                     await Task.Delay(5000);
-                    this._timer.Stop();
+                    RecurringJob.RemoveIfExists(nameof(this._timer.CheckForNewFeatured));
                 }
                 else
                 {
-                    this._timer.Restart();
+                    RecurringJob.TriggerJob(nameof(this._timer.CheckForNewFeatured));
                 }
 
                 var description = new StringBuilder();
@@ -1348,7 +1347,7 @@ public class AdminCommands : BaseCommandModule
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var feature = this._timer._currentFeatured;
+                var feature = this._timer.CurrentFeatured;
 
                 if (id.HasValue)
                 {
@@ -1389,18 +1388,15 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("stoptimer")]
-    [Summary("Stops the internal bot avatar timer.")]
-    [Alias("timerstop")]
+    [Command("picknewfeatureds")]
+    [Summary("Runs the job that picks new featureds manually.")]
     public async Task StopTimerAsync()
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
-                this._timer.Stop();
-                await ReplyAsync("Timer stopped");
-                this.Context.LogCommandUsed();
+                await this._timer.PickNewFeatureds();
             }
             catch (Exception e)
             {
@@ -1422,14 +1418,15 @@ public class AdminCommands : BaseCommandModule
         {
             try
             {
-                if (this._timer.IsTimerActive())
-                {
-                    await ReplyAsync("Timer is active");
-                }
-                else
-                {
-                    await ReplyAsync("Timer is inactive");
-                }
+
+                //if (this._timer.IsTimerActive())
+                //{
+                //    await ReplyAsync("Timer is active");
+                //}
+                //else
+                //{
+                //    await ReplyAsync("Timer is inactive");
+                //}
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
