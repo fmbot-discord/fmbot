@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -20,7 +21,9 @@ using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
+using Google.Apis.Discovery;
 using Hangfire;
+using Hangfire.Storage;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -1418,15 +1421,57 @@ public class AdminCommands : BaseCommandModule
         {
             try
             {
+                var recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
 
-                //if (this._timer.IsTimerActive())
-                //{
-                //    await ReplyAsync("Timer is active");
-                //}
-                //else
-                //{
-                //    await ReplyAsync("Timer is inactive");
-                //}
+                var description = new StringBuilder();
+
+                foreach (var job in recurringJobs)
+                {
+                    description.AppendLine($"**{job.Id}**");
+
+                    if (job.RetryAttempt > 0)
+                    {
+                        description.AppendLine($"*Retried {job.RetryAttempt} times*");
+                    }
+
+                    if (job.Error != null)
+                    {
+                        description.AppendLine($"⚠️ Error");
+                    }
+
+                    description.Append("Last execution ");
+                    if (job.LastExecution.HasValue)
+                    {
+                        var dateValue = ((DateTimeOffset)job.LastExecution).ToUnixTimeSeconds();
+                        description.Append($"<t:{dateValue}:R>");
+                    }
+                    else
+                    {
+                        description.Append($"never");
+                    }
+
+                    description.Append(" - ");
+
+                    description.Append("Next ");
+                    if (job.NextExecution.HasValue)
+                    {
+                        var dateValue = ((DateTimeOffset)job.NextExecution).ToUnixTimeSeconds();
+                        description.Append($"<t:{dateValue}:R>");
+                    }
+                    else
+                    {
+                        description.Append($"never");
+                    }
+
+                    description.AppendLine();
+                    description.AppendLine();
+                }
+
+                this._embed.WithColor(DiscordConstants.InformationColorBlue);
+                this._embed.WithDescription(description.ToString());
+                this._embed.WithFooter("15 second timer interval");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
