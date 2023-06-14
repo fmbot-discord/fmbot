@@ -480,11 +480,10 @@ public class AlbumBuilders
             return response;
         }
 
-
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
             userId: context.ContextUser.UserId);
-        if (album == null)
+        if (album.Album == null)
         {
             return album.Response;
         }

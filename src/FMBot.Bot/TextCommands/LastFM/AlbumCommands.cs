@@ -167,13 +167,6 @@ public class AlbumCommands : BaseCommandModule
 
         try
         {
-            var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
-                useCachedAlbums: true, userId: contextUser.UserId);
-            if (album == null)
-            {
-                return;
-            }
-
             var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -364,12 +357,6 @@ public class AlbumCommands : BaseCommandModule
         {
             var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
 
-            var album = await this.SearchAlbum(userSettings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
-            if (album == null)
-            {
-                return;
-            }
-
             var response = await this._albumBuilders.AlbumTracksAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, userSettings.NewSearchValue);
 
@@ -430,171 +417,5 @@ public class AlbumCommands : BaseCommandModule
         {
             await this.Context.HandleCommandException(e);
         }
-    }
-
-    private async Task<AlbumInfo> SearchAlbum(string albumValues, string lastFmUserName, string sessionKey = null,
-        string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null)
-    {
-        string searchValue;
-        if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.Length != 0)
-        {
-            searchValue = albumValues;
-            if (searchValue.ToLower() == "featured")
-            {
-                searchValue = $"{this._timer.CurrentFeatured.ArtistName} | {this._timer.CurrentFeatured.AlbumName}";
-            }
-            if (searchValue.Contains(" | "))
-            {
-                if (otherUserUsername != null)
-                {
-                    lastFmUserName = otherUserUsername;
-                }
-
-                var searchArtistName = searchValue.Split(" | ")[0];
-                var searchAlbumName = searchValue.Split(" | ")[1];
-
-                Response<AlbumInfo> albumInfo;
-                if (useCachedAlbums)
-                {
-                    albumInfo = await GetCachedAlbum(searchArtistName, searchAlbumName, lastFmUserName, userId);
-                }
-                else
-                {
-                    albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(searchArtistName, searchAlbumName,
-                        lastFmUserName);
-                }
-
-                if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
-                {
-                    this._embed.WithDescription($"Album `{searchAlbumName}` by `{searchArtistName}` could not be found, please check your search values and try again.");
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
-                    return null;
-                }
-                if (!albumInfo.Success || albumInfo.Content == null)
-                {
-                    this._embed.ErrorResponse(albumInfo.Error, albumInfo.Message, this.Context.Message.Content, this.Context.User, "album");
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                    return null;
-                }
-                return albumInfo.Content;
-            }
-        }
-        else
-        {
-            var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, useCache: true, sessionKey: sessionKey);
-
-            if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
-            {
-                return null;
-            }
-
-            if (otherUserUsername != null)
-            {
-                lastFmUserName = otherUserUsername;
-            }
-
-            var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
-
-            if (string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName))
-            {
-                this._embed.WithDescription($"The track you're scrobbling (**{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**) does not have an album associated with it according to Last.fm.\n" +
-                                            $"Please note that .fmbot is not associated with Last.fm.");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return null;
-            }
-
-            Response<AlbumInfo> albumInfo;
-            if (useCachedAlbums)
-            {
-                albumInfo = await GetCachedAlbum(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName, lastFmUserName, userId);
-            }
-            else
-            {
-                albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName,
-                    lastFmUserName);
-            }
-
-            if (albumInfo?.Content == null || !albumInfo.Success)
-            {
-                this._embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
-                                            $"This usually happens on recently released albums or on albums by smaller artists. Please try again later.\n\n" +
-                                            $"Please note that .fmbot is not associated with Last.fm.");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return null;
-            }
-
-            return albumInfo.Content;
-        }
-
-        var result = await this._lastFmRepository.SearchAlbumAsync(searchValue);
-        if (result.Success && result.Content.Any())
-        {
-            var album = result.Content[0];
-
-            if (otherUserUsername != null)
-            {
-                lastFmUserName = otherUserUsername;
-            }
-
-            Response<AlbumInfo> albumInfo;
-            if (useCachedAlbums)
-            {
-                albumInfo = await GetCachedAlbum(album.ArtistName, album.Name, lastFmUserName, userId);
-            }
-            else
-            {
-                albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(album.ArtistName, album.Name,
-                    lastFmUserName);
-            }
-
-            return albumInfo.Content;
-        }
-
-        if (result.Success)
-        {
-            this._embed.WithDescription($"Album could not be found, please check your search values and try again.");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
-            return null;
-        }
-
-        this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed(CommandResponse.LastFmError);
-        return null;
-    }
-
-    private async Task<Response<AlbumInfo>> GetCachedAlbum(string artistName, string albumName, string lastFmUserName, int? userId = null)
-    {
-        Response<AlbumInfo> albumInfo;
-        var cachedAlbum = await this._albumService.GetAlbumFromDatabase(artistName, albumName);
-        if (cachedAlbum != null)
-        {
-            albumInfo = new Response<AlbumInfo>
-            {
-                Content = this._albumService.CachedAlbumToAlbumInfo(cachedAlbum),
-                Success = true
-            };
-
-            if (userId.HasValue)
-            {
-                var userPlaycount = await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(cachedAlbum.ArtistName,
-                        cachedAlbum.Name, userId.Value);
-                albumInfo.Content.UserPlaycount = userPlaycount;
-            }
-        }
-        else
-        {
-            albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(artistName, albumName,
-                lastFmUserName);
-        }
-
-        return albumInfo;
     }
 }
