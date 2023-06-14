@@ -10,7 +10,7 @@ namespace FMBot.Images.Generators;
 
 public class PuppeteerService
 {
-    private Browser? _browser;
+    private IBrowser _browser;
     private readonly Task _initializationTask;
     private int _orderNr;
 

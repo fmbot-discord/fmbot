@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 using FMBot.Domain.Models;
-using static ICSharpCode.SharpZipLib.Zip.ExtendedUnixData;
 
 namespace FMBot.Bot.Extensions;
 
