@@ -217,11 +217,6 @@ public class Startup
             b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
 
         services.AddMemoryCache();
-
-        services.AddHangfire(config =>
-        {
-            config.UseMemoryStorage();
-        });
     }
 
     private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)

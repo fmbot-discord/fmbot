@@ -32,7 +32,6 @@
     <PackageReference Include="Genius.NET" Version="4.0.1" />
     <PackageReference Include="Google.Apis" Version="1.60.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.60.0.2945" />
-    <PackageReference Include="Hangfire" Version="1.8.2" />
     <PackageReference Include="Hangfire.Core" Version="1.8.2" />
     <PackageReference Include="Hangfire.MemoryStorage" Version="1.7.0" />
     <PackageReference Include="Humanizer.Core" Version="2.14.1" />
