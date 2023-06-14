@@ -79,7 +79,7 @@ public class UserBuilder
 
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
 
-        if (this._timer._currentFeatured == null)
+        if (this._timer.CurrentFeatured == null)
         {
             response.ResponseType = ResponseType.Text;
             response.Text = ".fmbot is still starting up, please try again in a bit..";
@@ -87,18 +87,18 @@ public class UserBuilder
             return response;
         }
 
-        response.Embed.WithThumbnailUrl(this._timer._currentFeatured.ImageUrl);
-        response.Embed.AddField("Featured:", this._timer._currentFeatured.Description);
+        response.Embed.WithThumbnailUrl(this._timer.CurrentFeatured.ImageUrl);
+        response.Embed.AddField("Featured:", this._timer.CurrentFeatured.Description);
 
-        if (context.DiscordGuild != null && guildUsers.Any() && this._timer._currentFeatured.UserId.HasValue && this._timer._currentFeatured.UserId.Value != 0)
+        if (context.DiscordGuild != null && guildUsers.Any() && this._timer.CurrentFeatured.UserId.HasValue && this._timer.CurrentFeatured.UserId.Value != 0)
         {
-            guildUsers.TryGetValue(this._timer._currentFeatured.UserId.Value, out var guildUser);
+            guildUsers.TryGetValue(this._timer.CurrentFeatured.UserId.Value, out var guildUser);
 
             if (guildUser != null)
             {
                 response.Text = "in-server";
 
-                var dateValue = ((DateTimeOffset)this._timer._currentFeatured.DateTime.AddHours(1)).ToUnixTimeSeconds();
+                var dateValue = ((DateTimeOffset)this._timer.CurrentFeatured.DateTime.AddHours(1)).ToUnixTimeSeconds();
 
                 response.Embed.AddField("🥳 Congratulations!",
                     guildUser.DiscordUserId == context.DiscordUser.Id
@@ -107,7 +107,7 @@ public class UserBuilder
             }
         }
 
-        if (this._timer._currentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)
+        if (this._timer.CurrentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)
         {
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink);
         }

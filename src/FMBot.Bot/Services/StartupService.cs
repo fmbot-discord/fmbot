@@ -17,6 +17,8 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using Hangfire;
+using Hangfire.MemoryStorage;
 using IF.Lastfm.Core.Api;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -40,6 +42,7 @@ public class StartupService
     private readonly InteractionService _interactionService;
     private readonly GuildService _guildService;
     private readonly UserService _userService;
+    private readonly TimerService _timerService;
 
 
     public StartupService(
@@ -55,7 +58,8 @@ public class StartupService
         InteractionService interactions,
         GuildService guildService,
         UserService userService,
-        DisabledChannelService disabledChannelService)
+        DisabledChannelService disabledChannelService,
+        TimerService timerService)
     {
         this._provider = provider;
         this._client = discord;
@@ -69,6 +73,7 @@ public class StartupService
         this._guildService = guildService;
         this._userService = userService;
         this._disabledChannelService = disabledChannelService;
+        this._timerService = timerService;
         this._botSettings = botSettings.Value;
     }
 
@@ -143,12 +148,26 @@ public class StartupService
         Log.Information("Preparing cache folder");
         PrepareCacheFolder();
 
+        InitializeHangfireConfig();
+        this._timerService.QueueJobs();
+
         await this.StartMetricsPusher();
         await this.RegisterSlashCommands();
         await this.CacheSlashCommandIds();
         await this.CachePremiumGuilds();
         await this.CacheDiscordUserIds();
         await this.StartBotSiteUpdater();
+    }
+
+    private void InitializeHangfireConfig()
+    {
+        GlobalConfiguration.Configuration
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSerilogLogProvider()
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseMemoryStorage()
+            .UseActivator(new HangfireActivator(this._provider));
     }
 
     private async Task TestLastFmApi()

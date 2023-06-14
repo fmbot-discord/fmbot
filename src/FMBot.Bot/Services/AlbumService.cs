@@ -69,7 +69,7 @@ public class AlbumService
 
             if (searchValue.ToLower() == "featured")
             {
-                searchValue = $"{this._timer._currentFeatured.ArtistName} | {this._timer._currentFeatured.AlbumName}";
+                searchValue = $"{this._timer.CurrentFeatured.ArtistName} | {this._timer.CurrentFeatured.AlbumName}";
             }
 
             int? rndPosition = null;

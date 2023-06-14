@@ -41,7 +41,7 @@ public class FeaturedService
         this._cache = cache;
     }
 
-    public async Task<FeaturedLog> NewFeatured(ulong botUserId, DateTime? dateTime = null)
+    public async Task<FeaturedLog> NewFeatured(DateTime? dateTime = null)
     {
         var randomAvatarMode = RandomNumberGenerator.GetInt32(1, 4);
 
@@ -73,7 +73,7 @@ public class FeaturedService
         var featuredLog = new FeaturedLog
         {
             FeaturedMode = featuredMode,
-            BotType = BotTypeExtension.GetBotType(botUserId),
+            BotType = BotType.Production,
             DateTime = DateTime.SpecifyKind(dateTime ?? DateTime.UtcNow, DateTimeKind.Utc),
             HasFeatured = false,
             SupporterDay = supporterDay
@@ -563,7 +563,7 @@ public class FeaturedService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var newFeatured = await NewFeatured(botUserId, featuredLog.DateTime);
+        var newFeatured = await NewFeatured(featuredLog.DateTime);
 
         featuredLog.HasFeatured = false;
         featuredLog.AlbumName = newFeatured.AlbumName;

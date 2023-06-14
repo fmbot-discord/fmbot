@@ -1,9 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -22,6 +21,9 @@ using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
+using Google.Apis.Discovery;
+using Hangfire;
+using Hangfire.Storage;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -1120,17 +1122,17 @@ public class AdminCommands : BaseCommandModule
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                await this._featuredService.CustomFeatured(this._timer._currentFeatured, desc, url);
+                await this._featuredService.CustomFeatured(this._timer.CurrentFeatured, desc, url);
 
                 if (stopTimer)
                 {
-                    this._timer.Restart();
+                    RecurringJob.TriggerJob(nameof(this._timer.CheckForNewFeatured));
                     await Task.Delay(5000);
-                    this._timer.Stop();
+                    RecurringJob.RemoveIfExists(nameof(this._timer.CheckForNewFeatured));
                 }
                 else
                 {
-                    this._timer.Restart();
+                    RecurringJob.TriggerJob(nameof(this._timer.CheckForNewFeatured));
                 }
 
                 var description = new StringBuilder();
@@ -1348,7 +1350,7 @@ public class AdminCommands : BaseCommandModule
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var feature = this._timer._currentFeatured;
+                var feature = this._timer.CurrentFeatured;
 
                 if (id.HasValue)
                 {
@@ -1389,17 +1391,59 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("stoptimer")]
-    [Summary("Stops the internal bot avatar timer.")]
-    [Alias("timerstop")]
+    [Command("picknewfeatureds")]
+    [Summary("Runs the job that picks new featureds manually.")]
     public async Task StopTimerAsync()
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
             try
             {
-                this._timer.Stop();
-                await ReplyAsync("Timer stopped");
+                await this._timer.PickNewFeatureds();
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("runtimer")]
+    [Summary("Run a timer manually (only works if it exists)")]
+    [Alias("triggerjob")]
+    public async Task RunTimerAsync([Remainder] string job = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                if (job == null)
+                {
+                    await ReplyAsync("Pick a job to run. Check `.timerstatus` for available jobs.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                job = job.ToLower();
+
+                var recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
+                var jobIds = recurringJobs.Select(s => s.Id);
+
+                if (jobIds.All(a => a.ToLower() != job))
+                {
+                    await ReplyAsync("Could not find job you're looking for. Check `.timerstatus` for available jobs.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                RecurringJob.TriggerJob(job);
+                await ReplyAsync($"Triggered job {job}", allowedMentions: AllowedMentions.None);
+
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -1422,14 +1466,57 @@ public class AdminCommands : BaseCommandModule
         {
             try
             {
-                if (this._timer.IsTimerActive())
+                var recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
+
+                var description = new StringBuilder();
+
+                foreach (var job in recurringJobs)
                 {
-                    await ReplyAsync("Timer is active");
+                    description.AppendLine($"**{job.Id}**");
+
+                    if (job.RetryAttempt > 0)
+                    {
+                        description.AppendLine($"*Retried {job.RetryAttempt} times*");
+                    }
+
+                    if (job.Error != null)
+                    {
+                        description.AppendLine($"⚠️ Error");
+                    }
+
+                    description.Append("Last execution ");
+                    if (job.LastExecution.HasValue)
+                    {
+                        var dateValue = ((DateTimeOffset)job.LastExecution).ToUnixTimeSeconds();
+                        description.Append($"<t:{dateValue}:R>");
+                    }
+                    else
+                    {
+                        description.Append($"never");
+                    }
+
+                    description.Append(" - ");
+
+                    description.Append("Next ");
+                    if (job.NextExecution.HasValue)
+                    {
+                        var dateValue = ((DateTimeOffset)job.NextExecution).ToUnixTimeSeconds();
+                        description.Append($"<t:{dateValue}:R>");
+                    }
+                    else
+                    {
+                        description.Append($"never");
+                    }
+
+                    description.AppendLine();
+                    description.AppendLine();
                 }
-                else
-                {
-                    await ReplyAsync("Timer is inactive");
-                }
+
+                this._embed.WithColor(DiscordConstants.InformationColorBlue);
+                this._embed.WithDescription(description.ToString());
+                this._embed.WithFooter("15 second timer interval");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)

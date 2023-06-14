@@ -441,7 +441,7 @@ public class AlbumCommands : BaseCommandModule
             searchValue = albumValues;
             if (searchValue.ToLower() == "featured")
             {
-                searchValue = $"{this._timer._currentFeatured.ArtistName} | {this._timer._currentFeatured.AlbumName}";
+                searchValue = $"{this._timer.CurrentFeatured.ArtistName} | {this._timer.CurrentFeatured.AlbumName}";
             }
             if (searchValue.Contains(" | "))
             {

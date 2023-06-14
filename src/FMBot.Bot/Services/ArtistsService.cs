@@ -67,7 +67,7 @@ public class ArtistsService
 
             if (artistValues.ToLower() == "featured")
             {
-                artistValues = this._timer._currentFeatured.ArtistName;
+                artistValues = this._timer.CurrentFeatured.ArtistName;
             }
 
             int? rndPosition = null;

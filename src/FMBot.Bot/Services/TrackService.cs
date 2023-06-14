@@ -83,10 +83,10 @@ public class TrackService
         {
             searchValue = trackValues;
 
-            if (searchValue.ToLower() == "featured" && this._timer._currentFeatured.TrackName != null)
+            if (searchValue.ToLower() == "featured" && this._timer.CurrentFeatured.TrackName != null)
             {
                 searchValue =
-                    $"{this._timer._currentFeatured.ArtistName} | {this._timer._currentFeatured.TrackName}";
+                    $"{this._timer.CurrentFeatured.ArtistName} | {this._timer.CurrentFeatured.TrackName}";
             }
 
             if (searchValue.Contains(" | "))
