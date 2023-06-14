@@ -1413,6 +1413,51 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("runtimer")]
+    [Summary("Run a timer manually (only works if it exists)")]
+    [Alias("triggerjob")]
+    public async Task RunTimerAsync([Remainder] string job = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                if (job == null)
+                {
+                    await ReplyAsync("Pick a job to run. Check `.timerstatus` for available jobs.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                job = job.ToLower();
+
+                var recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
+                var jobIds = recurringJobs.Select(s => s.Id);
+
+                if (jobIds.All(a => a.ToLower() != job))
+                {
+                    await ReplyAsync("Could not find job you're looking for. Check `.timerstatus` for available jobs.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                RecurringJob.TriggerJob(job);
+                await ReplyAsync($"Triggered job {job}", allowedMentions: AllowedMentions.None);
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
     [Command("timerstatus")]
     [Summary("Checks the status of the timer.")]
     public async Task TimerStatusAsync()
