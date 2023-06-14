@@ -17,6 +17,7 @@ using Npgsql;
 using Serilog;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
+using Album = FMBot.Persistence.Domain.Models.Album;
 using Artist = FMBot.Persistence.Domain.Models.Artist;
 
 namespace FMBot.Bot.Services.ThirdParty;
