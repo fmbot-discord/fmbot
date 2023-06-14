@@ -432,18 +432,18 @@ public class PlayService
         var description = new StringBuilder();
         if (streak.ArtistName != null && streak.ArtistPlaycount.HasValue)
         {
-            description.AppendLine($"Artist: **[{streak.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(streak.ArtistName)})** - " +
-                                   $"{GetEmojiForStreakCount(streak.ArtistPlaycount.Value)}*{streak.ArtistPlaycount} plays in a row*");
+            description.AppendLine($"`Artist:` **[{streak.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(streak.ArtistName)})** - " +
+                                   $"{GetEmojiForStreakCount(streak.ArtistPlaycount.Value)} {streak.ArtistPlaycount} {StringExtensions.GetPlaysString(streak.ArtistPlaycount)}");
         }
         if (streak.AlbumName != null && streak.AlbumPlaycount.HasValue)
         {
-            description.AppendLine($"Album: **[{streak.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/{HttpUtility.UrlEncode(streak.AlbumName)})** - " +
-                                   $"{GetEmojiForStreakCount(streak.AlbumPlaycount.Value)}*{streak.AlbumPlaycount} plays in a row*");
+            description.AppendLine($"` Album:` **[{streak.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/{HttpUtility.UrlEncode(streak.AlbumName)})** - " +
+                                   $"{GetEmojiForStreakCount(streak.AlbumPlaycount.Value)} {streak.AlbumPlaycount} {StringExtensions.GetPlaysString(streak.AlbumPlaycount)}");
         }
         if (streak.TrackName != null && streak.TrackPlaycount.HasValue)
         {
-            description.AppendLine($"Track: **[{streak.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/_/{HttpUtility.UrlEncode(streak.TrackName)})** - " +
-                                   $"{GetEmojiForStreakCount(streak.TrackPlaycount.Value)}*{streak.TrackPlaycount} plays in a row*");
+            description.AppendLine($"` Track:` **[{streak.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/_/{HttpUtility.UrlEncode(streak.TrackName)})** - " +
+                                   $"{GetEmojiForStreakCount(streak.TrackPlaycount.Value)} {streak.TrackPlaycount} {StringExtensions.GetPlaysString(streak.TrackPlaycount)}");
         }
 
         if (description.Length == 0)
