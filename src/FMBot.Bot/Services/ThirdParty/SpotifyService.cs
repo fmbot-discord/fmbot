@@ -9,6 +9,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
+using Genius.Models.Song;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -159,7 +160,7 @@ public class SpotifyService
                     .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
             }
 
-            if (dbArtist.LastFmDescription == null && artistInfo.Description != null)
+            if (artistInfo.Description != null && dbArtist.LastFmDescription != artistInfo.Description)
             {
                 await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -343,7 +344,7 @@ public class SpotifyService
                 db.Entry(dbTrack).State = EntityState.Modified;
             }
 
-            if (dbTrack.LastFmDescription == null && trackInfo.Description != null)
+            if (trackInfo.Description != null && dbTrack.LastFmDescription != trackInfo.Description)
             {
                 dbTrack.LastFmDescription = trackInfo.Description;
                 dbTrack.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
@@ -554,7 +555,7 @@ public class SpotifyService
             db.Entry(dbAlbum).State = EntityState.Modified;
             await db.SaveChangesAsync();
         }
-        if (dbAlbum.LastFmDescription == null && albumInfo.Description != null)
+        if (albumInfo.Description != null && dbAlbum.LastFmDescription != albumInfo.Description)
         {
             dbAlbum.LastFmDescription = albumInfo.Description;
             dbAlbum.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
