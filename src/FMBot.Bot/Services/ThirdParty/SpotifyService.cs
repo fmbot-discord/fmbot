@@ -190,6 +190,8 @@ public class SpotifyService
                 if (spotifyArtist != null && spotifyArtist.Images.Any())
                 {
                     dbArtist.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
+
+                    dbArtist.SpotifyId = spotifyArtist.Id;
                     dbArtist.Popularity = spotifyArtist.Popularity;
 
                     if (artistInfo.ArtistUrl != null)
