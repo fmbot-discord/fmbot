@@ -67,8 +67,8 @@ public class TimerService
         Log.Information($"RecurringJob: Adding {nameof(CheckForNewFeatured)}");
         RecurringJob.AddOrUpdate(nameof(CheckForNewFeatured), () => CheckForNewFeatured(), "* * * * *");
 
-        Log.Information($"RecurringJob: Adding {nameof(UpdateMetrics)}");
-        RecurringJob.AddOrUpdate(nameof(UpdateMetrics), () => UpdateMetrics(), "* * * * *");
+        Log.Information($"RecurringJob: Adding {nameof(UpdateMetricsAndStatus)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateMetricsAndStatus), () => UpdateMetricsAndStatus(), "* * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(CheckIfShardsNeedReconnect)}");
         RecurringJob.AddOrUpdate(nameof(CheckIfShardsNeedReconnect), () => CheckIfShardsNeedReconnect(), "*/2 * * * *");
@@ -83,7 +83,7 @@ public class TimerService
         }
         else
         {
-            Log.Warning("No user index frequency set, not queuing user index job");
+            Log.Warning($"No {nameof(this._botSettings.LastFm.UserIndexFrequencyInDays)} set in config, not queuing user index job");
         }
 
         if (this._botSettings.LastFm.UserUpdateFrequencyInHours != null && this._botSettings.LastFm.UserUpdateFrequencyInHours != 0)
@@ -93,7 +93,7 @@ public class TimerService
         }
         else
         {
-            Log.Warning("No user update frequency set, not queuing user update job");
+            Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
         if (this._botSettings.Bot.FeaturedMaster == true)
@@ -113,18 +113,26 @@ public class TimerService
         }
     }
 
-    public async Task UpdateMetrics()
+    public async Task UpdateMetricsAndStatus()
     {
-        if (this._client?.Guilds?.Count == null)
-        {
-            Log.Information($"Client guild count is null, cancelling {nameof(UpdateMetrics)}");
-            return;
-        }
+        Log.Information($"Running {nameof(UpdateMetricsAndStatus)}");
 
-        Log.Information("Updating metrics");
+        Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
+        Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
+        Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
+
+        Statistics.OneDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(1));
+        Statistics.SevenDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(7));
+        Statistics.ThirtyDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(30));
 
         try
         {
+            if (this._client?.Guilds?.Count == null)
+            {
+                Log.Information($"Client guild count is null, cancelling {nameof(UpdateMetricsAndStatus)}");
+                return;
+            }
+
             var currentProcess = Process.GetCurrentProcess();
             var startTime = DateTime.Now - currentProcess.StartTime;
 
@@ -132,18 +140,10 @@ public class TimerService
             {
                 Statistics.DiscordServerCount.Set(this._client.Guilds.Count);
             }
-
-            Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
-            Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
-            Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
-
-            Statistics.OneDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(1));
-            Statistics.SevenDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(7));
-            Statistics.ThirtyDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(30));
         }
         catch (Exception e)
         {
-            Log.Error(e, nameof(UpdateMetrics));
+            Log.Error(e, nameof(UpdateMetricsAndStatus));
             throw;
         }
 
@@ -151,7 +151,6 @@ public class TimerService
         {
             if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
             {
-                Log.Information("Updating status");
                 if (!PublicProperties.IssuesAtLastFm)
                 {
                     await this._client.SetGameAsync(
@@ -167,7 +166,7 @@ public class TimerService
         }
         catch (Exception e)
         {
-            Log.Error(e, nameof(UpdateMetrics));
+            Log.Error(e, nameof(UpdateMetricsAndStatus));
             throw;
         }
     }

@@ -3,6 +3,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Ganss.Xss;
 using PuppeteerSharp;
+using Serilog;
 using SkiaSharp;
 
 namespace FMBot.Images.Generators;
@@ -21,11 +22,11 @@ public class PuppeteerService
 
     private async Task InitializeAsync()
     {
-        Console.WriteLine("Fetching browser");
+        Log.Information("Fetching puppeteer browser");
         using var browserFetcher = new BrowserFetcher();
         await browserFetcher.DownloadAsync();
 
-        Console.WriteLine("Starting browser");
+        Log.Information("Starting puppeteer browser");
         this._browser = await Puppeteer.LaunchAsync(new LaunchOptions()
         {
             Headless = true,

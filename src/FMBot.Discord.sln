@@ -28,9 +28,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Images", "FMBot.Image
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.OpenCollective", "FMBot.OpenCollective\FMBot.OpenCollective.csproj", "{5E680345-355D-40CD-BF9B-31157F8CEAD8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.Discogs", "FMBot.Discogs\FMBot.Discogs.csproj", "{4EF56FE3-E3D2-417E-BE75-376225EAFC42}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Discogs", "FMBot.Discogs\FMBot.Discogs.csproj", "{4EF56FE3-E3D2-417E-BE75-376225EAFC42}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.Tests", "FMBot.Tests\FMBot.Tests.csproj", "{7B30B754-B4D9-4B16-B599-9EAA5A2DFC77}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Tests", "FMBot.Tests\FMBot.Tests.csproj", "{7B30B754-B4D9-4B16-B599-9EAA5A2DFC77}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

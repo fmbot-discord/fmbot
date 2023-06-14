@@ -148,10 +148,13 @@ public class StartupService
         Log.Information("Preparing cache folder");
         PrepareCacheFolder();
 
+        await this._timerService.UpdateMetricsAndStatus();
+
         InitializeHangfireConfig();
         this._timerService.QueueJobs();
 
-        await this.StartMetricsPusher();
+        this.StartMetricsPusher();
+
         await this.RegisterSlashCommands();
         await this.CacheSlashCommandIds();
         await this.CachePremiumGuilds();
@@ -192,12 +195,12 @@ public class StartupService
         }
     }
 
-    private Task StartMetricsPusher()
+    private void StartMetricsPusher()
     {
         if (string.IsNullOrWhiteSpace(this._botSettings.Bot.MetricsPusherName) || string.IsNullOrWhiteSpace(this._botSettings.Bot.MetricsPusherEndpoint))
         {
             Log.Information("Metrics pusher config not set, not pushing");
-            return Task.CompletedTask;
+            return;
         }
 
         Log.Information("Starting metrics pusher");
@@ -210,7 +213,6 @@ public class StartupService
         pusher.Start();
 
         Log.Information("Metrics pusher pushing to {MetricsPusherEndpoint}, job name {MetricsPusherName}", this._botSettings.Bot.MetricsPusherEndpoint, this._botSettings.Bot.MetricsPusherName);
-        return Task.CompletedTask;
     }
 
     private async Task RegisterSlashCommands()
