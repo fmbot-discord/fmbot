@@ -38,6 +38,7 @@ public class Guild
     public ulong[] AllowedRoles { get; set; }
     public ulong[] BlockedRoles { get; set; }
     public ulong[] BotManagementRoles { get; set; }
+    public ulong[] FilterRoles { get; set; }
 
     public int? UserActivityThresholdDays { get; set; }
 
@@ -45,6 +46,8 @@ public class Guild
 
     public DateTime? LastCrownSeed { get; set; }
     public AutomaticCrownSeeder? AutomaticCrownSeeder { get; set; }
+
+    public GuildFlags? GuildFlags { get; set; }
 
     public ICollection<GuildUser> GuildUsers { get; set; }
 

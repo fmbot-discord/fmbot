@@ -1400,6 +1400,30 @@ public class AdminCommands : BaseCommandModule
             try
             {
                 await this._timer.PickNewFeatureds();
+                await ReplyAsync("Started pick new featured job");
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("refreshpremiumservers")]
+    [Summary("Refreshes cached premium servers")]
+    public async Task RefreshPremiumGuilds()
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                await this._guildService.RefreshPremiumGuilds();
+                await ReplyAsync("Refreshed premium server cache dictionary");
             }
             catch (Exception e)
             {

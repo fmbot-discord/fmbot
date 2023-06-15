@@ -8,6 +8,7 @@ using Discord;
 using Discord.Commands;
 using Discord.Interactions;
 using FMBot.Bot.Models;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -145,8 +146,23 @@ public class GuildService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Guilds
             .AsNoTracking()
-            .Where(w => w.SpecialGuild == true)
+            .Where(w => w.SpecialGuild == true ||
+                        (w.GuildFlags.HasValue && w.GuildFlags.Value.HasFlag(GuildFlags.LegacyWhoKnowsWhitelist)))
             .ToListAsync();
+    }
+
+    public async Task RefreshPremiumGuilds()
+    {
+        foreach (var guild in PublicProperties.PremiumServers)
+        {
+            PublicProperties.PremiumServers.TryRemove(guild);
+        }
+
+        var premiumServers = await GetPremiumGuilds();
+        foreach (var guild in premiumServers)
+        {
+            PublicProperties.PremiumServers.TryAdd(guild.DiscordGuildId, guild.GuildId);
+        }
     }
 
     private async Task RemoveGuildFromCache(ulong discordGuildId)

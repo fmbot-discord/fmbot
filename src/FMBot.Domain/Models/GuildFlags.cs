@@ -1,5 +1,4 @@
 using System;
-using FMBot.Domain.Attributes;
 
 namespace FMBot.Domain.Models;
 

@@ -63,7 +63,16 @@ public class PremiumSettingBuilder
         response.Embed.WithDescription(description.ToString());
 
         var footer = new StringBuilder();
-        footer.AppendLine("✨ Premium server");
+
+        if (guild.GuildFlags.HasValue && guild.GuildFlags.Value.HasFlag(GuildFlags.LegacyWhoKnowsWhitelist))
+        {
+            footer.AppendLine("✨ Grandfathered allowed roles access");
+        }
+        else
+        {
+            footer.AppendLine("✨ Premium server");
+        }
+
         if (lastModifier != null)
         {
             footer.AppendLine($"Last modified by {lastModifier.Username}");
