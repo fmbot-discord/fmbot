@@ -57,7 +57,7 @@ public class SpotifySlashCommands : InteractionModuleBase
 
             if (searchValue != null)
             {
-                reply = $"Results for *`{Format.Sanitize(searchValue)}`*\n";
+                reply = $"Results for *`{StringExtensions.Sanitize(searchValue)}`*\n";
                 querystring = searchValue;
             }
             else
@@ -160,7 +160,7 @@ public class SpotifySlashCommands : InteractionModuleBase
             }
             else
             {
-                await RespondAsync($"Sorry, Spotify returned no results for *`{Format.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None, ephemeral: true);
+                await RespondAsync($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None, ephemeral: true);
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
             }
         }

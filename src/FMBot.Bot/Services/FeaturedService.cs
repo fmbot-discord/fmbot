@@ -320,7 +320,7 @@ public class FeaturedService
         {
             if (user != null)
             {
-                description.Append($" from **[{Format.Sanitize(user.UserName)}]({Constants.LastFMUserUrl}{user.UserNameLastFM})**");
+                description.Append($" from **[{StringExtensions.Sanitize(user.UserName)}]({Constants.LastFMUserUrl}{user.UserNameLastFM})**");
             }
             else if (featured.User != null)
             {

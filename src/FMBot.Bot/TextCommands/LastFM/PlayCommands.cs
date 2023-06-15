@@ -395,12 +395,12 @@ public class PlayCommands : BaseCommandModule
 
         if (count == null)
         {
-            await this.Context.Channel.SendMessageAsync($"Could not find total count for Last.fm user `{Format.Sanitize(userSettings.UserNameLastFm)}`.", allowedMentions: AllowedMentions.None);
+            await this.Context.Channel.SendMessageAsync($"Could not find total count for Last.fm user `{StringExtensions.Sanitize(userSettings.UserNameLastFm)}`.", allowedMentions: AllowedMentions.None);
             this.Context.LogCommandUsed(CommandResponse.NotFound);
             return;
         }
 
-        var userTitle = $"{Format.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
+        var userTitle = $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {

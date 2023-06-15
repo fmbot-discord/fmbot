@@ -198,7 +198,7 @@ public class DiscogsBuilder
 
             if (!string.IsNullOrWhiteSpace(searchValues))
             {
-                footer.AppendLine($"Searching for '{Format.Sanitize(searchValues)}'");
+                footer.AppendLine($"Searching for '{StringExtensions.Sanitize(searchValues)}'");
             }
 
             if (searchValues == null)

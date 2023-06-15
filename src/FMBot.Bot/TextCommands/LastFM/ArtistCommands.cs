@@ -159,7 +159,7 @@ public class ArtistCommands : BaseCommandModule
         if (topAlbums.Count == 0)
         {
             this._embed.WithDescription(
-                $"{Format.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()} has no scrobbles for this artist or their scrobbles have no album associated with them.");
+                $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()} has no scrobbles for this artist or their scrobbles have no album associated with them.");
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
             return;
@@ -252,9 +252,9 @@ public class ArtistCommands : BaseCommandModule
         }
 
         var reply =
-            $"**{Format.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has " +
+            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has " +
             $"`{artist.UserPlaycount}` {StringExtensions.GetPlaysString(artist.UserPlaycount)} for " +
-            $"**{Format.Sanitize(artist.ArtistName)}**";
+            $"**{StringExtensions.Sanitize(artist.ArtistName)}**";
 
         if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
         {

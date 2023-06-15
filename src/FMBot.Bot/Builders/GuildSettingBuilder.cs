@@ -548,7 +548,7 @@ public class GuildSettingBuilder
 
         if (!string.IsNullOrWhiteSpace(searchValue))
         {
-            footer.AppendLine($"Showing results with '{Format.Sanitize(searchValue)}'");
+            footer.AppendLine($"Showing results with '{StringExtensions.Sanitize(searchValue)}'");
         }
 
         footer.AppendLine($"Block type — Discord ID — Name — Last.fm");
@@ -605,7 +605,7 @@ public class GuildSettingBuilder
                     }
 
                     description.AppendLine(
-                        $"`{blockedUser.DiscordUserId}` — **{Format.Sanitize(blockedUser.UserName)}** — [`{blockedUser.UserNameLastFM}`]({Constants.LastFMUserUrl}{blockedUser.UserNameLastFM}) ");
+                        $"`{blockedUser.DiscordUserId}` — **{StringExtensions.Sanitize(blockedUser.UserName)}** — [`{blockedUser.UserNameLastFM}`]({Constants.LastFMUserUrl}{blockedUser.UserNameLastFM}) ");
                 }
 
                 pages.Add(new PageBuilder()

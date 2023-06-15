@@ -142,7 +142,7 @@ public class StaticBuilders
                 existingSupporterDescription.AppendLine($"Subscription type: {Enum.GetName(existingSupporter.SubscriptionType.Value)}");
             }
 
-            existingSupporterDescription.AppendLine($"Name: **{Format.Sanitize(existingSupporter.Name)}** (from OpenCollective)");
+            existingSupporterDescription.AppendLine($"Name: **{StringExtensions.Sanitize(existingSupporter.Name)}** (from OpenCollective)");
 
             response.Embed.AddField("Your details", existingSupporterDescription.ToString());
         }

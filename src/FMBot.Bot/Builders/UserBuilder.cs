@@ -881,7 +881,7 @@ public class UserBuilder
 
     private static string ImproveAiResponse(string response, List<string> artists)
     {
-        response = Format.Sanitize(response);
+        response = StringExtensions.Sanitize(response);
 
         foreach (var artist in artists)
         {

@@ -64,6 +64,31 @@ public static class StringExtensions
         return trackName;
     }
 
+    private static readonly string[] SensitiveCharacters = {
+        "\\",
+        "*",
+        "_",
+        "~",
+        "`",
+        ":",
+        "/",
+        ">",
+        "|",
+        "#",
+    };
+
+    public static string Sanitize(string text)
+    {
+        if (text != null)
+        {
+            foreach (string sensitiveCharacter in SensitiveCharacters)
+            {
+                text = text.Replace(sensitiveCharacter, "\\" + sensitiveCharacter);
+            }
+        }
+        return text;
+    }
+
     public static string UserTypeToIcon(this UserType userType)
     {
         switch (userType)

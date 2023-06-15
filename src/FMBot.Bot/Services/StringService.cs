@@ -28,25 +28,25 @@ public static class StringService
                 albumRymUrl += HttpUtility.UrlEncode($"{track.ArtistName} {albumQueryName}");
                 albumRymUrl += "&searchtype=l";
 
-                return $"[{Format.Sanitize(track.TrackName)}]({track.TrackUrl})\n" +
-                       $"By **{Format.Sanitize(track.ArtistName)}**" +
-                       $" | *[{Format.Sanitize(track.AlbumName)}]({albumRymUrl})*\n";
+                return $"[{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})\n" +
+                       $"By **{StringExtensions.Sanitize(track.ArtistName)}**" +
+                       $" | *[{StringExtensions.Sanitize(track.AlbumName)}]({albumRymUrl})*\n";
             }
 
-            return $"[{Format.Sanitize(track.TrackName)}]({track.TrackUrl})\n" +
-                   $"By **{Format.Sanitize(track.ArtistName)}**" +
-                   $" | *{Format.Sanitize(track.AlbumName)}*\n";
+            return $"[{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})\n" +
+                   $"By **{StringExtensions.Sanitize(track.ArtistName)}**" +
+                   $" | *{StringExtensions.Sanitize(track.AlbumName)}*\n";
         }
 
-        return $"[{Format.Sanitize(track.TrackName)}]({track.TrackUrl})\n" +
-               $"By **{Format.Sanitize(track.ArtistName)}**\n";
+        return $"[{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})\n" +
+               $"By **{StringExtensions.Sanitize(track.ArtistName)}**\n";
     }
 
     public static string TrackToLinkedStringWithTimestamp(RecentTrack track, bool? rymEnabled = null, TimeSpan? trackLength = null)
     {
         var description = new StringBuilder();
 
-        description.AppendLine($"**[{Format.Sanitize(track.TrackName)}]({track.TrackUrl})** by **{Format.Sanitize(track.ArtistName)}**");
+        description.AppendLine($"**[{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})** by **{StringExtensions.Sanitize(track.ArtistName)}**");
 
         if (!track.TimePlayed.HasValue || track.NowPlaying)
         {
@@ -78,11 +78,11 @@ public static class StringService
                 albumRymUrl += HttpUtility.UrlEncode($"{track.ArtistName} {albumQueryName}");
                 albumRymUrl += "&searchtype=l";
 
-                description.Append($"*[{Format.Sanitize(track.AlbumName)}]({albumRymUrl})*");
+                description.Append($"*[{StringExtensions.Sanitize(track.AlbumName)}]({albumRymUrl})*");
             }
             else
             {
-                description.Append($"*{Format.Sanitize(track.AlbumName)}*");
+                description.Append($"*{StringExtensions.Sanitize(track.AlbumName)}*");
             }
         }
 
@@ -93,11 +93,11 @@ public static class StringService
 
     public static string TrackToString(RecentTrack track)
     {
-        return $"{Format.Sanitize(track.TrackName)}\n" +
-               $"By **{Format.Sanitize(track.ArtistName)}**" +
+        return $"{StringExtensions.Sanitize(track.TrackName)}\n" +
+               $"By **{StringExtensions.Sanitize(track.ArtistName)}**" +
                (string.IsNullOrWhiteSpace(track.AlbumName)
                    ? "\n"
-                   : $" | *{Format.Sanitize(track.AlbumName)}*\n");
+                   : $" | *{StringExtensions.Sanitize(track.AlbumName)}*\n");
     }
 
     public record BillboardLine(string Text, string Name, int PositionsMoved, int NewPosition, int? OldPosition);

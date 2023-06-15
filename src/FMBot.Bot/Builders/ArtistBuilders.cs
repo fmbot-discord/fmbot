@@ -376,7 +376,7 @@ public class ArtistBuilders
         if (topTracks.Count == 0)
         {
             response.Embed.WithDescription(
-                $"{Format.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{Format.Sanitize(artistSearch.Artist.ArtistName)}** in .fmbot.");
+                $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}** in .fmbot.");
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -397,7 +397,7 @@ public class ArtistBuilders
             var albumPageString = new StringBuilder();
             foreach (var track in topTrackPage)
             {
-                albumPageString.AppendLine($"{counter}. **{Format.Sanitize(track.Name)}** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)})");
+                albumPageString.AppendLine($"{counter}. **{StringExtensions.Sanitize(track.Name)}** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)})");
                 counter++;
             }
 
@@ -720,7 +720,7 @@ public class ArtistBuilders
         var determiner = "your";
         if (userSettings.DifferentUser)
         {
-            reply.Append($"<@{context.DiscordUser.Id}> My estimate is that the user '{Format.Sanitize(userSettings.UserNameLastFm)}'");
+            reply.Append($"<@{context.DiscordUser.Id}> My estimate is that the user '{StringExtensions.Sanitize(userSettings.UserNameLastFm)}'");
             determiner = "their";
         }
         else
@@ -728,7 +728,7 @@ public class ArtistBuilders
             reply.Append($"<@{context.DiscordUser.Id}> My estimate is that you");
         }
 
-        reply.AppendLine($" will reach **{goalAmount}** plays on **{Format.Sanitize(artistSearch.Artist.ArtistName)}** on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
+        reply.AppendLine($" will reach **{goalAmount}** plays on **{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}** on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
 
 
         reply.AppendLine(
@@ -1273,7 +1273,7 @@ public class ArtistBuilders
         var willCreateDiscogsPage = ownWithDiscogs.UserDiscogs != null && otherWithDiscogs.UserDiscogs != null;
 
         var artistPage = new PageBuilder();
-        artistPage.WithTitle($"Top artist comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
+        artistPage.WithTitle($"Top artist comparison - {StringExtensions.Sanitize(ownName)} vs {StringExtensions.Sanitize(otherName)}");
         artistPage.WithUrl(url);
 
         if (tasteSettings.TasteType == TasteType.FullEmbed)
@@ -1297,7 +1297,7 @@ public class ArtistBuilders
         if (ownTopGenres.Any() && otherTopGenres.Any())
         {
             var genrePage = new PageBuilder();
-            genrePage.WithTitle($"Top genre comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
+            genrePage.WithTitle($"Top genre comparison - {StringExtensions.Sanitize(ownName)} vs {StringExtensions.Sanitize(otherName)}");
             genrePage.WithUrl(url);
 
             var ownTopGenresTaste =
@@ -1317,7 +1317,7 @@ public class ArtistBuilders
         if (ownTopCountries.Any() && otherTopCountries.Any())
         {
             var countryPage = new PageBuilder();
-            countryPage.WithTitle($"Top country comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
+            countryPage.WithTitle($"Top country comparison - {StringExtensions.Sanitize(ownName)} vs {StringExtensions.Sanitize(otherName)}");
             countryPage.WithUrl(url);
 
             var ownTopCountriesTaste =
@@ -1345,7 +1345,7 @@ public class ArtistBuilders
         if (willCreateDiscogsPage)
         {
             var discogsPage = new PageBuilder();
-            discogsPage.WithTitle($"Top Discogs comparison - {Format.Sanitize(ownName)} vs {Format.Sanitize(otherName)}");
+            discogsPage.WithTitle($"Top Discogs comparison - {StringExtensions.Sanitize(ownName)} vs {StringExtensions.Sanitize(otherName)}");
             discogsPage.WithUrl($"{Constants.DiscogsUserUrl}{otherWithDiscogs.UserDiscogs.Username}/collection");
 
             var ownReleases = await this._discogsService.GetUserCollection(ownWithDiscogs.UserId);
@@ -1446,7 +1446,7 @@ public class ArtistBuilders
                 guildUsers.TryGetValue(neighbor.Key, out var guildUser);
                 pageString.AppendLine(
                     $"**{(neighbor.Value.TotalPoints / self.TotalPoints).ToString("P1", numberInfo)}** — " +
-                    $"**[{Format.Sanitize(guildUser?.UserName)}]({Constants.LastFMUserUrl}{guildUser?.UserNameLastFM})** — " +
+                    $"**[{StringExtensions.Sanitize(guildUser?.UserName)}]({Constants.LastFMUserUrl}{guildUser?.UserNameLastFM})** — " +
                                       $"`{(neighbor.Value.ArtistPoints / self.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
                                       $"`{(neighbor.Value.GenrePoints / self.GenrePoints).ToString("P0", numberInfo)}` genres, " +
                                       $"`{(neighbor.Value.CountryPoints / self.CountryPoints).ToString("P0", numberInfo)}` countries");

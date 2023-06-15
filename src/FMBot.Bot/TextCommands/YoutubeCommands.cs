@@ -86,7 +86,7 @@ public class YoutubeCommands : BaseCommandModule
 
                 var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
 
-                var reply = $"{Format.Sanitize(name)} searched for: `{Format.Sanitize(querystring)}`";
+                var reply = $"{StringExtensions.Sanitize(name)} searched for: `{StringExtensions.Sanitize(querystring)}`";
 
                 var video = await this._youtubeService.GetVideoResult(youtubeResult.VideoId);
 

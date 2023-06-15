@@ -306,7 +306,7 @@ public class WhoKnowsService
 
     public static string NameWithLink(WhoKnowsObjectWithUser user)
     {
-        var discordName = user.DiscordName != null ? Format.Sanitize(user.DiscordName.Replace("[", "").Replace("]", "")) : null;
+        var discordName = user.DiscordName != null ? StringExtensions.Sanitize(user.DiscordName.Replace("[", "").Replace("]", "")) : null;
 
         if (string.IsNullOrWhiteSpace(discordName))
         {

@@ -95,7 +95,7 @@ public class SpotifyCommands : BaseCommandModule
             }
             else
             {
-                await ReplyAsync($"Sorry, Spotify returned no results for *`{Format.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
+                await ReplyAsync($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
             }
         }
@@ -162,7 +162,7 @@ public class SpotifyCommands : BaseCommandModule
             }
             else
             {
-                await ReplyAsync($"Sorry, Spotify returned no results for *`{Format.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
+                await ReplyAsync($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
             }
         }
@@ -232,7 +232,7 @@ public class SpotifyCommands : BaseCommandModule
             }
             else
             {
-                await ReplyAsync($"Sorry, Spotify returned no results for *`{Format.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
+                await ReplyAsync($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
             }
         }
