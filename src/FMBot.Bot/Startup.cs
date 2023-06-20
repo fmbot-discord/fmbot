@@ -141,6 +141,7 @@ public class Startup
             .AddSingleton<CommandHandler>()
             .AddSingleton<DiscogsBuilder>()
             .AddSingleton<DiscogsService>()
+            .AddSingleton<DiscordSkuService>()
             .AddSingleton<FeaturedService>()
             .AddSingleton<FriendsService>()
             .AddSingleton<FriendBuilders>()

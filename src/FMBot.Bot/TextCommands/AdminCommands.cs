@@ -851,7 +851,7 @@ public class AdminCommands : BaseCommandModule
             var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
-                await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings, supporter);
+                await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null, supporter);
 
                 description.AppendLine("✅ Thank you dm sent");
             }
@@ -916,7 +916,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings, supporter);
+            await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null, supporter);
 
             await ReplyAsync("✅ Thank you dm sent");
         }

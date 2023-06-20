@@ -98,6 +98,9 @@ public class TimerService
 
         if (this._botSettings.Bot.FeaturedMaster == true)
         {
+            Log.Information($"RecurringJob: Adding {nameof(UpdateDiscordSupporters)}");
+            RecurringJob.AddOrUpdate(nameof(UpdateDiscordSupporters), () => UpdateDiscordSupporters(), "* * * * *");
+
             Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
             RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 0,12 * * *");
 
@@ -259,6 +262,11 @@ public class TimerService
     public async Task UpdateExistingSupporters()
     {
         await this._supporterService.UpdateExistingOpenCollectiveSupporters();
+    }
+
+    public async Task UpdateDiscordSupporters()
+    {
+        await this._supporterService.UpdateDiscordSupporters();
     }
 
     public static async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)

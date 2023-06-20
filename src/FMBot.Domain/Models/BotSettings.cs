@@ -31,6 +31,7 @@ public class DiscordConfig
     public string Token { get; set; }
 
     public ulong? BotUserId { get; set; }
+    public ulong? ApplicationId { get; set; }
 }
 
 public class DatabaseConfig

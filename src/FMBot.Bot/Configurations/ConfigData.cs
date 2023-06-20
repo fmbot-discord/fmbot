@@ -47,6 +47,7 @@ public static class ConfigData
                 Discord = new DiscordConfig
                 {
                     BotUserId = 0000000000000,
+                    ApplicationId = 0000000000000,
                     Token = "CHANGE-ME-DISCORD-TOKEN"
                 },
                 LastFm = new LastFmConfig
