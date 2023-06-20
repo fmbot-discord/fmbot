@@ -227,6 +227,33 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("supporterlink")]
+    [Summary("Adds supporter purchase link")]
+    public async Task SupporterLinkAsync([Remainder] string link = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            if (link != null)
+            {
+                PublicProperties.DiscordPurchaseLink = link;
+                await ReplyAsync("Added Discord link", allowedMentions: AllowedMentions.None);
+
+            }
+            else
+            {
+                PublicProperties.DiscordPurchaseLink = null;
+                await ReplyAsync("Removed Discord link");
+            }
+
+            this.Context.LogCommandUsed();
+        }
+        else
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
     [Command("purgecache")]
     [Summary("Purges discord caches")]
     public async Task PurgeCacheAsync()

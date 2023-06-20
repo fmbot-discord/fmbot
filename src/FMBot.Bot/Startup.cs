@@ -141,7 +141,6 @@ public class Startup
             .AddSingleton<CommandHandler>()
             .AddSingleton<DiscogsBuilder>()
             .AddSingleton<DiscogsService>()
-            .AddSingleton<DiscordSkuService>()
             .AddSingleton<FeaturedService>()
             .AddSingleton<FriendsService>()
             .AddSingleton<FriendBuilders>()
@@ -198,6 +197,7 @@ public class Startup
         services.AddHttpClient<DiscogsApi>();
         services.AddHttpClient<LastFmRepository>();
         services.AddHttpClient<TrackService>();
+        services.AddHttpClient<DiscordSkuService>();
         services.AddHttpClient<OpenCollectiveService>();
         services.AddHttpClient<OpenAiService>();
 

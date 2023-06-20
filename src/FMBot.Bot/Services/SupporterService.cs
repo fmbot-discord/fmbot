@@ -340,6 +340,7 @@ public class SupporterService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.Supporters
+            .OrderByDescending(o => o.Created)
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
     }
 
@@ -763,16 +764,21 @@ public class SupporterService
         if (user == null)
         {
             Log.Warning("Someone who isn't registered in .fmbot just got a Discord subscription - ID {discordUserId}", id);
-            return null;
         }
+        else
+        {
+            if (user.UserType == UserType.User)
+            {
+                user.UserType = UserType.Supporter;
+            }
 
-        user.UserType = UserType.Supporter;
-        db.Update(user);
+            db.Update(user);
+        }
 
         var supporterToAdd = new Supporter
         {
             DiscordUserId = id,
-            Name = user.UserNameLastFM,
+            Name = user?.UserNameLastFM,
             Created = entitlement.StartsAt ?? DateTime.UtcNow,
             LastPayment = entitlement.EndsAt,
             Notes = "Added through Discord SKU",
@@ -795,9 +801,19 @@ public class SupporterService
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordUserId == id);
 
-        user.UserType = UserType.User;
+        if (user == null)
+        {
+            Log.Warning("Someone who isn't registered in .fmbot just cancelled their Discord subscription - ID {discordUserId}", id);
+        }
+        else
+        {
+            if (user.UserType == UserType.Supporter)
+            {
+                user.UserType = UserType.User;
+            }
 
-        db.Update(user);
+            db.Update(user);
+        }
 
         supporter.Expired = true;
         supporter.VisibleInOverview = false;
