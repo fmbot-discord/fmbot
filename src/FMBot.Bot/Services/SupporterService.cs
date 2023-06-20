@@ -660,6 +660,11 @@ public class SupporterService
 
                 discordUsersLeft.Remove(discordSupporter.DiscordUserId);
 
+                var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+                var embed = new EmbedBuilder().WithDescription(
+                    $"Added Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
+
                 Log.Information("Added Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
 
                 continue;
@@ -676,6 +681,11 @@ public class SupporterService
                     existingSupporter.LastPayment = discordSupporter.EndsAt;
                     db.Update(existingSupporter);
                     await db.SaveChangesAsync();
+
+                    var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+                    var embed = new EmbedBuilder().WithDescription(
+                        $"Updated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                    await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
                 }
 
                 if (existingSupporter.Expired != true && !discordSupporter.Active)
@@ -691,6 +701,11 @@ public class SupporterService
                     {
                         await SendSupporterGoodbyeMessage(user, false);
                     }
+
+                    var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+                    var embed = new EmbedBuilder().WithDescription(
+                        $"Removed Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                    await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
 
                     Log.Information("Removed Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
                 }
