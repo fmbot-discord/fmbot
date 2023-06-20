@@ -1,4 +1,4 @@
-namespace FMBot.OpenCollective.Models;
+namespace FMBot.Subscriptions.Models;
 
 
 

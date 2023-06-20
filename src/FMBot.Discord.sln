@@ -10,8 +10,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Bot", "FMBot.Bot\FMBo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Persistence.EntityFrameWork", "FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj", "{769E7FD4-97EB-447C-92FB-11ED991EDAEF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Logger", "FMBot.Logger\FMBot.Logger.csproj", "{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.LastFM", "FMBot.LastFM\FMBot.LastFM.csproj", "{1C1B04B5-D8DD-4719-B77F-5F81C370FFF4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Persistence", "FMBot.Persistence\FMBot.Persistence.csproj", "{2A6ECC70-CF19-408F-B092-9530EE6DD06F}"
@@ -26,7 +24,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Youtube", "FMBot.Yout
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Images", "FMBot.Images\FMBot.Images.csproj", "{3A126F42-6267-4ECC-9AB8-024DFF8B934E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.OpenCollective", "FMBot.OpenCollective\FMBot.OpenCollective.csproj", "{5E680345-355D-40CD-BF9B-31157F8CEAD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Subscriptions", "FMBot.Subscriptions\FMBot.Subscriptions.csproj", "{5E680345-355D-40CD-BF9B-31157F8CEAD8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Discogs", "FMBot.Discogs\FMBot.Discogs.csproj", "{4EF56FE3-E3D2-417E-BE75-376225EAFC42}"
 EndProject
@@ -46,10 +44,6 @@ Global
 		{769E7FD4-97EB-447C-92FB-11ED991EDAEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{769E7FD4-97EB-447C-92FB-11ED991EDAEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{769E7FD4-97EB-447C-92FB-11ED991EDAEF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1C1B04B5-D8DD-4719-B77F-5F81C370FFF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1C1B04B5-D8DD-4719-B77F-5F81C370FFF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C1B04B5-D8DD-4719-B77F-5F81C370FFF4}.Release|Any CPU.ActiveCfg = Release|Any CPU

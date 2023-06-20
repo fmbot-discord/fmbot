@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Linq;
+using FMBot.Domain.Enums;
 
 namespace FMBot.Bot.Models;
 
