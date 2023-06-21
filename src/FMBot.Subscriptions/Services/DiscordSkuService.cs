@@ -58,7 +58,10 @@ public class DiscordSkuService
 
             var result = JsonSerializer.Deserialize<List<DiscordEntitlementResponseModel>>(requestBody, jsonSerializerOptions);
 
-            return result.Select(ResponseToModel).ToList();
+            return result
+                .Where(w => w.UserId.HasValue)
+                .Select(ResponseToModel)
+                .ToList();
         }
         catch (Exception ex)
         {
