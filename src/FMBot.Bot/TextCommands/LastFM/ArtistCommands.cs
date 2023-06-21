@@ -597,7 +597,7 @@ public class ArtistCommands : BaseCommandModule
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
 
         try
         {

@@ -70,15 +70,12 @@
     <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Images\FMBot.Images.csproj" />
     <ProjectReference Include="..\FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj" />
-    <ProjectReference Include="..\FMBot.OpenCollective\FMBot.Subscriptions.csproj" />
     <ProjectReference Include="..\FMBot.Persistence\FMBot.Persistence.csproj" />
     <ProjectReference Include="..\FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj" />
-    <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
     <ProjectReference Include="..\FMBot.LastFM\FMBot.LastFM.csproj" />
     <ProjectReference Include="..\FMBot.Subscriptions\FMBot.Subscriptions.csproj" />
     <ProjectReference Include="..\FMBot.Youtube\FMBot.Youtube.csproj" />
-    <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\Modals\" />
