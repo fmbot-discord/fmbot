@@ -1,7 +1,7 @@
 
 using FMBot.Domain.Models;
 
-namespace FMBot.OpenCollective.Models;
+namespace FMBot.Subscriptions.Models;
 
 public class OpenCollectiveOverview
 {

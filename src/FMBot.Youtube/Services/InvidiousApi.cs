@@ -44,7 +44,7 @@ namespace FMBot.Youtube.Services
                 RequestUri = new Uri(url),
                 Method = HttpMethod.Get
             };
-
+            
             try
             {
                 using var httpResponse = await this._client.SendAsync(request);

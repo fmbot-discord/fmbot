@@ -1,14 +1,14 @@
 using System.Net;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.OpenCollective.Models;
+using FMBot.Subscriptions.Models;
 using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
-namespace FMBot.OpenCollective.Services;
+namespace FMBot.Subscriptions.Services;
 
 public class OpenCollectiveService
 {

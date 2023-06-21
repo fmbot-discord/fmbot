@@ -37,6 +37,8 @@ public static class Constants
     public const string GetSupporterButton = "Get .fmbot supporter";
     public const string GetSupporterLink = "https://opencollective.com/fmbot/contribute";
 
+    public const string GetDiscordSupporterButton = "Get through Discord";
+
     public const string GetSupporterOverviewButton = "View all supporter perks here.";
     public const string GetSupporterOverviewLink = "https://fmbot.xyz/supporter/";
 

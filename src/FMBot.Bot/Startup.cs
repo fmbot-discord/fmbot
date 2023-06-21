@@ -21,9 +21,9 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Api;
 using FMBot.LastFM.Repositories;
-using FMBot.OpenCollective.Services;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
+using FMBot.Subscriptions.Services;
 using FMBot.Youtube.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -197,6 +197,7 @@ public class Startup
         services.AddHttpClient<DiscogsApi>();
         services.AddHttpClient<LastFmRepository>();
         services.AddHttpClient<TrackService>();
+        services.AddHttpClient<DiscordSkuService>();
         services.AddHttpClient<OpenCollectiveService>();
         services.AddHttpClient<OpenAiService>();
 

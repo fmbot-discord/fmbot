@@ -134,7 +134,15 @@ public class StaticBuilders
             {
                 var lastPayment = DateTime.SpecifyKind(existingSupporter.LastPayment.Value, DateTimeKind.Utc);
                 var lastPaymentValue = ((DateTimeOffset)lastPayment).ToUnixTimeSeconds();
-                existingSupporterDescription.AppendLine($"Last payment: <t:{lastPaymentValue}:D>");
+
+                if (existingSupporter.SubscriptionType != SubscriptionType.Discord)
+                {
+                    existingSupporterDescription.AppendLine($"Last payment: <t:{lastPaymentValue}:D>");
+                }
+                else
+                {
+                    existingSupporterDescription.AppendLine($"Expires on: <t:{lastPaymentValue}:D>");
+                }
             }
 
             if (existingSupporter.SubscriptionType.HasValue)
@@ -142,14 +150,20 @@ public class StaticBuilders
                 existingSupporterDescription.AppendLine($"Subscription type: {Enum.GetName(existingSupporter.SubscriptionType.Value)}");
             }
 
-            existingSupporterDescription.AppendLine($"Name: **{StringExtensions.Sanitize(existingSupporter.Name)}** (from OpenCollective)");
+            existingSupporterDescription.AppendLine($"Name: **{StringExtensions.Sanitize(existingSupporter.Name)}**");
 
             response.Embed.AddField("Your details", existingSupporterDescription.ToString());
         }
 
         response.Embed.WithDescription(embedDescription.ToString());
 
-        response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink);
+        var buttons = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink);
+        if (PublicProperties.DiscordPurchaseLink != null)
+        {
+            buttons.WithButton(Constants.GetDiscordSupporterButton, style: ButtonStyle.Link, url: PublicProperties.DiscordPurchaseLink);
+        }
+
+        response.Components = buttons;
 
         return response;
     }

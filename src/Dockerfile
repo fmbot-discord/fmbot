@@ -34,8 +34,7 @@ COPY ["src/FMBot.Persistence.EntityFrameWork", "FMBot.Persistence.EntityFrameWor
 COPY ["src/FMBot.Youtube", "FMBot.Youtube/"]
 COPY ["src/FMBot.LastFM", "FMBot.LastFM/"]
 COPY ["src/FMBot.LastFM.Domain", "FMBot.LastFM.Domain/"]
-COPY ["src/FMBot.Logger", "FMBot.Logger/"]
-COPY ["src/FMBot.OpenCollective", "FMBot.OpenCollective/"]
+COPY ["src/FMBot.Subscriptions", "FMBot.Subscriptions/"]
 COPY ["src/FMBot.Discogs", "FMBot.Discogs/"]
 RUN dotnet restore "FMBot.Bot/FMBot.Bot.csproj"
 COPY . .

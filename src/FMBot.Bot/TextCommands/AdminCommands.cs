@@ -227,6 +227,33 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("supporterlink")]
+    [Summary("Adds supporter purchase link")]
+    public async Task SupporterLinkAsync([Remainder] string link = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            if (link != null)
+            {
+                PublicProperties.DiscordPurchaseLink = link;
+                await ReplyAsync("Added Discord link", allowedMentions: AllowedMentions.None);
+
+            }
+            else
+            {
+                PublicProperties.DiscordPurchaseLink = null;
+                await ReplyAsync("Removed Discord link");
+            }
+
+            this.Context.LogCommandUsed();
+        }
+        else
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
     [Command("purgecache")]
     [Summary("Purges discord caches")]
     public async Task PurgeCacheAsync()
@@ -851,7 +878,7 @@ public class AdminCommands : BaseCommandModule
             var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
-                await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings, supporter);
+                await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null, supporter);
 
                 description.AppendLine("✅ Thank you dm sent");
             }
@@ -916,7 +943,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings, supporter);
+            await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null, supporter);
 
             await ReplyAsync("✅ Thank you dm sent");
         }
