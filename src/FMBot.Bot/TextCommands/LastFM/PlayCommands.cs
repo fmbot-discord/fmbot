@@ -497,7 +497,7 @@ public class PlayCommands : BaseCommandModule
 
             var topPlaycountUsers = await this._playService.GetGuildUsersTotalPlaycount(this.Context, guildUsers, guild.GuildId);
 
-            var (filterStats, filteredTopPlaycountUsers) = WhoKnowsService.FilterGuildUsersAsync(topPlaycountUsers, guild);
+            var (filterStats, filteredTopPlaycountUsers) = WhoKnowsService.FilterWhoKnowsObjectsAsync(topPlaycountUsers, guild);
 
             if (!topPlaycountUsers.Any() && filteredTopPlaycountUsers.Any())
             {
@@ -576,7 +576,7 @@ public class PlayCommands : BaseCommandModule
             var userListeningTime =
                 await this._timeService.UserPlaysToGuildLeaderboard(this.Context, userPlays, guildUsers);
 
-            var (filterStats, filteredTopListeningTimeUsers) = WhoKnowsService.FilterGuildUsersAsync(userListeningTime, guild);
+            var (filterStats, filteredTopListeningTimeUsers) = WhoKnowsService.FilterWhoKnowsObjectsAsync(userListeningTime, guild);
 
             if (!userListeningTime.Any() && filteredTopListeningTimeUsers.Any())
             {

@@ -139,6 +139,7 @@ public class PlayBuilder
         var embedType = context.ContextUser.FmEmbedType;
 
         Guild guild = null;
+        IDictionary<int, FullGuildUser> guildUsers = null;
         if (context.DiscordGuild != null)
         {
             guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
@@ -151,6 +152,8 @@ public class PlayBuilder
             {
                 await this._indexService.UpdateGuildUser(await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId),
                     context.ContextUser.UserId, guild);
+
+                guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
             }
         }
 
@@ -161,11 +164,6 @@ public class PlayBuilder
         if (userSettings.DifferentUser)
         {
             totalPlaycount = recentTracks.Content.TotalAmount;
-        }
-
-        if (!userSettings.DifferentUser)
-        {
-            this._whoKnowsPlayService.AddRecentPlayToCache(context.ContextUser.UserId, currentTrack);
         }
 
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
@@ -249,17 +247,16 @@ public class PlayBuilder
                 response.EmbedAuthor.WithName(headerText);
                 response.EmbedAuthor.WithUrl(recentTracks.Content.UserUrl);
 
-                //if (guild != null && !userSettings.DifferentUser)
-                //{
-                //    var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
-                //        guild, currentTrack.ArtistName, currentTrack.TrackName);
+                if (guild != null && !userSettings.DifferentUser)
+                {
+                    var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
+                        guildUsers, guild, currentTrack.ArtistName, currentTrack.TrackName);
 
-                //    if (guildAlsoPlaying != null)
-                //    {
-                //        footerText += "\n";
-                //        footerText += guildAlsoPlaying;
-                //    }
-                //}
+                    if (guildAlsoPlaying != null)
+                    {
+                        footerText.AppendLine(guildAlsoPlaying);
+                    }
+                }
 
                 if (footerText.Length > 0)
                 {
@@ -460,7 +457,7 @@ public class PlayBuilder
         if (!userSettings.DifferentUser)
         {
             response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
-            
+
         }
 
         response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");

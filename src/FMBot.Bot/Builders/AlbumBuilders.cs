@@ -132,6 +132,23 @@ public class AlbumBuilders
             globalStats.AppendLine($"`{StringExtensions.GetLongListeningTimeString(listeningTime)}` spent listening");
         }
 
+        var footer = new StringBuilder();
+
+        if (context.ContextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 10)
+        {
+            footer.AppendLine($"{(decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your scrobbles are on this album");
+        }
+
+        if (databaseAlbum?.Label != null)
+        {
+            footer.AppendLine($"Label: {databaseAlbum.Label}");
+        }
+
+        if (footer.Length > 0)
+        {
+            response.Embed.WithFooter(footer.ToString());
+        }
+
         response.Embed.AddField("Statistics", globalStats.ToString(), true);
 
         if (context.DiscordGuild != null)
@@ -143,7 +160,7 @@ public class AlbumBuilders
             if (guild?.LastIndexed != null)
             {
                 var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guildUsers, guild.GuildId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
-                var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
+                var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithAlbum, guild);
 
                 if (filteredUsersWithAlbum.Count != 0)
                 {
@@ -168,6 +185,14 @@ public class AlbumBuilders
             else
             {
                 serverStats += $"Run `{context.Prefix}index` to get server stats";
+            }
+
+            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.ContextUser.UserId,
+            guildUsers, guild, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+             
+            if (guildAlsoPlaying != null)
+            {
+                footer.AppendLine(guildAlsoPlaying);
             }
 
             response.Embed.AddField("Server stats", serverStats, true);
@@ -209,23 +234,6 @@ public class AlbumBuilders
                 response.Embed.WithDescription($"*Supporters can see the date they first listened to an album. " +
                                                $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterOverviewLink})*");
             }
-        }
-
-        var footer = new StringBuilder();
-
-        if (context.ContextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 10)
-        {
-            footer.AppendLine($"{(decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your scrobbles are on this album");
-        }
-
-        if (databaseAlbum?.Label != null)
-        {
-            footer.AppendLine($"Label: {databaseAlbum.Label}");
-        }
-
-        if (footer.Length > 0)
-        {
-            response.Embed.WithFooter(footer.ToString());
         }
 
         if (albumSearch.Album.Description != null)
@@ -343,7 +351,7 @@ public class AlbumBuilders
 
         usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser, fullAlbumName, context.DiscordGuild, album.Album.UserPlaycount);
 
-        var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild, roles);
+        var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithAlbum, guild, roles);
 
         var albumCoverUrl = album.Album.AlbumCoverUrl;
         if (cachedAlbum.SpotifyImageUrl != null)
@@ -411,13 +419,8 @@ public class AlbumBuilders
             footer += $"\n{filterStats.FullDescription}";
         }
 
-        if (guild.WhoKnowsWhitelistRoleId.HasValue)
-        {
-            footer += $"\nUsers with WhoKnows whitelisted role only";
-        }
-
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.ContextUser.UserId,
-            guild, usersWithAlbum, album.Album.ArtistName, album.Album.AlbumName);
+            guildUsers, guild, album.Album.ArtistName, album.Album.AlbumName);
 
         if (guildAlsoPlaying != null)
         {
@@ -670,15 +673,6 @@ public class AlbumBuilders
             footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
             footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
         }
-
-        //var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.ContextUser.UserId,
-        //    guild, usersWithAlbum, album.ArtistName, album.AlbumName);
-
-        //if (guildAlsoPlaying != null)
-        //{
-        //    footer += "\n";
-        //    footer += guildAlsoPlaying;
-        //}
 
         if (settings.AdminView)
         {

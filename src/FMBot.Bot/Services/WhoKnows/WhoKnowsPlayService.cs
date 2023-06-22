@@ -1,69 +1,46 @@
-using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Dapper;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Models;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
-using Npgsql;
 
 namespace FMBot.Bot.Services.WhoKnows;
 
 public class WhoKnowsPlayService
 {
-    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
-    private readonly BotSettings _botSettings;
 
-    public WhoKnowsPlayService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings)
+    public WhoKnowsPlayService(IMemoryCache cache)
     {
-        this._contextFactory = contextFactory;
         this._cache = cache;
-        this._botSettings = botSettings.Value;
     }
 
-    public void AddRecentPlayToCache(int userId, RecentTrack track)
+    public string GuildAlsoPlayingTrack(
+        int currentUserId,
+        IDictionary<int, FullGuildUser> guildUsers,
+        Persistence.Domain.Models.Guild guild,
+        string artistName,
+        string trackName)
     {
-        if (track.NowPlaying || track.TimePlayed != null && track.TimePlayed > DateTime.UtcNow.AddMinutes(-8))
-        {
-            var userPlay = new UserPlayTs
-            {
-                ArtistName = track.ArtistName,
-                AlbumName = track.AlbumName,
-                TrackName = track.TrackName,
-                UserId = userId,
-                TimePlayed = track.TimePlayed ?? DateTime.UtcNow
-            };
-
-            this._cache.Set($"{userId}-last-play", userPlay, TimeSpan.FromMinutes(15));
-        }
-    }
-
-    public string GuildAlsoPlayingTrack(int userId, Persistence.Domain.Models.Guild guild,
-        IEnumerable<WhoKnowsObjectWithUser> users, string artistName, string trackName)
-    {
-        if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
+        if (guild == null || guildUsers == null || !guildUsers.Any())
         {
             return null;
         }
 
-        var foundUsers = new List<WhoKnowsObjectWithUser>();
+        var foundUsers = new List<FullGuildUser>();
         var userPlays = new List<UserPlayTs>();
 
-        foreach (var user in users.Where(w => w.UserId != userId))
-        {
-            var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlayTs userPlay);
+        var filter = GuildService.FilterGuildUsers(guildUsers, guild);
 
-            if (userFound && userPlay.ArtistName == artistName.ToLower() && userPlay.TrackName == trackName.ToLower())
+        foreach (var user in filter.FilteredGuildUsers.Where(w => w.Key != currentUserId))
+        {
+            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-track-{artistName.ToLower()}-{trackName.ToLower()}", out UserPlayTs userPlay);
+
+            if (userFound)
             {
-                foundUsers.Add(user);
+                foundUsers.Add(user.Value);
                 userPlays.Add(userPlay);
             }
         }
@@ -73,38 +50,33 @@ public class WhoKnowsPlayService
             return null;
         }
 
-        return foundUsers.Count switch
-        {
-            1 =>
-                $"{foundUsers.First().DiscordName} was also listening to this track {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
-            2 =>
-                $"{foundUsers[0].DiscordName} and {foundUsers[1].DiscordName} were also recently listening to this track!",
-            3 =>
-                $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName} and {foundUsers[2].DiscordName} were also recently listening to this track!",
-            > 3 =>
-                $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName}, {foundUsers[2].DiscordName} and {foundUsers.Count - 3} others were also recently listening to this track!",
-            _ => null
-        };
+        return Description(foundUsers, userPlays, "track");
     }
 
-    public string GuildAlsoPlayingAlbum(int userId, Persistence.Domain.Models.Guild guild,
-        IEnumerable<WhoKnowsObjectWithUser> users, string artistName, string albumName)
+    public string GuildAlsoPlayingAlbum(
+        int currentUserId,
+        IDictionary<int, FullGuildUser> guildUsers,
+        Persistence.Domain.Models.Guild guild,
+        string artistName,
+        string albumName)
     {
-        if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
+        if (guild == null || guildUsers == null || !guildUsers.Any())
         {
             return null;
         }
 
-        var foundUsers = new List<WhoKnowsObjectWithUser>();
+        var foundUsers = new List<FullGuildUser>();
         var userPlays = new List<UserPlayTs>();
 
-        foreach (var user in users.Where(w => w.UserId != userId))
-        {
-            var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlayTs userPlay);
+        var filter = GuildService.FilterGuildUsers(guildUsers, guild);
 
-            if (userFound && userPlay.ArtistName == artistName.ToLower() && userPlay.AlbumName == albumName.ToLower())
+        foreach (var user in filter.FilteredGuildUsers.Where(w => w.Key != currentUserId))
+        {
+            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-album-{artistName.ToLower()}-{albumName.ToLower()}", out UserPlayTs userPlay);
+
+            if (userFound)
             {
-                foundUsers.Add(user);
+                foundUsers.Add(user.Value);
                 userPlays.Add(userPlay);
             }
         }
@@ -114,38 +86,32 @@ public class WhoKnowsPlayService
             return null;
         }
 
-        return foundUsers.Count switch
-        {
-            1 =>
-                $"{foundUsers.First().DiscordName} was also listening to this album {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
-            2 =>
-                $"{foundUsers[0].DiscordName} and {foundUsers[1].DiscordName} were also recently listening to this album!",
-            3 =>
-                $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName} and {foundUsers[2].DiscordName} were also recently listening to this album!",
-            > 3 =>
-                $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName}, {foundUsers[2].DiscordName} and {foundUsers.Count - 3} others were also recently listening to this album!",
-            _ => null
-        };
+        return Description(foundUsers, userPlays, "album");
     }
 
-    public string GuildAlsoPlayingArtist(int userId, IDictionary<int, FullGuildUser> guildUsers,
-        IEnumerable<WhoKnowsObjectWithUser> users, string artistName)
+    public string GuildAlsoPlayingArtist(
+        int currentUserId,
+        IDictionary<int, FullGuildUser> guildUsers,
+        Persistence.Domain.Models.Guild guild,
+        string artistName)
     {
-        if (guildUsers == null || !guildUsers.Any())
+        if (guild == null || guildUsers == null || !guildUsers.Any())
         {
             return null;
         }
 
-        var foundUsers = new List<WhoKnowsObjectWithUser>();
+        var foundUsers = new List<FullGuildUser>();
         var userPlays = new List<UserPlayTs>();
 
-        foreach (var user in users)
-        {
-            var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlayTs userPlay);
+        var filter = GuildService.FilterGuildUsers(guildUsers, guild);
 
-            if (userFound && userPlay.ArtistName == artistName.ToLower() && userPlay.TimePlayed > DateTime.UtcNow.AddMinutes(-10))
+        foreach (var user in filter.FilteredGuildUsers.Where(w => w.Key != currentUserId))
+        {
+            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-artist-{artistName.ToLower()}", out UserPlayTs userPlay);
+
+            if (userFound)
             {
-                foundUsers.Add(user);
+                foundUsers.Add(user.Value);
                 userPlays.Add(userPlay);
             }
         }
@@ -155,16 +121,21 @@ public class WhoKnowsPlayService
             return null;
         }
 
-        return foundUsers.Count switch
+        return Description(foundUsers, userPlays, "artist");
+    }
+
+    private static string Description(IReadOnlyList<FullGuildUser> fullGuildUsers, IEnumerable<UserPlayTs> userPlayTsList, string type)
+    {
+        return fullGuildUsers.Count switch
         {
             1 =>
-                $"{foundUsers.First().DiscordName} was also listening to this artist {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
+                $"{fullGuildUsers.First().UserName} was also listening to this {type} {StringExtensions.GetTimeAgo(userPlayTsList.OrderByDescending(o => o.TimePlayed).First().TimePlayed)}!",
             2 =>
-                $"{foundUsers[0].DiscordName} and {foundUsers[1].DiscordName} were also recently listening to this artist!",
+                $"{fullGuildUsers[0].UserName} and {fullGuildUsers[1].UserName} were also recently listening to this {type}!",
             3 =>
-                $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName} and {foundUsers[2].DiscordName} were also recently listening to this artist!",
+                $"{fullGuildUsers[0].UserName}, {fullGuildUsers[1].UserName} and {fullGuildUsers[2].UserName} were also recently listening to this {type}!",
             > 3 =>
-                $"{foundUsers[0].DiscordName}, {foundUsers[1].DiscordName}, {foundUsers[2].DiscordName} and {foundUsers.Count - 3} others were also recently listening to this artist!",
+                $"{fullGuildUsers[0].UserName}, {fullGuildUsers[1].UserName}, {fullGuildUsers[2].UserName} and {fullGuildUsers.Count - 3} others were also recently listening to this {type}!",
             _ => null
         };
     }

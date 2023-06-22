@@ -183,7 +183,7 @@ public class StartupService
         var fmClient = new LastfmClient(this._botSettings.LastFm.PublicKey, this._botSettings.LastFm.PublicKeySecret);
 
         Log.Information("Testing Last.fm API");
-        var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport");
+        var lastFMUser = await fmClient.User.GetInfoAsync("fm-bot");
 
         if (lastFMUser.Status.ToString().Equals("BadApiKey"))
         {

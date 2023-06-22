@@ -53,12 +53,12 @@ public class FilterStats
             var description = new StringBuilder();
             if (descriptionList.Any())
             {
-                description.AppendLine($"Filtered: {StringService.StringListToLongString(descriptionList)} users");
+                description.Append($"Filtered: {StringService.StringListToLongString(descriptionList)} users");
             }
 
             if (this.Roles != null && this.Roles.Any())
             {
-                description.AppendLine($"✨ Role filter enabled with {this.Roles.Count} {StringExtensions.GetRolesString(this.Roles.Count)} picked");
+                description.Append($"✨ Role filter enabled with {this.Roles.Count} {StringExtensions.GetRolesString(this.Roles.Count)} picked");
             }
 
             return description.Length > 0 ?

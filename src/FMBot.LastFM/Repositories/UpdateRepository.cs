@@ -119,6 +119,8 @@ public class UpdateRepository
             return recentTracks;
         }
 
+        AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks);
+
         _ = RemoveInactiveUserIfExists(user);
 
         if (!recentTracks.Content.RecentTracks.Any())
@@ -131,8 +133,6 @@ public class UpdateRepository
             recentTracks.Content.NewRecentTracksAmount = 0;
             return recentTracks;
         }
-
-        AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks.First());
 
         try
         {
@@ -519,21 +519,39 @@ public class UpdateRepository
         return correctPlaycount.Value;
     }
 
-    private void AddRecentPlayToMemoryCache(int userId, RecentTrack track)
+    private void AddRecentPlayToMemoryCache(int userId, IEnumerable<RecentTrack> tracks)
     {
-        if (track.NowPlaying || track.TimePlayed != null && track.TimePlayed > DateTime.UtcNow.AddMinutes(-8))
-        {
-            var userPlay = new UserPlayTs
-            {
-                ArtistName = track.ArtistName,
-                AlbumName = track.AlbumName,
-                TrackName = track.TrackName,
-                UserId = userId,
-                TimePlayed = track.TimePlayed ?? DateTime.UtcNow
-            };
+        const int minutesToCache = 30;
+        var filter = DateTime.UtcNow.AddMinutes(-minutesToCache);
 
-            this._cache.Set($"{userId}-last-play", userPlay, TimeSpan.FromMinutes(15));
+        var playsToCache = tracks
+            .Where(w => w.NowPlaying || w.TimePlayed.HasValue && w.TimePlayed.Value > filter)
+            .Select(s => new UserPlayTs
+            {
+                ArtistName = s.ArtistName.ToLower(),
+                AlbumName = s.AlbumName.ToLower(),
+                TrackName = s.TrackName.ToLower(),
+                UserId = userId,
+                TimePlayed = s.TimePlayed ?? DateTime.UtcNow
+            });
+
+        foreach (var userPlay in playsToCache.OrderBy(o => o.TimePlayed))
+        {
+            var timeToCache = CalculateTimeToCache(userPlay.TimePlayed, minutesToCache);
+
+            this._cache.Set($"{userId}-lastplay-artist-{userPlay.ArtistName}", userPlay, TimeSpan.FromMinutes(timeToCache));
+            this._cache.Set($"{userId}-lastplay-album-{userPlay.ArtistName}-{userPlay.AlbumName}", userPlay, TimeSpan.FromMinutes(timeToCache));
+            this._cache.Set($"{userId}-lastplay-track-{userPlay.ArtistName}-{userPlay.TrackName}", userPlay, TimeSpan.FromMinutes(timeToCache));
         }
+    }
+
+    private static int CalculateTimeToCache(DateTime timePlayed, int minutesToCache)
+    {
+        var elapsedTime = DateTime.UtcNow - timePlayed;
+
+        var minutes = (int)elapsedTime.TotalMinutes;
+        var timeToCache = minutesToCache - (minutes % minutesToCache);
+        return timeToCache;
     }
 
     private async Task AddOrUpdateInactiveUserMissingParameterError(User user)

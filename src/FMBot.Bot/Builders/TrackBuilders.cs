@@ -18,7 +18,6 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
-using Genius.Models.Song;
 using SkiaSharp;
 
 namespace FMBot.Bot.Builders;
@@ -40,6 +39,7 @@ public class TrackBuilders
     private readonly CensorService _censorService;
     private readonly WhoKnowsService _whoKnowsService;
     private readonly AlbumService _albumService;
+    private readonly WhoKnowsPlayService _whoKnowsPlayService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -55,7 +55,8 @@ public class TrackBuilders
         IIndexService indexService,
         CensorService censorService,
         WhoKnowsService whoKnowsService,
-        AlbumService albumService)
+        AlbumService albumService,
+        WhoKnowsPlayService whoKnowsPlayService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -72,6 +73,7 @@ public class TrackBuilders
         this._censorService = censorService;
         this._whoKnowsService = whoKnowsService;
         this._albumService = albumService;
+        this._whoKnowsPlayService = whoKnowsPlayService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -248,7 +250,7 @@ public class TrackBuilders
         var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers,guild.GuildId, track.Track.ArtistName, track.Track.TrackName);
+        var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers, guild.GuildId, track.Track.ArtistName, track.Track.TrackName);
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.DiscordUser.Id);
         var currentUser = await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
@@ -256,7 +258,7 @@ public class TrackBuilders
 
         usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
-        var (filterStats, filteredUsersWithTrack) = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild, roles);
+        var (filterStats, filteredUsersWithTrack) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithTrack, guild, roles);
 
         string albumCoverUrl = null;
         if (track.Track.AlbumName != null)
@@ -309,6 +311,14 @@ public class TrackBuilders
         if (filterStats.FullDescription != null)
         {
             footer += $"\n{filterStats.FullDescription}";
+        }
+
+        var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
+            guildUsers, guild, track.Track.ArtistName, track.Track.TrackName);
+
+        if (guildAlsoPlaying != null)
+        {
+            footer += $"\n{guildAlsoPlaying}";
         }
 
         response.Embed.WithTitle(StringExtensions.TruncateLongString($"{trackName} in {context.DiscordGuild.Name}", 255));
@@ -472,8 +482,25 @@ public class TrackBuilders
 
         var privacyLevel = PrivacyLevel.Global;
 
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var footer = $"Global WhoKnows track requested by {userTitle}";
+
+        if (settings.AdminView)
+        {
+            footer += "\nAdmin view enabled - not for public channels";
+        }
+        if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
+        {
+            footer += $"\nYou are currently not globally visible - use '{context.Prefix}privacy global' to enable.";
+        }
+        if (settings.HidePrivateUsers)
+        {
+            footer += "\nAll private users are hidden from results";
+        }
+
         if (context.DiscordGuild != null)
         {
+            var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
             var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
             filteredUsersWithTrack =
@@ -482,6 +509,14 @@ public class TrackBuilders
             if (settings.AdminView)
             {
                 privacyLevel = PrivacyLevel.Server;
+            }
+
+            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
+                guildUsers, guild, track.Track.ArtistName, track.Track.TrackName);
+
+            if (guildAlsoPlaying != null)
+            {
+                footer += $"\n{guildAlsoPlaying}";
             }
         }
 
@@ -512,8 +547,6 @@ public class TrackBuilders
 
         response.Embed.WithDescription(serverUsers);
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        var footer = $"Global WhoKnows track requested by {userTitle}";
 
         var duration = spotifyTrack?.DurationMs ?? track.Track.Duration;
 
@@ -538,20 +571,6 @@ public class TrackBuilders
             footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
             footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
             footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
-        }
-
-        if (settings.AdminView)
-        {
-            footer += "\nAdmin view enabled - not for public channels";
-        }
-        if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
-        {
-            footer += $"\nYou are currently not globally visible - use '{context.Prefix}privacy global' to enable.";
-        }
-
-        if (settings.HidePrivateUsers)
-        {
-            footer += "\nAll private users are hidden from results";
         }
 
         response.Embed.WithTitle(StringExtensions.TruncateLongString($"{trackName} globally", 255));

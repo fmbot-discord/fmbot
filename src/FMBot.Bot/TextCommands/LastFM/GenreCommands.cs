@@ -212,7 +212,7 @@ public class GenreCommands : BaseCommandModule
             var currentUser = await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, user);
             await this._indexService.UpdateGuildUser(discordGuildUser, currentUser.UserId, guild);
 
-            var (filterStats, filteredUsersWithGenre) = WhoKnowsService.FilterGuildUsersAsync(usersWithGenre, guild);
+            var (filterStats, filteredUsersWithGenre) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithGenre, guild);
 
             var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, user.UserId, PrivacyLevel.Server);
             if (filteredUsersWithGenre.Count == 0)

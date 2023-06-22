@@ -238,7 +238,15 @@ public class UserService
         return title;
     }
 
-    public async Task<StringBuilder> GetFooterAsync(FmFooterOption footerOptions, UserSettingsModel userSettings, string artistName, string albumName, string trackName, bool loved, long totalScrobbles, Persistence.Domain.Models.Guild guild = null)
+    public async Task<StringBuilder> GetFooterAsync(FmFooterOption footerOptions,
+        UserSettingsModel userSettings,
+        string artistName,
+        string albumName,
+        string trackName,
+        bool loved,
+        long totalScrobbles,
+        Persistence.Domain.Models.Guild guild = null,
+        IDictionary<int, FullGuildUser> guildUsers = null)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();

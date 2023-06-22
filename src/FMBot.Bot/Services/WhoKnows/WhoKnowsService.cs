@@ -70,7 +70,7 @@ public class WhoKnowsService
         return users.OrderByDescending(o => o.Playcount).ToList();
     }
 
-    public static (FilterStats stats, List<WhoKnowsObjectWithUser>) FilterGuildUsersAsync(
+    public static (FilterStats stats, List<WhoKnowsObjectWithUser>) FilterWhoKnowsObjectsAsync(
         ICollection<WhoKnowsObjectWithUser> users,
         Persistence.Domain.Models.Guild guild,
         List<ulong> roles = null)

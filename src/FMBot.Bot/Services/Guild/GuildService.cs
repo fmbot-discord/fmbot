@@ -184,29 +184,90 @@ public class GuildService
         return $"guild-full-{discordGuildId}";
     }
 
-    public static IDictionary<int, FullGuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild, IDictionary<int, FullGuildUser> guildUsers)
+    public static (FilterStats Stats, IDictionary<int, FullGuildUser> FilteredGuildUsers) FilterGuildUsers(
+        IDictionary<int, FullGuildUser> users,
+        Persistence.Domain.Models.Guild guild,
+        List<ulong> roles = null)
     {
+        var stats = new FilterStats
+        {
+            StartCount = users.Count,
+            RequesterFiltered = false,
+            Roles = roles
+        };
+
         if (guild.ActivityThresholdDays.HasValue)
         {
-            guildUsers = guildUsers.Where(w =>
+            var preFilterCount = users.Count;
+
+            users = users.Where(w =>
                     w.Value.LastUsed != null &&
                     w.Value.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
                 .ToDictionary(i => i.Key, i => i.Value);
+
+            stats.ActivityThresholdFiltered = preFilterCount - users.Count;
+        }
+        if (guild.UserActivityThresholdDays.HasValue)
+        {
+            var preFilterCount = users.Count;
+
+            users = users.Where(w =>
+                    w.Value.LastMessage != null &&
+                    w.Value.LastMessage >= DateTime.UtcNow.AddDays(-guild.UserActivityThresholdDays.Value))
+                .ToDictionary(i => i.Key, i => i.Value);
+
+            stats.GuildActivityThresholdFiltered = preFilterCount - users.Count;
         }
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
         {
+            var preFilterCount = users.Count;
+
             var usersToFilter = guild.GuildBlockedUsers
-                .Where(wh => wh.BlockedFromWhoKnows)
+                .DistinctBy(d => d.UserId)
+                .Where(w => w.BlockedFromWhoKnows)
                 .Select(s => s.UserId)
-                .Distinct()
                 .ToHashSet();
 
-            guildUsers = guildUsers.Where(w =>
-                    !usersToFilter.Contains(w.Key))
+            users = users
+                .Where(w => !usersToFilter.Contains(w.Value.UserId))
                 .ToDictionary(i => i.Key, i => i.Value);
+
+            stats.BlockedFiltered = preFilterCount - users.Count;
+        }
+        if (guild.AllowedRoles != null && guild.AllowedRoles.Any())
+        {
+            var preFilterCount = users.Count;
+
+            users = users
+                .Where(w => w.Value.Roles != null && guild.AllowedRoles.Any(a => w.Value.Roles.Contains(a)))
+                .ToDictionary(i => i.Key, i => i.Value);
+
+            stats.AllowedRolesFiltered = preFilterCount - users.Count;
+        }
+        if (guild.BlockedRoles != null && guild.BlockedRoles.Any())
+        {
+            var preFilterCount = users.Count;
+
+            users = users
+                .Where(w => w.Value.Roles != null && !guild.BlockedRoles.Any(a => w.Value.Roles.Contains(a)))
+                .ToDictionary(i => i.Key, i => i.Value); 
+
+            stats.BlockedRolesFiltered = preFilterCount - users.Count;
+        }
+        if (roles != null && roles.Any())
+        {
+            var preFilterCount = users.Count;
+
+            users = users
+                .Where(w => w.Value.Roles != null && roles.Any(a => w.Value.Roles.Contains(a)))
+                .ToDictionary(i => i.Key, i => i.Value); ;
+
+            stats.ManualRoleFilter = preFilterCount - users.Count;
         }
 
-        return guildUsers;
+        stats.EndCount = users.Count;
+
+        return (stats, users);
     }
 
     public static async Task<GuildPermissions> GetGuildPermissionsAsync(ICommandContext context)

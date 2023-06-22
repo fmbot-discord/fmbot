@@ -234,21 +234,21 @@ public class ArtistBuilders
         if (context.DiscordGuild != null)
         {
             var serverStats = "";
-            var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
+            var contextGuild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
 
-            if (guild?.LastIndexed != null)
+            if (contextGuild?.LastIndexed != null)
             {
                 var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-                var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, guildUsers, guild.GuildId, artistSearch.Artist.ArtistName);
-                var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
+                var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, guildUsers, contextGuild.GuildId, artistSearch.Artist.ArtistName);
+                var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithArtist, contextGuild);
 
                 if (filteredUsersWithArtist.Count != 0)
                 {
                     var serverListeners = filteredUsersWithArtist.Count;
                     var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
                     var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
-                    var serverPlaycountLastWeek = await this._playService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artistSearch.Artist.ArtistName);
+                    var serverPlaycountLastWeek = await this._playService.GetWeekArtistPlaycountForGuildAsync(contextGuild.GuildId, artistSearch.Artist.ArtistName);
 
                     serverStats += $"`{serverListeners}` {StringExtensions.GetListenersString(serverListeners)}";
                     serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
@@ -259,6 +259,14 @@ public class ArtistBuilders
                     {
                         serverStats += $"\n{filterStats.BasicDescription}";
                     }
+                }
+
+                var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
+                    guildUsers, contextGuild, artistSearch.Artist.ArtistName);
+
+                if (guildAlsoPlaying != null)
+                {
+                    footer.AppendLine(guildAlsoPlaying);
                 }
             }
             else
@@ -778,7 +786,7 @@ public class ArtistBuilders
 
         usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
-        var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, contextGuild, roles);
+        var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithArtist, contextGuild, roles);
 
         CrownModel crownModel = null;
         if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector)
@@ -846,17 +854,17 @@ public class ArtistBuilders
             footer.AppendLine($"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}");
         }
 
+        if (filterStats.FullDescription != null)
+        {
+            footer.AppendLine(filterStats.FullDescription);
+        }
+
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
-            guildUsers, usersWithArtist, artistSearch.Artist.ArtistName);
+            guildUsers, contextGuild, artistSearch.Artist.ArtistName);
 
         if (guildAlsoPlaying != null)
         {
             footer.AppendLine(guildAlsoPlaying);
-        }
-
-        if (filterStats.FullDescription != null)
-        {
-            footer.AppendLine(filterStats.FullDescription);
         }
 
         response.Embed.WithTitle($"{artistSearch.Artist.ArtistName}{ArtistsService.IsArtistBirthday(cachedArtist?.StartDate)} in {context.DiscordGuild.Name}");
@@ -1412,8 +1420,8 @@ public class ArtistBuilders
 
         var concurrentNeighbors = await this._whoKnowsArtistService.GetAffinity(guildTopAllTime, ownAllTime, guildTopQuarterly, ownQuarterly);
 
-        var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild, guildUsers);
-        var filteredUserIds = filteredGuildUsers
+        var filter = GuildService.FilterGuildUsers(guildUsers, guild);
+        var filteredUserIds = filter.FilteredGuildUsers
             .Keys
             .Distinct()
             .ToHashSet();
