@@ -203,7 +203,7 @@ public class StaticBuilders
                     _ => ""
                 };
 
-                supporterString.AppendLine($" - **{supporter.Name}** {type}");
+                supporterString.AppendLine($"- **{supporter.Name}** {type}");
             }
 
             pages.Add(new PageBuilder()
