@@ -159,8 +159,9 @@ public class StartupService
         var startDelay = (this._client.Shards.Count * 1) + 10;
 
         BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(startDelay));
-        BackgroundJob.Schedule(() => this.StartBotSiteUpdater(), TimeSpan.FromSeconds(startDelay));
         BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(startDelay));
+
+        BackgroundJob.Schedule(() => this.StartBotSiteUpdater(), TimeSpan.FromMinutes(15));
 
         await this.CachePremiumGuilds();
         await this.CacheDiscordUserIds();
