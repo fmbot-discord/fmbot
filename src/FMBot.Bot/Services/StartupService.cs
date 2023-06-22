@@ -24,6 +24,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Prometheus;
 using Serilog;
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace FMBot.Bot.Services;
 
@@ -156,10 +157,15 @@ public class StartupService
         this.StartMetricsPusher();
 
         await this.RegisterSlashCommands();
-        await this.CacheSlashCommandIds();
+
+        var startDelay = (this._client.Shards.Count * 1) + 10;
+
+        BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(startDelay));
+        BackgroundJob.Schedule(() => this.StartBotSiteUpdater(), TimeSpan.FromSeconds(startDelay));
+        BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(startDelay));
+
         await this.CachePremiumGuilds();
         await this.CacheDiscordUserIds();
-        await this.StartBotSiteUpdater();
     }
 
     private void InitializeHangfireConfig()
@@ -215,15 +221,8 @@ public class StartupService
         Log.Information("Metrics pusher pushing to {MetricsPusherEndpoint}, job name {MetricsPusherName}", this._botSettings.Bot.MetricsPusherEndpoint, this._botSettings.Bot.MetricsPusherName);
     }
 
-    private async Task RegisterSlashCommands()
+    public async Task RegisterSlashCommands()
     {
-        Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
-        if (this._client == null || this._client.CurrentUser == null)
-        {
-            Log.Information("Delaying slash command registration");
-            Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
-        }
-
         Log.Information("Starting slash command registration");
 
 #if DEBUG
@@ -235,14 +234,12 @@ public class StartupService
 #endif
     }
 
-    private Task StartBotSiteUpdater()
+    public void StartBotSiteUpdater()
     {
-        Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
-
         if (!this._client.CurrentUser.Id.Equals(Constants.BotProductionId))
         {
             Log.Information("Cancelled botlist updater, non-production bot detected");
-            return Task.CompletedTask;
+            return;
         }
 
         Log.Information("Starting botlist updater");
@@ -267,7 +264,7 @@ public class StartupService
         else
         {
             Log.Information("Cancelled botlist updater, no botlist tokens in config");
-            return Task.CompletedTask;
+            return;
         }
 
         try
@@ -280,8 +277,6 @@ public class StartupService
         {
             Log.Error(e, "Exception while attempting to start botlist updater!");
         }
-
-        return Task.CompletedTask;
     }
 
     private static void PrepareCacheFolder()
@@ -293,7 +288,7 @@ public class StartupService
         }
     }
 
-    private async Task CacheSlashCommandIds()
+    public async Task CacheSlashCommandIds()
     {
         var commands = await this._client.Rest.GetGlobalApplicationCommands();
         Log.Information("Found {slashCommandCount} registered slash commands", commands.Count);

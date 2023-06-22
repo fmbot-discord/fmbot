@@ -67,13 +67,10 @@ public class BotConfig
 
     public string Status { get; set; }
 
-    public int BotWarmupTimeInSeconds { get; set; }
     public int TotalShards { get; set; }
 
     public string MetricsPusherEndpoint { get; set; }
     public string MetricsPusherName { get; set; }
-
-    public int FeaturedTimerStartupDelayInSeconds { get; set; }
 }
 
 public class LastFmConfig

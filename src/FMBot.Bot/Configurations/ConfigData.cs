@@ -36,11 +36,9 @@ public static class ConfigData
                 Bot = new BotConfig
                 {
                     Prefix = ".",
-                    BotWarmupTimeInSeconds = 15,
                     BaseServerId = 0000000000000,
                     FeaturedChannelId = 0000000000000,
                     FeaturedPreviewWebhookUrl = "CHANGE-ME-WEBHOOK-URL",
-                    FeaturedTimerStartupDelayInSeconds = 20,
                     MainInstance = true,
                     FeaturedMaster = true
                 }, 
