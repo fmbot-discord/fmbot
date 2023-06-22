@@ -252,14 +252,9 @@ public class UserCommands : BaseCommandModule
         if (user.UserType == UserType.User)
         {
             this._embed.WithDescription($"Only supporters can set their own automatic emoji reactions.\n\n" +
-                                        $"[Get supporter here]({Constants.GetSupporterOverviewLink}), or alternatively use the `{prfx}serverreactions` command to set server-wide automatic emoji reactions.");
+                                        $"[Get supporter here]({Constants.GetSupporterDiscordLink}), or alternatively use the `{prfx}serverreactions` command to set server-wide automatic emoji reactions.");
 
-            var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink);
-
-            if (PublicProperties.DiscordPurchaseLink != null)
-            {
-                components.WithButton(Constants.GetDiscordSupporterButton, style: ButtonStyle.Link, url: PublicProperties.DiscordPurchaseLink);
-            }
+            var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: SupporterService.GetSupporterLink());
 
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());

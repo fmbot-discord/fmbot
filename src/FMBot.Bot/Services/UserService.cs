@@ -657,7 +657,7 @@ public class UserService
              stats.ArtistCount >= 3900))
         {
             description.AppendLine();
-            description.AppendLine($"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterOverviewLink}).");
+            description.AppendLine($"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterDiscordLink}).");
             promo = true;
         }
 

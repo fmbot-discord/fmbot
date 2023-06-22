@@ -968,7 +968,7 @@ public class PlayBuilder
         }
 
         var supporterDescription = context.ContextUser.UserType == UserType.User
-            ? $"Want an extra page with your artist discoveries and a monthly overview? \n[Get .fmbot suppporter here.]({Constants.GetSupporterLink})"
+            ? $"Want an extra page with your artist discoveries and a monthly overview? \n[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})"
             : "";
 
         pages.Add(new PageBuilder()

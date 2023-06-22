@@ -109,11 +109,7 @@ public class UserBuilder
 
         if (this._timer.CurrentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)
         {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink);
-            if (PublicProperties.DiscordPurchaseLink != null)
-            {
-                response.Components.WithButton(Constants.GetDiscordSupporterButton, style: ButtonStyle.Link, url: PublicProperties.DiscordPurchaseLink);
-            }
+            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: SupporterService.GetSupporterLink());
         }
 
         response.Embed.WithFooter($"View your featured history with '{context.Prefix}featuredlog'");
@@ -709,11 +705,7 @@ public class UserBuilder
                 description.AppendLine($"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and the possibility to use the command on others.");
 
                 response.Components = new ComponentBuilder()
-                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink);
-                if (PublicProperties.DiscordPurchaseLink != null)
-                {
-                    response.Components.WithButton(Constants.GetDiscordSupporterButton, style: ButtonStyle.Link, url: PublicProperties.DiscordPurchaseLink);
-                }
+                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: SupporterService.GetSupporterLink());
             }
         }
         else

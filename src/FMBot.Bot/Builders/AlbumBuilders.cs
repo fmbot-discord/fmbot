@@ -232,7 +232,7 @@ public class AlbumBuilders
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
                 response.Embed.WithDescription($"*Supporters can see the date they first listened to an album. " +
-                                               $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterOverviewLink})*");
+                                               $"[{Constants.GetSupporterOverviewButton}]({SupporterService.GetSupporterLink()})*");
             }
         }
 

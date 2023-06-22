@@ -504,7 +504,7 @@ public class LastFmRepository
                         ? Guid.Parse(artistCall.Content.Artist.Mbid)
                         : null,
                     Description = !string.IsNullOrWhiteSpace(filteredSummary)
-                        ? filteredSummary.Replace(". .", ".")
+                        ? filteredSummary.Replace(". .", ".").Replace("\n\n", "\n")
                         : null,
                     TotalPlaycount = artistCall.Content.Artist.Stats?.Playcount ?? 0,
                     TotalListeners = artistCall.Content.Artist.Stats?.Listeners ?? 0,

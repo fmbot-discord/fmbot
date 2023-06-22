@@ -35,12 +35,10 @@ public static class Constants
     public const string FmbotStaffOnly = "Unauthorized, only .fmbot staff can use this command.";
 
     public const string GetSupporterButton = "Get .fmbot supporter";
-    public const string GetSupporterLink = "https://opencollective.com/fmbot/contribute";
-
-    public const string GetDiscordSupporterButton = "Get through Discord";
 
     public const string GetSupporterOverviewButton = "View all supporter perks here.";
     public const string GetSupporterOverviewLink = "https://fmbot.xyz/supporter/";
+    public const string GetSupporterDiscordLink = "https://discord.com/application-directory/356268235697553409/premium";
 
     /// <summary>Amount of days to store plays for users for</summary>
     public const int DaysToStorePlays = 46;

@@ -157,11 +157,7 @@ public class StaticBuilders
 
         response.Embed.WithDescription(embedDescription.ToString());
 
-        var buttons = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterLink);
-        if (PublicProperties.DiscordPurchaseLink != null)
-        {
-            buttons.WithButton(Constants.GetDiscordSupporterButton, style: ButtonStyle.Link, url: PublicProperties.DiscordPurchaseLink);
-        }
+        var buttons = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: SupporterService.GetSupporterLink());
 
         response.Components = buttons;
 

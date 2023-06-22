@@ -149,7 +149,7 @@ public class ArtistBuilders
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
                 response.Embed.WithDescription($"*Supporters can see the date they first listened to an artist. " +
-                                               $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterOverviewLink})*");
+                                               $"[{Constants.GetSupporterOverviewButton}]({SupporterService.GetSupporterLink()})*");
             }
         }
 
@@ -227,7 +227,16 @@ public class ArtistBuilders
 
             if (artistInfo.Length > 0)
             {
-                response.Embed.WithDescription(artistInfo.ToString());
+                if (response.Embed.Description.Length > 0)
+                {
+                    response.Embed.WithDescription(
+                        artistInfo + "\n" + response.Embed.Description);
+
+                }
+                else
+                {
+                    response.Embed.WithDescription(artistInfo.ToString());
+                }
             }
         }
 

@@ -144,12 +144,7 @@ public class ChartBuilders
         embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
         if (supporter != null)
         {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink);
-
-            if (PublicProperties.DiscordPurchaseLink != null)
-            {
-                response.Components.WithButton(Constants.GetDiscordSupporterButton, style: ButtonStyle.Link, url: PublicProperties.DiscordPurchaseLink);
-            }
+            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: SupporterService.GetSupporterLink());
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
@@ -288,11 +283,7 @@ public class ChartBuilders
         embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
         if (supporter != null)
         {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterOverviewLink);
-            if (PublicProperties.DiscordPurchaseLink != null)
-            {
-                response.Components.WithButton(Constants.GetDiscordSupporterButton, style: ButtonStyle.Link, url: PublicProperties.DiscordPurchaseLink);
-            }
+            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: SupporterService.GetSupporterLink());
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;

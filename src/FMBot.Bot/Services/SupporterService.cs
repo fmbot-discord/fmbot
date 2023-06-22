@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -15,7 +16,6 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Subscriptions.Models;
 using FMBot.Subscriptions.Services;
-using Genius.Models.User;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -119,6 +119,17 @@ public class SupporterService
         }
 
         return true;
+    }
+
+    public static string GetSupporterLink()
+    {
+        var pick = RandomNumberGenerator.GetInt32(0, 1);
+
+        return pick switch
+        {
+            1 => Constants.GetSupporterDiscordLink,
+            _ => Constants.GetSupporterOverviewLink,
+        };
     }
 
     public static async Task SendSupporterWelcomeMessage(IUser discordUser, bool hasDiscogs, Supporter supporter)
@@ -225,7 +236,7 @@ public class SupporterService
             case 1:
                 SetGuildPromoCache(guildId);
                 return
-                    $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4/5/6k? " +
+                    $"*.fmbot stores all artists/albums/tracks instead of just the top 4/5/6k for supporters. " +
                     $"[See all the benefits of becoming a supporter here.]({Constants.GetSupporterOverviewLink})*";
             case 2:
                 SetGuildPromoCache(guildId);
@@ -256,8 +267,8 @@ public class SupporterService
 
                     SetGuildPromoCache(guildId);
                     return
-                        $"*Want more custom options in your `{prfx}fm` footer? Supporters can set up to 8 options. " +
-                        $"[Get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})*";
+                        $"*Want more custom options in your `{prfx}fm` footer? Supporters can set up to 8 + 1 options. " +
+                        $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*";
                 }
             default:
                 return null;
