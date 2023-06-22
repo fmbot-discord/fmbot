@@ -539,9 +539,11 @@ public class UpdateRepository
         {
             var timeToCache = CalculateTimeToCache(userPlay.TimePlayed, minutesToCache);
 
-            this._cache.Set($"{userId}-lastplay-artist-{userPlay.ArtistName}", userPlay, TimeSpan.FromMinutes(timeToCache));
-            this._cache.Set($"{userId}-lastplay-album-{userPlay.ArtistName}-{userPlay.AlbumName}", userPlay, TimeSpan.FromMinutes(timeToCache));
-            this._cache.Set($"{userId}-lastplay-track-{userPlay.ArtistName}-{userPlay.TrackName}", userPlay, TimeSpan.FromMinutes(timeToCache));
+            var timeSpan = TimeSpan.FromMinutes(timeToCache);
+
+            this._cache.Set($"{userId}-lastplay-artist-{userPlay.ArtistName}", userPlay, timeSpan);
+            this._cache.Set($"{userId}-lastplay-album-{userPlay.ArtistName}-{userPlay.AlbumName}", userPlay, timeSpan);
+            this._cache.Set($"{userId}-lastplay-track-{userPlay.ArtistName}-{userPlay.TrackName}", userPlay, timeSpan);
         }
     }
 
