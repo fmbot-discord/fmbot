@@ -156,8 +156,6 @@ public class StartupService
 
         this.StartMetricsPusher();
 
-        await this.RegisterSlashCommands();
-
         var startDelay = (this._client.Shards.Count * 1) + 10;
 
         BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(startDelay));
