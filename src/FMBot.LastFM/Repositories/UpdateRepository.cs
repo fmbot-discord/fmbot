@@ -529,7 +529,7 @@ public class UpdateRepository
             .Select(s => new UserPlayTs
             {
                 ArtistName = s.ArtistName.ToLower(),
-                AlbumName = s.AlbumName.ToLower(),
+                AlbumName = s.AlbumName?.ToLower(),
                 TrackName = s.TrackName.ToLower(),
                 UserId = userId,
                 TimePlayed = s.TimePlayed ?? DateTime.UtcNow
@@ -542,8 +542,12 @@ public class UpdateRepository
             var timeSpan = TimeSpan.FromMinutes(timeToCache);
 
             this._cache.Set($"{userId}-lastplay-artist-{userPlay.ArtistName}", userPlay, timeSpan);
-            this._cache.Set($"{userId}-lastplay-album-{userPlay.ArtistName}-{userPlay.AlbumName}", userPlay, timeSpan);
             this._cache.Set($"{userId}-lastplay-track-{userPlay.ArtistName}-{userPlay.TrackName}", userPlay, timeSpan);
+
+            if (userPlay.AlbumName != null)
+            {
+                this._cache.Set($"{userId}-lastplay-album-{userPlay.ArtistName}-{userPlay.AlbumName}", userPlay, timeSpan);
+            }
         }
     }
 
