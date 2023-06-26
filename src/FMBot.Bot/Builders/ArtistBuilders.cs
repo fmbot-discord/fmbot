@@ -227,7 +227,7 @@ public class ArtistBuilders
 
             if (artistInfo.Length > 0)
             {
-                if (response.Embed.Description.Length > 0)
+                if (response.Embed.Description is { Length: > 0 })
                 {
                     response.Embed.WithDescription(
                         artistInfo + "\n" + response.Embed.Description);

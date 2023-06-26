@@ -89,10 +89,17 @@ public class ArtistCommands : BaseCommandModule
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, prfx, contextUser), artistValues);
+        try
+        {
+            var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, prfx, contextUser), artistValues);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [Command("artisttracks", RunMode = RunMode.Async)]
