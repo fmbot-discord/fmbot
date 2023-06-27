@@ -101,7 +101,7 @@ public class FriendBuilders
                     var discordUser = await context.DiscordGuild.GetUserAsync(user.DiscordUserId, CacheMode.CacheOnly);
                     if (discordUser?.Username != null)
                     {
-                        friendNameToDisplay = discordUser.Nickname ?? discordUser.Username;
+                        friendNameToDisplay = discordUser.DisplayName;
                     }
                 }
             }

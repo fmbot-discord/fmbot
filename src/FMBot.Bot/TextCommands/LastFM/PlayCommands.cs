@@ -110,8 +110,8 @@ public class PlayCommands : BaseCommandModule
 
         if (contextUser?.UserNameLastFM == null)
         {
-            var userNickname = (this.Context.User as SocketGuildUser)?.Nickname;
-            this._embed.UsernameNotSetErrorResponse(prfx, userNickname ?? this.Context.User.Username);
+            var userNickname = (this.Context.User as SocketGuildUser)?.DisplayName;
+            this._embed.UsernameNotSetErrorResponse(prfx, userNickname ?? this.Context.User.GlobalName ?? this.Context.User.Username);
 
             await ReplyAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);

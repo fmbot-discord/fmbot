@@ -405,7 +405,7 @@ public class StaticCommands : BaseCommandModule
             var searchResult = this._service.Search(extraValues);
             if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any())
             {
-                var userName = (this.Context.Message.Author as SocketGuildUser)?.Nickname ?? this.Context.User.Username;
+                var userName = (this.Context.Message.Author as SocketGuildUser)?.DisplayName ?? this.Context.User.GlobalName ?? this.Context.User.Username;
                 this._embed.HelpResponse(searchResult.Commands[0].Command, prefix, userName);
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -529,7 +529,7 @@ public class StaticCommands : BaseCommandModule
                     var searchResult = this._service.Search(selectedCategoryOrCommand);
                     if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any())
                     {
-                        var userName = (this.Context.Message.Author as SocketGuildUser)?.Nickname ?? this.Context.User.Username;
+                        var userName = (this.Context.Message.Author as SocketGuildUser)?.DisplayName ?? this.Context.User.GlobalName ?? this.Context.User.Username;
                         this._embed.Fields = new List<EmbedFieldBuilder>();
                         this._embed.HelpResponse(searchResult.Commands[0].Command, prefix, userName);
                     }

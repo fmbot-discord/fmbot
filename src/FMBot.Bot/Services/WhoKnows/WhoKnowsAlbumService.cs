@@ -156,7 +156,7 @@ public class WhoKnowsAlbumService
                     var discordUser = await guild.GetUserAsync(userAlbum.DiscordUserId, CacheMode.CacheOnly);
                     if (discordUser != null)
                     {
-                        userName = discordUser.Nickname ?? discordUser.Username;
+                        userName = discordUser.DisplayName;
                     }
                 }
             }

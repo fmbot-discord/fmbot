@@ -160,7 +160,7 @@ public class WhoKnowsArtistService
                     var discordUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId, CacheMode.CacheOnly);
                     if (discordUser != null)
                     {
-                        userName = discordUser.Nickname ?? discordUser.Username;
+                        userName = discordUser.DisplayName;
                     }
                 }
             }

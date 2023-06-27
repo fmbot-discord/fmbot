@@ -196,12 +196,12 @@ public class UserService
     {
         if (guild == null)
         {
-            return user.Username;
+            return user.GlobalName ?? user.Username;
         }
 
         var guildUser = await guild.GetUserAsync(user.Id);
 
-        return guildUser?.Nickname ?? user.Username;
+        return guildUser?.DisplayName ?? user.GlobalName ?? user.Username;
     }
 
     public async Task<UserType> GetRankAsync(IUser discordUser)

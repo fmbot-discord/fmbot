@@ -169,7 +169,7 @@ public class TimeService
                     var discordUser = await context.Guild.GetUserAsync(guildUser.DiscordUserId);
                     if (discordUser != null)
                     {
-                        userName = discordUser.Nickname ?? discordUser.Username;
+                        userName = discordUser.DisplayName;
                     }
                 }
 

@@ -1262,7 +1262,7 @@ public class ArtistBuilders
         var pages = new List<PageBuilder>();
         var url = $"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?{timeSettings.UrlParameter}";
 
-        var ownName = context.DiscordUser.Username;
+        var ownName = context.DiscordUser.GlobalName ?? context.DiscordUser.Username;
         var otherName = userSettings.DisplayName;
 
         if (context.DiscordGuild != null)
