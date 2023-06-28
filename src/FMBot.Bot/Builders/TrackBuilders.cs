@@ -18,6 +18,7 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Serilog;
 using SkiaSharp;
 
 namespace FMBot.Bot.Builders;
@@ -559,6 +560,9 @@ public class TrackBuilders
                 response.Embed.AddField("Heads up",
                     "We regularly remove people who spam short songs to raise their playcounts from Global WhoKnows. " +
                     "Consider not spamming scrobbles and/or removing your scrobbles on this track if you don't want to be removed.");
+
+                Log.Information("Displayed GlobalWhoKnows short track warning for {userId} - {discordUserId} - {userNameLastFm}",
+                    context.ContextUser.UserId, context.ContextUser.DiscordUserId, context.ContextUser.UserNameLastFM);
             }
         }
 
