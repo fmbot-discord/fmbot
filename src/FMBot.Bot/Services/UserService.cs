@@ -44,47 +44,66 @@ public class UserService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<bool> UserRegisteredAsync(IUser discordUser)
+    public async Task<User> GetUserSettingsAsync(IUser discordUser)
+    {
+        return await GetUserAsync(discordUser.Id);
+    }
+
+    public async Task<User> GetUserAsync(ulong discordUserId)
+    {
+        var cacheKey = UserCacheKey(discordUserId);
+
+        if (this._cache.TryGetValue(cacheKey, out User user))
+        {
+            return user;
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        user = await db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+        if (user != null)
+        {
+            this._cache.Set(cacheKey, user, TimeSpan.FromSeconds(3));
+        }
+
+        return user;
+    }
+
+    private static string UserCacheKey(ulong discordUserId)
+    {
+        return $"user-{discordUserId}";
+    }
+
+    public async Task<User> GetUserWithDiscogs(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var isRegistered = await db.Users
+        return await db.Users
+            .Include(i => i.UserDiscogs)
+            .Include(i => i.DiscogsReleases)
+            .ThenInclude(i => i.Release)
             .AsNoTracking()
-            .AnyAsync(f => f.DiscordUserId == discordUser.Id);
+            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+    }
 
-        return isRegistered;
+    public async Task<bool> UserRegisteredAsync(IUser discordUser)
+    {
+        var user = await GetUserAsync(discordUser.Id);
+
+        return user != null;
     }
 
     public async Task<bool> UserBlockedAsync(ulong discordUserId)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        const string cacheKey = "blocked-users";
+        var user = await GetUserAsync(discordUserId);
 
-        if (this._cache.TryGetValue(cacheKey, out IReadOnlyList<User> blockedUsers))
-        {
-            return blockedUsers.Select(s => s.DiscordUserId).Contains(discordUserId);
-        }
-
-        blockedUsers = await db.Users
-            .AsNoTracking()
-            .Where(w => w.Blocked == true)
-            .ToListAsync();
-
-        this._cache.Set(cacheKey, blockedUsers, TimeSpan.FromMinutes(15));
-
-        return blockedUsers.Select(s => s.DiscordUserId).Contains(discordUserId);
+        return user.Blocked == true;
     }
 
     public async Task<bool> UserHasSessionAsync(IUser discordUser)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var user = await db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
-
-        if (user == null)
-        {
-            return false;
-        }
+        var user = await GetUserSettingsAsync(discordUser);
 
         return !string.IsNullOrEmpty(user.SessionKeyLastFm);
     }
@@ -125,25 +144,8 @@ public class UserService
         db.Entry(user).State = EntityState.Modified;
 
         await db.SaveChangesAsync();
-    }
 
-    public async Task<User> GetUserSettingsAsync(IUser discordUser)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
-    }
-
-    public async Task<User> GetUserWithDiscogs(ulong discordUserId)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.Users
-            .Include(i => i.UserDiscogs)
-            .Include(i => i.DiscogsReleases)
-            .ThenInclude(i => i.Release)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+        this._cache.Remove(UserCacheKey(user.DiscordUserId));
     }
 
     public async Task<User> GetUserWithFriendsAsync(IUser discordUser)
@@ -154,14 +156,6 @@ public class UserService
             .ThenInclude(i => i.FriendUser)
             .AsNoTracking()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
-    }
-
-    public async Task<User> GetUserAsync(ulong discordUserId)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
     }
 
     public async Task<User> GetUserForIdAsync(int userId)
@@ -206,10 +200,7 @@ public class UserService
 
     public async Task<UserType> GetRankAsync(IUser discordUser)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var user = await db.Users
-            .AsQueryable()
-            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+        var user = await GetUserSettingsAsync(discordUser);
 
         return user?.UserType ?? UserType.User;
     }
@@ -664,7 +655,6 @@ public class UserService
         return (promo, description.ToString());
     }
 
-    // Set LastFM Name
     public async Task SetLastFm(IUser discordUser, User newUserSettings, bool updateSessionKey = false)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -718,6 +708,8 @@ public class UserService
 
             await db.SaveChangesAsync();
         }
+
+        this._cache.Remove(UserCacheKey(discordUser.Id));
     }
 
     public async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
@@ -776,6 +768,8 @@ public class UserService
 
         await db.SaveChangesAsync();
 
+        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+
         return userToUpdate.PrivacyLevel;
     }
 
@@ -788,6 +782,8 @@ public class UserService
         db.Update(userToUpdate);
 
         await db.SaveChangesAsync();
+
+        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
 
         return userToUpdate.PrivacyLevel;
     }
@@ -818,6 +814,8 @@ public class UserService
 
         await db.SaveChangesAsync();
 
+        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+
         return user;
     }
 
@@ -832,6 +830,8 @@ public class UserService
 
         await db.SaveChangesAsync();
 
+        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+
         return user;
     }
 
@@ -845,6 +845,8 @@ public class UserService
         db.Update(user);
 
         await db.SaveChangesAsync();
+
+        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
 
         return user;
     }
@@ -877,6 +879,8 @@ public class UserService
 
             await db.SaveChangesAsync();
 
+            this._cache.Remove(UserCacheKey(user.DiscordUserId));
+
             PublicProperties.RegisteredUsers.TryRemove(user.DiscordUserId, out _);
         }
         catch (Exception e)
@@ -902,6 +906,8 @@ public class UserService
 
         await db.SaveChangesAsync();
 
+        this._cache.Remove(UserCacheKey(user.DiscordUserId));
+
         return user.RymEnabled;
     }
 
@@ -915,7 +921,9 @@ public class UserService
 
         db.Update(user);
 
-        await db.SaveChangesAsync(); ;
+        this._cache.Remove(UserCacheKey(user.DiscordUserId));
+
+        await db.SaveChangesAsync();
     }
 
     public async Task<int> GetTotalUserCountAsync()

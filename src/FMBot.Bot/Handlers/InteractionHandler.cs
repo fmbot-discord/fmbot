@@ -190,9 +190,9 @@ public class InteractionHandler
         }
         if (attributes.OfType<UsernameSetRequired>().Any())
         {
-            var contextUser = await this._userService.GetUserAsync(context.User.Id);
+            var userIsRegistered = await this._userService.UserRegisteredAsync(context.User);
 
-            if (contextUser == null)
+            if (!userIsRegistered)
             {
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);

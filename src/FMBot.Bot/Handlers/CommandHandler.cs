@@ -229,8 +229,8 @@ public class CommandHandler
 
         if (searchResult.Commands[0].Command.Attributes.OfType<UsernameSetRequired>().Any())
         {
-            var userRegistered = await this._userService.UserRegisteredAsync(context.User);
-            if (!userRegistered)
+            var userIsRegistered = await this._userService.UserRegisteredAsync(context.User);
+            if (!userIsRegistered)
             {
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
@@ -320,7 +320,7 @@ public class CommandHandler
         }
         else
         {
-            Log.Error(result.ToString(), context.Message.Content);
+            Log.Error(result?.ToString() ?? "Command error (null)", context.Message.Content);
         }
     }
 
