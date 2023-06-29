@@ -756,7 +756,7 @@ public class SupporterService
         }
     }
 
-    private async Task ModifyGuildRole(ulong discordUserId, bool add = true)
+    public async Task ModifyGuildRole(ulong discordUserId, bool add = true)
     {
         var baseGuild = await this._client.Rest.GetGuildAsync(this._botSettings.Bot.BaseServerId);
 
@@ -771,11 +771,17 @@ public class SupporterService
 
                     if (add)
                     {
-                        await guildUser.AddRoleAsync(role);
+                        await guildUser.AddRoleAsync(role, new RequestOptions
+                        {
+                            AuditLogReason = "Automated supporter integration"
+                        });
                     }
                     else
                     {
-                        await guildUser.RemoveRoleAsync(role);
+                        await guildUser.RemoveRoleAsync(role, new RequestOptions
+                        {
+                            AuditLogReason = "Automated supporter integration"
+                        });
                     }
 
                     Log.Information("Modifying supporter role succeeded for {id}", discordUserId);
