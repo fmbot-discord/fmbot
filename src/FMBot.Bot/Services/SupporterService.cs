@@ -636,6 +636,11 @@ public class SupporterService
                $"Notes: `{supporter.Notes}`";
     }
 
+    public async Task<List<DiscordEntitlement>> GetDiscordEntitlements()
+    {
+        return await this._discordSkuService.GetEntitlements();
+    }
+
     public async Task UpdateDiscordSupporters()
     {
         var discordSupporters = await this._discordSkuService.GetEntitlements();
