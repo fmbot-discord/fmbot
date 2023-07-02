@@ -369,7 +369,7 @@ public class UserBuilder
                             description.AppendLine($"But don't let them give up hope just yet!");
                             description.AppendLine($"Every hour there is a 1 in {odds} chance that they might be picked.");
                         }
-                        
+
                         break;
                     }
                 default:
@@ -846,18 +846,23 @@ public class UserBuilder
 
         var supporter = context.ContextUser.UserType != UserType.User;
 
+        var enhanced = supporter ? "enhanced " : null;
+        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot {enhanced}AI judgement - Compliment 🙂");
+        response.Embed.WithColor(new Color(186, 237, 169));
+
         var openAiResponse =
             await this._openAiService.GetJudgeResponse(topArtists, true, supporter);
+
+        if (openAiResponse.Choices == null)
+        {
+            response.Embed.WithDescription($"<:404:882220605783560222> OpenAI API error - please try again");
+            return response;
+        }
 
         var aiGeneration =
             await this._openAiService.StoreAiGeneration(openAiResponse, context.ContextUser.UserId, userSettings.DifferentUser ? userSettings.UserId : null);
 
-        var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
-
-        var enhanced = supporter ? "enhanced " : null;
-        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot {enhanced}AI judgement - Compliment 🙂");
         response.Embed.WithDescription(ImproveAiResponse(aiGeneration.Output, topArtists));
-        response.Embed.WithColor(new Color(186, 237, 169));
 
         return response;
     }
@@ -870,19 +875,23 @@ public class UserBuilder
         };
 
         var supporter = context.ContextUser.UserType != UserType.User;
+        var enhanced = supporter ? "enhanced " : null;
+        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot {enhanced}AI judgement - Roast 🔥");
+        response.Embed.WithColor(new Color(255, 122, 1));
 
         var openAiResponse =
             await this._openAiService.GetJudgeResponse(topArtists, false, supporter);
 
+        if (openAiResponse.Choices == null)
+        {
+            response.Embed.WithDescription($"<:404:882220605783560222> OpenAI API error - please try again");
+            return response;
+        }
+
         var aiGeneration =
             await this._openAiService.StoreAiGeneration(openAiResponse, context.ContextUser.UserId, userSettings.DifferentUser ? userSettings.UserId : null);
 
-        var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
-
-        var enhanced = supporter ? "enhanced " : null;
-        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot {enhanced}AI judgement - Roast 🔥");
         response.Embed.WithDescription(ImproveAiResponse(aiGeneration.Output, topArtists));
-        response.Embed.WithColor(new Color(255, 122, 1));
 
         return response;
     }
