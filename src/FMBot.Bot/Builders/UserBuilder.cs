@@ -703,7 +703,7 @@ public class UserBuilder
             else
             {
                 description.Append($"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
-                description.AppendLine($"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and the possibility to use the command on others.");
+                description.AppendLine($"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit, get access to better responses and the possibility to use the command on others.");
 
                 response.Components = new ComponentBuilder()
                     .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: SupporterService.GetSupporterLink());
@@ -714,6 +714,7 @@ public class UserBuilder
             if (usesLeftToday is <= 30 and > 0)
             {
                 description.AppendLine($"You can use this command `{usesLeftToday}` more times today.");
+                description.AppendLine($"Improved AI model has been enabled.");
             }
             if (!hasUsesLeft)
             {
@@ -764,7 +765,7 @@ public class UserBuilder
             return response;
         }
 
-        var commandUsesLeft = await this._openAiService.GetCommandUsesLeft(context.ContextUser);
+        var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(context.ContextUser);
 
         if (commandUsesLeft <= 0)
         {
@@ -843,15 +844,18 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
+        var supporter = context.ContextUser.UserType != UserType.User;
+
         var openAiResponse =
-            await this._openAiService.GetResponse(topArtists, true);
+            await this._openAiService.GetJudgeResponse(topArtists, true, supporter);
 
         var aiGeneration =
             await this._openAiService.StoreAiGeneration(openAiResponse, context.ContextUser.UserId, userSettings.DifferentUser ? userSettings.UserId : null);
 
         var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
 
-        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Compliment 🙂");
+        var enhanced = supporter ? "enhanced " : null;
+        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot {enhanced}AI judgement - Compliment 🙂");
         response.Embed.WithDescription(ImproveAiResponse(aiGeneration.Output, topArtists));
         response.Embed.WithColor(new Color(186, 237, 169));
 
@@ -865,15 +869,18 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
+        var supporter = context.ContextUser.UserType != UserType.User;
+
         var openAiResponse =
-            await this._openAiService.GetResponse(topArtists, false);
+            await this._openAiService.GetJudgeResponse(topArtists, false, supporter);
 
         var aiGeneration =
             await this._openAiService.StoreAiGeneration(openAiResponse, context.ContextUser.UserId, userSettings.DifferentUser ? userSettings.UserId : null);
 
         var userNickname = (context.DiscordUser as SocketGuildUser)?.DisplayName;
 
-        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Roast 🔥");
+        var enhanced = supporter ? "enhanced " : null;
+        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot {enhanced}AI judgement - Roast 🔥");
         response.Embed.WithDescription(ImproveAiResponse(aiGeneration.Output, topArtists));
         response.Embed.WithColor(new Color(255, 122, 1));
 

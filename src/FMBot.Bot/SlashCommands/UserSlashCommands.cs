@@ -430,7 +430,7 @@ public class UserSlashCommands : InteractionModuleBase
 
         topArtists = topArtists.Take(artistLimit).ToList();
 
-        var commandUsesLeft = await this._openAiService.GetCommandUsesLeft(contextUser);
+        var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(contextUser);
 
         try
         {
