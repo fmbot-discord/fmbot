@@ -68,7 +68,7 @@ public class WhoKnowsTrackService
                 var discordUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
                 if (discordUser != null)
                 {
-                    userName = discordUser.Nickname ?? discordUser.Username;
+                    userName = discordUser.DisplayName;
                 }
             }
 
@@ -159,7 +159,7 @@ public class WhoKnowsTrackService
                     var discordUser = await discordGuild.GetUserAsync(userTrack.DiscordUserId, CacheMode.CacheOnly);
                     if (discordUser != null)
                     {
-                        userName = discordUser.Nickname ?? discordUser.Username;
+                        userName = discordUser.DisplayName;
                     }
                 }
             }

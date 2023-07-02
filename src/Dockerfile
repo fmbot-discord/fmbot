@@ -10,7 +10,7 @@ WORKDIR /app
 # Install latest chrome dev package and fonts to support major charsets (Chinese, Japanese, Arabic, Hebrew, Thai and a few others)
 # Note: this installs the necessary libs to make the bundled version of Chromium that Puppeteer
 # installs, work.
-ARG CHROME_VERSION="98.0.4758.102-1"
+ARG CHROME_VERSION="114.0.5735.133-1"
 RUN apt-get update && apt-get -f install && apt-get -y install wget gnupg2 apt-utils
 RUN wget --no-verbose -O /tmp/chrome.deb http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb \
     && apt-get update \

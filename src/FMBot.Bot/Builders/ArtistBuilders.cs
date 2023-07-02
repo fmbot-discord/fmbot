@@ -228,7 +228,7 @@ public class ArtistBuilders
 
             if (artistInfo.Length > 0)
             {
-                if (response.Embed.Description.Length > 0)
+                if (response.Embed.Description is { Length: > 0 })
                 {
                     response.Embed.WithDescription(
                         artistInfo + "\n" + response.Embed.Description);
@@ -1266,7 +1266,7 @@ public class ArtistBuilders
 
         var url = LastfmUrlExtensions.GetUserUrl(lastfmToCompare, $"/library/artists?{timeSettings.UrlParameter}");
 
-        var ownName = context.DiscordUser.Username;
+        var ownName = context.DiscordUser.GlobalName ?? context.DiscordUser.Username;
         var otherName = userSettings.DisplayName;
 
         if (context.DiscordGuild != null)

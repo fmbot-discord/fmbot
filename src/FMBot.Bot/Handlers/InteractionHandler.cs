@@ -190,13 +190,13 @@ public class InteractionHandler
         }
         if (attributes.OfType<UsernameSetRequired>().Any())
         {
-            var contextUser = await this._userService.GetUserAsync(context.User.Id);
+            var userIsRegistered = await this._userService.UserRegisteredAsync(context.User);
 
-            if (contextUser == null)
+            if (!userIsRegistered)
             {
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
-                var userNickname = (context.User as SocketGuildUser)?.Nickname;
+                var userNickname = (context.User as SocketGuildUser)?.DisplayName;
                 embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
 
                 await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);

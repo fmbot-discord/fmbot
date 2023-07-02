@@ -238,6 +238,15 @@ public class IndexCommands : BaseCommandModule
                 await this._supporterService.GetPromotionalUpdateMessage(contextUser, prfx, this.Context.Client, this.Context.Guild?.Id);
             await message.ModifyAsync(m =>
             {
+                if (GenericEmbedService.RecentScrobbleCallFailed(update))
+                {
+                    m.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(update, contextUser.UserNameLastFM).Build();
+
+                    this.Context.LogCommandWithLastFmError(update.Error);
+
+                    return;
+                }
+
                 if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
                 {
                     var updateDescription = new StringBuilder();

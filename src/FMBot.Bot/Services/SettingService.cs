@@ -476,11 +476,11 @@ public class SettingService
         if (discordGuild != null)
         {
             var discordGuildUser = await discordGuild.GetUserAsync(user.DiscordUserId, CacheMode.CacheOnly);
-            discordUserName = discordGuildUser?.Nickname ?? discordGuildUser?.Username ?? discordUser.Username;
+            discordUserName = discordGuildUser?.DisplayName ?? discordUser.GlobalName ?? discordUser.Username;
         }
         else
         {
-            discordUserName = discordUser.Username;
+            discordUserName = discordUser.GlobalName ?? discordUser.Username;
         }
 
         var settingsModel = new UserSettingsModel
