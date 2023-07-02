@@ -19,6 +19,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
@@ -870,9 +871,10 @@ public class AlbumBuilders
         footer.Append(spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ");
         footer.Append($"{userSettings.DisplayName} has {albumSearch.Album.UserPlaycount} total scrobbles on this album");
 
-        var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/" +
-                  $"{UrlEncoder.Default.Encode(albumSearch.Album.ArtistName)}/" +
-                  $"{UrlEncoder.Default.Encode(albumSearch.Album.AlbumName)}/";
+        var url = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
+            $"/library/music/" +
+            $"{UrlEncoder.Default.Encode(albumSearch.Album.ArtistName)}/" +
+            $"{UrlEncoder.Default.Encode(albumSearch.Album.AlbumName)}/");
 
         var i = 0;
         var tracksDisplayed = 0;
@@ -1104,8 +1106,8 @@ public class AlbumBuilders
             response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
         }
 
-        var userUrl =
-            $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}";
+        var userUrl = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
+            $"/library/albums?{timeSettings.UrlParameter}");
 
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);

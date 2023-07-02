@@ -20,6 +20,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -134,11 +135,11 @@ public class UserCommands : BaseCommandModule
 
             if (userSettings.DifferentUser)
             {
-                await this.Context.Channel.SendMessageAsync($"<@{userSettings.DiscordUserId}>'s Last.fm profile: {Constants.LastFMUserUrl}{userSettings.UserNameLastFm}", allowedMentions: AllowedMentions.None);
+                await this.Context.Channel.SendMessageAsync($"<@{userSettings.DiscordUserId}>'s Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}", allowedMentions: AllowedMentions.None);
             }
             else
             {
-                await this.Context.Channel.SendMessageAsync($"Your Last.fm profile: {Constants.LastFMUserUrl}{userSettings.UserNameLastFm}", allowedMentions: AllowedMentions.None);
+                await this.Context.Channel.SendMessageAsync($"Your Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}", allowedMentions: AllowedMentions.None);
             }
 
             this.Context.LogCommandUsed();
@@ -704,7 +705,7 @@ public class UserCommands : BaseCommandModule
             await authorizeMessage.ModifyAsync(m =>
             {
                 var description =
-                    $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!\n\n" +
+                    $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newUserSettings.UserNameLastFM)})!\n\n" +
                     $"`.fmmode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
                     $"`.wkmode` has been set to: `{newUserSettings.Mode ?? WhoKnowsMode.Embed}`\n" +
                     $"`.fmprivacy` has been set to: `{newUserSettings.PrivacyLevel}`";

@@ -16,6 +16,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
@@ -874,7 +875,7 @@ public class TrackBuilders
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
         }
 
-        var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
+        var userUrl = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/tracks?{timeSettings.UrlParameter}";
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} tracks for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
@@ -985,7 +986,7 @@ public class TrackBuilders
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
         }
 
-        var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
+        var userUrl = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/tracks?{timeSettings.UrlParameter}";
         response.EmbedAuthor.WithName($"Top {timeSettings.Description} tracks for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
         response.Embed.WithAuthor(response.EmbedAuthor);

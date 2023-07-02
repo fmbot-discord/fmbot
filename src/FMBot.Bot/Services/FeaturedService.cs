@@ -320,11 +320,11 @@ public class FeaturedService
         {
             if (user != null)
             {
-                description.Append($" from **[{StringExtensions.Sanitize(user.UserName)}]({Constants.LastFMUserUrl}{user.UserNameLastFM})**");
+                description.Append($" from **[{StringExtensions.Sanitize(user.UserName)}]({LastfmUrlExtensions.GetUserUrl(user.UserNameLastFM)})**");
             }
             else if (featured.User != null)
             {
-                description.Append($" from **[{featured.User.UserNameLastFM}]({Constants.LastFMUserUrl}{featured.User.UserNameLastFM})**");
+                description.Append($" from **[{featured.User.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(featured.User.UserNameLastFM)})**");
             }
         }
 

@@ -19,6 +19,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -165,7 +166,7 @@ public class ArtistCommands : BaseCommandModule
             return;
         }
 
-        var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/{UrlEncoder.Default.Encode(artist.Artist.ArtistName)}";
+        var url = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/music/{UrlEncoder.Default.Encode(artist.Artist.ArtistName)}";
         if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
         {
             this._embedAuthor.WithUrl(url);

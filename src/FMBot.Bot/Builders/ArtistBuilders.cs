@@ -20,6 +20,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Genius.Models.Song;
@@ -399,7 +400,9 @@ public class ArtistBuilders
             return response;
         }
 
-        var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/{UrlEncoder.Default.Encode(artistSearch.Artist.ArtistName)}";
+        var url = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
+            $"/library/music/{UrlEncoder.Default.Encode(artistSearch.Artist.ArtistName)}");
+
         if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
         {
             response.EmbedAuthor.WithUrl(url);
@@ -576,8 +579,8 @@ public class ArtistBuilders
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
         }
 
-        var userUrl =
-            $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}";
+        var userUrl = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
+            $"/library/artists?{timeSettings.UrlParameter}");
 
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artists for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
@@ -1260,7 +1263,8 @@ public class ArtistBuilders
 
         var amount = tasteSettings.ExtraLarge ? 28 : 14;
         var pages = new List<PageBuilder>();
-        var url = $"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?{timeSettings.UrlParameter}";
+
+        var url = LastfmUrlExtensions.GetUserUrl(lastfmToCompare, $"/library/artists?{timeSettings.UrlParameter}");
 
         var ownName = context.DiscordUser.Username;
         var otherName = userSettings.DisplayName;
@@ -1463,7 +1467,7 @@ public class ArtistBuilders
                 guildUsers.TryGetValue(neighbor.Key, out var guildUser);
                 pageString.AppendLine(
                     $"**{(neighbor.Value.TotalPoints / self.TotalPoints).ToString("P1", numberInfo)}** — " +
-                    $"**[{StringExtensions.Sanitize(guildUser?.UserName)}]({Constants.LastFMUserUrl}{guildUser?.UserNameLastFM})** — " +
+                    $"**[{StringExtensions.Sanitize(guildUser?.UserName)}]({LastfmUrlExtensions.GetUserUrl(guildUser?.UserNameLastFM)})** — " +
                                       $"`{(neighbor.Value.ArtistPoints / self.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
                                       $"`{(neighbor.Value.GenrePoints / self.GenrePoints).ToString("P0", numberInfo)}` genres, " +
                                       $"`{(neighbor.Value.CountryPoints / self.CountryPoints).ToString("P0", numberInfo)}` countries");

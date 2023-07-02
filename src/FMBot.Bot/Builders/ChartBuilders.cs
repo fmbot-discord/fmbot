@@ -9,6 +9,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -128,7 +129,7 @@ public class ChartBuilders
 
         response.EmbedAuthor.WithName(embedAuthorDescription);
         response.EmbedAuthor.WithUrl(
-            $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{chartSettings.TimespanUrlString}");
+            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/albums?{chartSettings.TimespanUrlString}");
 
         var embedDescription = "";
 
@@ -262,7 +263,7 @@ public class ChartBuilders
 
         response.EmbedAuthor.WithName(embedAuthorDescription);
         response.EmbedAuthor.WithUrl(
-            $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{chartSettings.TimespanUrlString}");
+            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{chartSettings.TimespanUrlString}");
 
         var embedDescription = "";
 

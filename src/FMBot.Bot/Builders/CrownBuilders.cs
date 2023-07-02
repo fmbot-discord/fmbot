@@ -10,6 +10,7 @@ using System;
 using System.Linq;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 
 namespace FMBot.Bot.Builders;
@@ -87,7 +88,7 @@ public class CrownBuilders
         var name = GuildService.GetUserFromGuild(guild, currentCrown.UserId);
 
         var artistUrl =
-            $"{Constants.LastFMUserUrl}{currentCrown.User.UserNameLastFM}/library/music/{HttpUtility.UrlEncode(artistSearch.Artist.ArtistName)}";
+            $"{LastfmUrlExtensions.GetUserUrl(currentCrown.User.UserNameLastFM)}/library/music/{HttpUtility.UrlEncode(artistSearch.Artist.ArtistName)}";
         response.Embed.AddField("Current crown holder",
             $"**[{name?.UserName ?? currentCrown.User.UserNameLastFM}]({artistUrl})** - " +
             $"Since **<t:{((DateTimeOffset)currentCrown.Created).ToUnixTimeSeconds()}:D>** - " +

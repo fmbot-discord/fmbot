@@ -18,6 +18,7 @@ using FMBot.Bot.TextCommands.LastFM;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -448,7 +449,7 @@ public class UserBuilder
         }
 
         response.EmbedAuthor.WithName($"Stats for {userTitle}");
-        response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}");
+        response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}");
         response.Embed.WithAuthor(response.EmbedAuthor);
 
         var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
@@ -487,7 +488,7 @@ public class UserBuilder
 
         var lastFmStats = new StringBuilder();
         lastFmStats.AppendLine($"Name: **{userInfo.Name}**");
-        lastFmStats.AppendLine($"Username: **[{userSettings.UserNameLastFm}]({Constants.LastFMUserUrl}{userSettings.UserNameLastFm})**");
+        lastFmStats.AppendLine($"Username: **[{userSettings.UserNameLastFm}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})**");
         if (userInfo.Subscriber != 0)
         {
             lastFmStats.AppendLine("Last.fm Pro subscriber");

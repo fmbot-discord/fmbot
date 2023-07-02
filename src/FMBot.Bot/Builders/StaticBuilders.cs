@@ -11,6 +11,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Extensions;
 
 namespace FMBot.Bot.Builders;
 
@@ -58,7 +59,7 @@ public class StaticBuilders
         response.Components = new ComponentBuilder()
             .WithButton("Last.fm settings", style: ButtonStyle.Link, url: "https://www.last.fm/settings/applications")
             .WithButton("Full guide", style: ButtonStyle.Link, url: "https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184")
-            .WithButton("Your profile", style: ButtonStyle.Link, url: $"{Constants.LastFMUserUrl}{context.ContextUser.UserNameLastFM}");
+            .WithButton("Your profile", style: ButtonStyle.Link, url: $"{LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}");
 
         return response;
     }

@@ -14,6 +14,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Extensions;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -240,7 +241,7 @@ public class IndexCommands : BaseCommandModule
                 if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
                 {
                     var updateDescription = new StringBuilder();
-                    updateDescription.AppendLine($"No new scrobbles found on [your Last.fm profile]({Constants.LastFMUserUrl}{contextUser.UserNameLastFM}) since last update. ");
+                    updateDescription.AppendLine($"No new scrobbles found on [your Last.fm profile]({LastfmUrlExtensions.GetUserUrl(contextUser.UserNameLastFM)}) since last update. ");
                     updateDescription.AppendLine();
 
                     if (contextUser.LastUpdated.HasValue)

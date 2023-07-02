@@ -13,4 +13,16 @@ public static class LastfmUrlExtensions
     {
         return $"https://www.last.fm/music/{UrlEncoder.Default.Encode(artistName)}/{UrlEncoder.Default.Encode(albumName)}";
     }
+
+    public static string GetUserUrl(string userName, string addOn = null)
+    {
+        var url =  $"https://www.last.fm/user/{UrlEncoder.Default.Encode(userName)}";
+
+        if (addOn != null)
+        {
+            url += addOn;
+        }
+
+        return url;
+    }
 }

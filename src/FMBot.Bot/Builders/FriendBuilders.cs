@@ -13,6 +13,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 
@@ -80,7 +81,7 @@ public class FriendBuilders
             response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
         }
 
-        response.EmbedAuthor.WithUrl(Constants.LastFMUserUrl + context.ContextUser.UserNameLastFM);
+        response.EmbedAuthor.WithUrl(LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM));
         response.Embed.WithAuthor(response.EmbedAuthor);
 
         var totalPlaycount = 0;
@@ -161,7 +162,7 @@ public class FriendBuilders
                 totalPlaycount += (int)tracks.Content.TotalAmount;
             }
 
-            friendResult.Add(new FriendResult(timePlayed, $"**[{friendNameToDisplay}]({Constants.LastFMUserUrl}{friendUsername})** | {track}"));
+            friendResult.Add(new FriendResult(timePlayed, $"**[{friendNameToDisplay}]({LastfmUrlExtensions.GetUserUrl(friendUsername)})** | {track}"));
         }, maxDegreeOfParallelism: 3);
 
         response.EmbedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
@@ -267,7 +268,7 @@ public class FriendBuilders
                 $"Successfully added {addedFriendsList.Count} {StringExtensions.GetFriendsString(addedFriendsList.Count)}:\n";
             foreach (var addedFriend in addedFriendsList)
             {
-                reply += $"- *[{addedFriend}]({Constants.LastFMUserUrl}{addedFriend})*\n";
+                reply += $"- *[{addedFriend}]({LastfmUrlExtensions.GetUserUrl(addedFriend)})*\n";
             }
 
             reply += "\n";
@@ -279,7 +280,7 @@ public class FriendBuilders
                 $"Could not add {addedFriendsList.Count} {StringExtensions.GetFriendsString(friendNotFoundList.Count)}. Please ensure you spelled their name correctly and/or that they are registered in .fmbot.\n";
             foreach (var notFoundFriend in friendNotFoundList)
             {
-                reply += $"- *[{notFoundFriend}]({Constants.LastFMUserUrl}{notFoundFriend})*\n";
+                reply += $"- *[{notFoundFriend}]({LastfmUrlExtensions.GetUserUrl(notFoundFriend)})*\n";
             }
 
             reply += "\n";
@@ -291,7 +292,7 @@ public class FriendBuilders
                 $"Could not add {duplicateFriendsList.Count} {StringExtensions.GetFriendsString(duplicateFriendsList.Count)} because you already have them added:\n";
             foreach (var dupeFriend in duplicateFriendsList)
             {
-                reply += $"- *[{dupeFriend}]({Constants.LastFMUserUrl}{dupeFriend})*\n";
+                reply += $"- *[{dupeFriend}]({LastfmUrlExtensions.GetUserUrl(dupeFriend)})*\n";
             }
         }
 
@@ -350,7 +351,7 @@ public class FriendBuilders
             reply += $"Successfully removed {removedFriendsList.Count} friend(s):\n";
             foreach (var removedFriend in removedFriendsList)
             {
-                reply += $"- *[{removedFriend}]({Constants.LastFMUserUrl}{removedFriend})*\n";
+                reply += $"- *[{removedFriend}]({LastfmUrlExtensions.GetUserUrl(removedFriend)})*\n";
             }
 
             reply += "\n";
@@ -361,7 +362,7 @@ public class FriendBuilders
             reply += $"Could not remove {failedRemoveFriends.Count} friend(s).\n";
             foreach (var failedRemovedFriend in failedRemoveFriends)
             {
-                reply += $"- *[{failedRemovedFriend}]({Constants.LastFMUserUrl}{failedRemovedFriend})*\n";
+                reply += $"- *[{failedRemovedFriend}]({LastfmUrlExtensions.GetUserUrl(failedRemovedFriend)})*\n";
             }
 
             reply += "\n";

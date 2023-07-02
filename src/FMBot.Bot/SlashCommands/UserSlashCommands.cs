@@ -20,6 +20,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -114,7 +115,7 @@ public class UserSlashCommands : InteractionModuleBase
                 followUpEmbed.WithColor(DiscordConstants.SuccessColorGreen);
                 var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
                 var description =
-                    $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!\n\n" +
+                    $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newUserSettings.UserNameLastFM)})!\n\n" +
                     $"`/fmmode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
                     $"`/wkmode` has been set to: `{newUserSettings.Mode ?? WhoKnowsMode.Embed}`\n" +
                     $"`/privacy` has been set to: `{newUserSettings.PrivacyLevel}`";

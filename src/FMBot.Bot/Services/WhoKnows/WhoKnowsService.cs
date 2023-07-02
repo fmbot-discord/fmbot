@@ -8,6 +8,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Extensions;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -313,7 +314,7 @@ public class WhoKnowsService
             discordName = user.LastFMUsername;
         }
 
-        var nameWithLink = $"[\u2066{discordName}\u2069]({Constants.LastFMUserUrl}{user.LastFMUsername})";
+        var nameWithLink = $"[\u2066{discordName}\u2069]({LastfmUrlExtensions.GetUserUrl(user.LastFMUsername)})";
         return nameWithLink;
     }
 

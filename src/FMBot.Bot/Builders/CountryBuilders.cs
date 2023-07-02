@@ -13,6 +13,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -223,7 +224,7 @@ public class CountryBuilders
             pages.Add(new PageBuilder()
                 .WithDescription(genrePageString.ToString())
                 .WithTitle(title)
-                .WithUrl($"{Constants.LastFMUserUrl}{context.ContextUser.UserNameLastFM}/library/artists?date_preset=ALL")
+                .WithUrl($"{LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}/library/artists?date_preset=ALL")
                 .WithFooter(footer));
             pageCounter++;
         }
@@ -263,7 +264,7 @@ public class CountryBuilders
 
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artist countries for {userTitle}");
         response.EmbedAuthor.WithUrl(
-            $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}");
+            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}");
 
         Response<TopArtistList> artists;
         var previousTopArtists = new List<TopArtist>();
@@ -414,7 +415,7 @@ public class CountryBuilders
 
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artist countries for {userTitle}");
         response.EmbedAuthor.WithUrl(
-            $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}");
+            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}");
         response.Embed.WithAuthor(response.EmbedAuthor);
 
         Response<TopArtistList> artists;
