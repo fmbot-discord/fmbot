@@ -104,7 +104,7 @@ public class OpenAiService
         var filterDate = DateTime.UtcNow.Date;
         var generatedToday = await db.AiGenerations.CountAsync(c => c.UserId == user.UserId && c.DateGenerated >= filterDate);
 
-        var dailyAmount = user.UserType != UserType.User ? 25 : 3;
+        var dailyAmount = user.UserType != UserType.User ? 15 : 3;
         return dailyAmount - generatedToday;
     }
 
