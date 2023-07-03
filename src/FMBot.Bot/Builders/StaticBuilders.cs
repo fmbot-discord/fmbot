@@ -343,7 +343,7 @@ public class StaticBuilders
                     var endsAt = DateTime.SpecifyKind(supporter.EndsAt.Value, DateTimeKind.Utc);
                     var endsAtValue = ((DateTimeOffset)endsAt).ToUnixTimeSeconds();
 
-                    supporterString.AppendLine($"Started at: <t:{endsAtValue}:D> - Ends at: <t:{startsAtValue}:D>");
+                    supporterString.AppendLine($"Started at: <t:{startsAtValue}:D> - Ends at: <t:{endsAtValue}:D>");
                 }
                 else
                 {

@@ -67,24 +67,18 @@ public class SupporterService
             return null;
         }
 
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var guildSettings = await db.Guilds
-            .AsQueryable()
-            .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
-
-        if (guildSettings is { DisableSupporterMessages: true })
-        {
-            return null;
-        }
-
         var rnd = new Random();
         var randomHintNumber = rnd.Next(0, Constants.SupporterMessageChance);
 
         if (randomHintNumber == 1)
         {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var supporters = db.Supporters
                 .AsQueryable()
-                .Where(w => w.SupporterMessagesEnabled)
+                .Where(w => w.SupporterMessagesEnabled &&
+                            w.Name != null &&
+                            w.Name != "Incognito" &&
+                            w.Name != "Guest")
                 .ToList();
 
             if (!supporters.Any())
@@ -123,7 +117,7 @@ public class SupporterService
 
     public static string GetSupporterLink()
     {
-        var pick = RandomNumberGenerator.GetInt32(0, 1);
+        var pick = RandomNumberGenerator.GetInt32(0, 2);
 
         return pick switch
         {
@@ -229,20 +223,20 @@ public class SupporterService
             return null;
         }
 
-        var randomHintNumber = new Random().Next(0, 22);
+        var randomHintNumber = new Random().Next(0, 25);
 
         switch (randomHintNumber)
         {
             case 1:
                 SetGuildPromoCache(guildId);
-                return
+                return  
                     $"*.fmbot stores all artists/albums/tracks instead of just the top 4/5/6k for supporters. " +
-                    $"[See all the benefits of becoming a supporter here.]({Constants.GetSupporterOverviewLink})*";
-            case 2:
+                    $"[See all the benefits of becoming a supporter here.]({GetSupporterLink()})*";
+            case 2: 
                 SetGuildPromoCache(guildId);
                 return
                     $"*Supporters get extra statistics like first listen dates, full history in `stats`, artist discoveries in `year`, extra options in their `fm` footer and more. " +
-                    $"[See all the perks of getting supporter here.]({Constants.GetSupporterOverviewLink})*";
+                    $"[See all the perks of getting supporter here.]({GetSupporterLink()})*";
             case 3:
                 {
                     await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -268,7 +262,14 @@ public class SupporterService
                     SetGuildPromoCache(guildId);
                     return
                         $"*Want more custom options in your `{prfx}fm` footer? Supporters can set up to 8 + 1 options. " +
-                        $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*";
+                        $"[Get .fmbot supporter here.]({GetSupporterLink()})*";
+                }
+            case 5:
+                {
+                    SetGuildPromoCache(guildId);
+                    return
+                        $"*Supporters get an improved GPT-4 powered `{prfx}judge` comman. They also get higher usage limits and the ability to use the command on others. " +
+                        $"[Get .fmbot supporter here.]({GetSupporterLink()})*";
                 }
             default:
                 return null;

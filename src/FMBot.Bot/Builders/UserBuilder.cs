@@ -636,12 +636,12 @@ public class UserBuilder
                 if (user.UserDiscogs == null)
                 {
                     response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years? " +
-                                                     $"[Get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})*");
+                                                     $"[Get .fmbot supporter here.]({SupporterService.GetSupporterLink()})*");
                 }
                 else
                 {
                     response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years and your Discogs collection? " +
-                                                     $"[Get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})*");
+                                                     $"[Get .fmbot supporter here.]({SupporterService.GetSupporterLink()})*");
                 }
             }
         }
@@ -703,7 +703,7 @@ public class UserBuilder
             else
             {
                 description.Append($"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
-                description.AppendLine($"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit, get access to better responses and the possibility to use the command on others.");
+                description.AppendLine($"[Become a supporter]({SupporterService.GetSupporterLink()}) to raise your daily limit, get access to better responses and the possibility to use the command on others.");
 
                 response.Components = new ComponentBuilder()
                     .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: SupporterService.GetSupporterLink());
@@ -723,7 +723,7 @@ public class UserBuilder
         }
         if (differentUserButNotAllowed)
         {
-            description.AppendLine($"*Sorry, only [.fmbot supporters]({Constants.GetSupporterOverviewLink}) can use this command on others.*");
+            description.AppendLine($"*Sorry, only [.fmbot supporters]({SupporterService.GetSupporterLink()}) can use this command on others.*");
         }
         description.AppendLine();
         description.AppendLine("Some top artists might be sent to OpenAI. No other data is sent.");
@@ -773,7 +773,7 @@ public class UserBuilder
             if (context.ContextUser.UserType == UserType.User)
             {
                 description.Append($"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
-                description.AppendLine($"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and the possibility to use the command on others.");
+                description.AppendLine($"[Become a supporter]({SupporterService.GetSupporterLink()}) to raise your daily limit and the possibility to use the command on others.");
             }
             else
             {
