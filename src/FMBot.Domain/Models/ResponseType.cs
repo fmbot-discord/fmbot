@@ -9,5 +9,4 @@ public enum ResponseType
     Paginator = 3,
     ImageWithEmbed = 4,
     ImageOnly = 5,
-    PagedSelection = 6
 }

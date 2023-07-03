@@ -185,7 +185,7 @@ public static class StringService
         return null;
     }
 
-    public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages)
+    public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null, Emote optionEmote = null)
     {
         var builder = new StaticPaginatorBuilder()
             .WithPages(pages)
@@ -195,6 +195,11 @@ public static class StringService
         if (pages.Count != 1)
         {
             builder.WithOptions(DiscordConstants.PaginationEmotes);
+        }
+
+        if (customOptionId != null && optionEmote != null)
+        {
+            builder.AddOption(customOptionId, optionEmote, null, ButtonStyle.Primary);
         }
 
         return builder.Build();

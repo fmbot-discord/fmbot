@@ -36,6 +36,7 @@ public static class InteractionContextExtensions
         {
             SocketSlashCommand socketSlashCommand => socketSlashCommand.CommandName,
             SocketUserCommand socketUserCommand => socketUserCommand.CommandName,
+            SocketInteraction socketInteraction => "ButtonInteraction",
             _ => null
         };
 
@@ -83,13 +84,6 @@ public static class InteractionContextExtensions
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     ephemeral: ephemeral);
                 break;
-            case ResponseType.PagedSelection:
-                _ = interactiveService.SendSelectionAsync(
-                    response.PagedSelection,
-                    (SocketInteraction)context.Interaction,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                    ephemeral: ephemeral);
-                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -108,14 +102,6 @@ public static class InteractionContextExtensions
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
                     response.StaticPaginator,
-                    (SocketInteraction)context.Interaction,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                    InteractionResponseType.DeferredChannelMessageWithSource,
-                    ephemeral: ephemeral);
-                break;
-            case ResponseType.PagedSelection:
-                _ = interactiveService.SendSelectionAsync(
-                    response.PagedSelection,
                     (SocketInteraction)context.Interaction,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     InteractionResponseType.DeferredChannelMessageWithSource,
@@ -152,12 +138,18 @@ public static class InteractionContextExtensions
         }
     }
 
-    public static async Task UpdateInteractionEmbed(this IInteractionContext context, ResponseModel response)
+    public static async Task UpdateInteractionEmbed(this IInteractionContext context, ResponseModel response, InteractiveService interactiveService = null)
     {
         var message = (context.Interaction as SocketMessageComponent)?.Message;
 
         if (message == null)
         {
+            return;
+        }
+
+        if (response.ResponseType == ResponseType.Paginator)
+        {
+            await context.ModifyPaginator(interactiveService, message, response);
             return;
         }
 
@@ -186,5 +178,13 @@ public static class InteractionContextExtensions
         });
 
         await context.Interaction.DeferAsync();
+    }
+
+    private static async Task ModifyPaginator(this IInteractionContext context, InteractiveService interactiveService, IUserMessage message, ResponseModel response)
+    {
+        _ = interactiveService.SendPaginatorAsync(
+            response.StaticPaginator,
+            message,
+            TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
     }
 }

@@ -74,4 +74,7 @@ public static class InteractionConstants
     public const string WhoKnowsAlbumRolePicker = "whoknows-album-role-picker";
     public const string WhoKnowsTrackRolePicker = "whoknows-track-role-picker";
 
+    public const string GenreGuild = "genre-guild";
+    public const string GenreUser = "genre-user";
+
 }

@@ -65,12 +65,6 @@ public static class CommandContextExtensions
                     context.Channel,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                 break;
-            case ResponseType.PagedSelection:
-                _ = interactiveService.SendSelectionAsync(
-                    response.PagedSelection,
-                    context.Channel,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-                break;
             case ResponseType.ImageWithEmbed:
                 var imageEmbedFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
                 await context.Channel.SendFileAsync(

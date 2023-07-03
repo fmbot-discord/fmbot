@@ -26,28 +26,6 @@ public static class DiscordConstants
         { Emote.Parse("<:pages_last:883825508482183258>"), PaginatorAction.SkipToEnd}
     };
 
-    public const string JumpToGuildEmote = "<:server:961685224041902140>";
-
-    public static readonly IDictionary<IEmote, PaginatorAction> PaginationUserEmotes = new Dictionary<IEmote, PaginatorAction>
-    {
-        { Emote.Parse("<:pages_first:883825508633182208>"), PaginatorAction.SkipToStart},
-        { Emote.Parse("<:pages_previous:883825508507336704>"), PaginatorAction.Backward},
-        { Emote.Parse("<:pages_next:883825508087922739>"), PaginatorAction.Forward},
-        { Emote.Parse("<:pages_last:883825508482183258>"), PaginatorAction.SkipToEnd},
-        { Emote.Parse(JumpToGuildEmote), PaginatorAction.Jump}
-    };
-
-    public const string JumpToUserEmote = "<:user:961687127249260634>";
-
-    public static readonly IDictionary<IEmote, PaginatorAction> PaginationGuildEmotes = new Dictionary<IEmote, PaginatorAction>
-    {
-        { Emote.Parse("<:pages_first:883825508633182208>"), PaginatorAction.SkipToStart},
-        { Emote.Parse("<:pages_previous:883825508507336704>"), PaginatorAction.Backward},
-        { Emote.Parse("<:pages_next:883825508087922739>"), PaginatorAction.Forward},
-        { Emote.Parse("<:pages_last:883825508482183258>"), PaginatorAction.SkipToEnd},
-        { Emote.Parse(JumpToUserEmote), PaginatorAction.Jump}
-    };
-
     public const int PaginationTimeoutInSeconds = 120;
 
     public const string FiveOrMoreUp = "<:5_or_more_up:912380324841918504>";
