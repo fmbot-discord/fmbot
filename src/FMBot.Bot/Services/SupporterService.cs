@@ -268,7 +268,7 @@ public class SupporterService
                 {
                     SetGuildPromoCache(guildId);
                     return
-                        $"*Supporters get an improved GPT-4 powered `{prfx}judge` comman. They also get higher usage limits and the ability to use the command on others. " +
+                        $"*Supporters get an improved GPT-4 powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others. " +
                         $"[Get .fmbot supporter here.]({GetSupporterLink()})*";
                 }
             default:
