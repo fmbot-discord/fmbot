@@ -98,7 +98,7 @@ public class UserService
     {
         var user = await GetUserAsync(discordUserId);
 
-        return user.Blocked == true;
+        return user?.Blocked == true;
     }
 
     public async Task<bool> UserHasSessionAsync(IUser discordUser)

@@ -179,8 +179,6 @@ public class CommandHandler
             return;
         }
 
-        var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
-
         // If command possibly equals .fm
         if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(this._botSettings.Bot.Prefix))
         {
@@ -191,7 +189,7 @@ public class CommandHandler
                 return;
             }
 
-            if (userBlocked)
+            if (await this._userService.UserBlockedAsync(context.User.Id))
             {
                 await UserBlockedResponse(context, prfx);
                 return;
@@ -221,7 +219,7 @@ public class CommandHandler
             return;
         }
 
-        if (userBlocked)
+        if (await this._userService.UserBlockedAsync(context.User.Id))
         {
             await UserBlockedResponse(context, prfx);
             return;
