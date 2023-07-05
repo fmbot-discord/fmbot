@@ -194,6 +194,7 @@ public class Startup
         services.AddHttpClient<ILastfmApi, LastfmApi>();
         services.AddHttpClient<ChartService>();
         services.AddHttpClient<InvidiousApi>();
+        services.AddHttpClient<ImportService>();
         services.AddHttpClient<DiscogsApi>();
         services.AddHttpClient<LastFmRepository>();
         services.AddHttpClient<TrackService>();

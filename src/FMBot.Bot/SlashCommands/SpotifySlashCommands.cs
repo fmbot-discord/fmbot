@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -20,15 +21,17 @@ public class SpotifySlashCommands : InteractionModuleBase
     private readonly SpotifyService _spotifyService;
     private readonly UserService _userService;
     private readonly LastFmRepository _lastFmRepository;
+    private readonly ImportService _importService;
 
     private InteractiveService Interactivity { get; }
 
-    public SpotifySlashCommands(InteractiveService interactivity, SpotifyService spotifyService, UserService userService, LastFmRepository lastFmRepository)
+    public SpotifySlashCommands(InteractiveService interactivity, SpotifyService spotifyService, UserService userService, LastFmRepository lastFmRepository, ImportService importService)
     {
         this.Interactivity = interactivity;
         this._spotifyService = spotifyService;
         this._userService = userService;
         this._lastFmRepository = lastFmRepository;
+        this._importService = importService;
     }
 
     public enum SpotifySearch
@@ -168,6 +171,54 @@ public class SpotifySlashCommands : InteractionModuleBase
         {
             await this.Context.HandleCommandException(e);
         }
+    }
 
+    [SlashCommand("import", "Import your Spotify history")]
+    [UsernameSetRequired]
+    public async Task SpotifyAsync(
+        [Summary("file-1", "Spotify endsong.json file")] IAttachment attachment1,
+        [Summary("file-2", "Spotify endsong.json file")] IAttachment attachment2 = null,
+        [Summary("file-3", "Spotify endsong.json file")] IAttachment attachment3 = null,
+        [Summary("file-4", "Spotify endsong.json file")] IAttachment attachment4 = null,
+        [Summary("file-5", "Spotify endsong.json file")] IAttachment attachment5 = null,
+        [Summary("file-6", "Spotify endsong.json file")] IAttachment attachment6 = null,
+        [Summary("file-7", "Spotify endsong.json file")] IAttachment attachment7 = null,
+        [Summary("file-8", "Spotify endsong.json file")] IAttachment attachment8 = null,
+        [Summary("file-9", "Spotify endsong.json file")] IAttachment attachment9 = null,
+        [Summary("file-10", "Spotify endsong.json file")] IAttachment attachment10 = null,
+        [Summary("file-11", "Spotify endsong.json file")] IAttachment attachment11 = null,
+        [Summary("file-12", "Spotify endsong.json file")] IAttachment attachment12 = null,
+        [Summary("file-13", "Spotify endsong.json file")] IAttachment attachment13 = null,
+        [Summary("file-14", "Spotify endsong.json file")] IAttachment attachment14 = null,
+        [Summary("file-15", "Spotify endsong.json file")] IAttachment attachment15 = null,
+        [Summary("file-16", "Spotify endsong.json file")] IAttachment attachment16 = null)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
+        {
+            return;
+        }
+
+        var attachments = new List<IAttachment>
+        {
+            attachment1, attachment2, attachment3, attachment4, attachment5, attachment6,
+            attachment7, attachment8, attachment9, attachment10, attachment11, attachment12,
+            attachment13, attachment14, attachment15, attachment16
+        };
+
+        await DeferAsync();
+
+        try
+        {
+            var imports = await this._importService.HandleSpotifyFiles(attachments);
+            var plays = await this._importService.SpotifyImportToUserPlays(contextUser.UserId, imports);
+
+            await FollowupAsync($"Found {imports.Count} imports and converted them to {plays.Count} valid plays");
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 }
