@@ -1,4 +1,4 @@
-namespace FMBot.Domain.Models;
+namespace FMBot.Domain.Enums;
 
 public enum DataSource
 {

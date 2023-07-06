@@ -34,6 +34,10 @@ using Serilog.Exceptions;
 using RunMode = Discord.Commands.RunMode;
 using Hangfire;
 using Hangfire.MemoryStorage;
+using FMBot.Domain.Interfaces;
+using System.Collections.Generic;
+using FMBot.Domain.Enums;
+using FMBot.Persistence.Interfaces;
 
 namespace FMBot.Bot;
 
@@ -218,6 +222,8 @@ public class Startup
 
         services.AddMemoryCache();
     }
+
+    public delegate IPlayDataSourceRepository ServiceResolver(DataSource key);
 
     private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {

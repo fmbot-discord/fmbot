@@ -17,6 +17,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.TextCommands.LastFM;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
@@ -34,7 +35,7 @@ public class UserBuilder
     private readonly TimerService _timer;
     private readonly FeaturedService _featuredService;
     private readonly BotSettings _botSettings;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PlayService _playService;
     private readonly TimeService _timeService;
     private readonly ArtistsService _artistsService;
@@ -48,7 +49,7 @@ public class UserBuilder
         TimerService timer,
         IOptions<BotSettings> botSettings,
         FeaturedService featuredService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         PlayService playService,
         TimeService timeService,
         ArtistsService artistsService,
@@ -61,7 +62,7 @@ public class UserBuilder
         this._prefixService = prefixService;
         this._timer = timer;
         this._featuredService = featuredService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._playService = playService;
         this._timeService = timeService;
         this._artistsService = artistsService;
@@ -452,7 +453,7 @@ public class UserBuilder
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}");
         response.Embed.WithAuthor(response.EmbedAuthor);
 
-        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
 
         if (!string.IsNullOrWhiteSpace(userInfo.Image))
         {

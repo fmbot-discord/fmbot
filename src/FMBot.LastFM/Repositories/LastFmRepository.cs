@@ -14,7 +14,6 @@ using FMBot.LastFM.Api;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Extensions;
-using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using Microsoft.Extensions.Caching.Memory;
@@ -24,7 +23,7 @@ using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.LastFM.Repositories;
 
-public class LastFmRepository : IDataSourceRepository
+public class LastFmRepository : ILastfmRepository
 {
     private readonly LastfmClient _lastFmClient;
     private readonly IMemoryCache _cache;

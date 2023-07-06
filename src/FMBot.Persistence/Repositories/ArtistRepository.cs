@@ -20,7 +20,7 @@ public class ArtistRepository
         this._botSettings = botSettings.Value;
     }
 
-    public static async Task InsertUserArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId,
+    public static async Task AddOrReplaceUserArtistsInDatabase(IReadOnlyList<UserArtist> artists, int userId,
         NpgsqlConnection connection)
     {
         Log.Information($"Inserting {artists.Count} artists for user {userId}");
@@ -105,7 +105,7 @@ public class ArtistRepository
         }
     }
 
-    public async Task<IReadOnlyCollection<UserArtist>> GetUserArtists(int userId, NpgsqlConnection connection)
+    public static async Task<IReadOnlyCollection<UserArtist>> GetUserArtists(int userId, NpgsqlConnection connection)
     {
         const string sql = "SELECT * FROM public.user_artists where user_id = @userId";
         DefaultTypeMap.MatchNamesWithUnderscores = true;

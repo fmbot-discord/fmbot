@@ -20,7 +20,7 @@ public class AlbumRepository
         this._botSettings = botSettings.Value;
     }
 
-    public static async Task InsertUserAlbumsIntoDatabase(IReadOnlyList<UserAlbum> albums, int userId,
+    public static async Task AddOrReplaceUserAlbumsInDatabase(IReadOnlyList<UserAlbum> albums, int userId,
         NpgsqlConnection connection)
     {
         Log.Information($"Inserting {albums.Count} albums for user {userId}");
@@ -37,7 +37,7 @@ public class AlbumRepository
         await copyHelper.SaveAllAsync(connection, albums);
     }
 
-    public async Task<Album> GetAlbumForName(string artistName, string albumName, NpgsqlConnection connection)
+    public static async Task<Album> GetAlbumForName(string artistName, string albumName, NpgsqlConnection connection)
     {
         const string getAlbumQuery = "SELECT * FROM public.albums " +
                                      "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
@@ -51,7 +51,7 @@ public class AlbumRepository
         });
     }
 
-    public async Task<IReadOnlyCollection<UserAlbum>> GetUserAlbums(int userId, NpgsqlConnection connection)
+    public static async Task<IReadOnlyCollection<UserAlbum>> GetUserAlbums(int userId, NpgsqlConnection connection)
     {
         const string sql = "SELECT * FROM public.user_albums where user_id = @userId";
         DefaultTypeMap.MatchNamesWithUnderscores = true;

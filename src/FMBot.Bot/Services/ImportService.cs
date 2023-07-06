@@ -7,7 +7,11 @@ using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Models;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.Repositories;
+using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace FMBot.Bot.Services;
 
@@ -15,11 +19,13 @@ public class ImportService
 {
     private readonly HttpClient _httpClient;
     private readonly TimeService _timeService;
+    private readonly BotSettings _botSettings;
 
-    public ImportService(HttpClient httpClient, TimeService timeService)
+    public ImportService(HttpClient httpClient, TimeService timeService, IOptions<BotSettings> botSettings)
     {
         this._httpClient = httpClient;
         this._timeService = timeService;
+        this._botSettings = botSettings.Value;
     }
 
     public async Task<List<SpotifyImportModel>> HandleSpotifyFiles(IEnumerable<IAttachment> attachments)
@@ -71,5 +77,13 @@ public class ImportService
         }
 
         return userPlays;
+    }
+
+    public async Task InsertImportPlays(IEnumerable<UserPlayTs> plays)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.InsertTimeSeriesPlays(plays, connection);
     }
 }

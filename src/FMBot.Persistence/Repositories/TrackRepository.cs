@@ -20,7 +20,7 @@ public class TrackRepository
         this._botSettings = botSettings.Value;
     }
 
-    public static async Task InsertUserTracksIntoDatabase(IReadOnlyList<UserTrack> artists, int userId,
+    public static async Task AddOrReplaceUserTracksInDatabase(IReadOnlyList<UserTrack> artists, int userId,
         NpgsqlConnection connection)
     {
         Log.Information($"Inserting {artists.Count} tracks for user {userId}");
@@ -51,7 +51,7 @@ public class TrackRepository
         });
     }
 
-    public async Task<ICollection<Track>> GetAlbumTracks(int albumId, NpgsqlConnection connection)
+    public static async Task<ICollection<Track>> GetAlbumTracks(int albumId, NpgsqlConnection connection)
     {
         const string getTrackQuery = "SELECT * FROM public.tracks " +
                                      "WHERE album_id = @albumId ";

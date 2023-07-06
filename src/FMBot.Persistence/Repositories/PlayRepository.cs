@@ -78,7 +78,7 @@ public static class PlayRepository
         return new PlayUpdate(addedPlays, removedPlays);
     }
 
-    public static async Task InsertAllPlays(IReadOnlyList<UserPlayTs> playsToInsert, int userId, NpgsqlConnection connection)
+    public static async Task ReplaceAllPlays(IReadOnlyList<UserPlayTs> playsToInsert, int userId, NpgsqlConnection connection)
     {
         await RemoveAllCurrentPlays(userId, connection);
 
@@ -110,7 +110,7 @@ public static class PlayRepository
         }
     }
 
-    private static async Task InsertTimeSeriesPlays(IEnumerable<UserPlayTs> plays, NpgsqlConnection connection)
+    public static async Task InsertTimeSeriesPlays(IEnumerable<UserPlayTs> plays, NpgsqlConnection connection)
     {
         var copyHelper = new PostgreSQLCopyHelper<UserPlayTs>("public", "user_play_ts")
             .MapText("track_name", x => x.TrackName)
@@ -122,7 +122,7 @@ public static class PlayRepository
         await copyHelper.SaveAllAsync(connection, plays);
     }
 
-    public static async Task<IReadOnlyList<UserPlayTs>> GetUserPlays(int userId, NpgsqlConnection connection, int limit)
+    public static async Task<ICollection<UserPlayTs>> GetUserPlays(int userId, NpgsqlConnection connection, int limit)
     {
         const string sql = "SELECT * FROM public.user_play_ts WHERE user_id = @userId " +
                            "ORDER BY time_played DESC LIMIT @limit";
@@ -134,7 +134,7 @@ public static class PlayRepository
         })).ToList();
     }
 
-    public static async Task<IReadOnlyCollection<UserPlayTs>> GetUserPlaysWithinTimeRange(int userId, NpgsqlConnection connection, DateTime start, DateTime? end = null)
+    public static async Task<ICollection<UserPlayTs>> GetUserPlaysWithinTimeRange(int userId, NpgsqlConnection connection, DateTime start, DateTime? end = null)
     {
         end ??= DateTime.UtcNow;
 

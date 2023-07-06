@@ -19,6 +19,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
@@ -36,7 +37,7 @@ public class TrackCommands : BaseCommandModule
     private readonly IIndexService _indexService;
     private readonly IPrefixService _prefixService;
     private readonly IUpdateService _updateService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PlayService _playService;
     private readonly SettingService _settingService;
     private readonly SpotifyService _spotifyService;
@@ -60,7 +61,7 @@ public class TrackCommands : BaseCommandModule
         IIndexService indexService,
         IPrefixService prefixService,
         IUpdateService updateService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         PlayService playService,
         SettingService settingService,
         SpotifyService spotifyService,
@@ -78,7 +79,7 @@ public class TrackCommands : BaseCommandModule
     {
         this._guildService = guildService;
         this._indexService = indexService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._playService = playService;
         this._prefixService = prefixService;
         this._settingService = settingService;
@@ -218,7 +219,7 @@ public class TrackCommands : BaseCommandModule
 
             const int amount = 200;
 
-            var lovedTracks = await this._lastFmRepository.GetLovedTracksAsync(userSettings.UserNameLastFm, amount, sessionKey: sessionKey);
+            var lovedTracks = await this._dataSourceFactory.GetLovedTracksAsync(userSettings.UserNameLastFm, amount, sessionKey: sessionKey);
 
             if (!lovedTracks.Content.RecentTracks.Any())
             {
@@ -369,7 +370,7 @@ public class TrackCommands : BaseCommandModule
 
         var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-        var trackScrobbled = await this._lastFmRepository.ScrobbleAsync(contextUser.SessionKeyLastFm, track.ArtistName, track.TrackName, track.AlbumName);
+        var trackScrobbled = await this._dataSourceFactory.ScrobbleAsync(contextUser.SessionKeyLastFm, track.ArtistName, track.TrackName, track.AlbumName);
 
         if (trackScrobbled.Success && trackScrobbled.Content.Accepted)
         {
@@ -669,13 +670,13 @@ public class TrackCommands : BaseCommandModule
                     trackInfo = await this._trackService.GetCachedTrack(trackArtist, trackName, lastFmUserName, userId);
                     if (trackInfo.Success && trackInfo.Content.TrackUrl == null)
                     {
-                        trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackName, trackArtist,
+                        trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, trackArtist,
                             lastFmUserName);
                     }
                 }
                 else
                 {
-                    trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackName, trackArtist,
+                    trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, trackArtist,
                         lastFmUserName);
                 }
 
@@ -698,7 +699,7 @@ public class TrackCommands : BaseCommandModule
         }
         else
         {
-            var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, useCache: true, sessionKey: sessionKey);
+            var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, useCache: true, sessionKey: sessionKey);
 
             if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
             {
@@ -718,13 +719,13 @@ public class TrackCommands : BaseCommandModule
                 trackInfo = await this._trackService.GetCachedTrack(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, lastFmUserName, userId);
                 if (trackInfo.Success && trackInfo.Content.TrackUrl == null)
                 {
-                    trackInfo = await this._lastFmRepository.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
+                    trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
                         lastFmUserName);
                 }
             }
             else
             {
-                trackInfo = await this._lastFmRepository.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
+                trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
                     lastFmUserName);
             }
 
@@ -742,7 +743,7 @@ public class TrackCommands : BaseCommandModule
             return trackInfo.Content;
         }
 
-        var result = await this._lastFmRepository.SearchTrackAsync(searchValue);
+        var result = await this._dataSourceFactory.SearchTrackAsync(searchValue);
         if (result.Success && result.Content != null)
         {
             if (otherUserUsername != null)
@@ -757,7 +758,7 @@ public class TrackCommands : BaseCommandModule
             }
             else
             {
-                trackInfo = await this._lastFmRepository.GetTrackInfoAsync(result.Content.TrackName, result.Content.ArtistName,
+                trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(result.Content.TrackName, result.Content.ArtistName,
                     lastFmUserName);
             }
 

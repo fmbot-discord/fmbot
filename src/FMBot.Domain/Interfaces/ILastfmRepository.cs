@@ -6,19 +6,23 @@ using FMBot.Domain.Types;
 
 namespace FMBot.Domain.Interfaces;
 
-public interface IDataSourceRepository
+public interface ILastfmRepository
 {
-    Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1);
-    Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null, long? fromUnixTimestamp = null);
-    Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? from = null, string sessionKey = null, long? until = null);
-    Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(string lastFmUserName, string sessionKey, long totalScrobbles, long milestoneScrobble);
+    Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false,
+    string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1);
+
+    Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? from = null, string sessionKey = null,
+        long? until = null);
+
+    Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(string lastFmUserName, string sessionKey, long totalScrobbles,
+        long milestoneScrobble);
+
     Task<DataSourceUser> GetLfmUserInfoAsync(string lastFmUserName);
     Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery);
     Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null);
     Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username);
     Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null);
     Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery);
-    Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
         TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1);
@@ -47,6 +51,8 @@ public interface IDataSourceRepository
     Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count);
 
+    Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null, long? fromUnixTimestamp = null);
+    Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl);
     Task<bool> LastFmUserExistsAsync(string lastFmUserName);
     Task<Response<TokenResponse>> GetAuthToken();
     Task<Response<AuthSessionResponse>> GetAuthSession(string token);

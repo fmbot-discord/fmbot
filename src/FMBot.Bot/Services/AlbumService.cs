@@ -12,6 +12,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
@@ -33,7 +34,7 @@ public class AlbumService
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
     private readonly AlbumRepository _albumRepository;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly TimerService _timer;
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
@@ -43,7 +44,7 @@ public class AlbumService
     public AlbumService(IMemoryCache cache,
         IOptions<BotSettings> botSettings,
         AlbumRepository albumRepository,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         TimerService timer,
         WhoKnowsAlbumService whoKnowsAlbumService,
         IDbContextFactory<FMBotDbContext> contextFactory,
@@ -52,7 +53,7 @@ public class AlbumService
     {
         this._cache = cache;
         this._albumRepository = albumRepository;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._timer = timer;
         this._whoKnowsAlbumService = whoKnowsAlbumService;
         this._contextFactory = contextFactory;
@@ -108,7 +109,7 @@ public class AlbumService
                 }
                 else
                 {
-                    albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(searchArtistName, searchAlbumName,
+                    albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(searchArtistName, searchAlbumName,
                         lastFmUserName);
                 }
 
@@ -140,7 +141,7 @@ public class AlbumService
             }
             else
             {
-                recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
             }
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
@@ -174,7 +175,7 @@ public class AlbumService
             }
             else
             {
-                albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName,
+                albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName,
                     lastFmUserName);
             }
 
@@ -192,7 +193,7 @@ public class AlbumService
             return new AlbumSearch(albumInfo.Content, response);
         }
 
-        var result = await this._lastFmRepository.SearchAlbumAsync(searchValue);
+        var result = await this._dataSourceFactory.SearchAlbumAsync(searchValue);
         if (result.Success && result.Content != null)
         {
             var album = result.Content;
@@ -209,7 +210,7 @@ public class AlbumService
             }
             else
             {
-                albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(album.ArtistName, album.AlbumName,
+                albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(album.ArtistName, album.AlbumName,
                     lastFmUserName);
             }
 
@@ -252,7 +253,7 @@ public class AlbumService
         }
         else
         {
-            albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(artistName, albumName,
+            albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(artistName, albumName,
                 lastFmUserName);
         }
 
@@ -333,7 +334,7 @@ public class AlbumService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var album = await this._albumRepository.GetAlbumForName(correctedArtistName, albumName, connection);
+        var album = await AlbumRepository.GetAlbumForName(correctedArtistName, albumName, connection);
 
         await connection.CloseAsync();
 
@@ -364,7 +365,7 @@ public class AlbumService
             return topAlbums;
         }
 
-        var freshTopAlbums = (await this._albumRepository.GetUserAlbums(userId, connection))
+        var freshTopAlbums = (await AlbumRepository.GetUserAlbums(userId, connection))
             .Select(s => new TopAlbum()
             {
                 ArtistName = s.Name,

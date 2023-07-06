@@ -1,19 +1,29 @@
 using System.Threading.Tasks;
 using System;
-using FMBot.Domain.Models;
-using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using Dapper;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Persistence.Repositories;
 
 public class UserRepository
 {
-    private readonly BotSettings _botSettings;
-
-    public UserRepository(IOptions<BotSettings> botSettings)
+    public static async Task<User> GetImportUserForLastFmUserName(string lastFmUserName, NpgsqlConnection connection)
     {
-        this._botSettings = botSettings.Value;
+        const string getUserQuery = "SELECT * FROM public.users " +
+                                      "WHERE UPPER(user_name_last_fm) = UPPER(@lastFmUserName) " +
+                                      "AND last_used is not null " +
+                                      "AND data_source != 1 " +
+                                      "ORDER BY last_used DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var user = await connection.QueryFirstOrDefaultAsync<User>(getUserQuery, new
+        {
+            lastFmUserName
+        });
+
+        return user;
     }
 
     public static async Task SetUserIndexTime(int userId, DateTime now, DateTime lastScrobble, NpgsqlConnection connection)

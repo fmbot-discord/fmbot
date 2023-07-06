@@ -1,5 +1,5 @@
 using System;
-using FMBot.Domain.Models;
+using FMBot.Domain.Enums;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable

@@ -1,16 +1,15 @@
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using AngleSharp.Css;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Extensions;
-using FMBot.LastFM.Repositories;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
@@ -19,17 +18,23 @@ namespace FMBot.Bot.Builders;
 public class ChartBuilders
 {
     private readonly ChartService _chartService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly AlbumService _albumService;
     private readonly UserService _userService;
     private readonly SupporterService _supporterService;
     private readonly SpotifyService _spotifyService;
     private readonly ArtistsService _artistService;
 
-    public ChartBuilders(ChartService chartService, LastFmRepository lastFmRepository, AlbumService albumService, UserService userService, SupporterService supporterService, SpotifyService spotifyService, ArtistsService artistService)
+    public ChartBuilders(ChartService chartService,
+        IDataSourceFactory dataSourceFactory,
+        AlbumService albumService,
+        UserService userService,
+        SupporterService supporterService,
+        SpotifyService spotifyService,
+        ArtistsService artistService)
     {
         this._chartService = chartService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._albumService = albumService;
         this._userService = userService;
         this._supporterService = supporterService;
@@ -68,7 +73,7 @@ public class ChartBuilders
 
         var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
 
-        var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
+        var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
 
         if (albums.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
         {
@@ -100,7 +105,7 @@ public class ChartBuilders
         for (var i = 0; i < amountToFetch; i++)
         {
             var albumWithoutImage = albumsWithoutImage[i];
-            var albumCall = await this._lastFmRepository.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
+            var albumCall = await this._dataSourceFactory.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
             if (albumCall.Success && albumCall.Content?.AlbumUrl != null)
             {
                 var spotifyArtistImage = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumCall.Content);
@@ -202,7 +207,7 @@ public class ChartBuilders
 
         var imagesToRequest = chartSettings.ImagesNeeded + extraArtists;
 
-        var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
+        var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
 
         if (artists.Content.TopArtists == null || artists.Content.TopArtists.Count < chartSettings.ImagesNeeded)
         {
@@ -235,7 +240,7 @@ public class ChartBuilders
         {
             var artistWithoutImage = artistsWithoutImages[i];
 
-            var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm);
+            var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm);
             if (artistCall.Success && artistCall.Content?.ArtistUrl != null)
             {
                 var spotifyArtistImage = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);

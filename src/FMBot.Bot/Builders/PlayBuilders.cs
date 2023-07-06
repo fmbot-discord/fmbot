@@ -15,6 +15,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
@@ -37,7 +38,7 @@ public class PlayBuilder
     private readonly IIndexService _indexService;
     private readonly IPrefixService _prefixService;
     private readonly IUpdateService _updateService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PlayService _playService;
     private readonly GenreService _genreService;
     private readonly SettingService _settingService;
@@ -56,7 +57,7 @@ public class PlayBuilder
         IIndexService indexService,
         IPrefixService prefixService,
         IUpdateService updateService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         PlayService playService,
         SettingService settingService,
         UserService userService,
@@ -74,7 +75,7 @@ public class PlayBuilder
     {
         this._guildService = guildService;
         this._indexService = indexService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._playService = playService;
         this._prefixService = prefixService;
         this._settingService = settingService;
@@ -114,7 +115,7 @@ public class PlayBuilder
             if (context.ContextUser.LastIndexed == null)
             {
                 _ = this._indexService.IndexUser(context.ContextUser);
-                recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm,
+                recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFm,
                     useCache: true, sessionKey: sessionKey);
             }
             else
@@ -125,7 +126,7 @@ public class PlayBuilder
         else
         {
             recentTracks =
-                await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, useCache: true);
+                await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFm, useCache: true);
         }
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
@@ -309,7 +310,7 @@ public class PlayBuilder
             if (context.ContextUser.LastIndexed == null)
             {
                 _ = this._indexService.IndexUser(context.ContextUser);
-                recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm,
+                recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFm,
                     useCache: true, sessionKey: sessionKey);
             }
             else
@@ -320,7 +321,7 @@ public class PlayBuilder
         else
         {
             recentTracks =
-                await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, 120, useCache: true);
+                await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFm, 120, useCache: true);
         }
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
@@ -651,7 +652,7 @@ public class PlayBuilder
         }
         else
         {
-            count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm);
+            count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm);
         }
 
         if (count is null or 0)
@@ -711,7 +712,7 @@ public class PlayBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        var mileStonePlay = await this._lastFmRepository.GetMilestoneScrobbleAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm, userTotalPlaycount, mileStoneAmount);
+        var mileStonePlay = await this._dataSourceFactory.GetMilestoneScrobbleAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm, userTotalPlaycount, mileStoneAmount);
 
         if (!mileStonePlay.Success || mileStonePlay.Content == null)
         {

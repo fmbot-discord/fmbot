@@ -17,6 +17,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
@@ -37,7 +38,7 @@ public class ArtistCommands : BaseCommandModule
     private readonly IIndexService _indexService;
     private readonly IPrefixService _prefixService;
     private readonly IUpdateService _updateService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PlayService _playService;
     private readonly SettingService _settingService;
     private readonly UserService _userService;
@@ -51,7 +52,7 @@ public class ArtistCommands : BaseCommandModule
         IIndexService indexService,
         IPrefixService prefixService,
         IUpdateService updateService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         PlayService playService,
         SettingService settingService,
         UserService userService,
@@ -63,7 +64,7 @@ public class ArtistCommands : BaseCommandModule
         this._artistsService = artistsService;
         this._guildService = guildService;
         this._indexService = indexService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._playService = playService;
         this._prefixService = prefixService;
         this._settingService = settingService;
@@ -669,7 +670,7 @@ public class ArtistCommands : BaseCommandModule
                 lastFmUserName = otherUserUsername;
             }
 
-            var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName);
+            var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistValues, lastFmUserName);
             if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
             {
                 this._embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");
@@ -697,7 +698,7 @@ public class ArtistCommands : BaseCommandModule
             }
             else
             {
-                recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
             }
 
             if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
@@ -712,7 +713,7 @@ public class ArtistCommands : BaseCommandModule
 
             var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
 
-            var artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
+            var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
 
             if (artistCall.Content == null || !artistCall.Success)
             {

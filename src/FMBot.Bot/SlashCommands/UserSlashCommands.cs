@@ -19,6 +19,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
@@ -30,7 +31,7 @@ namespace FMBot.Bot.SlashCommands;
 public class UserSlashCommands : InteractionModuleBase
 {
     private readonly UserService _userService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly GuildService _guildService;
     private readonly FriendsService _friendsService;
     private readonly IIndexService _indexService;
@@ -44,7 +45,7 @@ public class UserSlashCommands : InteractionModuleBase
     private InteractiveService Interactivity { get; }
 
     public UserSlashCommands(UserService userService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         IOptions<BotSettings> botSettings,
         GuildService guildService,
         IIndexService indexService,
@@ -55,7 +56,7 @@ public class UserSlashCommands : InteractionModuleBase
         ArtistsService artistsService, OpenAiService openAiService)
     {
         this._userService = userService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._guildService = guildService;
         this._indexService = indexService;
         this.Interactivity = interactivity;
@@ -71,7 +72,7 @@ public class UserSlashCommands : InteractionModuleBase
     public async Task LoginAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var token = await this._lastFmRepository.GetAuthToken();
+        var token = await this._dataSourceFactory.GetAuthToken();
 
         try
         {
@@ -413,7 +414,7 @@ public class UserSlashCommands : InteractionModuleBase
         }
         else
         {
-            var lfmTopArtists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, artistLimit);
+            var lfmTopArtists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, artistLimit);
             topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
         }
 

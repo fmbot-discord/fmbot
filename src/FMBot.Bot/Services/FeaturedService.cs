@@ -9,6 +9,7 @@ using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
@@ -23,18 +24,18 @@ namespace FMBot.Bot.Services;
 
 public class FeaturedService
 {
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly CensorService _censorService;
     private readonly UserService _userService;
     private readonly IMemoryCache _cache;
 
-    public FeaturedService(LastFmRepository lastFmRepository,
+    public FeaturedService(IDataSourceFactory dataSourceFactory,
         IDbContextFactory<FMBotDbContext> contextFactory,
         CensorService censorService,
         UserService userService, IMemoryCache cache)
     {
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._contextFactory = contextFactory;
         this._censorService = censorService;
         this._userService = userService;
@@ -96,7 +97,7 @@ public class FeaturedService
             {
                 // Recent listens
                 case FeaturedMode.RecentPlays:
-                    var tracks = await this._lastFmRepository.GetRecentTracksAsync(user.UserNameLastFM, 50, sessionKey: user.SessionKeyLastFm);
+                    var tracks = await this._dataSourceFactory.GetRecentTracksAsync(user.UserNameLastFM, 50, sessionKey: user.SessionKeyLastFm);
 
                     if (!tracks.Success || tracks.Content?.RecentTracks == null)
                     {
@@ -160,13 +161,13 @@ public class FeaturedService
                             break;
                     }
 
-                    var albums = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
+                    var albums = await this._dataSourceFactory.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
 
                     if (!albums.Success || albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
                     {
                         Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
                         user = await GetUserToFeatureAsync(Constants.DaysLastUsedForFeatured + (supporterDay ? 6 : 0), supporterDay);
-                        albums = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
+                        albums = await this._dataSourceFactory.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
                     }
 
                     var albumList = albums.Content.TopAlbums.ToList();
@@ -392,7 +393,7 @@ public class FeaturedService
 
     private async Task<bool> AlbumPopularEnough(string albumName, string artistName)
     {
-        var album = await this._lastFmRepository.GetAlbumInfoAsync(artistName, albumName);
+        var album = await this._dataSourceFactory.GetAlbumInfoAsync(artistName, albumName);
 
         if (!album.Success || album.Content == null || album.Content.TotalListeners < 2500)
         {
@@ -531,7 +532,7 @@ public class FeaturedService
 
             if (botUser?.SessionKeyLastFm != null)
             {
-                await this._lastFmRepository.ScrobbleAsync(botUser.SessionKeyLastFm, featuredLog.ArtistName, featuredLog.TrackName, featuredLog.AlbumName);
+                await this._dataSourceFactory.ScrobbleAsync(botUser.SessionKeyLastFm, featuredLog.ArtistName, featuredLog.TrackName, featuredLog.AlbumName);
             }
         }
         catch (Exception exception)

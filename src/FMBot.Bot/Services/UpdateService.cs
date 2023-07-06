@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Repositories;
@@ -31,21 +32,21 @@ public class UpdateService : IUpdateService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SmallIndexRepository _smallIndexRepository;
 
     public UpdateService(IUserUpdateQueue userUpdateQueue,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
         IOptions<BotSettings> botSettings,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         SmallIndexRepository smallIndexRepository)
     {
         this._userUpdateQueue = userUpdateQueue;
         this._userUpdateQueue.UsersToUpdate.SubscribeAsync(OnNextAsync);
         this._contextFactory = contextFactory;
         this._cache = cache;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._smallIndexRepository = smallIndexRepository;
         this._botSettings = botSettings.Value;
     }
@@ -147,7 +148,7 @@ public class UpdateService : IUpdateService
             totalPlaycountCorrect = true;
         }
 
-        var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(
+        var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(
             user.UserNameLastFM,
             count,
             true,
@@ -556,7 +557,7 @@ public class UpdateService : IUpdateService
         {
             if (!user.TotalPlaycount.HasValue)
             {
-                var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(
+                var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(
                     user.UserNameLastFM,
                     count: 1,
                     useCache: false,

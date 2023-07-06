@@ -18,6 +18,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
@@ -35,7 +36,7 @@ public class PlayCommands : BaseCommandModule
     private readonly IIndexService _indexService;
     private readonly IPrefixService _prefixService;
     private readonly IUpdateService _updateService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PlayService _playService;
     private readonly GenreService _genreService;
     private readonly SettingService _settingService;
@@ -59,7 +60,7 @@ public class PlayCommands : BaseCommandModule
         IIndexService indexService,
         IPrefixService prefixService,
         IUpdateService updateService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         PlayService playService,
         SettingService settingService,
         UserService userService,
@@ -78,7 +79,7 @@ public class PlayCommands : BaseCommandModule
     {
         this._guildService = guildService;
         this._indexService = indexService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._playService = playService;
         this._prefixService = prefixService;
         this._settingService = settingService;
@@ -337,7 +338,7 @@ public class PlayCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
 
         var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
         var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
@@ -365,7 +366,7 @@ public class PlayCommands : BaseCommandModule
 
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
 
-        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
         var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
@@ -391,7 +392,7 @@ public class PlayCommands : BaseCommandModule
         var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
         var userSettings = await this._settingService.GetUser(timeSettings.NewSearchValue, user, this.Context, true);
 
-        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
+        var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
         if (count == null)
         {

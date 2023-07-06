@@ -8,6 +8,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
@@ -18,7 +19,7 @@ namespace FMBot.Bot.TextCommands;
 [Name("Spotify")]
 public class SpotifyCommands : BaseCommandModule
 {
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SpotifyService _spotifyService;
 
     private readonly UserService _userService;
@@ -27,7 +28,7 @@ public class SpotifyCommands : BaseCommandModule
 
     public SpotifyCommands(
         IPrefixService prefixService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         UserService userService,
         SpotifyService spotifyService,
         IOptions<BotSettings> botSettings) : base(botSettings)
@@ -35,7 +36,7 @@ public class SpotifyCommands : BaseCommandModule
         this._prefixService = prefixService;
         this._userService = userService;
         this._spotifyService = spotifyService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
     }
 
     [Command("spotify")]
@@ -65,7 +66,7 @@ public class SpotifyCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
@@ -132,7 +133,7 @@ public class SpotifyCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
@@ -199,7 +200,7 @@ public class SpotifyCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {

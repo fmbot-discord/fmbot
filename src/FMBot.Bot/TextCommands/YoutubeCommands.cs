@@ -7,8 +7,8 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.TextCommands;
@@ -16,7 +16,7 @@ namespace FMBot.Bot.TextCommands;
 [Name("Youtube")]
 public class YoutubeCommands : BaseCommandModule
 {
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly UserService _userService;
     private readonly YoutubeService _youtubeService;
 
@@ -24,7 +24,7 @@ public class YoutubeCommands : BaseCommandModule
 
     public YoutubeCommands(
         IPrefixService prefixService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         UserService userService,
         YoutubeService youtubeService,
         IOptions<BotSettings> botSettings) : base(botSettings)
@@ -32,7 +32,7 @@ public class YoutubeCommands : BaseCommandModule
         this._prefixService = prefixService;
         this._userService = userService;
         this._youtubeService = youtubeService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
     }
 
     [Command("youtube")]
@@ -62,7 +62,7 @@ public class YoutubeCommands : BaseCommandModule
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {

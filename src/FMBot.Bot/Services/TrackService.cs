@@ -17,6 +17,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
@@ -35,7 +36,7 @@ namespace FMBot.Bot.Services;
 
 public class TrackService
 {
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SpotifyService _spotifyService;
     private readonly HttpClient _client;
     private readonly BotSettings _botSettings;
@@ -49,7 +50,7 @@ public class TrackService
     private readonly IUpdateService _updateService;
 
     public TrackService(HttpClient httpClient,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         IOptions<BotSettings> botSettings,
         SpotifyService spotifyService,
         IMemoryCache memoryCache,
@@ -61,7 +62,7 @@ public class TrackService
         ArtistsService artistsService,
         IUpdateService updateService)
     {
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._spotifyService = spotifyService;
         this._cache = memoryCache;
         this._trackRepository = trackRepository;
@@ -107,7 +108,7 @@ public class TrackService
                 }
                 else
                 {
-                    trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackName, trackArtist,
+                    trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, trackArtist,
                         lastFmUserName);
                 }
 
@@ -140,7 +141,7 @@ public class TrackService
             }
             else
             {
-                recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
             }
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
@@ -165,7 +166,7 @@ public class TrackService
             }
             else
             {
-                trackInfo = await this._lastFmRepository.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
+                trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
                     lastFmUserName);
             }
 
@@ -183,7 +184,7 @@ public class TrackService
             return new TrackSearch(trackInfo.Content, response);
         }
 
-        var result = await this._lastFmRepository.SearchTrackAsync(searchValue);
+        var result = await this._dataSourceFactory.SearchTrackAsync(searchValue);
         if (result.Success && result.Content != null)
         {
             if (otherUserUsername != null)
@@ -198,7 +199,7 @@ public class TrackService
             }
             else
             {
-                trackInfo = await this._lastFmRepository.GetTrackInfoAsync(result.Content.TrackName, result.Content.ArtistName,
+                trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(result.Content.TrackName, result.Content.ArtistName,
                     lastFmUserName);
             }
 
@@ -260,7 +261,7 @@ public class TrackService
         }
         else
         {
-            trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackName, artistName,
+            trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName,
                 lastFmUserName);
         }
 
@@ -325,7 +326,7 @@ public class TrackService
 
             if (!description.Contains("-"))
             {
-                var lastFmResult = await this._lastFmRepository.SearchTrackAsync(description);
+                var lastFmResult = await this._dataSourceFactory.SearchTrackAsync(description);
                 if (lastFmResult.Success && lastFmResult.Content != null)
                 {
                     return new TrackSearchResult
@@ -391,7 +392,7 @@ public class TrackService
                     }
                 }
 
-                var trackLfm = await this._lastFmRepository.GetTrackInfoAsync(trackName, artistName);
+                var trackLfm = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName);
 
                 if (trackLfm.Success)
                 {

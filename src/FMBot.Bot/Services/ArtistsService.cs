@@ -12,6 +12,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Repositories;
@@ -32,7 +33,7 @@ public class ArtistsService
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
     private readonly ArtistRepository _artistRepository;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly TimerService _timer;
     private readonly IUpdateService _updateService;
@@ -41,7 +42,7 @@ public class ArtistsService
         IMemoryCache cache,
         IOptions<BotSettings> botSettings,
         ArtistRepository artistRepository,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         WhoKnowsArtistService whoKnowsArtistService,
         TimerService timer,
         IUpdateService updateService)
@@ -49,7 +50,7 @@ public class ArtistsService
         this._contextFactory = contextFactory;
         this._cache = cache;
         this._artistRepository = artistRepository;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._whoKnowsArtistService = whoKnowsArtistService;
         this._timer = timer;
         this._updateService = updateService;
@@ -95,7 +96,7 @@ public class ArtistsService
             }
             else
             {
-                artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName);
+                artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistValues, lastFmUserName);
             }
 
             if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
@@ -125,7 +126,7 @@ public class ArtistsService
             }
             else
             {
-                recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
             }
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
@@ -148,7 +149,7 @@ public class ArtistsService
             }
             else
             {
-                artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
+                artistCall = await this._dataSourceFactory.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
             }
 
             if (artistCall.Content == null || !artistCall.Success)
@@ -183,7 +184,7 @@ public class ArtistsService
         }
         else
         {
-            artistInfo = await this._lastFmRepository.GetArtistInfoAsync(artistName, lastFmUserName);
+            artistInfo = await this._dataSourceFactory.GetArtistInfoAsync(artistName, lastFmUserName);
         }
 
         return artistInfo;
@@ -320,7 +321,7 @@ public class ArtistsService
             return topArtists;
         }
 
-        var freshTopArtists = (await this._artistRepository.GetUserArtists(userId, connection))
+        var freshTopArtists = (await ArtistRepository.GetUserArtists(userId, connection))
             .Select(s => new TopArtist
             {
                 ArtistName = s.Name,

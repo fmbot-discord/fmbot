@@ -14,6 +14,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
@@ -26,7 +27,7 @@ public class CrownCommands : BaseCommandModule
     private readonly AdminService _adminService;
     private readonly CrownService _crownService;
     private readonly GuildService _guildService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly IPrefixService _prefixService;
     private readonly SettingService _settingService;
     private readonly UserService _userService;
@@ -40,7 +41,7 @@ public class CrownCommands : BaseCommandModule
         IPrefixService prefixService,
         UserService userService,
         AdminService adminService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         SettingService settingService,
         InteractiveService interactivity,
         IOptions<BotSettings> botSettings,
@@ -52,7 +53,7 @@ public class CrownCommands : BaseCommandModule
         this._prefixService = prefixService;
         this._userService = userService;
         this._adminService = adminService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._settingService = settingService;
         this.Interactivity = interactivity;
         this._artistsService = artistsService;

@@ -9,6 +9,8 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
@@ -29,18 +31,19 @@ public class IndexService : IIndexService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
 
     public IndexService(IUserIndexQueue userIndexQueue,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
-        IOptions<BotSettings> botSettings, LastFmRepository lastFmRepository)
+        IOptions<BotSettings> botSettings,
+        IDataSourceFactory dataSourceFactory)
     {
         this._userIndexQueue = userIndexQueue;
         this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
         this._contextFactory = contextFactory;
         this._cache = cache;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._botSettings = botSettings.Value;
     }
 
@@ -104,7 +107,7 @@ public class IndexService : IIndexService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM);
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user.UserNameLastFM);
         if (userInfo?.Registered != null)
         {
             await UserRepository.SetUserSignUpTime(user.UserId, userInfo.Registered, connection, userInfo.Subscriber);
@@ -113,16 +116,16 @@ public class IndexService : IIndexService
         await SetUserPlaycount(user, connection);
 
         var plays = await GetPlaysForUserFromLastFm(user);
-        await PlayRepository.InsertAllPlays(plays, user.UserId, connection);
+        await PlayRepository.ReplaceAllPlays(plays, user.UserId, connection);
 
         var artists = await GetArtistsForUserFromLastFm(user);
-        await ArtistRepository.InsertUserArtistsIntoDatabase(artists, user.UserId, connection);
+        await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
 
         var albums = await GetAlbumsForUserFromLastFm(user);
-        await AlbumRepository.InsertUserAlbumsIntoDatabase(albums, user.UserId, connection);
+        await AlbumRepository.AddOrReplaceUserAlbumsInDatabase(albums, user.UserId, connection);
 
         var tracks = await GetTracksForUserFromLastFm(user);
-        await TrackRepository.InsertUserTracksIntoDatabase(tracks, user.UserId, connection);
+        await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
 
         var latestScrobbleDate = await GetLatestScrobbleDate(user);
 
@@ -148,7 +151,7 @@ public class IndexService : IIndexService
 
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 4;
 
-        var topArtists = await this._lastFmRepository.GetTopArtistsAsync(user.UserNameLastFM,
+        var topArtists = await this._dataSourceFactory.GetTopArtistsAsync(user.UserNameLastFM,
             TimePeriod.AllTime, 1000, indexLimit);
 
         if (!topArtists.Success || topArtists.Content.TopArtists == null)
@@ -170,7 +173,7 @@ public class IndexService : IIndexService
 
         var pages = UserHasHigherIndexLimit(user) ? 750 : 25;
 
-        var recentPlays = await this._lastFmRepository.GetRecentTracksAsync(user.UserNameLastFM, 1000,
+        var recentPlays = await this._dataSourceFactory.GetRecentTracksAsync(user.UserNameLastFM, 1000,
             sessionKey: user.SessionKeyLastFm, amountOfPages: pages);
 
         if (!recentPlays.Success || recentPlays.Content.RecentTracks.Count == 0)
@@ -186,7 +189,8 @@ public class IndexService : IIndexService
                 AlbumName = t.AlbumName,
                 ArtistName = t.ArtistName,
                 TimePlayed = t.TimePlayed.Value,
-                UserId = user.UserId
+                UserId = user.UserId,
+                PlaySource = PlaySource.LastFm
             }).ToList();
     }
 
@@ -197,7 +201,7 @@ public class IndexService : IIndexService
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 5;
 
         var topAlbums =
-            await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, TimePeriod.AllTime, 1000, indexLimit);
+            await this._dataSourceFactory.GetTopAlbumsAsync(user.UserNameLastFM, TimePeriod.AllTime, 1000, indexLimit);
 
         if (!topAlbums.Success || topAlbums.Content.TopAlbums == null)
         {
@@ -219,7 +223,7 @@ public class IndexService : IIndexService
 
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 6;
 
-        var trackResult = await this._lastFmRepository.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
+        var trackResult = await this._dataSourceFactory.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
 
         if (!trackResult.Success || trackResult.Content.TopTracks.Count == 0)
         {
@@ -237,7 +241,7 @@ public class IndexService : IIndexService
 
     private async Task<DateTime> GetLatestScrobbleDate(User user)
     {
-        var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(user.UserNameLastFM, count: 2);
+        var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(user.UserNameLastFM, count: 2);
 
         if (!recentTracks.Success ||
             recentTracks.Content?.RecentTracks == null ||
@@ -252,7 +256,7 @@ public class IndexService : IIndexService
 
     private async Task SetUserPlaycount(User user, NpgsqlConnection connection)
     {
-        var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(
+        var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(
             user.UserNameLastFM,
             count: 1,
             useCache: false,
@@ -600,7 +604,7 @@ public class IndexService : IIndexService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM);
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user.UserNameLastFM);
         if (userInfo?.Registered != null)
         {
             return await UserRepository.SetUserSignUpTime(user.UserId, userInfo.Registered, connection, userInfo.Subscriber);
