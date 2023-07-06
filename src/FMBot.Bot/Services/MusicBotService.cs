@@ -113,7 +113,7 @@ public class MusicBotService
     {
         try
         {
-            await this._lastFmRepository.SetNowPlayingAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
+            await this._lastFmRepository.SetNowPlayingAsync(user.SessionKeyLastFm, result.ArtistName, result.TrackName, result.AlbumName);
         }
         catch (Exception e)
         {
@@ -128,7 +128,7 @@ public class MusicBotService
 
         if (!this._cache.TryGetValue($"now-playing-{user.UserId}", out bool _))
         {
-            await this._lastFmRepository.ScrobbleAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
+            await this._lastFmRepository.ScrobbleAsync(user.SessionKeyLastFm, result.ArtistName, result.TrackName, result.AlbumName);
             Statistics.LastfmScrobbles.WithLabels(musicBot.Name).Inc();
         }
 

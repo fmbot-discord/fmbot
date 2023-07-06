@@ -344,7 +344,7 @@ public class PlayCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
-            userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.Registered.Unixtime);
+            userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

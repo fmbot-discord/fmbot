@@ -9,7 +9,7 @@ using Npgsql;
 using PostgreSQLCopyHelper;
 using Serilog;
 
-namespace FMBot.LastFM.Repositories;
+namespace FMBot.Persistence.Repositories;
 
 public static class PlayRepository
 {

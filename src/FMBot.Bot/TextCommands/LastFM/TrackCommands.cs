@@ -18,8 +18,9 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Enums;
+using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
@@ -368,22 +369,22 @@ public class TrackCommands : BaseCommandModule
 
         var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-        var trackScrobbled = await this._lastFmRepository.ScrobbleAsync(contextUser, track.ArtistName, track.TrackName, track.AlbumName);
+        var trackScrobbled = await this._lastFmRepository.ScrobbleAsync(contextUser.SessionKeyLastFm, track.ArtistName, track.TrackName, track.AlbumName);
 
-        if (trackScrobbled.Success && trackScrobbled.Content.Scrobbles.Attr.Accepted > 0)
+        if (trackScrobbled.Success && trackScrobbled.Content.Accepted)
         {
             Statistics.LastfmScrobbles.Inc();
             this._embed.WithTitle($"Scrobbled track for {userTitle}");
             this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track));
         }
-        else if (trackScrobbled.Success && trackScrobbled.Content.Scrobbles.Attr.Ignored > 0)
+        else if (trackScrobbled.Success && trackScrobbled.Content.Ignored)
         {
             this._embed.WithTitle($"Last.fm ignored scrobble for {userTitle}");
             var description = new StringBuilder();
 
-            if (!string.IsNullOrWhiteSpace(trackScrobbled.Content.Scrobbles.Scrobble.IgnoredMessage?.Text))
+            if (!string.IsNullOrWhiteSpace(trackScrobbled.Content.IgnoreMessage))
             {
-                description.AppendLine($"Reason: {trackScrobbled.Content.Scrobbles.Scrobble.IgnoredMessage?.Text}");
+                description.AppendLine($"Reason: {trackScrobbled.Content.IgnoreMessage}");
             }
 
             description.AppendLine(LastFmRepository.ResponseTrackToLinkedString(track));

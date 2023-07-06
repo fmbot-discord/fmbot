@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
@@ -12,6 +13,7 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -24,21 +26,18 @@ namespace FMBot.Bot.Services;
 public class IndexService : IIndexService
 {
     private readonly IUserIndexQueue _userIndexQueue;
-    private readonly IndexRepository _indexRepository;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
     private readonly LastFmRepository _lastFmRepository;
 
     public IndexService(IUserIndexQueue userIndexQueue,
-        IndexRepository indexRepository,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
         IOptions<BotSettings> botSettings, LastFmRepository lastFmRepository)
     {
         this._userIndexQueue = userIndexQueue;
         this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
-        this._indexRepository = indexRepository;
         this._contextFactory = contextFactory;
         this._cache = cache;
         this._lastFmRepository = lastFmRepository;
@@ -47,7 +46,7 @@ public class IndexService : IIndexService
 
     private async Task OnNextAsync(IndexUserQueueItem user)
     {
-        await this._indexRepository.IndexUser(user);
+        await IndexUser(user);
     }
 
     public void AddUsersToIndexQueue(IReadOnlyList<User> users)
@@ -63,7 +62,7 @@ public class IndexService : IIndexService
 
         if (!this._cache.TryGetValue($"index-started-{user.UserId}", out bool _))
         {
-            return await this._indexRepository.IndexUser(new IndexUserQueueItem(user.UserId));
+            return await IndexUser(new IndexUserQueueItem(user.UserId));
         }
         else
         {
@@ -71,6 +70,213 @@ public class IndexService : IIndexService
         }
 
         return null;
+    }
+
+    public async Task<IndexedUserStats> IndexUser(IndexUserQueueItem queueItem)
+    {
+        if (queueItem.IndexQueue)
+        {
+            Thread.Sleep(15000);
+        }
+
+        var concurrencyCacheKey = $"index-started-{queueItem.UserId}";
+        this._cache.Set(concurrencyCacheKey, true, TimeSpan.FromMinutes(3));
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FindAsync(queueItem.UserId);
+
+        if (queueItem.IndexQueue)
+        {
+            if (user == null)
+            {
+                return null;
+            }
+            if (user.LastIndexed > DateTime.UtcNow.AddHours(-24))
+            {
+                Log.Debug("Index: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                return null;
+            }
+        }
+
+        Log.Information($"Starting index for {user.UserNameLastFM}");
+        var now = DateTime.UtcNow;
+
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM);
+        if (userInfo?.Registered != null)
+        {
+            await UserRepository.SetUserSignUpTime(user.UserId, userInfo.Registered, connection, userInfo.Subscriber);
+        }
+
+        await SetUserPlaycount(user, connection);
+
+        var plays = await GetPlaysForUserFromLastFm(user);
+        await PlayRepository.InsertAllPlays(plays, user.UserId, connection);
+
+        var artists = await GetArtistsForUserFromLastFm(user);
+        await ArtistRepository.InsertUserArtistsIntoDatabase(artists, user.UserId, connection);
+
+        var albums = await GetAlbumsForUserFromLastFm(user);
+        await AlbumRepository.InsertUserAlbumsIntoDatabase(albums, user.UserId, connection);
+
+        var tracks = await GetTracksForUserFromLastFm(user);
+        await TrackRepository.InsertUserTracksIntoDatabase(tracks, user.UserId, connection);
+
+        var latestScrobbleDate = await GetLatestScrobbleDate(user);
+
+        await UserRepository.SetUserIndexTime(user.UserId, now, latestScrobbleDate, connection);
+
+        await connection.CloseAsync();
+
+        Statistics.IndexedUsers.Inc();
+        this._cache.Remove(concurrencyCacheKey);
+
+        return new IndexedUserStats
+        {
+            PlayCount = plays.Count,
+            ArtistCount = artists.Count,
+            AlbumCount = albums.Count,
+            TrackCount = tracks.Count
+        };
+    }
+
+    private async Task<IReadOnlyList<UserArtist>> GetArtistsForUserFromLastFm(User user)
+    {
+        Log.Information($"Getting artists for user {user.UserNameLastFM}");
+
+        var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 4;
+
+        var topArtists = await this._lastFmRepository.GetTopArtistsAsync(user.UserNameLastFM,
+            TimePeriod.AllTime, 1000, indexLimit);
+
+        if (!topArtists.Success || topArtists.Content.TopArtists == null)
+        {
+            return new List<UserArtist>();
+        }
+
+        return topArtists.Content.TopArtists.Select(a => new UserArtist
+        {
+            Name = a.ArtistName,
+            Playcount = (int)a.UserPlaycount,
+            UserId = user.UserId
+        }).ToList();
+    }
+
+    private async Task<IReadOnlyList<UserPlayTs>> GetPlaysForUserFromLastFm(User user)
+    {
+        Log.Information($"Getting plays for user {user.UserNameLastFM}");
+
+        var pages = UserHasHigherIndexLimit(user) ? 750 : 25;
+
+        var recentPlays = await this._lastFmRepository.GetRecentTracksAsync(user.UserNameLastFM, 1000,
+            sessionKey: user.SessionKeyLastFm, amountOfPages: pages);
+
+        if (!recentPlays.Success || recentPlays.Content.RecentTracks.Count == 0)
+        {
+            return new List<UserPlayTs>();
+        }
+
+        return recentPlays.Content.RecentTracks
+            .Where(w => !w.NowPlaying && w.TimePlayed.HasValue)
+            .Select(t => new UserPlayTs
+            {
+                TrackName = t.TrackName,
+                AlbumName = t.AlbumName,
+                ArtistName = t.ArtistName,
+                TimePlayed = t.TimePlayed.Value,
+                UserId = user.UserId
+            }).ToList();
+    }
+
+    private async Task<IReadOnlyList<UserAlbum>> GetAlbumsForUserFromLastFm(User user)
+    {
+        Log.Information($"Getting albums for user {user.UserNameLastFM}");
+
+        var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 5;
+
+        var topAlbums =
+            await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, TimePeriod.AllTime, 1000, indexLimit);
+
+        if (!topAlbums.Success || topAlbums.Content.TopAlbums == null)
+        {
+            return new List<UserAlbum>();
+        }
+
+        return topAlbums.Content.TopAlbums.Select(a => new UserAlbum
+        {
+            Name = a.AlbumName,
+            ArtistName = a.ArtistName,
+            Playcount = (int)a.UserPlaycount,
+            UserId = user.UserId
+        }).ToList();
+    }
+
+    private async Task<IReadOnlyList<UserTrack>> GetTracksForUserFromLastFm(User user)
+    {
+        Log.Information($"Getting tracks for user {user.UserNameLastFM}");
+
+        var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 6;
+
+        var trackResult = await this._lastFmRepository.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
+
+        if (!trackResult.Success || trackResult.Content.TopTracks.Count == 0)
+        {
+            return new List<UserTrack>();
+        }
+
+        return trackResult.Content.TopTracks.Select(a => new UserTrack
+        {
+            Name = a.TrackName,
+            ArtistName = a.ArtistName,
+            Playcount = Convert.ToInt32(a.UserPlaycount),
+            UserId = user.UserId
+        }).ToList();
+    }
+
+    private async Task<DateTime> GetLatestScrobbleDate(User user)
+    {
+        var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(user.UserNameLastFM, count: 2);
+
+        if (!recentTracks.Success ||
+            recentTracks.Content?.RecentTracks == null ||
+            !recentTracks.Content.RecentTracks.Any(a => a.TimePlayed.HasValue))
+        {
+            Log.Information("Recent track call to get latest scrobble date failed!");
+            return DateTime.UtcNow;
+        }
+
+        return recentTracks.Content.RecentTracks.First(f => f.TimePlayed != null).TimePlayed.Value;
+    }
+
+    private async Task SetUserPlaycount(User user, NpgsqlConnection connection)
+    {
+        var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(
+            user.UserNameLastFM,
+            count: 1,
+            useCache: false,
+            user.SessionKeyLastFm);
+
+        if (recentTracks.Success)
+        {
+            await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
+
+            await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static bool UserHasHigherIndexLimit(User user)
+    {
+        return user.UserType switch
+        {
+            UserType.Supporter => true,
+            UserType.Contributor => true,
+            UserType.Admin => true,
+            UserType.Owner => true,
+            UserType.User => false,
+            _ => false
+        };
     }
 
     public async Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
@@ -386,7 +592,21 @@ public class IndexService : IIndexService
             return null;
         }
 
-        return await this._indexRepository.SetUserSignUpTime(user);
+        return await SetUserSignUpTime(user);
+    }
+
+    private async Task<DateTime?> SetUserSignUpTime(User user)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM);
+        if (userInfo?.Registered != null)
+        {
+            return await UserRepository.SetUserSignUpTime(user.UserId, userInfo.Registered, connection, userInfo.Subscriber);
+        }
+
+        return null;
     }
 
     public async Task<IReadOnlyList<User>> GetUsersToFullyUpdate(IReadOnlyCollection<IGuildUser> discordGuildUsers)

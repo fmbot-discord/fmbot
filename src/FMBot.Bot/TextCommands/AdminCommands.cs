@@ -687,9 +687,9 @@ public class AdminCommands : BaseCommandModule
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user);
 
             DateTimeOffset? age = null;
-            if (userInfo != null && userInfo.Subscriber != 0)
+            if (userInfo != null && userInfo.Subscriber)
             {
-                age = DateTimeOffset.FromUnixTimeSeconds(userInfo.Registered.Text);
+                age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
             }
 
             if (bottedUser == null)

@@ -16,8 +16,9 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Enums;
+using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
@@ -44,8 +45,8 @@ public class TrackService
     private readonly TimerService _timer;
     private readonly AlbumService _albumService;
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
-    private readonly UpdateRepository _updateRepository;
     private readonly ArtistsService _artistsService;
+    private readonly IUpdateService _updateService;
 
     public TrackService(HttpClient httpClient,
         LastFmRepository lastFmRepository,
@@ -57,8 +58,8 @@ public class TrackService
         TimerService timer,
         AlbumService albumService,
         WhoKnowsTrackService whoKnowsTrackService,
-        UpdateRepository updateRepository,
-        ArtistsService artistsService)
+        ArtistsService artistsService,
+        IUpdateService updateService)
     {
         this._lastFmRepository = lastFmRepository;
         this._spotifyService = spotifyService;
@@ -70,8 +71,8 @@ public class TrackService
         this._timer = timer;
         this._albumService = albumService;
         this._whoKnowsTrackService = whoKnowsTrackService;
-        this._updateRepository = updateRepository;
         this._artistsService = artistsService;
+        this._updateService = updateService;
     }
 
     public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string trackValues,
@@ -135,7 +136,7 @@ public class TrackService
 
             if (userId.HasValue && otherUserUsername == null)
             {
-                recentScrobbles = await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId.Value));
+                recentScrobbles = await this._updateService.UpdateUser(new UpdateUserQueueItem(userId.Value));
             }
             else
             {

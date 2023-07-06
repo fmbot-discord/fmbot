@@ -7,12 +7,13 @@ using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Enums;
-using FMBot.LastFM.Domain.Types;
+using FMBot.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -34,7 +35,7 @@ public class ArtistsService
     private readonly LastFmRepository _lastFmRepository;
     private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly TimerService _timer;
-    private readonly UpdateRepository _updateRepository;
+    private readonly IUpdateService _updateService;
 
     public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
@@ -43,7 +44,7 @@ public class ArtistsService
         LastFmRepository lastFmRepository,
         WhoKnowsArtistService whoKnowsArtistService,
         TimerService timer,
-        UpdateRepository updateRepository)
+        IUpdateService updateService)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
@@ -51,7 +52,7 @@ public class ArtistsService
         this._lastFmRepository = lastFmRepository;
         this._whoKnowsArtistService = whoKnowsArtistService;
         this._timer = timer;
-        this._updateRepository = updateRepository;
+        this._updateService = updateService;
         this._botSettings = botSettings.Value;
     }
 
@@ -120,7 +121,7 @@ public class ArtistsService
 
             if (userId.HasValue && otherUserUsername == null)
             {
-                recentScrobbles = await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId.Value, getAccurateTotalPlaycount: false));
+                recentScrobbles = await this._updateService.UpdateUser(new UpdateUserQueueItem(userId.Value, getAccurateTotalPlaycount: false));
             }
             else
             {

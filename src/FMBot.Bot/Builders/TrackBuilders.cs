@@ -685,7 +685,7 @@ public class TrackBuilders
         }
         else
         {
-            var trackLoved = await this._lastFmRepository.LoveTrackAsync(context.ContextUser, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+            var trackLoved = await this._lastFmRepository.LoveTrackAsync(context.ContextUser.SessionKeyLastFm, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
 
             if (trackLoved)
             {
@@ -728,7 +728,7 @@ public class TrackBuilders
         }
         else
         {
-            var trackLoved = await this._lastFmRepository.UnLoveTrackAsync(context.ContextUser, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+            var trackLoved = await this._lastFmRepository.UnLoveTrackAsync(context.ContextUser.SessionKeyLastFm, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
 
             if (trackLoved)
             {

@@ -531,7 +531,7 @@ public class FeaturedService
 
             if (botUser?.SessionKeyLastFm != null)
             {
-                await this._lastFmRepository.ScrobbleAsync(botUser, featuredLog.ArtistName, featuredLog.TrackName, featuredLog.AlbumName);
+                await this._lastFmRepository.ScrobbleAsync(botUser.SessionKeyLastFm, featuredLog.ArtistName, featuredLog.TrackName, featuredLog.AlbumName);
             }
         }
         catch (Exception exception)

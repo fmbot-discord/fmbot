@@ -194,9 +194,9 @@ public class AdminSlashCommands : InteractionModuleBase
 
         var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(report.UserNameLastFM);
         DateTimeOffset? age = null;
-        if (userInfo != null && userInfo.Subscriber != 0)
+        if (userInfo != null && userInfo.Subscriber)
         {
-            age = DateTimeOffset.FromUnixTimeSeconds(userInfo.Registered.Text);
+            age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
         }
 
         var result = await this._adminService.AddBottedUserAsync(report.UserNameLastFM, modal.Note, age?.DateTime);

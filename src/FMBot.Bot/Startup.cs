@@ -180,16 +180,14 @@ public class Startup
             .AddSingleton<WhoKnowsArtistService>()
             .AddSingleton<WhoKnowsPlayService>()
             .AddSingleton<WhoKnowsTrackService>()
-            .AddSingleton<YoutubeService>() // Add random to the collection
+            .AddSingleton<YoutubeService>()
+            .AddSingleton<IUpdateService, UpdateService>()
             .AddSingleton<IConfiguration>(this.Configuration);
 
         // These services can only be added after the config is loaded
         services
             .AddSingleton<InteractionHandler>()
-            .AddSingleton<IndexRepository>()
-            .AddSingleton<SmallIndexRepository>()
-            .AddSingleton<UpdateRepository>()
-            .AddSingleton<IUpdateService, UpdateService>();
+            .AddSingleton<SmallIndexRepository>();
 
         services.AddHttpClient<ILastfmApi, LastfmApi>();
         services.AddHttpClient<ChartService>();

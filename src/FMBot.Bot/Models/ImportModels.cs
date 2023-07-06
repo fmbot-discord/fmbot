@@ -3,12 +3,6 @@ using System;
 
 namespace FMBot.Bot.Models;
 
-public enum ImportSetting
-{
-    FullSpotifyThenLastFm = 0,
-    SpotifyThenFullLastFm = 1
-}
-
 public class SpotifyImportModel
 {
     [JsonPropertyName("ts")]

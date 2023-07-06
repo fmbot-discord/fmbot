@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using FMBot.LastFM.Domain.Enums;
+using FMBot.Domain.Enums;
 
-namespace FMBot.LastFM.Domain.Types;
+namespace FMBot.Domain.Types;
 
 public class Response<T>
 {

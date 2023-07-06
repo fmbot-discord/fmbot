@@ -6,12 +6,14 @@ using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Enums;
+using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
@@ -35,8 +37,8 @@ public class AlbumService
     private readonly TimerService _timer;
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly UpdateRepository _updateRepository;
     private readonly ArtistsService _artistsService;
+    private readonly IUpdateService _updateService;
 
     public AlbumService(IMemoryCache cache,
         IOptions<BotSettings> botSettings,
@@ -45,8 +47,8 @@ public class AlbumService
         TimerService timer,
         WhoKnowsAlbumService whoKnowsAlbumService,
         IDbContextFactory<FMBotDbContext> contextFactory,
-        UpdateRepository updateRepository,
-        ArtistsService artistsService)
+        ArtistsService artistsService,
+        IUpdateService updateService)
     {
         this._cache = cache;
         this._albumRepository = albumRepository;
@@ -54,8 +56,8 @@ public class AlbumService
         this._timer = timer;
         this._whoKnowsAlbumService = whoKnowsAlbumService;
         this._contextFactory = contextFactory;
-        this._updateRepository = updateRepository;
         this._artistsService = artistsService;
+        this._updateService = updateService;
         this._botSettings = botSettings.Value;
     }
 
@@ -134,7 +136,7 @@ public class AlbumService
 
             if (userId.HasValue && otherUserUsername == null)
             {
-                recentScrobbles = await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId.Value));
+                recentScrobbles = await this._updateService.UpdateUser(new UpdateUserQueueItem(userId.Value));
             }
             else
             {
@@ -191,9 +193,9 @@ public class AlbumService
         }
 
         var result = await this._lastFmRepository.SearchAlbumAsync(searchValue);
-        if (result.Success && result.Content.Any())
+        if (result.Success && result.Content != null)
         {
-            var album = result.Content[0];
+            var album = result.Content;
 
             if (otherUserUsername != null)
             {
@@ -203,11 +205,11 @@ public class AlbumService
             Response<AlbumInfo> albumInfo;
             if (useCachedAlbums)
             {
-                albumInfo = await GetCachedAlbum(album.ArtistName, album.Name, lastFmUserName, userId);
+                albumInfo = await GetCachedAlbum(album.ArtistName, album.AlbumName, lastFmUserName, userId);
             }
             else
             {
-                albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(album.ArtistName, album.Name,
+                albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(album.ArtistName, album.AlbumName,
                     lastFmUserName);
             }
 
@@ -223,7 +225,7 @@ public class AlbumService
             return new AlbumSearch(null, response);
         }
 
-        response.Embed.WithDescription($"Last.fm returned an error: {result.Status}");
+        response.Embed.WithDescription($"Last.fm returned an error: {result.Error}");
         response.CommandResponse = CommandResponse.LastFmError;
         response.ResponseType = ResponseType.Embed;
         return new AlbumSearch(null, response);

@@ -16,6 +16,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;

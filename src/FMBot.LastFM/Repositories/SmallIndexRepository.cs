@@ -38,7 +38,6 @@ public class SmallIndexRepository
 
     public async Task SmallIndexUser(User indexUser)
     {
-
         var concurrencyCacheKey = $"small-index-started-{indexUser.UserId}";
         this._cache.Set(concurrencyCacheKey, true, TimeSpan.FromMinutes(1));
 

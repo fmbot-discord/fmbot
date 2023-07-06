@@ -454,10 +454,9 @@ public class UserBuilder
 
         var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
 
-        var userAvatar = userInfo.Image?.FirstOrDefault(f => f.Size == "extralarge");
-        if (!string.IsNullOrWhiteSpace(userAvatar?.Text))
+        if (!string.IsNullOrWhiteSpace(userInfo.Image))
         {
-            response.Embed.WithThumbnailUrl(userAvatar.Text);
+            response.Embed.WithThumbnailUrl(userInfo.Image);
         }
 
         var description = new StringBuilder();
@@ -489,18 +488,18 @@ public class UserBuilder
         var lastFmStats = new StringBuilder();
         lastFmStats.AppendLine($"Name: **{userInfo.Name}**");
         lastFmStats.AppendLine($"Username: **[{userSettings.UserNameLastFm}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})**");
-        if (userInfo.Subscriber != 0)
+        if (userInfo.Subscriber)
         {
             lastFmStats.AppendLine("Last.fm Pro subscriber");
         }
 
         lastFmStats.AppendLine($"Country: **{userInfo.Country}**");
 
-        lastFmStats.AppendLine($"Registered: **<t:{userInfo.Registered.Text}:D>** (<t:{userInfo.Registered.Text}:R>)");
+        lastFmStats.AppendLine($"Registered: **<t:{userInfo.RegisteredUnix}:D>** (<t:{userInfo.RegisteredUnix}:R>)");
 
         response.Embed.AddField("Last.fm info", lastFmStats.ToString(), true);
 
-        var age = DateTimeOffset.FromUnixTimeSeconds(userInfo.Registered.Text);
+        var age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
         var totalDays = (DateTime.UtcNow - age).TotalDays;
         var avgPerDay = userInfo.Playcount / totalDays;
 

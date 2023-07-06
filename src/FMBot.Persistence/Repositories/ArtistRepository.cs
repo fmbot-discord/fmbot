@@ -6,6 +6,8 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using PostgreSQLCopyHelper;
+using Serilog;
 
 namespace FMBot.Persistence.Repositories;
 
@@ -16,6 +18,22 @@ public class ArtistRepository
     public ArtistRepository(IOptions<BotSettings> botSettings)
     {
         this._botSettings = botSettings.Value;
+    }
+
+    public static async Task InsertUserArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId,
+        NpgsqlConnection connection)
+    {
+        Log.Information($"Inserting {artists.Count} artists for user {userId}");
+
+        var copyHelper = new PostgreSQLCopyHelper<UserArtist>("public", "user_artists")
+            .MapText("name", x => x.Name)
+            .MapInteger("user_id", x => x.UserId)
+            .MapInteger("playcount", x => x.Playcount);
+
+        await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {userId};", connection);
+        await deleteCurrentArtists.ExecuteNonQueryAsync();
+
+        await copyHelper.SaveAllAsync(connection, artists);
     }
 
     public async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection, bool includeGenres = false)

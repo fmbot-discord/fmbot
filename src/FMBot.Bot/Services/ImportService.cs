@@ -60,7 +60,7 @@ public class ImportService
                     ArtistName = spotifyPlay.MasterMetadataAlbumArtistName,
                     AlbumName = spotifyPlay.MasterMetadataAlbumAlbumName,
                     TrackName = spotifyPlay.MasterMetadataTrackName,
-                    PlaySource = PlaySource.Spotify,
+                    PlaySource = PlaySource.SpotifyImport,
                     MsPlayed = spotifyPlay.MsPlayed
                 });
             }

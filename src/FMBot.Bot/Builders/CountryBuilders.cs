@@ -11,6 +11,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.Domain.Types;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Extensions;
