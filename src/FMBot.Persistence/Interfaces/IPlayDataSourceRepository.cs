@@ -28,7 +28,7 @@ public interface IPlayDataSourceRepository
         TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(User user,
-        TimePeriod timePeriod, int count = 2, int amountOfPages = 1);
+        TimePeriod timePeriod, int playDays, int count = 2, int amountOfPages = 1);
 
     Task<Response<TopAlbumList>> GetTopAlbumsForCustomTimePeriodAsyncAsync(User user,
         DateTime startDateTime, DateTime endDateTime, int count);
@@ -44,9 +44,6 @@ public interface IPlayDataSourceRepository
 
     Task<Response<TopTrackList>> GetTopTracksAsync(User user,
         TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1);
-
-    Task<Response<TopTrackList>> GetTopTracksAsync(User user,
-        string period, int count = 2, int amountOfPages = 1);
 
     Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(User user,
         DateTime startDateTime, DateTime endDateTime, int count);

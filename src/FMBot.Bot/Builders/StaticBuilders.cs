@@ -10,8 +10,8 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Extensions;
 
 namespace FMBot.Bot.Builders;
 

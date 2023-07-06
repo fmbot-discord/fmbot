@@ -36,17 +36,11 @@ public interface IDataSourceFactory
     Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
         TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1);
 
-    Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
-        TimePeriod timePeriod, long count = 2, long amountOfPages = 1);
-
     Task<Response<TopArtistList>> GetTopArtistsForCustomTimePeriodAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count);
 
     Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
         TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1);
-
-    Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
-        string period, int count = 2, int amountOfPages = 1);
 
     Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count);

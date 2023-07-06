@@ -1,6 +1,6 @@
 using System.Text.Encodings.Web;
 
-namespace FMBot.LastFM.Extensions;
+namespace FMBot.Domain.Extensions;
 
 public static class LastfmUrlExtensions
 {

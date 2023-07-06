@@ -117,7 +117,9 @@ public static class PlayRepository
             .MapText("album_name", x => x.AlbumName)
             .MapText("artist_name", x => x.ArtistName)
             .MapTimeStampTz("time_played", x => DateTime.SpecifyKind(x.TimePlayed, DateTimeKind.Utc))
-            .MapInteger("user_id", x => x.UserId);
+            .MapInteger("user_id", x => x.UserId)
+            .MapBigInt("ms_played", x => x.MsPlayed)
+            .MapInteger("play_source", x => (int?)x.PlaySource);
 
         await copyHelper.SaveAllAsync(connection, plays);
     }
@@ -148,5 +150,15 @@ public static class PlayRepository
             start,
             end
         })).ToList();
+    }
+
+    public static async Task SetDefaultSourceForPlays(int userId, NpgsqlConnection connection)
+    {
+        const string sql = "UPDATE public.user_play_ts SET play_source = 0 WHERE user_id = @userId AND play_source IS null";
+
+        await connection.ExecuteAsync(sql, new
+        {
+            userId,
+        });
     }
 }

@@ -36,6 +36,7 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 using FMBot.Domain.Interfaces;
 using System.Collections.Generic;
+using FMBot.Bot.Factories;
 using FMBot.Domain.Enums;
 using FMBot.Persistence.Interfaces;
 
@@ -186,6 +187,8 @@ public class Startup
             .AddSingleton<WhoKnowsTrackService>()
             .AddSingleton<YoutubeService>()
             .AddSingleton<IUpdateService, UpdateService>()
+            .AddSingleton<IDataSourceFactory, DataSourceFactory>()
+            .AddSingleton<IPlayDataSourceRepository, PlayDataSourceRepository>()
             .AddSingleton<IConfiguration>(this.Configuration);
 
         // These services can only be added after the config is loaded
@@ -198,7 +201,7 @@ public class Startup
         services.AddHttpClient<InvidiousApi>();
         services.AddHttpClient<ImportService>();
         services.AddHttpClient<DiscogsApi>();
-        services.AddHttpClient<LastFmRepository>();
+        services.AddHttpClient<ILastfmRepository, LastFmRepository>();
         services.AddHttpClient<TrackService>();
         services.AddHttpClient<DiscordSkuService>();
         services.AddHttpClient<OpenCollectiveService>();

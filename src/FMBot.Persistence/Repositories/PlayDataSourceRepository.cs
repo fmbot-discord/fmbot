@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.Persistence.Domain.Models;
@@ -127,7 +128,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         throw new NotImplementedException();
     }
 
-    public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(User user, TimePeriod timePeriod, int count = 2, int amountOfPages = 1)
+    public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(User user, TimePeriod timePeriod, int playDays, int count = 2, int amountOfPages = 1)
     {
         throw new NotImplementedException();
     }
@@ -176,8 +177,11 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                     .Select(s => new TopArtist
                     {
                         ArtistName = s.First().ArtistName,
-                        UserPlaycount = s.Count()
-                    }).ToList()
+                        UserPlaycount = s.Count(),
+                        ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.First().ArtistName)
+                    })
+                    .OrderByDescending(o => o.UserPlaycount)
+                    .ToList()
             }
         };
     }
@@ -201,18 +205,16 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                     .Select(s => new TopArtist
                     {
                         ArtistName = s.First().ArtistName,
-                        UserPlaycount = s.Count()
-                    }).ToList()
+                        UserPlaycount = s.Count(),
+                        ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.First().ArtistName)
+                    })
+                    .OrderByDescending(o => o.UserPlaycount)
+                    .ToList()
             }
         };
     }
 
     public async Task<Response<TopTrackList>> GetTopTracksAsync(User user, TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<Response<TopTrackList>> GetTopTracksAsync(User user, string period, int count = 2, int amountOfPages = 1)
     {
         throw new NotImplementedException();
     }

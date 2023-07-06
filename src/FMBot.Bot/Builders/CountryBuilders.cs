@@ -10,11 +10,11 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.Images.Generators;
-using FMBot.LastFM.Extensions;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 

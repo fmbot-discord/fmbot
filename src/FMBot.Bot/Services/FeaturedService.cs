@@ -3,19 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using Discord;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Extensions;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using Google.Apis.Discovery;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
@@ -25,6 +20,7 @@ namespace FMBot.Bot.Services;
 public class FeaturedService
 {
     private readonly IDataSourceFactory _dataSourceFactory;
+    private readonly ILastfmRepository _lastfmRepository;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly CensorService _censorService;
     private readonly UserService _userService;
@@ -33,13 +29,14 @@ public class FeaturedService
     public FeaturedService(IDataSourceFactory dataSourceFactory,
         IDbContextFactory<FMBotDbContext> contextFactory,
         CensorService censorService,
-        UserService userService, IMemoryCache cache)
+        UserService userService, IMemoryCache cache, ILastfmRepository lastfmRepository)
     {
         this._dataSourceFactory = dataSourceFactory;
         this._contextFactory = contextFactory;
         this._censorService = censorService;
         this._userService = userService;
         this._cache = cache;
+        this._lastfmRepository = lastfmRepository;
     }
 
     public async Task<FeaturedLog> NewFeatured(DateTime? dateTime = null)
@@ -97,7 +94,7 @@ public class FeaturedService
             {
                 // Recent listens
                 case FeaturedMode.RecentPlays:
-                    var tracks = await this._dataSourceFactory.GetRecentTracksAsync(user.UserNameLastFM, 50, sessionKey: user.SessionKeyLastFm);
+                    var tracks = await this._lastfmRepository.GetRecentTracksAsync(user.UserNameLastFM, 50, sessionKey: user.SessionKeyLastFm);
 
                     if (!tracks.Success || tracks.Content?.RecentTracks == null)
                     {
@@ -161,13 +158,13 @@ public class FeaturedService
                             break;
                     }
 
-                    var albums = await this._dataSourceFactory.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
+                    var albums = await this._lastfmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
 
                     if (!albums.Success || albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
                     {
                         Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
                         user = await GetUserToFeatureAsync(Constants.DaysLastUsedForFeatured + (supporterDay ? 6 : 0), supporterDay);
-                        albums = await this._dataSourceFactory.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
+                        albums = await this._lastfmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
                     }
 
                     var albumList = albums.Content.TopAlbums.ToList();

@@ -197,6 +197,7 @@ public class SpotifySlashCommands : InteractionModuleBase
 
         if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
         {
+            await RespondAsync("Not available yet!");
             return;
         }
 
@@ -212,9 +213,20 @@ public class SpotifySlashCommands : InteractionModuleBase
         try
         {
             var imports = await this._importService.HandleSpotifyFiles(attachments);
+
             var plays = await this._importService.SpotifyImportToUserPlays(contextUser.UserId, imports);
 
-            await FollowupAsync($"Found {imports.Count} imports and converted them to {plays.Count} valid plays");
+            var playsWithoutDuplicates =
+                await this._importService.RemoveDuplicateSpotifyImports(contextUser.UserId, plays);
+
+            await this._importService.InsertImportPlays(playsWithoutDuplicates);
+
+            await this._importService.UpdateExistingPlays(contextUser.UserId);
+
+            await FollowupAsync($"Result:\n" +
+                                $"- {imports.Count} imports\n" +
+                                $"- {plays.Count} valid plays\n" +
+                                $"- {playsWithoutDuplicates.Count} new plays found");
         }
         catch (Exception e)
         {

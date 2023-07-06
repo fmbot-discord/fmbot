@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Domain;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -22,11 +23,11 @@ public class SmallIndexRepository
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly string _connectionString;
 
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly ILastfmRepository _lastFmRepository;
 
     public SmallIndexRepository(
         IConfiguration configuration,
-        LastFmRepository lastFmRepository,
+        ILastfmRepository lastFmRepository,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache)
     {

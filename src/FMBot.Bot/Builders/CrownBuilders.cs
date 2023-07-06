@@ -10,8 +10,8 @@ using System;
 using System.Linq;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
-using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 
 namespace FMBot.Bot.Builders;

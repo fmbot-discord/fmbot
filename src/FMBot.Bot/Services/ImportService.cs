@@ -79,6 +79,30 @@ public class ImportService
         return userPlays;
     }
 
+    public async Task<List<UserPlayTs>> RemoveDuplicateSpotifyImports(int userId, IEnumerable<UserPlayTs> userPlays)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var existingPlays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+
+        var timestamps = existingPlays
+            .Select(s => s.TimePlayed)
+            .ToHashSet();
+
+        return userPlays
+            .Where(w => !timestamps.Contains(w.TimePlayed))
+            .ToList();
+    }
+
+    public async Task UpdateExistingPlays(int userId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.SetDefaultSourceForPlays(userId, connection);
+    }
+
     public async Task InsertImportPlays(IEnumerable<UserPlayTs> plays)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

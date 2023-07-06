@@ -92,14 +92,6 @@ public class UserService
             .FirstOrDefaultAsync(f => f.UserId == userId);
     }
 
-    public async Task<User> GetImportUserForLastFmUserName(string lastFmUserName)
-    {
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        return await UserRepository.GetImportUserForLastFmUserName(lastFmUserName, connection);
-    }
-
     public async Task<User> GetUserWithDiscogs(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
