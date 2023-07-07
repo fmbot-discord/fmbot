@@ -8,6 +8,7 @@ using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -26,10 +27,11 @@ public class SpotifySlashCommands : InteractionModuleBase
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly ImportService _importService;
     private readonly PlayService _playService;
+    private readonly IIndexService _indexService;
 
     private InteractiveService Interactivity { get; }
 
-    public SpotifySlashCommands(InteractiveService interactivity, SpotifyService spotifyService, UserService userService, IDataSourceFactory dataSourceFactory, ImportService importService, PlayService playService)
+    public SpotifySlashCommands(InteractiveService interactivity, SpotifyService spotifyService, UserService userService, IDataSourceFactory dataSourceFactory, ImportService importService, PlayService playService, IIndexService indexService)
     {
         this.Interactivity = interactivity;
         this._spotifyService = spotifyService;
@@ -37,6 +39,7 @@ public class SpotifySlashCommands : InteractionModuleBase
         this._dataSourceFactory = dataSourceFactory;
         this._importService = importService;
         this._playService = playService;
+        this._indexService = indexService;
     }
 
     public enum SpotifySearch
@@ -244,13 +247,16 @@ public class SpotifySlashCommands : InteractionModuleBase
 
             var playsWithoutDuplicates =
                 await this._importService.RemoveDuplicateSpotifyImports(contextUser.UserId, plays);
-            await UpdateImportEmbed(message, embed, description, $"- **{playsWithoutDuplicates.Count}** after filtering already imported");
+            await UpdateImportEmbed(message, embed, description, $"- **{playsWithoutDuplicates.Count}** new plays found");
 
             if (playsWithoutDuplicates.Count > 0)
             {
                 await this._importService.InsertImportPlays(playsWithoutDuplicates);
                 await UpdateImportEmbed(message, embed, description, $"- Added plays to database");
             }
+
+            await this._indexService.RecalculateTopLists(contextUser);
+            await UpdateImportEmbed(message, embed, description, $"- Recalculated top lists");
 
             await this._importService.UpdateExistingPlays(contextUser.UserId);
 

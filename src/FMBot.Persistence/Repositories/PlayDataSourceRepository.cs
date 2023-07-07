@@ -170,6 +170,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
             Content = new TopAlbumList
             {
                 TopAlbums = plays
+                    .Where(w => w.AlbumName != null)
                     .GroupBy(g => new
                     {
                         ArtistName = g.ArtistName.ToLower(),
