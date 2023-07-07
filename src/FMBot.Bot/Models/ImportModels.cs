@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using System;
+using FMBot.Domain.Enums;
 
 namespace FMBot.Bot.Models;
 

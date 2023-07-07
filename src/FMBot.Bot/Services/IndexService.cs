@@ -115,34 +115,42 @@ public class IndexService : IIndexService
 
         await SetUserPlaycount(user, connection);
 
-        var plays = await GetPlaysForUserFromLastFm(user);
-        await PlayRepository.ReplaceAllPlays(plays, user.UserId, connection);
-
-        var artists = await GetArtistsForUserFromLastFm(user);
-        await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
-
-        var albums = await GetAlbumsForUserFromLastFm(user);
-        await AlbumRepository.AddOrReplaceUserAlbumsInDatabase(albums, user.UserId, connection);
-
-        var tracks = await GetTracksForUserFromLastFm(user);
-        await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
-
-        var latestScrobbleDate = await GetLatestScrobbleDate(user);
-
-        await UserRepository.SetUserIndexTime(user.UserId, now, latestScrobbleDate, connection);
-
-        await connection.CloseAsync();
-
-        Statistics.IndexedUsers.Inc();
-        this._cache.Remove(concurrencyCacheKey);
-
-        return new IndexedUserStats
+        try
         {
-            PlayCount = plays.Count,
-            ArtistCount = artists.Count,
-            AlbumCount = albums.Count,
-            TrackCount = tracks.Count
-        };
+            var plays = await GetPlaysForUserFromLastFm(user);
+            await PlayRepository.ReplaceAllPlays(plays, user.UserId, connection);
+
+            var artists = await GetArtistsForUserFromLastFm(user);
+            await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
+
+            var albums = await GetAlbumsForUserFromLastFm(user);
+            await AlbumRepository.AddOrReplaceUserAlbumsInDatabase(albums, user.UserId, connection);
+
+            var tracks = await GetTracksForUserFromLastFm(user);
+            await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
+
+            var latestScrobbleDate = await GetLatestScrobbleDate(user);
+
+            await UserRepository.SetUserIndexTime(user.UserId, now, latestScrobbleDate, connection);
+
+            await connection.CloseAsync();
+
+            Statistics.IndexedUsers.Inc();
+            this._cache.Remove(concurrencyCacheKey);
+
+            return new IndexedUserStats
+            {
+                PlayCount = plays.Count,
+                ArtistCount = artists.Count,
+                AlbumCount = albums.Count,
+                TrackCount = tracks.Count
+            };
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     private async Task<IReadOnlyList<UserArtist>> GetArtistsForUserFromLastFm(User user)

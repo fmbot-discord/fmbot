@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -8,8 +9,10 @@ using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using SpotifyAPI.Web;
@@ -22,16 +25,18 @@ public class SpotifySlashCommands : InteractionModuleBase
     private readonly UserService _userService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly ImportService _importService;
+    private readonly PlayService _playService;
 
     private InteractiveService Interactivity { get; }
 
-    public SpotifySlashCommands(InteractiveService interactivity, SpotifyService spotifyService, UserService userService, IDataSourceFactory dataSourceFactory, ImportService importService)
+    public SpotifySlashCommands(InteractiveService interactivity, SpotifyService spotifyService, UserService userService, IDataSourceFactory dataSourceFactory, ImportService importService, PlayService playService)
     {
         this.Interactivity = interactivity;
         this._spotifyService = spotifyService;
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
         this._importService = importService;
+        this._playService = playService;
     }
 
     public enum SpotifySearch
@@ -212,25 +217,98 @@ public class SpotifySlashCommands : InteractionModuleBase
 
         try
         {
+            var embed = new EmbedBuilder();
+            var description = new StringBuilder();
+
+            embed.WithTitle("Importing Spotify... (Beta)");
+            embed.WithColor(DiscordConstants.SpotifyColorGreen);
+            embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
+            var message = await FollowupAsync(embed: embed.Build());
+
             var imports = await this._importService.HandleSpotifyFiles(attachments);
 
-            var plays = await this._importService.SpotifyImportToUserPlays(contextUser.UserId, imports);
+            if (!imports.success)
+            {
+                embed.WithColor(DiscordConstants.WarningColorOrange);
+                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file. Make sure you select the right files, for example `endsong_1.json`.", true);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+            else
+            {
+                await UpdateImportEmbed(message, embed, description, $"- **{imports.result.Count}** Spotify imports found");
+            }
+
+            var plays = await this._importService.SpotifyImportToUserPlays(contextUser.UserId, imports.result);
+            await UpdateImportEmbed(message, embed, description, $"- **{plays.Count}** actual plays found");
 
             var playsWithoutDuplicates =
                 await this._importService.RemoveDuplicateSpotifyImports(contextUser.UserId, plays);
+            await UpdateImportEmbed(message, embed, description, $"- **{playsWithoutDuplicates.Count}** after filtering already imported");
 
-            await this._importService.InsertImportPlays(playsWithoutDuplicates);
+            if (playsWithoutDuplicates.Count > 0)
+            {
+                await this._importService.InsertImportPlays(playsWithoutDuplicates);
+                await UpdateImportEmbed(message, embed, description, $"- Added plays to database");
+            }
 
             await this._importService.UpdateExistingPlays(contextUser.UserId);
 
-            await FollowupAsync($"Result:\n" +
-                                $"- {imports.Count} imports\n" +
-                                $"- {plays.Count} valid plays\n" +
-                                $"- {playsWithoutDuplicates.Count} new plays found");
+            var files = new StringBuilder();
+            foreach (var attachment in attachments
+                         .Where(w => w != null)
+                         .OrderBy(o => o.Filename))
+            {
+                files.AppendLine($"`{attachment.Filename}`");
+            }
+
+            embed.AddField("Processed files", files.ToString());
+
+            var years = new StringBuilder();
+            var allPlays = await this._playService
+                .GetAllUserPlays(contextUser.UserId);
+
+            var yearGroups = allPlays
+                .Where(w => w.PlaySource == PlaySource.SpotifyImport)
+                .OrderByDescending(o => o.TimePlayed)
+                .GroupBy(g => g.TimePlayed.Year);
+
+            foreach (var year in yearGroups)
+            {
+                years.AppendLine(
+                    $"**`{year.Key}`** " +
+                    $"- **{year.Count()}** plays");
+            }
+            if (years.Length > 0)
+            {
+                embed.AddField("Total imported plays", years.ToString());
+            }
+
+            await UpdateImportEmbed(message, embed, description, $"- ✅ Import complete", true);
+            this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
+    }
+
+    private static async Task UpdateImportEmbed(IUserMessage msg, EmbedBuilder embed, StringBuilder builder, string lineToAdd, bool lastLine = false)
+    {
+        const string loadingLine = "- <a:loading:821676038102056991> Processing...";
+        builder.Replace($"\r\n{loadingLine}", "");
+        builder.AppendLine(lineToAdd);
+
+        if (!lastLine)
+        {
+            builder.AppendLine(loadingLine);
+        }
+
+        embed.WithDescription(builder.ToString());
+
+        await msg.ModifyAsync(m =>
+        {
+            m.Embed = embed.Build();
+        });
     }
 }

@@ -12,6 +12,7 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.Repositories;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using Serilog;
 
 namespace FMBot.Bot.Services;
 
@@ -28,20 +29,28 @@ public class ImportService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<List<SpotifyImportModel>> HandleSpotifyFiles(IEnumerable<IAttachment> attachments)
+    public async Task<(bool success, List<SpotifyImportModel> result)> HandleSpotifyFiles(IEnumerable<IAttachment> attachments)
     {
-        var spotifyPlays = new List<SpotifyImportModel>();
-
-        foreach (var attachment in attachments.Where(w => w?.Url != null))
+        try
         {
-            await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
+            var spotifyPlays = new List<SpotifyImportModel>();
 
-            var result = await JsonSerializer.DeserializeAsync<List<SpotifyImportModel>>(stream);
+            foreach (var attachment in attachments.Where(w => w?.Url != null))
+            {
+                await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
 
-            spotifyPlays.AddRange(result);
+                var result = await JsonSerializer.DeserializeAsync<List<SpotifyImportModel>>(stream);
+
+                spotifyPlays.AddRange(result);
+            }
+
+            return (true, spotifyPlays);
         }
-
-        return spotifyPlays;
+        catch (Exception e)
+        {
+            Log.Error("Error while attempting to process Spotify import file", e);
+            return (false, null);
+        }
     }
 
     public async Task<List<UserPlayTs>> SpotifyImportToUserPlays(int userId, List<SpotifyImportModel> spotifyPlays)
@@ -87,6 +96,7 @@ public class ImportService
         var existingPlays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
 
         var timestamps = existingPlays
+            .Where(w => w.PlaySource == PlaySource.SpotifyImport)
             .Select(s => s.TimePlayed)
             .ToHashSet();
 

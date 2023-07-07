@@ -1,11 +1,9 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using FMBot.Bot.Services;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
-using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.Interfaces;
 using FMBot.Persistence.Repositories;
 using Microsoft.Extensions.Options;
@@ -26,12 +24,19 @@ public class DataSourceFactory : IDataSourceFactory
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<User> GetImportUserForLastFmUserName(string lastFmUserName)
+    public async Task<ImportUser> GetImportUserForLastFmUserName(string lastFmUserName)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await UserRepository.GetImportUserForLastFmUserName(lastFmUserName, connection);
+        var importUser = await UserRepository.GetImportUserForLastFmUserName(lastFmUserName, connection);
+
+        if (!importUser.LastImportPlay.HasValue)
+        {
+            return null;
+        }
+
+        return importUser;
     }
 
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null,
@@ -62,7 +67,14 @@ public class DataSourceFactory : IDataSourceFactory
 
     public async Task<DataSourceUser> GetLfmUserInfoAsync(string lastFmUserName)
     {
-        throw new NotImplementedException();
+        //var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
+
+        //if (importUser != null)
+        //{
+        //    return await this._playDataSourceRepository.GetLfmUserInfoAsync(importUser);
+        //}
+
+        return await this._lastfmRepository.GetLfmUserInfoAsync(lastFmUserName);
     }
 
     public async Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery)
@@ -92,27 +104,36 @@ public class DataSourceFactory : IDataSourceFactory
 
     public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName, TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
     {
-        throw new NotImplementedException();
-    }
+        var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 
-    public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName, TimePeriod timePeriod, int count = 2, int amountOfPages = 1)
-    {
-        throw new NotImplementedException();
+        if (importUser != null && timeSettings.StartDateTime < importUser.LastImportPlay)
+        {
+            return await this._playDataSourceRepository.GetTopAlbumsAsync(importUser, timeSettings, count * amountOfPages);
+        }
+
+        return await this._lastfmRepository.GetTopAlbumsAsync(lastFmUserName, timeSettings, count, amountOfPages);
     }
 
     public async Task<Response<TopAlbumList>> GetTopAlbumsForCustomTimePeriodAsyncAsync(string lastFmUserName, DateTime startDateTime, DateTime endDateTime,
         int count)
     {
-        throw new NotImplementedException();
+        var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
+
+        if (importUser != null && startDateTime < importUser.LastImportPlay)
+        {
+            return await this._playDataSourceRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(importUser, startDateTime, endDateTime, count);
+        }
+
+        return await this._lastfmRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(lastFmUserName, startDateTime, endDateTime, count);
     }
 
-    public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName, TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1)
+    public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName, TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 
-        if (importUser != null)
+        if (importUser != null && timeSettings.StartDateTime < importUser.LastImportPlay)
         {
-            return await this._playDataSourceRepository.GetTopArtistsAsync(importUser, timeSettings, count, amountOfPages);
+            return await this._playDataSourceRepository.GetTopArtistsAsync(importUser, timeSettings, count * amountOfPages);
         }
 
         return await this._lastfmRepository.GetTopArtistsAsync(lastFmUserName, timeSettings, count, amountOfPages);
@@ -123,7 +144,7 @@ public class DataSourceFactory : IDataSourceFactory
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 
-        if (importUser != null)
+        if (importUser != null && startDateTime < importUser.LastImportPlay)
         {
             return await this._playDataSourceRepository.GetTopArtistsForCustomTimePeriodAsync(importUser, startDateTime, endDateTime, count);
         }
@@ -135,12 +156,12 @@ public class DataSourceFactory : IDataSourceFactory
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 
-        if (importUser != null)
+        if (importUser != null && timeSettings.StartDateTime < importUser.LastImportPlay)
         {
+            return await this._playDataSourceRepository.GetTopTracksAsync(importUser, timeSettings, count * amountOfPages);
         }
 
         return await this._lastfmRepository.GetTopTracksAsync(lastFmUserName, timeSettings, count, amountOfPages);
-
     }
 
     public async Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName, DateTime startDateTime, DateTime endDateTime,
@@ -148,12 +169,13 @@ public class DataSourceFactory : IDataSourceFactory
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 
-        if (importUser != null)
+        if (importUser != null && startDateTime < importUser.LastImportPlay)
         {
-
+            await this._playDataSourceRepository.GetTopTracksForCustomTimePeriodAsyncAsync(importUser, startDateTime,
+                endDateTime, count);
         }
 
-        return await GetTopTracksForCustomTimePeriodAsyncAsync(lastFmUserName, startDateTime, endDateTime, count);
+        return await this._lastfmRepository.GetTopTracksForCustomTimePeriodAsyncAsync(lastFmUserName, startDateTime, endDateTime, count);
     }
 
     public async Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null,

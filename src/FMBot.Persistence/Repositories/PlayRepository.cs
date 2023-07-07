@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Npgsql;
@@ -26,6 +27,7 @@ public static class PlayRepository
                 AlbumName = s.AlbumName,
                 TrackName = s.TrackName,
                 TimePlayed = DateTime.SpecifyKind(s.TimePlayed.Value, DateTimeKind.Utc),
+                PlaySource = PlaySource.LastFm,
                 UserId = userId
             }).ToList();
 
@@ -80,16 +82,17 @@ public static class PlayRepository
 
     public static async Task ReplaceAllPlays(IReadOnlyList<UserPlayTs> playsToInsert, int userId, NpgsqlConnection connection)
     {
-        await RemoveAllCurrentPlays(userId, connection);
+        await RemoveAllCurrentLastFmPlays(userId, connection);
 
         Log.Information($"Inserting {playsToInsert.Count} time series plays for user {userId}");
         await InsertTimeSeriesPlays(playsToInsert, connection);
     }
 
-    private static async Task RemoveAllCurrentPlays(int userId, NpgsqlConnection connection)
+    private static async Task RemoveAllCurrentLastFmPlays(int userId, NpgsqlConnection connection)
     {
         await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_play_ts " +
-                                                        "WHERE user_id = @userId", connection);
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source IS NULL OR play_source = 0", connection);
 
         deletePlays.Parameters.AddWithValue("userId", userId);
 

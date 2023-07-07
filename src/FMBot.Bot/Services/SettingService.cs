@@ -187,6 +187,10 @@ public class SettingService
                 settingsModel.PlayDays = (int)(DateTime.UtcNow - registeredLastFm.Value).TotalDays + 1;
                 settingsModel.StartDateTime = registeredLastFm.Value.AddDays(-1);
             }
+            else
+            {
+                settingsModel.StartDateTime = new DateTime(2000, 1, 1);
+            }
         }
         else if (Contains(options, sixDays) && dailyTimePeriods)
         {
