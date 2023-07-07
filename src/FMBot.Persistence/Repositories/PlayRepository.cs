@@ -164,4 +164,19 @@ public static class PlayRepository
             userId,
         });
     }
+
+    public static async Task<bool> HasImported(int userId, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT * FROM public.user_play_ts WHERE user_id = @userId " +
+                           "AND play_source IS NOT NULL and play_source != 0 " +
+                           "LIMIT 1";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var play = await connection.QueryFirstOrDefaultAsync(sql, new
+        {
+            userId,
+        });
+
+        return play != null;
+    }
 }

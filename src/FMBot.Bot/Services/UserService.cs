@@ -827,6 +827,22 @@ public class UserService
         return user;
     }
 
+    public async Task<User> SetDataSource(User userToUpdate, DataSource dataSource)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+        user.DataSource = dataSource;
+
+        db.Update(user);
+
+        await db.SaveChangesAsync();
+
+        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+
+        return user;
+    }
+
     public async Task<User> SetFooterOptions(User userToUpdate, FmFooterOption fmFooterOption)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

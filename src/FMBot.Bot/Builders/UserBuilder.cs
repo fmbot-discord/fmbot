@@ -17,6 +17,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.TextCommands.LastFM;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -957,5 +958,74 @@ public class UserBuilder
         embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
 
         return embed;
+    }
+
+    public static ResponseModel ImportMode(ContextModel context, bool hasImported = false)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var importSetting = new SelectMenuBuilder()
+                .WithPlaceholder("Select import setting")
+                .WithCustomId(InteractionConstants.ImportSetting)
+                .WithMinValues(1)
+                .WithMaxValues(1);
+
+        if (!hasImported)
+        {
+            importSetting.IsDisabled = true;
+        }
+
+        foreach (var option in ((DataSource[])Enum.GetValues(typeof(DataSource))))
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var description = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+
+            var active = context.ContextUser.DataSource == option;
+
+            importSetting.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+        }
+
+        response.Components = new ComponentBuilder().WithSelectMenu(importSetting);
+
+        response.Embed.WithAuthor("Configuring your import settings");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var embedDescription = new StringBuilder();
+
+        embedDescription.AppendLine(context.ContextUser.DataSource == DataSource.LastFm
+            ? "__**Last.fm**__"
+            : "**Last.fm**");
+        embedDescription.AppendLine("- Use only your Last.fm for stats and ignore imports");
+        embedDescription.AppendLine();
+
+        embedDescription.AppendLine(context.ContextUser.DataSource == DataSource.FullSpotifyThenLastFm
+            ? "__**Full Spotify, then Last.fm**__"
+            : "**Full Spotify, then Last.fm**");
+        embedDescription.AppendLine("- Uses your full Spotify history and adds Last.fm afterwards");
+        embedDescription.AppendLine("- Recommended if you have imported Spotify on Last.fm before");
+        embedDescription.AppendLine("- Plays from other music apps you scrobbled to Last.fm will not be included");
+        embedDescription.AppendLine();
+
+        embedDescription.AppendLine(context.ContextUser.DataSource == DataSource.SpotifyThenFullLastFm
+            ? "__**Spotify until Last.fm**__"
+            : "**Spotify until Last.fm**");
+        embedDescription.AppendLine("- Uses your Spotify history up until the point you started scrobbling on Last.fm");
+        embedDescription.AppendLine("- Do not use this if you have imported on Last.fm before");
+        embedDescription.AppendLine("- Best if you have scrobbles on Last.fm from sources other then Spotify");
+
+        if (!hasImported)
+        {
+            embedDescription.AppendLine();
+            embedDescription.AppendLine("Run the `/import spotify` command to get started with imports, or read the guide (todo link). " +
+                                        "After importing you'll be able to change these settings.");
+        }
+
+        response.Embed.WithDescription(embedDescription.ToString());
+
+        return response;
     }
 }
