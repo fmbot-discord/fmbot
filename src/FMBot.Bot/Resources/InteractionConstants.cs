@@ -20,7 +20,6 @@ public static class InteractionConstants
 
     public const string ImportManage = "user-import-manage";
     public const string ImportSetting = "user-import-setting";
-    public const string ImportDelete = "user-import-delete";
 
     public const string CensorTypes = "admin-censor-*";
 

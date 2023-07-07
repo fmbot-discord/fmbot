@@ -122,6 +122,11 @@ public class ImportSlashCommands : InteractionModuleBase
                 await UpdateImportEmbed(message, embed, description, $"- Added plays to database");
             }
 
+            if (contextUser.DataSource == DataSource.LastFm)
+            {
+                await this._userService.SetDataSource(contextUser, DataSource.FullSpotifyThenLastFm);
+            }
+
             await this._indexService.RecalculateTopLists(contextUser);
             await UpdateImportEmbed(message, embed, description, $"- Recalculated top lists");
 
@@ -157,7 +162,11 @@ public class ImportSlashCommands : InteractionModuleBase
                 embed.AddField("Total imported plays", years.ToString());
             }
 
-            await UpdateImportEmbed(message, embed, description, $"- ✅ Import complete", true);
+            var components = new ComponentBuilder()
+                .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
+
+            await UpdateImportEmbed(message, embed, description, $"- ✅ Import complete", true, components);
+
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -166,7 +175,7 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    private static async Task UpdateImportEmbed(IUserMessage msg, EmbedBuilder embed, StringBuilder builder, string lineToAdd, bool lastLine = false)
+    private static async Task UpdateImportEmbed(IUserMessage msg, EmbedBuilder embed, StringBuilder builder, string lineToAdd, bool lastLine = false, ComponentBuilder components = null)
     {
         const string loadingLine = "- <a:loading:821676038102056991> Processing...";
         builder.Replace($"\r\n{loadingLine}", "");
@@ -182,6 +191,7 @@ public class ImportSlashCommands : InteractionModuleBase
         await msg.ModifyAsync(m =>
         {
             m.Embed = embed.Build();
+            m.Components = components?.Build();
         });
     }
 

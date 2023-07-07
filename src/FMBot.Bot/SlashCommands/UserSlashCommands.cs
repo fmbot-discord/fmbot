@@ -611,11 +611,40 @@ public class UserSlashCommands : InteractionModuleBase
             var name = newUserSettings.DataSource.GetAttribute<OptionAttribute>().Name;
 
             var embed = new EmbedBuilder();
-            embed.WithDescription($"Import mode set to `{name}`.");
+            embed.WithDescription($"Import mode set to **{name}**.\n\n" +
+                                  $"Your stored top artist/albums/tracks are being recalculated.");
             embed.WithColor(DiscordConstants.SuccessColorGreen);
 
             await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
             this.Context.LogCommandUsed();
+
+            await this._indexService.RecalculateTopLists(newUserSettings);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportManage)]
+    [UsernameSetRequired]
+    public async Task ImportManage()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
+        {
+            await RespondAsync("Not available yet!");
+            return;
+        }
+
+        try
+        {
+            var hasImported = await this._importService.HasImported(contextUser.UserId);
+            var response = UserBuilder.ImportMode(new ContextModel(this.Context, contextUser), hasImported);
+
+            await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
         }
     }
 }
