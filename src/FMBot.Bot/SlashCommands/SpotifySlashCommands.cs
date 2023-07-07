@@ -223,7 +223,7 @@ public class SpotifySlashCommands : InteractionModuleBase
             var embed = new EmbedBuilder();
             var description = new StringBuilder();
 
-            embed.WithTitle("Importing Spotify... (Beta)");
+            embed.WithTitle("Importing Spotify into .fmbot.. (Beta)");
             embed.WithColor(DiscordConstants.SpotifyColorGreen);
             embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
             var message = await FollowupAsync(embed: embed.Build());

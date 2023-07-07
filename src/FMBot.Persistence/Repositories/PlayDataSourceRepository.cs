@@ -78,7 +78,9 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow);
+        var fromTimeStamp = from.HasValue ? DateTimeOffset.FromUnixTimeSeconds(from.Value).UtcDateTime : new DateTime(2000, 0, 0);
+
+        var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, fromTimeStamp);
         plays = GetFinalUserPlays(user, plays);
 
         return plays.Count;
