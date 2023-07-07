@@ -210,21 +210,4 @@ public class ImportSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
-
-    [ComponentInteraction(InteractionConstants.ImportSetting)]
-    [UsernameSetRequired]
-    public async Task SetImport(string[] inputs)
-    {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        if (Enum.TryParse(inputs.FirstOrDefault(), out DataSource dataSource))
-        {
-            var newUserSettings = await this._userService.SetDataSource(contextUser, dataSource);
-
-            var hasImported = await this._importService.HasImported(newUserSettings.UserId);
-            var response = UserBuilder.ImportMode(new ContextModel(this.Context, newUserSettings), hasImported);
-
-            await this.Context.UpdateInteractionEmbed(response);
-        }
-    }
 }

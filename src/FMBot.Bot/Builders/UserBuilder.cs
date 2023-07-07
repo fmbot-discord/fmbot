@@ -996,23 +996,17 @@ public class UserBuilder
 
         var embedDescription = new StringBuilder();
 
-        embedDescription.AppendLine(context.ContextUser.DataSource == DataSource.LastFm
-            ? "__**Last.fm**__"
-            : "**Last.fm**");
+        embedDescription.AppendLine("**Last.fm**");
         embedDescription.AppendLine("- Use only your Last.fm for stats and ignore imports");
         embedDescription.AppendLine();
 
-        embedDescription.AppendLine(context.ContextUser.DataSource == DataSource.FullSpotifyThenLastFm
-            ? "__**Full Spotify, then Last.fm**__"
-            : "**Full Spotify, then Last.fm**");
+        embedDescription.AppendLine("**Full Spotify, then Last.fm**");
         embedDescription.AppendLine("- Uses your full Spotify history and adds Last.fm afterwards");
         embedDescription.AppendLine("- Recommended if you have imported Spotify on Last.fm before");
         embedDescription.AppendLine("- Plays from other music apps you scrobbled to Last.fm will not be included");
         embedDescription.AppendLine();
 
-        embedDescription.AppendLine(context.ContextUser.DataSource == DataSource.SpotifyThenFullLastFm
-            ? "__**Spotify until Last.fm**__"
-            : "**Spotify until Last.fm**");
+        embedDescription.AppendLine("**Spotify until Last.fm**");
         embedDescription.AppendLine("- Uses your Spotify history up until the point you started scrobbling on Last.fm");
         embedDescription.AppendLine("- Do not use this if you have imported on Last.fm before");
         embedDescription.AppendLine("- Best if you have scrobbles on Last.fm from sources other then Spotify");

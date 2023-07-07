@@ -19,10 +19,10 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
@@ -39,6 +39,7 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly SettingService _settingService;
     private readonly ArtistsService _artistsService;
     private readonly OpenAiService _openAiService;
+    private readonly ImportService _importService;
 
     private readonly BotSettings _botSettings;
 
@@ -53,7 +54,7 @@ public class UserSlashCommands : InteractionModuleBase
         FriendsService friendsService,
         UserBuilder userBuilder,
         SettingService settingService,
-        ArtistsService artistsService, OpenAiService openAiService)
+        ArtistsService artistsService, OpenAiService openAiService, ImportService importService)
     {
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
@@ -65,6 +66,7 @@ public class UserSlashCommands : InteractionModuleBase
         this._settingService = settingService;
         this._artistsService = artistsService;
         this._openAiService = openAiService;
+        this._importService = importService;
         this._botSettings = botSettings.Value;
     }
 
@@ -594,5 +596,26 @@ public class UserSlashCommands : InteractionModuleBase
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportSetting)]
+    [UsernameSetRequired]
+    public async Task SetImport(string[] inputs)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (Enum.TryParse(inputs.FirstOrDefault(), out DataSource dataSource))
+        {
+            var newUserSettings = await this._userService.SetDataSource(contextUser, dataSource);
+
+            var name = newUserSettings.DataSource.GetAttribute<OptionAttribute>().Name;
+
+            var embed = new EmbedBuilder();
+            embed.WithDescription($"Import mode set to `{name}`.");
+            embed.WithColor(DiscordConstants.SuccessColorGreen);
+
+            await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+            this.Context.LogCommandUsed();
+        }
     }
 }
