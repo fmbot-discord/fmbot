@@ -517,7 +517,7 @@ public class UserBuilder
         var stats = new StringBuilder();
         if (userSettings.UserType != UserType.User)
         {
-            var hasImported = this._playService.UserHasImported(allPlays);
+            var hasImported = PlayService.UserHasImported(allPlays);
             if (hasImported)
             {
                 stats.AppendLine("User has most likely imported plays from external source");

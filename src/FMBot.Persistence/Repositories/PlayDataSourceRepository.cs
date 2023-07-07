@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
@@ -22,7 +23,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         this._botSettings = botSettings.Value;
     }
 
-    private static ICollection<UserPlayTs> GetFinalUserPlays(ImportUser user, ICollection<UserPlayTs> userPlays)
+    public static ICollection<UserPlayTs> GetFinalUserPlays(ImportUser user, ICollection<UserPlayTs> userPlays)
     {
         switch (user.DataSource)
         {
@@ -42,8 +43,13 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                         .Where(w => w.PlaySource != PlaySource.SpotifyImport || w.TimePlayed < firstLastFmPlay.TimePlayed)
                         .ToList();
                 }
+            case DataSource.LastFm:
             default:
-                return userPlays;
+                {
+                    return userPlays
+                        .Where(w => w.PlaySource is null or PlaySource.LastFm)
+                        .ToList();
+                }
         }
     }
 
@@ -91,9 +97,35 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         throw new NotImplementedException();
     }
 
-    public async Task<DataSourceUser> GetLfmUserInfoAsync(ImportUser user)
+    public async Task<DataSourceUser> GetLfmUserInfoAsync(ImportUser user, DataSourceUser dataSourceUser)
     {
-        throw new NotImplementedException();
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 99999999);
+
+        plays = GetFinalUserPlays(user, plays);
+
+        dataSourceUser.Playcount = plays.Count;
+
+        dataSourceUser.ArtistCount = plays
+            .GroupBy(g => g.ArtistName.ToLower()).Count();
+
+        dataSourceUser.AlbumCount = plays
+            .Where(w => w.AlbumName != null)
+            .GroupBy(g => new
+        {
+            ArtistName = g.ArtistName.ToLower(),
+            AlbumName = g.AlbumName.ToLower()
+        }).Count();
+
+        dataSourceUser.TrackCount = plays.GroupBy(g => new
+        {
+            ArtistName = g.ArtistName.ToLower(),
+            TrackName = g.TrackName.ToLower()
+        }).Count();
+
+        return dataSourceUser;
     }
 
     public async Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery)

@@ -35,9 +35,9 @@ public class ImportService
         {
             var spotifyPlays = new List<SpotifyImportModel>();
 
-            foreach (var attachment in attachments.Where(w => w?.Url != null))
+            foreach (var attachment in attachments.Where(w => w?.Url != null).GroupBy(g => g.Filename))
             {
-                await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
+                await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
 
                 var result = await JsonSerializer.DeserializeAsync<List<SpotifyImportModel>>(stream);
 

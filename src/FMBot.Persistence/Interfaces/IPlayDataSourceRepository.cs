@@ -17,7 +17,7 @@ public interface IPlayDataSourceRepository
     Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(ImportUser user, string sessionKey, long totalScrobbles,
         long milestoneScrobble);
 
-    Task<DataSourceUser> GetLfmUserInfoAsync(ImportUser user);
+    Task<DataSourceUser> GetLfmUserInfoAsync(ImportUser user, DataSourceUser dataSourceUser);
     Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery);
     Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null);
     Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username);

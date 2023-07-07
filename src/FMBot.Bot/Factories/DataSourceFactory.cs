@@ -24,8 +24,13 @@ public class DataSourceFactory : IDataSourceFactory
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<ImportUser> GetImportUserForLastFmUserName(string lastFmUserName)
+    private async Task<ImportUser> GetImportUserForLastFmUserName(string lastFmUserName)
     {
+        if (lastFmUserName == null)
+        {
+            return null;
+        }
+
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
@@ -67,23 +72,34 @@ public class DataSourceFactory : IDataSourceFactory
 
     public async Task<DataSourceUser> GetLfmUserInfoAsync(string lastFmUserName)
     {
-        //var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
+        var user = await this._lastfmRepository.GetLfmUserInfoAsync(lastFmUserName);
 
-        //if (importUser != null)
-        //{
-        //    return await this._playDataSourceRepository.GetLfmUserInfoAsync(importUser);
-        //}
+        var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 
-        return await this._lastfmRepository.GetLfmUserInfoAsync(lastFmUserName);
+        if (importUser != null && user != null)
+        {
+            return await this._playDataSourceRepository.GetLfmUserInfoAsync(importUser, user);
+        }
+
+        return user;
     }
 
     public async Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery)
     {
-        throw new NotImplementedException();
+        return await this._lastfmRepository.SearchTrackAsync(searchQuery);
     }
 
     public async Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null)
     {
+        var track = await this._lastfmRepository.GetTrackInfoAsync(trackName, artistName, username);
+
+        var importUser = await this.GetImportUserForLastFmUserName(username);
+
+        if (importUser != null && track.Success)
+        {
+            //return await this._playDataSourceRepository.GetTrackInfoAsync(importUser, track);
+        }
+
         throw new NotImplementedException();
     }
 
@@ -99,7 +115,7 @@ public class DataSourceFactory : IDataSourceFactory
 
     public async Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery)
     {
-        throw new NotImplementedException();
+        return await this._lastfmRepository.SearchAlbumAsync(searchQuery);
     }
 
     public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName, TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)

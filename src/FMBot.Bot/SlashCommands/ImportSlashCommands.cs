@@ -65,8 +65,7 @@ public class ImportSlashCommands : InteractionModuleBase
         [Summary("file-12", "Spotify endsong.json file")] IAttachment attachment12 = null,
         [Summary("file-13", "Spotify endsong.json file")] IAttachment attachment13 = null,
         [Summary("file-14", "Spotify endsong.json file")] IAttachment attachment14 = null,
-        [Summary("file-15", "Spotify endsong.json file")] IAttachment attachment15 = null,
-        [Summary("file-16", "Spotify endsong.json file")] IAttachment attachment16 = null)
+        [Summary("file-15", "Spotify endsong.json file")] IAttachment attachment15 = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -80,7 +79,7 @@ public class ImportSlashCommands : InteractionModuleBase
         {
             attachment1, attachment2, attachment3, attachment4, attachment5, attachment6,
             attachment7, attachment8, attachment9, attachment10, attachment11, attachment12,
-            attachment13, attachment14, attachment15, attachment16
+            attachment13, attachment14, attachment15
         };
 
         await DeferAsync();
@@ -135,16 +134,17 @@ public class ImportSlashCommands : InteractionModuleBase
             var files = new StringBuilder();
             foreach (var attachment in attachments
                          .Where(w => w != null)
-                         .OrderBy(o => o.Filename))
+                         .OrderBy(o => o.Filename)
+                         .GroupBy(g => g.Filename))
             {
-                files.AppendLine($"`{attachment.Filename}`");
+                files.AppendLine($"`{attachment.First().Filename}`");
             }
 
             embed.AddField("Processed files", files.ToString());
 
             var years = new StringBuilder();
             var allPlays = await this._playService
-                .GetAllUserPlays(contextUser.UserId);
+                .GetAllUserPlays(contextUser.UserId, false);
 
             var yearGroups = allPlays
                 .Where(w => w.PlaySource == PlaySource.SpotifyImport)

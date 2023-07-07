@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Dapper;
@@ -491,7 +492,7 @@ public class PlayService
         existingStreak.AlbumPlaycount = currentStreak.AlbumPlaycount;
         existingStreak.TrackName = currentStreak.TrackName;
         existingStreak.TrackPlaycount = currentStreak.TrackPlaycount;
-        
+
         db.Entry(existingStreak).State = EntityState.Modified;
         await db.SaveChangesAsync();
 
@@ -526,6 +527,7 @@ public class PlayService
 
         var start = DateTime.UtcNow.AddDays(-days);
         var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
+
         var topArtists = plays
             .GroupBy(x => x.ArtistName)
             .Select(s => new TopArtist
@@ -816,18 +818,27 @@ public class PlayService
         return userPlays;
     }
 
-    public bool UserHasImported(IEnumerable<UserPlayTs> userPlays)
+    public static bool UserHasImported(IEnumerable<UserPlayTs> userPlays)
     {
         return userPlays
             .GroupBy(g => g.TimePlayed.Date)
             .Count(w => w.Count() > 2500) >= 7;
     }
 
-    public async Task<ICollection<UserPlayTs>> GetAllUserPlays(int userId)
+    public async Task<ICollection<UserPlayTs>> GetAllUserPlays(int userId, bool finalizeImport = true)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await PlayRepository.GetUserPlays(userId, connection, 9999999);
+        var plays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+
+        if (finalizeImport)
+        {
+            var importUser = await UserRepository.GetImportUserForLastFmUserId(userId, connection);
+            plays = PlayDataSourceRepository.GetFinalUserPlays(importUser, plays);
+        }
+
+
+        return plays;
     }
 }
