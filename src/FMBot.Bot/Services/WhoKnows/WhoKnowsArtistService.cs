@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -358,21 +359,7 @@ public class WhoKnowsArtistService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await GetArtistPlayCountForUser(connection, artistName, userId);
-    }
-
-    public static async Task<int?> GetArtistPlayCountForUser(NpgsqlConnection connection, string artistName, int userId)
-    {
-        const string sql = "SELECT ua.playcount " +
-                           "FROM user_artists AS ua " +
-                           "WHERE ua.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                           "ORDER BY playcount DESC";
-
-        return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
-        {
-            userId,
-            artistName
-        });
+        return await ArtistRepository.GetArtistPlayCountForUser(connection, artistName, userId);
     }
 
     public async Task<ICollection<AffinityItemDto>> GetAllTimeTopArtistForGuild(int guildId, bool largeGuild, bool bypassCache = false)

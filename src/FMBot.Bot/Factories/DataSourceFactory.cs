@@ -62,7 +62,14 @@ public class DataSourceFactory : IDataSourceFactory
     public async Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? from = null, string sessionKey = null,
         long? until = null)
     {
-        throw new NotImplementedException();
+        var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
+
+        if (importUser != null)
+        {
+            return await this._playDataSourceRepository.GetScrobbleCountFromDateAsync(importUser, from, sessionKey, until);
+        }
+
+        return await this._lastfmRepository.GetScrobbleCountFromDateAsync(lastFmUserName, from, sessionKey, until);
     }
 
     public async Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(string lastFmUserName, string sessionKey, long totalScrobbles, long milestoneScrobble)
@@ -95,22 +102,40 @@ public class DataSourceFactory : IDataSourceFactory
 
         var importUser = await this.GetImportUserForLastFmUserName(username);
 
-        if (importUser != null && track.Success)
+        if (importUser != null && track.Success && track.Content != null)
         {
-            //return await this._playDataSourceRepository.GetTrackInfoAsync(importUser, track);
+            track.Content.UserPlaycount = await this._playDataSourceRepository.GetTrackPlaycount(importUser, trackName, artistName);
         }
 
-        throw new NotImplementedException();
+        return track;
     }
 
     public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username)
     {
-        throw new NotImplementedException();
+        var artist = await this._lastfmRepository.GetArtistInfoAsync(artistName, username);
+
+        var importUser = await this.GetImportUserForLastFmUserName(username);
+
+        if (importUser != null && artist.Success && artist.Content != null)
+        {
+            artist.Content.UserPlaycount = await this._playDataSourceRepository.GetArtistPlaycount(importUser, artistName);
+        }
+
+        return artist;
     }
 
     public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
     {
-        throw new NotImplementedException();
+        var album = await this._lastfmRepository.GetAlbumInfoAsync(artistName, albumName, username);
+
+        var importUser = await this.GetImportUserForLastFmUserName(username);
+
+        if (importUser != null && album.Success && album.Content != null)
+        {
+            album.Content.UserPlaycount = await this._playDataSourceRepository.GetAlbumPlaycount(importUser, artistName, albumName);
+        }
+
+        return album;
     }
 
     public async Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery)

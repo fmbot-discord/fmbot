@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Dapper;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
@@ -128,29 +129,31 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return dataSourceUser;
     }
 
-    public async Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery)
+    public async Task<int?> GetTrackPlaycount(ImportUser user, string trackName, string artistName)
     {
-        throw new NotImplementedException();
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await TrackRepository.GetTrackPlayCountForUser(connection, artistName, trackName, user.UserId);
     }
 
-    public async Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null)
+    public async Task<int?> GetArtistPlaycount(ImportUser user, string artistName)
     {
-        throw new NotImplementedException();
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await ArtistRepository.GetArtistPlayCountForUser(connection, artistName, user.UserId);
     }
 
-    public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username)
+    public async Task<int?> GetAlbumPlaycount(ImportUser user, string artistName, string albumName)
     {
-        throw new NotImplementedException();
-    }
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
 
-    public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery)
-    {
-        throw new NotImplementedException();
+        return await AlbumRepository.GetAlbumPlayCountForUser(connection, artistName, albumName, user.UserId);
     }
 
     public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(ImportUser user, TimeSettingsModel timeSettings, int count = 2)

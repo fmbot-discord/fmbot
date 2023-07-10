@@ -18,11 +18,9 @@ public interface IPlayDataSourceRepository
         long milestoneScrobble);
 
     Task<DataSourceUser> GetLfmUserInfoAsync(ImportUser user, DataSourceUser dataSourceUser);
-    Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery);
-    Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null);
-    Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username);
-    Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null);
-    Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery);
+    Task<int?> GetTrackPlaycount(ImportUser user, string trackName, string artistName);
+    Task<int?> GetArtistPlaycount(ImportUser user, string artistName);
+    Task<int?> GetAlbumPlaycount(ImportUser user, string artistName, string albumName);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(ImportUser user,
         TimeSettingsModel timeSettings, int count = 2);
