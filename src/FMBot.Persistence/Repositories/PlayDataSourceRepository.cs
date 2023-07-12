@@ -93,9 +93,32 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return plays.Count;
     }
 
-    public async Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(ImportUser user, string sessionKey, long totalScrobbles, long milestoneScrobble)
+    public async Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(ImportUser user, int milestoneScrobble)
     {
-        throw new NotImplementedException();
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var plays = await PlayRepository.GetUserPlays(user.UserId, connection, 99999999);
+
+        plays = GetFinalUserPlays(user, plays);
+
+        var milestone = plays
+            .OrderBy(o => o.TimePlayed)
+            .ElementAtOrDefault(milestoneScrobble);
+
+        return new Response<RecentTrack>
+        {
+            Content = milestone != null
+                ? new RecentTrack
+                {
+                    AlbumName = milestone.AlbumName,
+                    ArtistName = milestone.ArtistName,
+                    TrackName = milestone.TrackName,
+                    TimePlayed = milestone.TimePlayed
+                }
+                : null,
+            Success = milestone != null
+        };
     }
 
     public async Task<DataSourceUser> GetLfmUserInfoAsync(ImportUser user, DataSourceUser dataSourceUser)

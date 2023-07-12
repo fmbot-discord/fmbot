@@ -72,9 +72,16 @@ public class DataSourceFactory : IDataSourceFactory
         return await this._lastfmRepository.GetScrobbleCountFromDateAsync(lastFmUserName, from, sessionKey, until);
     }
 
-    public async Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(string lastFmUserName, string sessionKey, long totalScrobbles, long milestoneScrobble)
+    public async Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(string lastFmUserName, string sessionKey, long totalScrobbles, int milestoneScrobble)
     {
-        throw new NotImplementedException();
+        var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
+
+        if (importUser != null)
+        {
+            return await this._playDataSourceRepository.GetMilestoneScrobbleAsync(importUser, milestoneScrobble);
+        }
+
+        return await this._lastfmRepository.GetMilestoneScrobbleAsync(lastFmUserName, sessionKey, totalScrobbles, milestoneScrobble);
     }
 
     public async Task<DataSourceUser> GetLfmUserInfoAsync(string lastFmUserName)

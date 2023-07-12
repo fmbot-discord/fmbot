@@ -15,7 +15,7 @@ public interface IDataSourceFactory
         long? until = null);
 
     Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(string lastFmUserName, string sessionKey, long totalScrobbles,
-        long milestoneScrobble);
+        int milestoneScrobble);
 
     Task<DataSourceUser> GetLfmUserInfoAsync(string lastFmUserName);
     Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery);

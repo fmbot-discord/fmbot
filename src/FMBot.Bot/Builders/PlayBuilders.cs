@@ -704,7 +704,7 @@ public class PlayBuilder
     public async Task<ResponseModel> MileStoneAsync(
         ContextModel context,
         UserSettingsModel userSettings,
-        long mileStoneAmount,
+        int mileStoneAmount,
         long userTotalPlaycount)
     {
         var response = new ResponseModel
