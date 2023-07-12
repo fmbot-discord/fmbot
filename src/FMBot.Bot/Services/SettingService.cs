@@ -802,7 +802,7 @@ public class SettingService
         return goalAmount;
     }
 
-    public static long GetMilestoneAmount(
+    public static int GetMilestoneAmount(
         string extraOptions,
         long currentPlaycount)
     {
