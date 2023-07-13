@@ -911,7 +911,7 @@ public class PlayBuilder
 
                 var previousPosition = previousTopAlbum == null ? null : yearOverview.PreviousTopAlbums?.TopAlbums?.IndexOf(previousTopAlbum);
 
-                albumDescription.AppendLine(StringService.GetBillboardLine($"**{topAlbum.ArtistName}** - **{topAlbum.AlbumName}**", i, previousPosition).Text);
+                albumDescription.AppendLine(StringService.GetBillboardLine($"**{topAlbum.ArtistName}** - **{StringExtensions.TruncateLongString(topAlbum.AlbumName, 40)}**", i, previousPosition).Text);
             }
             fields.Add(new EmbedFieldBuilder().WithName("Albums").WithValue(albumDescription.ToString()));
         }
