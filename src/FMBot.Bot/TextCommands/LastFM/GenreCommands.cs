@@ -13,6 +13,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Humanizer;
@@ -27,7 +28,7 @@ public class GenreCommands : BaseCommandModule
     private readonly IPrefixService _prefixService;
     private readonly UserService _userService;
     private readonly SettingService _settingService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly GenreService _genreService;
     private readonly ArtistsService _artistsService;
     private readonly GuildService _guildService;
@@ -41,7 +42,7 @@ public class GenreCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         UserService userService,
         SettingService settingService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         InteractiveService interactivity,
         GenreService genreService,
         ArtistsService artistsService,
@@ -52,7 +53,7 @@ public class GenreCommands : BaseCommandModule
         this._prefixService = prefixService;
         this._userService = userService;
         this._settingService = settingService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this.Interactivity = interactivity;
         this._genreService = genreService;
         this._artistsService = artistsService;
@@ -143,7 +144,7 @@ public class GenreCommands : BaseCommandModule
         {
             if (string.IsNullOrWhiteSpace(genreValues))
             {
-                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, true, contextUser.SessionKeyLastFm);
+                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, true, contextUser.SessionKeyLastFm);
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, contextUser.UserNameLastFM, this.Context))
                 {

@@ -19,8 +19,9 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -36,7 +37,7 @@ public class UserCommands : BaseCommandModule
     private readonly GuildService _guildService;
     private readonly IIndexService _indexService;
     private readonly IPrefixService _prefixService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SettingService _settingService;
     private readonly TimerService _timer;
     private readonly UserService _userService;
@@ -58,7 +59,7 @@ public class UserCommands : BaseCommandModule
         GuildService guildService,
         IIndexService indexService,
         IPrefixService prefixService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         SettingService settingService,
         TimerService timer,
         UserService userService,
@@ -76,7 +77,7 @@ public class UserCommands : BaseCommandModule
         this._friendsService = friendsService;
         this._guildService = guildService;
         this._indexService = indexService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._prefixService = prefixService;
         this._settingService = settingService;
         this._timer = timer;
@@ -179,7 +180,7 @@ public class UserCommands : BaseCommandModule
         }
         else
         {
-            var lfmTopArtists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, artistLimit);
+            var lfmTopArtists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, artistLimit);
             topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
         }
 
@@ -643,7 +644,7 @@ public class UserCommands : BaseCommandModule
         }
 
         var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var token = await this._lastFmRepository.GetAuthToken();
+        var token = await this._dataSourceFactory.GetAuthToken();
 
         var reply = new StringBuilder();
         var link =

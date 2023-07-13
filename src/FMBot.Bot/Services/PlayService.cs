@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Dapper;
@@ -10,12 +11,14 @@ using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -30,15 +33,15 @@ public class PlayService
     private readonly GenreService _genreService;
     private readonly TimeService _timeService;
     private readonly BotSettings _botSettings;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly IMemoryCache _cache;
 
-    public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService, TimeService timeService, IOptions<BotSettings> botSettings, LastFmRepository lastFmRepository, IMemoryCache cache)
+    public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService, TimeService timeService, IOptions<BotSettings> botSettings, IDataSourceFactory dataSourceFactory, IMemoryCache cache)
     {
         this._contextFactory = contextFactory;
         this._genreService = genreService;
         this._timeService = timeService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._cache = cache;
         this._botSettings = botSettings.Value;
     }
@@ -120,7 +123,7 @@ public class PlayService
         };
 
         var currentTopTracks =
-            await this._lastFmRepository.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime, endDateTime, 500);
+            await this._dataSourceFactory.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime, endDateTime, 500);
 
         if (!currentTopTracks.Success)
         {
@@ -131,7 +134,7 @@ public class PlayService
         yearOverview.TopTracks = currentTopTracks.Content;
 
         var currentTopAlbums =
-            await this._lastFmRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime, endDateTime, 500);
+            await this._dataSourceFactory.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime, endDateTime, 500);
 
         if (!currentTopAlbums.Success)
         {
@@ -142,7 +145,7 @@ public class PlayService
         yearOverview.TopAlbums = currentTopAlbums.Content;
 
         var currentTopArtists =
-            await this._lastFmRepository.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime, endDateTime, 500);
+            await this._dataSourceFactory.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime, endDateTime, 500);
 
         if (!currentTopArtists.Success)
         {
@@ -155,7 +158,7 @@ public class PlayService
         if (user.RegisteredLastFm < endDateTime.AddYears(-1))
         {
             var previousTopTracks =
-                await this._lastFmRepository.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
+                await this._dataSourceFactory.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
 
             if (previousTopTracks.Success)
             {
@@ -167,7 +170,7 @@ public class PlayService
             }
 
             var previousTopAlbums =
-                await this._lastFmRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
+                await this._dataSourceFactory.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
 
             if (previousTopAlbums.Success)
             {
@@ -179,7 +182,7 @@ public class PlayService
             }
 
             var previousTopArtists =
-                await this._lastFmRepository.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
+                await this._dataSourceFactory.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
 
             if (previousTopArtists.Success)
             {
@@ -255,7 +258,7 @@ public class PlayService
         return $"`{topArtist.Count()}` {StringExtensions.GetPlaysString(topArtist.Count())} - {StringExtensions.Sanitize(topArtist.Key)}";
     }
 
-    private async Task<IReadOnlyCollection<UserPlayTs>> GetWeekPlays(int userId)
+    private async Task<ICollection<UserPlayTs>> GetWeekPlays(int userId)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -313,14 +316,14 @@ public class PlayService
     }
 
     public static UserStreak GetCurrentStreak(int userId, RecentTrack lastPlay,
-        IReadOnlyList<UserPlayTs> lastPlays)
+        ICollection<UserPlayTs> lastPlays)
     {
         if (!lastPlays.Any() || lastPlay == null)
         {
             return null;
         }
 
-        lastPlays = lastPlays
+        var lastPlaysList = lastPlays
             .OrderByDescending(o => o.TimePlayed)
             .Where(w => !lastPlay.TimePlayed.HasValue || w.TimePlayed < lastPlay.TimePlayed.Value)
             .ToList();
@@ -335,9 +338,9 @@ public class PlayService
             UserId = userId
         };
 
-        for (var i = 1; i < lastPlays.Count; i++)
+        for (var i = 1; i < lastPlaysList.Count; i++)
         {
-            var currentPlay = lastPlays[i];
+            var currentPlay = lastPlaysList[i];
 
             if (lastPlay.ArtistName.ToLower() == currentPlay.ArtistName.ToLower())
             {
@@ -354,9 +357,9 @@ public class PlayService
             }
         }
 
-        for (var i = 1; i < lastPlays.Count; i++)
+        for (var i = 1; i < lastPlaysList.Count; i++)
         {
-            var currentPlay = lastPlays[i];
+            var currentPlay = lastPlaysList[i];
 
             if (lastPlay.AlbumName != null &&
                 currentPlay.AlbumName != null &&
@@ -375,9 +378,9 @@ public class PlayService
             }
         }
 
-        for (var i = 1; i < lastPlays.Count; i++)
+        for (var i = 1; i < lastPlaysList.Count; i++)
         {
-            var currentPlay = lastPlays[i];
+            var currentPlay = lastPlaysList[i];
 
             if (lastPlay.TrackName.ToLower() == currentPlay.TrackName.ToLower() &&
                 lastPlay.ArtistName.ToLower() == currentPlay.ArtistName.ToLower())
@@ -489,7 +492,7 @@ public class PlayService
         existingStreak.AlbumPlaycount = currentStreak.AlbumPlaycount;
         existingStreak.TrackName = currentStreak.TrackName;
         existingStreak.TrackPlaycount = currentStreak.TrackPlaycount;
-        
+
         db.Entry(existingStreak).State = EntityState.Modified;
         await db.SaveChangesAsync();
 
@@ -524,6 +527,7 @@ public class PlayService
 
         var start = DateTime.UtcNow.AddDays(-days);
         var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
+
         var topArtists = plays
             .GroupBy(x => x.ArtistName)
             .Select(s => new TopArtist
@@ -814,18 +818,27 @@ public class PlayService
         return userPlays;
     }
 
-    public bool UserHasImported(IEnumerable<UserPlayTs> userPlays)
+    public static bool UserHasImported(IEnumerable<UserPlayTs> userPlays)
     {
         return userPlays
             .GroupBy(g => g.TimePlayed.Date)
             .Count(w => w.Count() > 2500) >= 7;
     }
 
-    public async Task<IReadOnlyList<UserPlayTs>> GetAllUserPlays(int userId)
+    public async Task<ICollection<UserPlayTs>> GetAllUserPlays(int userId, bool finalizeImport = true)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await PlayRepository.GetUserPlays(userId, connection, 9999999);
+        var plays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+
+        if (finalizeImport)
+        {
+            var importUser = await UserRepository.GetImportUserForLastFmUserId(userId, connection);
+            plays = PlayDataSourceRepository.GetFinalUserPlays(importUser, plays);
+        }
+
+
+        return plays;
     }
 }

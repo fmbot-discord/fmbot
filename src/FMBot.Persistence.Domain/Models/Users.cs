@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models;

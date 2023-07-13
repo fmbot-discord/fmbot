@@ -1,4 +1,4 @@
-namespace FMBot.LastFM.Domain.Enums;
+namespace FMBot.Domain.Enums;
 
 public enum ResponseStatus
 {

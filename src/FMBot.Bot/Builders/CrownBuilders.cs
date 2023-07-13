@@ -10,7 +10,8 @@ using System;
 using System.Linq;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
-using FMBot.LastFM.Extensions;
+using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.LastFM.Repositories;
 
 namespace FMBot.Bot.Builders;
@@ -19,13 +20,13 @@ public class CrownBuilders
 {
     private readonly CrownService _crownService;
     private readonly ArtistsService _artistsService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
 
-    public CrownBuilders(CrownService crownService, ArtistsService artistsService, LastFmRepository lastFmRepository)
+    public CrownBuilders(CrownService crownService, ArtistsService artistsService, IDataSourceFactory dataSourceFactory)
     {
         this._crownService = crownService;
         this._artistsService = artistsService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
     }
 
     public async Task<ResponseModel> CrownAsync(
@@ -49,7 +50,7 @@ public class CrownBuilders
         if (string.IsNullOrWhiteSpace(artistValues))
         {
             var recentTracks =
-                await this._lastFmRepository.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, sessionKey:context.ContextUser.SessionKeyLastFm, useCache: true);
+                await this._dataSourceFactory.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, sessionKey:context.ContextUser.SessionKeyLastFm, useCache: true);
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {

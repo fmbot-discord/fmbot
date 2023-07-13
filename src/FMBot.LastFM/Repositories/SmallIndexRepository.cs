@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -22,11 +24,11 @@ public class SmallIndexRepository
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly string _connectionString;
 
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly ILastfmRepository _lastFmRepository;
 
     public SmallIndexRepository(
         IConfiguration configuration,
-        LastFmRepository lastFmRepository,
+        ILastfmRepository lastFmRepository,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache)
     {
@@ -38,12 +40,16 @@ public class SmallIndexRepository
 
     public async Task SmallIndexUser(User indexUser)
     {
-
         var concurrencyCacheKey = $"small-index-started-{indexUser.UserId}";
         this._cache.Set(concurrencyCacheKey, true, TimeSpan.FromMinutes(1));
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users.FindAsync(indexUser.UserId);
+
+        if (user.DataSource != DataSource.LastFm)
+        {
+            return;
+        }
 
         if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
         {

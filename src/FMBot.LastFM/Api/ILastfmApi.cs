@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
 
 namespace FMBot.LastFM.Api;

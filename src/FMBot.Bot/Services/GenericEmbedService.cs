@@ -7,8 +7,9 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Enums;
+using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
 using Serilog;
 

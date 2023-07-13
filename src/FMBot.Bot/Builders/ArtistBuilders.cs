@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
@@ -17,13 +16,12 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
-using FMBot.LastFM.Domain.Models;
-using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
-using Genius.Models.Song;
 using SkiaSharp;
 using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -33,7 +31,7 @@ namespace FMBot.Bot.Builders;
 public class ArtistBuilders
 {
     private readonly ArtistsService _artistsService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly GuildService _guildService;
     private readonly SpotifyService _spotifyService;
     private readonly UserService _userService;
@@ -53,7 +51,7 @@ public class ArtistBuilders
     private readonly CensorService _censorService;
 
     public ArtistBuilders(ArtistsService artistsService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         GuildService guildService,
         SpotifyService spotifyService,
         UserService userService,
@@ -73,7 +71,7 @@ public class ArtistBuilders
         CensorService censorService)
     {
         this._artistsService = artistsService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._guildService = guildService;
         this._spotifyService = spotifyService;
         this._userService = userService;
@@ -585,7 +583,7 @@ public class ArtistBuilders
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artists for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
-        var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
+        var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
             timeSettings, 200, 1);
 
         if (!artists.Success || artists.Content == null)
@@ -604,7 +602,7 @@ public class ArtistBuilders
         var previousTopArtists = new List<TopArtist>();
         if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
         {
-            var previousArtistsCall = await this._lastFmRepository
+            var previousArtistsCall = await this._dataSourceFactory
                 .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
 
             if (previousArtistsCall.Success)
@@ -706,7 +704,7 @@ public class ArtistBuilders
 
         goalAmount = SettingService.GetGoalAmount(amount, artistSearch.Artist.UserPlaycount.GetValueOrDefault(0));
 
-        var regularPlayCount = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm);
+        var regularPlayCount = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm);
 
         if (regularPlayCount is null or 0)
         {
@@ -1231,8 +1229,8 @@ public class ArtistBuilders
             return response;
         }
 
-        var ownArtistsTask = this._lastFmRepository.GetTopArtistsAsync(ownLastFmUsername, timeSettings, 1000);
-        var otherArtistsTask = this._lastFmRepository.GetTopArtistsAsync(lastfmToCompare, timeSettings, 1000);
+        var ownArtistsTask = this._dataSourceFactory.GetTopArtistsAsync(ownLastFmUsername, timeSettings, 1000);
+        var otherArtistsTask = this._dataSourceFactory.GetTopArtistsAsync(lastfmToCompare, timeSettings, 1000);
 
         var ownArtists = await ownArtistsTask;
         var otherArtists = await otherArtistsTask;

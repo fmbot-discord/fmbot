@@ -14,9 +14,10 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
-using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Serilog;
@@ -33,7 +34,7 @@ public class TrackBuilders
     private readonly PlayService _playService;
     private readonly SpotifyService _spotifyService;
     private readonly TimeService _timeService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PuppeteerService _puppeteerService;
     private readonly IUpdateService _updateService;
     private readonly SupporterService _supporterService;
@@ -50,7 +51,7 @@ public class TrackBuilders
         PlayService playService,
         SpotifyService spotifyService,
         TimeService timeService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         PuppeteerService puppeteerService,
         IUpdateService updateService,
         SupporterService supporterService,
@@ -67,7 +68,7 @@ public class TrackBuilders
         this._playService = playService;
         this._spotifyService = spotifyService;
         this._timeService = timeService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._puppeteerService = puppeteerService;
         this._updateService = updateService;
         this._supporterService = supporterService;
@@ -685,7 +686,7 @@ public class TrackBuilders
         }
         else
         {
-            var trackLoved = await this._lastFmRepository.LoveTrackAsync(context.ContextUser, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+            var trackLoved = await this._dataSourceFactory.LoveTrackAsync(context.ContextUser.SessionKeyLastFm, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
 
             if (trackLoved)
             {
@@ -728,7 +729,7 @@ public class TrackBuilders
         }
         else
         {
-            var trackLoved = await this._lastFmRepository.UnLoveTrackAsync(context.ContextUser, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+            var trackLoved = await this._dataSourceFactory.UnLoveTrackAsync(context.ContextUser.SessionKeyLastFm, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
 
             if (trackLoved)
             {
@@ -883,7 +884,7 @@ public class TrackBuilders
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} tracks for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
-        var topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
+        var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
 
         if (!topTracks.Success)
         {
@@ -902,7 +903,7 @@ public class TrackBuilders
         var previousTopTracks = new List<TopTrack>();
         if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
         {
-            var previousTopTracksCall = await this._lastFmRepository
+            var previousTopTracksCall = await this._dataSourceFactory
                 .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
 
             if (previousTopTracksCall.Success)
@@ -995,7 +996,7 @@ public class TrackBuilders
         response.EmbedAuthor.WithUrl(userUrl);
         response.Embed.WithAuthor(response.EmbedAuthor);
 
-        var topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20);
+        var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20);
 
         if (!topTracks.Success)
         {
@@ -1013,7 +1014,7 @@ public class TrackBuilders
             return response;
         }
 
-        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
+        var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
         var image = await this._puppeteerService.GetReceipt(userSettings, topTracks.Content, timeSettings, count);
 

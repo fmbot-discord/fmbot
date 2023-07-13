@@ -1,16 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using SpotifyAPI.Web;
 
 namespace FMBot.Bot.SlashCommands;
@@ -19,16 +24,16 @@ public class SpotifySlashCommands : InteractionModuleBase
 {
     private readonly SpotifyService _spotifyService;
     private readonly UserService _userService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
 
     private InteractiveService Interactivity { get; }
 
-    public SpotifySlashCommands(InteractiveService interactivity, SpotifyService spotifyService, UserService userService, LastFmRepository lastFmRepository)
+    public SpotifySlashCommands(InteractiveService interactivity, SpotifyService spotifyService, UserService userService, IDataSourceFactory dataSourceFactory)
     {
         this.Interactivity = interactivity;
         this._spotifyService = spotifyService;
         this._userService = userService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
     }
 
     public enum SpotifySearch
@@ -69,7 +74,7 @@ public class SpotifySlashCommands : InteractionModuleBase
                     sessionKey = contextUser.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
                 {
@@ -168,6 +173,5 @@ public class SpotifySlashCommands : InteractionModuleBase
         {
             await this.Context.HandleCommandException(e);
         }
-
     }
 }

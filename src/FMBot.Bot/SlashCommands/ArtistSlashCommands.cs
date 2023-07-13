@@ -13,6 +13,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 
@@ -23,7 +24,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     private readonly UserService _userService;
     private readonly ArtistBuilders _artistBuilders;
     private readonly SettingService _settingService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly GuildService _guildService;
     private readonly ArtistsService _artistsService;
 
@@ -33,7 +34,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         ArtistBuilders artistBuilders,
         SettingService settingService,
         InteractiveService interactivity,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         GuildService guildService,
         ArtistsService artistsService)
     {
@@ -41,7 +42,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         this._artistBuilders = artistBuilders;
         this._settingService = settingService;
         this.Interactivity = interactivity;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._guildService = guildService;
         this._artistsService = artistsService;
     }
@@ -105,7 +106,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+            var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(ArtistPaceTimePeriod), timePeriod), TimePeriod.Monthly);
 
             var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, contextUser),

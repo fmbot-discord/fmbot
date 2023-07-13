@@ -13,8 +13,8 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Extensions;
 using Microsoft.Extensions.Options;
 using Serilog;
 

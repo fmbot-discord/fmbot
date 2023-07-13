@@ -34,6 +34,11 @@ using Serilog.Exceptions;
 using RunMode = Discord.Commands.RunMode;
 using Hangfire;
 using Hangfire.MemoryStorage;
+using FMBot.Domain.Interfaces;
+using System.Collections.Generic;
+using FMBot.Bot.Factories;
+using FMBot.Domain.Enums;
+using FMBot.Persistence.Interfaces;
 
 namespace FMBot.Bot;
 
@@ -180,22 +185,23 @@ public class Startup
             .AddSingleton<WhoKnowsArtistService>()
             .AddSingleton<WhoKnowsPlayService>()
             .AddSingleton<WhoKnowsTrackService>()
-            .AddSingleton<YoutubeService>() // Add random to the collection
+            .AddSingleton<YoutubeService>()
+            .AddSingleton<IUpdateService, UpdateService>()
+            .AddSingleton<IDataSourceFactory, DataSourceFactory>()
+            .AddSingleton<IPlayDataSourceRepository, PlayDataSourceRepository>()
             .AddSingleton<IConfiguration>(this.Configuration);
 
         // These services can only be added after the config is loaded
         services
             .AddSingleton<InteractionHandler>()
-            .AddSingleton<IndexRepository>()
-            .AddSingleton<SmallIndexRepository>()
-            .AddSingleton<UpdateRepository>()
-            .AddSingleton<IUpdateService, UpdateService>();
+            .AddSingleton<SmallIndexRepository>();
 
         services.AddHttpClient<ILastfmApi, LastfmApi>();
         services.AddHttpClient<ChartService>();
         services.AddHttpClient<InvidiousApi>();
+        services.AddHttpClient<ImportService>();
         services.AddHttpClient<DiscogsApi>();
-        services.AddHttpClient<LastFmRepository>();
+        services.AddHttpClient<ILastfmRepository, LastFmRepository>();
         services.AddHttpClient<TrackService>();
         services.AddHttpClient<DiscordSkuService>();
         services.AddHttpClient<OpenCollectiveService>();
@@ -219,6 +225,8 @@ public class Startup
 
         services.AddMemoryCache();
     }
+
+    public delegate IPlayDataSourceRepository ServiceResolver(DataSource key);
 
     private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {

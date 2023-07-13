@@ -13,8 +13,8 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
@@ -31,7 +31,7 @@ public class AlbumCommands : BaseCommandModule
     private readonly IIndexService _indexService;
     private readonly IPrefixService _prefixService;
     private readonly IUpdateService _updateService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SpotifyService _spotifyService;
     private readonly PlayService _playService;
     private readonly SettingService _settingService;
@@ -54,7 +54,7 @@ public class AlbumCommands : BaseCommandModule
         IIndexService indexService,
         IPrefixService prefixService,
         IUpdateService updateService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         PlayService playService,
         SettingService settingService,
         UserService userService,
@@ -67,12 +67,14 @@ public class AlbumCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         FriendsService friendsService,
         TimerService timer,
-        TimeService timeService, AlbumService albumService, AlbumBuilders albumBuilders) : base(botSettings)
+        TimeService timeService,
+        AlbumService albumService,
+        AlbumBuilders albumBuilders) : base(botSettings)
     {
         this._censorService = censorService;
         this._guildService = guildService;
         this._indexService = indexService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._playService = playService;
         this._prefixService = prefixService;
         this._settingService = settingService;

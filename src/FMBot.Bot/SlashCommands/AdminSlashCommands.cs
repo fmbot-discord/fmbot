@@ -11,6 +11,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 
@@ -22,15 +23,15 @@ public class AdminSlashCommands : InteractionModuleBase
     private readonly CensorService _censorService;
     private readonly AlbumService _albumService;
     private readonly ArtistsService _artistService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
 
-    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, LastFmRepository lastFmRepository)
+    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory)
     {
         this._adminService = adminService;
         this._censorService = censorService;
         this._albumService = albumService;
         this._artistService = artistService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
     }
 
     [ComponentInteraction(InteractionConstants.CensorTypes)]
@@ -192,11 +193,11 @@ public class AdminSlashCommands : InteractionModuleBase
 
         await this._adminService.UpdateReport(report, ReportStatus.AcceptedWithComment, this.Context.User.Id);
 
-        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(report.UserNameLastFM);
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(report.UserNameLastFM);
         DateTimeOffset? age = null;
-        if (userInfo != null && userInfo.Subscriber != 0)
+        if (userInfo != null && userInfo.Subscriber)
         {
-            age = DateTimeOffset.FromUnixTimeSeconds(userInfo.Registered.Text);
+            age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
         }
 
         var result = await this._adminService.AddBottedUserAsync(report.UserNameLastFM, modal.Note, age?.DateTime);

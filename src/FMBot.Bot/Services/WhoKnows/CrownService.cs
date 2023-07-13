@@ -4,10 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -20,15 +21,15 @@ namespace FMBot.Bot.Services.WhoKnows;
 public class CrownService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly LastFmRepository _lastFmRepository;
-    private readonly UpdateRepository _updateRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly BotSettings _botSettings;
+    private readonly IUpdateService _updateService;
 
-    public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, UpdateRepository updateRepository, IOptions<BotSettings> botSettings)
+    public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, IDataSourceFactory dataSourceFactory, IOptions<BotSettings> botSettings, IUpdateService updateService)
     {
         this._contextFactory = contextFactory;
-        this._lastFmRepository = lastFmRepository;
-        this._updateRepository = updateRepository;
+        this._dataSourceFactory = dataSourceFactory;
+        this._updateService = updateService;
         this._botSettings = botSettings.Value;
     }
 
@@ -405,16 +406,16 @@ public class CrownService
 
     private async Task<long?> GetCurrentPlaycountForUser(string artistName, string lastFmUserName, int userId)
     {
-        var artist = await this._lastFmRepository.GetArtistInfoAsync(artistName, lastFmUserName);
+        var artist = await this._dataSourceFactory.GetArtistInfoAsync(artistName, lastFmUserName);
 
-        await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId));
+        await this._updateService.UpdateUser(new UpdateUserQueueItem(userId));
 
         if (!artist.Success || !artist.Content.UserPlaycount.HasValue)
         {
             return null;
         }
 
-        await this._updateRepository.CorrectUserArtistPlaycount(userId, artistName,
+        await this._updateService.CorrectUserArtistPlaycount(userId, artistName,
             artist.Content.UserPlaycount.Value);
 
         return artist.Content.UserPlaycount;

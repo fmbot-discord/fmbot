@@ -17,8 +17,10 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.TextCommands.LastFM;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -34,7 +36,7 @@ public class UserBuilder
     private readonly TimerService _timer;
     private readonly FeaturedService _featuredService;
     private readonly BotSettings _botSettings;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PlayService _playService;
     private readonly TimeService _timeService;
     private readonly ArtistsService _artistsService;
@@ -48,7 +50,7 @@ public class UserBuilder
         TimerService timer,
         IOptions<BotSettings> botSettings,
         FeaturedService featuredService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         PlayService playService,
         TimeService timeService,
         ArtistsService artistsService,
@@ -61,7 +63,7 @@ public class UserBuilder
         this._prefixService = prefixService;
         this._timer = timer;
         this._featuredService = featuredService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._playService = playService;
         this._timeService = timeService;
         this._artistsService = artistsService;
@@ -452,18 +454,32 @@ public class UserBuilder
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}");
         response.Embed.WithAuthor(response.EmbedAuthor);
 
-        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
 
-        var userAvatar = userInfo.Image?.FirstOrDefault(f => f.Size == "extralarge");
-        if (!string.IsNullOrWhiteSpace(userAvatar?.Text))
+        if (!string.IsNullOrWhiteSpace(userInfo.Image))
         {
-            response.Embed.WithThumbnailUrl(userAvatar.Text);
+            response.Embed.WithThumbnailUrl(userInfo.Image);
         }
 
         var description = new StringBuilder();
         if (user.UserType != UserType.User)
         {
             description.AppendLine($"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
+        }
+        if (user.DataSource != DataSource.LastFm)
+        {
+            var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
+
+            switch (user.DataSource)
+            {
+                case DataSource.FullSpotifyThenLastFm:
+                case DataSource.SpotifyThenFullLastFm:
+                    description.AppendLine($"Imported: {name}");
+                    break;
+                case DataSource.LastFm:
+                default:
+                    break;
+            }
         }
 
         if (this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
@@ -489,18 +505,18 @@ public class UserBuilder
         var lastFmStats = new StringBuilder();
         lastFmStats.AppendLine($"Name: **{userInfo.Name}**");
         lastFmStats.AppendLine($"Username: **[{userSettings.UserNameLastFm}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})**");
-        if (userInfo.Subscriber != 0)
+        if (userInfo.Subscriber)
         {
             lastFmStats.AppendLine("Last.fm Pro subscriber");
         }
 
         lastFmStats.AppendLine($"Country: **{userInfo.Country}**");
 
-        lastFmStats.AppendLine($"Registered: **<t:{userInfo.Registered.Text}:D>** (<t:{userInfo.Registered.Text}:R>)");
+        lastFmStats.AppendLine($"Registered: **<t:{userInfo.RegisteredUnix}:D>** (<t:{userInfo.RegisteredUnix}:R>)");
 
         response.Embed.AddField("Last.fm info", lastFmStats.ToString(), true);
 
-        var age = DateTimeOffset.FromUnixTimeSeconds(userInfo.Registered.Text);
+        var age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
         var totalDays = (DateTime.UtcNow - age).TotalDays;
         var avgPerDay = userInfo.Playcount / totalDays;
 
@@ -516,7 +532,7 @@ public class UserBuilder
         var stats = new StringBuilder();
         if (userSettings.UserType != UserType.User)
         {
-            var hasImported = this._playService.UserHasImported(allPlays);
+            var hasImported = PlayService.UserHasImported(allPlays);
             if (hasImported)
             {
                 stats.AppendLine("User has most likely imported plays from external source");
@@ -957,5 +973,68 @@ public class UserBuilder
         embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
 
         return embed;
+    }
+
+    public static ResponseModel ImportMode(ContextModel context, bool hasImported = false)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var importSetting = new SelectMenuBuilder()
+                .WithPlaceholder("Select import setting")
+                .WithCustomId(InteractionConstants.ImportSetting)
+                .WithMinValues(1)
+                .WithMaxValues(1);
+
+        if (!hasImported)
+        {
+            importSetting.IsDisabled = true;
+        }
+
+        foreach (var option in ((DataSource[])Enum.GetValues(typeof(DataSource))))
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var description = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+
+            var active = context.ContextUser.DataSource == option;
+
+            importSetting.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+        }
+
+        response.Components = new ComponentBuilder().WithSelectMenu(importSetting);
+
+        response.Embed.WithAuthor("Configuring your import settings");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var embedDescription = new StringBuilder();
+
+        embedDescription.AppendLine("**Last.fm**");
+        embedDescription.AppendLine("- Use only your Last.fm for stats and ignore imports");
+        embedDescription.AppendLine();
+
+        embedDescription.AppendLine("**Full Spotify, then Last.fm**");
+        embedDescription.AppendLine("- Uses your full Spotify history and adds Last.fm afterwards");
+        embedDescription.AppendLine("- Recommended if you have imported Spotify on Last.fm before");
+        embedDescription.AppendLine("- Plays from other music apps you scrobbled to Last.fm will not be included");
+        embedDescription.AppendLine();
+
+        embedDescription.AppendLine("**Spotify until Last.fm**");
+        embedDescription.AppendLine("- Uses your Spotify history up until the point you started scrobbling on Last.fm");
+        embedDescription.AppendLine("- Do not use this if you have imported on Last.fm before");
+        embedDescription.AppendLine("- Best if you have scrobbles on Last.fm from sources other then Spotify");
+
+        if (!hasImported)
+        {
+            embedDescription.AppendLine();
+            embedDescription.AppendLine("Run the `/import spotify` command to get started with imports, or read the guide (todo link). " +
+                                        "After importing you'll be able to change these settings.");
+        }
+
+        response.Embed.WithDescription(embedDescription.ToString());
+
+        return response;
     }
 }
