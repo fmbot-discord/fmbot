@@ -1011,8 +1011,8 @@ public class PlayBuilder
             {
                 var newArtist = topNewArtists.OrderBy(o => o.FirstPlay).ToList()[i];
 
-                newArtistDescription.AppendLine($"**[{newArtist.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
-                                                $"- **{newArtist.UserPlaycount}** {StringExtensions.GetPlaysString(newArtist.UserPlaycount)} " +
+                newArtistDescription.AppendLine($"**[{newArtist.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)}) " +
+                                                $"- {newArtist.UserPlaycount}** {StringExtensions.GetPlaysString(newArtist.UserPlaycount)} " +
                                                 $"- On **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
             }
 
