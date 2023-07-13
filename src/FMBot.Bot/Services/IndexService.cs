@@ -204,8 +204,10 @@ public class IndexService : IIndexService
             return new List<UserPlayTs>();
         }
 
+        var indexLimitFilter = DateTime.UtcNow.AddYears(-1).AddDays(-180);
         return recentPlays.Content.RecentTracks
             .Where(w => !w.NowPlaying && w.TimePlayed.HasValue)
+            .Where(w => UserHasHigherIndexLimit(user) || w.TimePlayed > indexLimitFilter)
             .Select(t => new UserPlayTs
             {
                 TrackName = t.TrackName,
