@@ -992,81 +992,71 @@ public class LastFmRepository : ILastfmRepository
             {"period", period },
         };
 
-        try
+        Response<TopTracksLfmResponse> topTracksCall;
+        if (amountOfPages == 1)
         {
-            Response<TopTracksLfmResponse> topTracksCall;
-            if (amountOfPages == 1)
+            topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
+        }
+        else
+        {
+            topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
+            if (topTracksCall.Success && topTracksCall.Content.TopTracks.Track.Count > 998)
             {
-                topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
-            }
-            else
-            {
-                topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
-                if (topTracksCall.Success && topTracksCall.Content.TopTracks.Track.Count > 998)
+                for (var i = 2; i <= amountOfPages; i++)
                 {
-                    for (var i = 2; i <= amountOfPages; i++)
-                    {
-                        queryParams.Remove("page");
-                        queryParams.Add("page", i.ToString());
-                        var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
+                    queryParams.Remove("page");
+                    queryParams.Add("page", i.ToString());
+                    var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
 
-                        if (pageResponse.Success)
-                        {
-                            topTracksCall.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
-                            if (pageResponse.Content.TopTracks.Track.Count < 1000)
-                            {
-                                break;
-                            }
-                        }
-                        else
+                    if (pageResponse.Success)
+                    {
+                        topTracksCall.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
+                        if (pageResponse.Content.TopTracks.Track.Count < 1000)
                         {
                             break;
                         }
                     }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
+        }
 
-            if (topTracksCall.Success)
-            {
-                return new Response<TopTrackList>
-                {
-                    Success = true,
-                    Content = new TopTrackList
-                    {
-                        TotalAmount = topTracksCall.Content.TopTracks.Attr?.Total,
-                        TopTracks = topTracksCall.Content.TopTracks.Track.Select(s => new TopTrack
-                        {
-                            AlbumCoverUrl = !string.IsNullOrWhiteSpace(s.Image?.FirstOrDefault(f => f.Size != null && f.Size.ToLower() == "extralarge")?.Text)
-                                ? s.Image.First(f => f.Size.ToLower() == "extralarge").Text
-                                : null,
-                            TrackName = s.Name,
-                            ArtistName = s.Artist.Name,
-                            Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
-                                ? Guid.Parse(s.Mbid)
-                                : null,
-                            TrackUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
-                                ? s.Url
-                                : null,
-                            UserPlaycount = s.Playcount
-                        }).ToList()
-                    }
-                };
-            }
-
-
-
+        if (topTracksCall.Success)
+        {
             return new Response<TopTrackList>
             {
-                Success = false,
-                Error = topTracksCall.Error,
-                Message = topTracksCall.Message
+                Success = true,
+                Content = new TopTrackList
+                {
+                    TotalAmount = topTracksCall.Content.TopTracks.Attr?.Total,
+                    TopTracks = topTracksCall.Content.TopTracks.Track.Select(s => new TopTrack
+                    {
+                        AlbumCoverUrl = !string.IsNullOrWhiteSpace(s.Image?.FirstOrDefault(f => f.Size != null && f.Size.ToLower() == "extralarge")?.Text)
+                            ? s.Image.First(f => f.Size.ToLower() == "extralarge").Text
+                            : null,
+                        TrackName = s.Name,
+                        ArtistName = s.Artist.Name,
+                        Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
+                            ? Guid.Parse(s.Mbid)
+                            : null,
+                        TrackUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
+                            ? s.Url
+                            : null,
+                        UserPlaycount = s.Playcount
+                    }).ToList()
+                }
             };
         }
-        catch (Exception e)
+
+        return new Response<TopTrackList>
         {
-            Console.WriteLine(e);
-            throw;
-        }
+            Success = false,
+            Error = topTracksCall.Error,
+            Message = topTracksCall.Message
+        };
     }
 
     public async Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName,
