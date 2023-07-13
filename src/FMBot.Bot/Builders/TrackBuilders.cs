@@ -922,10 +922,14 @@ public class TrackBuilders
 
         foreach (var trackPage in trackPages)
         {
+            var tooMuchChars = trackPage.Select(s => s.TrackUrl?.Length).Sum() > 3000;
+
             var trackPageString = new StringBuilder();
             foreach (var track in trackPage)
             {
-                var name = $"**{track.ArtistName}** - **[{track.TrackName}]({track.TrackUrl})** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})";
+                var name = tooMuchChars ?
+                    $"**{track.ArtistName}** - **{track.TrackName}** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})" :
+                    $"**{track.ArtistName}** - **[{track.TrackName}]({track.TrackUrl})** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})";
 
                 if (topListSettings.Billboard && previousTopTracks.Any())
                 {
