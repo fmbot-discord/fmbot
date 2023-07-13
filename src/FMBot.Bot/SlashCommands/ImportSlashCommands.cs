@@ -81,11 +81,14 @@ public class ImportSlashCommands : InteractionModuleBase
             attachment13, attachment14, attachment15
         };
 
+        var noAttachments = attachments.All(a => a == null);
+        await DeferAsync(ephemeral: noAttachments);
+
         var embed = new EmbedBuilder();
         var description = new StringBuilder();
         embed.WithColor(DiscordConstants.SpotifyColorGreen);
 
-        if (attachments.All(a => a == null))
+        if (noAttachments)
         {
             embed.WithTitle("Spotify import instructions");
 
@@ -107,17 +110,22 @@ public class ImportSlashCommands : InteractionModuleBase
             description.AppendLine("- We filter out duplicates, so don't worry about submitting the same file twice");
             description.AppendLine("- Spotify files includes plays that you skipped quickly, we filter those out as well");
 
+            var years = await this.GetImportedYears(contextUser.UserId);
+            if (years.Length > 0)
+            {
+                embed.AddField("Total imported plays", years);
+            }
+
             embed.WithDescription(description.ToString());
+            embed.WithFooter("Spotify importing is currently in beta. Please report any issues you encounter");
 
             var components = new ComponentBuilder()
                 .WithButton("Spotify privacy settings", style: ButtonStyle.Link, url: "https://www.spotify.com/us/account/privacy/");
 
             this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-            await this.RespondAsync(embed: embed.Build(), ephemeral: true, components: components.Build());
+            await this.FollowupAsync(embed: embed.Build(), ephemeral: noAttachments, components: components.Build());
             return;
         }
-
-        await DeferAsync();
 
         try
         {
@@ -173,24 +181,10 @@ public class ImportSlashCommands : InteractionModuleBase
 
             embed.AddField("Processed files", files.ToString());
 
-            var years = new StringBuilder();
-            var allPlays = await this._playService
-                .GetAllUserPlays(contextUser.UserId, false);
-
-            var yearGroups = allPlays
-                .Where(w => w.PlaySource == PlaySource.SpotifyImport)
-                .OrderByDescending(o => o.TimePlayed)
-                .GroupBy(g => g.TimePlayed.Year);
-
-            foreach (var year in yearGroups)
-            {
-                years.AppendLine(
-                    $"**`{year.Key}`** " +
-                    $"- **{year.Count()}** plays");
-            }
+            var years = await this.GetImportedYears(contextUser.UserId);
             if (years.Length > 0)
             {
-                embed.AddField("Total imported plays", years.ToString());
+                embed.AddField("Total imported plays", years);
             }
 
             var components = new ComponentBuilder()
@@ -224,6 +218,27 @@ public class ImportSlashCommands : InteractionModuleBase
             m.Embed = embed.Build();
             m.Components = components?.Build();
         });
+    }
+
+    private async Task<string> GetImportedYears(int userId)
+    {
+        var years = new StringBuilder();
+        var allPlays = await this._playService
+            .GetAllUserPlays(userId, false);
+
+        var yearGroups = allPlays
+            .Where(w => w.PlaySource == PlaySource.SpotifyImport)
+            .OrderByDescending(o => o.TimePlayed)
+            .GroupBy(g => g.TimePlayed.Year);
+
+        foreach (var year in yearGroups)
+        {
+            years.AppendLine(
+                $"**`{year.Key}`** " +
+                $"- **{year.Count()}** plays");
+        }
+
+        return years.ToString();
     }
 
     [SlashCommand("manage", "Manage your import settings")]
