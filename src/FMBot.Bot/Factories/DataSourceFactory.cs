@@ -36,12 +36,7 @@ public class DataSourceFactory : IDataSourceFactory
 
         var importUser = await UserRepository.GetImportUserForLastFmUserName(lastFmUserName, connection);
 
-        if (!importUser.LastImportPlay.HasValue)
-        {
-            return null;
-        }
-
-        return importUser;
+        return importUser?.LastImportPlay == null ? null : importUser;
     }
 
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null,

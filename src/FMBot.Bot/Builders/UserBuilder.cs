@@ -466,6 +466,21 @@ public class UserBuilder
         {
             description.AppendLine($"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
         }
+        if (user.DataSource != DataSource.LastFm)
+        {
+            var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
+
+            switch (user.DataSource)
+            {
+                case DataSource.FullSpotifyThenLastFm:
+                case DataSource.SpotifyThenFullLastFm:
+                    description.AppendLine($"Imported: {name}");
+                    break;
+                case DataSource.LastFm:
+                default:
+                    break;
+            }
+        }
 
         if (this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
         {

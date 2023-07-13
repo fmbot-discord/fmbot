@@ -14,7 +14,6 @@ using FMBot.Domain.Models;
 using FMBot.Domain.Interfaces;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
-using System.Xml.Linq;
 using FMBot.Bot.Builders;
 using Fergun.Interactive;
 
@@ -51,7 +50,7 @@ public class ImportSlashCommands : InteractionModuleBase
     [SlashCommand("spotify", "Import your Spotify history")]
     [UsernameSetRequired]
     public async Task SpotifyAsync(
-        [Summary("file-1", "Spotify endsong.json file")] IAttachment attachment1,
+        [Summary("file-1", "Spotify endsong.json file")] IAttachment attachment1 = null,
         [Summary("file-2", "Spotify endsong.json file")] IAttachment attachment2 = null,
         [Summary("file-3", "Spotify endsong.json file")] IAttachment attachment3 = null,
         [Summary("file-4", "Spotify endsong.json file")] IAttachment attachment4 = null,
@@ -71,7 +70,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
         if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
         {
-            await RespondAsync("Not available yet!");
+            await RespondAsync("Sorry, this command is not available yet. Stay tuned for more info.");
             return;
         }
 
@@ -82,15 +81,47 @@ public class ImportSlashCommands : InteractionModuleBase
             attachment13, attachment14, attachment15
         };
 
+        var embed = new EmbedBuilder();
+        var description = new StringBuilder();
+        embed.WithColor(DiscordConstants.SpotifyColorGreen);
+
+        if (attachments.All(a => a == null))
+        {
+            embed.WithTitle("Spotify import instructions");
+
+            description.AppendLine("### Requesting your data from Spotify");
+            description.AppendLine("1. Go to your **[Spotify privacy settings](https://www.spotify.com/us/account/privacy/)**");
+            description.AppendLine("2. Scroll down to \"Download your data\"");
+            description.AppendLine("3. Select **Extended streaming history**");
+            description.AppendLine("4. De-select the other options");
+            description.AppendLine("5. Press request data");
+            description.AppendLine("6. Confirm your data request through your email");
+            description.AppendLine("7. Wait up to 30 days for Spotify to deliver your files");
+
+            description.AppendLine("### Importing your data into .fmbot");
+            description.AppendLine("1. Download the file Spotify provided");
+            description.AppendLine("2. Extract the `.zip` file so you have multiple `endsong_x.json` files ready");
+            description.AppendLine("3. Use this command and add each file as an attachment through the options");
+
+            description.AppendLine("### Notes");
+            description.AppendLine("- We filter out duplicates, so don't worry about submitting the same file twice");
+            description.AppendLine("- Spotify files includes plays that you skipped quickly, we filter those out as well");
+
+            embed.WithDescription(description.ToString());
+
+            var components = new ComponentBuilder()
+                .WithButton("Spotify privacy settings", style: ButtonStyle.Link, url: "https://www.spotify.com/us/account/privacy/");
+
+            this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+            await this.RespondAsync(embed: embed.Build(), ephemeral: true, components: components.Build());
+            return;
+        }
+
         await DeferAsync();
 
         try
         {
-            var embed = new EmbedBuilder();
-            var description = new StringBuilder();
-
             embed.WithTitle("Importing Spotify into .fmbot.. (Beta)");
-            embed.WithColor(DiscordConstants.SpotifyColorGreen);
             embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
             var message = await FollowupAsync(embed: embed.Build());
 
@@ -203,7 +234,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
         if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
         {
-            await RespondAsync("Not available yet!");
+            await RespondAsync("Sorry, this command is not available yet. Stay tuned for more info.");
             return;
         }
 

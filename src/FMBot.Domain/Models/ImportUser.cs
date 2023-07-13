@@ -14,4 +14,5 @@ public class ImportUser
     public DataSource DataSource { get; set; }
 
     public DateTime? LastImportPlay { get; set; }
+    public DateTime? FirstImportPlay { get; set; }
 }

@@ -26,12 +26,12 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
 
     public static ICollection<UserPlayTs> GetFinalUserPlays(ImportUser user, ICollection<UserPlayTs> userPlays)
     {
-        switch (user.DataSource)
+        switch (user?.DataSource)
         {
             case DataSource.FullSpotifyThenLastFm:
                 {
                     return userPlays
-                        .Where(w => w.PlaySource != PlaySource.LastFm || w.TimePlayed > user.LastImportPlay)
+                        .Where(w => w.PlaySource != PlaySource.LastFm || w.TimePlayed > user.LastImportPlay || w.TimePlayed < user.FirstImportPlay)
                         .ToList();
                 }
             case DataSource.SpotifyThenFullLastFm:
