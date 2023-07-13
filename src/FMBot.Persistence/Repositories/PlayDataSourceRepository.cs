@@ -30,8 +30,10 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         {
             case DataSource.FullSpotifyThenLastFm:
                 {
+                    var firstImportPlay = userPlays.Where(w => w.PlaySource != PlaySource.LastFm).MinBy(o => o.TimePlayed).TimePlayed;
+
                     return userPlays
-                        .Where(w => w.PlaySource != PlaySource.LastFm || w.TimePlayed > user.LastImportPlay || w.TimePlayed < user.FirstImportPlay)
+                        .Where(w => w.PlaySource != PlaySource.LastFm || w.TimePlayed > user.LastImportPlay || w.TimePlayed < firstImportPlay)
                         .ToList();
                 }
             case DataSource.SpotifyThenFullLastFm:

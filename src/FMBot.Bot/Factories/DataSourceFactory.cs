@@ -34,9 +34,9 @@ public class DataSourceFactory : IDataSourceFactory
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var importUser = await UserRepository.GetImportUserForLastFmUserName(lastFmUserName, connection);
+        var importUser = await UserRepository.GetImportUserForLastFmUserName(lastFmUserName, connection, true);
 
-        return importUser?.LastImportPlay == null ? null : importUser;
+        return importUser;
     }
 
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null,
