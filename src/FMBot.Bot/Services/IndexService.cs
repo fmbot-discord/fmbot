@@ -175,7 +175,7 @@ public class IndexService : IIndexService
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 4;
 
         var topArtists = await this._dataSourceFactory.GetTopArtistsAsync(user.UserNameLastFM,
-            new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm }, 1000, indexLimit);
+            new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm, ApiParameter = "overall" }, 1000, indexLimit);
 
         if (!topArtists.Success || topArtists.Content.TopArtists == null)
         {
@@ -223,9 +223,11 @@ public class IndexService : IIndexService
 
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 5;
 
+        var topAlbumsList = new List<TopAlbum>();
+
         var topAlbums =
             await this._dataSourceFactory.GetTopAlbumsAsync(user.UserNameLastFM,
-                new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm }, 1000, indexLimit);
+                new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm, ApiParameter = "overall" }, 1000, indexLimit);
 
         if (!topAlbums.Success || topAlbums.Content.TopAlbums == null)
         {
@@ -248,7 +250,7 @@ public class IndexService : IIndexService
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 6;
 
         var trackResult = await this._dataSourceFactory.GetTopTracksAsync(user.UserNameLastFM,
-            new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm }, 1000, indexLimit);
+            new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm, ApiParameter = "overall"}, 1000, indexLimit);
 
         if (!trackResult.Success || trackResult.Content.TopTracks.Count == 0)
         {

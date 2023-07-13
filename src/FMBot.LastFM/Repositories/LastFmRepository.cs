@@ -16,6 +16,8 @@ using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
+using IF.Lastfm.Core.Api.Helpers;
+using IF.Lastfm.Core.Objects;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Tag = FMBot.Domain.Models.Tag;
@@ -683,9 +685,53 @@ public class LastFmRepository : ILastfmRepository
         TimePeriod timePeriod, int count = 2, int amountOfPages = 1)
     {
         var lastStatsTimeSpan = TimePeriodToLastStatsTimeSpan(timePeriod);
-        var topAlbums = await this._lastFmClient.User.GetTopAlbums(lastFmUserName, lastStatsTimeSpan, 1, count);
 
-        Statistics.LastfmApiCalls.Inc();
+        var albums = new List<LastAlbum>();
+        PageResponse<LastAlbum> topAlbums;
+
+        if (amountOfPages == 1)
+        {
+            topAlbums = await this._lastFmClient.User.GetTopAlbums(lastFmUserName, lastStatsTimeSpan, 1, count);
+            Statistics.LastfmApiCalls.Inc();
+
+            if (topAlbums.Success && topAlbums.Content.Any())
+            {
+                albums.AddRange(topAlbums.Content);
+            }
+        }
+        else
+        {
+            topAlbums = await this._lastFmClient.User.GetTopAlbums(lastFmUserName, lastStatsTimeSpan, 1, count);
+            Statistics.LastfmApiCalls.Inc();
+
+            if (topAlbums.Success)
+            {
+                albums.AddRange(topAlbums.Content);
+
+                if (topAlbums.Content.Count > 998)
+                {
+                    for (var i = 2; i <= amountOfPages; i++)
+                    {
+                        topAlbums = await this._lastFmClient.User.GetTopAlbums(lastFmUserName, lastStatsTimeSpan, i, count);
+                        Statistics.LastfmApiCalls.Inc();
+
+                        if (!topAlbums.Success)
+                        {
+                            break;
+                        }
+                        if (topAlbums.Content.Any())
+                        {
+                            albums.AddRange(topAlbums.Content);
+                            if (topAlbums.Count() < 1000)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
 
         if (!topAlbums.Success)
         {
@@ -697,7 +743,7 @@ public class LastFmRepository : ILastfmRepository
             };
         }
 
-        if (topAlbums.Content == null || topAlbums.TotalItems == 0)
+        if (topAlbums.Content == null || !albums.Any())
         {
             return new Response<TopAlbumList>
             {
@@ -712,7 +758,7 @@ public class LastFmRepository : ILastfmRepository
             Content = new TopAlbumList
             {
                 TotalAmount = topAlbums.TotalItems,
-                TopAlbums = topAlbums.Content.Select(s => new TopAlbum
+                TopAlbums = albums.Select(s => new TopAlbum
                 {
                     ArtistName = s.ArtistName,
                     AlbumName = s.Name,
@@ -725,7 +771,7 @@ public class LastFmRepository : ILastfmRepository
                     Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
                         ? Guid.Parse(s.Mbid)
                         : null
-                }).Take(count).ToList()
+                }).ToList()
             }
         };
     }
@@ -793,9 +839,51 @@ public class LastFmRepository : ILastfmRepository
     {
         var lastStatsTimeSpan = TimePeriodToLastStatsTimeSpan(timePeriod);
 
-        var topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, 1, (int)count);
+        var artists = new List<LastArtist>();
+        PageResponse<LastArtist> topArtists;
 
-        Statistics.LastfmApiCalls.Inc();
+        if (amountOfPages == 1)
+        {
+            topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, 1, (int)count);
+            Statistics.LastfmApiCalls.Inc();
+
+            if (topArtists.Success && topArtists.Content.Any())
+            {
+                artists.AddRange(topArtists.Content);
+            }
+        }
+        else
+        {
+            topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, 1, (int)count);
+            Statistics.LastfmApiCalls.Inc();
+
+            if (topArtists.Success)
+            {
+                artists.AddRange(topArtists.Content);
+
+                if (topArtists.Content.Count > 998)
+                {
+                    for (var i = 2; i <= amountOfPages; i++)
+                    {
+                        topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, i, (int)count);
+                        Statistics.LastfmApiCalls.Inc();
+
+                        if (!topArtists.Success)
+                        {
+                            break;
+                        }
+                        if (topArtists.Content.Any())
+                        {
+                            artists.AddRange(topArtists.Content);
+                            if (topArtists.Count() < 1000)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         if (!topArtists.Success)
         {
@@ -822,7 +910,7 @@ public class LastFmRepository : ILastfmRepository
             Content = new TopArtistList
             {
                 TotalAmount = topArtists.TotalItems,
-                TopArtists = topArtists.Content.Select(s => new TopArtist
+                TopArtists = artists.Select(s => new TopArtist
                 {
                     ArtistName = s.Name,
                     ArtistUrl = s.Url.ToString(),
@@ -904,71 +992,81 @@ public class LastFmRepository : ILastfmRepository
             {"period", period },
         };
 
-        Response<TopTracksLfmResponse> topTracksCall;
-        if (amountOfPages == 1)
+        try
         {
-            topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
-        }
-        else
-        {
-            topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
-            if (topTracksCall.Success && topTracksCall.Content.TopTracks.Track.Count > 998)
+            Response<TopTracksLfmResponse> topTracksCall;
+            if (amountOfPages == 1)
             {
-                for (var i = 1; i < amountOfPages; i++)
+                topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
+            }
+            else
+            {
+                topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
+                if (topTracksCall.Success && topTracksCall.Content.TopTracks.Track.Count > 998)
                 {
-                    queryParams.Remove("page");
-                    queryParams.Add("page", (i + 1).ToString());
-                    var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
-
-                    if (pageResponse.Success)
+                    for (var i = 2; i <= amountOfPages; i++)
                     {
-                        topTracksCall.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
-                        if (pageResponse.Content.TopTracks.Track.Count < 1000)
+                        queryParams.Remove("page");
+                        queryParams.Add("page", i.ToString());
+                        var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
+
+                        if (pageResponse.Success)
+                        {
+                            topTracksCall.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
+                            if (pageResponse.Content.TopTracks.Track.Count < 1000)
+                            {
+                                break;
+                            }
+                        }
+                        else
                         {
                             break;
                         }
                     }
-                    else
-                    {
-                        break;
-                    }
                 }
             }
-        }
 
-        if (topTracksCall.Success)
-        {
+            if (topTracksCall.Success)
+            {
+                return new Response<TopTrackList>
+                {
+                    Success = true,
+                    Content = new TopTrackList
+                    {
+                        TotalAmount = topTracksCall.Content.TopTracks.Attr?.Total,
+                        TopTracks = topTracksCall.Content.TopTracks.Track.Select(s => new TopTrack
+                        {
+                            AlbumCoverUrl = !string.IsNullOrWhiteSpace(s.Image?.FirstOrDefault(f => f.Size != null && f.Size.ToLower() == "extralarge")?.Text)
+                                ? s.Image.First(f => f.Size.ToLower() == "extralarge").Text
+                                : null,
+                            TrackName = s.Name,
+                            ArtistName = s.Artist.Name,
+                            Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
+                                ? Guid.Parse(s.Mbid)
+                                : null,
+                            TrackUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
+                                ? s.Url
+                                : null,
+                            UserPlaycount = s.Playcount
+                        }).ToList()
+                    }
+                };
+            }
+
+
+
             return new Response<TopTrackList>
             {
-                Success = true,
-                Content = new TopTrackList
-                {
-                    TotalAmount = topTracksCall.Content.TopTracks.Attr?.Total,
-                    TopTracks = topTracksCall.Content.TopTracks.Track.Select(s => new TopTrack
-                    {
-                        AlbumCoverUrl = !string.IsNullOrWhiteSpace(s.Image?.FirstOrDefault(f => f.Size != null && f.Size.ToLower() == "extralarge")?.Text)
-                            ? s.Image.First(f => f.Size.ToLower() == "extralarge").Text
-                            : null,
-                        TrackName = s.Name,
-                        ArtistName = s.Artist.Name,
-                        Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
-                            ? Guid.Parse(s.Mbid)
-                            : null,
-                        TrackUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
-                            ? s.Url
-                            : null,
-                        UserPlaycount = s.Playcount
-                    }).ToList()
-                }
+                Success = false,
+                Error = topTracksCall.Error,
+                Message = topTracksCall.Message
             };
         }
-
-        return new Response<TopTrackList>
+        catch (Exception e)
         {
-            Success = false,
-            Error = topTracksCall.Error,
-            Message = topTracksCall.Message
-        };
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName,
