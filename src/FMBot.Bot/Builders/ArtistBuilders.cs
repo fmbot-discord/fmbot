@@ -152,7 +152,9 @@ public class ArtistBuilders
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(fullArtist.Type))
+        if (!string.IsNullOrWhiteSpace(fullArtist.Type) ||
+            !string.IsNullOrWhiteSpace(fullArtist.Location) ||
+            !string.IsNullOrWhiteSpace(fullArtist.Disambiguation))
         {
             var artistInfo = new StringBuilder();
 
