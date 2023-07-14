@@ -262,7 +262,6 @@ public class UserCommands : BaseCommandModule
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
 
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
-
             return;
         }
 

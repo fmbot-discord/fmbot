@@ -16,6 +16,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using Fergun.Interactive;
+using FMBot.Domain;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -68,9 +69,19 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
+        var embed = new EmbedBuilder();
+
+        if (contextUser.UserType == UserType.User)
         {
-            await RespondAsync("Sorry, this command is not available yet. Stay tuned for more info.");
+            embed.WithDescription($"Only .fmbot supporters import their Spotify history.\n\n" +
+                                  $"[Get supporter here]({Constants.GetSupporterDiscordLink}).");
+
+            var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            await ReplyAsync(embed: embed.Build(), components: components.Build());
+
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
 
@@ -84,7 +95,6 @@ public class ImportSlashCommands : InteractionModuleBase
         var noAttachments = attachments.All(a => a == null);
         await DeferAsync(ephemeral: noAttachments);
 
-        var embed = new EmbedBuilder();
         var description = new StringBuilder();
         embed.WithColor(DiscordConstants.SpotifyColorGreen);
 
@@ -247,9 +257,18 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
+        if (contextUser.UserType == UserType.User)
         {
-            await RespondAsync("Sorry, this command is not available yet. Stay tuned for more info.");
+            var embed = new EmbedBuilder();
+            embed.WithDescription($"Only .fmbot supporters import their Spotify history.\n\n" +
+                              $"[Get supporter here]({Constants.GetSupporterDiscordLink}).");
+
+            var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            await ReplyAsync(embed: embed.Build(), components: components.Build());
+
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
 
