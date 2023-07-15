@@ -1,4 +1,5 @@
 using System;
+using FMBot.Domain.Enums;
 
 namespace FMBot.Persistence.Domain.Models;
 
@@ -15,6 +16,10 @@ public class UserPlay
     public string ArtistName { get; set; }
 
     public DateTime TimePlayed { get; set; }
+
+    public long? MsPlayed { get; set; }
+
+    public PlaySource? PlaySource { get; set; }
 
     public User User { get; set; }
 }
