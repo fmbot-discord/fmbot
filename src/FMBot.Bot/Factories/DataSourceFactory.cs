@@ -257,7 +257,7 @@ public class DataSourceFactory : IDataSourceFactory
         return await this._lastfmRepository.UnLoveTrackAsync(lastFmSessionKey, artistName, trackName);
     }
 
-    public async Task<Response<StoredPlayResponse>> SetNowPlayingAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null)
+    public async Task<Response<bool>> SetNowPlayingAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null)
     {
         return await this._lastfmRepository.SetNowPlayingAsync(lastFmSessionKey, artistName, trackName, albumName);
     }

@@ -1181,7 +1181,7 @@ public class LastFmRepository : ILastfmRepository
         return unLoveCall.Success;
     }
 
-    public async Task<Response<StoredPlayResponse>> SetNowPlayingAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null)
+    public async Task<Response<bool>> SetNowPlayingAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null)
     {
         var queryParams = new Dictionary<string, string>
         {
@@ -1196,27 +1196,12 @@ public class LastFmRepository : ILastfmRepository
             queryParams.Add("album", albumName);
         }
 
-        var nowPlayingCall = await this._lastFmApi.CallApiAsync<ScrobbledTrack>(queryParams, Call.TrackUpdateNowPlaying, true);
+        var nowPlayingCall = await this._lastFmApi.CallApiAsync<NowPlayingLfmResponse>(queryParams, Call.TrackUpdateNowPlaying, true);
 
-        if (nowPlayingCall.Success)
+        return new Response<bool>
         {
-            return new Response<StoredPlayResponse>
-            {
-                Success = true,
-                Content = new StoredPlayResponse
-                {
-                    Accepted = nowPlayingCall.Content.Scrobbles.Attr.Accepted > 0,
-                    Ignored = nowPlayingCall.Content.Scrobbles.Attr.Ignored > 0,
-                    IgnoreMessage = nowPlayingCall.Content.Scrobbles.Scrobble?.IgnoredMessage?.Text
-                }
-            };
-        }
-
-        return new Response<StoredPlayResponse>
-        {
-            Success = false,
-            Error = nowPlayingCall.Error,
-            Message = nowPlayingCall.Message
+            Success = nowPlayingCall.Success,
+            Content = nowPlayingCall.Content.Nowplaying.IgnoredMessage.Code == 0
         };
     }
 

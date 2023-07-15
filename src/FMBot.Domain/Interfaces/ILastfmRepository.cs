@@ -58,6 +58,7 @@ public interface ILastfmRepository
     Task<Response<AuthSessionResponse>> GetAuthSession(string token);
     Task<bool> LoveTrackAsync(string lastFmSessionKey, string artistName, string trackName);
     Task<bool> UnLoveTrackAsync(string lastFmSessionKey, string artistName, string trackName);
-    Task<Response<StoredPlayResponse>> SetNowPlayingAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null);
+    Task<Response<bool>> SetNowPlayingAsync(string lastFmSessionKey, string artistName, string trackName,
+        string albumName = null);
     Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null);
 }
