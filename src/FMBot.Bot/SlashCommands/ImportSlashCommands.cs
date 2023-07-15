@@ -71,7 +71,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
         var embed = new EmbedBuilder();
 
-        await ReplyAsync(
+        await RespondAsync(
             "The importing beta has currently been disabled due to some discovered technical issues. We're working on it, sorry for the inconvenience!");
         return;
 
@@ -261,7 +261,7 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        await ReplyAsync(
+        await RespondAsync(
             "The importing beta has currently been disabled due to some discovered technical issues. We're working on it, sorry for the inconvenience!");
         return;
 
