@@ -71,6 +71,10 @@ public class ImportSlashCommands : InteractionModuleBase
 
         var embed = new EmbedBuilder();
 
+        await ReplyAsync(
+            "The importing beta has currently been disabled due to some discovered technical issues. We're working on it, sorry for the inconvenience!");
+        return;
+
         if (contextUser.UserType == UserType.User)
         {
             embed.WithDescription($"Only supporters import their Spotify history.\n\n" +
@@ -256,6 +260,10 @@ public class ImportSlashCommands : InteractionModuleBase
     public async Task ManageImportAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        await ReplyAsync(
+            "The importing beta has currently been disabled due to some discovered technical issues. We're working on it, sorry for the inconvenience!");
+        return;
 
         if (contextUser.UserType == UserType.User)
         {

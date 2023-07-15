@@ -91,8 +91,7 @@ public static class PlayRepository
     private static async Task RemoveAllCurrentLastFmPlays(int userId, NpgsqlConnection connection)
     {
         await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_play_ts " +
-                                                        "WHERE user_id = @userId " +
-                                                        "AND play_source IS NULL OR play_source = 0", connection);
+                                                        "WHERE user_id = @userId ", connection);
 
         deletePlays.Parameters.AddWithValue("userId", userId);
 
