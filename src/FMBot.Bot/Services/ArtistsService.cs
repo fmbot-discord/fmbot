@@ -401,7 +401,17 @@ public class ArtistsService
 
     private static string Description(IEnumerable<TasteItem> mainUserArtists, TimePeriod chartTimePeriod, IReadOnlyCollection<TasteItem> matchedArtists)
     {
-        var percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
+        decimal percentage;
+
+        if (!mainUserArtists.Any() || !matchedArtists.Any())
+        {
+            percentage = 0;
+        }
+        else
+        {
+            percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
+        }
+
         var description =
             $"**{matchedArtists.Count()}** ({percentage:0.0}%)  out of top **{mainUserArtists.Count()}** {chartTimePeriod.ToString().ToLower()} match";
 
