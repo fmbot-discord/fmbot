@@ -14,14 +14,14 @@ namespace FMBot.Persistence.Repositories;
 
 public static class PlayRepository
 {
-    public record PlayUpdate(List<UserPlayTs> NewPlays, List<UserPlayTs> RemovedPlays);
+    public record PlayUpdate(List<UserPlay> NewPlays, List<UserPlay> RemovedPlays);
 
     public static async Task<PlayUpdate> InsertLatestPlays(IEnumerable<RecentTrack> recentTracks, int userId, NpgsqlConnection connection)
     {
         var plays = recentTracks
             .Where(w => !w.NowPlaying &&
                         w.TimePlayed.HasValue)
-            .Select(s => new UserPlayTs
+            .Select(s => new UserPlay
             {
                 ArtistName = s.ArtistName,
                 AlbumName = s.AlbumName,
@@ -42,7 +42,7 @@ public static class PlayRepository
                 .ToList();
         }
 
-        var addedPlays = new List<UserPlayTs>();
+        var addedPlays = new List<UserPlay>();
         foreach (var newPlay in plays)
         {
             if (existingPlays.All(a => a.TimePlayed != newPlay.TimePlayed))
@@ -53,7 +53,7 @@ public static class PlayRepository
 
         var firstNewPlay = plays.MinBy(o => o.TimePlayed);
 
-        var removedPlays = new List<UserPlayTs>();
+        var removedPlays = new List<UserPlay>();
         if (firstNewPlay != null)
         {
             foreach (var existingPlay in existingPlays.Where(w => w.TimePlayed >= firstNewPlay.TimePlayed))
@@ -80,7 +80,7 @@ public static class PlayRepository
         return new PlayUpdate(addedPlays, removedPlays);
     }
 
-    public static async Task ReplaceAllPlays(IReadOnlyList<UserPlayTs> playsToInsert, int userId, NpgsqlConnection connection)
+    public static async Task ReplaceAllPlays(IReadOnlyList<UserPlay> playsToInsert, int userId, NpgsqlConnection connection)
     {
         await RemoveAllCurrentLastFmPlays(userId, connection);
 
@@ -90,49 +90,31 @@ public static class PlayRepository
 
     private static async Task RemoveAllCurrentLastFmPlays(int userId, NpgsqlConnection connection)
     {
-        await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_play_ts " +
+        await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
                                                         "WHERE user_id = @userId ", connection);
 
         deletePlays.Parameters.AddWithValue("userId", userId);
 
         await deletePlays.ExecuteNonQueryAsync();
-
-
-        // TODO remove old plays table and only delete Last.fm plays
-        await using var deleteMappedPlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                              "WHERE user_id = @userId ", connection);
-
-        deleteMappedPlays.Parameters.AddWithValue("userId", userId);
-
-        await deleteMappedPlays.ExecuteNonQueryAsync();
     }
 
-    private static async Task RemoveSpecificPlays(IEnumerable<UserPlayTs> playsToRemove, NpgsqlConnection connection)
+    private static async Task RemoveSpecificPlays(IEnumerable<UserPlay> playsToRemove, NpgsqlConnection connection)
     {
         foreach (var playToRemove in playsToRemove)
         {
-            await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_play_ts " +
+            await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
                                                             "WHERE user_id = @userId AND time_played = @timePlayed", connection);
 
             deletePlays.Parameters.AddWithValue("userId", playToRemove.UserId);
             deletePlays.Parameters.AddWithValue("timePlayed", playToRemove.TimePlayed);
 
             await deletePlays.ExecuteNonQueryAsync();
-
-            // TODO remove old plays table and convert to ID delete
-            await using var deleteMappedPlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                            "WHERE user_id = @userId AND time_played = @timePlayed", connection);
-
-            deleteMappedPlays.Parameters.AddWithValue("userId", playToRemove.UserId);
-            deleteMappedPlays.Parameters.AddWithValue("timePlayed", playToRemove.TimePlayed);
-
-            await deleteMappedPlays.ExecuteNonQueryAsync();
         }
     }
 
-    public static async Task InsertTimeSeriesPlays(IEnumerable<UserPlayTs> plays, NpgsqlConnection connection)
+    public static async Task InsertTimeSeriesPlays(IEnumerable<UserPlay> plays, NpgsqlConnection connection)
     {
-        var copyHelper = new PostgreSQLCopyHelper<UserPlayTs>("public", "user_play_ts")
+        var copyHelper = new PostgreSQLCopyHelper<UserPlay>("public", "user_plays")
             .MapText("track_name", x => x.TrackName)
             .MapText("album_name", x => x.AlbumName)
             .MapText("artist_name", x => x.ArtistName)
@@ -142,55 +124,29 @@ public static class PlayRepository
             .MapInteger("play_source", x => (int?)x.PlaySource);
 
         await copyHelper.SaveAllAsync(connection, plays);
-
-        // TODO remove old plays table
-        if (plays != null)
-        {
-            var mappedUserPlays = plays.Select(s => new UserPlay
-            {
-                TimePlayed = s.TimePlayed,
-                AlbumName = s.AlbumName,
-                ArtistName = s.ArtistName,
-                TrackName = s.TrackName,
-                MsPlayed = s.MsPlayed,
-                PlaySource = s.PlaySource,
-                UserId = s.UserId
-            });
-
-            var newCopyHelper = new PostgreSQLCopyHelper<UserPlay>("public", "user_plays")
-                .MapText("track_name", x => x.TrackName)
-                .MapText("album_name", x => x.AlbumName)
-                .MapText("artist_name", x => x.ArtistName)
-                .MapTimeStampTz("time_played", x => DateTime.SpecifyKind(x.TimePlayed, DateTimeKind.Utc))
-                .MapInteger("user_id", x => x.UserId)
-                .MapBigInt("ms_played", x => x.MsPlayed)
-                .MapInteger("play_source", x => (int?)x.PlaySource);
-
-            await newCopyHelper.SaveAllAsync(connection, mappedUserPlays);
-        }
     }
 
-    public static async Task<ICollection<UserPlayTs>> GetUserPlays(int userId, NpgsqlConnection connection, int limit)
+    public static async Task<ICollection<UserPlay>> GetUserPlays(int userId, NpgsqlConnection connection, int limit)
     {
-        const string sql = "SELECT * FROM public.user_play_ts WHERE user_id = @userId " +
+        const string sql = "SELECT * FROM public.user_plays WHERE user_id = @userId " +
                            "ORDER BY time_played DESC LIMIT @limit";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-        return (await connection.QueryAsync<UserPlayTs>(sql, new
+        return (await connection.QueryAsync<UserPlay>(sql, new
         {
             userId,
             limit
         })).ToList();
     }
 
-    public static async Task<ICollection<UserPlayTs>> GetUserPlaysWithinTimeRange(int userId, NpgsqlConnection connection, DateTime start, DateTime? end = null)
+    public static async Task<ICollection<UserPlay>> GetUserPlaysWithinTimeRange(int userId, NpgsqlConnection connection, DateTime start, DateTime? end = null)
     {
         end ??= DateTime.UtcNow;
 
-        const string sql = "SELECT * FROM public.user_play_ts WHERE user_id = @userId " +
+        const string sql = "SELECT * FROM public.user_plays WHERE user_id = @userId " +
                            "AND time_played >= @start AND time_played <= @end  " +
                            "ORDER BY time_played DESC ";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-        return (await connection.QueryAsync<UserPlayTs>(sql, new
+        return (await connection.QueryAsync<UserPlay>(sql, new
         {
             userId,
             start,
@@ -200,17 +156,9 @@ public static class PlayRepository
 
     public static async Task SetDefaultSourceForPlays(int userId, NpgsqlConnection connection)
     {
-        const string sql = "UPDATE public.user_play_ts SET play_source = 0 WHERE user_id = @userId AND play_source IS null";
+        const string sql = "UPDATE public.user_plays SET play_source = 0 WHERE user_id = @userId AND play_source IS null";
 
         await connection.ExecuteAsync(sql, new
-        {
-            userId,
-        });
-
-        // TODO remove old plays table
-        const string mappedSql = "UPDATE public.user_plays SET play_source = 0 WHERE user_id = @userId AND play_source IS null";
-
-        await connection.ExecuteAsync(mappedSql, new
         {
             userId,
         });
@@ -218,7 +166,7 @@ public static class PlayRepository
 
     public static async Task<bool> HasImported(int userId, NpgsqlConnection connection)
     {
-        const string sql = "SELECT * FROM public.user_play_ts WHERE user_id = @userId " +
+        const string sql = "SELECT * FROM public.user_plays WHERE user_id = @userId " +
                            "AND play_source IS NOT NULL and play_source != 0 " +
                            "LIMIT 1";
 

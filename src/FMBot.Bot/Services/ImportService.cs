@@ -53,9 +53,9 @@ public class ImportService
         }
     }
 
-    public async Task<List<UserPlayTs>> SpotifyImportToUserPlays(int userId, List<SpotifyImportModel> spotifyPlays)
+    public async Task<List<UserPlay>> SpotifyImportToUserPlays(int userId, List<SpotifyImportModel> spotifyPlays)
     {
-        var userPlays = new List<UserPlayTs>();
+        var userPlays = new List<UserPlay>();
 
         var invalidPlays = 0;
 
@@ -68,7 +68,7 @@ public class ImportService
 
             if (validScrobble)
             {
-                userPlays.Add(new UserPlayTs
+                userPlays.Add(new UserPlay
                 {
                     UserId = userId,
                     TimePlayed = DateTime.SpecifyKind(spotifyPlay.Ts, DateTimeKind.Utc),
@@ -88,7 +88,7 @@ public class ImportService
         return userPlays;
     }
 
-    public async Task<List<UserPlayTs>> RemoveDuplicateSpotifyImports(int userId, IEnumerable<UserPlayTs> userPlays)
+    public async Task<List<UserPlay>> RemoveDuplicateSpotifyImports(int userId, IEnumerable<UserPlay> userPlays)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -113,7 +113,7 @@ public class ImportService
         await PlayRepository.SetDefaultSourceForPlays(userId, connection);
     }
 
-    public async Task InsertImportPlays(IEnumerable<UserPlayTs> plays)
+    public async Task InsertImportPlays(IEnumerable<UserPlay> plays)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();

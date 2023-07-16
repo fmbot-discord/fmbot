@@ -190,7 +190,7 @@ public class IndexService : IIndexService
         }).ToList();
     }
 
-    private async Task<IReadOnlyList<UserPlayTs>> GetPlaysForUserFromLastFm(User user)
+    private async Task<IReadOnlyList<UserPlay>> GetPlaysForUserFromLastFm(User user)
     {
         Log.Information($"Getting plays for user {user.UserNameLastFM}");
 
@@ -201,14 +201,14 @@ public class IndexService : IIndexService
 
         if (!recentPlays.Success || recentPlays.Content.RecentTracks.Count == 0)
         {
-            return new List<UserPlayTs>();
+            return new List<UserPlay>();
         }
 
         var indexLimitFilter = DateTime.UtcNow.AddYears(-1).AddDays(-180);
         return recentPlays.Content.RecentTracks
             .Where(w => !w.NowPlaying && w.TimePlayed.HasValue)
             .Where(w => UserHasHigherIndexLimit(user) || w.TimePlayed > indexLimitFilter)
-            .Select(t => new UserPlayTs
+            .Select(t => new UserPlay
             {
                 TrackName = t.TrackName,
                 AlbumName = t.AlbumName,

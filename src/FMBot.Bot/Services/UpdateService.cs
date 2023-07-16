@@ -334,7 +334,7 @@ public class UpdateService : IUpdateService
     }
 
     private async Task UpdateArtistsForUser(User user,
-        IEnumerable<UserPlayTs> newScrobbles,
+        IEnumerable<UserPlay> newScrobbles,
         NpgsqlConnection connection,
         IReadOnlyDictionary<string, UserArtist> userArtists)
     {
@@ -400,7 +400,7 @@ public class UpdateService : IUpdateService
     }
 
     private async Task UpdateAlbumsForUser(User user,
-        IEnumerable<UserPlayTs> newScrobbles,
+        IEnumerable<UserPlay> newScrobbles,
         NpgsqlConnection connection,
         IReadOnlyDictionary<string, List<UserAlbum>> userAlbums)
     {
@@ -477,7 +477,7 @@ public class UpdateService : IUpdateService
     }
 
     private async Task UpdateTracksForUser(User user,
-        IEnumerable<UserPlayTs> newScrobbles,
+        IEnumerable<UserPlay> newScrobbles,
         NpgsqlConnection connection,
         IReadOnlyDictionary<string, List<UserTrack>> userTracks)
     {
@@ -592,7 +592,7 @@ public class UpdateService : IUpdateService
 
         var playsToCache = tracks
             .Where(w => w.NowPlaying || w.TimePlayed.HasValue && w.TimePlayed.Value > filter)
-            .Select(s => new UserPlayTs
+            .Select(s => new UserPlay
             {
                 ArtistName = s.ArtistName.ToLower(),
                 AlbumName = s.AlbumName?.ToLower(),

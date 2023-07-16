@@ -415,7 +415,7 @@ public class WhoKnowsArtistService
                   "FROM ( " +
                   "SELECT up.user_id, artist_name AS name, COUNT(*) as playcount, " +
                   " ROW_NUMBER() OVER (PARTITION BY up.user_id ORDER BY COUNT(*) DESC) as pos " +
-                  "FROM user_play_ts AS up " +
+                  "FROM user_plays AS up " +
                   "INNER JOIN guild_users AS gu ON gu.user_id = up.user_id  " +
                   $"WHERE gu.guild_id = @guildId AND time_played > current_date - interval '{amountOfDays}' day " +
                   "GROUP BY up.user_id, artist_name " +

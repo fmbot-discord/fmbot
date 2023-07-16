@@ -12,7 +12,7 @@ public class PlayServiceTest
     {
         // Arrange
         var recentTracks = new RecentTrack();
-        var lastPlays = new List<UserPlayTs>();
+        var lastPlays = new List<UserPlay>();
 
         // Act
         var result = PlayService.GetCurrentStreak(1, recentTracks, lastPlays);
@@ -35,7 +35,7 @@ public class PlayServiceTest
             };
 
 
-        var lastPlays = new List<UserPlayTs>
+        var lastPlays = new List<UserPlay>
         {
             new()
             {
@@ -94,7 +94,7 @@ public class PlayServiceTest
                         TimePlayed = DateTime.UtcNow
                     };
 
-        var lastPlays = new List<UserPlayTs>
+        var lastPlays = new List<UserPlay>
         {
             new()
             {

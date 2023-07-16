@@ -374,7 +374,7 @@ public class GenreService
         return foundGenres;
     }
 
-    public async Task<List<string>> GetTopGenresForPlays(IEnumerable<UserPlayTs> plays)
+    public async Task<List<string>> GetTopGenresForPlays(IEnumerable<UserPlay> plays)
     {
         var artists = plays
             .GroupBy(x => new { x.ArtistName })

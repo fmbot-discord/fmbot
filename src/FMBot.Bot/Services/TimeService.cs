@@ -26,7 +26,7 @@ public class TimeService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<TimeSpan> GetPlayTimeForPlays(IEnumerable<UserPlayTs> plays)
+    public async Task<TimeSpan> GetPlayTimeForPlays(IEnumerable<UserPlay> plays)
     {
         await CacheAllTrackLengths();
 
@@ -136,7 +136,7 @@ public class TimeService
         return $"artist-length-avg-{artistName}";
     }
 
-    public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(ICommandContext context, List<UserPlayTs> userPlays, IDictionary<int, FullGuildUser> guildUsers)
+    public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(ICommandContext context, List<UserPlay> userPlays, IDictionary<int, FullGuildUser> guildUsers)
     {
         var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 
