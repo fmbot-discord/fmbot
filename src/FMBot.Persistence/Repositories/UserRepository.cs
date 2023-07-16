@@ -26,7 +26,7 @@ public class UserRepository
 
         if (user != null && getLastImportPlayDate)
         {
-            const string getLastImportedPlayDateQuery = "SELECT time_played FROM user_play_ts WHERE play_source != 0 AND user_id = @userId ORDER BY time_played DESC LIMIT 1";
+            const string getLastImportedPlayDateQuery = "SELECT time_played FROM user_plays WHERE play_source != 0 AND user_id = @userId ORDER BY time_played DESC LIMIT 1";
 
             user.LastImportPlay = await connection.QueryFirstOrDefaultAsync<DateTime?>(getLastImportedPlayDateQuery, new
             {
@@ -40,7 +40,7 @@ public class UserRepository
     public static async Task<ImportUser> GetImportUserForLastFmUserId(int userId, NpgsqlConnection connection, bool getLastImportPlayDate = false)
     {
         const string getUserQuery = "SELECT user_id, discord_user_id, user_name_last_fm, data_source, " +
-                                    "(SELECT time_played FROM user_play_ts WHERE play_source != 0 AND user_id = @userId ORDER BY time_played DESC LIMIT 1) AS last_import_play " +
+                                    "(SELECT time_played FROM user_plays WHERE play_source != 0 AND user_id = @userId ORDER BY time_played DESC LIMIT 1) AS last_import_play " +
                                     "FROM users " +
                                     "WHERE user_id = @userId " +
                                     "AND last_used is not null " +

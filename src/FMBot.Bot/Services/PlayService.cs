@@ -202,21 +202,21 @@ public class PlayService
         return yearOverview;
     }
 
-    private static int GetUniqueCount(IEnumerable<UserPlayTs> plays)
+    private static int GetUniqueCount(IEnumerable<UserPlay> plays)
     {
         return plays
             .GroupBy(x => new { x.ArtistName, x.TrackName })
             .Count();
     }
 
-    private static double GetAvgPerDayCount(IEnumerable<UserPlayTs> plays)
+    private static double GetAvgPerDayCount(IEnumerable<UserPlay> plays)
     {
         return plays
             .GroupBy(g => g.TimePlayed.Date)
             .Average(a => a.Count());
     }
 
-    private static string GetTopTrackForPlays(IEnumerable<UserPlayTs> plays)
+    private static string GetTopTrackForPlays(IEnumerable<UserPlay> plays)
     {
         var topTrack = plays
             .GroupBy(x => new { x.ArtistName, x.TrackName })
@@ -230,7 +230,7 @@ public class PlayService
         return $"`{topTrack.Count()}` {StringExtensions.GetPlaysString(topTrack.Count())} - {StringExtensions.Sanitize(topTrack.Key.ArtistName)} | {StringExtensions.Sanitize(topTrack.Key.TrackName)}";
     }
 
-    private static string GetTopAlbumForPlays(IEnumerable<UserPlayTs> plays)
+    private static string GetTopAlbumForPlays(IEnumerable<UserPlay> plays)
     {
         var topAlbum = plays
             .GroupBy(x => new { x.ArtistName, x.AlbumName })
@@ -244,7 +244,7 @@ public class PlayService
         return $"`{topAlbum.Count()}` {StringExtensions.GetPlaysString(topAlbum.Count())} - {StringExtensions.Sanitize(topAlbum.Key.ArtistName)} | {StringExtensions.Sanitize(topAlbum.Key.AlbumName)}";
     }
 
-    private static string GetTopArtistForPlays(IEnumerable<UserPlayTs> plays)
+    private static string GetTopArtistForPlays(IEnumerable<UserPlay> plays)
     {
         var topArtist = plays
             .GroupBy(x => x.ArtistName)
@@ -258,7 +258,7 @@ public class PlayService
         return $"`{topArtist.Count()}` {StringExtensions.GetPlaysString(topArtist.Count())} - {StringExtensions.Sanitize(topArtist.Key)}";
     }
 
-    private async Task<ICollection<UserPlayTs>> GetWeekPlays(int userId)
+    private async Task<ICollection<UserPlay>> GetWeekPlays(int userId)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -316,7 +316,7 @@ public class PlayService
     }
 
     public static UserStreak GetCurrentStreak(int userId, RecentTrack lastPlay,
-        ICollection<UserPlayTs> lastPlays)
+        ICollection<UserPlay> lastPlays)
     {
         if (!lastPlays.Any() || lastPlay == null)
         {
@@ -564,7 +564,7 @@ public class PlayService
             .ToList();
     }
 
-    public static List<GuildTrack> GetGuildTopTracks(IEnumerable<UserPlayTs> plays, DateTime startDateTime, OrderType orderType, string artistName)
+    public static List<GuildTrack> GetGuildTopTracks(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
     {
         return plays
             .Where(w => w.TimePlayed > startDateTime)
@@ -587,7 +587,7 @@ public class PlayService
             .ToList();
     }
 
-    public static List<GuildAlbum> GetGuildTopAlbums(IEnumerable<UserPlayTs> plays, DateTime startDateTime, OrderType orderType, string artistName)
+    public static List<GuildAlbum> GetGuildTopAlbums(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
     {
         return plays
             .Where(w => w.TimePlayed > startDateTime && w.AlbumName != null)
@@ -609,7 +609,7 @@ public class PlayService
             .ToList();
     }
 
-    public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlayTs> plays, DateTime startDateTime, OrderType orderType, int limit = 120, bool includeListeners = false)
+    public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, int limit = 120, bool includeListeners = false)
     {
         return plays
             .Where(w => w.TimePlayed > startDateTime)
@@ -689,7 +689,7 @@ public class PlayService
         var minDate = DateTime.UtcNow.AddDays(-7);
 
         const string sql = "SELECT coalesce(count(up.time_played), 0) " +
-                           "FROM user_play_ts AS up " +
+                           "FROM user_plays AS up " +
                            "INNER JOIN users AS u ON up.user_id = u.user_id " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                            "WHERE gu.guild_id = @guildId AND " +
@@ -710,7 +710,7 @@ public class PlayService
 
     public async Task<DateTime?> GetArtistFirstPlayDate(int userId, string artistName)
     {
-        const string sql = "SELECT first(time_played, time_played) FROM user_play_ts " +
+        const string sql = "SELECT first(time_played, time_played) FROM user_plays " +
                            "WHERE user_id = @userId AND " +
                            "UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
 
@@ -727,7 +727,7 @@ public class PlayService
 
     public async Task<DateTime?> GetAlbumFirstPlayDate(int userId, string artistName, string albumName)
     {
-        const string sql = "SELECT first(time_played, time_played) FROM user_play_ts " +
+        const string sql = "SELECT first(time_played, time_played) FROM user_plays " +
                            "WHERE user_id = @userId AND " +
                            "UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
                            "UPPER(album_name) = UPPER(CAST(@albumName AS CITEXT))";
@@ -746,7 +746,7 @@ public class PlayService
 
     public async Task<DateTime?> GetTrackFirstPlayDate(int userId, string artistName, string trackName)
     {
-        const string sql = "SELECT first(time_played, time_played) FROM user_play_ts " +
+        const string sql = "SELECT first(time_played, time_played) FROM user_plays " +
                            "WHERE user_id = @userId AND " +
                            "UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
                            "UPPER(track_name) = UPPER(CAST(@trackName AS CITEXT))";
@@ -763,18 +763,18 @@ public class PlayService
         });
     }
 
-    public async Task<IList<UserPlayTs>> GetGuildUsersPlays(int guildId, int amountOfDays)
+    public async Task<IList<UserPlay>> GetGuildUsersPlays(int guildId, int amountOfDays)
     {
         var cacheKey = $"guild-user-plays-{guildId}-{amountOfDays}";
 
-        var cachedPlaysAvailable = this._cache.TryGetValue(cacheKey, out List<UserPlayTs> userPlays);
+        var cachedPlaysAvailable = this._cache.TryGetValue(cacheKey, out List<UserPlay> userPlays);
         if (cachedPlaysAvailable)
         {
             return userPlays;
         }
 
         var sql = "SELECT up.* " +
-                  "FROM user_play_ts AS up " +
+                  "FROM user_plays AS up " +
                   "INNER JOIN users AS u ON up.user_id = u.user_id  " +
                   "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                   $"WHERE gu.guild_id = @guildId  AND gu.bot != true AND time_played > current_date - interval '{amountOfDays}' day " +
@@ -785,7 +785,7 @@ public class PlayService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        userPlays = (await connection.QueryAsync<UserPlayTs>(sql, new
+        userPlays = (await connection.QueryAsync<UserPlay>(sql, new
         {
             guildId
         })).ToList();
@@ -795,10 +795,10 @@ public class PlayService
         return userPlays;
     }
 
-    public async Task<List<UserPlayTs>> GetGuildUsersPlaysForTimeLeaderBoard(int guildId)
+    public async Task<List<UserPlay>> GetGuildUsersPlaysForTimeLeaderBoard(int guildId)
     {
         const string sql = "SELECT up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
-                           "FROM public.user_play_ts AS up " +
+                           "FROM public.user_plays AS up " +
                            "INNER JOIN users AS u ON up.user_id = u.user_id " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                            "WHERE gu.guild_id = @guildId " +
@@ -810,7 +810,7 @@ public class PlayService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var userPlays = (await connection.QueryAsync<UserPlayTs>(sql, new
+        var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
         {
             guildId,
         })).ToList();
@@ -818,14 +818,14 @@ public class PlayService
         return userPlays;
     }
 
-    public static bool UserHasImported(IEnumerable<UserPlayTs> userPlays)
+    public static bool UserHasImported(IEnumerable<UserPlay> userPlays)
     {
         return userPlays
             .GroupBy(g => g.TimePlayed.Date)
             .Count(w => w.Count() > 2500) >= 7;
     }
 
-    public async Task<ICollection<UserPlayTs>> GetAllUserPlays(int userId, bool finalizeImport = true)
+    public async Task<ICollection<UserPlay>> GetAllUserPlays(int userId, bool finalizeImport = true)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();

@@ -30,13 +30,13 @@ public class WhoKnowsPlayService
         }
 
         var foundUsers = new List<FullGuildUser>();
-        var userPlays = new List<UserPlayTs>();
+        var userPlays = new List<UserPlay>();
 
         var filter = GuildService.FilterGuildUsers(guildUsers, guild);
 
         foreach (var user in filter.FilteredGuildUsers.Where(w => w.Key != currentUserId))
         {
-            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-track-{artistName.ToLower()}-{trackName.ToLower()}", out UserPlayTs userPlay);
+            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-track-{artistName.ToLower()}-{trackName.ToLower()}", out UserPlay userPlay);
 
             if (userFound)
             {
@@ -66,13 +66,13 @@ public class WhoKnowsPlayService
         }
 
         var foundUsers = new List<FullGuildUser>();
-        var userPlays = new List<UserPlayTs>();
+        var userPlays = new List<UserPlay>();
 
         var filter = GuildService.FilterGuildUsers(guildUsers, guild);
 
         foreach (var user in filter.FilteredGuildUsers.Where(w => w.Key != currentUserId))
         {
-            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-album-{artistName.ToLower()}-{albumName.ToLower()}", out UserPlayTs userPlay);
+            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-album-{artistName.ToLower()}-{albumName.ToLower()}", out UserPlay userPlay);
 
             if (userFound)
             {
@@ -101,13 +101,13 @@ public class WhoKnowsPlayService
         }
 
         var foundUsers = new List<FullGuildUser>();
-        var userPlays = new List<UserPlayTs>();
+        var userPlays = new List<UserPlay>();
 
         var filter = GuildService.FilterGuildUsers(guildUsers, guild);
 
         foreach (var user in filter.FilteredGuildUsers.Where(w => w.Key != currentUserId))
         {
-            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-artist-{artistName.ToLower()}", out UserPlayTs userPlay);
+            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-artist-{artistName.ToLower()}", out UserPlay userPlay);
 
             if (userFound)
             {
@@ -124,7 +124,7 @@ public class WhoKnowsPlayService
         return Description(foundUsers, userPlays, "artist");
     }
 
-    private static string Description(IReadOnlyList<FullGuildUser> fullGuildUsers, IEnumerable<UserPlayTs> userPlayTsList, string type)
+    private static string Description(IReadOnlyList<FullGuildUser> fullGuildUsers, IEnumerable<UserPlay> userPlayTsList, string type)
     {
         return fullGuildUsers.Count switch
         {

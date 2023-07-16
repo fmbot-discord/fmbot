@@ -24,7 +24,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         this._botSettings = botSettings.Value;
     }
 
-    public static ICollection<UserPlayTs> GetFinalUserPlays(ImportUser user, ICollection<UserPlayTs> userPlays)
+    public static ICollection<UserPlay> GetFinalUserPlays(ImportUser user, ICollection<UserPlay> userPlays)
     {
         switch (user?.DataSource)
         {
@@ -197,7 +197,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        ICollection<UserPlayTs> plays = new List<UserPlayTs>();
+        ICollection<UserPlay> plays = new List<UserPlay>();
         if (timePeriod == TimePeriod.AllTime)
         {
             plays = await PlayRepository.GetUserPlays(user.UserId, connection, 99999999);
@@ -224,7 +224,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return PlaysToTopAlbums(plays, count);
     }
 
-    private static Response<TopAlbumList> PlaysToTopAlbums(IEnumerable<UserPlayTs> plays, int count)
+    private static Response<TopAlbumList> PlaysToTopAlbums(IEnumerable<UserPlay> plays, int count)
     {
         return new Response<TopAlbumList>
         {
@@ -269,7 +269,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        ICollection<UserPlayTs> plays = new List<UserPlayTs>();
+        ICollection<UserPlay> plays = new List<UserPlay>();
         if (timePeriod == TimePeriod.AllTime)
         {
             plays = await PlayRepository.GetUserPlays(user.UserId, connection, 99999999);
@@ -296,7 +296,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return PlaysToTopArtists(plays, count);
     }
 
-    private static Response<TopArtistList> PlaysToTopArtists(IEnumerable<UserPlayTs> plays, int count)
+    private static Response<TopArtistList> PlaysToTopArtists(IEnumerable<UserPlay> plays, int count)
     {
         return new Response<TopArtistList>
         {
@@ -334,7 +334,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        ICollection<UserPlayTs> plays = new List<UserPlayTs>();
+        ICollection<UserPlay> plays = new List<UserPlay>();
         if (timePeriod == TimePeriod.AllTime)
         {
             plays = await PlayRepository.GetUserPlays(user.UserId, connection, 99999999);
@@ -361,7 +361,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return PlaysToTopTracks(plays, count);
     }
 
-    private static Response<TopTrackList> PlaysToTopTracks(IEnumerable<UserPlayTs> plays, int count)
+    private static Response<TopTrackList> PlaysToTopTracks(IEnumerable<UserPlay> plays, int count)
     {
         return new Response<TopTrackList>
         {
