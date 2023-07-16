@@ -15,6 +15,8 @@ public interface IIndexService
 
     Task<IndexedUserStats> IndexUser(User user);
 
+    Task RecalculateTopLists(User user);
+
     Task<GuildUser> GetOrAddUserToGuild(
         IDictionary<int, FullGuildUser> guildUsers,
         Guild guild,

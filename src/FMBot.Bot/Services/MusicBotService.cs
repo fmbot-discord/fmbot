@@ -13,6 +13,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Models.MusicBot;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
+using FMBot.Domain.Interfaces;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -25,7 +26,7 @@ namespace FMBot.Bot.Services;
 public class MusicBotService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly TrackService _trackService;
     private readonly IMemoryCache _cache;
     private readonly IPrefixService _prefixService;
@@ -35,10 +36,15 @@ public class MusicBotService
 
     private InteractiveService Interactivity { get; }
 
-    public MusicBotService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, TrackService trackService, IMemoryCache cache, InteractiveService interactivity, IPrefixService prefixService)
+    public MusicBotService(IDbContextFactory<FMBotDbContext> contextFactory,
+        IDataSourceFactory dataSourceFactory,
+        TrackService trackService,
+        IMemoryCache cache,
+        InteractiveService interactivity,
+        IPrefixService prefixService)
     {
         this._contextFactory = contextFactory;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._trackService = trackService;
         this._cache = cache;
         this.Interactivity = interactivity;
@@ -113,7 +119,7 @@ public class MusicBotService
     {
         try
         {
-            await this._lastFmRepository.SetNowPlayingAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
+            await this._dataSourceFactory.SetNowPlayingAsync(user.SessionKeyLastFm, result.ArtistName, result.TrackName, result.AlbumName);
         }
         catch (Exception e)
         {
@@ -128,7 +134,7 @@ public class MusicBotService
 
         if (!this._cache.TryGetValue($"now-playing-{user.UserId}", out bool _))
         {
-            await this._lastFmRepository.ScrobbleAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
+            await this._dataSourceFactory.ScrobbleAsync(user.SessionKeyLastFm, result.ArtistName, result.TrackName, result.AlbumName);
             Statistics.LastfmScrobbles.WithLabels(musicBot.Name).Inc();
         }
 

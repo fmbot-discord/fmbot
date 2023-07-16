@@ -17,7 +17,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.7")
+                .HasAnnotation("ProductVersion", "7.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
@@ -1533,6 +1533,14 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("citext")
                         .HasColumnName("artist_name");
 
+                    b.Property<long?>("MsPlayed")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ms_played");
+
+                    b.Property<int?>("PlaySource")
+                        .HasColumnType("integer")
+                        .HasColumnName("play_source");
+
                     b.Property<DateTime>("TimePlayed")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("time_played");
@@ -1563,6 +1571,14 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<string>("ArtistName")
                         .HasColumnType("citext")
                         .HasColumnName("artist_name");
+
+                    b.Property<long?>("MsPlayed")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ms_played");
+
+                    b.Property<int?>("PlaySource")
+                        .HasColumnType("integer")
+                        .HasColumnName("play_source");
 
                     b.Property<DateTime>("TimePlayed")
                         .HasColumnType("timestamp with time zone")

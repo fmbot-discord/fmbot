@@ -79,6 +79,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\Modals\" />
+    <Folder Include="Factories\" />
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>

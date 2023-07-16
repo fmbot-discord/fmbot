@@ -10,6 +10,8 @@ using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
@@ -27,17 +29,23 @@ public class UserService
 {
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly BotSettings _botSettings;
     private readonly ArtistRepository _artistRepository;
     private readonly CountryService _countryService;
     private readonly PlayService _playService;
 
-    public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, CountryService countryService, PlayService playService)
+    public UserService(IMemoryCache cache,
+        IDbContextFactory<FMBotDbContext> contextFactory,
+        IDataSourceFactory dataSourceFactory,
+        IOptions<BotSettings> botSettings,
+        ArtistRepository artistRepository,
+        CountryService countryService,
+        PlayService playService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._artistRepository = artistRepository;
         this._countryService = countryService;
         this._playService = playService;
@@ -74,6 +82,14 @@ public class UserService
     private static string UserCacheKey(ulong discordUserId)
     {
         return $"user-{discordUserId}";
+    }
+
+    public async Task<User> GetUserForIdAsync(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.UserId == userId);
     }
 
     public async Task<User> GetUserWithDiscogs(ulong discordUserId)
@@ -156,14 +172,6 @@ public class UserService
             .ThenInclude(i => i.FriendUser)
             .AsNoTracking()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
-    }
-
-    public async Task<User> GetUserForIdAsync(int userId)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.UserId == userId);
     }
 
     public async Task<List<User>> GetAllDiscordUserIds()
@@ -253,21 +261,21 @@ public class UserService
         if (footerOptions.HasFlag(FmFooterOption.ArtistPlays))
         {
             var trackPlaycount =
-                await WhoKnowsArtistService.GetArtistPlayCountForUser(connection, artistName, userSettings.UserId) ?? 0;
+                await ArtistRepository.GetArtistPlayCountForUser(connection, artistName, userSettings.UserId) ?? 0;
 
             options.Add($"{trackPlaycount} artist scrobbles");
         }
         if (footerOptions.HasFlag(FmFooterOption.AlbumPlays) && albumName != null)
         {
             var albumPlaycount =
-                await WhoKnowsAlbumService.GetAlbumPlayCountForUser(connection, artistName, albumName, userSettings.UserId) ?? 0;
+                await AlbumRepository.GetAlbumPlayCountForUser(connection, artistName, albumName, userSettings.UserId) ?? 0;
 
             options.Add($"{albumPlaycount} album scrobbles");
         }
         if (footerOptions.HasFlag(FmFooterOption.TrackPlays))
         {
             var trackPlaycount =
-                await WhoKnowsTrackService.GetTrackPlayCountForUser(connection, artistName, trackName, userSettings.UserId) ?? 0;
+                await TrackRepository.GetTrackPlayCountForUser(connection, artistName, trackName, userSettings.UserId) ?? 0;
 
             options.Add($"{trackPlaycount} track scrobbles");
         }
@@ -721,7 +729,7 @@ public class UserService
         {
             await Task.Delay(loginDelay);
 
-            var authSession = await this._lastFmRepository.GetAuthSession(token);
+            var authSession = await this._dataSourceFactory.GetAuthSession(token);
 
             if (authSession.Success)
             {
@@ -809,6 +817,22 @@ public class UserService
         var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
 
         user.FmEmbedType = embedType;
+
+        db.Update(user);
+
+        await db.SaveChangesAsync();
+
+        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+
+        return user;
+    }
+
+    public async Task<User> SetDataSource(User userToUpdate, DataSource dataSource)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+        user.DataSource = dataSource;
 
         db.Update(user);
 
@@ -974,7 +998,7 @@ public class UserService
 
             if (user != null)
             {
-                if (!await this._lastFmRepository.LastFmUserExistsAsync(user.UserNameLastFM))
+                if (!await this._dataSourceFactory.LastFmUserExistsAsync(user.UserNameLastFM))
                 {
                     await DeleteUser(user.UserId);
                     Log.Information("DeleteInactiveUsers: User {userNameLastFm} | {userId} | {discordUserId} deleted", user.UserNameLastFM, user.UserId, user.DiscordUserId);

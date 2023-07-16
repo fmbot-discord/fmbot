@@ -10,8 +10,8 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Extensions;
 
 namespace FMBot.Bot.Builders;
 
@@ -343,7 +343,7 @@ public class StaticBuilders
                     var endsAt = DateTime.SpecifyKind(supporter.EndsAt.Value, DateTimeKind.Utc);
                     var endsAtValue = ((DateTimeOffset)endsAt).ToUnixTimeSeconds();
 
-                    supporterString.AppendLine($"Started at: <t:{startsAtValue}:D> - Ends at: <t:{endsAtValue}:D>");
+                    supporterString.AppendLine($"Started <t:{startsAtValue}:f> - Ends on <t:{endsAtValue}:D>");
                 }
                 else
                 {

@@ -19,9 +19,10 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Extensions;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
@@ -30,7 +31,7 @@ namespace FMBot.Bot.SlashCommands;
 public class UserSlashCommands : InteractionModuleBase
 {
     private readonly UserService _userService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly GuildService _guildService;
     private readonly FriendsService _friendsService;
     private readonly IIndexService _indexService;
@@ -38,13 +39,14 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly SettingService _settingService;
     private readonly ArtistsService _artistsService;
     private readonly OpenAiService _openAiService;
+    private readonly ImportService _importService;
 
     private readonly BotSettings _botSettings;
 
     private InteractiveService Interactivity { get; }
 
     public UserSlashCommands(UserService userService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         IOptions<BotSettings> botSettings,
         GuildService guildService,
         IIndexService indexService,
@@ -52,10 +54,10 @@ public class UserSlashCommands : InteractionModuleBase
         FriendsService friendsService,
         UserBuilder userBuilder,
         SettingService settingService,
-        ArtistsService artistsService, OpenAiService openAiService)
+        ArtistsService artistsService, OpenAiService openAiService, ImportService importService)
     {
         this._userService = userService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._guildService = guildService;
         this._indexService = indexService;
         this.Interactivity = interactivity;
@@ -64,6 +66,7 @@ public class UserSlashCommands : InteractionModuleBase
         this._settingService = settingService;
         this._artistsService = artistsService;
         this._openAiService = openAiService;
+        this._importService = importService;
         this._botSettings = botSettings.Value;
     }
 
@@ -71,7 +74,7 @@ public class UserSlashCommands : InteractionModuleBase
     public async Task LoginAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var token = await this._lastFmRepository.GetAuthToken();
+        var token = await this._dataSourceFactory.GetAuthToken();
 
         try
         {
@@ -413,7 +416,7 @@ public class UserSlashCommands : InteractionModuleBase
         }
         else
         {
-            var lfmTopArtists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, artistLimit);
+            var lfmTopArtists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, artistLimit);
             topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
         }
 
@@ -593,5 +596,55 @@ public class UserSlashCommands : InteractionModuleBase
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportSetting)]
+    [UsernameSetRequired]
+    public async Task SetImport(string[] inputs)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (Enum.TryParse(inputs.FirstOrDefault(), out DataSource dataSource))
+        {
+            var newUserSettings = await this._userService.SetDataSource(contextUser, dataSource);
+
+            var name = newUserSettings.DataSource.GetAttribute<OptionAttribute>().Name;
+
+            var embed = new EmbedBuilder();
+            embed.WithDescription($"Import mode set to **{name}**.\n\n" +
+                                  $"Your stored top artist/albums/tracks are being recalculated.");
+            embed.WithColor(DiscordConstants.SuccessColorGreen);
+
+            await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+            this.Context.LogCommandUsed();
+
+            await this._indexService.RecalculateTopLists(newUserSettings);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportManage)]
+    [UsernameSetRequired]
+    public async Task ImportManage()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
+        {
+            await RespondAsync("Not available yet!");
+            return;
+        }
+
+        try
+        {
+            var hasImported = await this._importService.HasImported(contextUser.UserId);
+            var response = UserBuilder.ImportMode(new ContextModel(this.Context, contextUser), hasImported);
+
+            await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 }

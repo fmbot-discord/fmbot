@@ -18,6 +18,8 @@ public static class InteractionConstants
     public const string SetGuildActivityThresholdModal = "set-guild-activity-threshold-modal";
     public const string RemoveGuildActivityThreshold = "remove-guild-activity-threshold";
 
+    public const string ImportManage = "user-import-manage";
+    public const string ImportSetting = "user-import-setting";
 
     public const string CensorTypes = "admin-censor-*";
 

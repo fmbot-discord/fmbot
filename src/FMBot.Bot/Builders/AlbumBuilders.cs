@@ -17,9 +17,10 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
-using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
@@ -38,7 +39,7 @@ public class AlbumBuilders
     private readonly TimeService _timeService;
     private readonly CensorService _censorService;
     private readonly IUpdateService _updateService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SupporterService _supporterService;
     private readonly IIndexService _indexService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
@@ -55,7 +56,7 @@ public class AlbumBuilders
         IUpdateService updateService,
         TimeService timeService,
         CensorService censorService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         SupporterService supporterService,
         IIndexService indexService,
         WhoKnowsPlayService whoKnowsPlayService,
@@ -71,7 +72,7 @@ public class AlbumBuilders
         this._updateService = updateService;
         this._timeService = timeService;
         this._censorService = censorService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._supporterService = supporterService;
         this._indexService = indexService;
         this._whoKnowsPlayService = whoKnowsPlayService;
@@ -1031,7 +1032,7 @@ public class AlbumBuilders
             return response;
         }
 
-        var image = await this._lastFmRepository.GetAlbumImageAsStreamAsync(albumCoverUrl);
+        var image = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(albumCoverUrl);
         if (image == null)
         {
             response.Embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
@@ -1114,7 +1115,7 @@ public class AlbumBuilders
 
         const int amount = 200;
 
-        var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
+        var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
         if (!albums.Success || albums.Content == null)
         {
             response.Embed.ErrorResponse(albums.Error, albums.Message, "top albums", context.DiscordUser);
@@ -1132,7 +1133,7 @@ public class AlbumBuilders
         var previousTopAlbums = new List<TopAlbum>();
         if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
         {
-            var previousAlbumsCall = await this._lastFmRepository
+            var previousAlbumsCall = await this._dataSourceFactory
                 .GetTopAlbumsForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, amount);
 
             if (previousAlbumsCall.Success)

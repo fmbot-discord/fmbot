@@ -1,4 +1,4 @@
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.Domain.Models;
 
 public class AuthSessionResponse
 {

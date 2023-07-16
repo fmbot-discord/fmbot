@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using SummaryAttribute = Discord.Interactions.SummaryAttribute;
@@ -23,7 +24,7 @@ public class PlaySlashCommands : InteractionModuleBase
     private readonly SettingService _settingService;
     private readonly PlayBuilder _playBuilder;
     private readonly GuildService _guildService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
 
     private InteractiveService Interactivity { get; }
 
@@ -34,14 +35,14 @@ public class PlaySlashCommands : InteractionModuleBase
         SettingService settingService,
         PlayBuilder playBuilder,
         GuildService guildService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         InteractiveService interactivity)
     {
         this._userService = userService;
         this._settingService = settingService;
         this._playBuilder = playBuilder;
         this._guildService = guildService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this.Interactivity = interactivity;
     }
 
@@ -230,12 +231,12 @@ public class PlaySlashCommands : InteractionModuleBase
 
         try
         {
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+            var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var goalAmount = SettingService.GetGoalAmount(amount.ToString(), userInfo.Playcount);
             var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
 
             var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, contextUser),
-                userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.Registered.Unixtime);
+                userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -259,7 +260,7 @@ public class PlaySlashCommands : InteractionModuleBase
 
         try
         {
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+            var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var mileStoneAmount = SettingService.GetMilestoneAmount(amount.ToString(), userInfo.Playcount);
 
             var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, contextUser),

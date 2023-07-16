@@ -19,6 +19,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Google.Apis.Discovery;
@@ -38,7 +39,7 @@ public class AdminCommands : BaseCommandModule
     private readonly CensorService _censorService;
     private readonly GuildService _guildService;
     private readonly TimerService _timer;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SupporterService _supporterService;
     private readonly UserService _userService;
     private readonly SettingService _settingService;
@@ -55,7 +56,7 @@ public class AdminCommands : BaseCommandModule
         CensorService censorService,
         GuildService guildService,
         TimerService timer,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         SupporterService supporterService,
         UserService userService,
         IOptions<BotSettings> botSettings,
@@ -69,7 +70,7 @@ public class AdminCommands : BaseCommandModule
         this._censorService = censorService;
         this._guildService = guildService;
         this._timer = timer;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._supporterService = supporterService;
         this._userService = userService;
         this._settingService = settingService;
@@ -548,7 +549,7 @@ public class AdminCommands : BaseCommandModule
 
             var bottedUser = await this._adminService.GetBottedUserAsync(user);
 
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user);
+            var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user);
 
             this._embed.WithTitle($"Botted check for Last.fm '{user}'");
 
@@ -566,7 +567,7 @@ public class AdminCommands : BaseCommandModule
                 var dateAgo = DateTime.UtcNow.AddDays(-365);
                 var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
 
-                var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(user, timeFrom);
+                var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(user, timeFrom);
 
                 var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
                 var totalDays = (DateTime.UtcNow - age).TotalDays;
@@ -684,12 +685,12 @@ public class AdminCommands : BaseCommandModule
 
             var bottedUser = await this._adminService.GetBottedUserAsync(user);
 
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user);
+            var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user);
 
             DateTimeOffset? age = null;
-            if (userInfo != null && userInfo.Subscriber != 0)
+            if (userInfo != null && userInfo.Subscriber)
             {
-                age = DateTimeOffset.FromUnixTimeSeconds(userInfo.Registered.Text);
+                age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
             }
 
             if (bottedUser == null)

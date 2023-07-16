@@ -6,6 +6,8 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using PostgreSQLCopyHelper;
+using Serilog;
 
 namespace FMBot.Persistence.Repositories;
 
@@ -18,7 +20,24 @@ public class AlbumRepository
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<Album> GetAlbumForName(string artistName, string albumName, NpgsqlConnection connection)
+    public static async Task AddOrReplaceUserAlbumsInDatabase(IReadOnlyList<UserAlbum> albums, int userId,
+        NpgsqlConnection connection)
+    {
+        Log.Information($"Inserting {albums.Count} albums for user {userId}");
+
+        var copyHelper = new PostgreSQLCopyHelper<UserAlbum>("public", "user_albums")
+            .MapText("name", x => x.Name)
+            .MapText("artist_name", x => x.ArtistName)
+            .MapInteger("user_id", x => x.UserId)
+            .MapInteger("playcount", x => x.Playcount);
+
+        await using var deleteCurrentAlbums = new NpgsqlCommand($"DELETE FROM public.user_albums WHERE user_id = {userId};", connection);
+        await deleteCurrentAlbums.ExecuteNonQueryAsync();
+
+        await copyHelper.SaveAllAsync(connection, albums);
+    }
+
+    public static async Task<Album> GetAlbumForName(string artistName, string albumName, NpgsqlConnection connection)
     {
         const string getAlbumQuery = "SELECT * FROM public.albums " +
                                      "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
@@ -32,7 +51,7 @@ public class AlbumRepository
         });
     }
 
-    public async Task<IReadOnlyCollection<UserAlbum>> GetUserAlbums(int userId, NpgsqlConnection connection)
+    public static async Task<IReadOnlyCollection<UserAlbum>> GetUserAlbums(int userId, NpgsqlConnection connection)
     {
         const string sql = "SELECT * FROM public.user_albums where user_id = @userId";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -40,5 +59,22 @@ public class AlbumRepository
         {
             userId
         })).ToList();
+    }
+
+    public static async Task<int?> GetAlbumPlayCountForUser(NpgsqlConnection connection, string artistName, string albumName, int userId)
+    {
+        const string sql = "SELECT ua.playcount " +
+                           "FROM user_albums AS ua " +
+                           "WHERE ua.user_id = @userId AND " +
+                           "UPPER(ua.name) = UPPER(CAST(@albumName AS CITEXT)) AND " +
+                           "UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "ORDER BY playcount DESC";
+
+        return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
+        {
+            userId,
+            albumName,
+            artistName
+        });
     }
 }

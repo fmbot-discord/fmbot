@@ -58,15 +58,6 @@ public class TimeService
         return avgArtistTrackLength ?? 210000;
     }
 
-    public async Task<TimeSpan?> GetTrackLengthForTrackOrDefault(string artistName, string trackName)
-    {
-        await CacheAllTrackLengths();
-
-        var trackLength = (long?)this._cache.Get(CacheKeyForTrack(trackName.ToLower(), artistName.ToLower()));
-
-        return trackLength.HasValue ? TimeSpan.FromMilliseconds(trackLength.Value) : null;
-    }
-
     public async Task<TimeSpan> GetPlayTimeForAlbum(List<AlbumTrack> albumTracks, List<UserTrack> userTracks, long totalPlaycount)
     {
         await CacheAllTrackLengths();
@@ -190,5 +181,29 @@ public class TimeService
         return whoKnowsAlbumList
             .OrderByDescending(o => o.Playcount)
             .ToList();
+    }
+
+    public async Task<bool> IsValidScrobble(string artistName, string trackName, int msPlayed)
+    {
+        if (msPlayed < 30000)
+        {
+            return false;
+        }
+
+        if (msPlayed > 240000)
+        {
+            return true;
+        }
+
+        await CacheAllTrackLengths();
+
+        var trackLength = GetTrackLengthForTrack(artistName, trackName);
+
+        if (msPlayed > trackLength / 2)
+        {
+            return true;
+        }
+
+        return false;
     }
 }

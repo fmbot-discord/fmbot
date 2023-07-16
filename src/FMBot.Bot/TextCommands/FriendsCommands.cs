@@ -10,6 +10,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
@@ -22,7 +23,7 @@ public class FriendsCommands : BaseCommandModule
     private readonly FriendsService _friendsService;
     private readonly GuildService _guildService;
     private readonly IPrefixService _prefixService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly UserService _userService;
     private readonly SettingService _settingService;
     private readonly IUpdateService _updateService;
@@ -34,7 +35,7 @@ public class FriendsCommands : BaseCommandModule
         FriendsService friendsService,
         GuildService guildService,
         IPrefixService prefixService,
-        LastFmRepository lastFmRepository,
+        IDataSourceFactory dataSourceFactory,
         UserService userService,
         IOptions<BotSettings> botSettings,
         SettingService settingService,
@@ -44,7 +45,7 @@ public class FriendsCommands : BaseCommandModule
     {
         this._friendsService = friendsService;
         this._guildService = guildService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._prefixService = prefixService;
         this._userService = userService;
         this._settingService = settingService;

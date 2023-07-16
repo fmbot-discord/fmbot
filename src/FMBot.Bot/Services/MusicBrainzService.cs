@@ -33,57 +33,34 @@ public class MusicBrainzService
 
             var api = new Query(this._httpClient);
 
-            if (artist.Mbid.HasValue)
+
+            var musicBrainzResults = await api.FindArtistsAsync(artist.Name, simple: true);
+            Statistics.MusicBrainzApiCalls.Inc();
+
+            var musicBrainzArtist =
+                musicBrainzResults.Results
+                    .OrderByDescending(o => o.Score)
+                    .Select(s => s.Item).FirstOrDefault(f => f.Name?.ToLower() == artist.Name.ToLower());
+
+            if (musicBrainzArtist != null)
             {
-                var musicBrainzArtist = await api.LookupArtistAsync(artist.Mbid.Value);
+                musicBrainzArtist = await api.LookupArtistAsync(musicBrainzArtist.Id);
                 Statistics.MusicBrainzApiCalls.Inc();
 
-                if (musicBrainzArtist.Name != null)
-                {
-                    var startDate = musicBrainzArtist.LifeSpan?.Begin?.NearestDate;
-                    var endDate = musicBrainzArtist.LifeSpan?.End?.NearestDate;
+                var startDate = musicBrainzArtist.LifeSpan?.Begin?.NearestDate;
+                var endDate = musicBrainzArtist.LifeSpan?.End?.NearestDate;
 
-                    artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-                    artist.Location = musicBrainzArtist.Area?.Name;
-                    artist.CountryCode = GetArtistCountryCode(musicBrainzArtist);
-                    artist.Type = musicBrainzArtist.Type;
-                    artist.Disambiguation = musicBrainzArtist.Disambiguation;
-                    artist.Gender = musicBrainzArtist.Gender;
-                    artist.StartDate = startDate.HasValue ? DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc) : null;
-                    artist.EndDate = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : null;
+                artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                artist.Location = musicBrainzArtist.Area?.Name;
+                artist.CountryCode = GetArtistCountryCode(musicBrainzArtist);
+                artist.Type = musicBrainzArtist.Type;
+                artist.Disambiguation = musicBrainzArtist.Disambiguation;
+                artist.Gender = musicBrainzArtist.Gender;
+                artist.StartDate = startDate.HasValue ? DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc) : null;
+                artist.EndDate = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : null;
+                artist.Mbid = musicBrainzArtist.Id;
 
-                    updated = true;
-                }
-            }
-            else
-            {
-                var musicBrainzResults = await api.FindArtistsAsync(artist.Name, simple: true);
-                Statistics.MusicBrainzApiCalls.Inc();
-
-                var musicBrainzArtist =
-                    musicBrainzResults.Results
-                        .OrderByDescending(o => o.Score)
-                        .Select(s => s.Item).FirstOrDefault(f => f.Name?.ToLower() == artist.Name.ToLower());
-
-                if (musicBrainzArtist != null)
-                {
-                    musicBrainzArtist = await api.LookupArtistAsync(musicBrainzArtist.Id);
-                    Statistics.MusicBrainzApiCalls.Inc();
-
-                    var startDate = musicBrainzArtist.LifeSpan?.Begin?.NearestDate;
-                    var endDate = musicBrainzArtist.LifeSpan?.End?.NearestDate;
-
-                    artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow,DateTimeKind.Utc);
-                    artist.Location = musicBrainzArtist.Area?.Name;
-                    artist.CountryCode = GetArtistCountryCode(musicBrainzArtist);
-                    artist.Type = musicBrainzArtist.Type;
-                    artist.Disambiguation = musicBrainzArtist.Disambiguation;
-                    artist.Gender = musicBrainzArtist.Gender;
-                    artist.StartDate = startDate.HasValue ? DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc) : null;
-                    artist.EndDate = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : null;
-
-                    updated = true;
-                }
+                updated = true;
             }
 
             return new ArtistUpdated(artist, updated);

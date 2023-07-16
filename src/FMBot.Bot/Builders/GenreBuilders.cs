@@ -14,9 +14,11 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Humanizer;
@@ -32,10 +34,10 @@ public class GenreBuilders
     private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly PlayService _playService;
     private readonly ArtistsService _artistsService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SpotifyService _spotifyService;
 
-    public GenreBuilders(UserService userService, GuildService guildService, GenreService genreService, WhoKnowsArtistService whoKnowsArtistService, PlayService playService, ArtistsService artistsService, LastFmRepository lastFmRepository, SpotifyService spotifyService)
+    public GenreBuilders(UserService userService, GuildService guildService, GenreService genreService, WhoKnowsArtistService whoKnowsArtistService, PlayService playService, ArtistsService artistsService, IDataSourceFactory dataSourceFactory, SpotifyService spotifyService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -43,7 +45,7 @@ public class GenreBuilders
         this._whoKnowsArtistService = whoKnowsArtistService;
         this._playService = playService;
         this._artistsService = artistsService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._spotifyService = spotifyService;
     }
 
@@ -177,7 +179,7 @@ public class GenreBuilders
 
         if (!timeSettings.UsePlays && timeSettings.TimePeriod != TimePeriod.AllTime)
         {
-            artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
+            artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
                 timeSettings, 1000);
 
             if (!artists.Success || artists.Content == null)
@@ -217,7 +219,7 @@ public class GenreBuilders
 
         if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
         {
-            var previousArtistsCall = await this._lastFmRepository
+            var previousArtistsCall = await this._dataSourceFactory
                 .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
 
             if (previousArtistsCall.Success)
@@ -297,7 +299,7 @@ public class GenreBuilders
         var genres = new List<string>();
         if (string.IsNullOrWhiteSpace(genreOptions))
         {
-            var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, 1, true, context.ContextUser.SessionKeyLastFm);
+            var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, 1, true, context.ContextUser.SessionKeyLastFm);
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
@@ -314,7 +316,7 @@ public class GenreBuilders
 
             if (foundGenres == null)
             {
-                var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistName, context.ContextUser.UserNameLastFM);
+                var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistName, context.ContextUser.UserNameLastFM);
                 if (artistCall.Success)
                 {
                     var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);

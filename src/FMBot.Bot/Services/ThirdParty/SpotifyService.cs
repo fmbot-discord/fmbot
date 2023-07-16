@@ -496,7 +496,7 @@ public class SpotifyService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var dbAlbum = await this._albumRepository.GetAlbumForName(albumInfo.ArtistName, albumInfo.AlbumName, connection);
+        var dbAlbum = await AlbumRepository.GetAlbumForName(albumInfo.ArtistName, albumInfo.AlbumName, connection);
 
         if (dbAlbum == null)
         {
@@ -654,7 +654,7 @@ public class SpotifyService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var albumTracks = await this._trackRepository.GetAlbumTracks(albumId, connection);
+        var albumTracks = await TrackRepository.GetAlbumTracks(albumId, connection);
         await connection.CloseAsync();
 
         return albumTracks;

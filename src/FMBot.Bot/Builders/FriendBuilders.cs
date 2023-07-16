@@ -11,9 +11,11 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Extensions;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 
@@ -24,17 +26,17 @@ public class FriendBuilders
     private readonly FriendsService _friendsService;
     private readonly UserService _userService;
     private readonly GuildService _guildService;
-    private readonly LastFmRepository _lastFmRepository;
+    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly IUpdateService _updateService;
     private readonly SettingService _settingService;
 
     public FriendBuilders(FriendsService friendsService, UserService userService, GuildService guildService,
-        LastFmRepository lastFmRepository, IUpdateService updateService, SettingService settingService)
+        IDataSourceFactory dataSourceFactory, IUpdateService updateService, SettingService settingService)
     {
         this._friendsService = friendsService;
         this._userService = userService;
         this._guildService = guildService;
-        this._lastFmRepository = lastFmRepository;
+        this._dataSourceFactory = dataSourceFactory;
         this._updateService = updateService;
         this._settingService = settingService;
     }
@@ -130,7 +132,7 @@ public class FriendBuilders
             }
             else
             {
-                tracks = await this._lastFmRepository.GetRecentTracksAsync(friendUsername, useCache: true,
+                tracks = await this._dataSourceFactory.GetRecentTracksAsync(friendUsername, useCache: true,
                     sessionKey: sessionKey);
             }
 
@@ -224,7 +226,7 @@ public class FriendBuilders
                 !existingFriends.Where(w => w.FriendUser != null).Select(s => s.FriendUser.UserNameLastFM.ToLower())
                     .Contains(friendUsername.ToLower()))
             {
-                if (await this._lastFmRepository.LastFmUserExistsAsync(friendUsername))
+                if (await this._dataSourceFactory.LastFmUserExistsAsync(friendUsername))
                 {
                     await this._friendsService.AddLastFmFriendAsync(context.ContextUser, friendUsername, friendUserId);
                     addedFriendsList.Add(friendUsername);
