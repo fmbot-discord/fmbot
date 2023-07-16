@@ -1441,6 +1441,15 @@ public class ArtistBuilders
 
         concurrentNeighbors.TryGetValue(userSettings.UserId, out var self);
 
+        if (self == null)
+        {
+            response.Embed.WithDescription(
+                "Sorry, you are not added to this server yet. Run `/refreshmembers` and try again.");
+            response.ResponseType = ResponseType.Embed;
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
         var neighbors = concurrentNeighbors
             .Where(w => filteredUserIds.Contains(w.Key))
             .ToDictionary(d => d.Key, d => d.Value);
