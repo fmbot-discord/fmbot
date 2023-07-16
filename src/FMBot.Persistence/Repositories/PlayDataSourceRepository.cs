@@ -43,7 +43,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                         .MinBy(o => o.TimePlayed);
 
                     return userPlays
-                        .Where(w => w.PlaySource != PlaySource.SpotifyImport || w.TimePlayed < firstLastFmPlay.TimePlayed)
+                        .Where(w => w.PlaySource != PlaySource.SpotifyImport || w.TimePlayed < (firstLastFmPlay?.TimePlayed ?? DateTime.UtcNow))
                         .ToList();
                 }
             case DataSource.LastFm:
