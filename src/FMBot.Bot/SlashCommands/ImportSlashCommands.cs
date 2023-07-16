@@ -20,7 +20,7 @@ using FMBot.Domain;
 
 namespace FMBot.Bot.SlashCommands;
 
-[Group("import", "Manage your data imports")]
+//[Group("import", "Manage your data imports")]
 public class ImportSlashCommands : InteractionModuleBase
 {
     private readonly UserService _userService;
@@ -48,7 +48,7 @@ public class ImportSlashCommands : InteractionModuleBase
         this.Interactivity = interactivity;
     }
 
-    [SlashCommand("spotify", "Import your Spotify history")]
+    //[SlashCommand("spotify", "Import your Spotify history")]
     [UsernameSetRequired]
     public async Task SpotifyAsync(
         [Summary("file-1", "Spotify endsong.json file")] IAttachment attachment1 = null,
@@ -255,7 +255,7 @@ public class ImportSlashCommands : InteractionModuleBase
         return years.ToString();
     }
 
-    [SlashCommand("manage", "Manage your import settings")]
+    //[SlashCommand("manage", "Manage your import settings")]
     [UsernameSetRequired]
     public async Task ManageImportAsync()
     {
