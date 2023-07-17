@@ -266,22 +266,6 @@ namespace FMBot.Persistence.EntityFrameWork
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<UserPlayTs>(entity =>
-            {
-                entity.HasNoKey();
-
-                entity.HasIndex(i => i.UserId);
-
-                entity.Property(e => e.TrackName)
-                    .HasColumnType("citext");
-
-                entity.Property(e => e.AlbumName)
-                    .HasColumnType("citext");
-
-                entity.Property(e => e.ArtistName)
-                    .HasColumnType("citext");
-            });
-
             modelBuilder.Entity<UserCrown>(entity =>
             {
                 entity.HasKey(e => e.CrownId);
