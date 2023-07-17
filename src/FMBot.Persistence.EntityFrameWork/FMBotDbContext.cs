@@ -72,7 +72,6 @@ namespace FMBot.Persistence.EntityFrameWork
         {
             modelBuilder.HasPostgresExtension("citext");
             modelBuilder.HasPostgresExtension("pg_trgm");
-            modelBuilder.HasPostgresExtension("timescaledb");
 
             modelBuilder.Entity<Friend>(entity =>
             {
