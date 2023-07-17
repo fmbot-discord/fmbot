@@ -1029,7 +1029,7 @@ public class UserBuilder
         if (!hasImported)
         {
             embedDescription.AppendLine();
-            embedDescription.AppendLine("Run the `/import spotify` command to get started with imports. " +
+            embedDescription.AppendLine("Run the `/import spotify` command to see how to request your data and to get started with imports. " +
                                         "After importing you'll be able to change these settings.");
         }
 
