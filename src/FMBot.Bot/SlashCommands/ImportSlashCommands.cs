@@ -69,16 +69,15 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var embed = new EmbedBuilder();
-
         await RespondAsync(
             "The importing beta has currently been disabled due to some discovered technical issues. We're working on it, sorry for the inconvenience!");
         return;
 
+        var embed = new EmbedBuilder();
+
         if (contextUser.UserType == UserType.User)
         {
-            embed.WithDescription($"Only supporters import their Spotify history.\n\n" +
-                                  $"[Get supporter here]({Constants.GetSupporterDiscordLink}).");
+            embed.WithDescription($"Only supporters import their Spotify history.");
 
             var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
@@ -216,16 +215,11 @@ public class ImportSlashCommands : InteractionModuleBase
 
     private static async Task UpdateImportEmbed(IUserMessage msg, EmbedBuilder embed, StringBuilder builder, string lineToAdd, bool lastLine = false, ComponentBuilder components = null)
     {
-        const string loadingLine = "- <a:loading:821676038102056991> Processing...";
-        builder.Replace($"\r\n{loadingLine}", "");
         builder.AppendLine(lineToAdd);
 
-        if (!lastLine)
-        {
-            builder.AppendLine(loadingLine);
-        }
+        const string loadingLine = "- <a:loading:821676038102056991> Processing...";
 
-        embed.WithDescription(builder.ToString());
+        embed.WithDescription(builder + (lastLine ? null : loadingLine));
 
         await msg.ModifyAsync(m =>
         {
@@ -261,15 +255,10 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        await RespondAsync(
-            "The importing beta has currently been disabled due to some discovered technical issues. We're working on it, sorry for the inconvenience!");
-        return;
-
         if (contextUser.UserType == UserType.User)
         {
             var embed = new EmbedBuilder();
-            embed.WithDescription($"Only supporters import their Spotify history.\n\n" +
-                              $"[Get supporter here]({Constants.GetSupporterDiscordLink}).");
+            embed.WithDescription($"Only supporters import their Spotify history.");
 
             var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
