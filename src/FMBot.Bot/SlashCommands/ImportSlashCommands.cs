@@ -82,7 +82,7 @@ public class ImportSlashCommands : InteractionModuleBase
             embed.WithColor(DiscordConstants.InformationColorBlue);
             await RespondAsync(embed: embed.Build(), components: components.Build());
 
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            this.Context.LogCommandUsed(CommandResponse.SupporterRequired);
             return;
         }
 
@@ -280,7 +280,7 @@ public class ImportSlashCommands : InteractionModuleBase
             embed.WithColor(DiscordConstants.InformationColorBlue);
             await RespondAsync(embed: embed.Build(), components: components.Build());
 
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            this.Context.LogCommandUsed(CommandResponse.SupporterRequired);
             return;
         }
 

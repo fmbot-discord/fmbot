@@ -261,7 +261,7 @@ public class UserCommands : BaseCommandModule
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
 
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            this.Context.LogCommandUsed(CommandResponse.SupporterRequired);
             return;
         }
 
