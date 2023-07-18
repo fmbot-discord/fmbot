@@ -69,10 +69,6 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        await RespondAsync(
-            "The importing beta has currently been disabled due to some discovered technical issues. We're working on it, sorry for the inconvenience!");
-        return;
-
         var embed = new EmbedBuilder();
 
         if (contextUser.UserType == UserType.User)
@@ -122,6 +118,7 @@ public class ImportSlashCommands : InteractionModuleBase
             description.AppendLine("### Notes");
             description.AppendLine("- We filter out duplicates, so don't worry about submitting the same file twice");
             description.AppendLine("- Spotify files includes plays that you skipped quickly, we filter those out as well");
+            description.AppendLine("- You can select what from your import you want to use with `/import manage`");
 
             var years = await this.GetImportedYears(contextUser.UserId);
             if (years.Length > 0)

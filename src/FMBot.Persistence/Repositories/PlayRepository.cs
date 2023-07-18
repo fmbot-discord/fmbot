@@ -103,7 +103,8 @@ public static class PlayRepository
         foreach (var playToRemove in playsToRemove)
         {
             await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                            "WHERE user_id = @userId AND time_played = @timePlayed", connection);
+                                                            "WHERE user_id = @userId AND time_played = @timePlayed " +
+                                                            "AND play_source != 1", connection);
 
             deletePlays.Parameters.AddWithValue("userId", playToRemove.UserId);
             deletePlays.Parameters.AddWithValue("timePlayed", playToRemove.TimePlayed);
