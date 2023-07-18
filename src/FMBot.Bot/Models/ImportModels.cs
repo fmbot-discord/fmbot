@@ -4,7 +4,7 @@ using FMBot.Domain.Enums;
 
 namespace FMBot.Bot.Models;
 
-public class SpotifyImportModel
+public class SpotifyEndSongImportModel
 {
     [JsonPropertyName("ts")]
     public DateTime Ts { get; set; }

@@ -48,24 +48,26 @@ public class ImportSlashCommands : InteractionModuleBase
         this.Interactivity = interactivity;
     }
 
+    private const string SpotifyFileDescription = "Spotify endsong.json file";
+
     [SlashCommand("spotify", "Import your Spotify history")]
     [UsernameSetRequired]
     public async Task SpotifyAsync(
-        [Summary("file-1", "Spotify endsong.json file")] IAttachment attachment1 = null,
-        [Summary("file-2", "Spotify endsong.json file")] IAttachment attachment2 = null,
-        [Summary("file-3", "Spotify endsong.json file")] IAttachment attachment3 = null,
-        [Summary("file-4", "Spotify endsong.json file")] IAttachment attachment4 = null,
-        [Summary("file-5", "Spotify endsong.json file")] IAttachment attachment5 = null,
-        [Summary("file-6", "Spotify endsong.json file")] IAttachment attachment6 = null,
-        [Summary("file-7", "Spotify endsong.json file")] IAttachment attachment7 = null,
-        [Summary("file-8", "Spotify endsong.json file")] IAttachment attachment8 = null,
-        [Summary("file-9", "Spotify endsong.json file")] IAttachment attachment9 = null,
-        [Summary("file-10", "Spotify endsong.json file")] IAttachment attachment10 = null,
-        [Summary("file-11", "Spotify endsong.json file")] IAttachment attachment11 = null,
-        [Summary("file-12", "Spotify endsong.json file")] IAttachment attachment12 = null,
-        [Summary("file-13", "Spotify endsong.json file")] IAttachment attachment13 = null,
-        [Summary("file-14", "Spotify endsong.json file")] IAttachment attachment14 = null,
-        [Summary("file-15", "Spotify endsong.json file")] IAttachment attachment15 = null)
+        [Summary("file-1", SpotifyFileDescription)] IAttachment attachment1 = null,
+        [Summary("file-2", SpotifyFileDescription)] IAttachment attachment2 = null,
+        [Summary("file-3", SpotifyFileDescription)] IAttachment attachment3 = null,
+        [Summary("file-4", SpotifyFileDescription)] IAttachment attachment4 = null,
+        [Summary("file-5", SpotifyFileDescription)] IAttachment attachment5 = null,
+        [Summary("file-6", SpotifyFileDescription)] IAttachment attachment6 = null,
+        [Summary("file-7", SpotifyFileDescription)] IAttachment attachment7 = null,
+        [Summary("file-8", SpotifyFileDescription)] IAttachment attachment8 = null,
+        [Summary("file-9", SpotifyFileDescription)] IAttachment attachment9 = null,
+        [Summary("file-10", SpotifyFileDescription)] IAttachment attachment10 = null,
+        [Summary("file-11", SpotifyFileDescription)] IAttachment attachment11 = null,
+        [Summary("file-12", SpotifyFileDescription)] IAttachment attachment12 = null,
+        [Summary("file-13", SpotifyFileDescription)] IAttachment attachment13 = null,
+        [Summary("file-14", SpotifyFileDescription)] IAttachment attachment14 = null,
+        [Summary("file-15", SpotifyFileDescription)] IAttachment attachment15 = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -152,10 +154,26 @@ public class ImportSlashCommands : InteractionModuleBase
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
-            else
+
+            if (imports.result == null || imports.result.Count == 0 || imports.result.All(a => a.MsPlayed == 0))
             {
-                await UpdateImportEmbed(message, embed, description, $"- **{imports.result.Count}** Spotify imports found");
+                if (attachments.Any(a => a.Filename.ToLower().Contains("streaminghistory")))
+                {
+                    embed.WithColor(DiscordConstants.WarningColorOrange);
+                    await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import file. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package.\n\n" +
+                                                                         $"Streaming history files are named `endsong.json`. Files that are named `StreamingHistory.json` are incomplete and can't be processed.\n\n" +
+                                                                         $"The right files can take some more time to get, but actually contain your full Spotify history. Sorry for the inconvenience.", true);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                embed.WithColor(DiscordConstants.WarningColorOrange);
+                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `endsong_1.json`.", true);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
             }
+
+            await UpdateImportEmbed(message, embed, description, $"- **{imports.result.Count}** Spotify imports found");
 
             var plays = await this._importService.SpotifyImportToUserPlays(contextUser.UserId, imports.result);
             await UpdateImportEmbed(message, embed, description, $"- **{plays.Count}** actual plays found");
