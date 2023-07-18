@@ -50,7 +50,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
     private const string SpotifyFileDescription = "Spotify endsong.json file";
 
-    [SlashCommand("spotify", "Import your Spotify history")]
+    [SlashCommand("spotify", "Import your Spotify history (Beta)")]
     [UsernameSetRequired]
     public async Task SpotifyAsync(
         [Summary("file-1", SpotifyFileDescription)] IAttachment attachment1 = null,
@@ -264,7 +264,7 @@ public class ImportSlashCommands : InteractionModuleBase
         return years.ToString();
     }
 
-    [SlashCommand("manage", "Manage your import settings")]
+    [SlashCommand("manage", "Manage your import settings (Beta)")]
     [UsernameSetRequired]
     public async Task ManageImportAsync()
     {
