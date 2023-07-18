@@ -32,5 +32,7 @@ public enum CommandResponse
 
     UserBlocked = 15,
 
-    RateLimited = 16
+    RateLimited = 16,
+
+    SupporterRequired = 17
 }

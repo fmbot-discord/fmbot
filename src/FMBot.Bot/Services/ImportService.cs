@@ -29,17 +29,17 @@ public class ImportService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<(bool success, List<SpotifyImportModel> result)> HandleSpotifyFiles(IEnumerable<IAttachment> attachments)
+    public async Task<(bool success, List<SpotifyEndSongImportModel> result)> HandleSpotifyFiles(IEnumerable<IAttachment> attachments)
     {
         try
         {
-            var spotifyPlays = new List<SpotifyImportModel>();
+            var spotifyPlays = new List<SpotifyEndSongImportModel>();
 
             foreach (var attachment in attachments.Where(w => w?.Url != null).GroupBy(g => g.Filename))
             {
                 await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
 
-                var result = await JsonSerializer.DeserializeAsync<List<SpotifyImportModel>>(stream);
+                var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(stream);
 
                 spotifyPlays.AddRange(result);
             }
@@ -53,7 +53,7 @@ public class ImportService
         }
     }
 
-    public async Task<List<UserPlay>> SpotifyImportToUserPlays(int userId, List<SpotifyImportModel> spotifyPlays)
+    public async Task<List<UserPlay>> SpotifyImportToUserPlays(int userId, List<SpotifyEndSongImportModel> spotifyPlays)
     {
         var userPlays = new List<UserPlay>();
 
@@ -119,6 +119,14 @@ public class ImportService
         await connection.OpenAsync();
 
         await PlayRepository.InsertTimeSeriesPlays(plays, connection);
+    }
+
+    public async Task RemoveImportPlays(int userId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.RemoveAllImportPlays(userId, connection);
     }
 
     public async Task<bool> HasImported(int userId)
