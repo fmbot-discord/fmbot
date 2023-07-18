@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -382,6 +383,13 @@ public class SupporterService
             if (user != null)
             {
                 user.UserType = UserType.User;
+
+                if (user.DataSource != DataSource.LastFm)
+                {
+                    user.DataSource = DataSource.LastFm;
+                    _ = this._indexService.RecalculateTopLists(user);
+                }
+
                 db.Update(user);
 
                 Log.Information("Removed supporter status from Discord account {discordUserId} - {lastFmUsername}", user.DiscordUserId, user.UserNameLastFM);
@@ -891,6 +899,12 @@ public class SupporterService
             if (user.UserType == UserType.Supporter)
             {
                 user.UserType = UserType.User;
+            }
+
+            if (user.DataSource != DataSource.LastFm)
+            {
+                user.DataSource = DataSource.LastFm;
+                _ = this._indexService.RecalculateTopLists(user);
             }
 
             db.Update(user);
