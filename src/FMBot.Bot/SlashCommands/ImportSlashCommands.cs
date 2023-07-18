@@ -134,7 +134,7 @@ public class ImportSlashCommands : InteractionModuleBase
             var components = new ComponentBuilder()
                 .WithButton("Spotify privacy settings", style: ButtonStyle.Link, url: "https://www.spotify.com/us/account/privacy/");
 
-            this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+            this.Context.LogCommandUsed(CommandResponse.Help);
             await this.FollowupAsync(embed: embed.Build(), ephemeral: noAttachments, components: components.Build());
             return;
         }
