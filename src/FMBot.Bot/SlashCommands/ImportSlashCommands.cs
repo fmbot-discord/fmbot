@@ -75,7 +75,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
         if (contextUser.UserType == UserType.User)
         {
-            embed.WithDescription($"Only supporters can import their Spotify history.");
+            embed.WithDescription($"Only supporters can import their Spotify history into .fmbot.");
 
             var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
@@ -161,7 +161,7 @@ public class ImportSlashCommands : InteractionModuleBase
                 {
                     embed.WithColor(DiscordConstants.WarningColorOrange);
                     await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import file. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package.\n\n" +
-                                                                         $"Streaming history files are named `endsong.json`. Files that are named `StreamingHistory.json` are incomplete and can't be processed.\n\n" +
+                                                                         $"The files should have the name `endsong_x.json`. Files that are named `StreamingHistory.json` are incomplete and can't be processed.\n\n" +
                                                                          $"The right files can take some more time to get, but actually contain your full Spotify history. Sorry for the inconvenience.", true);
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
@@ -273,7 +273,7 @@ public class ImportSlashCommands : InteractionModuleBase
         if (contextUser.UserType == UserType.User)
         {
             var embed = new EmbedBuilder();
-            embed.WithDescription($"Only supporters can import their Spotify history.");
+            embed.WithDescription($"Only supporters can import their Spotify history into .fmbot.");
 
             var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
