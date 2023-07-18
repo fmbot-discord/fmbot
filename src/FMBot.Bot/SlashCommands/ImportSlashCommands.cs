@@ -73,7 +73,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
         if (contextUser.UserType == UserType.User)
         {
-            embed.WithDescription($"Only supporters import their Spotify history.");
+            embed.WithDescription($"Only supporters can import their Spotify history.");
 
             var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
@@ -255,7 +255,7 @@ public class ImportSlashCommands : InteractionModuleBase
         if (contextUser.UserType == UserType.User)
         {
             var embed = new EmbedBuilder();
-            embed.WithDescription($"Only supporters import their Spotify history.");
+            embed.WithDescription($"Only supporters can import their Spotify history.");
 
             var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
