@@ -244,7 +244,13 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                         UserPlaycount = s.Count(),
                         ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.First().ArtistName),
                         AlbumName = s.First().AlbumName,
-                        AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(s.First().ArtistName, s.First().AlbumName)
+                        AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(s.First().ArtistName, s.First().AlbumName),
+                        FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed,
+                        TimeListened = new TopTimeListened
+                        {
+                            MsPlayed = s.Sum(su => su.MsPlayed) ?? 0,
+                            PlaysWithPlayTime = s.Count(wh => wh.MsPlayed != null)
+                        }
                     })
                     .OrderByDescending(o => o.UserPlaycount)
                     .Take(count)
@@ -309,7 +315,13 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                     {
                         ArtistName = s.First().ArtistName,
                         UserPlaycount = s.Count(),
-                        ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.First().ArtistName)
+                        ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.First().ArtistName),
+                        FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed,
+                        TimeListened = new TopTimeListened
+                        {
+                            MsPlayed = s.Sum(su => su.MsPlayed) ?? 0,
+                            PlaysWithPlayTime = s.Count(wh => wh.MsPlayed != null)
+                        }
                     })
                     .OrderByDescending(o => o.UserPlaycount)
                     .Take(count)
@@ -381,7 +393,13 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                         ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.First().ArtistName),
                         TrackName = s.First().TrackName,
                         TrackUrl = LastfmUrlExtensions.GetTrackUrl(s.First().ArtistName, s.First().TrackName),
-                        AlbumName = s.First().AlbumName
+                        AlbumName = s.First().AlbumName,
+                        FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed,
+                        TimeListened = new TopTimeListened
+                        {
+                            MsPlayed = s.Sum(su => su.MsPlayed) ?? 0,
+                            PlaysWithPlayTime = s.Count(wh => wh.MsPlayed != null)
+                        }
                     })
                     .OrderByDescending(o => o.UserPlaycount)
                     .Take(count)

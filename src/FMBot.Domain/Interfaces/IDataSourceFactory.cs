@@ -37,10 +37,10 @@ public interface IDataSourceFactory
         DateTime startDateTime, DateTime endDateTime, int count);
 
     Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1);
+        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool calculateTimeListened = false);
 
     Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName,
-        DateTime startDateTime, DateTime endDateTime, int count);
+        DateTime startDateTime, DateTime endDateTime, int count, bool calculateTimeListened = false);
 
     Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null, long? fromUnixTimestamp = null);
     Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl);

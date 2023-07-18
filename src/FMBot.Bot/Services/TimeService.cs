@@ -35,13 +35,23 @@ public class TimeService
         return TimeSpan.FromMilliseconds(totalMs);
     }
 
-    public async Task<TimeSpan> GetPlayTimeForTrackWithPlaycount(string artistName, string trackName, long playcount)
+    public async Task<TimeSpan> GetPlayTimeForTrackWithPlaycount(string artistName, string trackName, long playcount, TopTimeListened topTimeListened = null)
     {
         await CacheAllTrackLengths();
 
+        long timeListened = 0;
+
+        if (topTimeListened != null)
+        {
+            timeListened += topTimeListened.MsPlayed;
+            playcount -= topTimeListened.PlaysWithPlayTime;
+        }
+
         var length = GetTrackLengthForTrack(artistName, trackName);
 
-        return TimeSpan.FromMilliseconds(length * playcount);
+        timeListened += length * playcount;
+
+        return TimeSpan.FromMilliseconds(timeListened);
     }
 
     private long GetTrackLengthForTrack(string artistName, string trackName)

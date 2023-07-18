@@ -27,6 +27,8 @@ public class TopArtist
 
     public DateTime? FirstPlay { get; set; }
 
+    public TopTimeListened TimeListened { get; set; }
+
     public List<string> Genres { get; set; }
 }
 

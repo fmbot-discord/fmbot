@@ -410,6 +410,12 @@ public class SettingService
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, discogs);
             topListSettings.Discogs = true;
         }
+        var timeListened = new[] { "tl", "timelistened" };
+        if (Contains(extraOptions, timeListened))
+        {
+            topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, timeListened);
+            topListSettings.Type = TopListType.TimeListened;
+        }
 
         return topListSettings;
     }
