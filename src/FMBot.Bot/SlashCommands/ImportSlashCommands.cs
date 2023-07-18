@@ -78,7 +78,7 @@ public class ImportSlashCommands : InteractionModuleBase
             var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
             embed.WithColor(DiscordConstants.InformationColorBlue);
-            await ReplyAsync(embed: embed.Build(), components: components.Build());
+            await RespondAsync(embed: embed.Build(), components: components.Build());
 
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
@@ -260,7 +260,7 @@ public class ImportSlashCommands : InteractionModuleBase
             var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
             embed.WithColor(DiscordConstants.InformationColorBlue);
-            await ReplyAsync(embed: embed.Build(), components: components.Build());
+            await RespondAsync(embed: embed.Build(), components: components.Build());
 
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
