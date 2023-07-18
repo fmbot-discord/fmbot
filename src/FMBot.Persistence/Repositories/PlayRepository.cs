@@ -98,6 +98,17 @@ public static class PlayRepository
         await deletePlays.ExecuteNonQueryAsync();
     }
 
+    public static async Task RemoveAllImportPlays(int userId, NpgsqlConnection connection)
+    {
+        await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source = 1", connection);
+
+        deletePlays.Parameters.AddWithValue("userId", userId);
+
+        await deletePlays.ExecuteNonQueryAsync();
+    }
+
     private static async Task RemoveSpecificPlays(IEnumerable<UserPlay> playsToRemove, NpgsqlConnection connection)
     {
         foreach (var playToRemove in playsToRemove)

@@ -710,9 +710,11 @@ public class PlayService
 
     public async Task<DateTime?> GetArtistFirstPlayDate(int userId, string artistName)
     {
-        const string sql = "SELECT first(time_played, time_played) FROM user_plays " +
+        const string sql = "SELECT time_played FROM user_plays " +
                            "WHERE user_id = @userId AND " +
-                           "UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+                           "UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "ORDER BY time_played ASC " +
+                           "LIMIT 1";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -727,10 +729,12 @@ public class PlayService
 
     public async Task<DateTime?> GetAlbumFirstPlayDate(int userId, string artistName, string albumName)
     {
-        const string sql = "SELECT first(time_played, time_played) FROM user_plays " +
+        const string sql = "SELECT time_played FROM user_plays " +
                            "WHERE user_id = @userId AND " +
                            "UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
-                           "UPPER(album_name) = UPPER(CAST(@albumName AS CITEXT))";
+                           "UPPER(album_name) = UPPER(CAST(@albumName AS CITEXT)) " +
+                           "ORDER BY time_played ASC " +
+                           "LIMIT 1";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -746,10 +750,12 @@ public class PlayService
 
     public async Task<DateTime?> GetTrackFirstPlayDate(int userId, string artistName, string trackName)
     {
-        const string sql = "SELECT first(time_played, time_played) FROM user_plays " +
+        const string sql = "SELECT time_played FROM user_plays " +
                            "WHERE user_id = @userId AND " +
                            "UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
-                           "UPPER(track_name) = UPPER(CAST(@trackName AS CITEXT))";
+                           "UPPER(track_name) = UPPER(CAST(@trackName AS CITEXT)) " +
+                           "ORDER BY time_played ASC " +
+                           "LIMIT 1";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

@@ -615,11 +615,34 @@ public class UserSlashCommands : InteractionModuleBase
                                   $"Your stored top artist/albums/tracks are being recalculated.");
             embed.WithColor(DiscordConstants.SuccessColorGreen);
 
-            await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+            ComponentBuilder components = null;
+            if (dataSource == DataSource.LastFm)
+            {
+                components = new ComponentBuilder()
+                    .WithButton("Also delete all imported plays", InteractionConstants.ImportClear, style: ButtonStyle.Danger);
+            }
+
+            await RespondAsync(null, new[] { embed.Build() }, ephemeral: true, components: components?.Build());
             this.Context.LogCommandUsed();
 
             await this._indexService.RecalculateTopLists(newUserSettings);
         }
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportClear)]
+    [UsernameSetRequired]
+    public async Task ClearImports()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        await this._importService.RemoveImportPlays(contextUser.UserId);
+
+        var embed = new EmbedBuilder();
+        embed.WithDescription($"All your imported plays have been removed from .fmbot.");
+        embed.WithColor(DiscordConstants.SuccessColorGreen);
+
+        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+        this.Context.LogCommandUsed();
     }
 
     [ComponentInteraction(InteractionConstants.ImportManage)]

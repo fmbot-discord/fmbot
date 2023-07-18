@@ -121,6 +121,14 @@ public class ImportService
         await PlayRepository.InsertTimeSeriesPlays(plays, connection);
     }
 
+    public async Task RemoveImportPlays(int userId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.RemoveAllImportPlays(userId, connection);
+    }
+
     public async Task<bool> HasImported(int userId)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
