@@ -493,13 +493,13 @@ public class LastFmRepository : ILastfmRepository
 
     }
 
-    public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username)
+    public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, bool redirectsEnabled)
     {
         var queryParams = new Dictionary<string, string>
         {
             {"artist", artistName },
             {"username", username },
-            {"autocorrect", "1"}
+            {"autocorrect", redirectsEnabled ? "1" : "0"}
         };
 
         var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);

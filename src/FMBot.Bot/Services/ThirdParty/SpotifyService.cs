@@ -68,7 +68,7 @@ public class SpotifyService
         return await spotify.Search.Item(searchRequest);
     }
 
-    public async Task<Artist> GetOrStoreArtistAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null)
+    public async Task<Artist> GetOrStoreArtistAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null, bool redirectsEnabled = true)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -146,7 +146,7 @@ public class SpotifyService
                     }).ToList();
                 }
 
-                if (artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
+                if (redirectsEnabled && artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
                 {
                     await this._artistRepository
                         .AddOrUpdateArtistAlias(artistToAdd.Id, artistNameBeforeCorrect, connection);
@@ -155,7 +155,7 @@ public class SpotifyService
                 return artistToAdd;
             }
 
-            if (artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
+            if (redirectsEnabled && artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
             {
                 await this._artistRepository
                     .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);

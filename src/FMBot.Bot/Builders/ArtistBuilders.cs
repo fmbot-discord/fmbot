@@ -93,20 +93,23 @@ public class ArtistBuilders
 
     public async Task<ResponseModel> ArtistAsync(
         ContextModel context,
-        string searchValue)
+        string searchValue,
+        bool redirectsEnabled)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
         }
 
-        var spotifyArtistTask = this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue);
+        var spotifyArtistTask = this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled);
 
         var fullArtist = await spotifyArtistTask;
 
@@ -348,11 +351,11 @@ public class ArtistBuilders
         return response;
     }
 
-    public async Task<ResponseModel> ArtistTracksAsync(
-        ContextModel context,
+    public async Task<ResponseModel> ArtistTracksAsync(ContextModel context,
         TimeSettingsModel timeSettings,
         UserSettingsModel userSettings,
-        string searchValue)
+        string searchValue,
+        bool redirectsEnabled)
     {
         var response = new ResponseModel
         {
@@ -360,7 +363,7 @@ public class ArtistBuilders
         };
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM,
-            context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId);
+            context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId, redirectsEnabled: redirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -675,12 +678,11 @@ public class ArtistBuilders
         return response;
     }
 
-    public async Task<ResponseModel> ArtistPaceAsync(
-        ContextModel context,
+    public async Task<ResponseModel> ArtistPaceAsync(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         string amount,
-        string artistName)
+        string artistName, bool redirectsEnabled)
     {
         var response = new ResponseModel
         {
@@ -698,7 +700,9 @@ public class ArtistBuilders
                 .TrimStart();
         }
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistName, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, userId: context.ContextUser.UserId);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistName,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -762,7 +766,8 @@ public class ArtistBuilders
         WhoKnowsMode mode,
         string artistValues,
         bool displayRoleSelector = false,
-        List<ulong> roles = null)
+        List<ulong> roles = null,
+        bool redirectsEnabled = true)
     {
         var response = new ResponseModel
         {
@@ -771,13 +776,13 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
         }
 
-        var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+        var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, redirectsEnabled);
 
         var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;
@@ -801,7 +806,7 @@ public class ArtistBuilders
         var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithArtist, contextGuild, roles);
 
         CrownModel crownModel = null;
-        if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector)
+        if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector && redirectsEnabled)
         {
             crownModel =
                 await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, contextGuild, artistSearch.Artist.ArtistName);
@@ -942,13 +947,15 @@ public class ArtistBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, settings.NewSearchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true, userId: context.ContextUser.UserId);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser,
+            settings.NewSearchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            useCachedArtists: true, userId: context.ContextUser.UserId, redirectsEnabled: settings.RedirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
         }
 
-        var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+        var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, settings.RedirectsEnabled);
 
         var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;
@@ -1071,10 +1078,9 @@ public class ArtistBuilders
         return response;
     }
 
-    public async Task<ResponseModel> FriendsWhoKnowArtistAsync(
-        ContextModel context,
+    public async Task<ResponseModel> FriendsWhoKnowArtistAsync(ContextModel context,
         WhoKnowsMode mode,
-        string artistValues)
+        string artistValues, bool redirectsEnabled)
     {
         var response = new ResponseModel
         {
@@ -1093,14 +1099,14 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
         }
 
         var cachedArtist =
-            await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+            await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, redirectsEnabled);
 
         var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;

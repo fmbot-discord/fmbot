@@ -18,6 +18,7 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
+using Genius.Models.Song;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -99,7 +100,7 @@ public class UpdateService : IUpdateService
             .OrderBy(o => o.LastUpdated)
             .ToListAsync();
     }
-    
+
     public async Task<Response<RecentTrackList>> UpdateUser(UpdateUserQueueItem queueItem)
     {
         if (queueItem.UpdateQueue)
@@ -338,50 +339,68 @@ public class UpdateService : IUpdateService
         NpgsqlConnection connection,
         IReadOnlyDictionary<string, UserArtist> userArtists)
     {
-        var updateExistingArtists = new StringBuilder();
+        var updateExistingUserArtistsQuery = new StringBuilder();
 
         foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName.ToLower()))
         {
-            var alias = (string)this._cache.Get(CacheKeyForAlias(artist.Key.ToLower()));
+            var artistAlias = (string)this._cache.Get(CacheKeyForAlias(artist.Key.ToLower()));
 
-            var artistName = alias ?? artist.First().ArtistName;
-
-            userArtists.TryGetValue(artistName.ToLower(), out var existingUserArtist);
-
-            if (existingUserArtist != null)
+            if (artistAlias != null && artistAlias.ToLower() != artist.Key)
             {
-                updateExistingArtists.Append($"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()} " +
-                                             $"WHERE user_artist_id = {existingUserArtist.UserArtistId}; ");
-
-                Log.Debug($"Updated artist {artistName} for {user.UserNameLastFM}");
+                await UpdateOrAddUserArtist(user, connection, userArtists, artist.First().ArtistName, updateExistingUserArtistsQuery, artist, addNewUserArtist: false);
+                await UpdateOrAddUserArtist(user, connection, userArtists, artistAlias, updateExistingUserArtistsQuery, artist);
             }
             else
             {
-                await using var addUserArtist =
-                    new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount)" +
-                                      "VALUES(@userId, @artistName, @artistPlaycount); ",
-                        connection);
-
-                addUserArtist.Parameters.AddWithValue("userId", user.UserId);
-                addUserArtist.Parameters.AddWithValue("artistName", artistName);
-                addUserArtist.Parameters.AddWithValue("artistPlaycount", artist.Count());
-
-                Log.Debug($"Added artist {artistName} for {user.UserNameLastFM}");
-
-                await addUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
+                await UpdateOrAddUserArtist(user, connection, userArtists, artist.First().ArtistName, updateExistingUserArtistsQuery, artist);
             }
         }
 
-        if (updateExistingArtists.Length > 0)
+        if (updateExistingUserArtistsQuery.Length > 0)
         {
             await using var updateUserArtist =
-                new NpgsqlCommand(updateExistingArtists.ToString(), connection);
+                new NpgsqlCommand(updateExistingUserArtistsQuery.ToString(), connection);
 
             await updateUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
         Log.Debug("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
+    }
+
+    private static async Task UpdateOrAddUserArtist(User user,
+        NpgsqlConnection connection,
+        IReadOnlyDictionary<string, UserArtist> userArtists,
+        string artistName,
+        StringBuilder updateExistingArtists,
+        IGrouping<string, UserPlay> artist,
+        bool addNewUserArtist = true)
+    {
+        userArtists.TryGetValue(artistName.ToLower(), out var existingUserArtist);
+
+        if (existingUserArtist != null)
+        {
+            updateExistingArtists.Append(
+                $"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()} " +
+                $"WHERE user_artist_id = {existingUserArtist.UserArtistId}; ");
+
+            Log.Debug($"Updated artist {artistName} for {user.UserNameLastFM}");
+        }
+        else if(addNewUserArtist)
+        {
+            await using var addUserArtist =
+                new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount)" +
+                                  "VALUES(@userId, @artistName, @artistPlaycount); ",
+                    connection);
+
+            addUserArtist.Parameters.AddWithValue("userId", user.UserId);
+            addUserArtist.Parameters.AddWithValue("artistName", artistName);
+            addUserArtist.Parameters.AddWithValue("artistPlaycount", artist.Count());
+
+            Log.Debug($"Added artist {artistName} for {user.UserNameLastFM}");
+
+            await addUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
     }
 
     private static async Task<IReadOnlyDictionary<string, List<UserAlbum>>> GetUserAlbums(int userId, IDbConnection connection)
@@ -404,61 +423,86 @@ public class UpdateService : IUpdateService
         NpgsqlConnection connection,
         IReadOnlyDictionary<string, List<UserAlbum>> userAlbums)
     {
-        var updateExistingAlbums = new StringBuilder();
+        var updateExistingUserAlbumsQuery = new StringBuilder();
 
         foreach (var album in newScrobbles
                      .Where(w => w.AlbumName != null)
-                     .GroupBy(x => new
+                     .GroupBy(x => new AlbumGroupBy
                      {
                          ArtistName = x.ArtistName.ToLower(),
                          AlbumName = x.AlbumName.ToLower()
                      }))
         {
-            var alias = (string)this._cache.Get(CacheKeyForAlias(album.Key.ArtistName.ToLower()));
+            var artistAlias = (string)this._cache.Get(CacheKeyForAlias(album.Key.ArtistName.ToLower()));
 
-            var artistName = alias ?? album.First().ArtistName;
-
-            userAlbums.TryGetValue(artistName.ToLower(), out var userArtistAlbums);
-
-            var existingUserAlbum =
-                userArtistAlbums?.FirstOrDefault(a => a.Name.ToLower() == album.Key.AlbumName.ToLower());
-
-            if (existingUserAlbum != null)
+            if (artistAlias != null && artistAlias.ToLower() != album.Key.ArtistName)
             {
-                updateExistingAlbums.Append($"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()} " +
-                                            $"WHERE user_album_id = {existingUserAlbum.UserAlbumId}; ");
-
-                Log.Debug($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
+                await UpdateOrAddUserAlbum(user, connection, userAlbums, album.First().ArtistName, album, updateExistingUserAlbumsQuery, addNewUserAlbum: false);
+                await UpdateOrAddUserAlbum(user, connection, userAlbums, artistAlias, album, updateExistingUserAlbumsQuery);
             }
             else
             {
-                await using var addUserAlbum =
-                    new NpgsqlCommand("INSERT INTO public.user_albums(user_id, name, artist_name, playcount)" +
-                                      "VALUES(@userId, @albumName, @artistName, @albumPlaycount); ",
-                        connection);
-
-                var capitalizedAlbumName = album.First().AlbumName;
-
-                addUserAlbum.Parameters.AddWithValue("userId", user.UserId);
-                addUserAlbum.Parameters.AddWithValue("albumName", capitalizedAlbumName);
-                addUserAlbum.Parameters.AddWithValue("artistName", artistName);
-                addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
-
-                Log.Debug($"Added album {album.Key.ArtistName} - {capitalizedAlbumName} for {user.UserNameLastFM}");
-
-                await addUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
+                await UpdateOrAddUserAlbum(user, connection, userAlbums, album.First().ArtistName, album, updateExistingUserAlbumsQuery);
             }
         }
 
-        if (updateExistingAlbums.Length > 0)
+        if (updateExistingUserAlbumsQuery.Length > 0)
         {
             await using var updateUserAlbum =
-                new NpgsqlCommand(updateExistingAlbums.ToString(), connection);
+                new NpgsqlCommand(updateExistingUserAlbumsQuery.ToString(), connection);
 
             await updateUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
         Log.Debug("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+    }
+
+    private class AlbumGroupBy
+    {
+        public string ArtistName { get; init; }
+        public string AlbumName { get; init; }
+    }
+
+    private static async Task UpdateOrAddUserAlbum(
+        User user,
+        NpgsqlConnection connection,
+        IReadOnlyDictionary<string, List<UserAlbum>> userAlbums,
+        string artistName,
+        IGrouping<AlbumGroupBy, UserPlay> album,
+        StringBuilder updateExistingAlbums,
+        bool addNewUserAlbum = true)
+    {
+        userAlbums.TryGetValue(artistName.ToLower(), out var userArtistAlbums);
+
+        var existingUserAlbum =
+            userArtistAlbums?.FirstOrDefault(a => a.Name.ToLower() == album.Key.AlbumName.ToLower());
+
+        if (existingUserAlbum != null)
+        {
+            updateExistingAlbums.Append(
+                $"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()} " +
+                $"WHERE user_album_id = {existingUserAlbum.UserAlbumId}; ");
+
+            Log.Debug($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
+        }
+        else if (addNewUserAlbum)
+        {
+            await using var addUserAlbum =
+                new NpgsqlCommand("INSERT INTO public.user_albums(user_id, name, artist_name, playcount)" +
+                                  "VALUES(@userId, @albumName, @artistName, @albumPlaycount); ",
+                    connection);
+
+            var capitalizedAlbumName = album.First().AlbumName;
+
+            addUserAlbum.Parameters.AddWithValue("userId", user.UserId);
+            addUserAlbum.Parameters.AddWithValue("albumName", capitalizedAlbumName);
+            addUserAlbum.Parameters.AddWithValue("artistName", artistName);
+            addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
+
+            Log.Debug($"Added album {album.Key.ArtistName} - {capitalizedAlbumName} for {user.UserNameLastFM}");
+
+            await addUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
     }
 
     private static async Task<IReadOnlyDictionary<string, List<UserTrack>>> GetUserTracks(int userId, IDbConnection connection)
@@ -481,57 +525,81 @@ public class UpdateService : IUpdateService
         NpgsqlConnection connection,
         IReadOnlyDictionary<string, List<UserTrack>> userTracks)
     {
-        var updateExistingTracks = new StringBuilder();
+        var updateExistingUserTracksQuery = new StringBuilder();
 
-        foreach (var track in newScrobbles.GroupBy(x => new
+        foreach (var track in newScrobbles.GroupBy(x => new TrackGroupBy
         {
             ArtistName = x.ArtistName.ToLower(),
             TrackName = x.TrackName.ToLower()
         }))
         {
-            var alias = (string)this._cache.Get(CacheKeyForAlias(track.Key.ArtistName.ToLower()));
+            var artistAlias = (string)this._cache.Get(CacheKeyForAlias(track.Key.ArtistName.ToLower()));
 
-            var artistName = alias ?? track.First().ArtistName;
-
-            userTracks.TryGetValue(artistName.ToLower(), out var userArtistTracks);
-
-            var existingUserTrack =
-                userArtistTracks?.FirstOrDefault(a => a.Name.ToLower() == track.Key.TrackName.ToLower());
-
-            if (existingUserTrack != null)
+            if (artistAlias != null && artistAlias.ToLower() != track.Key.ArtistName)
             {
-                updateExistingTracks.Append(
-                    $"UPDATE public.user_tracks SET playcount = {existingUserTrack.Playcount + track.Count()} " +
-                    $"WHERE user_track_id = {existingUserTrack.UserTrackId}; ");
-
-                Log.Debug($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
+                await AddOrUpdateUserTrack(user, connection, userTracks, track.First().ArtistName, track, updateExistingUserTracksQuery, addNewUserTrack: false);
+                await AddOrUpdateUserTrack(user, connection, userTracks, artistAlias, track, updateExistingUserTracksQuery);
             }
             else
             {
-                await using var addUserTrack =
-                    new NpgsqlCommand("INSERT INTO public.user_tracks(user_id, name, artist_name, playcount)" +
-                                      "VALUES(@userId, @trackName, @artistName, @trackPlaycount); ",
-                        connection);
-
-                var capitalizedTrackName = track.First().TrackName;
-
-                addUserTrack.Parameters.AddWithValue("userId", user.UserId);
-                addUserTrack.Parameters.AddWithValue("trackName", capitalizedTrackName);
-                addUserTrack.Parameters.AddWithValue("artistName", artistName);
-                addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
-
-                Log.Debug($"Added track {track.Key.ArtistName} - {capitalizedTrackName} for {user.UserNameLastFM}");
-
-                await addUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
+                await AddOrUpdateUserTrack(user, connection, userTracks, track.First().ArtistName, track, updateExistingUserTracksQuery);
             }
+
         }
 
-        if (updateExistingTracks.Length > 0)
+        if (updateExistingUserTracksQuery.Length > 0)
         {
             await using var updateExistingUserTracks =
-                new NpgsqlCommand(updateExistingTracks.ToString(), connection);
+                new NpgsqlCommand(updateExistingUserTracksQuery.ToString(), connection);
 
             await updateExistingUserTracks.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+    }
+
+    private class TrackGroupBy
+    {
+        public string ArtistName { get; init; }
+        public string TrackName { get; init; }
+    }
+
+    private static async Task AddOrUpdateUserTrack(User user,
+        NpgsqlConnection connection,
+        IReadOnlyDictionary<string, List<UserTrack>> userTracks,
+        string artistName,
+        IGrouping<TrackGroupBy, UserPlay> track,
+        StringBuilder updateExistingTracks,
+        bool addNewUserTrack = true)
+    {
+        userTracks.TryGetValue(artistName.ToLower(), out var userArtistTracks);
+
+        var existingUserTrack =
+            userArtistTracks?.FirstOrDefault(a => a.Name.ToLower() == track.Key.TrackName.ToLower());
+
+        if (existingUserTrack != null)
+        {
+            updateExistingTracks.Append(
+                $"UPDATE public.user_tracks SET playcount = {existingUserTrack.Playcount + track.Count()} " +
+                $"WHERE user_track_id = {existingUserTrack.UserTrackId}; ");
+
+            Log.Debug($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
+        }
+        else if(addNewUserTrack)
+        {
+            await using var addUserTrack =
+                new NpgsqlCommand("INSERT INTO public.user_tracks(user_id, name, artist_name, playcount)" +
+                                  "VALUES(@userId, @trackName, @artistName, @trackPlaycount); ",
+                    connection);
+
+            var capitalizedTrackName = track.First().TrackName;
+
+            addUserTrack.Parameters.AddWithValue("userId", user.UserId);
+            addUserTrack.Parameters.AddWithValue("trackName", capitalizedTrackName);
+            addUserTrack.Parameters.AddWithValue("artistName", artistName);
+            addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
+
+            Log.Debug($"Added track {track.Key.ArtistName} - {capitalizedTrackName} for {user.UserNameLastFM}");
+
+            await addUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
     }
 

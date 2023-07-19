@@ -91,10 +91,11 @@ public class ArtistCommands : BaseCommandModule
 
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var redirectsEnabled = SettingService.RedirectsEnabled(artistValues);
 
         try
         {
-            var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, prfx, contextUser), artistValues);
+            var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, prfx, contextUser), redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -122,10 +123,11 @@ public class ArtistCommands : BaseCommandModule
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime, cachedOrAllTimeOnly: true, dailyTimePeriods: false);
+        var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
+        var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.AllTime, cachedOrAllTimeOnly: true, dailyTimePeriods: false);
 
         var response = await this._artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, prfx, contextUser), timeSettings,
-            userSettings, userSettings.NewSearchValue);
+            userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -146,16 +148,18 @@ public class ArtistCommands : BaseCommandModule
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
+        var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
         var response = new ResponseModel();
         var artist = await this._artistsService.SearchArtist(response,
             this.Context.User,
-            userSettings.NewSearchValue,
+            redirectsEnabled.NewSearchValue,
             contextUser.UserNameLastFM,
             contextUser.SessionKeyLastFm,
             userSettings.UserNameLastFm,
             true,
-            userSettings.UserId);
+            userSettings.UserId,
+            redirectsEnabled: redirectsEnabled.Enabled);
         if (artist.Artist == null)
         {
             await this.Context.SendResponse(this.Interactivity, response);
@@ -254,8 +258,9 @@ public class ArtistCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
+        var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
-        var artist = await GetArtist(userSettings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
+        var artist = await GetArtist(redirectsEnabled.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
         if (artist == null)
         {
             return;
@@ -298,7 +303,8 @@ public class ArtistCommands : BaseCommandModule
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.Monthly, cachedOrAllTimeOnly: true);
+            var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
+            var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.Monthly, cachedOrAllTimeOnly: true);
 
             if (timeSettings.TimePeriod == TimePeriod.AllTime)
             {
@@ -306,7 +312,7 @@ public class ArtistCommands : BaseCommandModule
             }
 
             var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, prfx, contextUser),
-                userSettings, timeSettings, timeSettings.NewSearchValue, null);
+                userSettings, timeSettings, timeSettings.NewSearchValue, null, redirectsEnabled.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -433,7 +439,13 @@ public class ArtistCommands : BaseCommandModule
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), settings.WhoKnowsMode, settings.NewSearchValue, settings.DisplayRoleFilter);
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context,
+                    prfx,
+                    contextUser),
+                settings.WhoKnowsMode,
+                settings.NewSearchValue,
+                settings.DisplayRoleFilter,
+                redirectsEnabled: settings.RedirectsEnabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -525,7 +537,8 @@ public class ArtistCommands : BaseCommandModule
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
             var response = await this._artistBuilders
-                .FriendsWhoKnowArtistAsync(new ContextModel(this.Context, prfx, contextUser), currentSettings.WhoKnowsMode, settings.NewSearchValue);
+                .FriendsWhoKnowArtistAsync(new ContextModel(this.Context, prfx, contextUser),
+                    currentSettings.WhoKnowsMode, settings.NewSearchValue, settings.RedirectsEnabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

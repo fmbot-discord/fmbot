@@ -5,6 +5,11 @@ namespace FMBot.Bot.Models;
 
 public class WhoKnowsSettings
 {
+    public WhoKnowsSettings()
+    {
+        this.RedirectsEnabled = true;
+    }
+
     public bool HidePrivateUsers { get; set; }
 
     public bool ShowBotters { get; set; }
@@ -16,4 +21,6 @@ public class WhoKnowsSettings
     public WhoKnowsMode WhoKnowsMode { get; set; }
 
     public bool DisplayRoleFilter { get; set; }
+
+    public bool RedirectsEnabled { get; set; }
 }

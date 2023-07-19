@@ -117,9 +117,9 @@ public class DataSourceFactory : IDataSourceFactory
         return track;
     }
 
-    public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username)
+    public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, bool redirectsEnabled = true)
     {
-        var artist = await this._lastfmRepository.GetArtistInfoAsync(artistName, username);
+        var artist = await this._lastfmRepository.GetArtistInfoAsync(artistName, username, redirectsEnabled);
 
         var importUser = await this.GetImportUserForLastFmUserName(username);
 

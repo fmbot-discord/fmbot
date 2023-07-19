@@ -463,7 +463,25 @@ public class SettingService
             whoKnowsSettings.DisplayRoleFilter = true;
         }
 
+        var noRedirect = new[] { "nr", "noredirect" };
+        if (Contains(extraOptions, noRedirect))
+        {
+            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, noRedirect);
+            whoKnowsSettings.RedirectsEnabled = false;
+        }
+
         return whoKnowsSettings;
+    }
+
+    public static (bool Enabled, string NewSearchValue) RedirectsEnabled(string extraOptions)
+    {
+        var noRedirect = new[] { "nr", "noredirect" };
+        if (Contains(extraOptions, noRedirect))
+        {
+            return (false, ContainsAndRemove(extraOptions, noRedirect));
+        }
+
+        return (true, extraOptions);
     }
 
     public async Task<UserSettingsModel> GetUser(
