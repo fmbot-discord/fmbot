@@ -518,7 +518,7 @@ public class GenreBuilders
                     }
                 }
 
-                genrePageString.AppendLine($"{counterString} **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)})");
+                genrePageString.AppendLine($"{counterString} **{genreArtist.ArtistName}** - *{genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
                 counter++;
             }
 
