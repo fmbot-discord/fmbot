@@ -589,7 +589,7 @@ public class LastFmRepository : ILastfmRepository
                         ArtistName = s.Artist?.Name,
                         TrackName = s.Name,
                         TrackUrl = s.Url,
-                        Duration = s.Duration,
+                        DurationSeconds = s.Duration,
                         Rank = s.Attr?.Rank
                     }).ToList(),
                     Tags = albumCall.Content.Album.Tags?.Tag?.Select(s => new Tag

@@ -942,22 +942,22 @@ public class TrackBuilders
                 var name = new StringBuilder();
                 if (!tooMuchChars)
                 {
-                    name.Append($"**{StringExtensions.Sanitize(track.ArtistName)}** — **[{track.TrackName}]({track.TrackUrl})** ");
+                    name.Append($"**{StringExtensions.Sanitize(track.ArtistName)}** - **[{track.TrackName}]({track.TrackUrl})** ");
                 }
                 else
                 {
-                    name.Append($"**{StringExtensions.Sanitize(track.ArtistName)}** — **{track.TrackName}** ");
+                    name.Append($"**{StringExtensions.Sanitize(track.ArtistName)}** - **{track.TrackName}** ");
                 }
 
                 if (topListSettings.Type == TopListType.Plays)
                 {
                     name.Append(
-                        $"— *{track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)}*");
+                        $"- *{track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)}*");
                 }
                 else
                 {
                     name.Append(
-                        $"— *{StringExtensions.GetListeningTimeString(track.TimeListened.TotalTimeListened)}*");
+                        $"- *{StringExtensions.GetListeningTimeString(track.TimeListened.TotalTimeListened)}*");
                 }
 
                 if (topListSettings.Billboard && previousTopTracks.Any())

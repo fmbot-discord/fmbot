@@ -68,12 +68,18 @@ public class TimeService
         return avgArtistTrackLength ?? 210000;
     }
 
-    public async Task<TimeSpan> GetPlayTimeForAlbum(List<AlbumTrack> albumTracks, List<UserTrack> userTracks, long totalPlaycount)
+    public async Task<TimeSpan> GetAllTimePlayTimeForAlbum(List<AlbumTrack> albumTracks, List<UserTrack> userTracks, long totalPlaycount, TopTimeListened topTimeListened = null)
     {
         await CacheAllTrackLengths();
 
-        long totalPlaytime = 0;
+        long timeListenedSeconds = 0;
         var playsLeft = totalPlaycount;
+
+        if (topTimeListened != null)
+        {
+            timeListenedSeconds += (topTimeListened.MsPlayed / 1000);
+            playsLeft -= topTimeListened.PlaysWithPlayTime;
+        }
 
         foreach (var track in albumTracks)
         {
@@ -81,28 +87,97 @@ public class TimeService
                 StringExtensions.SanitizeTrackNameForComparison(track.TrackName)
                     .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
 
-            var trackLength = track.Duration ?? (GetTrackLengthForTrack(track.ArtistName, track.ArtistName) / 1000);
             if (albumTrackWithPlaycount != null)
             {
-                totalPlaytime += (trackLength * albumTrackWithPlaycount.Playcount);
-                playsLeft -= albumTrackWithPlaycount.Playcount;
+                var trackPlaycount = albumTrackWithPlaycount.Playcount;
+
+                var countedTrack = topTimeListened?.CountedTracks?.FirstOrDefault(f =>
+                    StringExtensions.SanitizeTrackNameForComparison(track.TrackName)
+                        .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
+
+                if (countedTrack != null)
+                {
+                    trackPlaycount -= countedTrack.CountedPlays;
+                }
+
+                if (trackPlaycount > 0)
+                {
+                    var trackLength = track.DurationSeconds ?? (GetTrackLengthForTrack(track.ArtistName, track.ArtistName) / 1000);
+
+                    timeListenedSeconds += (trackLength * trackPlaycount);
+                    playsLeft -= trackPlaycount;
+                }
             }
         }
 
         if (playsLeft > 0)
         {
-            var avgTrackLength = albumTracks.Average(a => a.Duration);
+            var avgTrackLengthSeconds = albumTracks.Average(a => a.DurationSeconds);
 
-            if (avgTrackLength == null)
+            if (avgTrackLengthSeconds == null)
             {
                 var avgArtistTrackLength = (long?)this._cache.Get(CacheKeyForArtist(albumTracks.First().ArtistName));
-                avgTrackLength = avgArtistTrackLength ?? 210000;
+                avgTrackLengthSeconds = (avgArtistTrackLength / 1000) ?? 210;
             }
 
-            totalPlaytime += (playsLeft * (long)avgTrackLength);
+            timeListenedSeconds += (playsLeft * (long)avgTrackLengthSeconds);
         }
 
-        return TimeSpan.FromSeconds(totalPlaytime);
+        return TimeSpan.FromSeconds(timeListenedSeconds);
+    }
+
+    public async Task<TimeSpan> GetAllTimePlayTimeForArtist(string artistName, List<UserTrack> userTracksForArtist, long totalPlaycount, TopTimeListened topTimeListened = null)
+    {
+        await CacheAllTrackLengths();
+
+        long timeListenedSeconds = 0;
+        var playsLeft = totalPlaycount;
+
+        if (topTimeListened != null)
+        {
+            timeListenedSeconds += (topTimeListened.MsPlayed / 1000);
+            playsLeft -= topTimeListened.PlaysWithPlayTime;
+        }
+
+        foreach (var track in userTracksForArtist)
+        {
+            var trackPlaycount = track.Playcount;
+
+            var countedTrack = topTimeListened?.CountedTracks?.FirstOrDefault(f =>
+                StringExtensions.SanitizeTrackNameForComparison(track.Name)
+                    .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
+
+            if (countedTrack != null)
+            {
+                trackPlaycount -= countedTrack.CountedPlays;
+            }
+
+            if (trackPlaycount > 0)
+            {
+                var trackLength = GetTrackLengthForTrack(track.ArtistName, track.ArtistName) / 1000;
+
+                timeListenedSeconds += (trackLength * trackPlaycount);
+                playsLeft -= trackPlaycount;
+            }
+        }
+
+        if (playsLeft > 0)
+        {
+            long avgTrackLength;
+            if (totalPlaycount > 50)
+            {
+                avgTrackLength = timeListenedSeconds / (totalPlaycount - playsLeft);
+            }
+            else
+            {
+                var avgArtistTrackLength = (long?)this._cache.Get(CacheKeyForArtist(artistName));
+                avgTrackLength = (avgArtistTrackLength / 1000) ?? 210;
+            }
+
+            timeListenedSeconds += (playsLeft * (long)avgTrackLength);
+        }
+
+        return TimeSpan.FromSeconds(timeListenedSeconds);
     }
 
     private async Task CacheAllTrackLengths()

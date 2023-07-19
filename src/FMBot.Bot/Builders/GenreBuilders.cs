@@ -242,7 +242,7 @@ public class GenreBuilders
             var genrePageString = new StringBuilder();
             foreach (var genre in genrePage)
             {
-                var name = $"**{genre.GenreName.Transform(To.TitleCase)}** ({genre.UserPlaycount} {StringExtensions.GetPlaysString(genre.UserPlaycount)})";
+                var name = $"**{genre.GenreName.Transform(To.TitleCase)}** - *{genre.UserPlaycount} {StringExtensions.GetPlaysString(genre.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopGenres.Any())
                 {

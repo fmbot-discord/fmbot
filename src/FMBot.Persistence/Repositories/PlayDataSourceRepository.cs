@@ -140,10 +140,10 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         dataSourceUser.AlbumCount = plays
             .Where(w => w.AlbumName != null)
             .GroupBy(g => new
-        {
-            ArtistName = g.ArtistName.ToLower(),
-            AlbumName = g.AlbumName.ToLower()
-        }).Count();
+            {
+                ArtistName = g.ArtistName.ToLower(),
+                AlbumName = g.AlbumName.ToLower()
+            }).Count();
 
         dataSourceUser.TrackCount = plays.GroupBy(g => new
         {
@@ -249,7 +249,14 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                         TimeListened = new TopTimeListened
                         {
                             MsPlayed = s.Sum(su => su.MsPlayed) ?? 0,
-                            PlaysWithPlayTime = s.Count(wh => wh.MsPlayed != null)
+                            PlaysWithPlayTime = s.Count(wh => wh.MsPlayed != null),
+                            CountedTracks = s.GroupBy(gr => gr.TrackName)
+                                .Select(se =>
+                                    new CountedTrack
+                                    {
+                                        Name = se.Key,
+                                        CountedPlays = se.Count()
+                                    }).ToList()
                         }
                     })
                     .OrderByDescending(o => o.UserPlaycount)
@@ -320,7 +327,14 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                         TimeListened = new TopTimeListened
                         {
                             MsPlayed = s.Sum(su => su.MsPlayed) ?? 0,
-                            PlaysWithPlayTime = s.Count(wh => wh.MsPlayed != null)
+                            PlaysWithPlayTime = s.Count(wh => wh.MsPlayed != null),
+                            CountedTracks = s.GroupBy(gr => gr.TrackName)
+                                .Select(se =>
+                                    new CountedTrack
+                                    {
+                                        Name = se.Key,
+                                        CountedPlays = se.Count()
+                                    }).ToList()
                         }
                     })
                     .OrderByDescending(o => o.UserPlaycount)

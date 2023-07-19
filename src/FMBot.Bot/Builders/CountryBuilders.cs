@@ -340,7 +340,7 @@ public class CountryBuilders
             foreach (var country in countryPage)
             {
                 var name =
-                    $"**{country.CountryName ?? country.CountryCode}** ({country.UserPlaycount} {StringExtensions.GetPlaysString(country.UserPlaycount)})";
+                    $"**{country.CountryName ?? country.CountryCode}** - *{country.UserPlaycount} {StringExtensions.GetPlaysString(country.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopCountries.Any())
                 {

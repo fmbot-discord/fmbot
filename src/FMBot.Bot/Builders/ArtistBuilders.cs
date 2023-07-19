@@ -626,7 +626,7 @@ public class ArtistBuilders
             foreach (var artist in artistPage)
             {
                 var name =
-                    $"**[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserPlaycount} {StringExtensions.GetPlaysString(artist.UserPlaycount)})";
+                    $"**[{artist.ArtistName}]({artist.ArtistUrl})** - *{artist.UserPlaycount} {StringExtensions.GetPlaysString(artist.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopArtists.Any())
                 {
