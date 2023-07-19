@@ -114,8 +114,11 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                 ? new RecentTrack
                 {
                     AlbumName = milestone.AlbumName,
+                    AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(milestone.ArtistName, milestone.AlbumName),
                     ArtistName = milestone.ArtistName,
+                    ArtistUrl = LastfmUrlExtensions.GetArtistUrl(milestone.ArtistName),
                     TrackName = milestone.TrackName,
+                    TrackUrl = LastfmUrlExtensions.GetTrackUrl(milestone.ArtistName, milestone.TrackName),
                     TimePlayed = milestone.TimePlayed
                 }
                 : null,
