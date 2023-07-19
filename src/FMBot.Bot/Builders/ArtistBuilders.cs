@@ -595,12 +595,14 @@ public class ArtistBuilders
         {
             response.Embed.ErrorResponse(artists.Error, artists.Message, "top artists", context.DiscordUser);
             response.CommandResponse = CommandResponse.LastFmError;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
         if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
         {
             response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top artists in the [selected time period]({userUrl}).");
             response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
