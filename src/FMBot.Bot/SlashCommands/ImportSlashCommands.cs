@@ -157,7 +157,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             if (imports.result == null || imports.result.Count == 0 || imports.result.All(a => a.MsPlayed == 0))
             {
-                if (attachments.Any(a => a.Filename.ToLower().Contains("streaminghistory")))
+                if (attachments != null && attachments.Any(a => a.Filename != null) && attachments.Any(a => a.Filename.ToLower().Contains("streaminghistory")))
                 {
                     embed.WithColor(DiscordConstants.WarningColorOrange);
                     await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import file. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package.\n\n" +
