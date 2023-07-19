@@ -59,7 +59,12 @@ public static class StringService
 
             var format = DateTime.UtcNow.AddHours(-20) < track.TimePlayed.Value ? "t" : "f";
 
-            description.Append($"<t:{dateValue}:{format}> • ");
+            description.Append($"<t:{dateValue}:{format}>");
+
+            if (!string.IsNullOrWhiteSpace(track.AlbumName))
+            {
+                description.Append($" • ");
+            }
         }
 
         if (trackLength.HasValue)
