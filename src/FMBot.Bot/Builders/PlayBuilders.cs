@@ -215,15 +215,15 @@ public class PlayBuilder
             default:
                 if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
                 {
-                    fmText += StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled);
+                    fmText += StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, embedType == FmEmbedType.EmbedMini);
                     response.Embed.WithDescription(fmText);
                 }
                 else if (previousTrack != null)
                 {
                     response.Embed.AddField("Current:",
-                        StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled));
+                        StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, false));
                     response.Embed.AddField("Previous:",
-                        StringService.TrackToLinkedString(previousTrack, context.ContextUser.RymEnabled));
+                        StringService.TrackToLinkedString(previousTrack, context.ContextUser.RymEnabled, false));
                 }
 
                 string headerText;
