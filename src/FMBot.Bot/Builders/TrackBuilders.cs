@@ -817,8 +817,8 @@ public class TrackBuilders
             foreach (var track in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** - **{track.TrackName}** ({track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)})"
-                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** - **{track.TrackName}** ({track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)})";
+                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** - **{track.TrackName}** · *{track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
+                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** - **{track.TrackName}** · *{track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)}*";
 
                 if (previousTopGuildTracks != null && previousTopGuildTracks.Any())
                 {

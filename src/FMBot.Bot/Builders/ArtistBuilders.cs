@@ -420,7 +420,7 @@ public class ArtistBuilders
             var albumPageString = new StringBuilder();
             foreach (var track in topTrackPage)
             {
-                albumPageString.AppendLine($"{counter}. **{StringExtensions.Sanitize(track.Name)}** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)})");
+                albumPageString.AppendLine($"{counter}. **{StringExtensions.Sanitize(track.Name)}** - *{track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}*");
                 counter++;
             }
 
@@ -519,8 +519,8 @@ public class ArtistBuilders
             foreach (var track in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** ({track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)})"
-                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** ({track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)})";
+                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** · *{track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
+                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** · *{track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)}*";
 
                 if (previousTopGuildArtists != null && previousTopGuildArtists.Any())
                 {

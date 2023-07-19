@@ -775,8 +775,8 @@ public class AlbumBuilders
             foreach (var album in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{album.ListenerCount}` · **{album.ArtistName}** - **{album.AlbumName}** ({album.TotalPlaycount} {StringExtensions.GetPlaysString(album.TotalPlaycount)})"
-                    : $"`{album.TotalPlaycount}` · **{album.ArtistName}** - **{album.AlbumName}** ({album.ListenerCount} {StringExtensions.GetListenersString(album.ListenerCount)})";
+                    ? $"`{album.ListenerCount}` · **{album.ArtistName}** - **{album.AlbumName}** · *{album.TotalPlaycount} {StringExtensions.GetPlaysString(album.TotalPlaycount)}*"
+                    : $"`{album.TotalPlaycount}` · **{album.ArtistName}** - **{album.AlbumName}** · *{album.ListenerCount} {StringExtensions.GetListenersString(album.ListenerCount)}*";
 
                 if (previousTopGuildAlbums != null && previousTopGuildAlbums.Any())
                 {
