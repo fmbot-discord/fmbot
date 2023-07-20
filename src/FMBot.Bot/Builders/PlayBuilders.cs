@@ -585,6 +585,8 @@ public class PlayBuilder
             return response;
         }
 
+        var description = new StringBuilder();
+        
         foreach (var day in week.Days.OrderByDescending(o => o.Date))
         {
             var genreString = new StringBuilder();
@@ -598,34 +600,40 @@ public class PlayBuilder
                     }
 
                     var genre = day.TopGenres[i];
-                    genreString.Append($"{genre}");
+                    genreString.Append($"`{genre}`");
                 }
             }
 
-            response.Embed.AddField(
-                $"{day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)} - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - <t:{day.Date.ToUnixEpochDate()}:D>",
-                $"{genreString}\n" +
+            description.AppendLine(
+                $"### <t:{day.Date.ToUnixEpochDate()}:D> - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - {day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)}");
+            description.AppendLine(
                 $"{day.TopArtist}\n" +
                 $"{day.TopAlbum}\n" +
-                $"{day.TopTrack}"
+                $"{day.TopTrack}\n" +
+                $"{genreString}"
             );
         }
 
-        var description = $"Top genres, artist, album and track for last {amount} days";
-
-        if (week.Days.Count < amount)
-        {
-            description += $"\n{amount - week.Days.Count} days not shown because of no plays.";
-        }
-
-        response.Embed.WithDescription(description);
+        response.Embed.WithDescription(description.ToString());
 
         response.EmbedAuthor.WithName($"Daily overview for {StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}");
 
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS");
         response.Embed.WithAuthor(response.EmbedAuthor);
 
-        response.EmbedFooter.WithText($"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 1)} per day");
+        var footer = new StringBuilder();
+
+        footer.AppendLine($"Top artist, album, track and genres for last {amount} days");
+
+        if (week.Days.Count < amount)
+        {
+            footer.AppendLine($"{amount - week.Days.Count} days not shown because of no plays.");
+        }
+
+        footer.AppendLine(
+            $"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 1)} per day");
+
+        response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
         return response;

@@ -195,7 +195,7 @@ public class ArtistCommands : BaseCommandModule
             var albumPageString = new StringBuilder();
             foreach (var artistAlbum in albumPage)
             {
-                albumPageString.AppendLine($"{counter}. **{artistAlbum.Name}** ({artistAlbum.Playcount} {StringExtensions.GetPlaysString(artistAlbum.Playcount)})");
+                albumPageString.AppendLine($"{counter}. **{artistAlbum.Name}** - *{artistAlbum.Playcount} {StringExtensions.GetPlaysString(artistAlbum.Playcount)}*");
                 counter++;
             }
 

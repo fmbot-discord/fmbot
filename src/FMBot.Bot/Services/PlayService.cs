@@ -227,7 +227,7 @@ public class PlayService
             return "No top track for this day";
         }
 
-        return $"`{topTrack.Count()}` {StringExtensions.GetPlaysString(topTrack.Count())} - {StringExtensions.Sanitize(topTrack.Key.ArtistName)} | {StringExtensions.Sanitize(topTrack.Key.TrackName)}";
+        return $"**{StringExtensions.Sanitize(topTrack.Key.ArtistName)}** - **{StringExtensions.Sanitize(topTrack.Key.TrackName)}** - *{topTrack.Count()} {StringExtensions.GetPlaysString(topTrack.Count())}*";
     }
 
     private static string GetTopAlbumForPlays(IEnumerable<UserPlay> plays)
@@ -241,7 +241,7 @@ public class PlayService
             return "No top album for this day";
         }
 
-        return $"`{topAlbum.Count()}` {StringExtensions.GetPlaysString(topAlbum.Count())} - {StringExtensions.Sanitize(topAlbum.Key.ArtistName)} | {StringExtensions.Sanitize(topAlbum.Key.AlbumName)}";
+        return $"**{StringExtensions.Sanitize(topAlbum.Key.ArtistName)}** - **{StringExtensions.Sanitize(topAlbum.Key.AlbumName)}** - *{topAlbum.Count()} {StringExtensions.GetPlaysString(topAlbum.Count())}*";
     }
 
     private static string GetTopArtistForPlays(IEnumerable<UserPlay> plays)
@@ -255,7 +255,7 @@ public class PlayService
             return "No top artist for this day";
         }
 
-        return $"`{topArtist.Count()}` {StringExtensions.GetPlaysString(topArtist.Count())} - {StringExtensions.Sanitize(topArtist.Key)}";
+        return $"**{StringExtensions.Sanitize(topArtist.Key)}** - *{topArtist.Count()} {StringExtensions.GetPlaysString(topArtist.Count())}*";
     }
 
     private async Task<ICollection<UserPlay>> GetWeekPlays(int userId)
