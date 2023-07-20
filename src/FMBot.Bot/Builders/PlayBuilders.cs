@@ -604,13 +604,12 @@ public class PlayBuilder
                 }
             }
 
-            description.AppendLine(
-                $"### <t:{day.Date.ToUnixEpochDate()}:D> - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - {day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)}");
-            description.AppendLine(
+            response.Embed.AddField(
+                $"<t:{day.Date.ToUnixEpochDate()}:D> - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - {day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)}",
+                $"{genreString}\n" +
                 $"{day.TopArtist}\n" +
                 $"{day.TopAlbum}\n" +
-                $"{day.TopTrack}\n" +
-                $"{genreString}"
+                $"{day.TopTrack}\n"
             );
         }
 
@@ -623,7 +622,7 @@ public class PlayBuilder
 
         var footer = new StringBuilder();
 
-        footer.AppendLine($"Top artist, album, track and genres for last {amount} days");
+        footer.AppendLine($"Top genres, artist, album and track for last {amount} days");
 
         if (week.Days.Count < amount)
         {
