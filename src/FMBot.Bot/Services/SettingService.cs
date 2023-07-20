@@ -463,12 +463,9 @@ public class SettingService
             whoKnowsSettings.DisplayRoleFilter = true;
         }
 
-        var noRedirect = new[] { "nr", "noredirect" };
-        if (Contains(extraOptions, noRedirect))
-        {
-            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, noRedirect);
-            whoKnowsSettings.RedirectsEnabled = false;
-        }
+        var (enabled, newSearchValue) = RedirectsEnabled(whoKnowsSettings.NewSearchValue);
+        whoKnowsSettings.RedirectsEnabled = enabled;
+        whoKnowsSettings.NewSearchValue = newSearchValue;
 
         return whoKnowsSettings;
     }
@@ -479,6 +476,17 @@ public class SettingService
         if (Contains(extraOptions, noRedirect))
         {
             return (false, ContainsAndRemove(extraOptions, noRedirect));
+        }
+
+        return (true, extraOptions);
+    }
+
+    public static (bool User, string NewSearchValue) IsUserView(string extraOptions)
+    {
+        var guild = new[] { "server", "guild" };
+        if (Contains(extraOptions, guild))
+        {
+            return (false, ContainsAndRemove(extraOptions, guild));
         }
 
         return (true, extraOptions);

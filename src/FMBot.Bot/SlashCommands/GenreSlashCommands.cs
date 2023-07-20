@@ -109,7 +109,12 @@ public class GenreSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, contextUser), genre, guild);
+            var context = new ContextModel(this.Context, contextUser)
+            {
+                DiscordUser = await this.Context.Guild.GetUserAsync(ulong.Parse(discordUserId))
+            };
+
+            var response = await this._genreBuilders.GenreAsync(context, genre, guild);
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity);
             this.Context.LogCommandUsed(response.CommandResponse);

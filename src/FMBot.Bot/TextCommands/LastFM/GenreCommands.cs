@@ -112,9 +112,11 @@ public class GenreCommands : BaseCommandModule
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
+        var userView = SettingService.IsUserView(genreOptions);
+
         try
         {
-            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, prfx, contextUser), genreOptions, guild);
+            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, prfx, contextUser), userView.NewSearchValue, guild, userView.User);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
