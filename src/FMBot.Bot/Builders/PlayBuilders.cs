@@ -600,7 +600,7 @@ public class PlayBuilder
                     }
 
                     var genre = day.TopGenres[i];
-                    genreString.Append($"`{genre}`");
+                    genreString.Append($"{genre}");
                 }
             }
 
