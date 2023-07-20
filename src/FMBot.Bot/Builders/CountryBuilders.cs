@@ -208,7 +208,7 @@ public class CountryBuilders
             var genrePageString = new StringBuilder();
             foreach (var genreArtist in genrePage)
             {
-                genrePageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)})");
+                genrePageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** - *{genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
                 counter++;
             }
 
@@ -307,6 +307,7 @@ public class CountryBuilders
                 $"Please try again later or try a different time period.");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -340,7 +341,7 @@ public class CountryBuilders
             foreach (var country in countryPage)
             {
                 var name =
-                    $"**{country.CountryName ?? country.CountryCode}** ({country.UserPlaycount} {StringExtensions.GetPlaysString(country.UserPlaycount)})";
+                    $"**{country.CountryName ?? country.CountryCode}** - *{country.UserPlaycount} {StringExtensions.GetPlaysString(country.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopCountries.Any())
                 {

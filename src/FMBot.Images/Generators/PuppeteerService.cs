@@ -74,7 +74,7 @@ public class PuppeteerService
         var img = await page.ScreenshotDataAsync();
 
         var skImg = SKBitmap.FromImage(SKImage.FromEncodedData(img));
-        AddTitleToChartImage(skImg, groupedCountries);
+        AddCountryListToMap(skImg, groupedCountries);
 
         return skImg;
     }
@@ -383,7 +383,7 @@ public class PuppeteerService
 
     private record GroupedCountries(List<string> CountryCodes, int MinAmount, int MaxAmount, double Opacity);
 
-    private static void AddTitleToChartImage(SKBitmap chartImage, List<GroupedCountries> lines)
+    private static void AddCountryListToMap(SKBitmap chartImage, List<GroupedCountries> lines)
     {
         const int textSize = 35;
 

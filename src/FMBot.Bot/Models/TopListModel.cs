@@ -18,4 +18,13 @@ public class TopListSettings
     public bool Billboard { get; set; }
     public bool Discogs { get; set; }
     public string NewSearchValue { get; set; }
+
+    public TopListType Type { get; set; }
+
+}
+
+public enum TopListType
+{
+    Plays,
+    TimeListened
 }

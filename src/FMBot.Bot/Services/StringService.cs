@@ -15,8 +15,21 @@ namespace FMBot.Bot.Services;
 
 public static class StringService
 {
-    public static string TrackToLinkedString(RecentTrack track, bool? rymEnabled = null)
+    public static string TrackToLinkedString(RecentTrack track, bool? rymEnabled = null, bool bigTrackName = true)
     {
+        var description = new StringBuilder();
+
+        if (bigTrackName)
+        {
+            description.AppendLine($"### [{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})");
+        }
+        else
+        {
+            description.AppendLine($"**[{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})**");
+        }
+
+        description.Append($"**{StringExtensions.Sanitize(track.ArtistName)}**");
+
         if (!string.IsNullOrWhiteSpace(track.AlbumName))
         {
             if (rymEnabled == true)
@@ -28,18 +41,16 @@ public static class StringService
                 albumRymUrl += HttpUtility.UrlEncode($"{track.ArtistName} {albumQueryName}");
                 albumRymUrl += "&searchtype=l";
 
-                return $"[{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})\n" +
-                       $"By **{StringExtensions.Sanitize(track.ArtistName)}**" +
-                       $" | *[{StringExtensions.Sanitize(track.AlbumName)}]({albumRymUrl})*\n";
+                description.Append($" • *[{StringExtensions.Sanitize(track.AlbumName)}]({albumRymUrl})*");
             }
-
-            return $"[{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})\n" +
-                   $"By **{StringExtensions.Sanitize(track.ArtistName)}**" +
-                   $" | *{StringExtensions.Sanitize(track.AlbumName)}*\n";
+            else
+            {
+                description.Append($" • *{StringExtensions.Sanitize(track.AlbumName)}*");
+            }
         }
 
-        return $"[{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})\n" +
-               $"By **{StringExtensions.Sanitize(track.ArtistName)}**\n";
+        description.AppendLine();
+        return description.ToString();
     }
 
     public static string TrackToLinkedStringWithTimestamp(RecentTrack track, bool? rymEnabled = null, TimeSpan? trackLength = null)
@@ -59,7 +70,12 @@ public static class StringService
 
             var format = DateTime.UtcNow.AddHours(-20) < track.TimePlayed.Value ? "t" : "f";
 
-            description.Append($"<t:{dateValue}:{format}> • ");
+            description.Append($"<t:{dateValue}:{format}>");
+
+            if (!string.IsNullOrWhiteSpace(track.AlbumName))
+            {
+                description.Append($" • ");
+            }
         }
 
         if (trackLength.HasValue)

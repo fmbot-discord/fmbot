@@ -29,5 +29,9 @@ public class TopTrack
 
     public long? UserPlaycount { get; set; }
 
+    public DateTime? FirstPlay { get; set; }
+
+    public TopTimeListened TimeListened { get; set; }
+
     public Guid? Mbid { get; set; }
 }

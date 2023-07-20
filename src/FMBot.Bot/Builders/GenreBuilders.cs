@@ -214,6 +214,7 @@ public class GenreBuilders
                                         $"Please try again later or try a different time period.");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -242,7 +243,7 @@ public class GenreBuilders
             var genrePageString = new StringBuilder();
             foreach (var genre in genrePage)
             {
-                var name = $"**{genre.GenreName.Transform(To.TitleCase)}** ({genre.UserPlaycount} {StringExtensions.GetPlaysString(genre.UserPlaycount)})";
+                var name = $"**{genre.GenreName.Transform(To.TitleCase)}** - *{genre.UserPlaycount} {StringExtensions.GetPlaysString(genre.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopGenres.Any())
                 {
@@ -517,7 +518,7 @@ public class GenreBuilders
                     }
                 }
 
-                genrePageString.AppendLine($"{counterString} **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)})");
+                genrePageString.AppendLine($"{counterString} **{genreArtist.ArtistName}** - *{genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
                 counter++;
             }
 

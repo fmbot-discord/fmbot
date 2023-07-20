@@ -493,13 +493,13 @@ public class LastFmRepository : ILastfmRepository
 
     }
 
-    public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username)
+    public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, bool redirectsEnabled)
     {
         var queryParams = new Dictionary<string, string>
         {
             {"artist", artistName },
             {"username", username },
-            {"autocorrect", "1"}
+            {"autocorrect", redirectsEnabled ? "1" : "0"}
         };
 
         var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
@@ -589,7 +589,7 @@ public class LastFmRepository : ILastfmRepository
                         ArtistName = s.Artist?.Name,
                         TrackName = s.Name,
                         TrackUrl = s.Url,
-                        Duration = s.Duration,
+                        DurationSeconds = s.Duration,
                         Rank = s.Attr?.Rank
                     }).ToList(),
                     Tags = albumCall.Content.Album.Tags?.Tag?.Select(s => new Tag

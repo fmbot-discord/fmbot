@@ -7,7 +7,7 @@ public class AlbumTrack
     public string TrackName { get; set; }
     public string TrackUrl { get; set; }
 
-    public long? Duration { get; set; }
+    public long? DurationSeconds { get; set; }
 
     public long? Rank { get; set; }
     public int Disc { get; set; }

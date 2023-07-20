@@ -58,7 +58,7 @@ public class ArtistsService
     }
 
     public async Task<ArtistSearch> SearchArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
-        bool useCachedArtists = false, int? userId = null)
+        bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true)
     {
         if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
         {
@@ -92,11 +92,11 @@ public class ArtistsService
             Response<ArtistInfo> artistCall;
             if (useCachedArtists)
             {
-                artistCall = await GetCachedArtist(artistValues, lastFmUserName, userId);
+                artistCall = await GetCachedArtist(artistValues, lastFmUserName, userId, redirectsEnabled);
             }
             else
             {
-                artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistValues, lastFmUserName);
+                artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistValues, lastFmUserName, redirectsEnabled);
             }
 
             if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
@@ -145,11 +145,11 @@ public class ArtistsService
             Response<ArtistInfo> artistCall;
             if (useCachedArtists)
             {
-                artistCall = await GetCachedArtist(lastPlayedTrack.ArtistName, lastFmUserName, userId);
+                artistCall = await GetCachedArtist(lastPlayedTrack.ArtistName, lastFmUserName, userId, redirectsEnabled);
             }
             else
             {
-                artistCall = await this._dataSourceFactory.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
+                artistCall = await this._dataSourceFactory.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName, redirectsEnabled);
             }
 
             if (artistCall.Content == null || !artistCall.Success)
@@ -164,10 +164,10 @@ public class ArtistsService
         }
     }
 
-    private async Task<Response<ArtistInfo>> GetCachedArtist(string artistName, string lastFmUserName, int? userId = null)
+    private async Task<Response<ArtistInfo>> GetCachedArtist(string artistName, string lastFmUserName, int? userId = null, bool redirectsEnabled = true)
     {
         Response<ArtistInfo> artistInfo;
-        var cachedArtist = await GetArtistFromDatabase(artistName);
+        var cachedArtist = await GetArtistFromDatabase(artistName, redirectsEnabled);
         if (cachedArtist != null)
         {
             artistInfo = new Response<ArtistInfo>
@@ -184,7 +184,7 @@ public class ArtistsService
         }
         else
         {
-            artistInfo = await this._dataSourceFactory.GetArtistInfoAsync(artistName, lastFmUserName);
+            artistInfo = await this._dataSourceFactory.GetArtistInfoAsync(artistName, lastFmUserName, redirectsEnabled);
         }
 
         return artistInfo;
@@ -476,19 +476,27 @@ public class ArtistsService
         return await db.Artists.FindAsync(artistId);
     }
 
-    public async Task<Artist> GetArtistFromDatabase(string artistName)
+    public async Task<Artist> GetArtistFromDatabase(string artistName ,bool redirectsEnabled = true)
     {
         if (string.IsNullOrWhiteSpace(artistName))
         {
             return null;
         }
 
-        var correctedArtistName = await GetCorrectedArtistName(artistName);
+        string correctArtistName;
+        if (redirectsEnabled)
+        {
+            correctArtistName = await GetCorrectedArtistName(artistName);
+        }
+        else
+        {
+            correctArtistName = artistName;
+        }
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var artist = await this._artistRepository.GetArtistForName(correctedArtistName, connection, true);
+        var artist = await this._artistRepository.GetArtistForName(correctArtistName, connection, true);
 
         await connection.CloseAsync();
 

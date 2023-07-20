@@ -817,8 +817,8 @@ public class TrackBuilders
             foreach (var track in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** - **{track.TrackName}** ({track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)})"
-                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** - **{track.TrackName}** ({track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)})";
+                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** - **{track.TrackName}** · *{track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
+                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** - **{track.TrackName}** · *{track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)}*";
 
                 if (previousTopGuildTracks != null && previousTopGuildTracks.Any())
                 {
@@ -884,12 +884,13 @@ public class TrackBuilders
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} tracks for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
-        var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
+        var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200, calculateTimeListened: topListSettings.Type == TopListType.TimeListened);
 
         if (!topTracks.Success)
         {
             response.Embed.ErrorResponse(topTracks.Error, topTracks.Message, "top tracks", context.DiscordUser);
             response.CommandResponse = CommandResponse.LastFmError;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
         if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
@@ -897,6 +898,7 @@ public class TrackBuilders
             response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top tracks in the [selected time period]({userUrl}).");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -904,7 +906,7 @@ public class TrackBuilders
         if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
         {
             var previousTopTracksCall = await this._dataSourceFactory
-                .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
+                .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200, calculateTimeListened: topListSettings.Type == TopListType.TimeListened);
 
             if (previousTopTracksCall.Success)
             {
@@ -914,7 +916,19 @@ public class TrackBuilders
 
         response.Embed.WithAuthor(response.EmbedAuthor);
 
-        var trackPages = topTracks.Content.TopTracks.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+        if (topListSettings.Type == TopListType.TimeListened)
+        {
+            topTracks.Content.TopTracks = topTracks.Content.TopTracks
+                .OrderByDescending(o => o.TimeListened.TotalTimeListened)
+                .ToList();
+
+            previousTopTracks = previousTopTracks
+                .OrderByDescending(o => o.TimeListened.TotalTimeListened)
+                .ToList();
+        }
+
+        var trackPages = topTracks.Content.TopTracks
+            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
 
         var counter = 1;
         var pageCounter = 1;
@@ -927,21 +941,38 @@ public class TrackBuilders
             var trackPageString = new StringBuilder();
             foreach (var track in trackPage)
             {
-                var name = tooMuchChars ?
-                    $"**{track.ArtistName}** - **{track.TrackName}** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})" :
-                    $"**{track.ArtistName}** - **[{track.TrackName}]({track.TrackUrl})** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})";
+                var name = new StringBuilder();
+                if (!tooMuchChars)
+                {
+                    name.Append($"**{StringExtensions.Sanitize(track.ArtistName)}** - **[{track.TrackName}]({track.TrackUrl})** ");
+                }
+                else
+                {
+                    name.Append($"**{StringExtensions.Sanitize(track.ArtistName)}** - **{track.TrackName}** ");
+                }
+
+                if (topListSettings.Type == TopListType.Plays)
+                {
+                    name.Append(
+                        $"- *{track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)}*");
+                }
+                else
+                {
+                    name.Append(
+                        $"- *{StringExtensions.GetListeningTimeString(track.TimeListened.TotalTimeListened)}*");
+                }
 
                 if (topListSettings.Billboard && previousTopTracks.Any())
                 {
                     var previousTopTrack = previousTopTracks.FirstOrDefault(f => f.ArtistName == track.ArtistName && f.TrackName == track.TrackName);
                     int? previousPosition = previousTopTrack == null ? null : previousTopTracks.IndexOf(previousTopTrack);
 
-                    trackPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
+                    trackPageString.AppendLine(StringService.GetBillboardLine(name.ToString(), counter - 1, previousPosition).Text);
                 }
                 else
                 {
                     trackPageString.Append($"{counter}\\. ");
-                    trackPageString.AppendLine(name);
+                    trackPageString.AppendLine(name.ToString());
                 }
 
                 counter++;

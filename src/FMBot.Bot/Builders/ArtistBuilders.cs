@@ -93,20 +93,23 @@ public class ArtistBuilders
 
     public async Task<ResponseModel> ArtistAsync(
         ContextModel context,
-        string searchValue)
+        string searchValue,
+        bool redirectsEnabled)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
         }
 
-        var spotifyArtistTask = this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue);
+        var spotifyArtistTask = this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled);
 
         var fullArtist = await spotifyArtistTask;
 
@@ -348,11 +351,11 @@ public class ArtistBuilders
         return response;
     }
 
-    public async Task<ResponseModel> ArtistTracksAsync(
-        ContextModel context,
+    public async Task<ResponseModel> ArtistTracksAsync(ContextModel context,
         TimeSettingsModel timeSettings,
         UserSettingsModel userSettings,
-        string searchValue)
+        string searchValue,
+        bool redirectsEnabled)
     {
         var response = new ResponseModel
         {
@@ -360,7 +363,7 @@ public class ArtistBuilders
         };
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM,
-            context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId);
+            context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId, redirectsEnabled: redirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -417,7 +420,7 @@ public class ArtistBuilders
             var albumPageString = new StringBuilder();
             foreach (var track in topTrackPage)
             {
-                albumPageString.AppendLine($"{counter}. **{StringExtensions.Sanitize(track.Name)}** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)})");
+                albumPageString.AppendLine($"{counter}. **{StringExtensions.Sanitize(track.Name)}** - *{track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}*");
                 counter++;
             }
 
@@ -516,8 +519,8 @@ public class ArtistBuilders
             foreach (var track in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** ({track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)})"
-                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** ({track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)})";
+                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** · *{track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
+                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** · *{track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)}*";
 
                 if (previousTopGuildArtists != null && previousTopGuildArtists.Any())
                 {
@@ -592,12 +595,14 @@ public class ArtistBuilders
         {
             response.Embed.ErrorResponse(artists.Error, artists.Message, "top artists", context.DiscordUser);
             response.CommandResponse = CommandResponse.LastFmError;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
         if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
         {
             response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top artists in the [selected time period]({userUrl}).");
             response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -626,7 +631,7 @@ public class ArtistBuilders
             foreach (var artist in artistPage)
             {
                 var name =
-                    $"**[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserPlaycount} {StringExtensions.GetPlaysString(artist.UserPlaycount)})";
+                    $"**[{artist.ArtistName}]({artist.ArtistUrl})** - *{artist.UserPlaycount} {StringExtensions.GetPlaysString(artist.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopArtists.Any())
                 {
@@ -675,12 +680,11 @@ public class ArtistBuilders
         return response;
     }
 
-    public async Task<ResponseModel> ArtistPaceAsync(
-        ContextModel context,
+    public async Task<ResponseModel> ArtistPaceAsync(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         string amount,
-        string artistName)
+        string artistName, bool redirectsEnabled)
     {
         var response = new ResponseModel
         {
@@ -698,7 +702,9 @@ public class ArtistBuilders
                 .TrimStart();
         }
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistName, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, userId: context.ContextUser.UserId);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistName,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -762,7 +768,8 @@ public class ArtistBuilders
         WhoKnowsMode mode,
         string artistValues,
         bool displayRoleSelector = false,
-        List<ulong> roles = null)
+        List<ulong> roles = null,
+        bool redirectsEnabled = true)
     {
         var response = new ResponseModel
         {
@@ -771,13 +778,13 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
         }
 
-        var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+        var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, redirectsEnabled);
 
         var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;
@@ -801,7 +808,7 @@ public class ArtistBuilders
         var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithArtist, contextGuild, roles);
 
         CrownModel crownModel = null;
-        if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector)
+        if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector && redirectsEnabled)
         {
             crownModel =
                 await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, contextGuild, artistSearch.Artist.ArtistName);
@@ -942,13 +949,15 @@ public class ArtistBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, settings.NewSearchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true, userId: context.ContextUser.UserId);
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser,
+            settings.NewSearchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            useCachedArtists: true, userId: context.ContextUser.UserId, redirectsEnabled: settings.RedirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
         }
 
-        var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+        var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, settings.RedirectsEnabled);
 
         var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;
@@ -1071,10 +1080,9 @@ public class ArtistBuilders
         return response;
     }
 
-    public async Task<ResponseModel> FriendsWhoKnowArtistAsync(
-        ContextModel context,
+    public async Task<ResponseModel> FriendsWhoKnowArtistAsync(ContextModel context,
         WhoKnowsMode mode,
-        string artistValues)
+        string artistValues, bool redirectsEnabled)
     {
         var response = new ResponseModel
         {
@@ -1093,14 +1101,14 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
         }
 
         var cachedArtist =
-            await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+            await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, redirectsEnabled);
 
         var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;

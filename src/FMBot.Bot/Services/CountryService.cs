@@ -27,7 +27,10 @@ public class CountryService
 
         var countryJsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "countries.json");
         var countryJson = File.ReadAllBytes(countryJsonPath);
-        this._countries = JsonSerializer.Deserialize<List<CountryInfo>>(countryJson);
+        this._countries = JsonSerializer.Deserialize<List<CountryInfo>>(countryJson, new JsonSerializerOptions
+        {
+            AllowTrailingCommas = true
+        });
     }
 
     private static string CacheKeyForArtistCountry(string artistName)
@@ -84,7 +87,8 @@ public class CountryService
         var foundCountry = this._countries
             .FirstOrDefault(f => TrimCountry(f.Name) == searchQuery ||
                                  f.Emoji == searchQuery ||
-                                 f.Code.ToLower() == searchQuery);
+                                 f.Code.ToLower() == searchQuery ||
+                                 f.Aliases != null && f.Aliases.Any(a => TrimCountry(a) == searchQuery));
 
         return foundCountry;
     }
@@ -102,7 +106,8 @@ public class CountryService
             .Where(f => TrimCountry(f.Name) == searchQuery ||
                         f.Code.ToLower() == searchQuery ||
                         TrimCountry(f.Name).StartsWith(searchQuery) ||
-                        TrimCountry(f.Name).Contains(searchQuery));
+                        TrimCountry(f.Name).Contains(searchQuery) ||
+                        f.Aliases != null && f.Aliases.Any(a => TrimCountry(a) == searchQuery));
 
         return foundCountries;
     }

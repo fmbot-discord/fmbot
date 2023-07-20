@@ -75,7 +75,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
         if (contextUser.UserType == UserType.User)
         {
-            embed.WithDescription($"Only supporters can import their Spotify history.");
+            embed.WithDescription($"Only supporters can import their Spotify history into .fmbot.");
 
             var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
@@ -121,6 +121,7 @@ public class ImportSlashCommands : InteractionModuleBase
             description.AppendLine("- We filter out duplicates, so don't worry about submitting the same file twice");
             description.AppendLine("- Spotify files includes plays that you skipped quickly, we filter those out as well");
             description.AppendLine("- You can select what from your import you want to use with `/import manage`");
+            description.AppendLine("- Discord mobile currently has an issue where it corrupts any `.json` file you send through it. Please only use this command with Discord desktop.");
 
             var years = await this.GetImportedYears(contextUser.UserId);
             if (years.Length > 0)
@@ -150,25 +151,26 @@ public class ImportSlashCommands : InteractionModuleBase
             if (!imports.success)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file. Make sure you select the right files, for example `endsong_1.json`.", true);
+                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file. Make sure you select the right files, for example `endsong_1.json`." , true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
             if (imports.result == null || imports.result.Count == 0 || imports.result.All(a => a.MsPlayed == 0))
             {
-                if (attachments.Any(a => a.Filename.ToLower().Contains("streaminghistory")))
+                if (attachments != null && attachments.Any(a => a.Filename != null) && attachments.Any(a => a.Filename.ToLower().Contains("streaminghistory")))
                 {
                     embed.WithColor(DiscordConstants.WarningColorOrange);
                     await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import file. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package.\n\n" +
-                                                                         $"Streaming history files are named `endsong.json`. Files that are named `StreamingHistory.json` are incomplete and can't be processed.\n\n" +
+                                                                         $"The files should have the name `endsong_x.json`. Files that are named `StreamingHistory.json` are incomplete and can't be processed.\n\n" +
                                                                          $"The right files can take some more time to get, but actually contain your full Spotify history. Sorry for the inconvenience.", true);
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `endsong_1.json`.", true);
+                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `endsong_1.json`.\n\n" +
+                                                                     $"The Discord mobile app currently empties all `.json` files you send through it. We've reported this to them, try using Discord on desktop in the meantime.", true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
@@ -273,7 +275,7 @@ public class ImportSlashCommands : InteractionModuleBase
         if (contextUser.UserType == UserType.User)
         {
             var embed = new EmbedBuilder();
-            embed.WithDescription($"Only supporters can import their Spotify history.");
+            embed.WithDescription($"Only supporters can import their Spotify history into .fmbot.");
 
             var components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 

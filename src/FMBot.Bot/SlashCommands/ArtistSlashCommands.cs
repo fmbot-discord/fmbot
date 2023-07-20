@@ -51,7 +51,8 @@ public class ArtistSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task ArtistAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(ArtistAutoComplete))] string name = null)
+        [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
+        [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         _ = DeferAsync();
 
@@ -59,7 +60,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, contextUser), name);
+            var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, contextUser), name, redirectsEnabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -76,7 +77,8 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))]string name = null,
         [Summary("Time-period", "Time period to base show tracks for")] PlayTimePeriod timePeriod = PlayTimePeriod.AllTime,
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -84,7 +86,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), timePeriod), TimePeriod.AllTime);
 
         var response = await this._artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser), timeSettings,
-            userSettings, name);
+            userSettings, name, redirectsEnabled);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -97,7 +99,8 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Autocomplete(typeof(ArtistAutoComplete))]string name = null,
         [Summary("Amount", "Goal play amount")] int amount = 1,
         [Summary("Time-period", "Time period to base average playcount on")] ArtistPaceTimePeriod timePeriod = ArtistPaceTimePeriod.Monthly,
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         _ = DeferAsync();
 
@@ -110,7 +113,7 @@ public class ArtistSlashCommands : InteractionModuleBase
             var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(ArtistPaceTimePeriod), timePeriod), TimePeriod.Monthly);
 
             var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, contextUser),
-                userSettings, timeSettings, amount.ToString(), name);
+                userSettings, timeSettings, amount.ToString(), name, redirectsEnabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
@@ -135,7 +138,8 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
         [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
-        [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false)
+        [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false,
+        [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         _ = DeferAsync();
 
@@ -145,7 +149,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode.Value, name, displayRoleFilter);
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser),
+                mode.Value, name, displayRoleFilter, redirectsEnabled: redirectsEnabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -177,6 +182,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
+            // TODO add redirects
             var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), WhoKnowsMode.Embed, artist.Name, true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
@@ -195,7 +201,8 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
         [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [Summary("Private", "Only show response to you")] bool privateResponse = false,
+        [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         _ = DeferAsync(privateResponse);
 
@@ -207,7 +214,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         try
         {
             var response = await this._artistBuilders.FriendsWhoKnowArtistAsync(new ContextModel(this.Context, contextUser),
-                mode.Value, name);
+                mode.Value, name, redirectsEnabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -225,7 +232,8 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
         [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
-        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
+        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false,
+        [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
         _ = DeferAsync();
 
@@ -237,7 +245,8 @@ public class ArtistSlashCommands : InteractionModuleBase
             ShowBotters = false,
             AdminView = false,
             NewSearchValue = name,
-            WhoKnowsMode = mode ?? contextUser.Mode ?? WhoKnowsMode.Embed
+            WhoKnowsMode = mode ?? contextUser.Mode ?? WhoKnowsMode.Embed,
+            RedirectsEnabled = redirectsEnabled
         };
 
         try

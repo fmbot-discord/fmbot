@@ -410,6 +410,12 @@ public class SettingService
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, discogs);
             topListSettings.Discogs = true;
         }
+        var timeListened = new[] { "tl", "timelistened" };
+        if (Contains(extraOptions, timeListened))
+        {
+            topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, timeListened);
+            topListSettings.Type = TopListType.TimeListened;
+        }
 
         return topListSettings;
     }
@@ -457,7 +463,25 @@ public class SettingService
             whoKnowsSettings.DisplayRoleFilter = true;
         }
 
+        var noRedirect = new[] { "nr", "noredirect" };
+        if (Contains(extraOptions, noRedirect))
+        {
+            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, noRedirect);
+            whoKnowsSettings.RedirectsEnabled = false;
+        }
+
         return whoKnowsSettings;
+    }
+
+    public static (bool Enabled, string NewSearchValue) RedirectsEnabled(string extraOptions)
+    {
+        var noRedirect = new[] { "nr", "noredirect" };
+        if (Contains(extraOptions, noRedirect))
+        {
+            return (false, ContainsAndRemove(extraOptions, noRedirect));
+        }
+
+        return (true, extraOptions);
     }
 
     public async Task<UserSettingsModel> GetUser(
