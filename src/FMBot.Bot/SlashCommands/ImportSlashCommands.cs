@@ -121,6 +121,7 @@ public class ImportSlashCommands : InteractionModuleBase
             description.AppendLine("- We filter out duplicates, so don't worry about submitting the same file twice");
             description.AppendLine("- Spotify files includes plays that you skipped quickly, we filter those out as well");
             description.AppendLine("- You can select what from your import you want to use with `/import manage`");
+            description.AppendLine("- Discord mobile currently has an issue where it corrupts any `.json` file you send through it. Please only use this command with Discord desktop.");
 
             var years = await this.GetImportedYears(contextUser.UserId);
             if (years.Length > 0)
