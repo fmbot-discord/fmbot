@@ -109,8 +109,8 @@ public class GenreBuilders
             foreach (var genre in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{genre.ListenerCount}` · **{genre.GenreName.Transform(To.TitleCase)}** ({genre.TotalPlaycount} {Extensions.StringExtensions.GetPlaysString(genre.TotalPlaycount)})"
-                    : $"`{genre.TotalPlaycount}` · **{genre.GenreName.Transform(To.TitleCase)}** ({genre.ListenerCount} {StringExtensions.GetListenersString(genre.ListenerCount)})";
+                    ? $"`{genre.ListenerCount}` · **{genre.GenreName.Transform(To.TitleCase)}** - *{genre.TotalPlaycount} {StringExtensions.GetPlaysString(genre.TotalPlaycount)}*"
+                    : $"`{genre.TotalPlaycount}` · **{genre.GenreName.Transform(To.TitleCase)}** - *{genre.ListenerCount} {StringExtensions.GetListenersString(genre.ListenerCount)}*";
 
                 if (previousTopGuildGenres != null && previousTopGuildGenres.Any())
                 {
