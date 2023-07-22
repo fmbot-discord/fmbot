@@ -188,11 +188,11 @@ public class ImportSlashCommands : InteractionModuleBase
             {
                 await this._importService.InsertImportPlays(playsWithoutDuplicates);
                 await UpdateImportEmbed(message, embed, description, $"- Added plays to database");
-            }
 
-            if (contextUser.DataSource == DataSource.LastFm)
-            {
-                await this._userService.SetDataSource(contextUser, DataSource.FullSpotifyThenLastFm);
+                if (contextUser.DataSource == DataSource.LastFm)
+                {
+                    await this._userService.SetDataSource(contextUser, DataSource.FullSpotifyThenLastFm);
+                }
             }
 
             await this._indexService.RecalculateTopLists(contextUser);
@@ -286,12 +286,14 @@ public class ImportSlashCommands : InteractionModuleBase
             return;
         }
 
+        await DeferAsync(ephemeral: true);
+
         try
         {
             var hasImported = await this._importService.HasImported(contextUser.UserId);
             var response = UserBuilder.ImportMode(new ContextModel(this.Context, contextUser), hasImported);
 
-            await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

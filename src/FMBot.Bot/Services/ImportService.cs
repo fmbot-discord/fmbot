@@ -85,6 +85,8 @@ public class ImportService
             }
         }
 
+        Log.Information("Importing: SpotifyImportToUserPlays found {validPlays} and {invalidPlays}", userPlays.Count, invalidPlays);
+
         return userPlays;
     }
 
@@ -100,9 +102,17 @@ public class ImportService
             .Select(s => s.TimePlayed)
             .ToHashSet();
 
-        return userPlays
-            .Where(w => !timestamps.Contains(w.TimePlayed))
-            .ToList();
+        var playsToReturn = new List<UserPlay>();
+        foreach (var userPlay in userPlays)
+        {
+            if (!timestamps.Contains(userPlay.TimePlayed))
+            {
+                playsToReturn.Add(userPlay);
+                timestamps.Add(userPlay.TimePlayed);
+            }
+        }
+
+        return playsToReturn;
     }
 
     public async Task UpdateExistingPlays(int userId)
@@ -111,14 +121,23 @@ public class ImportService
         await connection.OpenAsync();
 
         await PlayRepository.SetDefaultSourceForPlays(userId, connection);
+        Log.Information("Importing: Set default source for {userId}", userId);
     }
 
-    public async Task InsertImportPlays(IEnumerable<UserPlay> plays)
+    public async Task InsertImportPlays(IList<UserPlay> plays)
     {
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
+        if (plays != null && plays.Any())
+        {
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
-        await PlayRepository.InsertTimeSeriesPlays(plays, connection);
+            await PlayRepository.InsertTimeSeriesPlays(plays, connection);
+            Log.Information("Importing: Inserted {importCount} plays for {userId}", plays.Count(), plays.First().UserId);
+        }
+        else
+        {
+            Log.Error("Importing: Tried to insert 0 import plays!");
+        }
     }
 
     public async Task RemoveImportPlays(int userId)
@@ -127,6 +146,8 @@ public class ImportService
         await connection.OpenAsync();
 
         await PlayRepository.RemoveAllImportPlays(userId, connection);
+
+        Log.Information("Importing: Removed imported plays for {userId}", userId);
     }
 
     public async Task<bool> HasImported(int userId)
