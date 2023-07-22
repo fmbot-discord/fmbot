@@ -75,7 +75,7 @@ public class DiscordSkuService
         return new DiscordEntitlement
         {
             DiscordUserId = response.UserId.Value,
-            Active = !response.EndsAt.HasValue || response.EndsAt.Value > DateTime.UtcNow.AddDays(2),
+            Active = !response.EndsAt.HasValue || response.EndsAt.Value > DateTime.UtcNow.AddDays(7),
             StartsAt = response.StartsAt.HasValue ? DateTime.SpecifyKind(response.StartsAt.Value, DateTimeKind.Utc) : null,
             EndsAt = response.EndsAt.HasValue ? DateTime.SpecifyKind(response.EndsAt.Value, DateTimeKind.Utc) : null
         };
