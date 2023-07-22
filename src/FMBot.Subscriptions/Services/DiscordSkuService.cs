@@ -70,12 +70,12 @@ public class DiscordSkuService
         }
     }
 
-    private DiscordEntitlement ResponseToModel(DiscordEntitlementResponseModel response)
+    private static DiscordEntitlement ResponseToModel(DiscordEntitlementResponseModel response)
     {
         return new DiscordEntitlement
         {
             DiscordUserId = response.UserId.Value,
-            Active = !response.EndsAt.HasValue || response.EndsAt.Value > DateTime.UtcNow,
+            Active = !response.EndsAt.HasValue || response.EndsAt.Value > DateTime.UtcNow.AddDays(2),
             StartsAt = response.StartsAt.HasValue ? DateTime.SpecifyKind(response.StartsAt.Value, DateTimeKind.Utc) : null,
             EndsAt = response.EndsAt.HasValue ? DateTime.SpecifyKind(response.EndsAt.Value, DateTimeKind.Utc) : null
         };
