@@ -386,7 +386,7 @@ public class UpdateService : IUpdateService
 
             Log.Debug($"Updated artist {artistName} for {user.UserNameLastFM}");
         }
-        else if(addNewUserArtist)
+        else if (addNewUserArtist)
         {
             await using var addUserArtist =
                 new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount)" +
@@ -583,7 +583,7 @@ public class UpdateService : IUpdateService
 
             Log.Debug($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
         }
-        else if(addNewUserTrack)
+        else if (addNewUserTrack)
         {
             await using var addUserTrack =
                 new NpgsqlCommand("INSERT INTO public.user_tracks(user_id, name, artist_name, playcount)" +
