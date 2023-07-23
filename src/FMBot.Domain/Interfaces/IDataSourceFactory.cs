@@ -8,6 +8,8 @@ namespace FMBot.Domain.Interfaces;
 
 public interface IDataSourceFactory
 {
+    Task<ImportUser> GetImportUserForLastFmUserName(string lastFmUserName);
+
     Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false,
         string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1);
 
