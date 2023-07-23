@@ -64,10 +64,10 @@ public class DiscordSkuService
                 .GroupBy(g => g.UserId.Value)
                 .Select(s => new DiscordEntitlement
                 {
-                    DiscordUserId = s.Key,
-                    Active = s.OrderByDescending(o => o.EndsAt).First().EndsAt > DateTime.UtcNow.AddDays(7),
-                    StartsAt = s.OrderByDescending(o => o.EndsAt).First().StartsAt,
-                    EndsAt = s.OrderByDescending(o => o.EndsAt).First().EndsAt
+                    DiscordUserId = s.OrderByDescending(o => o.EndsAt).First().UserId.Value,
+                    Active = !s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue || s.OrderByDescending(o => o.EndsAt).First().EndsAt.Value > DateTime.UtcNow.AddDays(-7),
+                    StartsAt = s.OrderByDescending(o => o.EndsAt).First().StartsAt.HasValue ? DateTime.SpecifyKind(s.OrderByDescending(o => o.EndsAt).First().StartsAt.Value, DateTimeKind.Utc) : null,
+                    EndsAt = s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue ? DateTime.SpecifyKind(s.OrderByDescending(o => o.EndsAt).First().EndsAt.Value, DateTimeKind.Utc) : null
                 })
                 .ToList();
         }
