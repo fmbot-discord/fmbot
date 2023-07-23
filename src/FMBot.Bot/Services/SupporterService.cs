@@ -662,7 +662,9 @@ public class SupporterService
             .ToListAsync();
 
         var discordUsersLeft = existingSupporters
+            .OrderByDescending(o => o.LastPayment)
             .Select(s => s.DiscordUserId.Value)
+            .Distinct()
             .ToHashSet();
 
         foreach (var discordSupporter in discordSupporters)

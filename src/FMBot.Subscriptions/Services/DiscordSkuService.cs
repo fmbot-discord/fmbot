@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using FMBot.Domain.Types;
 using FMBot.Subscriptions.Models;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -60,7 +61,14 @@ public class DiscordSkuService
 
             return result
                 .Where(w => w.UserId.HasValue)
-                .Select(ResponseToModel)
+                .GroupBy(g => g.UserId.Value)
+                .Select(s => new DiscordEntitlement
+                {
+                    DiscordUserId = s.Key,
+                    Active = !s.Any(a => a.EndsAt.HasValue) || s.OrderByDescending(o => o.EndsAt.Value).First().EndsAt > DateTime.UtcNow.AddDays(7),
+                    StartsAt = s.Any(a => a.StartsAt.HasValue) ? DateTime.SpecifyKind(s.OrderBy(o => o.StartsAt.Value).First().StartsAt.Value, DateTimeKind.Utc) : null,
+                    EndsAt = s.Any(a => a.EndsAt.HasValue) ? DateTime.SpecifyKind(s.OrderByDescending(o => o.EndsAt.Value).First().EndsAt.Value, DateTimeKind.Utc) : null
+                })
                 .ToList();
         }
         catch (Exception ex)
