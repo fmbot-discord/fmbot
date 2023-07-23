@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
@@ -54,13 +53,10 @@ public class ImportService
                 {
                     try
                     {
-                        using (var sr = new StreamReader(entry.Open()))
-                        {
-                            var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(sr);
+                        await using var zipStream = entry.Open();
+                        var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(zipStream);
 
-                            spotifyPlays.AddRange(result);
-                        }
-                        
+                        spotifyPlays.AddRange(result);
                     }
                     catch (Exception e)
                     {

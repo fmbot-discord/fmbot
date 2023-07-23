@@ -115,13 +115,13 @@ public class ImportSlashCommands : InteractionModuleBase
             description.AppendLine("### Importing your data into .fmbot");
             description.AppendLine("1. Download the file Spotify provided");
             description.AppendLine("2. Use this command and add the `.zip` file as an attachment through the options");
-            description.AppendLine("3. Alternatively, you can attach each `.json` file separately");
+            description.AppendLine("3. Having issues? You can also attach each `.json` file separately");
 
             description.AppendLine("### Notes");
             description.AppendLine("- We filter out duplicates, so don't worry about submitting the same file twice");
             description.AppendLine("- Spotify files includes plays that you skipped quickly, we filter those out as well");
             description.AppendLine("- You can select what from your import you want to use with `/import manage`");
-            description.AppendLine("- Discord mobile currently has an issue where it corrupts any `.json` file you send through it. Please only use this command with Discord desktop.");
+            description.AppendLine("- Discord mobile currently has an issue where it corrupts any `.json` file you send through it. Attach the `.zip` instead, or try using Discord desktop");
 
             var years = await this.GetImportedYears(contextUser.UserId);
             if (years.Length > 0)
