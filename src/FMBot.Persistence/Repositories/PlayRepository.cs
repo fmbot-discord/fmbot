@@ -91,7 +91,7 @@ public static class PlayRepository
     private static async Task RemoveAllCurrentLastFmPlays(int userId, NpgsqlConnection connection)
     {
         await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                        "WHERE user_id = @userId ", connection);
+                                                        "WHERE user_id = @userId AND (play_source IS NULL OR play_source <> 0);", connection);
 
         deletePlays.Parameters.AddWithValue("userId", userId);
 
@@ -124,7 +124,7 @@ public static class PlayRepository
         }
     }
 
-    public static async Task InsertTimeSeriesPlays(IEnumerable<UserPlay> plays, NpgsqlConnection connection)
+    public static async Task<ulong> InsertTimeSeriesPlays(IEnumerable<UserPlay> plays, NpgsqlConnection connection)
     {
         var copyHelper = new PostgreSQLCopyHelper<UserPlay>("public", "user_plays")
             .MapText("track_name", x => x.TrackName)
@@ -135,7 +135,7 @@ public static class PlayRepository
             .MapBigInt("ms_played", x => x.MsPlayed)
             .MapInteger("play_source", x => (int?)x.PlaySource);
 
-        await copyHelper.SaveAllAsync(connection, plays);
+        return await copyHelper.SaveAllAsync(connection, plays);
     }
 
     public static async Task<ICollection<UserPlay>> GetUserPlays(int userId, NpgsqlConnection connection, int limit)

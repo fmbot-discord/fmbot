@@ -20,7 +20,7 @@ public class ArtistRepository
         this._botSettings = botSettings.Value;
     }
 
-    public static async Task AddOrReplaceUserArtistsInDatabase(IReadOnlyList<UserArtist> artists, int userId,
+    public static async Task<ulong> AddOrReplaceUserArtistsInDatabase(IReadOnlyList<UserArtist> artists, int userId,
         NpgsqlConnection connection)
     {
         Log.Information($"Inserting {artists.Count} artists for user {userId}");
@@ -33,7 +33,7 @@ public class ArtistRepository
         await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {userId};", connection);
         await deleteCurrentArtists.ExecuteNonQueryAsync();
 
-        await copyHelper.SaveAllAsync(connection, artists);
+        return await copyHelper.SaveAllAsync(connection, artists);
     }
 
     public async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection, bool includeGenres = false)

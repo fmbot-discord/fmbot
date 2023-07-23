@@ -101,7 +101,7 @@ public class IndexService : IIndexService
             }
         }
 
-        Log.Information($"Starting index for {user.UserNameLastFM}");
+        Log.Information($"Index: Starting for {user.UserNameLastFM}");
         var now = DateTime.UtcNow;
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -121,13 +121,18 @@ public class IndexService : IIndexService
             await PlayRepository.ReplaceAllPlays(plays, user.UserId, connection);
 
             var artists = await GetArtistsForUserFromLastFm(user);
-            await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
+            var artistsInserted = await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
 
             var albums = await GetAlbumsForUserFromLastFm(user);
-            await AlbumRepository.AddOrReplaceUserAlbumsInDatabase(albums, user.UserId, connection);
+            var albumsInserted = await AlbumRepository.AddOrReplaceUserAlbumsInDatabase(albums, user.UserId, connection);
 
             var tracks = await GetTracksForUserFromLastFm(user);
-            await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
+            var tracksInserted = await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
+
+            Log.Information("Index complete for {userId}: Artists found {artistCount}, inserted {artistsInserted} - " +
+                            "Albums found {albumCount}, inserted {albumsInserted} - "+
+                            "Tracks found {trackCount}, inserted {tracksInserted}",
+                user.UserId, artists.Count, artistsInserted, albums.Count, albumsInserted, tracks.Count, tracksInserted);
 
             var latestScrobbleDate = await GetLatestScrobbleDate(user);
 
@@ -148,7 +153,7 @@ public class IndexService : IIndexService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Error("Index: Error happened!", e);
             throw;
         }
     }
@@ -670,7 +675,7 @@ public class IndexService : IIndexService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var recentlyUsed = DateTime.UtcNow.AddDays(-2);
+        var recentlyUsed = DateTime.UtcNow.AddDays(-7);
         return await db.Users
             .AsQueryable()
             .Where(f => f.LastIndexed != null &&

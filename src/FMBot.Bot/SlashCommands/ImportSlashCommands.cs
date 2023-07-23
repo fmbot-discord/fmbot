@@ -48,7 +48,7 @@ public class ImportSlashCommands : InteractionModuleBase
         this.Interactivity = interactivity;
     }
 
-    private const string SpotifyFileDescription = "Spotify endsong.json file";
+    private const string SpotifyFileDescription = "Spotify history package (.zip) or history files (.json) ";
 
     [SlashCommand("spotify", "Import your Spotify history (Beta)")]
     [UsernameSetRequired]
@@ -114,14 +114,14 @@ public class ImportSlashCommands : InteractionModuleBase
 
             description.AppendLine("### Importing your data into .fmbot");
             description.AppendLine("1. Download the file Spotify provided");
-            description.AppendLine("2. Extract the `.zip` file so you have multiple `endsong_x.json` files ready");
-            description.AppendLine("3. Use this command and add each file as an attachment through the options");
+            description.AppendLine("2. Use this command and add the `.zip` file as an attachment through the options");
+            description.AppendLine("3. Having issues? You can also attach each `.json` file separately");
 
             description.AppendLine("### Notes");
             description.AppendLine("- We filter out duplicates, so don't worry about submitting the same file twice");
             description.AppendLine("- Spotify files includes plays that you skipped quickly, we filter those out as well");
             description.AppendLine("- You can select what from your import you want to use with `/import manage`");
-            description.AppendLine("- Discord mobile currently has an issue where it corrupts any `.json` file you send through it. Please only use this command with Discord desktop.");
+            description.AppendLine("- Discord mobile currently has an issue where it corrupts any `.json` file you send through it. Attach the `.zip` instead, or try using Discord desktop");
 
             var years = await this.GetImportedYears(contextUser.UserId);
             if (years.Length > 0)
@@ -151,7 +151,7 @@ public class ImportSlashCommands : InteractionModuleBase
             if (!imports.success)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file. Make sure you select the right files, for example `endsong_1.json`." , true);
+                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file. Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`." , true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
@@ -162,14 +162,14 @@ public class ImportSlashCommands : InteractionModuleBase
                 {
                     embed.WithColor(DiscordConstants.WarningColorOrange);
                     await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import file. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package.\n\n" +
-                                                                         $"The files should have the name `endsong_x.json`. Files that are named `StreamingHistory.json` are incomplete and can't be processed.\n\n" +
+                                                                         $"The files should have names like `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
                                                                          $"The right files can take some more time to get, but actually contain your full Spotify history. Sorry for the inconvenience.", true);
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `endsong_1.json`.\n\n" +
+                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
                                                                      $"The Discord mobile app currently empties all `.json` files you send through it. We've reported this to them, try using Discord on desktop in the meantime.", true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;

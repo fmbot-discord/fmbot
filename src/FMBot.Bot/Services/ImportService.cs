@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -35,13 +36,33 @@ public class ImportService
         {
             var spotifyPlays = new List<SpotifyEndSongImportModel>();
 
-            foreach (var attachment in attachments.Where(w => w?.Url != null).GroupBy(g => g.Filename))
+            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".json")).GroupBy(g => g.Filename))
             {
                 await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
 
                 var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(stream);
 
                 spotifyPlays.AddRange(result);
+            }
+            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".zip")).GroupBy(g => g.Filename))
+            {
+                await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
+
+                using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
+                foreach (var entry in zip.Entries.Where(w => w.Name.Contains(".json")))
+                {
+                    try
+                    {
+                        await using var zipStream = entry.Open();
+                        var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(zipStream);
+
+                        spotifyPlays.AddRange(result);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error("Error in import .zip file ({fileName})", entry.Name, e);
+                    }
+                }
             }
 
             return (true, spotifyPlays);
@@ -85,7 +106,7 @@ public class ImportService
             }
         }
 
-        Log.Information("Importing: SpotifyImportToUserPlays found {validPlays} and {invalidPlays}", userPlays.Count, invalidPlays);
+        Log.Information("Importing: SpotifyImportToUserPlays found {validPlays} valid plays and {invalidPlays} invalid plays", userPlays.Count, invalidPlays);
 
         return userPlays;
     }
@@ -131,8 +152,8 @@ public class ImportService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            await PlayRepository.InsertTimeSeriesPlays(plays, connection);
-            Log.Information("Importing: Inserted {importCount} plays for {userId}", plays.Count(), plays.First().UserId);
+            var inserted = await PlayRepository.InsertTimeSeriesPlays(plays, connection);
+            Log.Information("Importing: Inserted {insertCount} plays (Should be {importCount}) for {userId}", inserted, plays.Count(), plays.First().UserId);
         }
         else
         {

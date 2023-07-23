@@ -910,7 +910,7 @@ public class LastFmRepository : ILastfmRepository
             Content = new TopArtistList
             {
                 TotalAmount = topArtists.TotalItems,
-                TopArtists = artists.Select(s =>new TopArtist
+                TopArtists = artists.Select(s => new TopArtist
                 {
                     ArtistName = s.Name,
                     ArtistUrl = s.Url.ToString(),

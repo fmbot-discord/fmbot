@@ -183,10 +183,10 @@ public class TimerService
         }
 
         Log.Information("Getting users to index");
-        var timeToIndex = DateTime.UtcNow.AddDays(-this._botSettings.LastFm.UserIndexFrequencyInDays.Value);
+        var timeToIndex = DateTime.UtcNow.AddDays(-15);
 
         var usersToUpdate = (await this._indexService.GetOutdatedUsers(timeToIndex))
-            .Take(300)
+            .Take(2000)
             .ToList();
 
         Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to index queue");

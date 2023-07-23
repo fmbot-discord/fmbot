@@ -8,6 +8,8 @@ public static class InteractionConstants
     public const string FmSettingFooter = "fm-footer-menu";
     public const string FmSettingFooterSupporter = "fm-footer-menu-supporter";
 
+    public const string FmPrivacySetting = "fm-gwk-privacy";
+
     public const string FmGuildSettingType = "fm-guild-type-menu";
 
     public const string SetAllowedRoleMenu = "guild-allowed-roles-menu";

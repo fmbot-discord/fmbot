@@ -20,7 +20,7 @@ public class AlbumRepository
         this._botSettings = botSettings.Value;
     }
 
-    public static async Task AddOrReplaceUserAlbumsInDatabase(IReadOnlyList<UserAlbum> albums, int userId,
+    public static async Task<ulong> AddOrReplaceUserAlbumsInDatabase(IReadOnlyList<UserAlbum> albums, int userId,
         NpgsqlConnection connection)
     {
         Log.Information($"Inserting {albums.Count} albums for user {userId}");
@@ -34,7 +34,7 @@ public class AlbumRepository
         await using var deleteCurrentAlbums = new NpgsqlCommand($"DELETE FROM public.user_albums WHERE user_id = {userId};", connection);
         await deleteCurrentAlbums.ExecuteNonQueryAsync();
 
-        await copyHelper.SaveAllAsync(connection, albums);
+        return await copyHelper.SaveAllAsync(connection, albums);
     }
 
     public static async Task<Album> GetAlbumForName(string artistName, string albumName, NpgsqlConnection connection)
