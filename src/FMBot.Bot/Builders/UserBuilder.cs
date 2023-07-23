@@ -988,7 +988,7 @@ public class UserBuilder
                 .WithMinValues(1)
                 .WithMaxValues(1);
 
-        if (!hasImported)
+        if (!hasImported && context.ContextUser.DataSource == DataSource.LastFm)
         {
             importSetting.IsDisabled = true;
         }
