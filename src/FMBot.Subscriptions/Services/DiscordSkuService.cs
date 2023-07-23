@@ -65,9 +65,9 @@ public class DiscordSkuService
                 .Select(s => new DiscordEntitlement
                 {
                     DiscordUserId = s.Key,
-                    Active = !s.Any(a => a.EndsAt.HasValue) || s.OrderByDescending(o => o.EndsAt.Value).First().EndsAt > DateTime.UtcNow.AddDays(7),
-                    StartsAt = s.Any(a => a.StartsAt.HasValue) ? DateTime.SpecifyKind(s.OrderBy(o => o.StartsAt.Value).First().StartsAt.Value, DateTimeKind.Utc) : null,
-                    EndsAt = s.Any(a => a.EndsAt.HasValue) ? DateTime.SpecifyKind(s.OrderByDescending(o => o.EndsAt.Value).First().EndsAt.Value, DateTimeKind.Utc) : null
+                    Active = s.OrderByDescending(o => o.EndsAt).First().EndsAt > DateTime.UtcNow.AddDays(7),
+                    StartsAt = s.OrderByDescending(o => o.EndsAt).First().StartsAt,
+                    EndsAt = s.OrderByDescending(o => o.EndsAt).First().EndsAt
                 })
                 .ToList();
         }
