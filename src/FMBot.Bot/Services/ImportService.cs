@@ -85,7 +85,7 @@ public class ImportService
             }
         }
 
-        Log.Information("Importing: SpotifyImportToUserPlays found {validPlays} and {invalidPlays}", userPlays.Count, invalidPlays);
+        Log.Information("Importing: SpotifyImportToUserPlays found {validPlays} valid plays and {invalidPlays} invalid plays", userPlays.Count, invalidPlays);
 
         return userPlays;
     }
@@ -131,8 +131,8 @@ public class ImportService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            await PlayRepository.InsertTimeSeriesPlays(plays, connection);
-            Log.Information("Importing: Inserted {importCount} plays for {userId}", plays.Count(), plays.First().UserId);
+            var inserted = await PlayRepository.InsertTimeSeriesPlays(plays, connection);
+            Log.Information("Importing: Inserted {insertCount} plays (Should be {importCount}) for {userId}", inserted, plays.Count(), plays.First().UserId);
         }
         else
         {
