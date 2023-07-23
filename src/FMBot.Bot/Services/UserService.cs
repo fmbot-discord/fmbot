@@ -781,19 +781,21 @@ public class UserService
         return userToUpdate.PrivacyLevel;
     }
 
-    public async Task<PrivacyLevel> SetPrivacyLevel(User userToUpdate, PrivacyLevel privacyLevel)
+    public async Task<PrivacyLevel> SetPrivacyLevel(int userId, PrivacyLevel privacyLevel)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        userToUpdate.PrivacyLevel = privacyLevel;
+        var user = await db.Users.FirstAsync(f => f.UserId == userId);
 
-        db.Update(userToUpdate);
+        user.PrivacyLevel = privacyLevel;
+
+        db.Update(user);
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+        this._cache.Remove(UserCacheKey(user.DiscordUserId));
 
-        return userToUpdate.PrivacyLevel;
+        return user.PrivacyLevel;
     }
 
     public static User SetWkMode(User userSettings, string[] extraOptions)

@@ -252,6 +252,46 @@ public class UserBuilder
         return response;
     }
 
+    public static ResponseModel Privacy(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var privacySetting = new SelectMenuBuilder()
+                .WithPlaceholder("Select global WhoKnows privacy")
+                .WithCustomId(InteractionConstants.FmPrivacySetting)
+                .WithMinValues(1)
+                .WithMaxValues(1);
+
+        foreach (var name in Enum.GetNames(typeof(PrivacyLevel)).OrderBy(o => o))
+        {
+            privacySetting.AddOption(new SelectMenuOptionBuilder(name, name));
+        }
+
+        var builder = new ComponentBuilder()
+            .WithSelectMenu(privacySetting);
+
+        response.Components = builder;
+
+        response.Embed.WithAuthor("Configuring your global WhoKnows privacy");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var embedDescription = new StringBuilder();
+
+        embedDescription.AppendLine("Use this option to change your visibility to other .fmbot users.");
+        embedDescription.AppendLine();
+
+        response.Embed.AddField("Options:",
+            "**Global**: You are visible everywhere in global WhoKnows with your Last.fm username\n" +
+            "**Server**: You are not visible in global WhoKnows, but users in the same server will still see your name.");
+
+        response.Embed.WithDescription(embedDescription.ToString());
+
+        return response;
+    }
+
     public async Task<ResponseModel> FeaturedLogAsync(ContextModel context, UserSettingsModel userSettings, FeaturedView view)
     {
         var response = new ResponseModel

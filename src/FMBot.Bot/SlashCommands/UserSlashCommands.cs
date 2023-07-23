@@ -177,32 +177,31 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("privacy", "Changes your visibility to other .fmbot users in Global WhoKnows")]
     [UsernameSetRequired]
-    public async Task PrivacyAsync([Summary("level", "Privacy level for your .fmbot account")] PrivacyLevel privacyLevel)
+    public async Task PrivacyAsync()
     {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction(InteractionConstants.FmPrivacySetting)]
+    [UsernameSetRequired]
+    public async Task SetPrivacy(string[] inputs)
+    {
+        var embed = new EmbedBuilder();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var newPrivacyLevel = await this._userService.SetPrivacyLevel(userSettings, privacyLevel);
-
-        var reply = new StringBuilder();
-        reply.AppendLine($"Your privacy level has been set to **{newPrivacyLevel}**.");
-        reply.AppendLine();
-
-        if (newPrivacyLevel == PrivacyLevel.Global)
+        if (Enum.TryParse(inputs.FirstOrDefault(), out PrivacyLevel privacyLevel))
         {
-            reply.AppendLine("You will now be visible in the global WhoKnows with your Last.fm username.");
+            var newPrivacyLevel = await this._userService.SetPrivacyLevel(userSettings.UserId, privacyLevel);
+
+            embed.WithDescription($"Your privacy level has been set to **{newPrivacyLevel}**.");
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            await RespondAsync(embed: embed.Build(), ephemeral: true);
         }
-        if (newPrivacyLevel == PrivacyLevel.Server)
-        {
-            reply.AppendLine("You will not be visible in the global WhoKnows with your Last.fm username, but users you share a server with will still see it.");
-        }
-
-        var embed = new EmbedBuilder();
-        embed.WithColor(DiscordConstants.InformationColorBlue);
-        embed.WithDescription(reply.ToString());
-
-        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
-
-        this.Context.LogCommandUsed();
     }
 
     [SlashCommand("fmmode", "Changes your '/fm' layout")]

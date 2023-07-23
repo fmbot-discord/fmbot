@@ -683,7 +683,7 @@ public class AlbumBuilders
         if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
         {
             footer += $"\nYou are currently not globally visible - use " +
-                      $"'{context.Prefix}privacy global' to enable.";
+                      $"'{context.Prefix}privacy' to enable.";
         }
         if (settings.HidePrivateUsers)
         {

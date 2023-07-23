@@ -556,57 +556,18 @@ public class UserCommands : BaseCommandModule
              "The default privacy setting is 'Server'.")]
     [Options("**Global**: You are visible in the global WhoKnows with your Last.fm username",
         "**Server**: You are not visible in global WhoKnows, but users in the same server will still see your name.")]
-    [Examples("privacy global", "privacy server")]
+    [Examples("privacy")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
-    public async Task PrivacyAsync(params string[] otherSettings)
+    public async Task PrivacyAsync([Remainder] string _ = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "info")
-        {
-            var replyString = $"Use {prfx}privacy to change your visibility to other .fmbot users.";
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var response = UserBuilder.Privacy(new ContextModel(this.Context, prfx, contextUser));
 
-            this._embed.AddField("Options:",
-                "**Global**: You are visible in the global WhoKnows with your Last.fm username\n" +
-                "**Server**: You are not visible in global WhoKnows, but users in the same server will still see your name.\n\n" +
-                "The default privacy setting is 'Server'.");
-
-            this._embed.AddField("Examples:",
-                $"`{prfx}privacy global` \n" +
-                $"`{prfx}privacy server`");
-
-            this._embed.WithTitle("Changing your .fmbot privacy mode");
-            this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
-            this._embed.WithDescription(replyString);
-
-            this._embed.WithFooter(
-                $"Current privacy mode: {userSettings.PrivacyLevel}");
-
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
-
-        var newPrivacyLevel = await this._userService.SetPrivacy(userSettings, otherSettings);
-
-        var setReply = $"Your privacy mode has been set to **{newPrivacyLevel}**.\n\n";
-
-        if (newPrivacyLevel == PrivacyLevel.Global)
-        {
-            setReply += " You will now be visible in the global WhoKnows with your Last.fm username.";
-        }
-        if (newPrivacyLevel == PrivacyLevel.Server)
-        {
-            setReply += " You will not be visible in the global WhoKnows with your Last.fm username, but users you share a server with will still see it.";
-        }
-
-        this._embed.WithColor(DiscordConstants.InformationColorBlue);
-        this._embed.WithDescription(setReply);
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("login", RunMode = RunMode.Async)]
@@ -614,7 +575,7 @@ public class UserCommands : BaseCommandModule
              "Not receiving a DM? Please check if you have direct messages from server members enabled.")]
     [Alias("set", "setusername", "fm set", "connect")]
     [CommandCategories(CommandCategory.UserSettings)]
-    public async Task LoginAsync([Remainder] string unusedValues = null)
+    public async Task LoginAsync([Remainder] string _ = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 

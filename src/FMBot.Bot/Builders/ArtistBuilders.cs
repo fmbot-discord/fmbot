@@ -1054,7 +1054,7 @@ public class ArtistBuilders
         }
         if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
         {
-            footer.AppendLine($"You are currently not globally visible - use '{context.Prefix}privacy global' to enable.");
+            footer.AppendLine($"You are currently not globally visible - use '{context.Prefix}privacy' to enable.");
         }
 
         if (settings.HidePrivateUsers)
