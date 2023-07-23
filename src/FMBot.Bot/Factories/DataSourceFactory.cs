@@ -29,7 +29,7 @@ public class DataSourceFactory : IDataSourceFactory
         this._botSettings = botSettings.Value;
     }
 
-    private async Task<ImportUser> GetImportUserForLastFmUserName(string lastFmUserName)
+    public async Task<ImportUser> GetImportUserForLastFmUserName(string lastFmUserName)
     {
         if (lastFmUserName == null)
         {
