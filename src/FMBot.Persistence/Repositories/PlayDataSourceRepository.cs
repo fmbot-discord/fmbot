@@ -106,7 +106,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
 
         var milestone = plays
             .OrderBy(o => o.TimePlayed)
-            .ElementAtOrDefault(milestoneScrobble + 1);
+            .ElementAtOrDefault(milestoneScrobble - 1);
 
         return new Response<RecentTrack>
         {
