@@ -63,7 +63,7 @@ public class TrackRepository
         })).ToList();
     }
 
-    public static async Task<int?> GetTrackPlayCountForUser(NpgsqlConnection connection, string artistName, string trackName, int userId)
+    public static async Task<int> GetTrackPlayCountForUser(NpgsqlConnection connection, string artistName, string trackName, int userId)
     {
         const string sql = "SELECT ut.playcount " +
                            "FROM user_tracks AS ut " +
@@ -72,7 +72,7 @@ public class TrackRepository
                            "UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY playcount DESC";
 
-        return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
+        return await connection.QueryFirstOrDefaultAsync<int>(sql, new
         {
             userId,
             trackName,

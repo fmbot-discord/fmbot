@@ -116,14 +116,14 @@ public class ArtistRepository
     }
 
 
-    public static async Task<int?> GetArtistPlayCountForUser(NpgsqlConnection connection, string artistName, int userId)
+    public static async Task<int> GetArtistPlayCountForUser(NpgsqlConnection connection, string artistName, int userId)
     {
         const string sql = "SELECT ua.playcount " +
                            "FROM user_artists AS ua " +
                            "WHERE ua.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY playcount DESC";
 
-        return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
+        return await connection.QueryFirstOrDefaultAsync<int>(sql, new
         {
             userId,
             artistName

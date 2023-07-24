@@ -261,21 +261,21 @@ public class UserService
         if (footerOptions.HasFlag(FmFooterOption.ArtistPlays))
         {
             var trackPlaycount =
-                await ArtistRepository.GetArtistPlayCountForUser(connection, artistName, userSettings.UserId) ?? 0;
+                await ArtistRepository.GetArtistPlayCountForUser(connection, artistName, userSettings.UserId);
 
             options.Add($"{trackPlaycount} artist scrobbles");
         }
         if (footerOptions.HasFlag(FmFooterOption.AlbumPlays) && albumName != null)
         {
             var albumPlaycount =
-                await AlbumRepository.GetAlbumPlayCountForUser(connection, artistName, albumName, userSettings.UserId) ?? 0;
+                await AlbumRepository.GetAlbumPlayCountForUser(connection, artistName, albumName, userSettings.UserId);
 
             options.Add($"{albumPlaycount} album scrobbles");
         }
         if (footerOptions.HasFlag(FmFooterOption.TrackPlays))
         {
             var trackPlaycount =
-                await TrackRepository.GetTrackPlayCountForUser(connection, artistName, trackName, userSettings.UserId) ?? 0;
+                await TrackRepository.GetTrackPlayCountForUser(connection, artistName, trackName, userSettings.UserId);
 
             options.Add($"{trackPlaycount} track scrobbles");
         }

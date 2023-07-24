@@ -61,7 +61,7 @@ public class AlbumRepository
         })).ToList();
     }
 
-    public static async Task<int?> GetAlbumPlayCountForUser(NpgsqlConnection connection, string artistName, string albumName, int userId)
+    public static async Task<int> GetAlbumPlayCountForUser(NpgsqlConnection connection, string artistName, string albumName, int userId)
     {
         const string sql = "SELECT ua.playcount " +
                            "FROM user_albums AS ua " +
@@ -70,7 +70,7 @@ public class AlbumRepository
                            "UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY playcount DESC";
 
-        return await connection.QueryFirstOrDefaultAsync<int?>(sql, new
+        return await connection.QueryFirstOrDefaultAsync<int>(sql, new
         {
             userId,
             albumName,
