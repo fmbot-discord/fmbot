@@ -224,7 +224,7 @@ public class SupporterService
             return null;
         }
 
-        var randomHintNumber = new Random().Next(0, 25);
+        var randomHintNumber = new Random().Next(0, 30);
 
         switch (randomHintNumber)
         {
@@ -270,6 +270,13 @@ public class SupporterService
                     SetGuildPromoCache(guildId);
                     return
                         $"*Supporters get an improved GPT-4 powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others. " +
+                        $"[Get .fmbot supporter here.]({GetSupporterLink()})*";
+                }
+            case 6:
+                {
+                    SetGuildPromoCache(guildId);
+                    return
+                        $"*Supporters can now import their full Spotify history into the bot. " +
                         $"[Get .fmbot supporter here.]({GetSupporterLink()})*";
                 }
             default:

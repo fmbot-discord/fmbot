@@ -6,4 +6,6 @@ public class IndexedUserStats
     public long AlbumCount { get; set; }
     public long TrackCount { get; set; }
     public long PlayCount { get; set; }
+    public long? ImportCount { get; set; }
+    public long? TotalCount { get; set; }
 }

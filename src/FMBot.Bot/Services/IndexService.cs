@@ -9,6 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -110,7 +111,7 @@ public class IndexService : IIndexService
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user.UserNameLastFM);
         if (userInfo?.Registered != null)
         {
-            await UserRepository.SetUserSignUpTime(user.UserId, userInfo.Registered, connection, userInfo.Subscriber);
+            await UserRepository.SetUserSignUpTime(user, userInfo.Registered, connection, userInfo.Subscriber);
         }
 
         await SetUserPlaycount(user, connection);
@@ -138,18 +139,30 @@ public class IndexService : IIndexService
 
             await UserRepository.SetUserIndexTime(user.UserId, now, latestScrobbleDate, connection);
 
-            await connection.CloseAsync();
-
-            Statistics.IndexedUsers.Inc();
-            this._cache.Remove(concurrencyCacheKey);
-
-            return new IndexedUserStats
+            var stats = new IndexedUserStats
             {
                 PlayCount = plays.Count,
                 ArtistCount = artists.Count,
                 AlbumCount = albums.Count,
                 TrackCount = tracks.Count
             };
+
+            var importUser = await UserRepository.GetImportUserForUserId(user.UserId, connection);
+            if (importUser != null)
+            {
+                var finalPlays = await PlayRepository.GetUserPlays(user.UserId, connection, 9999999);
+                var filteredPlays = PlayDataSourceRepository.GetFinalUserPlays(importUser, finalPlays);
+
+                stats.ImportCount = finalPlays.Count(w => w.PlaySource != PlaySource.LastFm);
+                stats.TotalCount = filteredPlays.Count;
+            }
+
+            await connection.CloseAsync();
+
+            Statistics.IndexedUsers.Inc();
+            this._cache.Remove(concurrencyCacheKey);
+
+            return stats;
         }
         catch (Exception e)
         {
@@ -641,7 +654,7 @@ public class IndexService : IIndexService
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user.UserNameLastFM);
         if (userInfo?.Registered != null)
         {
-            return await UserRepository.SetUserSignUpTime(user.UserId, userInfo.Registered, connection, userInfo.Subscriber);
+            return await UserRepository.SetUserSignUpTime(user, userInfo.Registered, connection, userInfo.Subscriber);
         }
 
         return null;
