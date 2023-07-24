@@ -14,6 +14,7 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace FMBot.Bot.Services;
 
@@ -280,6 +281,16 @@ public class SettingService
                 settingsModel.AltDescription = "all-time";
                 settingsModel.UrlParameter = "date_preset=ALL";
                 settingsModel.ApiParameter = "overall";
+
+                if (registeredLastFm.HasValue)
+                {
+                    settingsModel.PlayDays = (int)(DateTime.UtcNow - registeredLastFm.Value).TotalDays + 1;
+                    settingsModel.StartDateTime = registeredLastFm.Value.AddDays(-1);
+                }
+                else
+                {
+                    settingsModel.StartDateTime = new DateTime(2000, 1, 1);
+                }
             }
             else if (defaultTimePeriod == TimePeriod.Monthly)
             {
