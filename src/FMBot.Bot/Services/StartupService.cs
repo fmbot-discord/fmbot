@@ -146,9 +146,9 @@ public class StartupService
             await Task.Delay(shardTimeOut);
             shardTimeOut += 4;
 
-            if (shardTimeOut > 1400)
+            if (shardTimeOut > 1250)
             {
-                shardTimeOut = 1400;
+                shardTimeOut = 1250;
             }
         }
 
