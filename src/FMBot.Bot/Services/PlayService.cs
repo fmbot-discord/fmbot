@@ -840,7 +840,7 @@ public class PlayService
 
         if (finalizeImport)
         {
-            var importUser = await UserRepository.GetImportUserForLastFmUserId(userId, connection, true);
+            var importUser = await UserRepository.GetImportUserForUserId(userId, connection, true);
             if (importUser != null)
             {
                 plays = PlayDataSourceRepository.GetFinalUserPlays(importUser, plays);
