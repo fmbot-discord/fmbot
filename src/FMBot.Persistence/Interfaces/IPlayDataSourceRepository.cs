@@ -8,11 +8,9 @@ namespace FMBot.Persistence.Interfaces;
 
 public interface IPlayDataSourceRepository
 {
-    Task<Response<RecentTrackList>> GetRecentTracksAsync(ImportUser user, int count = 2, bool useCache = false,
-        string sessionKey = null, long? fromUnixTimestamp = null);
+    Task<Response<RecentTrackList>> GetRecentTracksAsync(ImportUser user, int count = 2, bool useCache = false, long? fromUnixTimestamp = null);
 
-    Task<long?> GetScrobbleCountFromDateAsync(ImportUser user, long? from = null, string sessionKey = null,
-        long? until = null);
+    Task<long?> GetScrobbleCountFromDateAsync(ImportUser user, long? from = null, long? until = null);
 
     Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(ImportUser user, 
         int milestoneScrobble);

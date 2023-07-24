@@ -47,16 +47,22 @@ public class DataSourceFactory : IDataSourceFactory
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null,
         long? fromUnixTimestamp = null, int amountOfPages = 1)
     {
-        //var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
-
-        //if (importUser != null)
-        //{
-        //    return await this._playDataSourceRepository.GetRecentTracksAsync(importUser, count, useCache, sessionKey,
-        //        fromUnixTimestamp, amountOfPages);
-        //}
-
-        return await this._lastfmRepository.GetRecentTracksAsync(lastFmUserName, count, useCache, sessionKey,
+        var recentTracks = await this._lastfmRepository.GetRecentTracksAsync(lastFmUserName, count, useCache, sessionKey,
             fromUnixTimestamp, amountOfPages);
+
+        var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
+
+        if (importUser != null && recentTracks.Success && recentTracks.Content != null)
+        {
+            var total = await this._playDataSourceRepository.GetScrobbleCountFromDateAsync(importUser, fromUnixTimestamp);
+
+            if (total.HasValue)
+            {
+                recentTracks.Content.TotalAmount = total.Value;
+            }
+        }
+
+        return recentTracks;
     }
 
     public async Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? from = null, string sessionKey = null,
@@ -66,7 +72,7 @@ public class DataSourceFactory : IDataSourceFactory
 
         if (importUser != null)
         {
-            return await this._playDataSourceRepository.GetScrobbleCountFromDateAsync(importUser, from, sessionKey, until);
+            return await this._playDataSourceRepository.GetScrobbleCountFromDateAsync(importUser, from, until);
         }
 
         return await this._lastfmRepository.GetScrobbleCountFromDateAsync(lastFmUserName, from, sessionKey, until);
