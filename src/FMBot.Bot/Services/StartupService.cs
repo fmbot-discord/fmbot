@@ -138,17 +138,17 @@ public class StartupService
                 Assembly.GetEntryAssembly(),
                 this._provider);
 
-        var shardTimeOut = 800;
+        var shardTimeOut = 900;
         foreach (var shard in this._client.Shards)
         {
             Log.Information("ShardStartConnection: shard {shardId} - timeout {shardTimeout}", shard.ShardId, shardTimeOut);
             await shard.StartAsync();
             await Task.Delay(shardTimeOut);
-            shardTimeOut += 4;
+            shardTimeOut += 5;
 
-            if (shardTimeOut > 1250)
+            if (shardTimeOut > 1500)
             {
-                shardTimeOut = 1250;
+                shardTimeOut = 1500;
             }
         }
 
