@@ -111,6 +111,7 @@ public class Startup
     {
         services.Configure<BotSettings>(this.Configuration);
 
+        var totalShards = this.Configuration["Bot:TotalShards"];
         var discordClient = new DiscordShardedClient(new DiscordSocketConfig
         {
             LogLevel = LogSeverity.Info,
@@ -118,7 +119,8 @@ public class Startup
             ConnectionTimeout = 240000,
             GatewayIntents = GatewayIntents.GuildMembers | GatewayIntents.MessageContent |
                              GatewayIntents.DirectMessages | GatewayIntents.GuildMessages | GatewayIntents.Guilds |
-                             GatewayIntents.GuildVoiceStates
+                             GatewayIntents.GuildVoiceStates,
+            TotalShards = totalShards != null ? int.Parse(totalShards) : null
         });
 
         services
