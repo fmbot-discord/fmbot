@@ -888,6 +888,11 @@ public class SettingService
             }
         }
 
+        if (goalAmount < 1)
+        {
+            goalAmount = 1;
+        }
+
         return goalAmount;
     }
 
