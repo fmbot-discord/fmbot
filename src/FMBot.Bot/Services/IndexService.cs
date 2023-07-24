@@ -110,7 +110,7 @@ public class IndexService : IIndexService
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user.UserNameLastFM);
         if (userInfo?.Registered != null)
         {
-            await UserRepository.SetUserSignUpTime(user.UserId, userInfo.Registered, connection, userInfo.Subscriber);
+            await UserRepository.SetUserSignUpTime(user, userInfo.Registered, connection, userInfo.Subscriber);
         }
 
         await SetUserPlaycount(user, connection);
@@ -641,7 +641,7 @@ public class IndexService : IIndexService
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user.UserNameLastFM);
         if (userInfo?.Registered != null)
         {
-            return await UserRepository.SetUserSignUpTime(user.UserId, userInfo.Registered, connection, userInfo.Subscriber);
+            return await UserRepository.SetUserSignUpTime(user, userInfo.Registered, connection, userInfo.Subscriber);
         }
 
         return null;
