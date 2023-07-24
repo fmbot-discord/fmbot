@@ -271,8 +271,7 @@ public class AlbumService
 
         foreach (var topAlbum in topAlbums.Where(w => w.AlbumCoverUrl == null))
         {
-            var url = topAlbum.AlbumUrl.ToLower();
-            var albumCover = (string)this._cache.Get(CacheKeyForAlbumCover(url));
+            var albumCover = (string)this._cache.Get(CacheKeyForAlbumCover(topAlbum.ArtistName, topAlbum.AlbumName));
 
             if (albumCover != null)
             {
@@ -293,8 +292,8 @@ public class AlbumService
             return;
         }
 
-        const string sql = "SELECT LOWER(last_fm_url) as last_fm_url, LOWER(spotify_image_url) as spotify_image_url, LOWER(lastfm_image_url) as lastfm_image_url " +
-                           "FROM public.albums where last_fm_url is not null and (spotify_image_url is not null or lastfm_image_url is not null);";
+        const string sql = "SELECT LOWER(lastfm_image_url) as lastfm_image_url, LOWER(spotify_image_url) as spotify_image_url, LOWER(artist_name) as artist_name, LOWER(name) as album_name " +
+                           "FROM public.albums where (spotify_image_url is not null or lastfm_image_url is not null);";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -304,15 +303,15 @@ public class AlbumService
 
         foreach (var cover in albumCovers)
         {
-            this._cache.Set(CacheKeyForAlbumCover(cover.LastFmUrl), cover.LastfmImageUrl ?? cover.SpotifyImageUrl, cacheTime);
+            this._cache.Set(CacheKeyForAlbumCover(cover.ArtistName, cover.AlbumName), cover.LastfmImageUrl ?? cover.SpotifyImageUrl, cacheTime);
         }
 
         this._cache.Set(cacheKey, true, cacheTime);
     }
 
-    public static string CacheKeyForAlbumCover(string lastFmUrl)
+    public static string CacheKeyForAlbumCover(string artist, string album)
     {
-        return $"album-spotify-cover-{lastFmUrl.ToLower()}";
+        return $"album-spotify-cover-{artist.ToLower()}-{album.ToLower()}";
     }
 
     public async Task<Album> GetAlbumForId(int albumId)

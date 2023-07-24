@@ -110,7 +110,7 @@ public class SpotifyService
 
                         if (artistInfo.ArtistUrl != null)
                         {
-                            this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), artistToAdd.SpotifyImageUrl, TimeSpan.FromMinutes(5));
+                            this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistName), artistToAdd.SpotifyImageUrl, TimeSpan.FromMinutes(5));
                         }
                     }
 
@@ -198,7 +198,7 @@ public class SpotifyService
 
                     if (artistInfo.ArtistUrl != null)
                     {
-                        this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), dbArtist.SpotifyImageUrl, TimeSpan.FromMinutes(5));
+                        this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistName), dbArtist.SpotifyImageUrl, TimeSpan.FromMinutes(5));
                     }
                 }
 
@@ -533,7 +533,7 @@ public class SpotifyService
             var coverUrl = albumInfo.AlbumCoverUrl ?? albumToAdd.SpotifyImageUrl;
             if (coverUrl != null && albumInfo.AlbumUrl != null)
             {
-                this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), coverUrl, TimeSpan.FromMinutes(5));
+                this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.ArtistName, albumInfo.AlbumName), coverUrl, TimeSpan.FromMinutes(5));
             }
 
             albumToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
@@ -593,7 +593,7 @@ public class SpotifyService
             var coverUrl = albumInfo.AlbumCoverUrl ?? dbAlbum.SpotifyImageUrl;
             if (coverUrl != null && albumInfo.AlbumUrl != null)
             {
-                this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), coverUrl, TimeSpan.FromMinutes(5));
+                this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.ArtistName, albumInfo.AlbumName), coverUrl, TimeSpan.FromMinutes(5));
             }
 
             dbAlbum.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Domain.Enums;
@@ -56,8 +55,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         }
     }
 
-    public async Task<Response<RecentTrackList>> GetRecentTracksAsync(ImportUser user, int count = 2, bool useCache = false, string sessionKey = null,
-        long? fromUnixTimestamp = null)
+    public async Task<Response<RecentTrackList>> GetRecentTracksAsync(ImportUser user, int count = 2, bool useCache = false, long? fromUnixTimestamp = null)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -81,8 +79,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         };
     }
 
-    public async Task<long?> GetScrobbleCountFromDateAsync(ImportUser user, long? from = null, string sessionKey = null,
-        long? until = null)
+    public async Task<long?> GetScrobbleCountFromDateAsync(ImportUser user, long? from = null, long? until = null)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
