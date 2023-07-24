@@ -83,6 +83,7 @@ public class UserRepository
             if (firstImportPlay != null)
             {
                 signUpDateTime = firstImportPlay.Value;
+                user.RegisteredLastFm = firstImportPlay.Value;
             }
         }
 
