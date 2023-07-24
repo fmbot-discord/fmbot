@@ -211,8 +211,7 @@ public class ArtistsService
 
         foreach (var topArtist in topArtists.Where(w => w.ArtistImageUrl == null))
         {
-            var url = topArtist.ArtistUrl.ToLower();
-            var artistImage = (string)this._cache.Get(CacheKeyForArtist(url));
+            var artistImage = (string)this._cache.Get(CacheKeyForArtist(topArtist.ArtistName));
 
             if (artistImage != null)
             {
@@ -233,7 +232,7 @@ public class ArtistsService
             return;
         }
 
-        const string sql = "SELECT LOWER(last_fm_url) as last_fm_url, LOWER(spotify_image_url) as spotify_image_url " +
+        const string sql = "SELECT LOWER(spotify_image_url) as spotify_image_url, LOWER(name) as artist_name " +
                            "FROM public.artists where last_fm_url is not null and spotify_image_url is not null;";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -244,15 +243,15 @@ public class ArtistsService
 
         foreach (var artistCover in artistCovers)
         {
-            this._cache.Set(CacheKeyForArtist(artistCover.LastFmUrl), artistCover.SpotifyImageUrl, cacheTime);
+            this._cache.Set(CacheKeyForArtist(artistCover.ArtistName), artistCover.SpotifyImageUrl, cacheTime);
         }
 
         this._cache.Set(cacheKey, true, cacheTime);
     }
 
-    public static string CacheKeyForArtist(string lastFmUrl)
+    public static string CacheKeyForArtist(string artistName)
     {
-        return $"artist-spotify-image-{lastFmUrl.ToLower()}";
+        return $"artist-spotify-image-{artistName.ToLower()}";
     }
 
     // Top artists for 2 users

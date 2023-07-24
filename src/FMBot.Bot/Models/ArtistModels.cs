@@ -72,7 +72,7 @@ public class WhoKnowsGlobalArtistDto
 
 public class ArtistSpotifyCoverDto
 {
-    public string LastFmUrl { get; set; }
+    public string ArtistName { get; set; }
 
     public string SpotifyImageUrl { get; set; }
 }

@@ -58,7 +58,7 @@ public class SupporterService
             return null;
         }
 
-        if (userUserType == UserType.Supporter)
+        if (userUserType != UserType.User)
         {
             return null;
         }

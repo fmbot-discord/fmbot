@@ -55,11 +55,12 @@ public class WhoKnowsAlbumDto
 
 public class AlbumCoverDto
 {
-    public string LastFmUrl { get; set; }
+    public string LastfmImageUrl { get; set; }
 
     public string SpotifyImageUrl { get; set; }
 
-    public string LastfmImageUrl { get; set; }
+    public string AlbumName { get; set; }
+    public string ArtistName { get; set; }
 }
 
 public class WhoKnowsGlobalAlbumDto
