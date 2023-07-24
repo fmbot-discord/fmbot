@@ -10,6 +10,7 @@ using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -647,6 +648,15 @@ public class UserService
             description.AppendLine($"- **{stats.ArtistCount}** top artists");
             description.AppendLine($"- **{stats.AlbumCount}** top albums");
             description.AppendLine($"- **{stats.TrackCount}** top tracks");
+
+            if (stats.ImportCount != null)
+            {
+                description.AppendLine();
+
+                var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
+                description.AppendLine($"Import setting: {name}");
+                description.AppendLine($"Combined with your **{stats.ImportCount}** imported plays you have a total of **{stats.TotalCount}** plays.");
+            }
         }
 
         if (user.UserType == UserType.User &&
