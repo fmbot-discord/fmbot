@@ -54,11 +54,7 @@ public class CrownBuilders
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
-                var errorEmbed =
-                    GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, context.ContextUser.UserNameLastFM);
-                response.Embed = errorEmbed;
-                response.CommandResponse = CommandResponse.LastFmError;
-                return response;
+                return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, context.ContextUser.UserNameLastFM);
             }
 
             var currentTrack = recentTracks.Content.RecentTracks[0];
