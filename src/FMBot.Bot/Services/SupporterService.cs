@@ -158,8 +158,13 @@ public class SupporterService
         thankYouMessage.AppendLine("**Expanded commands**\n" +
                                    "- `fm` footer with up to 8 + 1 options (configured with `/fmmode`)\n" +
                                    "- Your own personal `fm` reactions with `userreactions`\n" +
-                                   "- Use the `judge` command up to 25 times a day and on others\n" +
+                                   "- Use the `judge` command up to 15 times a day and on others\n" +
                                    $"- Friend limit raised to {Constants.MaxFriendsSupporter} (up from {Constants.MaxFriends})");
+
+        thankYouMessage.AppendLine();
+        thankYouMessage.AppendLine("**Spotify importing**\n" +
+                                   "You can now import your full Spotify history and combine it together with your Last.fm scrobbles. " +
+                                   "Use `/import Spotify` to get started.");
 
         thankYouMessage.AppendLine();
         thankYouMessage.AppendLine("**Get featured**\n" +
@@ -187,7 +192,7 @@ public class SupporterService
         await discordUser.SendMessageAsync(embed: thankYouEmbed.Build());
     }
 
-    public static async Task SendSupporterGoodbyeMessage(IUser discordUser, bool openCollective = true)
+    public static async Task SendSupporterGoodbyeMessage(IUser discordUser, bool openCollective = true, bool hadImported = false)
     {
         var goodbyeEmbed = new EmbedBuilder();
         goodbyeEmbed.WithColor(DiscordConstants.InformationColorBlue);
@@ -200,6 +205,12 @@ public class SupporterService
         if (openCollective)
         {
             goodbyeMessage.AppendLine("If you ever want to come back in the future you can re-subscribe through the same OpenCollective account. Your supporter will then be automatically re-activated.");
+            goodbyeMessage.AppendLine();
+        }
+
+        if (hadImported)
+        {
+            goodbyeMessage.AppendLine("You have been moved back to using Last.fm without imports as your data source. Your imports are however saved and will be available again if you resubscribe in the future.");
             goodbyeMessage.AppendLine();
         }
 
@@ -230,10 +241,10 @@ public class SupporterService
         {
             case 1:
                 SetGuildPromoCache(guildId);
-                return  
+                return
                     $"*.fmbot stores all artists/albums/tracks instead of just the top 4/5/6k for supporters. " +
                     $"[See all the benefits of becoming a supporter here.]({GetSupporterLink()})*";
-            case 2: 
+            case 2:
                 SetGuildPromoCache(guildId);
                 return
                     $"*Supporters get extra statistics like first listen dates, full history in `stats`, artist discoveries in `year`, extra options in their `fm` footer and more. " +
@@ -753,6 +764,11 @@ public class SupporterService
                 {
                     Log.Information("Removing Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
 
+                    var fmbotUser = await
+                        db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordSupporter.DiscordUserId);
+
+                    var hadImported = fmbotUser != null && fmbotUser.DataSource != DataSource.LastFm;
+
                     await ExpireSupporter(discordSupporter.DiscordUserId, existingSupporter);
                     await ModifyGuildRole(discordSupporter.DiscordUserId, false);
                     await RunFullUpdate(discordSupporter.DiscordUserId);
@@ -760,7 +776,7 @@ public class SupporterService
                     var user = await this._client.Rest.GetUserAsync(discordSupporter.DiscordUserId);
                     if (user != null)
                     {
-                        await SendSupporterGoodbyeMessage(user, false);
+                        await SendSupporterGoodbyeMessage(user, false, hadImported);
                     }
 
                     var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
