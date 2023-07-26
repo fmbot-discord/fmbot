@@ -146,9 +146,8 @@ public class AlbumService
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
             {
-                response.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(recentScrobbles, lastFmUserName);
-                response.ResponseType = ResponseType.Embed;
-                return new AlbumSearch(null, response);
+                var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName);
+                return new AlbumSearch(null, errorResponse);
             }
 
             if (otherUserUsername != null)
@@ -311,7 +310,7 @@ public class AlbumService
 
     public static string CacheKeyForAlbumCover(string artist, string album)
     {
-        return $"album-spotify-cover-{artist.ToLower()}-{album.ToLower()}";
+        return $"ab-co-{album.ToLower()}-{artist.ToLower()}";
     }
 
     public async Task<Album> GetAlbumForId(int albumId)

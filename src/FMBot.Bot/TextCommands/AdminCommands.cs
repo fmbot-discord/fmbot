@@ -19,6 +19,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
@@ -968,7 +969,11 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            await SupporterService.SendSupporterGoodbyeMessage(discordUser);
+            var userSettings = await this._userService.GetUserAsync(discordUserId);
+
+            var hasImported = userSettings != null && userSettings.DataSource != DataSource.LastFm;
+
+            await SupporterService.SendSupporterGoodbyeMessage(discordUser, hadImported: hasImported);
 
             await ReplyAsync("✅ Goodbye dm sent");
         }
@@ -1010,6 +1015,8 @@ public class AdminCommands : BaseCommandModule
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
+
+            var hadImported = userSettings.DataSource != DataSource.LastFm;
 
             var existingSupporter = await this._supporterService.GetSupporter(discordUserId);
             if (existingSupporter == null)
@@ -1054,7 +1061,7 @@ public class AdminCommands : BaseCommandModule
             var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
-                await SupporterService.SendSupporterGoodbyeMessage(discordUser);
+                await SupporterService.SendSupporterGoodbyeMessage(discordUser, hadImported: hadImported);
 
                 description.AppendLine("✅ Goodbye dm sent");
             }

@@ -134,7 +134,7 @@ public class DiscogsApi
                 var pageResponse = await client.ExecuteAsync<DiscogsUserReleases>(request);
                 Statistics.DiscogsApiCalls.Inc();
 
-                if (pageResponse.Data != null && pageResponse.Data.Releases.Any())
+                if (pageResponse.Data?.Releases != null && pageResponse.Data.Releases.Any())
                 {
                     response.Data.Releases.AddRange(pageResponse.Data.Releases);
 

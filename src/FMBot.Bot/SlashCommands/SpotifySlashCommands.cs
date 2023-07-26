@@ -78,14 +78,10 @@ public class SpotifySlashCommands : InteractionModuleBase
 
                 if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
                 {
-                    var response = new ResponseModel
-                    {
-                        ResponseType = ResponseType.Embed,
-                        Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(recentScrobbles, contextUser.UserNameLastFM)
-                    };
+                    var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, contextUser.UserNameLastFM);
 
-                    await this.Context.SendResponse(this.Interactivity, response);
-                    this.Context.LogCommandUsed(response.CommandResponse);
+                    await this.Context.SendResponse(this.Interactivity, errorResponse);
+                    this.Context.LogCommandUsed(errorResponse.CommandResponse);
                     return;
                 }
 

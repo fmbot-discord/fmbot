@@ -131,9 +131,8 @@ public class ArtistsService
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
             {
-                response.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(recentScrobbles, lastFmUserName);
-                response.ResponseType = ResponseType.Embed;
-                return new ArtistSearch(null, response);
+                var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName);
+                return new ArtistSearch(null, errorResponse);
             }
 
             if (otherUserUsername != null)

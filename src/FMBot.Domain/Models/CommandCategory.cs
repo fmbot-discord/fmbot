@@ -14,5 +14,6 @@ public enum CommandCategory
     ThirdParty,
     UserSettings,
     ServerSettings,
+    Importing,
     Other
 }

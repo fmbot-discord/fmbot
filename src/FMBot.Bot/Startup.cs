@@ -161,6 +161,7 @@ public class Startup
             .AddSingleton<DisabledChannelService>()
             .AddSingleton<IIndexService, IndexService>()
             .AddSingleton<IPrefixService, PrefixService>()
+            .AddSingleton<ImportBuilders>()
             .AddSingleton<InteractiveService>()
             .AddSingleton<IUserIndexQueue, UserIndexQueue>()
             .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()

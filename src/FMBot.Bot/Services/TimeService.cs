@@ -214,11 +214,11 @@ public class TimeService
 
     private static string CacheKeyForTrack(string trackName, string artistName)
     {
-        return $"track-length-{trackName}-{artistName}";
+        return $"tr-l-{trackName}-{artistName}";
     }
     private static string CacheKeyForArtist(string artistName)
     {
-        return $"artist-length-avg-{artistName}";
+        return $"at-l-avg-{artistName}";
     }
 
     public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(ICommandContext context, List<UserPlay> userPlays, IDictionary<int, FullGuildUser> guildUsers)

@@ -131,11 +131,7 @@ public class PlayBuilder
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
-            var errorEmbed =
-                GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
-            response.Embed = errorEmbed;
-            response.CommandResponse = CommandResponse.LastFmError;
-            return response;
+            return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
         }
 
         var embedType = context.ContextUser.FmEmbedType;
@@ -326,9 +322,7 @@ public class PlayBuilder
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
-            response.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
-            response.CommandResponse = CommandResponse.LastFmError;
-            return response;
+            return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
         }
 
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
@@ -419,9 +413,7 @@ public class PlayBuilder
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
-            GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
-            response.CommandResponse = CommandResponse.LastFmError;
-            return response;
+            return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
         }
 
         var lastPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
@@ -586,7 +578,7 @@ public class PlayBuilder
         }
 
         var description = new StringBuilder();
-        
+
         foreach (var day in week.Days.OrderByDescending(o => o.Date))
         {
             var genreString = new StringBuilder();
@@ -1018,7 +1010,7 @@ public class PlayBuilder
             {
                 var newArtist = topNewArtists.OrderBy(o => o.FirstPlay).ToList()[i];
 
-                newArtistDescription.AppendLine($"**[{newArtist.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)}) " +
+                newArtistDescription.AppendLine($"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)}) " +
                                                 $"- {newArtist.UserPlaycount}** {StringExtensions.GetPlaysString(newArtist.UserPlaycount)} " +
                                                 $"- On **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
             }

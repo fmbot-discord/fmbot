@@ -304,11 +304,7 @@ public class GenreBuilders
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
-                var errorEmbed =
-                    GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, context.ContextUser.UserNameLastFM);
-                response.Embed = errorEmbed;
-                response.CommandResponse = CommandResponse.LastFmError;
-                return response;
+                return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, context.ContextUser.UserNameLastFM);
             }
 
             var artistName = recentTracks.Content.RecentTracks.First().ArtistName;
