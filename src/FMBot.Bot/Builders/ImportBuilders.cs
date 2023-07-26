@@ -29,7 +29,7 @@ public class ImportBuilders
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            response.Embed.WithDescription($"Only supporters can import their Spotify history into .fmbot.");
+            response.Embed.WithDescription($"Only supporters can import and use their Spotify history.");
 
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
