@@ -701,7 +701,14 @@ public class SupporterService
                 var user = await this._client.Rest.GetUserAsync(discordSupporter.DiscordUserId);
                 if (user != null)
                 {
-                    await SendSupporterWelcomeMessage(user, false, newSupporter);
+                    try
+                    {
+                        await SendSupporterWelcomeMessage(user, false, newSupporter);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error("Could not send welcome dm to new Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
+                    }
                 }
 
                 discordUsersLeft.Remove(discordSupporter.DiscordUserId);
