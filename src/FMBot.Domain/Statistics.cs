@@ -141,4 +141,15 @@ public static class Statistics
 
     public static readonly Counter SmallIndexedUsers = Metrics
         .CreateCounter("bot_updated_users", "Amount of small indexed users");
+
+
+    public static readonly Counter ShardStartConnection = Metrics
+        .CreateCounter("bot_shard_start_connection", "A shard has connection has been started");
+
+    public static readonly Counter ShardConnected = Metrics
+        .CreateCounter("bot_shard_connected", "A shard has connected");
+
+    public static readonly Counter ShardDisConnected = Metrics
+        .CreateCounter("bot_shard_disconnected", "A shard has disconnected");
+
 }

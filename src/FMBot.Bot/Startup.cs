@@ -187,6 +187,7 @@ public class Startup
             .AddSingleton<WhoKnowsAlbumService>()
             .AddSingleton<WhoKnowsArtistService>()
             .AddSingleton<WhoKnowsPlayService>()
+            .AddSingleton<WhoKnowsFilterService>()
             .AddSingleton<WhoKnowsTrackService>()
             .AddSingleton<YoutubeService>()
             .AddSingleton<IUpdateService, UpdateService>()

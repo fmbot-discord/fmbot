@@ -337,7 +337,19 @@ public class StaticBuilders
 
                 if (supporter.StartsAt.HasValue && supporter.EndsAt.HasValue)
                 {
-                    var startsAt = DateTime.SpecifyKind(supporter.StartsAt.Value, DateTimeKind.Utc);
+                    var existingSupporter =
+                        existingSupporters.FirstOrDefault(f => f.DiscordUserId == supporter.DiscordUserId);
+
+                    DateTime startsAt;
+                    if (existingSupporter != null)
+                    {
+                        startsAt = existingSupporter.Created;
+                    }
+                    else
+                    {
+                        startsAt = DateTime.SpecifyKind(supporter.StartsAt.Value, DateTimeKind.Utc);
+                    }
+
                     var startsAtValue = ((DateTimeOffset)startsAt).ToUnixTimeSeconds();
 
                     var endsAt = DateTime.SpecifyKind(supporter.EndsAt.Value, DateTimeKind.Utc);
