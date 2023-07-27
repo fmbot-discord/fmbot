@@ -469,6 +469,8 @@ public class AlbumService
     {
         try
         {
+            return new List<AlbumAutoCompleteSearchModel>();
+
             const string cacheKey = "albums-all";
 
             var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<AlbumAutoCompleteSearchModel> albums);

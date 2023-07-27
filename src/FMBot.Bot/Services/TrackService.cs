@@ -751,6 +751,8 @@ public class TrackService
     {
         try
         {
+            return new List<TrackAutoCompleteSearchModel>();
+
             const string cacheKey = "tracks-all";
 
             var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<TrackAutoCompleteSearchModel> tracks);

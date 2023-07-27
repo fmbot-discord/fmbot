@@ -631,6 +631,8 @@ public class ArtistsService
     {
         try
         {
+            return new List<Artist>();
+
             const string cacheKey = "artists-all";
 
             var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<Artist> artists);
