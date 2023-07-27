@@ -7,6 +7,7 @@ using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
@@ -105,12 +106,16 @@ public class ClientLogHandler
 
     private void ShardDisconnected(Exception exception, DiscordSocketClient shard)
     {
+        Statistics.ShardDisConnected.Inc();
+
         Log.Warning("ShardDisconnected: shard #{shardId} Disconnected",
             shard.ShardId, exception);
     }
 
     private void ShardConnected(DiscordSocketClient shard)
     {
+        Statistics.ShardConnected.Inc();
+
         Log.Information("ShardConnected: shard #{shardId} with {shardLatency} ms",
             shard.ShardId, shard.Latency);
     }
