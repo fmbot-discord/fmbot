@@ -91,6 +91,8 @@ public class ImportSlashCommands : InteractionModuleBase
         };
 
         var noAttachments = attachments.All(a => a == null);
+        attachments = attachments.Where(w => w != null).ToList();
+
         await DeferAsync(ephemeral: noAttachments);
 
         var description = new StringBuilder();
@@ -124,7 +126,9 @@ public class ImportSlashCommands : InteractionModuleBase
 
             if (imports.result == null || imports.result.Count == 0 || imports.result.All(a => a.MsPlayed == 0))
             {
-                if (attachments != null && attachments.Any(a => a.Filename != null) && attachments.Any(a => a.Filename.ToLower().Contains("streaminghistory")))
+                if (attachments != null &&
+                    attachments.Any(a => a.Filename != null) &&
+                    attachments.Any(a => a.Filename.ToLower().Contains("streaminghistory")))
                 {
                     embed.WithColor(DiscordConstants.WarningColorOrange);
                     await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import file. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package.\n\n" +
@@ -135,8 +139,8 @@ public class ImportSlashCommands : InteractionModuleBase
                 }
 
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
-                                                                     $"The Discord mobile app currently empties all `.json` files you send through it. We've reported this to them, try using Discord on desktop in the meantime.", true);
+                await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
+                                                                     $"Also note that we can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package.", true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
