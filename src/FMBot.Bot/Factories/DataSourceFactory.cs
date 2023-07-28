@@ -75,7 +75,8 @@ public class DataSourceFactory : IDataSourceFactory
 
         var user = await GetUserAsync(lastFmUserName);
 
-        if (user.DataSource != DataSource.LastFm &&
+        if (user != null &&
+            user.DataSource != DataSource.LastFm &&
             user.UserType != UserType.User)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
