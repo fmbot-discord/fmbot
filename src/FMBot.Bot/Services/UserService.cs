@@ -14,7 +14,6 @@ using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
@@ -60,9 +59,9 @@ public class UserService
 
     public async Task<User> GetUserAsync(ulong discordUserId)
     {
-        var cacheKey = UserCacheKey(discordUserId);
+        var discordUserIdCacheKey = UserDiscordIdCacheKey(discordUserId);
 
-        if (this._cache.TryGetValue(cacheKey, out User user))
+        if (this._cache.TryGetValue(discordUserIdCacheKey, out User user))
         {
             return user;
         }
@@ -74,15 +73,23 @@ public class UserService
 
         if (user != null)
         {
-            this._cache.Set(cacheKey, user, TimeSpan.FromSeconds(3));
+            var lastFmCacheKey = UserLastFmCacheKey(user.UserNameLastFM);
+
+            this._cache.Set(lastFmCacheKey, user, TimeSpan.FromSeconds(3));
+            this._cache.Set(discordUserIdCacheKey, user, TimeSpan.FromSeconds(3));
         }
 
         return user;
     }
 
-    private static string UserCacheKey(ulong discordUserId)
+    public static string UserDiscordIdCacheKey(ulong discordUserId)
     {
         return $"user-{discordUserId}";
+    }
+
+    public static string UserLastFmCacheKey(string userNameLastFm)
+    {
+        return $"user-{userNameLastFm.ToLower()}";
     }
 
     public async Task<User> GetUserForIdAsync(int userId)
@@ -162,7 +169,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserCacheKey(user.DiscordUserId));
+        this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
     }
 
     public async Task<User> GetUserWithFriendsAsync(IUser discordUser)
@@ -727,7 +734,7 @@ public class UserService
             await db.SaveChangesAsync();
         }
 
-        this._cache.Remove(UserCacheKey(discordUser.Id));
+        this._cache.Remove(UserDiscordIdCacheKey(discordUser.Id));
     }
 
     public async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
@@ -786,7 +793,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
 
         return userToUpdate.PrivacyLevel;
     }
@@ -803,7 +810,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserCacheKey(user.DiscordUserId));
+        this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
 
         return user.PrivacyLevel;
     }
@@ -834,7 +841,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
 
         return user;
     }
@@ -850,7 +857,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
 
         return user;
     }
@@ -866,7 +873,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
 
         return user;
     }
@@ -882,7 +889,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserCacheKey(userToUpdate.DiscordUserId));
+        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
 
         return user;
     }
@@ -915,7 +922,7 @@ public class UserService
 
             await db.SaveChangesAsync();
 
-            this._cache.Remove(UserCacheKey(user.DiscordUserId));
+            this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
 
             PublicProperties.RegisteredUsers.TryRemove(user.DiscordUserId, out _);
         }
@@ -942,7 +949,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserCacheKey(user.DiscordUserId));
+        this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
 
         return user.RymEnabled;
     }
@@ -957,7 +964,7 @@ public class UserService
 
         db.Update(user);
 
-        this._cache.Remove(UserCacheKey(user.DiscordUserId));
+        this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
 
         await db.SaveChangesAsync();
     }

@@ -1,15 +1,17 @@
 using System;
-using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Services;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Interfaces;
-using FMBot.Persistence.Repositories;
-using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
 
 namespace FMBot.Bot.Factories;
@@ -18,16 +20,51 @@ public class DataSourceFactory : IDataSourceFactory
 {
     private readonly ILastfmRepository _lastfmRepository;
     private readonly IPlayDataSourceRepository _playDataSourceRepository;
-    private readonly BotSettings _botSettings;
     private readonly TimeService _timeService;
+    private readonly IMemoryCache _cache;
+    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-    public DataSourceFactory(ILastfmRepository lastfmRepository, IPlayDataSourceRepository playDataSourceRepository, IOptions<BotSettings> botSettings, TimeService timeService)
+    public DataSourceFactory(ILastfmRepository lastfmRepository,
+        IPlayDataSourceRepository playDataSourceRepository,
+        TimeService timeService,
+        IMemoryCache cache,
+        IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._lastfmRepository = lastfmRepository;
         this._playDataSourceRepository = playDataSourceRepository;
         this._timeService = timeService;
-        this._botSettings = botSettings.Value;
+        this._cache = cache;
+        this._contextFactory = contextFactory;
     }
+
+    public async Task<User> GetUserAsync(string userNameLastFm)
+    {
+        var lastFmCacheKey = UserService.UserLastFmCacheKey(userNameLastFm);
+
+        if (this._cache.TryGetValue(lastFmCacheKey, out User user))
+        {
+            return user;
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var userNameParameter = new NpgsqlParameter("userNameLastFm", userNameLastFm);
+
+        user = await db.Users
+            .FromSql($"SELECT * FROM users WHERE UPPER(user_name_last_fm) = UPPER({userNameParameter}) AND last_used IS NOT NULL ORDER BY last_used DESC LIMIT 1")
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        if (user != null)
+        {
+            var discordUserIdCacheKey = UserService.UserDiscordIdCacheKey(user.DiscordUserId);
+
+            this._cache.Set(discordUserIdCacheKey, user, TimeSpan.FromSeconds(3));
+            this._cache.Set(lastFmCacheKey, user, TimeSpan.FromSeconds(3));
+        }
+
+        return user;
+    }
+
 
     public async Task<ImportUser> GetImportUserForLastFmUserName(string lastFmUserName)
     {
@@ -36,12 +73,30 @@ public class DataSourceFactory : IDataSourceFactory
             return null;
         }
 
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
+        var user = await GetUserAsync(lastFmUserName);
 
-        var importUser = await UserRepository.GetImportUserForLastFmUserName(lastFmUserName, connection, true);
+        if (user.DataSource != DataSource.LastFm &&
+            user.UserType != UserType.User)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var lastImportPlay = await db.Database
+                .SqlQuery<DateTime?>($"SELECT time_played FROM user_plays WHERE play_source != 0 AND user_id = {user.UserId} ORDER BY time_played DESC LIMIT 1")
+                .ToListAsync();
 
-        return importUser;
+            if (lastImportPlay.Any())
+            {
+                return new ImportUser
+                {
+                    DiscordUserId = user.DiscordUserId,
+                    DataSource = user.DataSource,
+                    UserNameLastFM = user.UserNameLastFM,
+                    UserId = user.UserId,
+                    LastImportPlay = lastImportPlay.First()
+                };
+            }
+        }
+
+        return null;
     }
 
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null,
