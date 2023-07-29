@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using FMBot.Domain.Types;
 using FMBot.Subscriptions.Models;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
@@ -28,11 +29,11 @@ public class DiscordSkuService
 
     public async Task<List<DiscordEntitlement>> GetEntitlements()
     {
-        var url = this._baseUrl + $"applications/{this._appId}/entitlements";
+        var fetchEntitlements = this._baseUrl + $"applications/{this._appId}/entitlements";
 
         var request = new HttpRequestMessage
         {
-            RequestUri = new Uri(url),
+            RequestUri = new Uri(fetchEntitlements),
             Method = HttpMethod.Get,
         };
 
@@ -40,24 +41,27 @@ public class DiscordSkuService
 
         try
         {
-            using var httpResponse = await this._client.SendAsync(request);
+            var result = await GetDiscordEntitlements(request);
 
-            if (!httpResponse.IsSuccessStatusCode)
+            if (result.Count >= 100)
             {
-                Log.Error("DiscordEntitlements: HTTP status code {statusCode} - {reason}", httpResponse.StatusCode, httpResponse.ReasonPhrase);
+                var queryParams = new Dictionary<string, string>
+                {
+                    { "after", "100" }
+                };
+
+                request.RequestUri = new Uri(QueryHelpers.AddQueryString(fetchEntitlements, queryParams));
+
+                var secondResult = await GetDiscordEntitlements(request);
+
+                if (secondResult.Any())
+                {
+                    var existingIds = result.Select(x => x.Id).ToHashSet();
+                    result.AddRange(secondResult.Where(w => !existingIds.Contains(w.Id)));
+                }
             }
 
-            var stream = await httpResponse.Content.ReadAsStreamAsync();
-            using var streamReader = new StreamReader(stream);
-            var requestBody = await streamReader.ReadToEndAsync();
-
-            var jsonSerializerOptions = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                NumberHandling = JsonNumberHandling.AllowReadingFromString
-            };
-
-            var result = JsonSerializer.Deserialize<List<DiscordEntitlementResponseModel>>(requestBody, jsonSerializerOptions);
+            Log.Information("Found {entitlementsCount} Discord entitlements", result.Count);
 
             return result
                 .Where(w => w.UserId.HasValue)
@@ -76,16 +80,30 @@ public class DiscordSkuService
             Log.Error("Something went wrong while deserializing Discord entitlements", ex);
             return null;
         }
+
     }
 
-    private static DiscordEntitlement ResponseToModel(DiscordEntitlementResponseModel response)
+    async Task<List<DiscordEntitlementResponseModel>> GetDiscordEntitlements(HttpRequestMessage httpRequestMessage)
     {
-        return new DiscordEntitlement
+        using var httpResponse = await this._client.SendAsync(httpRequestMessage);
+
+        if (!httpResponse.IsSuccessStatusCode)
         {
-            DiscordUserId = response.UserId.Value,
-            Active = !response.EndsAt.HasValue || response.EndsAt.Value > DateTime.UtcNow.AddDays(-7),
-            StartsAt = response.StartsAt.HasValue ? DateTime.SpecifyKind(response.StartsAt.Value, DateTimeKind.Utc) : null,
-            EndsAt = response.EndsAt.HasValue ? DateTime.SpecifyKind(response.EndsAt.Value, DateTimeKind.Utc) : null
+            Log.Error("DiscordEntitlements: HTTP status code {statusCode} - {reason}", httpResponse.StatusCode,
+                httpResponse.ReasonPhrase);
+        }
+
+        var stream = await httpResponse.Content.ReadAsStreamAsync();
+        using var streamReader = new StreamReader(stream);
+        var requestBody = await streamReader.ReadToEndAsync();
+
+        var jsonSerializerOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString
         };
+
+        var result = JsonSerializer.Deserialize<List<DiscordEntitlementResponseModel>>(requestBody, jsonSerializerOptions);
+        return result;
     }
 }

@@ -317,7 +317,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
             Content = new TopArtistList
             {
                 TopArtists = plays
-                    .GroupBy(g => g.ArtistName.ToLower())
+                    .GroupBy(g => g.ArtistName, StringComparer.InvariantCultureIgnoreCase)
                     .Select(s => new TopArtist
                     {
                         ArtistName = s.First().ArtistName,
