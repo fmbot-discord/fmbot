@@ -1470,7 +1470,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("runtimer")]
     [Summary("Run a timer manually (only works if it exists)")]
-    [Alias("triggerjob")]
+    [Alias("triggerjob", "runjob")]
     public async Task RunTimerAsync([Remainder] string job = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -1484,20 +1484,19 @@ public class AdminCommands : BaseCommandModule
                     return;
                 }
 
-                job = job.ToLower();
-
                 var recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
-                var jobIds = recurringJobs.Select(s => s.Id);
 
-                if (jobIds.All(a => a.ToLower() != job))
+                var jobToRun = recurringJobs.FirstOrDefault(f => f.Id.ToLower() == job.ToLower());
+
+                if (jobToRun == null)
                 {
                     await ReplyAsync("Could not find job you're looking for. Check `.timerstatus` for available jobs.");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
-                RecurringJob.TriggerJob(job);
-                await ReplyAsync($"Triggered job {job}", allowedMentions: AllowedMentions.None);
+                RecurringJob.TriggerJob(jobToRun.Id);
+                await ReplyAsync($"Triggered job {jobToRun.Id}", allowedMentions: AllowedMentions.None);
 
                 this.Context.LogCommandUsed();
             }
