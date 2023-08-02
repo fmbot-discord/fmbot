@@ -8,6 +8,6 @@ public enum DataSource
     LastFm = 1,
     [Option("Full Spotify, then Last.fm", "Use your full Spotify history and add Last.fm afterwards")]
     FullSpotifyThenLastFm = 2,
-    [Option("Spotify until Last.fm", "Use your Spotify history up until you started scrobbling")]
+    [Option("Spotify until full Last.fm", "Use your Spotify history up until you started scrobbling")]
     SpotifyThenFullLastFm = 3
 }

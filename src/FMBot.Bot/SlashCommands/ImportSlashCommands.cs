@@ -140,7 +140,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
                 embed.WithColor(DiscordConstants.WarningColorOrange);
                 await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import file (contains no plays). Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.\n\n" +
-                                                                     $"Also note that we can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package.", true);
+                                                                     $"If your `.zip` contains files like `Userdata.json` or `Identity.json` its the wrong package. We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. ", true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
