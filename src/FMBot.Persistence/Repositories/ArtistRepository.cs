@@ -69,11 +69,11 @@ public class ArtistRepository
 
     public static async Task AddOrUpdateArtistAlias(int artistId, string artistNameBeforeCorrect, NpgsqlConnection connection)
     {
-        const string selectQuery = @"SELECT FROM public.artist_aliases WHERE artist_id = @artistId AND alias ILIKE @alias LIMIT 1";
+        const string selectQuery = @"SELECT * FROM public.artist_aliases WHERE artist_id = @artistId AND alias = @alias LIMIT 1";
         var result = await connection.QueryFirstOrDefaultAsync<ArtistAlias>(selectQuery, new
         {
             artistId,
-            alias = artistNameBeforeCorrect
+            alias = artistNameBeforeCorrect.ToLower()
         });
 
         if (result == null)
@@ -84,7 +84,7 @@ public class ArtistRepository
             await connection.ExecuteAsync(insertQuery, new
             {
                 artistId,
-                alias = artistNameBeforeCorrect,
+                alias = artistNameBeforeCorrect.ToLower(),
                 correctsInScrobbles = true
             });
         }
