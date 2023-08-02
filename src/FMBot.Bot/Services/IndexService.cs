@@ -131,7 +131,7 @@ public class IndexService : IIndexService
             var tracksInserted = await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
 
             Log.Information("Index complete for {userId}: Artists found {artistCount}, inserted {artistsInserted} - " +
-                            "Albums found {albumCount}, inserted {albumsInserted} - "+
+                            "Albums found {albumCount}, inserted {albumsInserted} - " +
                             "Tracks found {trackCount}, inserted {tracksInserted}",
                 user.UserId, artists.Count, artistsInserted, albums.Count, albumsInserted, tracks.Count, tracksInserted);
 
@@ -166,24 +166,32 @@ public class IndexService : IIndexService
         }
         catch (Exception e)
         {
-            Log.Error("Index: Error happened!", e);
+            Log.Error($"Index: Error happened! User {user.DiscordUserId} / {user.UserId} - {e.Message} - {e.InnerException} - {e.StackTrace}", e);
             throw;
         }
     }
 
     public async Task RecalculateTopLists(User user)
     {
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
+        try
+        {
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
-        var artists = await GetArtistsForUserFromLastFm(user);
-        await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
+            var artists = await GetArtistsForUserFromLastFm(user);
+            await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
 
-        var albums = await GetAlbumsForUserFromLastFm(user);
-        await AlbumRepository.AddOrReplaceUserAlbumsInDatabase(albums, user.UserId, connection);
+            var albums = await GetAlbumsForUserFromLastFm(user);
+            await AlbumRepository.AddOrReplaceUserAlbumsInDatabase(albums, user.UserId, connection);
 
-        var tracks = await GetTracksForUserFromLastFm(user);
-        await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
+            var tracks = await GetTracksForUserFromLastFm(user);
+            await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
+        }
+        catch (Exception e)
+        {
+            Log.Error($"Index: Reculculate toplists error happened! User {user.DiscordUserId} / {user.UserId} - {e.Message} - {e.InnerException} - {e.StackTrace}", e);
+            throw;
+        }
     }
 
     private async Task<IReadOnlyList<UserArtist>> GetArtistsForUserFromLastFm(User user)
@@ -270,7 +278,7 @@ public class IndexService : IIndexService
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 6;
 
         var trackResult = await this._dataSourceFactory.GetTopTracksAsync(user.UserNameLastFM,
-            new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm, ApiParameter = "overall"}, 1000, indexLimit);
+            new TimeSettingsModel { TimePeriod = TimePeriod.AllTime, PlayDays = 99999, StartDateTime = user.RegisteredLastFm, ApiParameter = "overall" }, 1000, indexLimit);
 
         if (!trackResult.Success || trackResult.Content.TopTracks.Count == 0)
         {
