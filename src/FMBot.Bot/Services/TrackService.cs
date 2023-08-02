@@ -16,6 +16,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
@@ -635,7 +636,11 @@ public class TrackService
 
         var alias = await this._aliasService.GetAlias(artistName);
 
-        var correctedArtistName = alias.ArtistName ?? artistName;
+        var correctedArtistName = artistName;
+        if (alias != null && !alias.Options.HasFlag(AliasOption.NoRedirectInLastfmCalls))
+        {
+            correctedArtistName = alias.ArtistName;
+        }
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
