@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FMBot.Domain.Types;
 using FMBot.Subscriptions.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
@@ -27,39 +26,31 @@ public class DiscordSkuService
         this._client = client;
     }
 
-    public async Task<List<DiscordEntitlement>> GetEntitlements()
+    public async Task<List<DiscordEntitlement>> GetEntitlements(ulong? discordUserId = null)
     {
         var fetchEntitlements = this._baseUrl + $"applications/{this._appId}/entitlements";
 
         var request = new HttpRequestMessage
         {
             RequestUri = new Uri(fetchEntitlements),
-            Method = HttpMethod.Get,
+            Method = HttpMethod.Get
         };
 
         request.Headers.Add("Authorization", $"Bot {this._token}");
 
         try
         {
-            var result = await GetDiscordEntitlements(request);
-
-            if (result.Count >= 100)
+            if (discordUserId != null)
             {
                 var queryParams = new Dictionary<string, string>
                 {
-                    { "after", "100" }
+                    { "user_id", discordUserId.ToString() }
                 };
 
                 request.RequestUri = new Uri(QueryHelpers.AddQueryString(fetchEntitlements, queryParams));
-
-                var secondResult = await GetDiscordEntitlements(request);
-
-                if (secondResult.Any())
-                {
-                    var existingIds = result.Select(x => x.Id).ToHashSet();
-                    result.AddRange(secondResult.Where(w => !existingIds.Contains(w.Id)));
-                }
             }
+
+            var result = await GetDiscordEntitlements(request);
 
             Log.Information("Found {entitlementsCount} Discord entitlements", result.Count);
 
@@ -69,7 +60,7 @@ public class DiscordSkuService
                 .Select(s => new DiscordEntitlement
                 {
                     DiscordUserId = s.OrderByDescending(o => o.EndsAt).First().UserId.Value,
-                    Active = !s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue || s.OrderByDescending(o => o.EndsAt).First().EndsAt.Value > DateTime.UtcNow.AddDays(-7),
+                    Active = !s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue || s.OrderByDescending(o => o.EndsAt).First().EndsAt.Value > DateTime.UtcNow.AddDays(-5),
                     StartsAt = s.OrderByDescending(o => o.EndsAt).First().StartsAt.HasValue ? DateTime.SpecifyKind(s.OrderByDescending(o => o.EndsAt).First().StartsAt.Value, DateTimeKind.Utc) : null,
                     EndsAt = s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue ? DateTime.SpecifyKind(s.OrderByDescending(o => o.EndsAt).First().EndsAt.Value, DateTimeKind.Utc) : null
                 })

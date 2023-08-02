@@ -101,6 +101,9 @@ public class TimerService
             Log.Information($"RecurringJob: Adding {nameof(UpdateDiscordSupporters)}");
             RecurringJob.AddOrUpdate(nameof(UpdateDiscordSupporters), () => UpdateDiscordSupporters(), "* * * * *");
 
+            Log.Information($"RecurringJob: Adding {nameof(CheckExpiredDiscordSupporters)}");
+            RecurringJob.AddOrUpdate(nameof(CheckExpiredDiscordSupporters), () => CheckExpiredDiscordSupporters(), "0 8,18 * * *");
+
             Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
             RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 0,12 * * *");
 
@@ -267,6 +270,11 @@ public class TimerService
     public async Task UpdateDiscordSupporters()
     {
         await this._supporterService.UpdateDiscordSupporters();
+    }
+
+    public async Task CheckExpiredDiscordSupporters()
+    {
+        await this._supporterService.CheckExpiredDiscordSupporters();
     }
 
     public static async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
