@@ -224,7 +224,7 @@ public class PuppeteerService
         {
             content = content.Replace("{{users}}", userList.ToString());
 
-            content = content.Replace("{{listeners}}", whoKnowsObjects.Count.ToString());
+            content = content.Replace("{{listeners}}", whoKnowsObjects.Count(w => w.Playcount > 0).ToString());
             content = content.Replace("{{plays}}", whoKnowsObjects.Sum(a => a.Playcount).ToString());
             content = content.Replace("{{average}}", ((int)whoKnowsObjects.Average(a => a.Playcount)).ToString());
         }

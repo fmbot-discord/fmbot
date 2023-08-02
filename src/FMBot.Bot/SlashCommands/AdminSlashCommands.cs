@@ -11,9 +11,9 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -24,14 +24,16 @@ public class AdminSlashCommands : InteractionModuleBase
     private readonly AlbumService _albumService;
     private readonly ArtistsService _artistService;
     private readonly IDataSourceFactory _dataSourceFactory;
+    private readonly AliasService _aliasService;
 
-    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory)
+    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService)
     {
         this._adminService = adminService;
         this._censorService = censorService;
         this._albumService = albumService;
         this._artistService = artistService;
         this._dataSourceFactory = dataSourceFactory;
+        this._aliasService = aliasService;
     }
 
     [ComponentInteraction(InteractionConstants.CensorTypes)]
@@ -86,6 +88,61 @@ public class AdminSlashCommands : InteractionModuleBase
                 description.AppendLine($"- **{name}**");
             }
         }
+
+        embed.WithDescription(description.ToString());
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+        embed.WithFooter($"Adjusted by {this.Context.Interaction.User.Username}");
+        await RespondAsync(embed: embed.Build());
+    }
+
+    [ComponentInteraction(InteractionConstants.ArtistAlias)]
+    public async Task SetArtistAliasOptions(string censoredId, string[] inputs)
+    {
+        var embed = new EmbedBuilder();
+
+        var id = int.Parse(censoredId);
+        var artistAlias = await this._aliasService.GetArtistAliasForId(id);
+
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        foreach (var option in Enum.GetNames(typeof(AliasOption)))
+        {
+            if (Enum.TryParse(option, out AliasOption flag))
+            {
+                if (inputs.Any(a => a == option))
+                {
+                    artistAlias.Options |= flag;
+                }
+                else
+                {
+                    artistAlias.Options &= ~flag;
+                }
+            }
+        }
+
+        artistAlias = await this._aliasService.SetAliasOptions(artistAlias, artistAlias.Options);
+
+        var description = new StringBuilder();
+
+        description.AppendLine($"Artist: `{artistAlias.Artist.Name}`");
+        description.AppendLine($"Alias: `{artistAlias.Alias}`");
+
+        description.AppendLine();
+        description.AppendLine("Artist alias has been updated to:");
+
+        foreach (var flag in artistAlias.Options.GetUniqueFlags())
+        {
+            if (artistAlias.Options.HasFlag(flag))
+            {
+                var name = flag.GetAttribute<OptionAttribute>().Name;
+                description.AppendLine($"- **{name}**");
+            }
+        }
+
+        this._aliasService.RemoveCache();
 
         embed.WithDescription(description.ToString());
         embed.WithColor(DiscordConstants.InformationColorBlue);

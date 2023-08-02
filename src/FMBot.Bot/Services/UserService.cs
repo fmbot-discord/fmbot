@@ -303,7 +303,7 @@ public class UserService
 
         if (footerOptions.HasFlag(FmFooterOption.ArtistCountry) || footerOptions.HasFlag(FmFooterOption.ArtistBirthday) || footerOptions.HasFlag(FmFooterOption.ArtistGenres))
         {
-            var artist = await this._artistRepository.GetArtistForName(artistName, connection, footerOptions.HasFlag(FmFooterOption.ArtistGenres));
+            var artist = await ArtistRepository.GetArtistForName(artistName, connection, footerOptions.HasFlag(FmFooterOption.ArtistGenres));
 
             if (footerOptions.HasFlag(FmFooterOption.ArtistCountry) && !string.IsNullOrWhiteSpace(artist?.CountryCode))
             {

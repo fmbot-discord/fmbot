@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -20,10 +19,9 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
-using Google.Apis.Discovery;
 using Hangfire;
 using Hangfire.Storage;
 using Microsoft.Extensions.Options;
@@ -49,6 +47,8 @@ public class AdminCommands : BaseCommandModule
     private readonly IPrefixService _prefixService;
     private readonly StaticBuilders _staticBuilders;
     private readonly AlbumService _albumService;
+    private readonly ArtistsService _artistsService;
+    private readonly AliasService _aliasService;
 
     private InteractiveService Interactivity { get; }
 
@@ -65,7 +65,11 @@ public class AdminCommands : BaseCommandModule
         FeaturedService featuredService,
         IIndexService indexService,
         IPrefixService prefixService,
-        StaticBuilders staticBuilders, InteractiveService interactivity, AlbumService albumService) : base(botSettings)
+        StaticBuilders staticBuilders,
+        InteractiveService interactivity,
+        AlbumService albumService,
+        ArtistsService artistsService,
+        AliasService aliasService) : base(botSettings)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -81,6 +85,8 @@ public class AdminCommands : BaseCommandModule
         this._staticBuilders = staticBuilders;
         this.Interactivity = interactivity;
         this._albumService = albumService;
+        this._artistsService = artistsService;
+        this._aliasService = aliasService;
     }
 
     //[Command("debug")]
@@ -405,6 +411,72 @@ public class AdminCommands : BaseCommandModule
             this._embed.AddField("Artist name", existingAlbum.ArtistName);
             this._embed.AddField("Times censored", existingAlbum.TimesCensored ?? 0);
             this._embed.AddField("Types", censorDescription.ToString());
+
+            await ReplyAsync(embed: this._embed.Build(), components: builder.Build());
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("managealias")]
+    [Summary("Manage artist alias")]
+    public async Task ManageArtistAlias([Remainder] string alias)
+    {
+        try
+        {
+            if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(Constants.FmbotStaffOnly);
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            var artistAlias = await this._aliasService.GetArtistAlias(alias);
+            if (alias == null)
+            {
+                await ReplyAsync("Artist alias not found");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var aliasOptions = new SelectMenuBuilder()
+                .WithPlaceholder("Select alias options")
+                .WithCustomId($"artist-alias-{artistAlias.Id}")
+                .WithMinValues(0)
+                .WithMaxValues(5);
+
+            var censorDescription = new StringBuilder();
+            foreach (var option in ((AliasOption[])Enum.GetValues(typeof(AliasOption))))
+            {
+                var name = option.GetAttribute<OptionAttribute>().Name;
+                var description = option.GetAttribute<OptionAttribute>().Description;
+                var value = Enum.GetName(option);
+
+                var active = artistAlias.Options.HasFlag(option);
+
+                censorDescription.Append(active ? "✅" : "❌");
+                censorDescription.Append(" - ");
+                censorDescription.AppendLine(name);
+
+                aliasOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+            }
+
+            var builder = new ComponentBuilder()
+                .WithSelectMenu(aliasOptions);
+
+            this._embed.WithTitle("Artist alias - Option information");
+
+            var artist = await this._artistsService.GetArtistForId(artistAlias.ArtistId);
+
+            this._embed.AddField("Artist name", artist.Name);
+            this._embed.AddField("Alias", artistAlias.Alias);
+            this._embed.AddField("Types", censorDescription.ToString());
+
+            this._embed.WithFooter("Case insensitive\n" +
+                                   "Aliases are cached for 5 minutes");
 
             await ReplyAsync(embed: this._embed.Build(), components: builder.Build());
             this.Context.LogCommandUsed();
@@ -1470,7 +1542,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("runtimer")]
     [Summary("Run a timer manually (only works if it exists)")]
-    [Alias("triggerjob")]
+    [Alias("triggerjob", "runjob")]
     public async Task RunTimerAsync([Remainder] string job = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -1484,20 +1556,19 @@ public class AdminCommands : BaseCommandModule
                     return;
                 }
 
-                job = job.ToLower();
-
                 var recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
-                var jobIds = recurringJobs.Select(s => s.Id);
 
-                if (jobIds.All(a => a.ToLower() != job))
+                var jobToRun = recurringJobs.FirstOrDefault(f => f.Id.ToLower() == job.ToLower());
+
+                if (jobToRun == null)
                 {
                     await ReplyAsync("Could not find job you're looking for. Check `.timerstatus` for available jobs.");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
-                RecurringJob.TriggerJob(job);
-                await ReplyAsync($"Triggered job {job}", allowedMentions: AllowedMentions.None);
+                RecurringJob.TriggerJob(jobToRun.Id);
+                await ReplyAsync($"Triggered job {jobToRun.Id}", allowedMentions: AllowedMentions.None);
 
                 this.Context.LogCommandUsed();
             }

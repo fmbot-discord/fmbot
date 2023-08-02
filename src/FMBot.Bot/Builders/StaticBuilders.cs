@@ -307,9 +307,9 @@ public class StaticBuilders
 
         var existingSupporters = await this._supporterService.GetAllSupporters();
 
-        var supporters = await this._supporterService.GetDiscordEntitlements();
+        var discordEntitlements = await this._supporterService.GetDiscordEntitlements();
 
-        var supporterLists = supporters.OrderByDescending(o => o.StartsAt).Chunk(10);
+        var supporterLists = discordEntitlements.OrderByDescending(o => o.StartsAt).Chunk(10);
 
         var description = new StringBuilder();
 
@@ -369,8 +369,8 @@ public class StaticBuilders
                 .WithDescription(supporterString.ToString())
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithAuthor(response.EmbedAuthor)
-                .WithFooter($"Discord total: {supporters.Count} - db total: {existingSupporters.Count(c => c.SubscriptionType == SubscriptionType.Discord)}\n" +
-                            $"Discord active: {supporters.Count(c => c.Active)} - db active {existingSupporters.Count(c => c.SubscriptionType == SubscriptionType.Discord && c.Expired != true)}")
+                .WithFooter($"Discord total: {discordEntitlements.Count} - db total: {existingSupporters.Count(c => c.SubscriptionType == SubscriptionType.Discord)}\n" +
+                            $"Discord active: {discordEntitlements.Count(c => c.Active)} - db active {existingSupporters.Count(c => c.SubscriptionType == SubscriptionType.Discord && c.Expired != true)}")
                 .WithTitle(".fmbot Discord supporters overview"));
         }
 

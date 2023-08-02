@@ -2,13 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
@@ -16,8 +14,6 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
-using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
@@ -33,32 +29,29 @@ public class AlbumService
 {
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
-    private readonly AlbumRepository _albumRepository;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly TimerService _timer;
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly ArtistsService _artistsService;
     private readonly IUpdateService _updateService;
+    private readonly AliasService _aliasService;
 
     public AlbumService(IMemoryCache cache,
         IOptions<BotSettings> botSettings,
-        AlbumRepository albumRepository,
         IDataSourceFactory dataSourceFactory,
         TimerService timer,
         WhoKnowsAlbumService whoKnowsAlbumService,
         IDbContextFactory<FMBotDbContext> contextFactory,
-        ArtistsService artistsService,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        AliasService aliasService)
     {
         this._cache = cache;
-        this._albumRepository = albumRepository;
         this._dataSourceFactory = dataSourceFactory;
         this._timer = timer;
         this._whoKnowsAlbumService = whoKnowsAlbumService;
         this._contextFactory = contextFactory;
-        this._artistsService = artistsService;
         this._updateService = updateService;
+        this._aliasService = aliasService;
         this._botSettings = botSettings.Value;
     }
 
@@ -327,7 +320,9 @@ public class AlbumService
             return null;
         }
 
-        var correctedArtistName = await this._artistsService.GetCorrectedArtistName(artistName);
+        var alias = await this._aliasService.GetAlias(artistName);
+
+        var correctedArtistName = alias.ArtistName ?? artistName;
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();

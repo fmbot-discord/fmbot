@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
@@ -23,18 +24,20 @@ public class DataSourceFactory : IDataSourceFactory
     private readonly TimeService _timeService;
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+    private readonly AliasService _aliasService;
 
     public DataSourceFactory(ILastfmRepository lastfmRepository,
         IPlayDataSourceRepository playDataSourceRepository,
         TimeService timeService,
         IMemoryCache cache,
-        IDbContextFactory<FMBotDbContext> contextFactory)
+        IDbContextFactory<FMBotDbContext> contextFactory, AliasService aliasService)
     {
         this._lastfmRepository = lastfmRepository;
         this._playDataSourceRepository = playDataSourceRepository;
         this._timeService = timeService;
         this._cache = cache;
         this._contextFactory = contextFactory;
+        this._aliasService = aliasService;
     }
 
     public async Task<User> GetUserAsync(string userNameLastFm)
@@ -165,9 +168,16 @@ public class DataSourceFactory : IDataSourceFactory
         return await this._lastfmRepository.SearchTrackAsync(searchQuery);
     }
 
-    public async Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null)
+    public async Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null, bool redirectsEnabled = true)
     {
-        var track = await this._lastfmRepository.GetTrackInfoAsync(trackName, artistName, username);
+        var artistAlias = await this._aliasService.GetAlias(artistName);
+
+        if (artistAlias != null && artistAlias.Options.HasFlag(AliasOption.NoRedirectInLastfmCalls) && redirectsEnabled)
+        {
+            redirectsEnabled = false;
+        }
+
+        var track = await this._lastfmRepository.GetTrackInfoAsync(trackName, artistName, redirectsEnabled,username);
 
         var importUser = await this.GetImportUserForLastFmUserName(username);
 
@@ -181,6 +191,13 @@ public class DataSourceFactory : IDataSourceFactory
 
     public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, bool redirectsEnabled = true)
     {
+        var artistAlias = await this._aliasService.GetAlias(artistName);
+
+        if (artistAlias != null && artistAlias.Options.HasFlag(AliasOption.NoRedirectInLastfmCalls) && redirectsEnabled)
+        {
+            redirectsEnabled = false;
+        }
+
         var artist = await this._lastfmRepository.GetArtistInfoAsync(artistName, username, redirectsEnabled);
 
         var importUser = await this.GetImportUserForLastFmUserName(username);
@@ -193,9 +210,16 @@ public class DataSourceFactory : IDataSourceFactory
         return artist;
     }
 
-    public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
+    public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null, bool redirectsEnabled = true)
     {
-        var album = await this._lastfmRepository.GetAlbumInfoAsync(artistName, albumName, username);
+        var artistAlias = await this._aliasService.GetAlias(artistName);
+
+        if (artistAlias != null && artistAlias.Options.HasFlag(AliasOption.NoRedirectInLastfmCalls) && redirectsEnabled)
+        {
+            redirectsEnabled = false;
+        }
+
+        var album = await this._lastfmRepository.GetAlbumInfoAsync(artistName, albumName, redirectsEnabled, username);
 
         var importUser = await this.GetImportUserForLastFmUserName(username);
 
@@ -246,7 +270,11 @@ public class DataSourceFactory : IDataSourceFactory
             return await this._playDataSourceRepository.GetTopArtistsAsync(importUser, timeSettings, count * amountOfPages);
         }
 
-        return await this._lastfmRepository.GetTopArtistsAsync(lastFmUserName, timeSettings, count, amountOfPages);
+        var topArtists = await this._lastfmRepository.GetTopArtistsAsync(lastFmUserName, timeSettings, count, amountOfPages);
+
+        await CorrectArtistNamesInternally(topArtists);
+
+        return topArtists;
     }
 
     public async Task<Response<TopArtistList>> GetTopArtistsForCustomTimePeriodAsync(string lastFmUserName, DateTime startDateTime, DateTime endDateTime,
@@ -259,7 +287,26 @@ public class DataSourceFactory : IDataSourceFactory
             return await this._playDataSourceRepository.GetTopArtistsForCustomTimePeriodAsync(importUser, startDateTime, endDateTime, count);
         }
 
-        return await this._lastfmRepository.GetTopArtistsForCustomTimePeriodAsync(lastFmUserName, startDateTime, endDateTime, count);
+        var topArtists = await this._lastfmRepository.GetTopArtistsForCustomTimePeriodAsync(lastFmUserName, startDateTime, endDateTime, count);
+
+        await CorrectArtistNamesInternally(topArtists);
+
+        return topArtists;
+    }
+
+    private async Task CorrectArtistNamesInternally(Response<TopArtistList> topArtists)
+    {
+        if (topArtists.Success && topArtists.Content != null && topArtists.Content.TopArtists.Any())
+        {
+            foreach (var topArtist in topArtists.Content.TopArtists)
+            {
+                var alias = await this._aliasService.GetDataCorrectionAlias(topArtist.ArtistName);
+                if (alias != null)
+                {
+                    topArtist.ArtistName = alias.ArtistName;
+                }
+            }
+        }
     }
 
     public async Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName, TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool calculateTimeListened = false)

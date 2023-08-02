@@ -132,6 +132,7 @@ public class Startup
             .AddSingleton<InteractionService>()
             .AddSingleton<AlbumService>()
             .AddSingleton<AlbumBuilders>()
+            .AddSingleton<AliasService>()
             .AddSingleton<ArtistBuilders>()
             .AddSingleton<AlbumRepository>()
             .AddSingleton<AdminService>()

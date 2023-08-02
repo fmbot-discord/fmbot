@@ -864,7 +864,7 @@ public class ArtistBuilders
 
         if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)
         {
-            var serverListeners = filteredUsersWithArtist.Count;
+            var serverListeners = filteredUsersWithArtist.Count(c => c.Playcount > 0);
             var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
             var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
 

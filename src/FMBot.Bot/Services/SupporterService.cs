@@ -802,6 +802,75 @@ public class SupporterService
         }
     }
 
+    public async Task CheckExpiredDiscordSupporters()
+    {
+        var expiredDate = DateTime.UtcNow;
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var possiblyExpiredSupporters = await db.Supporters
+            .Where(w =>
+                w.DiscordUserId != null &&
+                w.SubscriptionType == SubscriptionType.Discord &&
+                w.Expired != true &&
+                w.LastPayment.HasValue &&
+                w.LastPayment.Value < expiredDate)
+            .ToListAsync();
+
+        foreach (var existingSupporter in possiblyExpiredSupporters)
+        {
+            var discordSupporters = await this._discordSkuService.GetEntitlements(existingSupporter.DiscordUserId.Value);
+
+            var discordSupporter = discordSupporters.FirstOrDefault();
+
+            if (discordSupporter == null)
+            {
+                Log.Information("Expired Discord supporter is not found in Discord API - {discordUserId}", existingSupporter.DiscordUserId);
+                continue;
+            }
+
+            if (existingSupporter.LastPayment != discordSupporter.EndsAt)
+            {
+                Log.Information("Updating Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
+
+                existingSupporter.LastPayment = discordSupporter.EndsAt;
+                db.Update(existingSupporter);
+                await db.SaveChangesAsync();
+
+                var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+                var embed = new EmbedBuilder().WithDescription(
+                    $"Updated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
+            }
+
+            if (existingSupporter.Expired != true && !discordSupporter.Active)
+            {
+                Log.Information("Removing Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
+
+                var fmbotUser = await
+                    db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordSupporter.DiscordUserId);
+
+                var hadImported = fmbotUser != null && fmbotUser.DataSource != DataSource.LastFm;
+
+                await ExpireSupporter(discordSupporter.DiscordUserId, existingSupporter);
+                await ModifyGuildRole(discordSupporter.DiscordUserId, false);
+                await RunFullUpdate(discordSupporter.DiscordUserId);
+
+                var user = await this._client.Rest.GetUserAsync(discordSupporter.DiscordUserId);
+                if (user != null)
+                {
+                    await SendSupporterGoodbyeMessage(user, false, hadImported);
+                }
+
+                var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+                var embed = new EmbedBuilder().WithDescription(
+                    $"Removed Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
+
+                Log.Information("Removed Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
+            }
+        }
+    }
+
     public async Task ModifyGuildRole(ulong discordUserId, bool add = true)
     {
         var baseGuild = await this._client.Rest.GetGuildAsync(this._botSettings.Bot.BaseServerId);

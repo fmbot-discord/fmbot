@@ -19,9 +19,9 @@ public interface IDataSourceFactory
 
     Task<DataSourceUser> GetLfmUserInfoAsync(string lastFmUserName);
     Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery);
-    Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null);
+    Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null, bool redirectsEnabled = true);
     Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, bool redirectsEnabled = true);
-    Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null);
+    Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null, bool redirectsEnabled = true);
     Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,

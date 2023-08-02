@@ -1,3 +1,5 @@
+using FMBot.Domain.Flags;
+
 namespace FMBot.Persistence.Domain.Models;
 
 public class ArtistAlias
@@ -9,6 +11,8 @@ public class ArtistAlias
     public string Alias { get; set; }
 
     public bool CorrectsInScrobbles { get; set; }
+
+    public AliasOption Options { get; set; }
 
     public Artist Artist { get; set; }
 }

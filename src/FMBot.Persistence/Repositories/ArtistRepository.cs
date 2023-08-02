@@ -36,7 +36,7 @@ public class ArtistRepository
         return await copyHelper.SaveAllAsync(connection, artists);
     }
 
-    public async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection, bool includeGenres = false)
+    public static async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection, bool includeGenres = false)
     {
         const string getArtistQuery = "SELECT * FROM public.artists " +
                                       "WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))";
@@ -55,7 +55,7 @@ public class ArtistRepository
         return artist;
     }
 
-    private async Task<ICollection<ArtistGenre>> GetArtistGenres(int artistId, NpgsqlConnection connection)
+    private static async Task<ICollection<ArtistGenre>> GetArtistGenres(int artistId, NpgsqlConnection connection)
     {
         const string getArtistGenreQuery = "SELECT * FROM public.artist_genres " +
                                            "WHERE artist_id = @artistId";
@@ -67,24 +67,27 @@ public class ArtistRepository
         })).ToList();
     }
 
-    public async Task AddOrUpdateArtistAlias(int artistId, string artistNameBeforeCorrect, NpgsqlConnection connection)
+    public static async Task AddOrUpdateArtistAlias(int artistId, string artistNameBeforeCorrect, NpgsqlConnection connection)
     {
-        const string deleteQuery = @"DELETE FROM public.artist_aliases WHERE artist_id = @artistId AND alias = @alias";
-        await connection.ExecuteAsync(deleteQuery, new
+        const string selectQuery = @"SELECT * FROM public.artist_aliases WHERE artist_id = @artistId AND alias = @alias LIMIT 1";
+        var result = await connection.QueryFirstOrDefaultAsync<ArtistAlias>(selectQuery, new
         {
             artistId,
-            alias = artistNameBeforeCorrect
+            alias = artistNameBeforeCorrect.ToLower()
         });
 
-        const string insertQuery = @"INSERT INTO public.artist_aliases(artist_id, alias, corrects_in_scrobbles) " +
-                                   "VALUES (@artistId, @alias, @correctsInScrobbles)";
-
-        await connection.ExecuteAsync(insertQuery, new
+        if (result == null)
         {
-            artistId,
-            alias = artistNameBeforeCorrect,
-            correctsInScrobbles = true
-        });
+            const string insertQuery = @"INSERT INTO public.artist_aliases(artist_id, alias, corrects_in_scrobbles) " +
+                                       "VALUES (@artistId, @alias, @correctsInScrobbles)";
+
+            await connection.ExecuteAsync(insertQuery, new
+            {
+                artistId,
+                alias = artistNameBeforeCorrect.ToLower(),
+                correctsInScrobbles = true
+            });
+        }
     }
 
     public async Task AddOrUpdateArtistGenres(int artistId, IEnumerable<string> genreNames, NpgsqlConnection connection)
