@@ -171,12 +171,9 @@ public class ImportSlashCommands : InteractionModuleBase
             await this._importService.UpdateExistingPlays(contextUser.UserId);
 
             var files = new StringBuilder();
-            foreach (var attachment in attachments
-                         .Where(w => w != null)
-                         .OrderBy(o => o.Filename)
-                         .GroupBy(g => g.Filename))
+            foreach (var attachment in imports.processedFiles.OrderBy(o => o))
             {
-                files.AppendLine($"`{attachment.First().Filename}`");
+                files.AppendLine($"`{attachment}`");
             }
 
             embed.AddField("Processed files", files.ToString());

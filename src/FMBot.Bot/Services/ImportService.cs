@@ -30,19 +30,28 @@ public class ImportService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<(bool success, List<SpotifyEndSongImportModel> result)> HandleSpotifyFiles(IEnumerable<IAttachment> attachments)
+    public async Task<(bool success, List<SpotifyEndSongImportModel> result, List<string> processedFiles)> HandleSpotifyFiles(IEnumerable<IAttachment> attachments)
     {
         try
         {
             var spotifyPlays = new List<SpotifyEndSongImportModel>();
+            var processedFiles = new List<string>();
 
             foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".json")).GroupBy(g => g.Filename))
             {
                 await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
 
-                var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(stream);
+                try
+                {
+                    var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(stream);
 
-                spotifyPlays.AddRange(result);
+                    spotifyPlays.AddRange(result);
+                    processedFiles.Add(attachment.Key);
+                }
+                catch (Exception e)
+                {
+                    Log.Error("Error in import .zip file ({fileName})", attachment.Key, e);
+                }
             }
             foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".zip")).GroupBy(g => g.Filename))
             {
@@ -57,6 +66,7 @@ public class ImportService
                         var result = await JsonSerializer.DeserializeAsync<List<SpotifyEndSongImportModel>>(zipStream);
 
                         spotifyPlays.AddRange(result);
+                        processedFiles.Add(entry.Name);
                     }
                     catch (Exception e)
                     {
@@ -65,12 +75,12 @@ public class ImportService
                 }
             }
 
-            return (true, spotifyPlays);
+            return (true, spotifyPlays, processedFiles);
         }
         catch (Exception e)
         {
             Log.Error("Error while attempting to process Spotify import file", e);
-            return (false, null);
+            return (false, null, null);
         }
     }
 
