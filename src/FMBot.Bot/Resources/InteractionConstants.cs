@@ -26,6 +26,8 @@ public static class InteractionConstants
 
     public const string CensorTypes = "admin-censor-*";
 
+    public const string ArtistAlias = "artist-alias-*";
+
     public const string GlobalWhoKnowsReport = "gwk-report";
     public const string GlobalWhoKnowsReportModal = "gwk-report-modal";
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FMBot.Domain.Flags;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Models;
@@ -29,6 +30,17 @@ public enum OrderType
 {
     Playcount = 1,
     Listeners = 2
+}
+
+public class CachedAlias
+{
+    public int ArtistId { get; set; }
+
+    public string Alias { get; set; }
+
+    public string ArtistName { get; set; }
+
+    public AliasOption Options { get; set; }
 }
 
 public class GuildArtist

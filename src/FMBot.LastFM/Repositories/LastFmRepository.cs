@@ -424,13 +424,13 @@ public class LastFmRepository : ILastfmRepository
     }
 
     // Track info
-    public async Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null)
+    public async Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, bool redirectsEnabled, string username = null)
     {
         var queryParams = new Dictionary<string, string>
         {
             {"artist", artistName },
             {"track", trackName },
-            {"autocorrect", "1"},
+            {"autocorrect", redirectsEnabled ? "1" : "0"},
             {"extended", "1" }
         };
 
@@ -544,12 +544,13 @@ public class LastFmRepository : ILastfmRepository
         };
     }
 
-    public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
+    public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, bool redirectsEnabled, string username = null)
     {
         var queryParams = new Dictionary<string, string>
         {
             {"artist", artistName },
-            {"album", albumName }
+            {"album", albumName },
+            {"autocorrect", redirectsEnabled ? "1" : "0"}
         };
 
         if (!string.IsNullOrEmpty(username))

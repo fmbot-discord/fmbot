@@ -9,4 +9,8 @@
     <PackageReference Include="prometheus-net" Version="8.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Flags\" />
+  </ItemGroup>
+
 </Project>

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -20,8 +19,6 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
-using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
@@ -41,39 +38,36 @@ public class TrackService
     private readonly HttpClient _client;
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
-    private readonly TrackRepository _trackRepository;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly TimerService _timer;
     private readonly AlbumService _albumService;
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
-    private readonly ArtistsService _artistsService;
     private readonly IUpdateService _updateService;
+    private readonly AliasService _aliasService;
 
     public TrackService(HttpClient httpClient,
         IDataSourceFactory dataSourceFactory,
         IOptions<BotSettings> botSettings,
         SpotifyService spotifyService,
         IMemoryCache memoryCache,
-        TrackRepository trackRepository,
         IDbContextFactory<FMBotDbContext> contextFactory,
         TimerService timer,
         AlbumService albumService,
         WhoKnowsTrackService whoKnowsTrackService,
-        ArtistsService artistsService,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        AliasService aliasService)
     {
         this._dataSourceFactory = dataSourceFactory;
         this._spotifyService = spotifyService;
         this._cache = memoryCache;
-        this._trackRepository = trackRepository;
         this._client = httpClient;
         this._botSettings = botSettings.Value;
         this._contextFactory = contextFactory;
         this._timer = timer;
         this._albumService = albumService;
         this._whoKnowsTrackService = whoKnowsTrackService;
-        this._artistsService = artistsService;
         this._updateService = updateService;
+        this._aliasService = aliasService;
     }
 
     public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string trackValues,
@@ -639,7 +633,9 @@ public class TrackService
             return null;
         }
 
-        var correctedArtistName = await this._artistsService.GetCorrectedArtistName(artistName);
+        var alias = await this._aliasService.GetAlias(artistName);
+
+        var correctedArtistName = alias.ArtistName ?? artistName;
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();

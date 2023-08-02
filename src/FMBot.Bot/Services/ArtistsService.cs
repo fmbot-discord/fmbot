@@ -12,6 +12,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
@@ -37,6 +38,7 @@ public class ArtistsService
     private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly TimerService _timer;
     private readonly IUpdateService _updateService;
+    private readonly AliasService _aliasService;
 
     public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
@@ -45,7 +47,8 @@ public class ArtistsService
         IDataSourceFactory dataSourceFactory,
         WhoKnowsArtistService whoKnowsArtistService,
         TimerService timer,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        AliasService aliasService)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
@@ -54,6 +57,7 @@ public class ArtistsService
         this._whoKnowsArtistService = whoKnowsArtistService;
         this._timer = timer;
         this._updateService = updateService;
+        this._aliasService = aliasService;
         this._botSettings = botSettings.Value;
     }
 
@@ -456,17 +460,6 @@ public class ArtistsService
         return tasteSettings;
     }
 
-    public async Task<string> GetCorrectedArtistName(string artistName)
-    {
-        var cachedArtistAliases = await GetCachedArtistAliases();
-        var alias = cachedArtistAliases
-            .FirstOrDefault(f => f.Alias.ToLower() == artistName.ToLower());
-
-        var correctedArtistName = alias != null ? alias.Artist.Name : artistName;
-
-        return correctedArtistName;
-    }
-
     public async Task<Artist> GetArtistForId(int artistId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -474,50 +467,29 @@ public class ArtistsService
         return await db.Artists.FindAsync(artistId);
     }
 
-    public async Task<Artist> GetArtistFromDatabase(string artistName ,bool redirectsEnabled = true)
+    public async Task<Artist> GetArtistFromDatabase(string artistName, bool redirectsEnabled = true)
     {
         if (string.IsNullOrWhiteSpace(artistName))
         {
             return null;
         }
 
-        string correctArtistName;
-        if (redirectsEnabled)
+        var alias = await this._aliasService.GetAlias(artistName);
+
+        var correctArtistName = artistName;
+        if (alias != null && redirectsEnabled && !alias.Options.HasFlag(AliasOption.NoRedirectInLastfmCalls))
         {
-            correctArtistName = await GetCorrectedArtistName(artistName);
-        }
-        else
-        {
-            correctArtistName = artistName;
+            correctArtistName = alias.ArtistName;
         }
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var artist = await this._artistRepository.GetArtistForName(correctArtistName, connection, true);
+        var artist = await ArtistRepository.GetArtistForName(correctArtistName, connection, true);
 
         await connection.CloseAsync();
 
         return artist?.SpotifyId != null ? artist : null;
-    }
-
-    private async Task<IReadOnlyList<ArtistAlias>> GetCachedArtistAliases()
-    {
-        if (this._cache.TryGetValue("artists", out IReadOnlyList<ArtistAlias> artists))
-        {
-            return artists;
-        }
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        artists = await db.ArtistAliases
-            .AsNoTracking()
-            .Include(i => i.Artist)
-            .ToListAsync();
-
-        this._cache.Set("artists", artists, TimeSpan.FromHours(2));
-        Log.Information($"Added {artists.Count} artists to memory cache");
-
-        return artists;
     }
 
 

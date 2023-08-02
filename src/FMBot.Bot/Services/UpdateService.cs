@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
@@ -34,13 +35,15 @@ public class UpdateService : IUpdateService
     private readonly BotSettings _botSettings;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SmallIndexRepository _smallIndexRepository;
+    private readonly AliasService _aliasService;
 
     public UpdateService(IUserUpdateQueue userUpdateQueue,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
         IOptions<BotSettings> botSettings,
         IDataSourceFactory dataSourceFactory,
-        SmallIndexRepository smallIndexRepository)
+        SmallIndexRepository smallIndexRepository,
+        AliasService aliasService)
     {
         this._userUpdateQueue = userUpdateQueue;
         this._userUpdateQueue.UsersToUpdate.SubscribeAsync(OnNextAsync);
@@ -48,6 +51,7 @@ public class UpdateService : IUpdateService
         this._cache = cache;
         this._dataSourceFactory = dataSourceFactory;
         this._smallIndexRepository = smallIndexRepository;
+        this._aliasService = aliasService;
         this._botSettings = botSettings.Value;
     }
 
@@ -225,8 +229,6 @@ public class UpdateService : IUpdateService
                 return recentTracks;
             }
 
-            await CacheArtistAliases();
-
             var cacheKey = $"{user.UserId}-update-in-progress";
             if (this._cache.TryGetValue(cacheKey, out bool _))
             {
@@ -289,35 +291,6 @@ public class UpdateService : IUpdateService
         await this._smallIndexRepository.SmallIndexUser(user);
     }
 
-    private async Task CacheArtistAliases()
-    {
-        const string cacheKey = "artist-aliases";
-        var cacheTime = TimeSpan.FromMinutes(5);
-
-        if (this._cache.TryGetValue(cacheKey, out _))
-        {
-            return;
-        }
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var artistAliases = await db.ArtistAliases
-            .Include(i => i.Artist)
-            .ToListAsync();
-
-        foreach (var alias in artistAliases)
-        {
-            this._cache.Set(CacheKeyForAlias(alias.Alias.ToLower()), alias.Artist.Name.ToLower(), cacheTime);
-        }
-
-        this._cache.Set(cacheKey, true, cacheTime);
-        Log.Information($"Added {artistAliases.Count} artist aliases to memory cache");
-    }
-
-    private static string CacheKeyForAlias(string aliasName)
-    {
-        return $"artist-alias-{aliasName}";
-    }
-
     private static async Task<IReadOnlyDictionary<string, UserArtist>> GetUserArtists(int userId, IDbConnection connection)
     {
         const string sql = "SELECT DISTINCT ON (LOWER(name)) user_id, name, playcount, user_artist_id " +
@@ -342,9 +315,13 @@ public class UpdateService : IUpdateService
 
         foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName.ToLower()))
         {
-            var alias = (string)this._cache.Get(CacheKeyForAlias(artist.Key.ToLower()));
+            var alias = await this._aliasService.GetAlias(artist.Key.ToLower());
 
-            var artistName = alias ?? artist.First().ArtistName;
+            var artistName = artist.First().ArtistName;
+            if (alias != null && !alias.Options.HasFlag(AliasOption.DisableInPlays))
+            {
+                artistName = alias.ArtistName;
+            }
 
             userArtists.TryGetValue(artistName.ToLower(), out var existingUserArtist);
 
@@ -414,9 +391,13 @@ public class UpdateService : IUpdateService
                          AlbumName = x.AlbumName.ToLower()
                      }))
         {
-            var alias = (string)this._cache.Get(CacheKeyForAlias(album.Key.ArtistName.ToLower()));
+            var alias = await this._aliasService.GetAlias(album.Key.ArtistName.ToLower());
 
-            var artistName = alias ?? album.First().ArtistName;
+            var artistName = album.First().ArtistName;
+            if (alias != null && !alias.Options.HasFlag(AliasOption.DisableInPlays))
+            {
+                artistName = alias.ArtistName;
+            }
 
             userAlbums.TryGetValue(artistName.ToLower(), out var userArtistAlbums);
 
@@ -489,9 +470,13 @@ public class UpdateService : IUpdateService
             TrackName = x.TrackName.ToLower()
         }))
         {
-            var alias = (string)this._cache.Get(CacheKeyForAlias(track.Key.ArtistName.ToLower()));
+            var alias = await this._aliasService.GetAlias(track.Key.ArtistName.ToLower());
 
-            var artistName = alias ?? track.First().ArtistName;
+            var artistName = track.First().ArtistName;
+            if (alias != null && !alias.Options.HasFlag(AliasOption.DisableInPlays))
+            {
+                artistName = alias.ArtistName;
+            }
 
             userTracks.TryGetValue(artistName.ToLower(), out var userArtistTracks);
 

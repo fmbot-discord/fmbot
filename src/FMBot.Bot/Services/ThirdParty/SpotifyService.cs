@@ -75,7 +75,7 @@ public class SpotifyService
 
         try
         {
-            var dbArtist = await this._artistRepository.GetArtistForName(artistInfo.ArtistName, connection, true);
+            var dbArtist = await ArtistRepository.GetArtistForName(artistInfo.ArtistName, connection, true);
 
             if (dbArtist == null)
             {
@@ -148,8 +148,7 @@ public class SpotifyService
 
                 if (redirectsEnabled && artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
                 {
-                    await this._artistRepository
-                        .AddOrUpdateArtistAlias(artistToAdd.Id, artistNameBeforeCorrect, connection);
+                    await ArtistRepository.AddOrUpdateArtistAlias(artistToAdd.Id, artistNameBeforeCorrect, connection);
                 }
 
                 return artistToAdd;
@@ -157,8 +156,7 @@ public class SpotifyService
 
             if (redirectsEnabled && artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
             {
-                await this._artistRepository
-                    .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
+                await ArtistRepository.AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
             }
 
             if (artistInfo.Description != null && dbArtist.LastFmDescription != artistInfo.Description)
@@ -288,7 +286,7 @@ public class SpotifyService
                     LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
                 };
 
-                var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName, connection);
+                var artist = await ArtistRepository.GetArtistForName(trackInfo.ArtistName, connection);
 
                 if (artist != null)
                 {
@@ -329,7 +327,7 @@ public class SpotifyService
             }
             if (!dbTrack.ArtistId.HasValue)
             {
-                var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName, connection);
+                var artist = await ArtistRepository.GetArtistForName(trackInfo.ArtistName, connection);
 
                 if (artist != null)
                 {
@@ -511,7 +509,7 @@ public class SpotifyService
                 LastfmDate = DateTime.UtcNow
             };
 
-            var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName, connection);
+            var artist = await ArtistRepository.GetArtistForName(albumInfo.ArtistName, connection);
 
             if (artist != null && artist.Id != 0)
             {
@@ -565,7 +563,7 @@ public class SpotifyService
 
         if (dbAlbum.Artist == null)
         {
-            var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName, connection);
+            var artist = await ArtistRepository.GetArtistForName(albumInfo.ArtistName, connection);
 
             if (artist != null && artist.Id != 0)
             {
