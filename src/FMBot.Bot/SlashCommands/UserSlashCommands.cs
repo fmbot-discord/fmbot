@@ -14,6 +14,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -40,6 +41,7 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly ArtistsService _artistsService;
     private readonly OpenAiService _openAiService;
     private readonly ImportService _importService;
+    private readonly IPrefixService _prefixService;
 
     private readonly BotSettings _botSettings;
 
@@ -54,7 +56,10 @@ public class UserSlashCommands : InteractionModuleBase
         FriendsService friendsService,
         UserBuilder userBuilder,
         SettingService settingService,
-        ArtistsService artistsService, OpenAiService openAiService, ImportService importService)
+        ArtistsService artistsService,
+        OpenAiService openAiService,
+        ImportService importService,
+        IPrefixService prefixService)
     {
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
@@ -67,7 +72,123 @@ public class UserSlashCommands : InteractionModuleBase
         this._artistsService = artistsService;
         this._openAiService = openAiService;
         this._importService = importService;
+        this._prefixService = prefixService;
         this._botSettings = botSettings.Value;
+    }
+
+    [SlashCommand("settings", "Shows user settings for .fmbot")]
+    [UsernameSetRequired]
+    public async Task UserSettingsAsync()
+    {
+        try
+        {
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._userBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
+
+            await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.UserSetting)]
+    [UsernameSetRequired]
+    public async Task GetUserSetting(string[] inputs)
+    {
+        var setting = inputs.First().Replace("us-", "");
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out UserSetting userSetting))
+        {
+            ResponseModel response;
+            switch (userSetting)
+            {
+                case UserSetting.Privacy:
+                    {
+                        response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                case UserSetting.FmMode:
+                    {
+                        response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                case UserSetting.WkMode:
+                    {
+                        response = UserBuilder.WkMode(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                case UserSetting.BotScrobbling:
+                    {
+                        response = await this._userBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                case UserSetting.SpotifyImport:
+                    {
+                        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+                        if (supporterRequired != null)
+                        {
+                            await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
+                            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                            return;
+                        }
+
+                        var hasImported = await this._importService.HasImported(contextUser.UserId);
+
+                        response = UserBuilder.ImportMode(new ContextModel(this.Context, contextUser), hasImported);
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                case UserSetting.UserReactions:
+                    {
+                        var supporterRequired = UserBuilder.UserReactionsSupporterRequired(new ContextModel(this.Context, contextUser), prfx);
+
+                        if (supporterRequired != null)
+                        {
+                            await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
+                            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                            return;
+                        }
+
+                        response = UserBuilder.UserReactionsAsync(new ContextModel(this.Context, contextUser), prfx);
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                case UserSetting.OutOfSync:
+                    {
+                        response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                case UserSetting.DeleteAccount:
+                    {
+                        response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
     }
 
     [SlashCommand("login", "Gives you a link to connect your Last.fm account to .fmbot")]
@@ -117,11 +238,10 @@ public class UserSlashCommands : InteractionModuleBase
             {
                 followUpEmbed.WithColor(DiscordConstants.SuccessColorGreen);
                 var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var settingCommand = PublicProperties.SlashCommands.ContainsKey("settings") ? $"</settings:{PublicProperties.SlashCommands["settings"]}>" : "`/settings`";
                 var description =
                     $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newUserSettings.UserNameLastFM)})!\n\n" +
-                    $"`/fmmode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
-                    $"`/wkmode` has been set to: `{newUserSettings.Mode ?? WhoKnowsMode.Embed}`\n" +
-                    $"`/privacy` has been set to: `{newUserSettings.PrivacyLevel}`";
+                    $"Use {settingCommand} to change your settings and to customize your .fmbot experience.";
 
                 followUpEmbed.WithDescription(description);
 
@@ -211,7 +331,7 @@ public class UserSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
 
-        var response = UserBuilder.Mode(new ContextModel(this.Context, contextUser), guild);
+        var response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser), guild);
 
         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -313,7 +433,7 @@ public class UserSlashCommands : InteractionModuleBase
 
         foreach (var flag in userSettings.FmFooterOptions.GetUniqueFlags())
         {
-            if (userSettings.FmFooterOptions.HasFlag(flag) && flag != FmFooterOption.None)
+            if (userSettings.FmFooterOptions.HasFlag(flag))
             {
                 var name = flag.GetAttribute<OptionAttribute>().Name;
                 description.AppendLine($"- **{name}**");
@@ -327,21 +447,36 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("wkmode", "Changes your default whoknows mode")]
     [UsernameSetRequired]
-    public async Task WkModeAsync([Summary("mode", "Mode your fm command should use")] WhoKnowsMode mode)
+    public async Task WkModeAsync()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var response = UserBuilder.WkMode(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction(InteractionConstants.WkModeSetting)]
+    [UsernameSetRequired]
+    public async Task SetWkModeAsync(string[] inputs)
     {
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var newUserSettings = await this._userService.SetWkMode(userSettings, mode);
+        if (Enum.TryParse(inputs.FirstOrDefault(), out WhoKnowsMode mode))
+        {
+            var newUserSettings = await this._userService.SetWkMode(userSettings, mode);
 
-        var reply = new StringBuilder();
-        reply.Append($"Your default `WhoKnows` mode has been set to **{newUserSettings.Mode}**.");
+            var reply = new StringBuilder();
+            reply.Append($"Your default `WhoKnows` mode has been set to **{newUserSettings.Mode}**.");
 
-        var embed = new EmbedBuilder();
-        embed.WithColor(DiscordConstants.InformationColorBlue);
-        embed.WithDescription(reply.ToString());
+            var embed = new EmbedBuilder();
+            embed.WithColor(DiscordConstants.InformationColorBlue);
+            embed.WithDescription(reply.ToString());
 
-        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
-        this.Context.LogCommandUsed();
+            await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+            this.Context.LogCommandUsed();
+        }
     }
 
     [SlashCommand("remove", "Deletes your .fmbot account")]
@@ -350,42 +485,64 @@ public class UserSlashCommands : InteractionModuleBase
     {
         var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
 
-        var embed = UserBuilder.GetRemoveDataEmbed(userSettings, "/");
+        var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, userSettings));
 
-        var builder = new ComponentBuilder()
-            .WithButton("Confirm", "id");
-
-        await RespondAsync("", new[] { embed.Build() }, components: builder.Build(), ephemeral: true);
-        var msg = await this.Context.Interaction.GetOriginalResponseAsync();
-
-        var result = await this.Interactivity.NextInteractionAsync(x => x is SocketMessageComponent c && c.Message.Id == msg.Id && x.User.Id == this.Context.User.Id,
-            timeout: TimeSpan.FromSeconds(60));
-
-        if (result.IsSuccess)
-        {
-            await result.Value.DeferAsync();
-
-            await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
-            await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
-
-            await this._userService.DeleteUser(userSettings.UserId);
-
-            var followUpEmbed = new EmbedBuilder();
-            followUpEmbed.WithTitle("Removal successful");
-            followUpEmbed.WithDescription("Your settings, friends and any other data have been successfully deleted from .fmbot.");
-            await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
-        }
-        else
-        {
-            var followUpEmbed = new EmbedBuilder();
-            followUpEmbed.WithTitle("Removal timed out");
-            followUpEmbed.WithDescription("If you still wish to delete your .fmbot account, please try again.");
-            await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
-        }
-
-        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
+
+    [ComponentInteraction($"{InteractionConstants.RemoveFmbotAccount}-*")]
+    [UsernameSetRequired]
+    public async Task RemoveAccountModal(string discordUserId)
+    {
+        var parsedId = ulong.Parse(discordUserId);
+        if (parsedId != this.Context.User.Id)
+        {
+            await RespondAsync("Hey, this button is not for you. At least you tried.", ephemeral: true);
+            return;
+        }
+
+        await this.Context.Interaction.RespondWithModalAsync<RemoveAccountConfirmModal>($"{InteractionConstants.RemoveFmbotAccountModal}-{discordUserId}");
+    }
+
+    [ModalInteraction($"{InteractionConstants.RemoveFmbotAccountModal}-*")]
+    [UsernameSetRequired]
+    public async Task RemoveConfirmAsync(string discordUserId, RemoveAccountConfirmModal modal)
+    {
+        var parsedId = ulong.Parse(discordUserId);
+        if (parsedId != this.Context.User.Id)
+        {
+            await RespondAsync("Hey, this button is not for you. At least you tried.", ephemeral: true);
+            return;
+        }
+
+        if (modal.Confirmation?.ToLower() != "confirm")
+        {
+            await RespondAsync("Account deletion cancelled, wrong modal input", ephemeral: true);
+            return;
+        }
+
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (userSettings == null)
+        {
+            await RespondAsync("We don't have any data from you in our database", ephemeral: true);
+            return;
+        }
+
+        await this.DeferAsync(true);
+
+        await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
+        await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
+
+        await this._userService.DeleteUser(userSettings.UserId);
+
+        var followUpEmbed = new EmbedBuilder();
+        followUpEmbed.WithTitle("Removal successful");
+        followUpEmbed.WithDescription("Your settings, friends and any other data have been successfully deleted from .fmbot.");
+        await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
+    }
+
 
     [SlashCommand("judge", "Judges your music taste using AI")]
     [UsernameSetRequired]

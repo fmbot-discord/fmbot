@@ -3,6 +3,15 @@ using Discord.Interactions;
 namespace FMBot.Bot.Models.Modals;
 
 
+public class RemoveAccountConfirmModal : IModal
+{
+    public string Title => "Confirm account deletion";
+
+    [InputLabel("Type 'confirm' to delete")]
+    [ModalTextInput("confirm", minLength: 1, maxLength: 7)]
+    public string Confirmation { get; set; }
+}
+
 public class SetPrefixModal : IModal
 {
     public string Title => "Set .fmbot text command prefix";

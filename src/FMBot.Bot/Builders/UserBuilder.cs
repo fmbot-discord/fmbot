@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -68,6 +69,47 @@ public class UserBuilder
         this._discogsService = discogsService;
         this._openAiService = openAiService;
         this._botSettings = botSettings.Value;
+    }
+
+    public async Task<ResponseModel> GetUserSettings(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        response.Embed.WithTitle($".fmbot user settings - {context.DiscordUser.GlobalName}");
+
+        response.Embed.WithFooter($"Use '{context.Prefix}configuration' for server-wide settings");
+
+        var settings = new StringBuilder();
+
+        settings.AppendLine($"Connected with Last.fm account [{context.ContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}). Use `/login` to change.");
+        settings.AppendLine();
+        settings.AppendLine($"Click the dropdown below to change your user settings.");
+
+        response.Embed.WithDescription(settings.ToString());
+
+        var guildSettings = new SelectMenuBuilder()
+            .WithPlaceholder("Select setting to view or change")
+            .WithCustomId(InteractionConstants.UserSetting)
+            .WithMaxValues(1);
+
+        foreach (var setting in ((UserSetting[])Enum.GetValues(typeof(UserSetting))))
+        {
+            var name = setting.GetAttribute<OptionAttribute>().Name;
+            var description = setting.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(setting);
+
+            guildSettings.AddOption(new SelectMenuOptionBuilder(name, $"us-view-{value}", description));
+        }
+
+        response.Components = new ComponentBuilder()
+            .WithSelectMenu(guildSettings);
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        return response;
     }
 
     public async Task<ResponseModel> FeaturedAsync(ContextModel context)
@@ -145,7 +187,7 @@ public class UserBuilder
         return response;
     }
 
-    public static ResponseModel Mode(
+    public static ResponseModel FmMode(
         ContextModel context,
         Guild guild = null)
     {
@@ -172,6 +214,7 @@ public class UserBuilder
         var fmOptions = new SelectMenuBuilder()
             .WithPlaceholder("Select footer options")
             .WithCustomId(InteractionConstants.FmSettingFooter)
+            .WithMinValues(0)
             .WithMaxValues(maxOptions);
 
         var fmSupporterOptions = new SelectMenuBuilder()
@@ -180,7 +223,7 @@ public class UserBuilder
             .WithMinValues(0)
             .WithMaxValues(1);
 
-        foreach (var option in ((FmFooterOption[])Enum.GetValues(typeof(FmFooterOption))).Where(w => w != FmFooterOption.None))
+        foreach (var option in ((FmFooterOption[])Enum.GetValues(typeof(FmFooterOption))))
         {
             var name = option.GetAttribute<OptionAttribute>().Name;
             var description = option.GetAttribute<OptionAttribute>().Description;
@@ -249,6 +292,43 @@ public class UserBuilder
         return response;
     }
 
+    public static ResponseModel WkMode(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithAuthor("Configuring your default WhoKnows mode");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var fmType = new SelectMenuBuilder()
+                .WithPlaceholder("Select WhoKnows mode")
+                .WithCustomId(InteractionConstants.WkModeSetting)
+                .WithMinValues(1)
+                .WithMaxValues(1);
+
+        foreach (var name in Enum.GetNames(typeof(WhoKnowsMode)).OrderBy(o => o))
+        {
+            var picked = context.SlashCommand && context.ContextUser.Mode.HasValue && Enum.GetName(context.ContextUser.Mode.Value) == name;
+
+            fmType.AddOption(new SelectMenuOptionBuilder(name, name, isDefault: picked));
+        }
+
+        response.Components = new ComponentBuilder()
+            .WithSelectMenu(fmType);
+
+        var description = new StringBuilder();
+
+        description.AppendLine("You can also override this when using a command:");
+        description.AppendLine("- `image` / `img`");
+        description.AppendLine("- `embed`");
+
+        response.Embed.WithDescription(description.ToString());
+
+        return response;
+    }
+
     public static ResponseModel Privacy(ContextModel context)
     {
         var response = new ResponseModel
@@ -257,14 +337,16 @@ public class UserBuilder
         };
 
         var privacySetting = new SelectMenuBuilder()
-                .WithPlaceholder("Select global WhoKnows privacy")
+                .WithPlaceholder("Select Global WhoKnows privacy")
                 .WithCustomId(InteractionConstants.FmPrivacySetting)
                 .WithMinValues(1)
                 .WithMaxValues(1);
 
         foreach (var name in Enum.GetNames(typeof(PrivacyLevel)).OrderBy(o => o))
         {
-            privacySetting.AddOption(new SelectMenuOptionBuilder(name, name));
+            var picked = context.SlashCommand && Enum.GetName(context.ContextUser.PrivacyLevel) == name;
+
+            privacySetting.AddOption(new SelectMenuOptionBuilder(name, name, isDefault: picked));
         }
 
         var builder = new ComponentBuilder()
@@ -272,17 +354,15 @@ public class UserBuilder
 
         response.Components = builder;
 
-        response.Embed.WithAuthor("Configuring your global WhoKnows privacy");
+        response.Embed.WithAuthor("Configuring your Global WhoKnows visibility");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var embedDescription = new StringBuilder();
 
-        embedDescription.AppendLine("Use this option to change your visibility to other .fmbot users.");
-        embedDescription.AppendLine();
-
-        response.Embed.AddField("Options:",
-            "**Global**: You are visible everywhere in global WhoKnows with your Last.fm username\n" +
-            "**Server**: You are not visible in global WhoKnows, but users in the same server will still see your name.");
+        response.Embed.AddField("Global",
+            "*You are visible everywhere in global WhoKnows with your Last.fm username.*");
+        response.Embed.AddField("Server",
+            "*You are not visible in global WhoKnows, but users in the same server will still see your name.*");
 
         response.Embed.WithDescription(embedDescription.ToString());
 
@@ -961,32 +1041,42 @@ public class UserBuilder
         return response;
     }
 
-    public static EmbedBuilder GetRemoveDataEmbed(User userSettings, string prfx)
+    public static ResponseModel RemoveDataResponse(ContextModel context)
     {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
         var description = new StringBuilder();
         description.AppendLine("**Are you sure you want to delete all your data from .fmbot?**");
         description.AppendLine("This will remove the following data:");
 
         description.AppendLine("- Account settings like your connected Last.fm account");
 
-        if (userSettings.Friends?.Count > 0)
+        if (context.ContextUser.Friends?.Count > 0)
         {
-            var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
-            description.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
+            var friendString = context.ContextUser.Friends?.Count == 1 ? "friend" : "friends";
+            description.AppendLine($"- `{context.ContextUser.Friends?.Count}` {friendString}");
         }
 
-        if (userSettings.FriendedByUsers?.Count > 0)
+        if (context.ContextUser.FriendedByUsers?.Count > 0)
         {
-            var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
-            description.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
+            var friendString = context.ContextUser.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
+            description.AppendLine($"- You from `{context.ContextUser.FriendedByUsers?.Count}` other {friendString}");
         }
 
         description.AppendLine("- All crowns you've gained or lost");
         description.AppendLine("- All featured history");
 
-        if (userSettings.UserType != UserType.User)
+        if (context.ContextUser.DataSource != DataSource.LastFm)
         {
-            description.AppendLine($"- `{userSettings.UserType}` account status");
+            description.AppendLine("- Your Spotify data imports");
+        }
+
+        if (context.ContextUser.UserType != UserType.User)
+        {
+            description.AppendLine($"- `{context.ContextUser.UserType}` account status");
             description.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
         }
 
@@ -995,21 +1085,66 @@ public class UserBuilder
         description.AppendLine($"Changed Last.fm username? Run `/login`");
         description.AppendLine();
 
-        if (prfx == "/")
+
+        description.AppendLine($"If you still wish to logout, please click the button below.");
+
+        response.Components = new ComponentBuilder().WithButton("Delete my .fmbot account",
+            $"{InteractionConstants.RemoveFmbotAccount}-{context.DiscordUser.Id}", ButtonStyle.Danger);
+
+        response.Embed.WithDescription(description.ToString());
+
+        response.Embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
+
+        response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+
+        return response;
+    }
+
+    public static ResponseModel UserReactionsSupporterRequired(ContextModel context, string prfx)
+    {
+        if (context.ContextUser.UserType != UserType.User)
         {
-            description.AppendLine($"If you still wish to logout, please click 'confirm'.");
+            return null;
         }
-        else
+
+        var response = new ResponseModel
         {
-            description.AppendLine($"Type `{prfx}remove confirm` to confirm deletion.");
-        }
+            ResponseType = ResponseType.Embed
+        };
 
-        var embed = new EmbedBuilder();
-        embed.WithDescription(description.ToString());
+        response.Embed.WithDescription($"Only supporters can set their own automatic emoji reactions.\n\n" +
+                                        $"[Get supporter here]({Constants.GetSupporterDiscordLink}), or alternatively use the `{prfx}serverreactions` command to set server-wide automatic emoji reactions.");
 
-        embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
+        response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
-        return embed;
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        response.CommandResponse = CommandResponse.SupporterRequired;
+
+        return response;
+    }
+
+    public static ResponseModel UserReactionsAsync(ContextModel context, string prfx)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var description = new StringBuilder();
+        description.Append(
+            $"Use the `{prfx}userreactions` command for automatic emoji reacts for `fm` and `featured`. ");
+        description.AppendLine("To disable, use without any emojis.");
+        description.AppendLine();
+        description.AppendLine("Make sure that you have a space between each emoji.");
+        description.AppendLine();
+        description.AppendLine("Examples:");
+        description.AppendLine($"`{prfx}userreactions :PagChomp: :PensiveBlob:`");
+        description.AppendLine($"`{prfx}userreactions 😀 😯 🥵`");
+
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        return response;
     }
 
     public static ResponseModel ImportMode(ContextModel context, bool hasImported = false)
