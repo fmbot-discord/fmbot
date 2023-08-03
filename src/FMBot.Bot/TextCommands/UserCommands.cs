@@ -98,7 +98,7 @@ public class UserCommands : BaseCommandModule
     [Summary("Shows user settings for .fmbot")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ServerSettings)]
-    [Alias("userconfig")]
+    [Alias("userconfig", "usersettings", "usersetting")]
     public async Task UserSettingsAsync([Remainder] string searchValues = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
