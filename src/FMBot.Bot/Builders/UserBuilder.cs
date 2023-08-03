@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -83,7 +84,7 @@ public class UserBuilder
 
         var settings = new StringBuilder();
 
-        settings.AppendLine($"Connected with the Last.fm account [{context.ContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}). Use `/login` to change.");
+        settings.AppendLine($"Connected with Last.fm account [{context.ContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}). Use `/login` to change.");
         settings.AppendLine();
         settings.AppendLine($"Click the dropdown below to change your user settings.");
 
@@ -1084,17 +1085,11 @@ public class UserBuilder
         description.AppendLine($"Changed Last.fm username? Run `/login`");
         description.AppendLine();
 
-        if (context.Prefix == "/")
-        {
-            description.AppendLine($"If you still wish to logout, please click the button below.");
 
-            response.Components = new ComponentBuilder().WithButton("Delete my .fmbot account",
-                InteractionConstants.RemoveFmbotAccount, ButtonStyle.Danger);
-        }
-        else
-        {
-            description.AppendLine($"Type `{context.Prefix}remove confirm` to confirm deletion.");
-        }
+        description.AppendLine($"If you still wish to logout, please click the button below.");
+
+        response.Components = new ComponentBuilder().WithButton("Delete my .fmbot account",
+            $"{InteractionConstants.RemoveFmbotAccount}-{context.DiscordUser.Id}", ButtonStyle.Danger);
 
         response.Embed.WithDescription(description.ToString());
 

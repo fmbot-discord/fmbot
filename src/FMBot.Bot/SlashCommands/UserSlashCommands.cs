@@ -14,6 +14,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -85,7 +86,7 @@ public class UserSlashCommands : InteractionModuleBase
 
             var response = await this._userBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
 
-            await this.Context.SendResponse(this.Interactivity, response ,ephemeral: true);
+            await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -490,11 +491,44 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction(InteractionConstants.RemoveFmbotAccount)]
+    [ComponentInteraction($"{InteractionConstants.RemoveFmbotAccount}-*")]
     [UsernameSetRequired]
-    public async Task RemoveConfirmAsync()
+    public async Task RemoveAccountModal(string discordUserId)
     {
+        var parsedId = ulong.Parse(discordUserId);
+        if (parsedId != this.Context.User.Id)
+        {
+            await RespondAsync("Hey, this button is not for you. At least you tried.", ephemeral: true);
+            return;
+        }
+
+        await this.Context.Interaction.RespondWithModalAsync<RemoveAccountConfirmModal>($"{InteractionConstants.RemoveFmbotAccountModal}-{discordUserId}");
+    }
+
+    [ModalInteraction($"{InteractionConstants.RemoveFmbotAccountModal}-*")]
+    [UsernameSetRequired]
+    public async Task RemoveConfirmAsync(string discordUserId, RemoveAccountConfirmModal modal)
+    {
+        var parsedId = ulong.Parse(discordUserId);
+        if (parsedId != this.Context.User.Id)
+        {
+            await RespondAsync("Hey, this button is not for you. At least you tried.", ephemeral: true);
+            return;
+        }
+
+        if (modal.Confirmation?.ToLower() != "confirm")
+        {
+            await RespondAsync("Account deletion cancelled, wrong modal input", ephemeral: true);
+            return;
+        }
+
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (userSettings == null)
+        {
+            await RespondAsync("We don't have any data from you in our database", ephemeral: true);
+            return;
+        }
 
         await this.DeferAsync(true);
 
@@ -508,6 +542,7 @@ public class UserSlashCommands : InteractionModuleBase
         followUpEmbed.WithDescription("Your settings, friends and any other data have been successfully deleted from .fmbot.");
         await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
     }
+
 
     [SlashCommand("judge", "Judges your music taste using AI")]
     [UsernameSetRequired]

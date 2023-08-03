@@ -761,24 +761,9 @@ public class UserCommands : BaseCommandModule
             return;
         }
 
-        if (string.IsNullOrEmpty(confirmation) || confirmation.ToLower() != "confirm")
-        {
-            var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
+        var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
 
-            await this.Context.SendResponse(this.Interactivity, response);
-        }
-        else
-        {
-            _ = this.Context.Channel.TriggerTypingAsync();
-
-            await this._friendsService.RemoveAllFriendsAsync(contextUser.UserId);
-            await this._friendsService.RemoveUserFromOtherFriendsAsync(contextUser.UserId);
-
-            await this._userService.DeleteUser(contextUser.UserId);
-
-            await ReplyAsync("Your settings, friends and any other data have been successfully deleted from .fmbot.");
-        }
-
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 }

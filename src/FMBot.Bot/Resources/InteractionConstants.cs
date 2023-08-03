@@ -13,6 +13,7 @@ public static class InteractionConstants
     public const string WkModeSetting = "wk-mode";
 
     public const string RemoveFmbotAccount = "remove-account-confirm";
+    public const string RemoveFmbotAccountModal = "remove-account-confirm-modal";
 
     public const string FmGuildSettingType = "fm-guild-type-menu";
 
