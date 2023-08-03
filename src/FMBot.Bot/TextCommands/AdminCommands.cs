@@ -1747,7 +1747,7 @@ public class AdminCommands : BaseCommandModule
     }
 
     [Command("runfullupdate")]
-    [Summary("Runs a full update for someone esle")]
+    [Summary("Runs a full update for someone else")]
     public async Task RunFullUpdate([Remainder] string user = null)
     {
         try
@@ -1767,6 +1767,40 @@ public class AdminCommands : BaseCommandModule
                 this.Context.LogCommandUsed();
 
                 await this._indexService.IndexUser(userToUpdate);
+            }
+            else
+            {
+                await ReplyAsync("You are not authorized to use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("runtoplistupdate")]
+    [Summary("Runs a toplist update for someone esle")]
+    public async Task RunTopListUpdate([Remainder] string user = null)
+    {
+        try
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                var userToUpdate = await this._settingService.GetDifferentUser(user);
+
+                if (userToUpdate == null)
+                {
+                    await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                await ReplyAsync($"Running top list update for '{userToUpdate.UserNameLastFM}'", allowedMentions: AllowedMentions.None);
+                this.Context.LogCommandUsed();
+
+                await this._indexService.RecalculateTopLists(userToUpdate);
             }
             else
             {

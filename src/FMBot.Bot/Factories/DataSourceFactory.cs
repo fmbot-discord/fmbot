@@ -296,12 +296,12 @@ public class DataSourceFactory : IDataSourceFactory
 
     private async Task CorrectArtistNamesInternally(Response<TopArtistList> topArtists)
     {
-        if (topArtists.Success && topArtists.Content != null && topArtists.Content.TopArtists.Any())
+        if (topArtists.Success && topArtists.Content?.TopArtists != null && topArtists.Content.TopArtists.Any())
         {
             foreach (var topArtist in topArtists.Content.TopArtists)
             {
                 var alias = await this._aliasService.GetDataCorrectionAlias(topArtist.ArtistName);
-                if (alias != null)
+                if (alias?.ArtistName != null)
                 {
                     topArtist.ArtistName = alias.ArtistName;
                 }
