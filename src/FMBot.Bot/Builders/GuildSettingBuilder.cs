@@ -14,6 +14,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -44,7 +45,8 @@ public class GuildSettingBuilder
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         response.Embed.WithTitle($".fmbot server configuration - {guild.Name}");
-        response.Embed.WithFooter($"{guild.DiscordGuildId}");
+        response.Embed.WithFooter($"{guild.DiscordGuildId}\n" +
+                                  $"Use '{context.Prefix}settings' for personal .fmbot settings");
 
         var settings = new StringBuilder();
 
@@ -188,7 +190,6 @@ public class GuildSettingBuilder
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         return response;
-
     }
 
     public async Task<ResponseModel> SetPrefix(ContextModel context, IUser lastModifier = null)
@@ -681,7 +682,6 @@ public class GuildSettingBuilder
 
         return response;
     }
-
 
     public static ResponseModel GuildReactionsAsync(ContextModel context, string prfx)
     {

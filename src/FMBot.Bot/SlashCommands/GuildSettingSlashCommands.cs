@@ -18,10 +18,11 @@ using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Services.WhoKnows;
 using Microsoft.Extensions.Options;
+using FMBot.Domain.Enums;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class SettingSlashCommands : InteractionModuleBase
+public class GuildSettingSlashCommands : InteractionModuleBase
 {
     private readonly UserService _userService;
 
@@ -40,7 +41,7 @@ public class SettingSlashCommands : InteractionModuleBase
 
     private InteractiveService Interactivity { get; }
 
-    public SettingSlashCommands(
+    public GuildSettingSlashCommands(
         GuildSettingBuilder guildSettingBuilder,
         InteractiveService interactivity,
         UserService userService,

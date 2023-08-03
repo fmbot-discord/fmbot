@@ -57,7 +57,7 @@ public class GuildCommands : BaseCommandModule
     [Summary("Shows server configuration for .fmbot")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ServerSettings)]
-    [Alias("ss", "config", "serversettings", "settings", "fmbotconfig", "serverconfig")]
+    [Alias("ss", "config", "serversettings", "fmbotconfig", "serverconfig")]
     public async Task GuildSettingsAsync([Remainder] string searchValues = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();

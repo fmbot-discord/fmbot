@@ -7,9 +7,6 @@ namespace FMBot.Domain.Models;
 [Flags]
 public enum FmFooterOption : long
 {
-    [Option("None", "")]
-    None = 0,
-
     [Option("Track loved", "Displays a heart if the track is loved")]
     Loved = 1 << 0,
     [Option("Artist plays", "Your all-time artist plays")]

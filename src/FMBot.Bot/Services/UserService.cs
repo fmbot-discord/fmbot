@@ -925,6 +925,8 @@ public class UserService
             this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
 
             PublicProperties.RegisteredUsers.TryRemove(user.DiscordUserId, out _);
+
+            Log.Information("Deleted user {userId} - {discordUserId} - {userNameLastFm}", user.UserId, user.DiscordUserId, user.UserNameLastFM);
         }
         catch (Exception e)
         {

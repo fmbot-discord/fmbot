@@ -3,12 +3,16 @@ namespace FMBot.Bot.Resources;
 public static class InteractionConstants
 {
     public const string GuildSetting = "guild-setting-picker";
+    public const string UserSetting = "user-setting-picker";
 
     public const string FmSettingType = "fm-type-menu";
     public const string FmSettingFooter = "fm-footer-menu";
     public const string FmSettingFooterSupporter = "fm-footer-menu-supporter";
 
     public const string FmPrivacySetting = "fm-gwk-privacy";
+    public const string WkModeSetting = "wk-mode";
+
+    public const string RemoveFmbotAccount = "remove-account-confirm";
 
     public const string FmGuildSettingType = "fm-guild-type-menu";
 
@@ -39,7 +43,6 @@ public static class InteractionConstants
 
     public const string BotScrobblingEnable = "user-setting-botscrobbling-enable";
     public const string BotScrobblingDisable = "user-setting-botscrobbling-disable";
-
 
     public const string SetPrefix = "set-prefix-threshold";
     public const string SetPrefixModal = "set-prefix-modal";

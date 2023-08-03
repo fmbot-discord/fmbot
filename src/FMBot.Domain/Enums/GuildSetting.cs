@@ -1,6 +1,6 @@
 using FMBot.Domain.Attributes;
 
-namespace FMBot.Domain.Models;
+namespace FMBot.Domain.Enums;
 
 public enum GuildSetting
 {
