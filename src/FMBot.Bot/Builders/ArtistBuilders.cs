@@ -151,7 +151,7 @@ public class ArtistBuilders
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
                 response.Embed.WithDescription($"*Supporters can see the date they first listened to an artist. " +
-                                               $"[{Constants.GetSupporterOverviewButton}]({SupporterService.GetSupporterLink()})*");
+                                               $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterDiscordLink})*");
             }
         }
 
