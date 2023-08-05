@@ -116,17 +116,6 @@ public class SupporterService
         return true;
     }
 
-    public static string GetSupporterLink()
-    {
-        var pick = RandomNumberGenerator.GetInt32(0, 2);
-
-        return pick switch
-        {
-            1 => Constants.GetSupporterDiscordLink,
-            _ => Constants.GetSupporterOverviewLink,
-        };
-    }
-
     public static async Task SendSupporterWelcomeMessage(IUser discordUser, bool hasDiscogs, Supporter supporter)
     {
         var thankYouEmbed = new EmbedBuilder();
@@ -235,7 +224,7 @@ public class SupporterService
             return null;
         }
 
-        var randomHintNumber = new Random().Next(0, 30);
+        var randomHintNumber = new Random().Next(0, 40);
 
         switch (randomHintNumber)
         {
@@ -243,12 +232,12 @@ public class SupporterService
                 SetGuildPromoCache(guildId);
                 return
                     $"*.fmbot stores all artists/albums/tracks instead of just the top 4/5/6k for supporters. " +
-                    $"[See all the benefits of becoming a supporter here.]({GetSupporterLink()})*";
+                    $"[See all the benefits of becoming a supporter here.]({Constants.GetSupporterDiscordLink})*";
             case 2:
                 SetGuildPromoCache(guildId);
                 return
                     $"*Supporters get extra statistics like first listen dates, full history in `stats`, artist discoveries in `year`, extra options in their `fm` footer and more. " +
-                    $"[See all the perks of getting supporter here.]({GetSupporterLink()})*";
+                    $"[See all the perks of getting supporter here.]({Constants.GetSupporterDiscordLink})*";
             case 3:
                 {
                     await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -274,21 +263,22 @@ public class SupporterService
                     SetGuildPromoCache(guildId);
                     return
                         $"*Want more custom options in your `{prfx}fm` footer? Supporters can set up to 8 + 1 options. " +
-                        $"[Get .fmbot supporter here.]({GetSupporterLink()})*";
+                        $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*";
                 }
             case 5:
                 {
                     SetGuildPromoCache(guildId);
                     return
                         $"*Supporters get an improved GPT-4 powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others. " +
-                        $"[Get .fmbot supporter here.]({GetSupporterLink()})*";
+                        $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*";
                 }
             case 6:
+            case 7:
                 {
                     SetGuildPromoCache(guildId);
                     return
-                        $"*Supporters can now import their full Spotify history into the bot. " +
-                        $"[Get .fmbot supporter here.]({GetSupporterLink()})*";
+                        $"*Supporters can now import and use their full Spotify history in the bot. " +
+                        $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*";
                 }
             default:
                 return null;

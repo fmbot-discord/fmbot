@@ -151,7 +151,7 @@ public class UserBuilder
 
         if (this._timer.CurrentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)
         {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: SupporterService.GetSupporterLink());
+            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
         }
 
         response.Embed.WithFooter($"View your featured history with '{context.Prefix}featuredlog'");
@@ -275,7 +275,7 @@ public class UserBuilder
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            embedDescription.Append($"[.fmbot supporters]({Constants.GetSupporterOverviewLink}) can select up to {Constants.MaxFooterOptionsSupporter} options.");
+            embedDescription.Append($"[.fmbot supporters]({Constants.GetSupporterDiscordLink}) can select up to {Constants.MaxFooterOptionsSupporter} options.");
         }
 
         if (guild?.FmEmbedType != null)
@@ -601,11 +601,17 @@ public class UserBuilder
 
         if (this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
         {
-            var random = new Random().Next(0, Constants.SupporterPromoChance);
-            if (random == 1)
+            var random = new Random().Next(0, (Constants.SupporterPromoChance * 2));
+            switch (random)
             {
-                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                description.AppendLine($"*Want to see an overview of all your years? [View all perks and get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})*");
+                case 1:
+                    this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                    description.AppendLine($"*Want to see an overview of all your years? [View all perks and get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
+                    break;
+                case 2:
+                    this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                    description.AppendLine($"*Want to import and use your Spotify history in .fmbot? [View all perks and get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
+                    break;
             }
         }
 
@@ -769,12 +775,12 @@ public class UserBuilder
                 if (user.UserDiscogs == null)
                 {
                     response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years? " +
-                                                     $"[Get .fmbot supporter here.]({SupporterService.GetSupporterLink()})*");
+                                                     $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
                 }
                 else
                 {
                     response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years and your Discogs collection? " +
-                                                     $"[Get .fmbot supporter here.]({SupporterService.GetSupporterLink()})*");
+                                                     $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
                 }
             }
         }
@@ -836,10 +842,10 @@ public class UserBuilder
             else
             {
                 description.Append($"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
-                description.AppendLine($"[Become a supporter]({SupporterService.GetSupporterLink()}) to raise your daily limit, get access to better responses and the possibility to use the command on others.");
+                description.AppendLine($"[Become a supporter]({Constants.GetSupporterDiscordLink}) to raise your daily limit, get access to better responses and the possibility to use the command on others.");
 
                 response.Components = new ComponentBuilder()
-                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: SupporterService.GetSupporterLink());
+                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
             }
         }
         else
@@ -856,7 +862,7 @@ public class UserBuilder
         }
         if (differentUserButNotAllowed)
         {
-            description.AppendLine($"*Sorry, only [.fmbot supporters]({SupporterService.GetSupporterLink()}) can use this command on others.*");
+            description.AppendLine($"*Sorry, only [.fmbot supporters]({Constants.GetSupporterDiscordLink}) can use this command on others.*");
         }
         description.AppendLine();
         description.AppendLine("Some top artists might be sent to OpenAI. No other data is sent.");
@@ -906,7 +912,7 @@ public class UserBuilder
             if (context.ContextUser.UserType == UserType.User)
             {
                 description.Append($"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
-                description.AppendLine($"[Become a supporter]({SupporterService.GetSupporterLink()}) to raise your daily limit and the possibility to use the command on others.");
+                description.AppendLine($"[Become a supporter]({Constants.GetSupporterDiscordLink}) to raise your daily limit and the possibility to use the command on others.");
             }
             else
             {
