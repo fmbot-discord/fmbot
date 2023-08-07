@@ -153,7 +153,7 @@ public class SupporterService
         thankYouMessage.AppendLine();
         thankYouMessage.AppendLine("**Spotify importing**\n" +
                                    "You can now import your full Spotify history and combine it together with your Last.fm scrobbles. " +
-                                   "Use `/import Spotify` to get started.");
+                                   "Use `/import Spotify` to view the instructions and get started.");
 
         thankYouMessage.AppendLine();
         thankYouMessage.AppendLine("**Get featured**\n" +
