@@ -77,7 +77,7 @@ public class AliasService
     {
         await CacheArtistAliases();
 
-        return (CachedAlias)this._cache.Get(CacheKeyForFullAlias(name.ToLower()));
+        return (CachedAlias)this._cache.Get(CacheKeyForDataCorrectionAlias(name.ToLower()));
     }
 
     private static string CacheKeyForFullAlias(string aliasName)
