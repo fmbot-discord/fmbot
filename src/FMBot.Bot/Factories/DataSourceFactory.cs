@@ -245,7 +245,11 @@ public class DataSourceFactory : IDataSourceFactory
             return await this._playDataSourceRepository.GetTopAlbumsAsync(importUser, timeSettings, count * amountOfPages);
         }
 
-        return await this._lastfmRepository.GetTopAlbumsAsync(lastFmUserName, timeSettings, count, amountOfPages);
+        var topAlbums = await this._lastfmRepository.GetTopAlbumsAsync(lastFmUserName, timeSettings, count, amountOfPages);
+
+        await CorrectTopAlbumNamesInternally(topAlbums);
+
+        return topAlbums;
     }
 
     public async Task<Response<TopAlbumList>> GetTopAlbumsForCustomTimePeriodAsyncAsync(string lastFmUserName, DateTime startDateTime, DateTime endDateTime,
@@ -258,7 +262,26 @@ public class DataSourceFactory : IDataSourceFactory
             return await this._playDataSourceRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(importUser, startDateTime, endDateTime, count);
         }
 
-        return await this._lastfmRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(lastFmUserName, startDateTime, endDateTime, count);
+        var topAlbums = await this._lastfmRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(lastFmUserName, startDateTime, endDateTime, count);
+
+        await CorrectTopAlbumNamesInternally(topAlbums);
+
+        return topAlbums;
+    }
+
+    private async Task CorrectTopAlbumNamesInternally(Response<TopAlbumList> topAlbums)
+    {
+        if (topAlbums.Success && topAlbums.Content?.TopAlbums != null && topAlbums.Content.TopAlbums.Any())
+        {
+            foreach (var topAlbum in topAlbums.Content.TopAlbums)
+            {
+                var alias = await this._aliasService.GetDataCorrectionAlias(topAlbum.ArtistName);
+                if (alias?.ArtistName != null)
+                {
+                    topAlbum.ArtistName = alias.ArtistName;
+                }
+            }
+        }
     }
 
     public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName, TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
@@ -272,7 +295,7 @@ public class DataSourceFactory : IDataSourceFactory
 
         var topArtists = await this._lastfmRepository.GetTopArtistsAsync(lastFmUserName, timeSettings, count, amountOfPages);
 
-        await CorrectArtistNamesInternally(topArtists);
+        await CorrectTopArtistNamesInternally(topArtists);
 
         return topArtists;
     }
@@ -289,12 +312,12 @@ public class DataSourceFactory : IDataSourceFactory
 
         var topArtists = await this._lastfmRepository.GetTopArtistsForCustomTimePeriodAsync(lastFmUserName, startDateTime, endDateTime, count);
 
-        await CorrectArtistNamesInternally(topArtists);
+        await CorrectTopArtistNamesInternally(topArtists);
 
         return topArtists;
     }
 
-    private async Task CorrectArtistNamesInternally(Response<TopArtistList> topArtists)
+    private async Task CorrectTopArtistNamesInternally(Response<TopArtistList> topArtists)
     {
         if (topArtists.Success && topArtists.Content?.TopArtists != null && topArtists.Content.TopArtists.Any())
         {
