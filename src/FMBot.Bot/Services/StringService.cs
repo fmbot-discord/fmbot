@@ -57,7 +57,7 @@ public static class StringService
     {
         var description = new StringBuilder();
 
-        description.AppendLine($"**[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 120))}]({track.TrackUrl})** by **{StringExtensions.Sanitize(track.ArtistName)}**");
+        description.AppendLine($"**[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 200))}]({track.TrackUrl})** by **{StringExtensions.Sanitize(track.ArtistName)}**");
 
         if (!track.TimePlayed.HasValue || track.NowPlaying)
         {
@@ -95,11 +95,11 @@ public static class StringService
                 albumRymUrl += HttpUtility.UrlEncode($"{track.ArtistName} {albumQueryName}");
                 albumRymUrl += "&searchtype=l";
 
-                description.Append($"*[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 120))}]({albumRymUrl})*");
+                description.Append($"*[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}]({albumRymUrl})*");
             }
             else
             {
-                description.Append($"*{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 120))}*");
+                description.Append($"*{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}*");
             }
         }
 

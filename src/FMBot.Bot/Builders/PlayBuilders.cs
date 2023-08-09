@@ -381,6 +381,11 @@ public class PlayBuilder
             footer.Append($"Page {pageCounter}/{trackPages.Count}");
             footer.Append($" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles");
 
+            if (trackPageString.Length > 4000)
+            {
+                throw new Exception();
+            }
+
             var page = new PageBuilder()
                 .WithDescription(trackPageString.ToString())
                 .WithAuthor(response.EmbedAuthor)
