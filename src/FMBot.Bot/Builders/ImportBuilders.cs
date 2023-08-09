@@ -33,7 +33,7 @@ public class ImportBuilders
 
             response.Components = new ComponentBuilder()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink)
-                .WithButton("More info", style: ButtonStyle.Link, url: "https://fmbot.xyz/importing/");
+                .WithButton("Import info", style: ButtonStyle.Link, url: "https://fmbot.xyz/importing/");
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
 
