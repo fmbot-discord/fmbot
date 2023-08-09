@@ -31,7 +31,9 @@ public class ImportBuilders
         {
             response.Embed.WithDescription($"Only supporters can import and use their Spotify history.");
 
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+            response.Components = new ComponentBuilder()
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink)
+                .WithButton("More info", style: ButtonStyle.Link, url: "https://fmbot.xyz/importing/");
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
 
