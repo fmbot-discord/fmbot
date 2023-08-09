@@ -24,6 +24,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Genius.Models.User;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
 
@@ -849,5 +850,53 @@ public class PlayService
 
 
         return plays;
+    }
+
+    public async Task<RecentTrackList> AddUserPlaysToRecentTracks(int userId, RecentTrackList recentTracks)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var plays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+
+        var importUser = await UserRepository.GetImportUserForUserId(userId, connection, true);
+        if (importUser != null)
+        {
+            plays = PlayDataSourceRepository.GetFinalUserPlays(importUser, plays);
+        }
+
+        var firstRecentTrack = recentTracks.RecentTracks
+            .Where(w => w.TimePlayed != null)
+            .MinBy(o => o.TimePlayed);
+
+        var playsToAdd = plays.Where(w => w.TimePlayed < firstRecentTrack.TimePlayed);
+
+        foreach (var play in playsToAdd)
+        {
+            recentTracks.RecentTracks.Add(UserPlayToRecentTrack(play));
+        }
+
+        recentTracks.TotalAmount = recentTracks.RecentTracks.Count;
+
+        recentTracks.RecentTracks = recentTracks.RecentTracks
+            .OrderByDescending(o => o.NowPlaying)
+            .ThenByDescending(o => o.TimePlayed)
+            .ToList();
+
+        return recentTracks;
+    }
+
+    private static RecentTrack UserPlayToRecentTrack(UserPlay userPlay)
+    {
+        return new RecentTrack
+        {
+            AlbumName = userPlay.AlbumName,
+            AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(userPlay.ArtistName, userPlay.AlbumName),
+            ArtistName = userPlay.ArtistName,
+            ArtistUrl = LastfmUrlExtensions.GetArtistUrl(userPlay.ArtistName),
+            TrackName = userPlay.TrackName,
+            TrackUrl = LastfmUrlExtensions.GetTrackUrl(userPlay.ArtistName, userPlay.TrackName),
+            TimePlayed = userPlay.TimePlayed
+        };
     }
 }

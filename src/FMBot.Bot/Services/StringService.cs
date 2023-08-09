@@ -57,7 +57,7 @@ public static class StringService
     {
         var description = new StringBuilder();
 
-        description.AppendLine($"**[{StringExtensions.Sanitize(track.TrackName)}]({track.TrackUrl})** by **{StringExtensions.Sanitize(track.ArtistName)}**");
+        description.AppendLine($"**[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 120))}]({track.TrackUrl})** by **{StringExtensions.Sanitize(track.ArtistName)}**");
 
         if (!track.TimePlayed.HasValue || track.NowPlaying)
         {
@@ -89,16 +89,17 @@ public static class StringService
             {
                 var albumQueryName = track.AlbumName.Replace(" - Single", "");
                 albumQueryName = albumQueryName.Replace(" - EP", "");
+                albumQueryName = StringExtensions.TruncateLongString(albumQueryName, 60);
 
                 var albumRymUrl = @"https://rateyourmusic.com/search?searchterm=";
                 albumRymUrl += HttpUtility.UrlEncode($"{track.ArtistName} {albumQueryName}");
                 albumRymUrl += "&searchtype=l";
 
-                description.Append($"*[{StringExtensions.Sanitize(track.AlbumName)}]({albumRymUrl})*");
+                description.Append($"*[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 120))}]({albumRymUrl})*");
             }
             else
             {
-                description.Append($"*{StringExtensions.Sanitize(track.AlbumName)}*");
+                description.Append($"*{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 120))}*");
             }
         }
 
@@ -216,6 +217,11 @@ public static class StringService
         if (customOptionId != null && optionEmote != null)
         {
             builder.AddOption(customOptionId, optionEmote, null, ButtonStyle.Primary);
+        }
+
+        if (customOptionId == null && pages.Count >= 10)
+        {
+            builder.AddOption(new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"), PaginatorAction.Jump));
         }
 
         return builder.Build();

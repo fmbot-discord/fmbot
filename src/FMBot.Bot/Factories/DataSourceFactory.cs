@@ -68,7 +68,6 @@ public class DataSourceFactory : IDataSourceFactory
         return user;
     }
 
-
     public async Task<ImportUser> GetImportUserForLastFmUserName(string lastFmUserName)
     {
         if (lastFmUserName == null)

@@ -11,6 +11,11 @@ public static class LastfmUrlExtensions
 
     public static string GetAlbumUrl(string artistName, string albumName)
     {
+        if (albumName == null)
+        {
+            return null;
+        }
+
         return $"https://last.fm/music/{UrlEncoder.Default.Encode(artistName)}/{UrlEncoder.Default.Encode(albumName)}";
     }
 
