@@ -115,7 +115,7 @@ public class ImportSlashCommands : InteractionModuleBase
             if (!imports.success)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file. Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`." , true);
+                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file. Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.", true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
@@ -157,7 +157,16 @@ public class ImportSlashCommands : InteractionModuleBase
 
                 if (contextUser.DataSource == DataSource.LastFm)
                 {
-                    await this._userService.SetDataSource(contextUser, DataSource.FullSpotifyThenLastFm);
+                    var userHasImportedLastfm = await this._playService.UserHasImportedLastFm(contextUser.UserId);
+
+                    if (userHasImportedLastfm)
+                    {
+                        await this._userService.SetDataSource(contextUser, DataSource.FullSpotifyThenLastFm);
+                    }
+                    else
+                    {
+                        await this._userService.SetDataSource(contextUser, DataSource.SpotifyThenFullLastFm);
+                    }
                 }
             }
 
@@ -190,6 +199,28 @@ public class ImportSlashCommands : InteractionModuleBase
             examples.AppendLine($"- Or use the `top artists` command for top lists");
 
             embed.AddField("Start exploring your full streaming history", examples);
+
+            contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var importSetting = new StringBuilder();
+            switch (contextUser.DataSource)
+            {
+                case DataSource.LastFm:
+                    importSetting.AppendLine(
+                        "Your play data source is currently still set to just Last.fm. You can change this manually with the button below.");
+                    break;
+                case DataSource.FullSpotifyThenLastFm:
+                    importSetting.AppendLine(
+                        "Your data source has been set to `Full Spotify, then Last.fm`. This uses your full Spotify history and adds your Last.fm scrobbles afterwards.");
+                    break;
+                case DataSource.SpotifyThenFullLastFm:
+                    importSetting.AppendLine(
+                        "Your data source has been set to `Spotify, then full Last.fm`. This uses your Spotify history up until you started using Last.fm.");
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            embed.AddField("Current import setting", importSetting);
 
             var components = new ComponentBuilder()
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);

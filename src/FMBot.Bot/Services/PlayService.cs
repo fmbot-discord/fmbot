@@ -826,9 +826,28 @@ public class PlayService
         return userPlays;
     }
 
+    public async Task<bool> UserHasImportedLastFm(int userId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var plays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+
+        if (!plays.Any() || plays.Count < 2000)
+        {
+            return false;
+        }
+
+        return plays
+            .Where(w => w.PlaySource == PlaySource.LastFm)
+            .GroupBy(g => g.TimePlayed.Date)
+            .Count(w => w.Count() > 2500) >= 7;
+    }
+
     public static bool UserHasImported(IEnumerable<UserPlay> userPlays)
     {
         return userPlays
+            .Where(w => w.PlaySource == PlaySource.LastFm)
             .GroupBy(g => g.TimePlayed.Date)
             .Count(w => w.Count() > 2500) >= 7;
     }

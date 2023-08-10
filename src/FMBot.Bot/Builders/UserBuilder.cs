@@ -1195,13 +1195,13 @@ public class UserBuilder
 
         embedDescription.AppendLine("**Full Spotify, then Last.fm**");
         embedDescription.AppendLine("- Uses your full Spotify history and adds Last.fm afterwards");
-        embedDescription.AppendLine("- Recommended if you have imported Spotify on Last.fm before");
+        embedDescription.AppendLine("- Recommended if you have imported Spotify onto Last.fm before");
         embedDescription.AppendLine("- Plays from other music apps you scrobbled to Last.fm will not be included");
         embedDescription.AppendLine();
 
-        embedDescription.AppendLine("**Spotify until Last.fm**");
+        embedDescription.AppendLine("**Spotify until full Last.fm**");
         embedDescription.AppendLine("- Uses your Spotify history up until the point you started scrobbling on Last.fm");
-        embedDescription.AppendLine("- Do not use this if you have imported on Last.fm before");
+        embedDescription.AppendLine("- Do not use this if you have imported onto Last.fm before");
         embedDescription.AppendLine("- Best if you have scrobbles on Last.fm from sources other then Spotify");
 
         if (!hasImported)
