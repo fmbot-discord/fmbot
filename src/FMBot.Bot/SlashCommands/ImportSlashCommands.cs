@@ -110,7 +110,7 @@ public class ImportSlashCommands : InteractionModuleBase
             embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
             var message = await FollowupAsync(embed: embed.Build());
 
-            var imports = await this._importService.HandleSpotifyFiles(attachments);
+            var imports = await this._importService.HandleSpotifyFiles(contextUser, attachments);
 
             if (!imports.success)
             {
@@ -143,7 +143,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             await UpdateImportEmbed(message, embed, description, $"- **{imports.result.Count}** Spotify imports found");
 
-            var plays = await this._importService.SpotifyImportToUserPlays(contextUser.UserId, imports.result);
+            var plays = await this._importService.SpotifyImportToUserPlays(contextUser, imports.result);
             await UpdateImportEmbed(message, embed, description, $"- **{plays.Count}** actual plays found");
 
             var playsWithoutDuplicates =
@@ -152,7 +152,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             if (playsWithoutDuplicates.Count > 0)
             {
-                await this._importService.InsertImportPlays(playsWithoutDuplicates);
+                await this._importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
                 await UpdateImportEmbed(message, embed, description, $"- Added plays to database");
 
                 if (contextUser.DataSource == DataSource.LastFm)
@@ -164,7 +164,7 @@ public class ImportSlashCommands : InteractionModuleBase
             await this._indexService.RecalculateTopLists(contextUser);
             await UpdateImportEmbed(message, embed, description, $"- Recalculated top lists");
 
-            await this._importService.UpdateExistingPlays(contextUser.UserId);
+            await this._importService.UpdateExistingPlays(contextUser);
 
             var files = new StringBuilder();
             foreach (var attachment in imports.processedFiles.OrderBy(o => o).Take(4))
@@ -173,10 +173,16 @@ public class ImportSlashCommands : InteractionModuleBase
             }
             if (imports.processedFiles.Count > 4)
             {
-                files.AppendLine($"*plus {imports.processedFiles.Count - 4} more files..*");
+                files.AppendLine($"*+ {imports.processedFiles.Count - 4} more files..*");
             }
 
             embed.AddField("Processed files", files.ToString());
+
+            var years = await this._importBuilders.GetImportedYears(contextUser.UserId);
+            if (years.Length > 0)
+            {
+                embed.AddField("Total imported plays", years);
+            }
 
             var examples = new StringBuilder();
             examples.AppendLine($"- Get an overview for each year with the `year` command");
@@ -184,12 +190,6 @@ public class ImportSlashCommands : InteractionModuleBase
             examples.AppendLine($"- Or use the `top artists` command for top lists");
 
             embed.AddField("Start exploring your full streaming history", examples);
-
-            var years = await this._importBuilders.GetImportedYears(contextUser.UserId);
-            if (years.Length > 0)
-            {
-                embed.AddField("Total imported plays", years);
-            }
 
             var components = new ComponentBuilder()
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);

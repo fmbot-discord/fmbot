@@ -791,7 +791,7 @@ public class UserSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        await this._importService.RemoveImportPlays(contextUser.UserId);
+        await this._importService.RemoveImportPlays(contextUser);
 
         var embed = new EmbedBuilder();
         embed.WithDescription($"All your imported plays have been removed from .fmbot.");
