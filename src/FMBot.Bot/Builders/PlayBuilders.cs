@@ -325,6 +325,16 @@ public class PlayBuilder
             return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
         }
 
+        if (SupporterService.IsSupporter(userSettings.UserType))
+        {
+            recentTracks.Content =
+                await this._playService.AddUserPlaysToRecentTracks(userSettings.UserId, recentTracks.Content);
+        }
+        else
+        {
+            recentTracks.Content.RecentTracks = recentTracks.Content.RecentTracks.Take(120).ToList();
+        }
+
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"
@@ -354,7 +364,6 @@ public class PlayBuilder
         var pages = new List<PageBuilder>();
 
         var trackPages = recentTracks.Content.RecentTracks
-            .Take(120)
             .ToList()
             .ChunkBy(6);
         var pageCounter = 1;
@@ -371,6 +380,11 @@ public class PlayBuilder
             var footer = new StringBuilder();
             footer.Append($"Page {pageCounter}/{trackPages.Count}");
             footer.Append($" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles");
+
+            if (trackPageString.Length > 4000)
+            {
+                throw new Exception();
+            }
 
             var page = new PageBuilder()
                 .WithDescription(trackPageString.ToString())
@@ -394,7 +408,15 @@ public class PlayBuilder
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        if (SupporterService.IsSupporter(userSettings.UserType))
+        {
+            response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        }
+        else
+        {
+            response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        }
+
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

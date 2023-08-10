@@ -938,22 +938,24 @@ public class UserService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        if (user.RymEnabled != true)
+        var userToUpdate = await db.Users.FindAsync(user.UserId);
+
+        if (userToUpdate.RymEnabled != true)
         {
-            user.RymEnabled = true;
+            userToUpdate.RymEnabled = true;
         }
         else
         {
-            user.RymEnabled = false;
+            userToUpdate.RymEnabled = false;
         }
 
-        db.Update(user);
+        db.Update(userToUpdate);
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
+        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
 
-        return user.RymEnabled;
+        return userToUpdate.RymEnabled;
     }
 
     public async Task ToggleBotScrobblingAsync(int userId, bool? disabled)

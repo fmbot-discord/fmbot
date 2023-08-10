@@ -31,7 +31,9 @@ public class ImportBuilders
         {
             response.Embed.WithDescription($"Only supporters can import and use their Spotify history.");
 
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+            response.Components = new ComponentBuilder()
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink)
+                .WithButton("Import info", style: ButtonStyle.Link, url: "https://fmbot.xyz/importing/");
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
 
@@ -78,10 +80,9 @@ public class ImportBuilders
         description.AppendLine("3. Having issues? You can also attach each `.json` file separately");
 
         description.AppendLine("### Notes");
-        description.AppendLine("- We filter out duplicates, so don't worry about submitting the same file twice");
-        description.AppendLine("- Spotify files includes plays that you skipped quickly, we filter those out as well");
+        description.AppendLine("- We filter out duplicates and skips, so don't worry about submitting the same file twice");
         description.AppendLine("- You can select what from your import you want to use with `/import manage`");
-        description.AppendLine("- Discord mobile currently has an issue where it corrupts any `.json` file you send through it. Attach the `.zip` instead, or try using Discord desktop");
+        description.AppendLine("- Discord mobile breaks `.json` files, use the full `.zip` instead.");
 
         var importedYears = await this.GetImportedYears(context.ContextUser.UserId);
         if (importedYears != null)
@@ -104,7 +105,7 @@ public class ImportBuilders
         response.Embed.WithDescription(description.ToString());
 
         response.Components = new ComponentBuilder()
-            .WithButton("Spotify privacy settings", style: ButtonStyle.Link, url: "https://www.spotify.com/us/account/privacy/");
+            .WithButton("Spotify privacy page", style: ButtonStyle.Link, url: "https://www.spotify.com/us/account/privacy/");
 
         return response;
     }

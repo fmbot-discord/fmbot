@@ -30,7 +30,7 @@ public class ImportService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<(bool success, List<SpotifyEndSongImportModel> result, List<string> processedFiles)> HandleSpotifyFiles(IEnumerable<IAttachment> attachments)
+    public async Task<(bool success, List<SpotifyEndSongImportModel> result, List<string> processedFiles)> HandleSpotifyFiles(User user, IEnumerable<IAttachment> attachments)
     {
         try
         {
@@ -50,7 +50,7 @@ public class ImportService
                 }
                 catch (Exception e)
                 {
-                    Log.Error("Error in import .zip file ({fileName})", attachment.Key, e);
+                    Log.Error("Importing: {userId} / {discordUserId} - Error in import .zip file ({fileName})", user.UserId, user.DiscordUserId, attachment.Key, e);
                 }
             }
             foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".zip")).GroupBy(g => g.Filename))
@@ -70,7 +70,7 @@ public class ImportService
                     }
                     catch (Exception e)
                     {
-                        Log.Error("Error in import .zip file ({fileName})", entry.Name, e);
+                        Log.Error("Importing: {userId} / {discordUserId} - Error in import .zip file ({fileName})", user.UserId, user.DiscordUserId, entry.Name, e);
                     }
                 }
             }
@@ -79,12 +79,12 @@ public class ImportService
         }
         catch (Exception e)
         {
-            Log.Error("Error while attempting to process Spotify import file", e);
+            Log.Error("Importing: {userId} / {discordUserId} - Error while attempting to process Spotify import file", user.UserId, user.DiscordUserId, e);
             return (false, null, null);
         }
     }
 
-    public async Task<List<UserPlay>> SpotifyImportToUserPlays(int userId, List<SpotifyEndSongImportModel> spotifyPlays)
+    public async Task<List<UserPlay>> SpotifyImportToUserPlays(User user, List<SpotifyEndSongImportModel> spotifyPlays)
     {
         var userPlays = new List<UserPlay>();
 
@@ -101,7 +101,7 @@ public class ImportService
             {
                 userPlays.Add(new UserPlay
                 {
-                    UserId = userId,
+                    UserId = user.UserId,
                     TimePlayed = DateTime.SpecifyKind(spotifyPlay.Ts, DateTimeKind.Utc),
                     ArtistName = spotifyPlay.MasterMetadataAlbumArtistName,
                     AlbumName = spotifyPlay.MasterMetadataAlbumAlbumName,
@@ -116,7 +116,8 @@ public class ImportService
             }
         }
 
-        Log.Information("Importing: SpotifyImportToUserPlays found {validPlays} valid plays and {invalidPlays} invalid plays", userPlays.Count, invalidPlays);
+        Log.Information("Importing: {userId} / {discordUserId} - SpotifyImportToUserPlays found {validPlays} valid plays and {invalidPlays} invalid plays",
+            user.UserId, user.DiscordUserId, userPlays.Count, invalidPlays);
 
         return userPlays;
     }
@@ -146,16 +147,16 @@ public class ImportService
         return playsToReturn;
     }
 
-    public async Task UpdateExistingPlays(int userId)
+    public async Task UpdateExistingPlays(User user)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        await PlayRepository.SetDefaultSourceForPlays(userId, connection);
-        Log.Information("Importing: Set default source for {userId}", userId);
+        await PlayRepository.SetDefaultSourceForPlays(user.UserId, connection);
+        Log.Information("Importing: {userId} / {discordUserId} - Set default data source", user.UserId, user.DiscordUserId);
     }
 
-    public async Task InsertImportPlays(IList<UserPlay> plays)
+    public async Task InsertImportPlays(User user, IList<UserPlay> plays)
     {
         if (plays != null && plays.Any())
         {
@@ -163,22 +164,22 @@ public class ImportService
             await connection.OpenAsync();
 
             var inserted = await PlayRepository.InsertTimeSeriesPlays(plays, connection);
-            Log.Information("Importing: Inserted {insertCount} plays (Should be {importCount}) for {userId}", inserted, plays.Count(), plays.First().UserId);
+            Log.Information("Importing: {userId} / {discordUserId} - Inserted {insertCount} plays (Should be {importCount})", user.UserId, user.DiscordUserId, inserted, plays.Count);
         }
         else
         {
-            Log.Error("Importing: Tried to insert 0 import plays!");
+            Log.Error("Importing: {userId} / {discordUserId} Tried to insert 0 import plays!", user.UserId, user.DiscordUserId);
         }
     }
 
-    public async Task RemoveImportPlays(int userId)
+    public async Task RemoveImportPlays(User user)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        await PlayRepository.RemoveAllImportPlays(userId, connection);
+        await PlayRepository.RemoveAllImportPlays(user.UserId, connection);
 
-        Log.Information("Importing: Removed imported plays for {userId}", userId);
+        Log.Information("Importing: {userId} / {discordUserId} - Removed imported plays", user.UserId, user.DiscordUserId);
     }
 
     public async Task<bool> HasImported(int userId)

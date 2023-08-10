@@ -11,6 +11,7 @@ using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -24,6 +25,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Genius.Models.User;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
 
@@ -824,9 +826,28 @@ public class PlayService
         return userPlays;
     }
 
+    public async Task<bool> UserHasImportedLastFm(int userId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var plays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+
+        if (!plays.Any() || plays.Count < 2000)
+        {
+            return false;
+        }
+
+        return plays
+            .Where(w => w.PlaySource == PlaySource.LastFm)
+            .GroupBy(g => g.TimePlayed.Date)
+            .Count(w => w.Count() > 2500) >= 7;
+    }
+
     public static bool UserHasImported(IEnumerable<UserPlay> userPlays)
     {
         return userPlays
+            .Where(w => w.PlaySource == PlaySource.LastFm)
             .GroupBy(g => g.TimePlayed.Date)
             .Count(w => w.Count() > 2500) >= 7;
     }
@@ -845,9 +866,60 @@ public class PlayService
             {
                 plays = PlayDataSourceRepository.GetFinalUserPlays(importUser, plays);
             }
+            else if (plays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
+            {
+                plays = plays.Where(w => w.PlaySource != PlaySource.SpotifyImport).ToList();
+            }
         }
 
-
         return plays;
+    }
+
+    public async Task<RecentTrackList> AddUserPlaysToRecentTracks(int userId, RecentTrackList recentTracks)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var plays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+
+        var importUser = await UserRepository.GetImportUserForUserId(userId, connection, true);
+        if (importUser != null)
+        {
+            plays = PlayDataSourceRepository.GetFinalUserPlays(importUser, plays);
+        }
+
+        var firstRecentTrack = recentTracks.RecentTracks
+            .Where(w => w.TimePlayed != null)
+            .MinBy(o => o.TimePlayed);
+
+        var playsToAdd = plays.Where(w => w.TimePlayed < firstRecentTrack.TimePlayed);
+
+        foreach (var play in playsToAdd)
+        {
+            recentTracks.RecentTracks.Add(UserPlayToRecentTrack(play));
+        }
+
+        recentTracks.TotalAmount = recentTracks.RecentTracks.Count;
+
+        recentTracks.RecentTracks = recentTracks.RecentTracks
+            .OrderByDescending(o => o.NowPlaying)
+            .ThenByDescending(o => o.TimePlayed)
+            .ToList();
+
+        return recentTracks;
+    }
+
+    private static RecentTrack UserPlayToRecentTrack(UserPlay userPlay)
+    {
+        return new RecentTrack
+        {
+            AlbumName = userPlay.AlbumName,
+            AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(userPlay.ArtistName, userPlay.AlbumName),
+            ArtistName = userPlay.ArtistName,
+            ArtistUrl = LastfmUrlExtensions.GetArtistUrl(userPlay.ArtistName),
+            TrackName = userPlay.TrackName,
+            TrackUrl = LastfmUrlExtensions.GetTrackUrl(userPlay.ArtistName, userPlay.TrackName),
+            TimePlayed = userPlay.TimePlayed
+        };
     }
 }

@@ -11,12 +11,31 @@ public static class LastfmUrlExtensions
 
     public static string GetAlbumUrl(string artistName, string albumName)
     {
-        return $"https://last.fm/music/{UrlEncoder.Default.Encode(artistName)}/{UrlEncoder.Default.Encode(albumName)}";
+        if (albumName == null)
+        {
+            return null;
+        }
+
+        var encodedAlbumName = UrlEncoder.Default.Encode(albumName);
+
+        if (encodedAlbumName.Length > 400)
+        {
+            return null;
+        }
+
+        return $"https://last.fm/music/{UrlEncoder.Default.Encode(artistName)}/{encodedAlbumName}";
     }
 
     public static string GetTrackUrl(string artistName, string trackName)
     {
-        return $"https://last.fm/music/{UrlEncoder.Default.Encode(artistName)}/_/{UrlEncoder.Default.Encode(trackName)}";
+        var encodedTrackName = UrlEncoder.Default.Encode(trackName);
+
+        if (encodedTrackName.Length > 400)
+        {
+            return null;
+        }
+
+        return $"https://last.fm/music/{UrlEncoder.Default.Encode(artistName)}/_/{encodedTrackName}";
     }
 
     public static string GetUserUrl(string userName, string addOn = null)

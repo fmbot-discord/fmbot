@@ -16,7 +16,6 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using Fergun.Interactive;
-using FMBot.Domain;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -28,7 +27,6 @@ public class ImportSlashCommands : InteractionModuleBase
     private readonly ImportService _importService;
     private readonly PlayService _playService;
     private readonly IIndexService _indexService;
-    private readonly UserBuilder _userBuilder;
     private readonly ImportBuilders _importBuilders;
     private InteractiveService Interactivity { get; }
 
@@ -37,7 +35,6 @@ public class ImportSlashCommands : InteractionModuleBase
         ImportService importService,
         PlayService playService,
         IIndexService indexService,
-        UserBuilder userBuilder,
         InteractiveService interactivity,
         ImportBuilders importBuilders)
     {
@@ -46,7 +43,6 @@ public class ImportSlashCommands : InteractionModuleBase
         this._importService = importService;
         this._playService = playService;
         this._indexService = indexService;
-        this._userBuilder = userBuilder;
         this.Interactivity = interactivity;
         this._importBuilders = importBuilders;
     }
@@ -97,7 +93,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
         var description = new StringBuilder();
         var embed = new EmbedBuilder();
-        embed.WithColor(DiscordConstants.SpotifyColorGreen);
+        embed.WithColor(DiscordConstants.InformationColorBlue);
 
         if (noAttachments)
         {
@@ -114,12 +110,12 @@ public class ImportSlashCommands : InteractionModuleBase
             embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
             var message = await FollowupAsync(embed: embed.Build());
 
-            var imports = await this._importService.HandleSpotifyFiles(attachments);
+            var imports = await this._importService.HandleSpotifyFiles(contextUser, attachments);
 
             if (!imports.success)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file. Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`." , true);
+                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file. Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.", true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
@@ -147,7 +143,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             await UpdateImportEmbed(message, embed, description, $"- **{imports.result.Count}** Spotify imports found");
 
-            var plays = await this._importService.SpotifyImportToUserPlays(contextUser.UserId, imports.result);
+            var plays = await this._importService.SpotifyImportToUserPlays(contextUser, imports.result);
             await UpdateImportEmbed(message, embed, description, $"- **{plays.Count}** actual plays found");
 
             var playsWithoutDuplicates =
@@ -156,24 +152,37 @@ public class ImportSlashCommands : InteractionModuleBase
 
             if (playsWithoutDuplicates.Count > 0)
             {
-                await this._importService.InsertImportPlays(playsWithoutDuplicates);
+                await this._importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
                 await UpdateImportEmbed(message, embed, description, $"- Added plays to database");
 
                 if (contextUser.DataSource == DataSource.LastFm)
                 {
-                    await this._userService.SetDataSource(contextUser, DataSource.FullSpotifyThenLastFm);
+                    var userHasImportedLastfm = await this._playService.UserHasImportedLastFm(contextUser.UserId);
+
+                    if (userHasImportedLastfm)
+                    {
+                        await this._userService.SetDataSource(contextUser, DataSource.FullSpotifyThenLastFm);
+                    }
+                    else
+                    {
+                        await this._userService.SetDataSource(contextUser, DataSource.SpotifyThenFullLastFm);
+                    }
                 }
             }
 
             await this._indexService.RecalculateTopLists(contextUser);
             await UpdateImportEmbed(message, embed, description, $"- Recalculated top lists");
 
-            await this._importService.UpdateExistingPlays(contextUser.UserId);
+            await this._importService.UpdateExistingPlays(contextUser);
 
             var files = new StringBuilder();
-            foreach (var attachment in imports.processedFiles.OrderBy(o => o))
+            foreach (var attachment in imports.processedFiles.OrderBy(o => o).Take(4))
             {
                 files.AppendLine($"`{attachment}`");
+            }
+            if (imports.processedFiles.Count > 4)
+            {
+                files.AppendLine($"*+ {imports.processedFiles.Count - 4} more files..*");
             }
 
             embed.AddField("Processed files", files.ToString());
@@ -184,9 +193,39 @@ public class ImportSlashCommands : InteractionModuleBase
                 embed.AddField("Total imported plays", years);
             }
 
+            var examples = new StringBuilder();
+            examples.AppendLine($"- Get an overview for each year with the `year` command");
+            examples.AppendLine($"- View all your combined plays with `recent`");
+            examples.AppendLine($"- Or use the `top artists` command for top lists");
+
+            embed.AddField("Start exploring your full streaming history", examples);
+
+            contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var importSetting = new StringBuilder();
+            switch (contextUser.DataSource)
+            {
+                case DataSource.LastFm:
+                    importSetting.AppendLine(
+                        "Your play data source is currently still set to just Last.fm. You can change this manually with the button below.");
+                    break;
+                case DataSource.FullSpotifyThenLastFm:
+                    importSetting.AppendLine(
+                        "Your data source has been set to `Full Spotify, then Last.fm`. This uses your full Spotify history and adds your Last.fm scrobbles afterwards.");
+                    break;
+                case DataSource.SpotifyThenFullLastFm:
+                    importSetting.AppendLine(
+                        "Your data source has been set to `Spotify, then full Last.fm`. This uses your Spotify history up until you started using Last.fm.");
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            embed.AddField("Current import setting", importSetting);
+
             var components = new ComponentBuilder()
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
 
+            embed.WithColor(DiscordConstants.SpotifyColorGreen);
             await UpdateImportEmbed(message, embed, description, $"- ✅ Import complete", true, components);
 
             this.Context.LogCommandUsed();
