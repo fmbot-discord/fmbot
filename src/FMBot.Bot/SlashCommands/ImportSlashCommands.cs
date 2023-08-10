@@ -16,8 +16,6 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using Fergun.Interactive;
-using FMBot.Domain;
-using System.Net.Mail;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -29,7 +27,6 @@ public class ImportSlashCommands : InteractionModuleBase
     private readonly ImportService _importService;
     private readonly PlayService _playService;
     private readonly IIndexService _indexService;
-    private readonly UserBuilder _userBuilder;
     private readonly ImportBuilders _importBuilders;
     private InteractiveService Interactivity { get; }
 
@@ -38,7 +35,6 @@ public class ImportSlashCommands : InteractionModuleBase
         ImportService importService,
         PlayService playService,
         IIndexService indexService,
-        UserBuilder userBuilder,
         InteractiveService interactivity,
         ImportBuilders importBuilders)
     {
@@ -47,7 +43,6 @@ public class ImportSlashCommands : InteractionModuleBase
         this._importService = importService;
         this._playService = playService;
         this._indexService = indexService;
-        this._userBuilder = userBuilder;
         this.Interactivity = interactivity;
         this._importBuilders = importBuilders;
     }
@@ -98,7 +93,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
         var description = new StringBuilder();
         var embed = new EmbedBuilder();
-        embed.WithColor(DiscordConstants.SpotifyColorGreen);
+        embed.WithColor(DiscordConstants.InformationColorBlue);
 
         if (noAttachments)
         {
@@ -172,16 +167,23 @@ public class ImportSlashCommands : InteractionModuleBase
             await this._importService.UpdateExistingPlays(contextUser.UserId);
 
             var files = new StringBuilder();
-            foreach (var attachment in imports.processedFiles.OrderBy(o => o).Take(5))
+            foreach (var attachment in imports.processedFiles.OrderBy(o => o).Take(4))
             {
                 files.AppendLine($"`{attachment}`");
             }
-            if (imports.processedFiles.Count > 5)
+            if (imports.processedFiles.Count > 4)
             {
-                files.AppendLine($"+ {imports.processedFiles.Count - 5} more files...");
+                files.AppendLine($"*plus {imports.processedFiles.Count - 4} more files..*");
             }
 
             embed.AddField("Processed files", files.ToString());
+
+            var examples = new StringBuilder();
+            examples.AppendLine($"- Get an overview for each year with the `year` command");
+            examples.AppendLine($"- View all your combined plays with `recent`");
+            examples.AppendLine($"- Or use the `top artists` command for top lists");
+
+            embed.AddField("Start exploring your full streaming history", examples);
 
             var years = await this._importBuilders.GetImportedYears(contextUser.UserId);
             if (years.Length > 0)
@@ -192,6 +194,7 @@ public class ImportSlashCommands : InteractionModuleBase
             var components = new ComponentBuilder()
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
 
+            embed.WithColor(DiscordConstants.SpotifyColorGreen);
             await UpdateImportEmbed(message, embed, description, $"- ✅ Import complete", true, components);
 
             this.Context.LogCommandUsed();
