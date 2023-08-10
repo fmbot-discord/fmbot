@@ -17,6 +17,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using Fergun.Interactive;
 using FMBot.Domain;
+using System.Net.Mail;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -171,9 +172,13 @@ public class ImportSlashCommands : InteractionModuleBase
             await this._importService.UpdateExistingPlays(contextUser.UserId);
 
             var files = new StringBuilder();
-            foreach (var attachment in imports.processedFiles.OrderBy(o => o))
+            foreach (var attachment in imports.processedFiles.OrderBy(o => o).Take(5))
             {
                 files.AppendLine($"`{attachment}`");
+            }
+            if (imports.processedFiles.Count > 5)
+            {
+                files.AppendLine($"+ {imports.processedFiles.Count - 5} more files...");
             }
 
             embed.AddField("Processed files", files.ToString());
