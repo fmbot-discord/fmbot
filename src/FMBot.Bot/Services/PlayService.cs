@@ -11,6 +11,7 @@ using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -846,8 +847,11 @@ public class PlayService
             {
                 plays = PlayDataSourceRepository.GetFinalUserPlays(importUser, plays);
             }
+            else if (plays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
+            {
+                plays = plays.Where(w => w.PlaySource != PlaySource.SpotifyImport).ToList();
+            }
         }
-
 
         return plays;
     }
