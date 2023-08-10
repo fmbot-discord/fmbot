@@ -90,7 +90,7 @@ public static class StringService
             {
                 var searchTerm = track.AlbumName.Replace(" - Single", "");
                 searchTerm = searchTerm.Replace(" - EP", "");
-                searchTerm = $"{StringExtensions.TruncateLongString(track.ArtistName, 30)} {StringExtensions.TruncateLongString(searchTerm, 50)}";
+                searchTerm = $"{StringExtensions.TruncateLongString(track.ArtistName, 25)} {StringExtensions.TruncateLongString(searchTerm, 25)}";
 
                 var url = QueryHelpers.AddQueryString("https://rateyourmusic.com/search",
                     new Dictionary<string, string>
@@ -99,7 +99,7 @@ public static class StringService
                     {"searchtype", $"l"}
                 });
 
-                if (url.Length < 200)
+                if (url.Length < 180)
                 {
                     description.Append($"*[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 160))}]({url})*");
                 }
