@@ -696,7 +696,7 @@ public class IndexService : IIndexService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var recentlyUsed = DateTime.UtcNow.AddDays(-7);
+        var recentlyUsed = DateTime.UtcNow.AddDays(-15);
         return await db.Users
             .AsQueryable()
             .Where(f => f.LastIndexed != null &&
