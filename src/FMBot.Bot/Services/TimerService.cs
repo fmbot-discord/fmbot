@@ -159,12 +159,12 @@ public class TimerService
             {
                 if (!PublicProperties.IssuesAtLastFm)
                 {
-                    await this._client.SetGameAsync(
-                        $"{this._botSettings.Bot.Prefix}fm | {this._client.Guilds.Count} servers | fmbot.xyz", type: ActivityType.Listening);
+                    await this._client.SetCustomStatusAsync(
+                        $"{this._botSettings.Bot.Prefix}fm — fmbot.xyz — {this._client.Guilds.Count} servers");
                 }
                 else
                 {
-                    await this._client.SetGameAsync(
+                    await this._client.SetCustomStatusAsync(
                         $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
                 }
 
