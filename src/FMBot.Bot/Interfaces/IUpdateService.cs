@@ -14,7 +14,7 @@ public interface IUpdateService
     Task<Response<RecentTrackList>> UpdateUser(UpdateUserQueueItem queueItem);
     Task<int> UpdateUser(User user);
 
-    Task<Response<RecentTrackList>> UpdateUserAndGetRecentTracks(User user);
+    Task<Response<RecentTrackList>> UpdateUserAndGetRecentTracks(User user, bool bypassIndexPending = false);
 
     Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeAuthorizedLastUpdated, DateTime timeUnauthorizedFilter);
 

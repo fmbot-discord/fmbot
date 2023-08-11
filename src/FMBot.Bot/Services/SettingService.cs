@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -501,6 +502,65 @@ public class SettingService
         }
 
         return (true, extraOptions);
+    }
+
+    public static (UpdateType updateType, bool optionPicked, string description) GetUpdateType(string extraOptions)
+    {
+        var updateType = new UpdateType();
+        var optionPicked = false;
+        var description = new StringBuilder();
+
+        var full = new[] { "full", "force", "f" };
+        if (Contains(extraOptions, full))
+        {
+            updateType |= UpdateType.Full;
+            optionPicked = true;
+            description.AppendLine("- Everything (full update)");
+        }
+        else
+        {
+            var allPlays = new[] { "plays", "allplays" };
+            if (Contains(extraOptions, allPlays))
+            {
+                updateType |= UpdateType.AllPlays;
+                optionPicked = true;
+                description.AppendLine("- All scrobbles");
+            }
+
+            var artists = new[] { "artists", "artist", "a" };
+            if (Contains(extraOptions, artists))
+            {
+                updateType |= UpdateType.Artist;
+                optionPicked = true;
+                description.AppendLine("- Your top artists");
+            }
+
+            var albums = new[] { "albums", "album", "ab" };
+            if (Contains(extraOptions, albums))
+            {
+                updateType |= UpdateType.Albums;
+                optionPicked = true;
+                description.AppendLine("- Your top albums");
+            }
+
+            var tracks = new[] { "tracks", "track", "tr" };
+            if (Contains(extraOptions, tracks))
+            {
+                updateType |= UpdateType.Tracks;
+                optionPicked = true;
+                description.AppendLine("- Your top tracks");
+            }
+        }
+
+        var discogs = new[] { "discogs", "discog", "vinyl", "collection" };
+        if (Contains(extraOptions, discogs))
+        {
+            updateType |= UpdateType.Discogs;
+            optionPicked = true;
+            description.AppendLine("- Your Discogs collection");
+        }
+
+        return (updateType, optionPicked, description.ToString());
     }
 
     public async Task<UserSettingsModel> GetUser(

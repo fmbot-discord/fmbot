@@ -1,5 +1,8 @@
 using System.Threading.Tasks;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Npgsql;
 using Serilog;
 using Dapper;
@@ -57,39 +60,34 @@ public class UserRepository
         return user;
     }
 
-    public static async Task SetUserIndexTime(int userId, DateTime now, DateTime lastScrobble, NpgsqlConnection connection)
+    public static async Task SetUserIndexTime(int userId, NpgsqlConnection connection, IEnumerable<UserPlay> plays)
     {
         Log.Information($"Setting user index time for user {userId}");
+        var now = DateTime.UtcNow;
 
-        await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now:u}', last_updated='{now:u}', last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {userId};", connection);
-        await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
+        var lastScrobble = plays?.MaxBy(o => o.TimePlayed)?.TimePlayed;
+
+        if (lastScrobble.HasValue)
+        {
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now:u}', last_updated='{now:u}', last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {userId};", connection);
+            await setIndexTime.ExecuteNonQueryAsync();
+        }
+        else
+        {
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now:u}', last_updated='{now:u}' WHERE user_id = {userId};", connection);
+            await setIndexTime.ExecuteNonQueryAsync();
+        }
     }
 
-    public static async Task<DateTime> SetUserSignUpTime(User user, DateTime signUpDateTime, NpgsqlConnection connection,
-        bool lastfmPro)
+    public static async Task<DateTime> SetUserPlayStats(User user, NpgsqlConnection connection, DataSourceUser dataSourceUser)
     {
-        Log.Information($"Setting user index signup time ({signUpDateTime}) for user {user.UserId}");
+        Log.Information($"Import: Setting user stats for {user.UserId}");
 
-        var importUser = await GetImportUserForUserId(user.UserId, connection);
-        if (importUser != null)
-        {
-            const string getFirstImportedPlayDateQuery = "SELECT time_played FROM user_plays WHERE play_source != 0 AND user_id = @userId ORDER BY time_played ASC LIMIT 1";
+        await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET registered_last_fm='{dataSourceUser.Registered:u}', lastfm_pro = '{dataSourceUser.Subscriber}', total_playcount = {dataSourceUser.Playcount} " +
+                                                         $"WHERE user_id = {user.UserId};", connection);
 
-            var firstImportPlay = await connection.QueryFirstOrDefaultAsync<DateTime?>(getFirstImportedPlayDateQuery, new
-            {
-                user.UserId
-            });
-
-            if (firstImportPlay != null)
-            {
-                signUpDateTime = firstImportPlay.Value;
-                user.RegisteredLastFm = firstImportPlay.Value;
-            }
-        }
-
-        await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET registered_last_fm='{signUpDateTime:u}', lastfm_pro = '{lastfmPro}' WHERE user_id = {user.UserId};", connection);
         await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-        return signUpDateTime;
+        return dataSourceUser.Registered;
     }
 }

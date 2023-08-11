@@ -644,17 +644,41 @@ public class UserService
         description.AppendLine("Cached the following playcounts:");
         if (user.UserType == UserType.User)
         {
-            description.AppendLine($"- Last **{stats.PlayCount}** plays");
-            description.AppendLine($"- Top **{stats.ArtistCount}** artists");
-            description.AppendLine($"- Top **{stats.AlbumCount}** albums");
-            description.AppendLine($"- Top **{stats.TrackCount}** tracks");
+            if (stats.PlayCount.HasValue)
+            {
+                description.AppendLine($"- Last **{stats.PlayCount}** plays");
+            }
+            if (stats.ArtistCount.HasValue)
+            {
+                description.AppendLine($"- Top **{stats.ArtistCount}** artists");
+            }
+            if (stats.AlbumCount.HasValue)
+            {
+                description.AppendLine($"- Top **{stats.AlbumCount}** albums");
+            }
+            if (stats.TrackCount.HasValue)
+            {
+                description.AppendLine($"- Top **{stats.TrackCount}** tracks");
+            }
         }
         else
         {
-            description.AppendLine($"- **{stats.PlayCount}** plays");
-            description.AppendLine($"- **{stats.ArtistCount}** top artists");
-            description.AppendLine($"- **{stats.AlbumCount}** top albums");
-            description.AppendLine($"- **{stats.TrackCount}** top tracks");
+            if (stats.PlayCount.HasValue)
+            {
+                description.AppendLine($"- **{stats.PlayCount}** Last.fm plays");
+            }
+            if (stats.ArtistCount.HasValue)
+            {
+                description.AppendLine($"- **{stats.ArtistCount}** top artists");
+            }
+            if (stats.AlbumCount.HasValue)
+            {
+                description.AppendLine($"- **{stats.AlbumCount}** top albums");
+            }
+            if (stats.TrackCount.HasValue)
+            {
+                description.AppendLine($"- **{stats.TrackCount}** top tracks");
+            }
 
             if (stats.ImportCount != null)
             {

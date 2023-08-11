@@ -15,6 +15,10 @@ public interface IIndexService
 
     Task<IndexedUserStats> IndexUser(User user);
 
+    Task<IndexedUserStats> ModularUpdate(User user, UpdateType updateType);
+
+    bool IndexStarted(int userId);
+
     Task RecalculateTopLists(User user);
 
     Task<GuildUser> GetOrAddUserToGuild(
