@@ -650,6 +650,9 @@ public class ArtistBuilders
             }
 
             var footer = new StringBuilder();
+
+            ImportService.AddTopListImportDescription(footer, artists.PlaySource);
+
             footer.Append($"Page {pageCounter}/{artistPages.Count}");
 
             if (artists.Content.TotalAmount.HasValue)

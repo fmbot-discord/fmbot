@@ -979,6 +979,9 @@ public class TrackBuilders
             }
 
             var footer = new StringBuilder();
+
+            ImportService.AddTopListImportDescription(footer, topTracks.PlaySource);
+
             footer.Append($"Page {pageCounter}/{trackPages.Count}");
             if (topTracks.Content.TotalAmount.HasValue)
             {

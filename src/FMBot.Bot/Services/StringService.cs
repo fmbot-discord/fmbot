@@ -10,6 +10,7 @@ using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace FMBot.Bot.Services;
 
@@ -87,15 +88,25 @@ public static class StringService
         {
             if (rymEnabled == true)
             {
-                var albumQueryName = track.AlbumName.Replace(" - Single", "");
-                albumQueryName = albumQueryName.Replace(" - EP", "");
-                albumQueryName = StringExtensions.TruncateLongString(albumQueryName, 60);
+                var searchTerm = track.AlbumName.Replace(" - Single", "");
+                searchTerm = searchTerm.Replace(" - EP", "");
+                searchTerm = $"{StringExtensions.TruncateLongString(track.ArtistName, 25)} {StringExtensions.TruncateLongString(searchTerm, 25)}";
 
-                var albumRymUrl = @"https://rateyourmusic.com/search?searchterm=";
-                albumRymUrl += HttpUtility.UrlEncode($"{track.ArtistName} {albumQueryName}");
-                albumRymUrl += "&searchtype=l";
+                var url = QueryHelpers.AddQueryString("https://rateyourmusic.com/search",
+                    new Dictionary<string, string>
+                {
+                    {"searchterm", $"{searchTerm}"},
+                    {"searchtype", $"l"}
+                });
 
-                description.Append($"*[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}]({albumRymUrl})*");
+                if (url.Length < 180)
+                {
+                    description.Append($"*[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 160))}]({url})*");
+                }
+                else
+                {
+                    description.Append($"*{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}*");
+                }
             }
             else
             {
@@ -219,7 +230,7 @@ public static class StringService
             builder.AddOption(customOptionId, optionEmote, null, ButtonStyle.Primary);
         }
 
-        if (customOptionId == null && pages.Count >= 10)
+        if (customOptionId == null && pages.Count >= 25)
         {
             builder.AddOption(new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"), PaginatorAction.Jump));
         }

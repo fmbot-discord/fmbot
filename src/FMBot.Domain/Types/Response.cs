@@ -10,6 +10,8 @@ public class Response<T>
 
     public ResponseStatus? Error { get; set; }
 
+    public PlaySource? PlaySource { get; set; }
+
     public string Message { get; set; }
 
     public T Content { get; set; }
