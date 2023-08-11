@@ -230,7 +230,7 @@ public static class StringService
             builder.AddOption(customOptionId, optionEmote, null, ButtonStyle.Primary);
         }
 
-        if (customOptionId == null && pages.Count >= 10)
+        if (customOptionId == null && pages.Count >= 25)
         {
             builder.AddOption(new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"), PaginatorAction.Jump));
         }

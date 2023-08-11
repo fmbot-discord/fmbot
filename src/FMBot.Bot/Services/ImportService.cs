@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
@@ -188,5 +189,15 @@ public class ImportService
         await connection.OpenAsync();
 
         return await PlayRepository.HasImported(userId, connection);
+    }
+
+    public static string AddTopListImportDescription(StringBuilder stringBuilder, PlaySource? playSource)
+    {
+        if (playSource == PlaySource.SpotifyImport)
+        {
+            stringBuilder.AppendLine("Contains imported Spotify plays");
+        }
+
+        return null;
     }
 }

@@ -66,6 +66,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return new Response<RecentTrackList>
         {
             Success = true,
+            PlaySource = DeterminePlaySource(plays),
             Content = new RecentTrackList
             {
                 RecentTracks = plays.Select(s => new RecentTrack
@@ -119,7 +120,8 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                     TimePlayed = milestone.TimePlayed
                 }
                 : null,
-            Success = milestone != null
+            Success = milestone != null,
+            PlaySource = DeterminePlaySource(plays)
         };
     }
 
@@ -224,20 +226,24 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return PlaysToTopAlbums(plays, count);
     }
 
-    private static Response<TopAlbumList> PlaysToTopAlbums(IEnumerable<UserPlay> plays, int count)
+    private static Response<TopAlbumList> PlaysToTopAlbums(ICollection<UserPlay> plays, int count)
     {
+        var topAlbums = plays
+            .Where(w => w.AlbumName != null)
+            .GroupBy(g => new
+            {
+                ArtistName = g.ArtistName.ToLower(),
+                AlbumName = g.AlbumName.ToLower()
+            }).ToList();
+
         return new Response<TopAlbumList>
         {
             Success = true,
+            PlaySource = DeterminePlaySource(plays),
             Content = new TopAlbumList
             {
-                TopAlbums = plays
-                    .Where(w => w.AlbumName != null)
-                    .GroupBy(g => new
-                    {
-                        ArtistName = g.ArtistName.ToLower(),
-                        AlbumName = g.AlbumName.ToLower()
-                    })
+                TotalAmount = topAlbums.Count,
+                TopAlbums = topAlbums
                     .Select(s => new TopAlbum
                     {
                         ArtistName = s.First().ArtistName,
@@ -309,15 +315,20 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return PlaysToTopArtists(plays, count);
     }
 
-    private static Response<TopArtistList> PlaysToTopArtists(IEnumerable<UserPlay> plays, int count)
+    private static Response<TopArtistList> PlaysToTopArtists(ICollection<UserPlay> plays, int count)
     {
+        var topArtists = plays
+            .GroupBy(g => g.ArtistName, StringComparer.InvariantCultureIgnoreCase)
+            .ToList();
+
         return new Response<TopArtistList>
         {
             Success = true,
+            PlaySource = DeterminePlaySource(plays),
             Content = new TopArtistList
             {
-                TopArtists = plays
-                    .GroupBy(g => g.ArtistName, StringComparer.InvariantCultureIgnoreCase)
+                TotalAmount = topArtists.Count,
+                TopArtists = topArtists
                     .Select(s => new TopArtist
                     {
                         ArtistName = s.First().ArtistName,
@@ -387,19 +398,23 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return PlaysToTopTracks(plays, count);
     }
 
-    private static Response<TopTrackList> PlaysToTopTracks(IEnumerable<UserPlay> plays, int count)
+    private static Response<TopTrackList> PlaysToTopTracks(ICollection<UserPlay> plays, int count)
     {
+        var topTracks = plays
+            .GroupBy(g => new
+            {
+                ArtistName = g.ArtistName.ToLower(),
+                TrackName = g.TrackName.ToLower()
+            }).ToList();
+
         return new Response<TopTrackList>
         {
             Success = true,
+            PlaySource = DeterminePlaySource(plays),
             Content = new TopTrackList
             {
-                TopTracks = plays
-                    .GroupBy(g => new
-                    {
-                        ArtistName = g.ArtistName.ToLower(),
-                        TrackName = g.TrackName.ToLower()
-                    })
+                TotalAmount = topTracks.Count,
+                TopTracks = topTracks
                     .Select(s => new TopTrack
                     {
                         ArtistName = s.First().ArtistName,
@@ -420,5 +435,20 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
                     .ToList()
             }
         };
+    }
+
+    private static PlaySource DeterminePlaySource(ICollection<UserPlay> plays)
+    {
+        if (plays == null)
+        {
+            return PlaySource.LastFm;
+        }
+
+        if (plays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
+        {
+            return PlaySource.SpotifyImport;
+        }
+
+        return PlaySource.LastFm;
     }
 }
