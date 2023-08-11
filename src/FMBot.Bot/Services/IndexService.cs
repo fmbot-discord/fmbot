@@ -220,7 +220,7 @@ public class IndexService : IIndexService
     {
         Log.Information($"Getting plays for user {user.UserNameLastFM}");
 
-        var pages = UserHasHigherIndexLimit(user) ? 750 : 25;
+        var pages = UserHasHigherIndexLimit(user) ? 750 : 50;
 
         var recentPlays = await this._dataSourceFactory.GetRecentTracksAsync(user.UserNameLastFM, 1000,
             sessionKey: user.SessionKeyLastFm, amountOfPages: pages);
@@ -230,7 +230,7 @@ public class IndexService : IIndexService
             return new List<UserPlay>();
         }
 
-        var indexLimitFilter = DateTime.UtcNow.AddYears(-1).AddDays(-180);
+        var indexLimitFilter = DateTime.UtcNow.AddYears(-2);
         return recentPlays.Content.RecentTracks
             .Where(w => !w.NowPlaying && w.TimePlayed.HasValue)
             .Where(w => UserHasHigherIndexLimit(user) || w.TimePlayed > indexLimitFilter)

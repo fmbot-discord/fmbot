@@ -667,7 +667,7 @@ public class UserService
         }
 
         if (user.UserType == UserType.User &&
-            (stats.PlayCount >= 24900 ||
+            (stats.PlayCount >= 49900 ||
              stats.TrackCount >= 5900 ||
              stats.AlbumCount >= 4900 ||
              stats.ArtistCount >= 3900))
