@@ -132,7 +132,7 @@ public class IndexService : IIndexService
 
     public async Task<IndexedUserStats> ModularUpdate(User user, UpdateType updateType)
     {
-        Log.Information("NewIndex: {userId} / {discordUserId} / {UserNameLastFM} - Starting", user.UserId, user.UserId, user.UserNameLastFM);
+        Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Starting", user.UserId, user.UserId, user.UserNameLastFM);
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();

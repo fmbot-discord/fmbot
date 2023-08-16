@@ -257,14 +257,14 @@ public class IndexCommands : BaseCommandModule
                 return;
             }
 
-            //if (contextUser.LastIndexed > DateTime.UtcNow.AddMinutes(-30))
-            //{
-            //    await ReplyAsync(
-            //        "You can't do full updates too often. These are only meant to be used when your Last.fm history has been adjusted.\n\n" +
-            //        $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help. Spotify sync issues can't be fixed inside of .fmbot.");
-            //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-            //    return;
-            //}
+            if (contextUser.LastIndexed > DateTime.UtcNow.AddMinutes(-30))
+            {
+                await ReplyAsync(
+                    "You can't do full updates too often. These are only meant to be used when your Last.fm history has been adjusted.\n\n" +
+                    $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help. Spotify sync issues can't be fixed inside of .fmbot.");
+                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                return;
+            }
 
             var indexDescription = new StringBuilder();
             indexDescription.AppendLine($"<a:loading:821676038102056991> Fetching Last.fm playcounts for user {contextUser.UserNameLastFM}...");
