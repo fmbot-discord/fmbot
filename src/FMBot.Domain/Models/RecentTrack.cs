@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FMBot.Domain.Enums;
 
 namespace FMBot.Domain.Models;
 
@@ -11,7 +12,7 @@ public class RecentTrackList
 
     public string UserUrl { get; set; }
     public string UserRecentTracksUrl { get; set; }
-        
+
     public List<RecentTrack> RecentTracks { get; set; }
 }
 
@@ -31,4 +32,6 @@ public class RecentTrack
     public string AlbumName { get; set; }
     public string AlbumUrl { get; set; }
     public string AlbumCoverUrl { get; set; }
+
+    public PlaySource? PlaySource { get; set; }
 }

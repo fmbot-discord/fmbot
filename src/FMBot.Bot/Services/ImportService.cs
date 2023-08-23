@@ -197,7 +197,7 @@ public class ImportService
         return await PlayRepository.HasImported(userId, connection);
     }
 
-    public static string AddTopListImportDescription(StringBuilder stringBuilder, PlaySource? playSource)
+    public static string AddImportDescription(StringBuilder stringBuilder, PlaySource? playSource)
     {
         if (playSource == PlaySource.SpotifyImport)
         {

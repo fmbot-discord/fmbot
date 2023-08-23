@@ -651,7 +651,7 @@ public class ArtistBuilders
 
             var footer = new StringBuilder();
 
-            ImportService.AddTopListImportDescription(footer, artists.PlaySource);
+            ImportService.AddImportDescription(footer, artists.PlaySource);
 
             footer.Append($"Page {pageCounter}/{artistPages.Count}");
 

@@ -1184,7 +1184,7 @@ public class AlbumBuilders
 
             var footer = new StringBuilder();
 
-            ImportService.AddTopListImportDescription(footer, albums.PlaySource);
+            ImportService.AddImportDescription(footer, albums.PlaySource);
 
             footer.Append($"Page {pageCounter}/{albumPages.Count}");
             if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)

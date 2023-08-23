@@ -919,7 +919,8 @@ public class PlayService
             ArtistUrl = LastfmUrlExtensions.GetArtistUrl(userPlay.ArtistName),
             TrackName = userPlay.TrackName,
             TrackUrl = LastfmUrlExtensions.GetTrackUrl(userPlay.ArtistName, userPlay.TrackName),
-            TimePlayed = userPlay.TimePlayed
+            TimePlayed = userPlay.TimePlayed,
+            PlaySource = userPlay.PlaySource
         };
     }
 }
