@@ -69,3 +69,10 @@ public class SpotifyEndSongImportModel
     //[JsonPropertyName("incognito_mode")]
     //public bool IncognitoMode { get; set; }
 }
+
+public enum ImportStatus
+{
+    Success,
+    UnknownFailure,
+    WrongPackageFailure
+}

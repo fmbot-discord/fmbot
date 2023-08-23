@@ -112,10 +112,21 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var imports = await this._importService.HandleSpotifyFiles(contextUser, attachments);
 
-            if (!imports.success)
+            if (imports.status == ImportStatus.UnknownFailure)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateImportEmbed(message, embed, description, $"- ❌ Invalid Spotify import file. Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.", true);
+                await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import file. Make sure you select the right files, for example `my_spotify_data.zip` or `Streaming_History_Audio_x.json`.", true);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            if (imports.status == ImportStatus.WrongPackageFailure)
+            {
+                embed.WithColor(DiscordConstants.WarningColorOrange);
+                await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import files. You have uploaded the wrong Spotify data package.\n\n" +
+                                                                     $"We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. Instead you have uploaded the 'Account data' package.", true,
+                    image: "https://cdn.discordapp.com/attachments/821661709214154762/1139326340454158346/IMG_1548.png",
+                    components: new ComponentBuilder().WithButton("Spotify privacy page", style: ButtonStyle.Link, url: "https://www.spotify.com/us/account/privacy/"));
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
@@ -236,13 +247,18 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    private static async Task UpdateImportEmbed(IUserMessage msg, EmbedBuilder embed, StringBuilder builder, string lineToAdd, bool lastLine = false, ComponentBuilder components = null)
+    private static async Task UpdateImportEmbed(IUserMessage msg, EmbedBuilder embed, StringBuilder builder, string lineToAdd, bool lastLine = false, ComponentBuilder components = null, string image = null)
     {
         builder.AppendLine(lineToAdd);
 
         const string loadingLine = "- <a:loading:821676038102056991> Processing...";
 
         embed.WithDescription(builder + (lastLine ? null : loadingLine));
+
+        if (image != null)
+        {
+            embed.WithImageUrl(image);
+        }
 
         await msg.ModifyAsync(m =>
         {
