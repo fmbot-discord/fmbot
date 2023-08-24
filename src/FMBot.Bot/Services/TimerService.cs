@@ -10,6 +10,7 @@ using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -34,6 +35,7 @@ public class TimerService
     private readonly FeaturedService _featuredService;
     private readonly SupporterService _supporterService;
     private readonly IMemoryCache _cache;
+    private readonly DiscogsService _discogsService;
 
     public FeaturedLog CurrentFeatured;
 
@@ -46,7 +48,8 @@ public class TimerService
         IOptions<BotSettings> botSettings,
         FeaturedService featuredService,
         IMemoryCache cache,
-        SupporterService supporterService)
+        SupporterService supporterService,
+        DiscogsService discogsService)
     {
         this._client = client;
         this._userService = userService;
@@ -56,6 +59,7 @@ public class TimerService
         this._featuredService = featuredService;
         this._cache = cache;
         this._supporterService = supporterService;
+        this._discogsService = discogsService;
         this._updateService = updateService;
         this._botSettings = botSettings.Value;
 
@@ -96,6 +100,8 @@ public class TimerService
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
+        _ = this.UpdateDiscogsUsers();
+
         if (this._botSettings.Bot.FeaturedMaster == true)
         {
             Log.Information($"RecurringJob: Adding {nameof(UpdateDiscordSupporters)}");
@@ -112,6 +118,9 @@ public class TimerService
 
             Log.Information($"RecurringJob: Adding {nameof(UpdateExistingSupporters)}");
             RecurringJob.AddOrUpdate(nameof(UpdateExistingSupporters), () => UpdateExistingSupporters(), "0 * * * *");
+
+            Log.Information($"RecurringJob: Adding {nameof(UpdateDiscogsUsers)}");
+            RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");
         }
         else
         {
@@ -275,6 +284,12 @@ public class TimerService
     public async Task CheckExpiredDiscordSupporters()
     {
         await this._supporterService.CheckExpiredDiscordSupporters();
+    }
+
+    public async Task UpdateDiscogsUsers()
+    {
+        var usersToUpdate = await this._discogsService.GetOutdatedDiscogsUsers();
+        await this._discogsService.UpdateDiscogsUsers(usersToUpdate);
     }
 
     public static async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)

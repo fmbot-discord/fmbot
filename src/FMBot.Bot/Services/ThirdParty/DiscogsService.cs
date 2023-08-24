@@ -8,6 +8,8 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services.ThirdParty;
 
@@ -79,13 +81,11 @@ public class DiscogsService
         var discogsAuth = new DiscogsAuth(user.UserDiscogs.AccessToken,
             user.UserDiscogs.AccessTokenSecret);
 
-        var pages = user.UserType == UserType.User ? 1 : 50;
+        var pages = user.UserType == UserType.User ? 2 : 50;
 
         var releases = await this._discogsApi.GetUserReleases(discogsAuth, user.UserDiscogs.Username, pages);
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
-
-        await db.Database.ExecuteSqlAsync($"DELETE FROM user_discogs_releases WHERE user_id = {user.UserId}");
 
         var ids = releases.Releases.Select(s => s.Id);
         var existingReleases = await db.DiscogsReleases
@@ -156,6 +156,8 @@ public class DiscogsService
             await db.UserDiscogsReleases.AddAsync(userDiscogsRelease);
         }
 
+        await db.Database.ExecuteSqlAsync($"DELETE FROM user_discogs_releases WHERE user_id = {user.UserId}");
+
         await db.SaveChangesAsync();
 
         return user.UserDiscogs;
@@ -187,6 +189,35 @@ public class DiscogsService
         await db.SaveChangesAsync();
 
         return user.UserDiscogs;
+    }
+
+    public async Task UpdateDiscogsUsers(List<User> usersToUpdate)
+    {
+        foreach (var user in usersToUpdate)
+        {
+            Log.Information("Discogs: Automatically updating {userId}", user.UserId);
+            await UpdateUserDiscogs(user);
+
+            await Task.Delay(5000);
+        }
+    }
+
+    public async Task<List<User>> GetOutdatedDiscogsUsers()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var updateCutoff = DateTime.UtcNow.AddMonths(-1);
+        return await db.Users
+            .Include(i => i.UserDiscogs)
+            .Where(w => w.UserDiscogs != null &&
+                        w.UserDiscogs.ReleasesLastUpdated < updateCutoff)
+            .ToListAsync();
+    }
+
+    private async Task UpdateUserDiscogs(User user)
+    {
+        user.UserDiscogs = await this.StoreUserReleases(user);
+        user.UserDiscogs = await this.UpdateCollectionValue(user.UserId);
     }
 
     public async Task<List<UserDiscogsReleases>> GetUserCollection(int userId)
