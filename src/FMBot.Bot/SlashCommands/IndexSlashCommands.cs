@@ -4,7 +4,6 @@ using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Models;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
 using Serilog;

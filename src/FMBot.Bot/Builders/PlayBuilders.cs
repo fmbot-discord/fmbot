@@ -22,6 +22,7 @@ using FMBot.Domain.Types;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Genius.Models.Song;
 using Genius.Models.User;
 using Microsoft.Extensions.Options;
 using Swan;
@@ -378,6 +379,9 @@ public class PlayBuilder
             }
 
             var footer = new StringBuilder();
+
+            ImportService.AddImportDescription(footer, trackPage.Last().PlaySource);
+
             footer.Append($"Page {pageCounter}/{trackPages.Count}");
             footer.Append($" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles");
 

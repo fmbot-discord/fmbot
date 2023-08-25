@@ -22,12 +22,14 @@ public class DiscogsBuilder
     private readonly UserService _userService;
     private readonly DiscogsService _discogsService;
     private readonly InteractiveService _interactivity;
+    private readonly ArtistsService _artistsService;
 
-    public DiscogsBuilder(UserService userService, DiscogsService discogsService, InteractiveService interactiveService)
+    public DiscogsBuilder(UserService userService, DiscogsService discogsService, InteractiveService interactiveService, ArtistsService artistsService)
     {
         this._userService = userService;
         this._discogsService = discogsService;
         this._interactivity = interactiveService;
+        this._artistsService = artistsService;
     }
 
     public async Task<ResponseModel> DiscogsLoginAsync(ContextModel context)
@@ -357,6 +359,30 @@ public class DiscogsBuilder
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
+    public async Task<ResponseModel> WhoHasDiscogsAsync(
+        ContextModel context,
+        WhoKnowsMode mode,
+        string artistValues,
+        bool displayRoleSelector = false,
+        List<ulong> roles = null,
+        bool redirectsEnabled = true)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
+        if (artistSearch.Artist == null)
+        {
+            return artistSearch.Response;
+        }
+
         return response;
     }
 }

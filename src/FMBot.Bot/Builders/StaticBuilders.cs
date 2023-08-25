@@ -80,7 +80,7 @@ public class StaticBuilders
 
         var existingSupporter = await this._supporterService.GetSupporter(context.DiscordUser.Id);
 
-        if (context.ContextUser.UserType == UserType.Supporter || existingSupporter != null)
+        if (context.ContextUser.UserType == UserType.Supporter || (existingSupporter != null && existingSupporter.Expired != true))
         {
             response.Embed.WithTitle("Thank you for being a supporter!");
             embedDescription.AppendLine("See a list of all your perks below:");
@@ -144,7 +144,7 @@ public class StaticBuilders
                 }
                 else
                 {
-                    existingSupporterDescription.AppendLine($"Expires on: <t:{lastPaymentValue}:D>");
+                    existingSupporterDescription.AppendLine($"Expiry date: <t:{lastPaymentValue}:D>");
                 }
             }
 

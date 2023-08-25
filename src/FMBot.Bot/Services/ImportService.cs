@@ -31,7 +31,7 @@ public class ImportService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<(bool success, List<SpotifyEndSongImportModel> result, List<string> processedFiles)> HandleSpotifyFiles(User user, IEnumerable<IAttachment> attachments)
+    public async Task<(ImportStatus status, List<SpotifyEndSongImportModel> result, List<string> processedFiles)> HandleSpotifyFiles(User user, IEnumerable<IAttachment> attachments)
     {
         try
         {
@@ -59,6 +59,12 @@ public class ImportService
                 await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
 
                 using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
+
+                if (zip.Entries.Any(w => w.Name.Contains("Userdata")))
+                {
+                    return (ImportStatus.WrongPackageFailure, null, null);
+                }
+
                 foreach (var entry in zip.Entries.Where(w => w.Name.Contains(".json")))
                 {
                     try
@@ -76,12 +82,12 @@ public class ImportService
                 }
             }
 
-            return (true, spotifyPlays, processedFiles);
+            return (ImportStatus.Success, spotifyPlays, processedFiles);
         }
         catch (Exception e)
         {
             Log.Error("Importing: {userId} / {discordUserId} - Error while attempting to process Spotify import file", user.UserId, user.DiscordUserId, e);
-            return (false, null, null);
+            return (ImportStatus.UnknownFailure, null, null);
         }
     }
 
@@ -191,7 +197,7 @@ public class ImportService
         return await PlayRepository.HasImported(userId, connection);
     }
 
-    public static string AddTopListImportDescription(StringBuilder stringBuilder, PlaySource? playSource)
+    public static string AddImportDescription(StringBuilder stringBuilder, PlaySource? playSource)
     {
         if (playSource == PlaySource.SpotifyImport)
         {

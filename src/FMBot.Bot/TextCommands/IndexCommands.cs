@@ -9,12 +9,15 @@ using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Models;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -107,207 +110,210 @@ public class IndexCommands : BaseCommandModule
 
     [Command("update", RunMode = RunMode.Async)]
     [Summary("Updates a users cached playcounts based on their recent plays\n\n" +
-             "This command also has an option to completely refresh a users cache (`full`). This is recommended if you have edited your scrobble history.")]
+             "You can also update parts of your cached playcounts by using one of the options")]
+    [Options("Full", "Plays", "Artists", "Albums", "Tracks")]
     [Examples("update", "update full")]
-    [Alias("u")]
-    [GuildOnly]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
-    public async Task UpdateUserAsync(string force = null)
+    [Alias("u")]
+    public async Task UpdateAsync([Remainder] string options = null)
     {
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
+        var updateType = SettingService.GetUpdateType(options);
+
+        if (!updateType.optionPicked)
         {
-            if (PublicProperties.IssuesAtLastFm)
-            {
-                var issues = "";
-                if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
-                {
-                    issues = "\n\n" +
-                             "Note:\n" +
-                             $"*\"{PublicProperties.IssuesReason}\"*";
-                }
-
-                await ReplyAsync(
-                    $"Doing a full update is disabled temporarily while Last.fm is having issues. Please try again later.{issues}",
-                    allowedMentions: AllowedMentions.None);
-                this.Context.LogCommandUsed(CommandResponse.Disabled);
-                return;
-            }
-
-            if (contextUser.LastIndexed > DateTime.UtcNow.AddHours(-1))
-            {
-                await ReplyAsync(
-                    "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
-                    $"Experiencing issues with the normal update? Please contact us on the .fmbot support server. \n\n" +
-                    $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.");
-                this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                return;
-            }
-
-            var msg = this.Context.Message as SocketUserMessage;
-            if (StackCooldownTarget.Contains(this.Context.Message.Author))
-            {
-                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(30) >= DateTimeOffset.Now)
-                {
-                    var secondsLeft = (int)(StackCooldownTimer[
-                            StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
-                        .AddSeconds(31) - DateTimeOffset.Now).TotalSeconds;
-                    if (secondsLeft <= 25)
-                    {
-                        await ReplyAsync("You recently started a full update. Please wait before starting a new one.");
-                        this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                    }
-
-                    return;
-                }
-
-                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
-            }
-            else
-            {
-                StackCooldownTarget.Add(msg.Author);
-                StackCooldownTimer.Add(DateTimeOffset.Now);
-            }
-
-            var indexDescription =
-                $"<a:loading:821676038102056991> Fully rebuilding playcount cache for user {contextUser.UserNameLastFM}..." +
-                $"\n\nThis can take a while. Note that you can only do a full update once a day.";
-
-            if (contextUser.UserType != UserType.User)
-            {
-                indexDescription += "\n\n" +
-                                    $"*Thanks for being an .fmbot {contextUser.UserType.ToString().ToLower()}. " +
-                                    $"Your full Last.fm history will now be cached, so this command might take slightly longer...*";
-            }
-
-            this._embed.WithDescription(indexDescription);
-
-            var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            var stats = await this._indexService.IndexUser(contextUser);
-
-            var description = UserService.GetIndexCompletedUserStats(contextUser, stats);
-
-            await message.ModifyAsync(m =>
-            {
-                m.Embed = new EmbedBuilder()
-                    .WithDescription(description.description)
-                    .WithColor(DiscordConstants.SuccessColorGreen)
-                    .Build(); 
-                m.Components = description.promo
-                    ? new ComponentBuilder()
-                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink)
-                        .Build()
-                    : null;
-            });
-        }
-        else
-        {
-            if (contextUser.LastUpdated > DateTime.UtcNow.AddMinutes(-1))
-            {
-                var recentlyUpdatedText =
-                    $"Your cached playcounts have already been updated recently ({StringExtensions.GetTimeAgoShortString(contextUser.LastUpdated.Value)} ago). \n\n" +
-                    $"Any commands that require updating will also update your playcount automatically.\n\n" +
-                    $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.";
-
-                this._embed.WithDescription(recentlyUpdatedText);
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                return;
-            }
-
-            if (contextUser.LastIndexed == null)
-            {
-                await ReplyAsync(
-                    "Just logged in to the bot? Please wait a little bit and try again later, since the bot is still fetching all your Last.fm data.\n\n" +
-                    $"If you keep getting this message, please try using `{prfx}update full` once.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
-
             this._embed.WithDescription(
-                $"<a:loading:821676038102056991> Fetching {contextUser.UserNameLastFM}'s latest scrobbles...");
+                $"<a:loading:821676038102056991> Fetching **{contextUser.UserNameLastFM}**'s latest scrobbles...");
             var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             var update = await this._updateService.UpdateUserAndGetRecentTracks(contextUser);
 
             var supporterPromo =
                 await this._supporterService.GetPromotionalUpdateMessage(contextUser, prfx, this.Context.Client, this.Context.Guild?.Id);
+
             await message.ModifyAsync(m =>
             {
                 if (GenericEmbedService.RecentScrobbleCallFailed(update))
                 {
                     m.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(update, contextUser.UserNameLastFM).Build();
-
                     this.Context.LogCommandWithLastFmError(update.Error);
-
                     return;
                 }
 
+                var updatedDescription = new StringBuilder();
+
                 if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
                 {
-                    var updateDescription = new StringBuilder();
-                    updateDescription.AppendLine($"No new scrobbles found on [your Last.fm profile]({LastfmUrlExtensions.GetUserUrl(contextUser.UserNameLastFM)}) since last update. ");
-                    updateDescription.AppendLine();
+                    var previousUpdate = DateTime.SpecifyKind(contextUser.LastUpdated.Value, DateTimeKind.Utc);
+                    var previousUpdateValue = ((DateTimeOffset)previousUpdate).ToUnixTimeSeconds();
 
-                    if (contextUser.LastUpdated.HasValue)
+                    updatedDescription.AppendLine($"Nothing new found on [your Last.fm profile]({LastfmUrlExtensions.GetUserUrl(contextUser.UserNameLastFM)}) since last update (<t:{previousUpdateValue}:R>)");
+
+                    if (update.Content?.RecentTracks != null && update.Content.RecentTracks.Any())
                     {
-                        var specifiedDateTime = DateTime.SpecifyKind(contextUser.LastUpdated.Value, DateTimeKind.Utc);
-                        var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+                        if (!update.Content.RecentTracks.Any(a => a.NowPlaying))
+                        {
+                            var latestScrobble = update.Content.RecentTracks.MaxBy(o => o.TimePlayed);
+                            if (latestScrobble != null && latestScrobble.TimePlayed.HasValue)
+                            {
+                                var specifiedDateTime = DateTime.SpecifyKind(latestScrobble.TimePlayed.Value, DateTimeKind.Utc);
+                                var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
 
-                        updateDescription.AppendLine($"Last update: <t:{dateValue}:R>.");
+                                updatedDescription.AppendLine();
+                                updatedDescription.AppendLine($"Last scrobble: <t:{dateValue}:R>.");
+                            }
+
+                            updatedDescription.AppendLine();
+                            updatedDescription.AppendLine($"Last.fm not keeping track of your Spotify properly? Try the instructions in `{prfx}outofsync` for help.");
+                        }
                     }
-
-                    var latestScrobble = update.Content.RecentTracks.MaxBy(o => o.TimePlayed);
-                    if (latestScrobble != null && latestScrobble.TimePlayed.HasValue)
+                    else
                     {
-                        var specifiedDateTime = DateTime.SpecifyKind(latestScrobble.TimePlayed.Value, DateTimeKind.Utc);
-                        var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
-
-                        updateDescription.AppendLine($"Last scrobble: <t:{dateValue}:R>.");
+                        if (supporterPromo != null)
+                        {
+                            updatedDescription.AppendLine();
+                            updatedDescription.AppendLine(supporterPromo);
+                        }
                     }
-
-
-                    updateDescription.AppendLine();
-                    updateDescription.AppendLine($"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.");
 
                     var newEmbed =
                         new EmbedBuilder()
-                            .WithDescription(updateDescription.ToString())
+                            .WithDescription(updatedDescription.ToString())
                             .WithColor(DiscordConstants.SuccessColorGreen);
 
                     m.Embed = newEmbed.Build();
                 }
                 else
                 {
-                    string updatedDescription;
-
                     if (update.Content.RemovedRecentTracksAmount == 0)
                     {
-                        updatedDescription = $"✅ Cached playcounts have been updated for {contextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)}.";
+                        updatedDescription.AppendLine($"✅ Cached playcounts have been updated for {contextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)}.");
                     }
                     else
                     {
-                        updatedDescription = $"✅ Cached playcounts have been updated for {contextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)} " +
-                                             $"and {update.Content.RemovedRecentTracksAmount} removed {StringExtensions.GetScrobblesString(update.Content.RemovedRecentTracksAmount)}.";
+                        updatedDescription.AppendLine($"✅ Cached playcounts have been updated for {contextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)} " +
+                                             $"and {update.Content.RemovedRecentTracksAmount} removed {StringExtensions.GetScrobblesString(update.Content.RemovedRecentTracksAmount)}.");
+                    }
+
+                    if (update.Content.NewRecentTracksAmount < 25)
+                    {
+                        var random = new Random().Next(0, 6);
+                        if (random == 1)
+                        {
+                            updatedDescription.AppendLine();
+                            updatedDescription.AppendLine("Did you know that .fmbot also updates you automatically once every 48 hours?");
+                        }
+                        if (random == 2)
+                        {
+                            updatedDescription.AppendLine();
+                            updatedDescription.AppendLine("Any commands that require you to be updated will also update you automatically.");
+                        }
                     }
 
                     if (supporterPromo != null)
                     {
-                        updatedDescription += $"\n\n{supporterPromo}";
+                        updatedDescription.AppendLine();
+                        updatedDescription.AppendLine(supporterPromo);
                     }
 
                     m.Embed = new EmbedBuilder()
-                        .WithDescription(updatedDescription)
+                        .WithDescription(updatedDescription.ToString())
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 }
             });
-        }
 
-        this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed();
+            return;
+        }
+        else
+        {
+            if (PublicProperties.IssuesAtLastFm)
+            {
+                var issueDescription = new StringBuilder();
+
+                issueDescription.AppendLine(
+                    "Doing an advanced update is disabled temporarily while Last.fm is having issues. Please try again later.");
+                if (PublicProperties.IssuesReason != null)
+                {
+                    issueDescription.AppendLine();
+                    issueDescription.AppendLine("Note:");
+                    issueDescription.AppendLine($"*{PublicProperties.IssuesReason}*");
+                }
+
+                await ReplyAsync(issueDescription.ToString(), allowedMentions: AllowedMentions.None);
+                this.Context.LogCommandUsed(CommandResponse.Disabled);
+                return;
+            }
+
+            var indexStarted = this._indexService.IndexStarted(contextUser.UserId);
+
+            if (!indexStarted)
+            {
+                await ReplyAsync("An advanced update has recently been started for you. Please wait before starting a new one.");
+                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                return;
+            }
+
+            if (contextUser.LastIndexed > DateTime.UtcNow.AddMinutes(-30))
+            {
+                await ReplyAsync(
+                    "You can't do full updates too often. These are only meant to be used when your Last.fm history has been adjusted.\n\n" +
+                    $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help. Spotify sync issues can't be fixed inside of .fmbot.");
+                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                return;
+            }
+
+            var indexDescription = new StringBuilder();
+            indexDescription.AppendLine($"<a:loading:821676038102056991> Fetching Last.fm playcounts for user {contextUser.UserNameLastFM}...");
+            indexDescription.AppendLine();
+            indexDescription.AppendLine("The following playcount caches are being rebuilt:");
+            indexDescription.AppendLine(updateType.description);
+
+            if (contextUser.UserType != UserType.User)
+            {
+                indexDescription.AppendLine($"*Thanks for being an .fmbot {contextUser.UserType.ToString().ToLower()}. " +
+                                            $"Your full Last.fm history will now be cached, so this command might take slightly longer...*");
+            }
+
+            this._embed.WithDescription(indexDescription.ToString());
+
+            var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+            if (!updateType.updateType.HasFlag(UpdateType.Full) && !updateType.updateType.HasFlag(UpdateType.AllPlays))
+            {
+                var update = await this._updateService.UpdateUserAndGetRecentTracks(contextUser, bypassIndexPending: true);
+
+                if (GenericEmbedService.RecentScrobbleCallFailed(update))
+                {
+                    await message.ModifyAsync(m => m.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(update, contextUser.UserNameLastFM).Build());
+                    this.Context.LogCommandWithLastFmError(update.Error);
+                    return;
+                }
+            }
+
+            var result = await this._indexService.ModularUpdate(contextUser, updateType.updateType);
+
+            var description = UserService.GetIndexCompletedUserStats(contextUser, result);
+
+            await message.ModifyAsync(m =>
+            {
+                m.Embed = new EmbedBuilder()
+                    .WithDescription(description.description)
+                    .WithColor(result.UpdateError != true ? DiscordConstants.SuccessColorGreen : DiscordConstants.WarningColorOrange)
+                    .Build();
+                m.Components = description.promo
+                    ? new ComponentBuilder()
+                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink)
+                        .Build()
+                    : null;
+            });
+
+            this.Context.LogCommandUsed();
+            return;
+        }
     }
 }

@@ -73,9 +73,9 @@ public class UpdateService : IUpdateService
         return (int)updatedUser.Content.NewRecentTracksAmount;
     }
 
-    public async Task<Response<RecentTrackList>> UpdateUserAndGetRecentTracks(User user)
+    public async Task<Response<RecentTrackList>> UpdateUserAndGetRecentTracks(User user, bool bypassIndexPending = false)
     {
-        if (this._cache.TryGetValue($"index-started-{user.UserId}", out bool _))
+        if (this._cache.TryGetValue(IndexService.IndexConcurrencyCacheKey(user.UserId), out bool _) && !bypassIndexPending)
         {
             return new Response<RecentTrackList>
             {

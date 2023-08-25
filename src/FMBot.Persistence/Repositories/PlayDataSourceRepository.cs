@@ -153,6 +153,8 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
             TrackName = g.TrackName.ToLower()
         }).Count();
 
+        dataSourceUser.Registered = plays.MinBy(o => o.TimePlayed).TimePlayed;
+
         return dataSourceUser;
     }
 

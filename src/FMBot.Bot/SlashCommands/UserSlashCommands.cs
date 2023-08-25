@@ -768,7 +768,8 @@ public class UserSlashCommands : InteractionModuleBase
 
             var embed = new EmbedBuilder();
             embed.WithDescription($"Import mode set to **{name}**.\n\n" +
-                                  $"Your stored top artist/albums/tracks are being recalculated.");
+                                  $"Your stored top artist/albums/tracks are being recalculated. \n\n" +
+                                  $"**Please wait for this to be confirmed before switching modes again.**");
             embed.WithColor(DiscordConstants.SuccessColorGreen);
 
             ComponentBuilder components = null;
@@ -782,6 +783,9 @@ public class UserSlashCommands : InteractionModuleBase
             this.Context.LogCommandUsed();
 
             await this._indexService.RecalculateTopLists(newUserSettings);
+
+            embed.WithDescription("✅ Your stored top artist/albums/tracks have successfully been recalculated.");
+            await FollowupAsync(null, new[] { embed.Build() }, ephemeral: true, components: components?.Build());
         }
     }
 

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Models;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
@@ -14,6 +15,10 @@ public interface IIndexService
     void AddUsersToIndexQueue(IReadOnlyList<User> users);
 
     Task<IndexedUserStats> IndexUser(User user);
+
+    Task<IndexedUserStats> ModularUpdate(User user, UpdateType updateType);
+
+    bool IndexStarted(int userId);
 
     Task RecalculateTopLists(User user);
 
