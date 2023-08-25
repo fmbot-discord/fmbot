@@ -6,6 +6,11 @@ public class TopListSettings
     {
     }
 
+    public TopListSettings(bool extraLarge)
+    {
+        this.ExtraLarge = extraLarge;
+    }
+
     public TopListSettings(bool extraLarge, bool billboard, bool discogs = false)
     {
         this.ExtraLarge = extraLarge;

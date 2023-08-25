@@ -1021,9 +1021,9 @@ public class PlayBuilder
                     UserPlaycount = s.Count(),
                     FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed
                 })
-                .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName)))
+                .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName, StringComparison.InvariantCultureIgnoreCase)))
                 .OrderByDescending(o => o.UserPlaycount)
-                .Take(10)
+                .Take(8)
                 .ToList();
 
             var newArtistDescription = new StringBuilder();
@@ -1031,9 +1031,9 @@ public class PlayBuilder
             {
                 var newArtist = topNewArtists.OrderBy(o => o.FirstPlay).ToList()[i];
 
-                newArtistDescription.AppendLine($"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)}) " +
-                                                $"- {newArtist.UserPlaycount}** {StringExtensions.GetPlaysString(newArtist.UserPlaycount)} " +
-                                                $"- On **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
+                newArtistDescription.AppendLine($"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
+                                                $"— *{newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
+                                                $"— on **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
             }
 
             fields.Add(new EmbedFieldBuilder().WithName("Artist discoveries")

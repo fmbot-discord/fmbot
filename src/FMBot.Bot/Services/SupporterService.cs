@@ -145,7 +145,7 @@ public class SupporterService
         thankYouMessage.AppendLine("**Expanded statistics**\n" +
                                    "We've started a full update for you. " +
                                    "After a few minutes the following commands should be expanded:\n" +
-                                   "- `artist`, `album` and `track` with first listen dates\n" +
+                                   "- `artist`, `album` and `track` with discovery dates\n" +
                                    "- `stats` command with overall history\n" +
                                    "- `year` with artist discoveries and monthly overview");
         thankYouMessage.AppendLine();
@@ -241,7 +241,7 @@ public class SupporterService
             case 2:
                 SetGuildPromoCache(guildId);
                 return
-                    $"*Supporters get extra statistics like first listen dates, full history in `stats`, artist discoveries in `year`, extra options in their `fm` footer and more. " +
+                    $"*Supporters get extra statistics like discovery dates, full history in `stats`, artist discoveries in `year`, extra options in their `fm` footer and more. " +
                     $"[See all the perks of getting supporter here.]({Constants.GetSupporterDiscordLink})*";
             case 3:
                 {

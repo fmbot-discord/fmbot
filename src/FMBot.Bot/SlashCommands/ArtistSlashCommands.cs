@@ -262,6 +262,40 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
+    [SlashCommand("discoveries", "Shows artists you've recently discovered")]
+    [UsernameSetRequired]
+    public async Task ArtistDiscoveriesAsync(
+        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("XXL", "Show extra top artists")] bool extraLarge = false,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        var context = new ContextModel(this.Context, contextUser);
+
+        var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+
+        if (supporterRequiredResponse != null)
+        {
+            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+            return;
+        }
+
+        _ = DeferAsync(privateResponse);
+
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
+
+        var topListSettings = new TopListSettings(extraLarge);
+
+        var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings);
+
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
     [UserCommand("Compare taste")]
     [UsernameSetRequired]
     public async Task UserTasteAsync(IUser user)
