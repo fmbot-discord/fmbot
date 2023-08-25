@@ -122,8 +122,6 @@ public class CensorService
             {
                 return CensorResult.NotSafe;
             }
-
-            return CensorResult.Safe;
         }
 
         if (censoredMusic
