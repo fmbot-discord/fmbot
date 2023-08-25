@@ -124,28 +124,29 @@ public class CensorService
             }
         }
 
-        if (censoredMusic
-            .Select(s => s.ArtistName.ToLower())
-            .Contains(artistName.ToLower()))
+        if (albumName != null)
         {
-            var album = censoredMusic
-                .Where(w => !w.Artist && w.AlbumName != null)
-                .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower() &&
-                                     f.AlbumName.ToLower() == albumName.ToLower());
-
-            if (album != null)
+            if (censoredMusic
+                .Select(s => s.ArtistName.ToLower())
+                .Contains(artistName.ToLower()))
             {
-                await IncreaseCensoredCount(album.CensoredMusicId);
-                if (album.CensorType.HasFlag(CensorType.AlbumCoverCensored))
-                {
-                    return CensorResult.NotSafe;
-                }
-                if (album.CensorType.HasFlag(CensorType.AlbumCoverNsfw))
-                {
-                    return CensorResult.Nsfw;
-                }
+                var album = censoredMusic
+                    .Where(w => !w.Artist && w.AlbumName != null)
+                    .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower() &&
+                                         f.AlbumName.ToLower() == albumName.ToLower());
 
-                return CensorResult.Safe;
+                if (album != null)
+                {
+                    await IncreaseCensoredCount(album.CensoredMusicId);
+                    if (album.CensorType.HasFlag(CensorType.AlbumCoverCensored))
+                    {
+                        return CensorResult.NotSafe;
+                    }
+                    if (album.CensorType.HasFlag(CensorType.AlbumCoverNsfw))
+                    {
+                        return CensorResult.Nsfw;
+                    }
+                }
             }
         }
 
