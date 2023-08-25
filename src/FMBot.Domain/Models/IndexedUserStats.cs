@@ -1,3 +1,5 @@
+using FMBot.Domain.Enums;
+
 namespace FMBot.Domain.Models;
 
 public class IndexedUserStats
@@ -8,4 +10,7 @@ public class IndexedUserStats
     public long? PlayCount { get; set; }
     public long? ImportCount { get; set; }
     public long? TotalCount { get; set; }
+
+    public bool? UpdateError { get; set; }
+    public UpdateType FailedUpdates { get; set; }
 }

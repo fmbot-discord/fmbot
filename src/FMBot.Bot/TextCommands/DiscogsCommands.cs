@@ -93,4 +93,31 @@ public class DiscogsCommands : BaseCommandModule
             await this.Context.HandleCommandException(e);
         }
     }
+
+    //[Command("whohas", RunMode = RunMode.Async)]
+    //[Summary("Shows who has the most Discogs merch of a certain artist in a server")]
+    //[UsernameSetRequired]
+    //[CommandCategories(CommandCategory.ThirdParty)]
+    //[Alias("wh", "whohasvinyl")]
+    public async Task WhoHasAsync([Remainder] string searchValues = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
+        var collectionSettings = SettingService.SetDiscogsCollectionSettings(userSettings.NewSearchValue);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        try
+        {
+            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, collectionSettings, collectionSettings.NewSearchValue);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }

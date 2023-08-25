@@ -14,6 +14,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
@@ -302,7 +303,7 @@ public class IndexCommands : BaseCommandModule
             {
                 m.Embed = new EmbedBuilder()
                     .WithDescription(description.description)
-                    .WithColor(DiscordConstants.SuccessColorGreen)
+                    .WithColor(result.UpdateError != true ? DiscordConstants.SuccessColorGreen : DiscordConstants.WarningColorOrange)
                     .Build();
                 m.Components = description.promo
                     ? new ComponentBuilder()

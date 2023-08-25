@@ -1,6 +1,6 @@
 using System;
 
-namespace FMBot.Bot.Models;
+namespace FMBot.Domain.Enums;
 
 [Flags]
 public enum UpdateType

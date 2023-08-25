@@ -132,7 +132,7 @@ public class IndexService : IIndexService
 
     public async Task<IndexedUserStats> ModularUpdate(User user, UpdateType updateType)
     {
-        Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Starting", user.UserId, user.UserId, user.UserNameLastFM);
+        Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Starting", user.UserId, user.DiscordUserId, user.UserNameLastFM);
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -144,39 +144,96 @@ public class IndexService : IIndexService
         {
             await UserRepository.SetUserPlayStats(user, connection, userInfo);
         }
+        else
+        {
+            Log.Warning("Index: {userId} / {discordUserId} / {UserNameLastFM} - Fetching UserInfo failed", user.UserId, user.DiscordUserId, user.UserNameLastFM);
+
+            stats.UpdateError = true;
+            stats.FailedUpdates = UpdateType.Full;
+
+            this._cache.Remove(IndexConcurrencyCacheKey(user.UserId));
+            return stats;
+        }
 
         if (updateType.HasFlag(UpdateType.AllPlays) || updateType.HasFlag(UpdateType.Full))
         {
             var plays = await GetPlaysForUserFromLastFm(user);
-            await PlayRepository.ReplaceAllPlays(plays, user.UserId, connection);
 
-            stats.PlayCount = plays.Count;
+            if (userInfo.Playcount >= 1000 && plays.Count < 200)
+            {
+                Log.Warning("Index: {userId} / {discordUserId} / {UserNameLastFM} - Fetching AllPlays failed - {playCount} expected, {fetchedPlayCount} fetched",
+                    user.UserId, user.DiscordUserId, user.UserNameLastFM, userInfo.Playcount, plays.Count);
 
-            await UserRepository.SetUserIndexTime(user.UserId, connection, plays);
+                stats.UpdateError = true;
+                stats.FailedUpdates |= UpdateType.AllPlays;
+            }
+            else
+            {
+                await PlayRepository.ReplaceAllPlays(plays, user.UserId, connection);
+
+                stats.PlayCount = plays.Count;
+
+                await UserRepository.SetUserIndexTime(user.UserId, connection, plays);
+            }
         }
 
         if (updateType.HasFlag(UpdateType.Artist) || updateType.HasFlag(UpdateType.Full))
         {
-            var artists = await GetArtistsForUserFromLastFm(user);
-            await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
+            var artists = await GetTopArtistsForUser(user);
 
-            stats.ArtistCount = artists.Count;
+            if (userInfo.ArtistCount >= 1000 && artists.Count < 200)
+            {
+                Log.Warning("Index: {userId} / {discordUserId} / {UserNameLastFM} - Fetching artists failed - {artistCount} expected, {fetchedArtistCount} fetched",
+                    user.UserId, user.DiscordUserId, user.UserNameLastFM, userInfo.ArtistCount, artists.Count);
+
+                stats.UpdateError = true;
+                stats.FailedUpdates |= UpdateType.Artist;
+            }
+            else
+            {
+                await ArtistRepository.AddOrReplaceUserArtistsInDatabase(artists, user.UserId, connection);
+                stats.ArtistCount = artists.Count;
+            }
         }
 
         if (updateType.HasFlag(UpdateType.Albums) || updateType.HasFlag(UpdateType.Full))
         {
-            var albums = await GetAlbumsForUserFromLastFm(user);
-            await AlbumRepository.AddOrReplaceUserAlbumsInDatabase(albums, user.UserId, connection);
+            var albums = await GetTopAlbumsForUser(user);
 
-            stats.AlbumCount = albums.Count;
+            if (userInfo.AlbumCount >= 1000 && albums.Count < 200)
+            {
+                Log.Warning("Index: {userId} / {discordUserId} / {UserNameLastFM} - Fetching albums failed - {albumCount} expected, {fetchedAlbumCount} fetched",
+                    user.UserId, user.DiscordUserId, user.UserNameLastFM, userInfo.AlbumCount, albums.Count);
+
+                stats.UpdateError = true;
+                stats.FailedUpdates |= UpdateType.Albums;
+            }
+            else
+            {
+                await AlbumRepository.AddOrReplaceUserAlbumsInDatabase(albums, user.UserId, connection);
+
+                stats.AlbumCount = albums.Count;
+            }
         }
 
         if (updateType.HasFlag(UpdateType.Tracks) || updateType.HasFlag(UpdateType.Full))
         {
-            var tracks = await GetTracksForUserFromLastFm(user);
-            await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
+            var tracks = await GetTopTracksForUser(user);
 
-            stats.TrackCount = tracks.Count;
+            if (userInfo.TrackCount >= 1000 && tracks.Count < 200)
+            {
+                Log.Warning("Index: {userId} / {discordUserId} / {UserNameLastFM} - Fetching tracks failed - {trackCount} expected, {fetchedTrackCount} fetched",
+                    user.UserId, user.DiscordUserId, user.UserNameLastFM, userInfo.TrackCount, tracks.Count);
+
+                stats.UpdateError = true;
+                stats.FailedUpdates |= UpdateType.Tracks;
+            }
+            else
+            {
+                await TrackRepository.AddOrReplaceUserTracksInDatabase(tracks, user.UserId, connection);
+
+                stats.TrackCount = tracks.Count;
+            }
         }
 
         var importUser = await UserRepository.GetImportUserForUserId(user.UserId, connection);
@@ -211,7 +268,7 @@ public class IndexService : IIndexService
         }
     }
 
-    private async Task<IReadOnlyList<UserArtist>> GetArtistsForUserFromLastFm(User user)
+    private async Task<IReadOnlyList<UserArtist>> GetTopArtistsForUser(User user)
     {
         Log.Information($"Getting artists for user {user.UserNameLastFM}");
 
@@ -262,7 +319,7 @@ public class IndexService : IIndexService
             }).ToList();
     }
 
-    private async Task<IReadOnlyList<UserAlbum>> GetAlbumsForUserFromLastFm(User user)
+    private async Task<IReadOnlyList<UserAlbum>> GetTopAlbumsForUser(User user)
     {
         Log.Information($"Getting albums for user {user.UserNameLastFM}");
 
@@ -288,7 +345,7 @@ public class IndexService : IIndexService
         }).ToList();
     }
 
-    private async Task<IReadOnlyList<UserTrack>> GetTracksForUserFromLastFm(User user)
+    private async Task<IReadOnlyList<UserTrack>> GetTopTracksForUser(User user)
     {
         Log.Information($"Getting tracks for user {user.UserNameLastFM}");
 

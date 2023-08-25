@@ -639,68 +639,92 @@ public class UserService
             return (false, description.ToString());
         }
 
-        description.AppendLine($"✅ {user.UserNameLastFM} has been fully updated.");
-        description.AppendLine();
-        description.AppendLine("Cached the following playcounts:");
-        if (user.UserType == UserType.User)
+        if (stats.UpdateError == true)
         {
-            if (stats.PlayCount.HasValue)
+            description.AppendLine($"❌ An error occurred while attempting to update `{user.UserNameLastFM}`:");
+            if (stats.FailedUpdates.HasFlag(UpdateType.Full))
             {
-                description.AppendLine($"- Last **{stats.PlayCount}** plays");
+                description.AppendLine($"- Could not fetch user info from Last.fm");
             }
-            if (stats.ArtistCount.HasValue)
+            if (stats.FailedUpdates.HasFlag(UpdateType.Artist))
             {
-                description.AppendLine($"- Top **{stats.ArtistCount}** artists");
+                description.AppendLine($"- Could not fetch top artists");
             }
-            if (stats.AlbumCount.HasValue)
+            if (stats.FailedUpdates.HasFlag(UpdateType.Albums))
             {
-                description.AppendLine($"- Top **{stats.AlbumCount}** albums");
+                description.AppendLine($"- Could not fetch top albums");
             }
-            if (stats.TrackCount.HasValue)
+            if (stats.FailedUpdates.HasFlag(UpdateType.Tracks))
             {
-                description.AppendLine($"- Top **{stats.TrackCount}** tracks");
+                description.AppendLine($"- Could not fetch top tracks");
             }
         }
         else
         {
-            if (stats.PlayCount.HasValue)
+            description.AppendLine($"✅ `{user.UserNameLastFM}` has been fully updated.");
+            description.AppendLine();
+            description.AppendLine("Cached the following playcounts:");
+
+            if (user.UserType == UserType.User)
             {
-                description.AppendLine($"- **{stats.PlayCount}** Last.fm plays");
+                if (stats.PlayCount.HasValue)
+                {
+                    description.AppendLine($"- Last **{stats.PlayCount}** plays");
+                }
+                if (stats.ArtistCount.HasValue)
+                {
+                    description.AppendLine($"- Top **{stats.ArtistCount}** artists");
+                }
+                if (stats.AlbumCount.HasValue)
+                {
+                    description.AppendLine($"- Top **{stats.AlbumCount}** albums");
+                }
+                if (stats.TrackCount.HasValue)
+                {
+                    description.AppendLine($"- Top **{stats.TrackCount}** tracks");
+                }
             }
-            if (stats.ArtistCount.HasValue)
+            else
             {
-                description.AppendLine($"- **{stats.ArtistCount}** top artists");
-            }
-            if (stats.AlbumCount.HasValue)
-            {
-                description.AppendLine($"- **{stats.AlbumCount}** top albums");
-            }
-            if (stats.TrackCount.HasValue)
-            {
-                description.AppendLine($"- **{stats.TrackCount}** top tracks");
+                if (stats.PlayCount.HasValue)
+                {
+                    description.AppendLine($"- **{stats.PlayCount}** Last.fm plays");
+                }
+                if (stats.ArtistCount.HasValue)
+                {
+                    description.AppendLine($"- **{stats.ArtistCount}** top artists");
+                }
+                if (stats.AlbumCount.HasValue)
+                {
+                    description.AppendLine($"- **{stats.AlbumCount}** top albums");
+                }
+                if (stats.TrackCount.HasValue)
+                {
+                    description.AppendLine($"- **{stats.TrackCount}** top tracks");
+                }
+
+                if (stats.ImportCount != null)
+                {
+                    description.AppendLine();
+
+                    var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
+                    description.AppendLine($"Import setting: {name}");
+                    description.AppendLine($"Combined with your **{stats.ImportCount}** imported plays you have a total of **{stats.TotalCount}** plays.");
+                }
             }
 
-            if (stats.ImportCount != null)
+            if (user.UserType == UserType.User &&
+                (stats.PlayCount >= 49900 ||
+                 stats.TrackCount >= 5900 ||
+                 stats.AlbumCount >= 4900 ||
+                 stats.ArtistCount >= 3900))
             {
                 description.AppendLine();
-
-                var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
-                description.AppendLine($"Import setting: {name}");
-                description.AppendLine($"Combined with your **{stats.ImportCount}** imported plays you have a total of **{stats.TotalCount}** plays.");
+                description.AppendLine($"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterDiscordLink}).");
+                promo = true;
             }
         }
-
-        if (user.UserType == UserType.User &&
-            (stats.PlayCount >= 49900 ||
-             stats.TrackCount >= 5900 ||
-             stats.AlbumCount >= 4900 ||
-             stats.ArtistCount >= 3900))
-        {
-            description.AppendLine();
-            description.AppendLine($"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterDiscordLink}).");
-            promo = true;
-        }
-
+        
         return (promo, description.ToString());
     }
 

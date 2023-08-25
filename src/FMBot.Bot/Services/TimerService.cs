@@ -100,8 +100,6 @@ public class TimerService
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
-        _ = this.UpdateDiscogsUsers();
-
         if (this._botSettings.Bot.FeaturedMaster == true)
         {
             Log.Information($"RecurringJob: Adding {nameof(UpdateDiscordSupporters)}");

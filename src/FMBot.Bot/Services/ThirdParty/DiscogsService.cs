@@ -81,7 +81,7 @@ public class DiscogsService
         var discogsAuth = new DiscogsAuth(user.UserDiscogs.AccessToken,
             user.UserDiscogs.AccessTokenSecret);
 
-        var pages = user.UserType == UserType.User ? 2 : 50;
+        var pages = user.UserType == UserType.User ? 1 : 50;
 
         var releases = await this._discogsApi.GetUserReleases(discogsAuth, user.UserDiscogs.Username, pages);
 
