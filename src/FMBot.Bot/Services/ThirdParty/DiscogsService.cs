@@ -85,6 +85,13 @@ public class DiscogsService
 
         var releases = await this._discogsApi.GetUserReleases(discogsAuth, user.UserDiscogs.Username, pages);
 
+        if (releases?.Releases == null || releases.Releases.Count == 0)
+        {
+            user.DiscogsReleases = new List<UserDiscogsReleases>();
+
+            return user.UserDiscogs;
+        }
+
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var ids = releases.Releases.Select(s => s.Id);
