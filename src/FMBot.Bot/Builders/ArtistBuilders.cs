@@ -773,13 +773,13 @@ public class ArtistBuilders
 
         var knownArtists = allPlays
             .Where(w => w.TimePlayed < timeSettings.StartDateTime)
-            .GroupBy(g => g.ArtistName)
+            .GroupBy(g => g.ArtistName, StringComparer.InvariantCultureIgnoreCase)
             .Select(s => s.Key)
             .ToList();
 
         var topNewArtists = allPlays
             .Where(w => w.TimePlayed >= timeSettings.StartDateTime && w.TimePlayed <= timeSettings.EndDateTime)
-            .GroupBy(g => g.ArtistName)
+            .GroupBy(g => g.ArtistName, StringComparer.InvariantCultureIgnoreCase)
             .Select(s => new TopArtist
             {
                 ArtistName = s.Key,
@@ -803,7 +803,7 @@ public class ArtistBuilders
             var artistPageString = new StringBuilder();
             for (var index = 0; index < artistPage.Count; index++)
             {
-                var newArtist = topNewArtists.ToList()[index];
+                var newArtist = artistPage.ToList()[index];
 
                 artistPageString.Append($"{counter}\\. ");
                 artistPageString.AppendLine(
