@@ -603,14 +603,12 @@ public class ArtistsService
     {
         try
         {
-            return new List<Artist>();
-
             const string cacheKey = "artists-all";
 
             var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<Artist> artists);
             if (!cacheAvailable && cacheEnabled)
             {
-                const string sql = "SELECT * " +
+                const string sql = "SELECT name, popularity " +
                                    "FROM public.artists " +
                                    "WHERE popularity is not null AND popularity > 9 ";
 
@@ -623,15 +621,13 @@ public class ArtistsService
                 this._cache.Set(cacheKey, artists, TimeSpan.FromHours(2));
             }
 
-            searchValue = searchValue.ToLower();
-
             var results = artists.Where(w =>
-                    w.Name.ToLower().StartsWith(searchValue))
+                    w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(o => o.Popularity)
                 .ToList();
 
             results.AddRange(artists.Where(w =>
-                    w.Name.ToLower().Contains(searchValue))
+                    w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(o => o.Popularity));
 
             return results;

@@ -13,6 +13,7 @@ public class AlbumAutoCompleteSearchModel
         this.Artist = artist;
         this.Album = album;
         this.Name = $"{artist} | {album}";
+        this.Popularity = popularity;
     }
 
     public AlbumAutoCompleteSearchModel(string name)

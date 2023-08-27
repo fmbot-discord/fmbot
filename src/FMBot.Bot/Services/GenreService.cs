@@ -142,11 +142,9 @@ public class GenreService
                 this._cache.Set(cacheKey, genres, TimeSpan.FromHours(2));
             }
 
-            searchValue = searchValue.ToLower();
+            var results = genres.Where(w => w.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase)).ToList();
 
-            var results = genres.Where(w => w.StartsWith(searchValue)).ToList();
-
-            results.AddRange(genres.Where(w => w.Contains(searchValue)));
+            results.AddRange(genres.Where(w => w.Contains(searchValue, StringComparison.OrdinalIgnoreCase)));
 
             return results;
         }

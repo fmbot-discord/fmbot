@@ -58,44 +58,44 @@ public class AlbumAutoComplete : AutocompleteHandler
                     await this._albumService.SearchThroughAlbums(searchValue);
 
                 results.ReplaceOrAddToList(recentlyPlayedAlbums
-                    .Where(w => w.Album.ToLower().StartsWith(searchValue.ToLower()))
+                    .Where(w => w.Album.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(4));
 
                 results.ReplaceOrAddToList(recentTopAlbums
-                    .Where(w => w.Album.ToLower().StartsWith(searchValue.ToLower()))
+                    .Where(w => w.Album.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(4));
 
                 results.ReplaceOrAddToList(recentlyPlayedAlbums
-                    .Where(w => w.Album.ToLower().Contains(searchValue.ToLower()))
+                    .Where(w => w.Album.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(2));
 
                 results.ReplaceOrAddToList(recentTopAlbums
-                    .Where(w => w.Album.ToLower().Contains(searchValue.ToLower()))
+                    .Where(w => w.Album.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(3));
 
                 results.ReplaceOrAddToList(albumResults
-                    .Where(w => w.Artist.ToLower().StartsWith(searchValue.ToLower()))
+                    .Where(w => w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Take(2)
                     .Select(s => s.Name));
 
                 results.ReplaceOrAddToList(albumResults
                     .Where(w => w.Popularity != null && w.Popularity > 60 &&
-                                w.Name.ToLower().Contains(searchValue.ToLower()))
+                                w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Take(2)
                     .Select(s => s.Name));
 
                 results.ReplaceOrAddToList(albumResults
-                    .Where(w => w.Name.ToLower().StartsWith(searchValue.ToLower()))
+                    .Where(w => w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Take(4)
                     .Select(s => s.Name));
 
 
                 results.ReplaceOrAddToList(albumResults
-                    .Where(w => w.Name.ToLower().Contains(searchValue.ToLower()))
+                    .Where(w => w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Take(2)
                     .Select(s => s.Name));
 

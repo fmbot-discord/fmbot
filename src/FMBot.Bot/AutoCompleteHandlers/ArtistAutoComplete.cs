@@ -56,35 +56,35 @@ public class ArtistAutoComplete : AutocompleteHandler
                 await this._artistsService.SearchThroughArtists(searchValue);
 
             results.ReplaceOrAddToList(recentlyPlayedArtists
-                .Where(w => w.ToLower().StartsWith(searchValue.ToLower()))
+                .Where(w => w.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                 .Take(4));
 
             results.ReplaceOrAddToList(recentTopArtists
-                .Where(w => w.ToLower().StartsWith(searchValue.ToLower()))
+                .Where(w => w.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                 .Take(4));
 
             results.ReplaceOrAddToList(recentlyPlayedArtists
-                .Where(w => w.ToLower().Contains(searchValue.ToLower()))
+                .Where(w => w.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                 .Take(2));
 
             results.ReplaceOrAddToList(recentTopArtists
-                .Where(w => w.ToLower().Contains(searchValue.ToLower()))
+                .Where(w => w.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                 .Take(3));
 
             results.ReplaceOrAddToList(artistResults
                 .Where(w => w.Popularity > 60 &&
-                            w.Name.ToLower().Contains(searchValue.ToLower()))
+                            w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                 .Take(2)
                 .Select(s => s.Name));
 
             results.ReplaceOrAddToList(artistResults
-                .Where(w => w.Name.ToLower().StartsWith(searchValue.ToLower()))
+                .Where(w => w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                 .Take(4)
                 .Select(s => s.Name));
 
 
             results.ReplaceOrAddToList(artistResults
-                .Where(w => w.Name.ToLower().Contains(searchValue.ToLower()))
+                .Where(w => w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                 .Take(2)
                 .Select(s => s.Name));
         }

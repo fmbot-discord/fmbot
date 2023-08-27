@@ -407,6 +407,7 @@ public class AlbumService
             var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-2));
 
             var albums = plays
+                .Where(w => w.AlbumName != null)
                 .OrderByDescending(o => o.TimePlayed)
                 .Select(s => new AlbumAutoCompleteSearchModel(s.ArtistName, s.AlbumName))
                 .Distinct()
@@ -449,6 +450,7 @@ public class AlbumService
             var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-20));
 
             var albums = plays
+                .Where(w => w.AlbumName != null)
                 .GroupBy(g => new AlbumAutoCompleteSearchModel(g.ArtistName, g.AlbumName))
                 .OrderByDescending(o => o.Count())
                 .Select(s => s.Key)
@@ -469,16 +471,14 @@ public class AlbumService
     {
         try
         {
-            return new List<AlbumAutoCompleteSearchModel>();
-
             const string cacheKey = "albums-all";
 
             var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<AlbumAutoCompleteSearchModel> albums);
             if (!cacheAvailable && cacheEnabled)
             {
-                const string sql = "SELECT * " +
+                const string sql = "SELECT name, artist_name, popularity " +
                                    "FROM public.albums " +
-                                   "WHERE popularity is not null AND popularity > 5 ";
+                                   "WHERE popularity IS NOT NULL AND name IS NOT NULL and artist_name IS NOT NULL AND popularity > 5 ";
 
                 DefaultTypeMap.MatchNamesWithUnderscores = true;
                 await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -493,13 +493,11 @@ public class AlbumService
                 this._cache.Set(cacheKey, albums, TimeSpan.FromHours(2));
             }
 
-            searchValue = searchValue.ToLower();
-
             var results = albums.Where(w =>
-                w.Name.ToLower().StartsWith(searchValue) ||
-                w.Artist.ToLower().StartsWith(searchValue) ||
-                w.Name.ToLower().Contains(searchValue) ||
-                w.Artist.ToLower().Contains(searchValue))
+                w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
+                w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
+                w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase) ||
+                w.Artist.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(o => o.Popularity)
                 .ToList();
 
