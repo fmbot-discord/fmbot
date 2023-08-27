@@ -65,11 +65,11 @@ public class DateTimeAutoComplete : AutocompleteHandler
             var searchValue = autocompleteInteraction.Data.Current.Value.ToString();
 
             results.ReplaceOrAddToList(this._allPossibleCombinations
-                .Where(w => w.ToLower().StartsWith(searchValue.ToLower()))
+                .Where(w => w.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                 .Take(6));
 
             results.ReplaceOrAddToList(this._allPossibleCombinations
-                .Where(w => w.ToLower().Contains(searchValue.ToLower()))
+                .Where(w => w.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                 .Take(4));
         }
 

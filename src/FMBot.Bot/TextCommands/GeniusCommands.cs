@@ -93,8 +93,8 @@ public class GeniusCommands : BaseCommandModule
                 }
 
                 var firstResult = geniusResults.First().Result;
-                if (firstResult.TitleWithFeatured.Trim().ToLower().StartsWith(currentTrackName.Trim().ToLower()) &&
-                    firstResult.PrimaryArtist.Name.Trim().ToLower().Equals(currentTrackArtist.Trim().ToLower()) ||
+                if (firstResult.TitleWithFeatured.Trim().StartsWith(currentTrackName.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                    firstResult.PrimaryArtist.Name.Trim().Equals(currentTrackArtist.Trim(), StringComparison.OrdinalIgnoreCase) ||
                     geniusResults.Count == 1)
                 {
                     this._embed.WithTitle(firstResult.TitleWithFeatured);

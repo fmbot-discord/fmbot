@@ -291,11 +291,11 @@ public class AlbumBuilders
         if (context.ContextUser.UserDiscogs != null && context.ContextUser.DiscogsReleases.Any())
         {
             var albumCollection = context.ContextUser.DiscogsReleases.Where(w =>
-                (w.Release.Title.ToLower().StartsWith(albumSearch.Album.AlbumName.ToLower()) ||
-                 albumSearch.Album.AlbumName.ToLower().StartsWith(w.Release.Title))
+                (w.Release.Title.StartsWith(albumSearch.Album.AlbumName, StringComparison.OrdinalIgnoreCase) ||
+                 albumSearch.Album.AlbumName.StartsWith(w.Release.Title, StringComparison.OrdinalIgnoreCase))
                 &&
-                (w.Release.Artist.ToLower().StartsWith(albumSearch.Album.ArtistName.ToLower()) ||
-                albumSearch.Album.ArtistName.ToLower().StartsWith(w.Release.Artist.ToLower()))).ToList();
+                (w.Release.Artist.StartsWith(albumSearch.Album.ArtistName, StringComparison.OrdinalIgnoreCase) ||
+                albumSearch.Album.ArtistName.StartsWith(w.Release.Artist, StringComparison.OrdinalIgnoreCase))).ToList();
 
             if (albumCollection.Any())
             {

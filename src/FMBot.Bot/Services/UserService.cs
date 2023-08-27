@@ -388,11 +388,11 @@ public class UserService
             if (discogsUser.UserDiscogs != null && discogsUser.DiscogsReleases.Any())
             {
                 var albumCollection = discogsUser.DiscogsReleases.Where(w =>
-                    (w.Release.Title.ToLower().StartsWith(albumName.ToLower()) ||
-                     albumName.ToLower().StartsWith(w.Release.Title.ToLower()))
+                    (w.Release.Title.StartsWith(albumName, StringComparison.OrdinalIgnoreCase) ||
+                     albumName.StartsWith(w.Release.Title, StringComparison.OrdinalIgnoreCase))
                     &&
-                    (w.Release.Artist.ToLower().StartsWith(artistName.ToLower()) ||
-                     artistName.ToLower().StartsWith(w.Release.Artist.ToLower()))).ToList();
+                    (w.Release.Artist.StartsWith(artistName, StringComparison.OrdinalIgnoreCase) ||
+                     artistName.StartsWith(w.Release.Artist, StringComparison.OrdinalIgnoreCase))).ToList();
 
                 var discogsAlbum = albumCollection.MaxBy(o => o.DateAdded);
 
