@@ -1175,7 +1175,7 @@ public class AlbumBuilders
                 }
                 else
                 {
-                    albumPageString.Append($"{counter}\\. ");
+                    albumPageString.Append($"{counter}. ");
                     albumPageString.AppendLine(name);
                 }
 

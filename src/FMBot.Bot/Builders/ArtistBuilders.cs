@@ -642,7 +642,7 @@ public class ArtistBuilders
                 }
                 else
                 {
-                    artistPageString.Append($"{counter}\\. ");
+                    artistPageString.Append($"{counter}. ");
                     artistPageString.AppendLine(name);
                 }
 
@@ -795,7 +795,7 @@ public class ArtistBuilders
             {
                 var newArtist = artistPage.ToList()[index];
 
-                artistPageString.Append($"{counter}\\. ");
+                artistPageString.Append($"{counter}. ");
                 artistPageString.AppendLine(
                     $"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
                     $"— *{newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
