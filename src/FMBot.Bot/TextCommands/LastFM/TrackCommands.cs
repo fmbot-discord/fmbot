@@ -332,10 +332,16 @@ public class TrackCommands : BaseCommandModule
                 $"`{prfx}scrobble Mac DeMarco | Chamber of Reflection`\n" +
                 $"`{prfx}scrobble Home | Climbing Out`");
 
+            this._embed.AddField("You can also specify the album",
+                $"Format: `{prfx}scrobble Artist | Track | Album`\n" +
+                $"`{prfx}scrobble Mac DeMarco | Chamber of Reflection | Salad Days`\n");
+
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed(CommandResponse.Help);
             return;
         }
+
+        _ = this.Context.Channel.TriggerTypingAsync();
 
         var track = await this.SearchTrack(trackValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
         if (track == null)
@@ -366,6 +372,11 @@ public class TrackCommands : BaseCommandModule
         {
             StackCooldownTarget.Add(msg.Author);
             StackCooldownTimer.Add(DateTimeOffset.Now);
+        }
+
+        if (trackValues.Contains(" | ") && trackValues.Split(" | ").ElementAtOrDefault(2) != null)
+        {
+            track.AlbumName = trackValues.Split(" | ").ElementAt(2);
         }
 
         var userTitle = await this._userService.GetUserTitleAsync(this.Context);

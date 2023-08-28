@@ -971,7 +971,7 @@ public class TrackBuilders
                 }
                 else
                 {
-                    trackPageString.Append($"{counter}\\. ");
+                    trackPageString.Append($"{counter}. ");
                     trackPageString.AppendLine(name.ToString());
                 }
 

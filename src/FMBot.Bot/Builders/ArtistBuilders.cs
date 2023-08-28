@@ -642,7 +642,7 @@ public class ArtistBuilders
                 }
                 else
                 {
-                    artistPageString.Append($"{counter}\\. ");
+                    artistPageString.Append($"{counter}. ");
                     artistPageString.AppendLine(name);
                 }
 
@@ -745,49 +745,40 @@ public class ArtistBuilders
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
         }
 
+        if (context.ContextUser.LastUpdated < DateTime.UtcNow.AddHours(-1))
+        {
+            await this._updateService.UpdateUser(context.ContextUser);
+        }
+
         var userUrl = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
             $"/library/artists?{timeSettings.UrlParameter}");
 
         response.EmbedAuthor.WithName($"Discovered artists in {timeSettings.AltDescription.ToLower()} for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
-        var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
-            timeSettings, 200, 1);
-
-        if (!artists.Success || artists.Content == null)
-        {
-            response.Embed.ErrorResponse(artists.Error, artists.Message, "top artists", context.DiscordUser);
-            response.CommandResponse = CommandResponse.LastFmError;
-            response.ResponseType = ResponseType.Embed;
-            return response;
-        }
-        if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
-        {
-            response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top artists in the [selected time period]({userUrl}).");
-            response.CommandResponse = CommandResponse.NoScrobbles;
-            response.ResponseType = ResponseType.Embed;
-            return response;
-        }
-
         var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
 
         var knownArtists = allPlays
             .Where(w => w.TimePlayed < timeSettings.StartDateTime)
-            .GroupBy(g => g.ArtistName, StringComparer.InvariantCultureIgnoreCase)
+            .GroupBy(g => g.ArtistName, StringComparer.OrdinalIgnoreCase)
             .Select(s => s.Key)
-            .ToList();
+            .ToHashSet();
+
+        var allArtists = allPlays
+            .GroupBy(g => g.ArtistName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(d => d.Key, d => d.Count(), StringComparer.OrdinalIgnoreCase);
 
         var topNewArtists = allPlays
             .Where(w => w.TimePlayed >= timeSettings.StartDateTime && w.TimePlayed <= timeSettings.EndDateTime)
-            .GroupBy(g => g.ArtistName, StringComparer.InvariantCultureIgnoreCase)
+            .GroupBy(g => g.ArtistName, StringComparer.OrdinalIgnoreCase)
             .Select(s => new TopArtist
             {
                 ArtistName = s.Key,
-                UserPlaycount = s.Count(),
+                UserPlaycount = allArtists[s.Key],
                 FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed,
                 ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.Key)
             })
-            .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName, StringComparison.InvariantCultureIgnoreCase)))
+            .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName, StringComparison.OrdinalIgnoreCase)))
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
 
@@ -796,7 +787,6 @@ public class ArtistBuilders
 
         var counter = 1;
         var pageCounter = 1;
-        var rnd = new Random().Next(0, 4);
 
         foreach (var artistPage in artistPages)
         {
@@ -805,7 +795,7 @@ public class ArtistBuilders
             {
                 var newArtist = artistPage.ToList()[index];
 
-                artistPageString.Append($"{counter}\\. ");
+                artistPageString.Append($"{counter}. ");
                 artistPageString.AppendLine(
                     $"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
                     $"— *{newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
@@ -816,14 +806,9 @@ public class ArtistBuilders
 
             var footer = new StringBuilder();
 
-            ImportService.AddImportDescription(footer, artists.PlaySource);
-
             footer.Append($"Page {pageCounter}/{artistPages.Count}");
 
-            if (artists.Content.TotalAmount.HasValue)
-            {
-                footer.Append($" - {artists.Content.TotalAmount} newly discovered artists");
-            }
+            footer.Append($" - {topNewArtists.Count} newly discovered artists");
 
             pages.Add(new PageBuilder()
                 .WithDescription(artistPageString.ToString())

@@ -336,7 +336,7 @@ public class DiscogsBuilder
                     $"**[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserReleasesInCollection} {StringExtensions.GetReleasesString(artist.UserReleasesInCollection)})";
 
                 // TODO for those who know how to deal with this: honor Billboard :)
-                artistPageString.Append($"{counter}\\. ");
+                artistPageString.Append($"{counter}. ");
                 artistPageString.AppendLine(name);
 
                 counter++;
