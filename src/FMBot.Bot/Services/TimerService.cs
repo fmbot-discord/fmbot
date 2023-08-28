@@ -69,7 +69,7 @@ public class TimerService
     public void QueueJobs()
     {
         Log.Information($"RecurringJob: Adding {nameof(CheckForNewFeatured)}");
-        RecurringJob.AddOrUpdate(nameof(CheckForNewFeatured), () => CheckForNewFeatured(), "* * * * *");
+        RecurringJob.AddOrUpdate(nameof(CheckForNewFeatured), () => CheckForNewFeatured(), "*/2 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(UpdateMetricsAndStatus)}");
         RecurringJob.AddOrUpdate(nameof(UpdateMetricsAndStatus), () => UpdateMetricsAndStatus(), "* * * * *");
@@ -109,7 +109,7 @@ public class TimerService
             RecurringJob.AddOrUpdate(nameof(CheckExpiredDiscordSupporters), () => CheckExpiredDiscordSupporters(), "0 8,18 * * *");
 
             Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
-            RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "*/2 * * * *");
+            RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 12 * * *");
 
             Log.Information($"RecurringJob: Adding {nameof(CheckForNewSupporters)}");
             RecurringJob.AddOrUpdate(nameof(CheckForNewSupporters), () => CheckForNewSupporters(), "*/3 * * * *");
