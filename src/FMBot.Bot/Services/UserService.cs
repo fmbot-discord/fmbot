@@ -388,11 +388,11 @@ public class UserService
             if (discogsUser.UserDiscogs != null && discogsUser.DiscogsReleases.Any())
             {
                 var albumCollection = discogsUser.DiscogsReleases.Where(w =>
-                    (w.Release.Title.ToLower().StartsWith(albumName.ToLower()) ||
-                     albumName.ToLower().StartsWith(w.Release.Title.ToLower()))
+                    (w.Release.Title.StartsWith(albumName, StringComparison.OrdinalIgnoreCase) ||
+                     albumName.StartsWith(w.Release.Title, StringComparison.OrdinalIgnoreCase))
                     &&
-                    (w.Release.Artist.ToLower().StartsWith(artistName.ToLower()) ||
-                     artistName.ToLower().StartsWith(w.Release.Artist.ToLower()))).ToList();
+                    (w.Release.Artist.StartsWith(artistName, StringComparison.OrdinalIgnoreCase) ||
+                     artistName.StartsWith(w.Release.Artist, StringComparison.OrdinalIgnoreCase))).ToList();
 
                 var discogsAlbum = albumCollection.MaxBy(o => o.DateAdded);
 
@@ -541,7 +541,7 @@ public class UserService
                     await this._playService.GetArtistFirstPlayDate(userSettings.UserId, artistName);
                 if (firstPlay != null)
                 {
-                    options.Add($"Artist first listened {firstPlay.Value.ToString("MMMM d yyyy")}");
+                    options.Add($"Artist discovered {firstPlay.Value.ToString("MMMM d yyyy")}");
                 }
             }
             if (footerOptions.HasFlag(FmFooterOption.FirstAlbumListen) && albumName != null)
@@ -550,7 +550,7 @@ public class UserService
                     await this._playService.GetAlbumFirstPlayDate(userSettings.UserId, artistName, albumName);
                 if (firstPlay != null)
                 {
-                    options.Add($"Album first listened {firstPlay.Value.ToString("MMMM d yyyy")}");
+                    options.Add($"Album discovered {firstPlay.Value.ToString("MMMM d yyyy")}");
                 }
             }
             if (footerOptions.HasFlag(FmFooterOption.FirstTrackListen))
@@ -559,7 +559,7 @@ public class UserService
                     await this._playService.GetTrackFirstPlayDate(userSettings.UserId, artistName, trackName);
                 if (firstPlay != null)
                 {
-                    options.Add($"First listened {firstPlay.Value.ToString("MMMM d yyyy")}");
+                    options.Add($"Track discovered {firstPlay.Value.ToString("MMMM d yyyy")}");
                 }
             }
         }

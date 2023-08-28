@@ -58,44 +58,44 @@ public class TrackAutoComplete : AutocompleteHandler
                     await this._trackService.SearchThroughTracks(searchValue);
 
                 results.ReplaceOrAddToList(recentlyPlayedTracks
-                    .Where(w => w.Track.ToLower().StartsWith(searchValue.ToLower()))
+                    .Where(w => w.Track.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(4));
 
                 results.ReplaceOrAddToList(recentTopTracks
-                    .Where(w => w.Track.ToLower().StartsWith(searchValue.ToLower()))
+                    .Where(w => w.Track.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(4));
 
                 results.ReplaceOrAddToList(recentlyPlayedTracks
-                    .Where(w => w.Track.ToLower().Contains(searchValue.ToLower()))
+                    .Where(w => w.Track.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(2));
 
                 results.ReplaceOrAddToList(recentTopTracks
-                    .Where(w => w.Track.ToLower().Contains(searchValue.ToLower()))
+                    .Where(w => w.Track.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Select(s => s.Name)
                     .Take(3));
 
                 results.ReplaceOrAddToList(trackResults
-                    .Where(w => w.Artist.ToLower().StartsWith(searchValue.ToLower()))
+                    .Where(w => w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Take(2)
                     .Select(s => s.Name));
 
                 results.ReplaceOrAddToList(trackResults
                     .Where(w => w.Popularity != null && w.Popularity > 60 &&
-                                w.Name.ToLower().Contains(searchValue.ToLower()))
+                                w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Take(2)
                     .Select(s => s.Name));
 
                 results.ReplaceOrAddToList(trackResults
-                    .Where(w => w.Name.ToLower().StartsWith(searchValue.ToLower()))
+                    .Where(w => w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Take(4)
                     .Select(s => s.Name));
 
 
                 results.ReplaceOrAddToList(trackResults
-                    .Where(w => w.Name.ToLower().Contains(searchValue.ToLower()))
+                    .Where(w => w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                     .Take(2)
                     .Select(s => s.Name));
 

@@ -180,7 +180,7 @@ public class TrackBuilders
             {
                 var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
 
-                response.Embed.WithDescription($"Your first listen: <t:{firstListenValue}:D>");
+                response.Embed.WithDescription($"Discovered on: <t:{firstListenValue}:D>");
             }
         }
         else
@@ -189,7 +189,7 @@ public class TrackBuilders
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                response.Embed.WithDescription($"*Supporters can see the date they first listened to a track. " +
+                response.Embed.WithDescription($"*Supporters can see the date they discovered a track. " +
                                                $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterDiscordLink})*");
             }
         }

@@ -141,7 +141,7 @@ public class ArtistBuilders
             {
                 var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
 
-                firstListenInfo = $"Your first listen: <t:{firstListenValue}:D>";
+                firstListenInfo = $"Discovered on: <t:{firstListenValue}:D>";
             }
         }
         else
@@ -150,7 +150,7 @@ public class ArtistBuilders
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                response.Embed.WithDescription($"*Supporters can see the date they first listened to an artist. " +
+                response.Embed.WithDescription($"*Supporters can see the date they discovered an artist. " +
                                                $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterDiscordLink})*");
             }
         }
@@ -327,8 +327,8 @@ public class ArtistBuilders
         if (context.ContextUser.UserDiscogs != null && context.ContextUser.DiscogsReleases.Any())
         {
             var artistCollection = context.ContextUser.DiscogsReleases
-                .Where(w => w.Release.Artist.ToLower().StartsWith(artistSearch.Artist.ArtistName.ToLower()) ||
-                            artistSearch.Artist.ArtistName.ToLower().StartsWith(w.Release.Artist.ToLower()))
+                .Where(w => w.Release.Artist.StartsWith(artistSearch.Artist.ArtistName, StringComparison.OrdinalIgnoreCase) ||
+                            artistSearch.Artist.ArtistName.StartsWith(w.Release.Artist, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             if (artistCollection.Any())
@@ -669,6 +669,160 @@ public class ArtistBuilders
             {
                 footer.AppendLine();
                 footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
+            }
+
+            pages.Add(new PageBuilder()
+                .WithDescription(artistPageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString()));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
+    public static ResponseModel DiscoverySupporterRequired(ContextModel context, UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (context.ContextUser.UserType == UserType.User)
+        {
+            response.Embed.WithDescription($"To see what artists you've recently discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
+
+            response.Components = new ComponentBuilder()
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.CommandResponse = CommandResponse.SupporterRequired;
+
+            return response;
+        }
+
+        if (userSettings.UserType == UserType.User)
+        {
+            response.Embed.WithDescription($"Sorry, artist discoveries uses someone their lifetime listening history. You can only use this command on other supporters.");
+
+            response.Components = new ComponentBuilder()
+                .WithButton(".fmbot supporter", style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.CommandResponse = CommandResponse.SupporterRequired;
+
+            return response;
+        }
+
+        return null;
+    }
+
+    public async Task<ResponseModel> ArtistDiscoveriesAsync(
+        ContextModel context,
+        TopListSettings topListSettings,
+        TimeSettingsModel timeSettings,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var pages = new List<PageBuilder>();
+
+        string userTitle;
+        if (!userSettings.DifferentUser)
+        {
+            if (!context.SlashCommand)
+            {
+                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            }
+            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        }
+        else
+        {
+            userTitle =
+                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+        }
+
+        var userUrl = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
+            $"/library/artists?{timeSettings.UrlParameter}");
+
+        response.EmbedAuthor.WithName($"Discovered artists in {timeSettings.AltDescription.ToLower()} for {userTitle}");
+        response.EmbedAuthor.WithUrl(userUrl);
+
+        var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
+            timeSettings, 200, 1);
+
+        if (!artists.Success || artists.Content == null)
+        {
+            response.Embed.ErrorResponse(artists.Error, artists.Message, "top artists", context.DiscordUser);
+            response.CommandResponse = CommandResponse.LastFmError;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+        if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
+        {
+            response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top artists in the [selected time period]({userUrl}).");
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+
+        var knownArtists = allPlays
+            .Where(w => w.TimePlayed < timeSettings.StartDateTime)
+            .GroupBy(g => g.ArtistName, StringComparer.InvariantCultureIgnoreCase)
+            .Select(s => s.Key)
+            .ToList();
+
+        var topNewArtists = allPlays
+            .Where(w => w.TimePlayed >= timeSettings.StartDateTime && w.TimePlayed <= timeSettings.EndDateTime)
+            .GroupBy(g => g.ArtistName, StringComparer.InvariantCultureIgnoreCase)
+            .Select(s => new TopArtist
+            {
+                ArtistName = s.Key,
+                UserPlaycount = s.Count(),
+                FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed,
+                ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.Key)
+            })
+            .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName, StringComparison.InvariantCultureIgnoreCase)))
+            .OrderByDescending(o => o.UserPlaycount)
+            .ToList();
+
+        var artistPages = topNewArtists
+            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+
+        var counter = 1;
+        var pageCounter = 1;
+        var rnd = new Random().Next(0, 4);
+
+        foreach (var artistPage in artistPages)
+        {
+            var artistPageString = new StringBuilder();
+            for (var index = 0; index < artistPage.Count; index++)
+            {
+                var newArtist = artistPage.ToList()[index];
+
+                artistPageString.Append($"{counter}\\. ");
+                artistPageString.AppendLine(
+                    $"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
+                    $"— *{newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
+                    $"— on **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
+
+                counter++;
+            }
+
+            var footer = new StringBuilder();
+
+            ImportService.AddImportDescription(footer, artists.PlaySource);
+
+            footer.Append($"Page {pageCounter}/{artistPages.Count}");
+
+            if (artists.Content.TotalAmount.HasValue)
+            {
+                footer.Append($" - {artists.Content.TotalAmount} newly discovered artists");
             }
 
             pages.Add(new PageBuilder()

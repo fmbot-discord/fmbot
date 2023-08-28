@@ -372,6 +372,51 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
+    [Command("discoveries", RunMode = RunMode.Async)]
+    [Summary("Shows the artists you've recently discovered.")]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample, Constants.ExtraLargeExample)]
+    [Examples("d", "discovered", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]
+    [Alias("d", "discovered", "discovery", "artistdiscoveries", "firstlistened")]
+    [UsernameSetRequired]
+    [SupportsPagination]
+    [CommandCategories(CommandCategory.Artists)]
+    public async Task ArtistDiscoveriesAsync([Remainder] string extraOptions = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var context = new ContextModel(this.Context, prfx, contextUser);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+
+            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
+            }
+
+            var topListSettings = SettingService.SetTopListSettings(extraOptions);
+            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+
+            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, TimePeriod.Quarterly, registeredLastFm: userSettings.RegisteredLastFm);
+
+            var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [Command("taste", RunMode = RunMode.Async)]
     [Summary("Compares your top artists, genres and countries to those from another user.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`", "XXL")]

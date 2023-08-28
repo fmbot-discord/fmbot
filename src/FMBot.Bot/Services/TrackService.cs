@@ -752,14 +752,12 @@ public class TrackService
     {
         try
         {
-            return new List<TrackAutoCompleteSearchModel>();
-
             const string cacheKey = "tracks-all";
 
             var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<TrackAutoCompleteSearchModel> tracks);
             if (!cacheAvailable && cacheEnabled)
             {
-                const string sql = "SELECT * " +
+                const string sql = "SELECT name, artist_name, popularity " +
                                    "FROM public.tracks " +
                                    "WHERE popularity is not null AND popularity > 5 ";
 
@@ -776,13 +774,11 @@ public class TrackService
                 this._cache.Set(cacheKey, tracks, TimeSpan.FromHours(2));
             }
 
-            searchValue = searchValue.ToLower();
-
             var results = tracks.Where(w =>
-                    w.Name.ToLower().StartsWith(searchValue) ||
-                    w.Artist.ToLower().StartsWith(searchValue) ||
-                    w.Name.ToLower().Contains(searchValue) ||
-                    w.Artist.ToLower().Contains(searchValue))
+                    w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
+                    w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
+                    w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase) ||
+                    w.Artist.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(o => o.Popularity)
                 .ToList();
 

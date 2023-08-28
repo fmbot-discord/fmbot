@@ -91,7 +91,7 @@ public class StaticBuilders
         }
 
         response.Embed.AddField("Get more stats",
-            "- See first listen dates for artists/albums/tracks\n" +
+            "- See discovery dates for artists/albums/tracks\n" +
             "- Expanded `stats` command with overall history\n" +
             "- Extra page on `year` with months and artist discoveries\n" +
             "- Add up to 8 options to your `fm` footer\n" +

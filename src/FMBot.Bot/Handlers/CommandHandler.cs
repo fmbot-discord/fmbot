@@ -98,7 +98,7 @@ public class CommandHandler
 
         // New prefix '.' but user still uses the '.fm' prefix anyway
         if (prfx == this._botSettings.Bot.Prefix &&
-            msg.HasStringPrefix(prfx + "fm", ref argPos, StringComparison.CurrentCultureIgnoreCase) &&
+            msg.HasStringPrefix(prfx + "fm", ref argPos, StringComparison.OrdinalIgnoreCase) &&
             msg.Content.Length > $"{prfx}fm".Length)
         {
             await ExecuteCommand(msg, context, argPos, prfx);
@@ -106,7 +106,7 @@ public class CommandHandler
         }
 
         // Prefix is set to '.fm' and the user uses '.fm'
-        if (prfx == ".fm" && msg.HasStringPrefix(".", ref argPos))
+        if (prfx == ".fm" && msg.HasStringPrefix(".", ref argPos, StringComparison.OrdinalIgnoreCase))
         {
             var searchResult = this._commands.Search(context, argPos);
             if (searchResult.IsSuccess &&
@@ -120,7 +120,7 @@ public class CommandHandler
         }
 
         // Normal or custom prefix
-        if (msg.HasStringPrefix(prfx, ref argPos, StringComparison.CurrentCultureIgnoreCase))
+        if (msg.HasStringPrefix(prfx, ref argPos, StringComparison.OrdinalIgnoreCase))
         {
             await ExecuteCommand(msg, context, argPos, prfx);
             return;
@@ -169,7 +169,7 @@ public class CommandHandler
         var searchResult = this._commands.Search(context, argPos);
 
         // If no commands found and message does not start with prefix
-        if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && !msg.Content.StartsWith(prfx))
+        if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && !msg.Content.StartsWith(prfx, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -180,7 +180,7 @@ public class CommandHandler
         }
 
         // If command possibly equals .fm
-        if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(this._botSettings.Bot.Prefix))
+        if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(this._botSettings.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
         {
             var fmSearchResult = this._commands.Search(context, 1);
 

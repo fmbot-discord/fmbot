@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Discord;
 using Discord.WebSocket;
@@ -27,7 +28,7 @@ public abstract class MusicBot
 
     public bool IsAuthor(SocketUser user)
     {
-        return user?.Username?.StartsWith(this.Name) ?? false;
+        return user?.Username?.StartsWith(this.Name, StringComparison.OrdinalIgnoreCase) ?? false;
     }
 
     public abstract bool ShouldIgnoreMessage(IUserMessage msg);

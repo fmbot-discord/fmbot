@@ -109,7 +109,7 @@ public class TimerService
             RecurringJob.AddOrUpdate(nameof(CheckExpiredDiscordSupporters), () => CheckExpiredDiscordSupporters(), "0 8,18 * * *");
 
             Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
-            RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 0,12 * * *");
+            RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "*/2 * * * *");
 
             Log.Information($"RecurringJob: Adding {nameof(CheckForNewSupporters)}");
             RecurringJob.AddOrUpdate(nameof(CheckForNewSupporters), () => CheckForNewSupporters(), "*/3 * * * *");
