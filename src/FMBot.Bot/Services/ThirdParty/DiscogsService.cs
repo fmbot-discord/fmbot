@@ -218,6 +218,7 @@ public class DiscogsService
             .Include(i => i.UserDiscogs)
             .Where(w => w.UserDiscogs != null &&
                         w.UserDiscogs.ReleasesLastUpdated < updateCutoff)
+            .Take(500)
             .ToListAsync();
     }
 
