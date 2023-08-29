@@ -138,16 +138,28 @@ public class ImportService
 
         var timestamps = existingPlays
             .Where(w => w.PlaySource == PlaySource.SpotifyImport)
-            .Select(s => s.TimePlayed)
-            .ToHashSet();
+            .GroupBy(g => g.TimePlayed)
+            .ToDictionary(d => d.Key, d => d.ToList());
 
         var playsToReturn = new List<UserPlay>();
         foreach (var userPlay in userPlays)
         {
-            if (!timestamps.Contains(userPlay.TimePlayed))
+            if (!timestamps.ContainsKey(userPlay.TimePlayed))
             {
                 playsToReturn.Add(userPlay);
-                timestamps.Add(userPlay.TimePlayed);
+                timestamps.Add(userPlay.TimePlayed, new List<UserPlay> { userPlay });
+            }
+            else
+            {
+                var playsWithTimestamp = timestamps[userPlay.TimePlayed];
+
+                if (!playsWithTimestamp.Any(a => a.TrackName == userPlay.TrackName &&
+                                                 a.AlbumName == userPlay.AlbumName &&
+                                                 a.ArtistName == userPlay.ArtistName))
+                {
+                    playsToReturn.Add(userPlay);
+                    playsWithTimestamp.Add(userPlay);
+                }
             }
         }
 
