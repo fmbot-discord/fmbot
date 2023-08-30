@@ -62,8 +62,8 @@ public class GenreSlashCommands : InteractionModuleBase
     }
 
     [UsernameSetRequired]
-    [ComponentInteraction($"{InteractionConstants.GenreGuild}-*-*")]
-    public async Task GuildGenresAsync(string discordUserId, string genre)
+    [ComponentInteraction($"{InteractionConstants.GenreGuild}-*-*-*")]
+    public async Task GuildGenresAsync(string discordUserId, string requesterDiscordUserId, string genre)
     {
         _ = DeferAsync();
 
@@ -77,9 +77,9 @@ public class GenreSlashCommands : InteractionModuleBase
             new ComponentBuilder().WithButton($"Loading server view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Primary);
         await message.ModifyAsync(m => m.Components = components.Build());
 
-        var contextUser = await this._userService.GetUserAsync(ulong.Parse(discordUserId));
+        var contextUser = await this._userService.GetUserAsync(ulong.Parse(requesterDiscordUserId));
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User);
+        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User);
 
         try
         {
@@ -95,8 +95,8 @@ public class GenreSlashCommands : InteractionModuleBase
     }
 
     [UsernameSetRequired]
-    [ComponentInteraction($"{InteractionConstants.GenreUser}-*-*")]
-    public async Task UserGenresAsync(string discordUserId, string genre)
+    [ComponentInteraction($"{InteractionConstants.GenreUser}-*-*-*")]
+    public async Task UserGenresAsync(string discordUserId, string requesterDiscordUserId, string genre)
     {
         _ = DeferAsync();
 
@@ -110,15 +110,15 @@ public class GenreSlashCommands : InteractionModuleBase
             new ComponentBuilder().WithButton($"Loading user view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Primary);
         await message.ModifyAsync(m => m.Components = components.Build());
 
-        var contextUser = await this._userService.GetUserAsync(ulong.Parse(discordUserId));
+        var contextUser = await this._userService.GetUserAsync(ulong.Parse(requesterDiscordUserId));
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User);
+        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User);
 
         try
         {
             var context = new ContextModel(this.Context, contextUser)
             {
-                DiscordUser = await this.Context.Guild.GetUserAsync(ulong.Parse(discordUserId))
+                DiscordUser = await this.Context.Guild.GetUserAsync(ulong.Parse(requesterDiscordUserId))
             };
 
             var response = await this._genreBuilders.GenreAsync(context, genre, userSettings, guild);

@@ -291,7 +291,7 @@ public class GenreBuilders
         string genreOptions,
         UserSettingsModel userSettings,
         Guild guild,
-        bool user = true)
+        bool userView = true)
     {
         var response = new ResponseModel
         {
@@ -441,7 +441,7 @@ public class GenreBuilders
         var userGenre = userArtistsWithGenres.FirstOrDefault();
 
         List<PageBuilder> pages;
-        if (user)
+        if (userView)
         {
             if (userGenre == null || !userGenre.Artists.Any())
             {
@@ -452,16 +452,19 @@ public class GenreBuilders
             }
 
             var userGenreArtistPages = userGenre.Artists.ChunkBy(10);
-            var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-            if (userSettings.DifferentUser)
+
+            string userTitle;
+            if (!userSettings.DifferentUser)
             {
-                userTitle = userSettings.UserNameLastFm;
-                pages = CreateGenrePageBuilder(userGenreArtistPages, response.EmbedAuthor, userGenre, "User view", null, new List<string>{$"Requested by {userTitle}"});
+                userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
             }
             else
             {
-                pages = CreateGenrePageBuilder(userGenreArtistPages, response.EmbedAuthor, userGenre, "User view");
+                userTitle =
+                    $"{userSettings.DisplayName}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
             }
+
+            pages = CreateGenrePageBuilder(userGenreArtistPages, response.EmbedAuthor, userGenre, "User view");
 
             response.EmbedAuthor.WithName($"Top '{userGenre.GenreName.Transform(To.TitleCase)}' artists for {userTitle}");
         }
@@ -487,7 +490,7 @@ public class GenreBuilders
             }
 
             var guildGenreArtistPages = guildGenre.Artists.ChunkBy(10);
-            pages = CreateGenrePageBuilder(guildGenreArtistPages, response.EmbedAuthor, guildGenre, "Server view", userGenre?.Artists);
+            pages = CreateGenrePageBuilder(guildGenreArtistPages, response.EmbedAuthor, guildGenre, "Server view", userSettings.DisplayName, userGenre?.Artists);
 
             response.EmbedAuthor.WithName($"Top '{genres.First().Transform(To.TitleCase)}' artists for {context.DiscordGuild.Name}");
         }
@@ -497,15 +500,20 @@ public class GenreBuilders
             response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
         }
 
-        var interaction = user ? InteractionConstants.GenreGuild : InteractionConstants.GenreUser;
-        var emote = user ? Emote.Parse("<:server:961685224041902140>") : Emote.Parse("<:user:961687127249260634>");
+        var interaction = userView ? InteractionConstants.GenreGuild : InteractionConstants.GenreUser;
+        var emote = userView ? Emote.Parse("<:server:961685224041902140>") : Emote.Parse("<:user:961687127249260634>");
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, $"{interaction}-{userSettings.DiscordUserId}-{userGenre.GenreName}", emote);
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages, $"{interaction}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{userGenre.GenreName}", emote);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
 
-    private List<PageBuilder> CreateGenrePageBuilder(List<List<TopArtist>> topArtists, EmbedAuthorBuilder author, TopGenre topGenre, string view, List<TopArtist> allUserTopArtists = null, List<string> additionalFooterItems = null)
+    private static List<PageBuilder> CreateGenrePageBuilder(List<List<TopArtist>> topArtists,
+        EmbedAuthorBuilder author,
+        TopGenre topGenre,
+        string view,
+        string userTitle = null,
+        IReadOnlyCollection<TopArtist> allUserTopArtists = null)
     {
         var pages = new List<PageBuilder>();
         if (!topArtists.Any())
@@ -517,36 +525,59 @@ public class GenreBuilders
 
         var counter = 1;
         var pageCounter = 1;
+        var anyMatches = false;
         foreach (var genreArtistPage in topArtists)
         {
             var genrePageString = new StringBuilder();
             foreach (var genreArtist in genreArtistPage)
             {
-                var counterString = $"{counter}.";
+                var counterString = $"{counter}. ";
+                var match = false;
                 if (allUserTopArtists != null)
                 {
-                    var userTopArtist = allUserTopArtists.FirstOrDefault(f => f.ArtistName.ToLower() == genreArtist.ArtistName.ToLower());
+                    var userTopArtist = allUserTopArtists.FirstOrDefault(f => string.Equals(f.ArtistName, genreArtist.ArtistName, StringComparison.OrdinalIgnoreCase));
                     if (userTopArtist != null)
                     {
-                        counterString = $"**{counter}.**";
+                        match = true;
+                        anyMatches = true;
                     }
                 }
 
-                genrePageString.AppendLine($"{counterString} **{genreArtist.ArtistName}** - *{genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
+                genrePageString.Append(counterString);
+
+                if (match)
+                {
+                    genrePageString.Append("__");
+                }
+
+                genrePageString.Append($"**{StringExtensions.Sanitize(genreArtist.ArtistName)}**");
+
+                if (match)
+                {
+                    genrePageString.Append("__");
+                }
+
+                genrePageString.Append($" - *{genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
+                genrePageString.AppendLine();
+
                 counter++;
             }
 
-            var footer = $"Genre source: Spotify - {view}\n" +
-                         $"Page {pageCounter}/{topArtists.Count} - {topGenre.Artists.Count} total artists - {topGenre.Artists.Sum(s => s.UserPlaycount)} total plays";
+            var footer = new StringBuilder();
 
-            foreach (var additionalFooterItem in additionalFooterItems)
+            footer.AppendLine($"Genre source: Spotify - {view}");
+
+            if (anyMatches)
             {
-                footer += $"\n{additionalFooterItem}";
+                footer.AppendLine($"Artists {StringExtensions.Sanitize(userTitle)} knows are underlined");
             }
+
+            footer.AppendLine($"Page {pageCounter}/{topArtists.Count} - {topGenre.Artists.Count} total artists - {topGenre.Artists.Sum(s => s.UserPlaycount)} total plays");
+
             pages.Add(new PageBuilder()
                 .WithDescription(genrePageString.ToString())
                 .WithAuthor(author)
-                .WithFooter(footer));
+                .WithFooter(footer.ToString()));
             pageCounter++;
         }
 
