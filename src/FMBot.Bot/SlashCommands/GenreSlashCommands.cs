@@ -12,7 +12,6 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain.Models;
 
 
 namespace FMBot.Bot.SlashCommands;
