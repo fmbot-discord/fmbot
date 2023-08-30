@@ -13,6 +13,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 
+
 namespace FMBot.Bot.SlashCommands;
 
 public class GenreSlashCommands : InteractionModuleBase
@@ -20,15 +21,17 @@ public class GenreSlashCommands : InteractionModuleBase
     private readonly UserService _userService;
     private readonly GuildService _guildService;
     private readonly GenreBuilders _genreBuilders;
+    private readonly SettingService _settingService;
 
     private InteractiveService Interactivity { get; }
 
-    public GenreSlashCommands(UserService userService, InteractiveService interactivity, GenreBuilders genreBuilders, GuildService guildService)
+    public GenreSlashCommands(UserService userService, InteractiveService interactivity, GenreBuilders genreBuilders, GuildService guildService, SettingService settingService)
     {
         this._userService = userService;
         this.Interactivity = interactivity;
         this._genreBuilders = genreBuilders;
         this._guildService = guildService;
+        this._settingService = settingService;
     }
 
     [SlashCommand("genre", "Shows genre info for artist or top artists for genre")]
@@ -36,16 +39,18 @@ public class GenreSlashCommands : InteractionModuleBase
     public async Task GenreAsync(
         [Summary("search", "The genre or artist you want to view")]
         [Autocomplete(typeof(GenreArtistAutoComplete))]
-        string name = null)
+        string search = null,
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         try
         {
-            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, contextUser), name, guild);
+            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, contextUser), search, userSettings, guild);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -74,10 +79,11 @@ public class GenreSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserAsync(ulong.Parse(discordUserId));
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User);
 
         try
         {
-            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, contextUser), genre, guild, false);
+            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, contextUser), genre, userSettings, guild, false);
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -106,6 +112,7 @@ public class GenreSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserAsync(ulong.Parse(discordUserId));
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User);
 
         try
         {
@@ -114,7 +121,7 @@ public class GenreSlashCommands : InteractionModuleBase
                 DiscordUser = await this.Context.Guild.GetUserAsync(ulong.Parse(discordUserId))
             };
 
-            var response = await this._genreBuilders.GenreAsync(context, genre, guild);
+            var response = await this._genreBuilders.GenreAsync(context, genre, userSettings, guild);
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity);
             this.Context.LogCommandUsed(response.CommandResponse);

@@ -116,7 +116,8 @@ public class GenreCommands : BaseCommandModule
 
         try
         {
-            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, prfx, contextUser), userView.NewSearchValue, guild, userView.User);
+            var userSettings = await this._settingService.GetUser(userView.NewSearchValue, contextUser, this.Context);
+            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, prfx, contextUser), userSettings.NewSearchValue, userSettings, guild, userView.User);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
