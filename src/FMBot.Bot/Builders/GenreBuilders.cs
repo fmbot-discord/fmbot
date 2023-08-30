@@ -289,6 +289,7 @@ public class GenreBuilders
     public async Task<ResponseModel> GenreAsync(
         ContextModel context,
         string genreOptions,
+        UserSettingsModel userSettings,
         Guild guild,
         bool user = true)
     {
@@ -300,11 +301,11 @@ public class GenreBuilders
         var genres = new List<string>();
         if (string.IsNullOrWhiteSpace(genreOptions))
         {
-            var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, 1, true, context.ContextUser.SessionKeyLastFm);
+            var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFm, 1, true, userSettings.SessionKeyLastFm);
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
-                return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, context.ContextUser.UserNameLastFM);
+                return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
             }
 
             var artistName = recentTracks.Content.RecentTracks.First().ArtistName;
@@ -313,7 +314,7 @@ public class GenreBuilders
 
             if (foundGenres == null)
             {
-                var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistName, context.ContextUser.UserNameLastFM);
+                var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistName, userSettings.UserNameLastFm);
                 if (artistCall.Success)
                 {
                     var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
@@ -417,11 +418,20 @@ public class GenreBuilders
             return response;
         }
 
-        var topArtists = await this._artistsService.GetUserAllTimeTopArtists(context.ContextUser.UserId, true);
+        var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true);
         if (topArtists.Count < 100)
         {
-            response.Embed.WithDescription($"Sorry, you don't have enough top artists yet to use this command (must have at least 100 - you have {topArtists.Count}).\n\n" +
-                                        "Please try again later.");
+            if (userSettings.DifferentUser)
+            {
+                response.Embed.WithDescription($"Sorry, {userSettings.UserNameLastFm} doesn't have enough top artists yet to use this command (must have at least 100 - {userSettings.UserNameLastFm} has {topArtists.Count}).\n\n" +
+                                            "Please try again later.");
+            }
+            else
+            {
+                response.Embed.WithDescription($"Sorry, you don't have enough top artists yet to use this command (must have at least 100 - you have {topArtists.Count}).\n\n" +
+                                            "Please try again later.");
+            }
+
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -442,9 +452,17 @@ public class GenreBuilders
             }
 
             var userGenreArtistPages = userGenre.Artists.ChunkBy(10);
-            pages = CreateGenrePageBuilder(userGenreArtistPages, response.EmbedAuthor, userGenre, "User view");
-
             var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+            if (userSettings.DifferentUser)
+            {
+                userTitle = userSettings.UserNameLastFm;
+                pages = CreateGenrePageBuilder(userGenreArtistPages, response.EmbedAuthor, userGenre, "User view", null, new List<string>{$"Requested by {userTitle}"});
+            }
+            else
+            {
+                pages = CreateGenrePageBuilder(userGenreArtistPages, response.EmbedAuthor, userGenre, "User view");
+            }
+
             response.EmbedAuthor.WithName($"Top '{userGenre.GenreName.Transform(To.TitleCase)}' artists for {userTitle}");
         }
         else
@@ -474,7 +492,7 @@ public class GenreBuilders
             response.EmbedAuthor.WithName($"Top '{genres.First().Transform(To.TitleCase)}' artists for {context.DiscordGuild.Name}");
         }
 
-        if (!context.SlashCommand)
+        if (!context.SlashCommand && !userSettings.DifferentUser)
         {
             response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
         }
@@ -482,12 +500,12 @@ public class GenreBuilders
         var interaction = user ? InteractionConstants.GenreGuild : InteractionConstants.GenreUser;
         var emote = user ? Emote.Parse("<:server:961685224041902140>") : Emote.Parse("<:user:961687127249260634>");
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, $"{interaction}-{context.ContextUser.DiscordUserId}-{userGenre.GenreName}", emote);
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages, $"{interaction}-{userSettings.DiscordUserId}-{userGenre.GenreName}", emote);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
 
-    private List<PageBuilder> CreateGenrePageBuilder(List<List<TopArtist>> topArtists, EmbedAuthorBuilder author, TopGenre topGenre, string view, List<TopArtist> allUserTopArtists = null)
+    private List<PageBuilder> CreateGenrePageBuilder(List<List<TopArtist>> topArtists, EmbedAuthorBuilder author, TopGenre topGenre, string view, List<TopArtist> allUserTopArtists = null, List<string> additionalFooterItems = null)
     {
         var pages = new List<PageBuilder>();
         if (!topArtists.Any())
@@ -521,6 +539,10 @@ public class GenreBuilders
             var footer = $"Genre source: Spotify - {view}\n" +
                          $"Page {pageCounter}/{topArtists.Count} - {topGenre.Artists.Count} total artists - {topGenre.Artists.Sum(s => s.UserPlaycount)} total plays";
 
+            foreach (var additionalFooterItem in additionalFooterItems)
+            {
+                footer += $"\n{additionalFooterItem}";
+            }
             pages.Add(new PageBuilder()
                 .WithDescription(genrePageString.ToString())
                 .WithAuthor(author)
