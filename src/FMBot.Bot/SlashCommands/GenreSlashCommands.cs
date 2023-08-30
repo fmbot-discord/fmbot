@@ -79,7 +79,7 @@ public class GenreSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserAsync(ulong.Parse(discordUserId));
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User);
 
         try
         {
@@ -112,7 +112,7 @@ public class GenreSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserAsync(ulong.Parse(discordUserId));
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User);
 
         try
         {
