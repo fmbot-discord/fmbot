@@ -54,6 +54,7 @@ public class SpotifyCommands : BaseCommandModule
             _ = this.Context.Channel.TriggerTypingAsync();
 
             string querystring;
+            string artistName = null;
             if (!string.IsNullOrWhiteSpace(searchValue))
             {
                 querystring = searchValue;
@@ -76,6 +77,7 @@ public class SpotifyCommands : BaseCommandModule
                 var currentTrack = recentScrobbles.Content.RecentTracks[0];
 
                 querystring = $"{currentTrack.TrackName} {currentTrack.ArtistName} {currentTrack.AlbumName}";
+                artistName = currentTrack.ArtistName;
             }
 
             var item = await this._spotifyService.GetSearchResultAsync(querystring);
@@ -83,10 +85,20 @@ public class SpotifyCommands : BaseCommandModule
             if (item.Tracks?.Items?.Any() == true)
             {
                 var track = item.Tracks.Items.FirstOrDefault();
+                if (artistName != null)
+                {
+                    var result = item.Tracks.Items.FirstOrDefault(f => f.Artists.Any(a => string.Equals(a.Name, artistName, StringComparison.OrdinalIgnoreCase)));
+
+                    if (result != null)
+                    {
+                        track = result;
+                    }
+                }
+
                 var reply = $"https://open.spotify.com/track/{track.Id}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 10) == 1 && string.IsNullOrWhiteSpace(searchValue))
                 {
                     reply += $"\n*Tip: Search for other songs by simply adding the searchvalue behind {prfx}spotify.*";
                 }

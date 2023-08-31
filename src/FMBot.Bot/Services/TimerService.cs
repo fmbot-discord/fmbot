@@ -102,8 +102,8 @@ public class TimerService
 
         if (this._botSettings.Bot.FeaturedMaster == true)
         {
-            Log.Information($"RecurringJob: Adding {nameof(UpdateDiscordSupporters)}");
-            RecurringJob.AddOrUpdate(nameof(UpdateDiscordSupporters), () => UpdateDiscordSupporters(), "* * * * *");
+            Log.Information($"RecurringJob: Adding {nameof(AddLatestDiscordSupporters)}");
+            RecurringJob.AddOrUpdate(nameof(AddLatestDiscordSupporters), () => AddLatestDiscordSupporters(), "* * * * *");
 
             Log.Information($"RecurringJob: Adding {nameof(CheckExpiredDiscordSupporters)}");
             RecurringJob.AddOrUpdate(nameof(CheckExpiredDiscordSupporters), () => CheckExpiredDiscordSupporters(), "0 8,18 * * *");
@@ -274,9 +274,9 @@ public class TimerService
         await this._supporterService.UpdateExistingOpenCollectiveSupporters();
     }
 
-    public async Task UpdateDiscordSupporters()
+    public async Task AddLatestDiscordSupporters()
     {
-        await this._supporterService.UpdateDiscordSupporters();
+        await this._supporterService.AddLatestDiscordSupporters();
     }
 
     public async Task CheckExpiredDiscordSupporters()

@@ -663,10 +663,63 @@ public class SupporterService
         return await this._discordSkuService.GetEntitlements();
     }
 
-    public async Task UpdateDiscordSupporters()
+    public async Task UpdateSingleDiscordSupporter(ulong discordUserId)
     {
-        var discordSupporters = await this._discordSkuService.GetEntitlements();
+        var discordSupporters = await this._discordSkuService.GetEntitlements(discordUserId);
 
+        await UpdateDiscordSupporters(discordSupporters);
+    }
+
+    public async Task AddLatestDiscordSupporters()
+    {
+        var discordSupporters = await this._discordSkuService.GetEntitlements(after: SnowflakeUtils.ToSnowflake(DateTime.UtcNow.AddDays(-2)));
+
+        await UpdateDiscordSupporters(discordSupporters);
+    }
+
+    public async Task UpdateGenerallyAllDiscordSupporters()
+    {
+        var discordSupporters = await this._discordSkuService.GetEntitlements(before: SnowflakeUtils.ToSnowflake(DateTime.UtcNow.AddDays(-1)));
+
+        await UpdateDiscordSupporters(discordSupporters);
+    }
+
+    public async Task UpdateAllDiscordSupporters()
+    {
+        var discordSupporters = new List<DiscordEntitlementResponseModel>();
+
+        for (var i = 0; i < 60; i++)
+        {
+            discordSupporters.AddRange(await this._discordSkuService.GetEntitlementsFromDiscord(
+                before: SnowflakeUtils.ToSnowflake(DateTimeOffset.UtcNow.AddDays(-i)),
+                after: SnowflakeUtils.ToSnowflake(DateTimeOffset.UtcNow.AddDays(-(i + 1)))));
+
+            await Task.Delay(100);
+        }
+
+        var result = DiscordSkuService.DiscordEntitlementsToGrouped(discordSupporters);
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingSupporters = db.Supporters
+            .Where(w =>
+                w.DiscordUserId != null &&
+                w.SubscriptionType == SubscriptionType.Discord)
+            .OrderByDescending(o => o.LastPayment)
+            .Select(s => s.DiscordUserId.Value)
+            .Distinct()
+            .ToHashSet();
+
+        var resultIds = result.Select(s => s.DiscordUserId).ToHashSet();
+        foreach (var existingSupporter in existingSupporters.Where(w => !resultIds.Contains(w)))
+        {
+            Log.Information("Found Discord supporter without entitlement - {discordUserId}", existingSupporter);
+        }
+
+        await UpdateDiscordSupporters(result);
+    }
+
+    public async Task UpdateDiscordSupporters(List<DiscordEntitlement> discordSupporters)
+    {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingSupporters = await db.Supporters
             .Where(w =>
