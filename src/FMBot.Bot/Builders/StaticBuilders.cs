@@ -12,6 +12,9 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Builders;
 
@@ -19,11 +22,14 @@ public class StaticBuilders
 {
     private readonly SupporterService _supporterService;
     private readonly UserService _userService;
+    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-    public StaticBuilders(SupporterService supporterService, UserService userService)
+
+    public StaticBuilders(SupporterService supporterService, UserService userService, IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._supporterService = supporterService;
         this._userService = userService;
+        this._contextFactory = contextFactory;
     }
 
     public static ResponseModel OutOfSync(
@@ -305,25 +311,53 @@ public class StaticBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        var existingSupporters = await this._supporterService.GetAllSupporters();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var discordEntitlements = await this._supporterService.GetDiscordEntitlements();
+        var existingSupporters = await db.Supporters
+            .Where(w => w.SubscriptionType == SubscriptionType.Discord &&
+                        w.DiscordUserId.HasValue)
+            .ToListAsync();
 
-        var supporterLists = discordEntitlements.OrderByDescending(o => o.StartsAt).Chunk(10);
+        var userIds = existingSupporters.Select(s => s.DiscordUserId.Value).ToList();
+        var users = await db.Users
+            .AsQueryable()
+            .Where(w => userIds.Contains(w.DiscordUserId))
+            .ToListAsync();
 
-        var description = new StringBuilder();
+        var supporterLists = existingSupporters.OrderByDescending(o => o.Created).Chunk(10);
+
+        var footer = new StringBuilder();
+
+        footer.Append(
+            $"Total: {existingSupporters.Count()}");
+        footer.Append(
+            $" - Active {existingSupporters.Count(c => c.Expired != true)}");
+        footer.AppendLine();
+        footer.Append(
+            $"Average new per day: {Math.Round(existingSupporters.Where(w => w.Created >= DateTime.UtcNow.AddDays(-60)).GroupBy(g => g.Created.Date).Average(c => c.Count()), 1)}");
+        footer.AppendLine();
+        footer.Append(
+            $"New yesterday: {existingSupporters.Count(c => c.Created.Date == DateTime.UtcNow.AddDays(-1).Date)}");
+        footer.Append(
+            $" - New today: {existingSupporters.Count(c => c.Created.Date == DateTime.UtcNow.Date)}");
+        footer.AppendLine();
+        footer.Append(
+            $"New last month: {existingSupporters.Count(c => c.Created.Month == DateTime.UtcNow.AddMonths(-1).Month &&
+                                                             c.Created.Year == DateTime.UtcNow.AddMonths(-1).Year)}");
+        footer.Append(
+            $" - New this month: {existingSupporters.Count(c => c.Created.Month == DateTime.UtcNow.Month &&
+                                                             c.Created.Year == DateTime.UtcNow.Year)}");
 
         var pages = new List<PageBuilder>();
         foreach (var supporterList in supporterLists)
         {
             var supporterString = new StringBuilder();
-            supporterString.Append(description.ToString());
 
             foreach (var supporter in supporterList)
             {
                 supporterString.Append($"**{supporter.DiscordUserId}** - <@{supporter.DiscordUserId}>");
 
-                var user = await this._userService.GetUserAsync(supporter.DiscordUserId);
+                var user = users.FirstOrDefault(f => f.DiscordUserId == supporter.DiscordUserId.Value);
                 if (user != null)
                 {
                     supporterString.Append($" - [{user.UserNameLastFM}]({Constants.LastFMUserUrl}{user.UserNameLastFM})");
@@ -335,32 +369,12 @@ public class StaticBuilders
 
                 supporterString.AppendLine();
 
-                if (supporter.StartsAt.HasValue && supporter.EndsAt.HasValue)
-                {
-                    var existingSupporter =
-                        existingSupporters.FirstOrDefault(f => f.DiscordUserId == supporter.DiscordUserId);
+                var startsAtValue = ((DateTimeOffset)supporter.Created).ToUnixTimeSeconds();
 
-                    DateTime startsAt;
-                    if (existingSupporter != null)
-                    {
-                        startsAt = existingSupporter.Created;
-                    }
-                    else
-                    {
-                        startsAt = DateTime.SpecifyKind(supporter.StartsAt.Value, DateTimeKind.Utc);
-                    }
+                var endsAt = DateTime.SpecifyKind(supporter.LastPayment.Value, DateTimeKind.Utc);
+                var endsAtValue = ((DateTimeOffset)endsAt).ToUnixTimeSeconds();
 
-                    var startsAtValue = ((DateTimeOffset)startsAt).ToUnixTimeSeconds();
-
-                    var endsAt = DateTime.SpecifyKind(supporter.EndsAt.Value, DateTimeKind.Utc);
-                    var endsAtValue = ((DateTimeOffset)endsAt).ToUnixTimeSeconds();
-
-                    supporterString.AppendLine($"Started <t:{startsAtValue}:f> - Ends on <t:{endsAtValue}:D>");
-                }
-                else
-                {
-                    supporterString.AppendLine($"No start or end date (unlimited test entitlement)");
-                }
+                supporterString.AppendLine($"Started <t:{startsAtValue}:f> - Ends on <t:{endsAtValue}:D>");
 
                 supporterString.AppendLine();
             }
@@ -369,8 +383,7 @@ public class StaticBuilders
                 .WithDescription(supporterString.ToString())
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithAuthor(response.EmbedAuthor)
-                .WithFooter($"Discord total: {discordEntitlements.Count} - db total: {existingSupporters.Count(c => c.SubscriptionType == SubscriptionType.Discord)}\n" +
-                            $"Discord active: {discordEntitlements.Count(c => c.Active)} - db active {existingSupporters.Count(c => c.SubscriptionType == SubscriptionType.Discord && c.Expired != true)}")
+                .WithFooter(footer.ToString())
                 .WithTitle(".fmbot Discord supporters overview"));
         }
 
