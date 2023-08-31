@@ -1517,6 +1517,62 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("updatediscordsupporters")]
+    [Summary("Updates all discord supporters")]
+    public async Task UpdateDiscordSupporters()
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                await ReplyAsync("Fetching supporters from Discord...");
+                await this._supporterService.UpdateAllDiscordSupporters();
+                await ReplyAsync("Updated all Discord supporters");
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("updatediscordsupporter")]
+    [Summary("Updates single discord supporteer")]
+    public async Task UpdateSingleDiscordSupporters([Remainder] string user)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                var userToUpdate = await this._settingService.GetDifferentUser(user);
+
+                if (userToUpdate == null)
+                {
+                    await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                await this._supporterService.UpdateSingleDiscordSupporter(userToUpdate.DiscordUserId);
+                await ReplyAsync("Updated single discord supporter");
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
     [Command("refreshpremiumservers")]
     [Summary("Refreshes cached premium servers")]
     public async Task RefreshPremiumGuilds()
