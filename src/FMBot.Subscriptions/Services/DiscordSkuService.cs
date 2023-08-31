@@ -40,7 +40,7 @@ public class DiscordSkuService
 
         try
         {
-            if (discordUserId != null || after != null)
+            if (discordUserId != null || before != null || after != null)
             {
                 var queryParams = new Dictionary<string, string>();
 
