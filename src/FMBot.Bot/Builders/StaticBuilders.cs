@@ -93,43 +93,35 @@ public class StaticBuilders
         }
         else
         {
-            response.Embed.WithTitle("Become a supporter");
+            response.Embed.WithTitle("Support .fmbot and get supporter");
         }
 
-        response.Embed.AddField("Get more stats",
-            "- See discovery dates for artists/albums/tracks\n" +
-            "- Expanded `stats` command with overall history\n" +
-            "- Extra page on `year` with months and artist discoveries\n" +
-            "- Add up to 8 options to your `fm` footer\n" +
-            "- More coming soon");
+        response.Embed.AddField("📈 Get more stats",
+            "- Your lifetime Last.fm data will be stored for extra stats\n" +
+            "- See first listen dates, have an expanded profile and advanced recaps\n" +
+            "- Ability to store your complete Discogs collection");
 
-        response.Embed.AddField("Make development sustainable",
-            "- Support development and get cool perks\n" +
-            "- Help us remain independent and free for everyone\n" +
-            "- Transparent fundraising on [OpenCollective](https://opencollective.com/fmbot)");
+        response.Embed.AddField("<:history:1131511469096312914> Import your Spotify history",
+            "- Use your full Spotify listening history together with your Last.fm data\n" +
+            "- Get the most accurate playcounts and listening time");
 
-        response.Embed.AddField("Flex your support",
-            "- Get a ⭐ badge after your name\n" +
-            "- Sponsor charts\n" +
-            "- Your name in `supporters`");
+        response.Embed.AddField("🔥 Expanded judge command",
+            "- GPT-4 powered compliments and roasts\n" +
+            "- Increased usage limits and ability to use the command on others");
 
-        response.Embed.AddField("All your music",
-            "- Lifetime scrobble history stored for extra stats\n" +
-            "- All artist/album/track playcounts cached (up from top 4/5/6k)\n" +
-            "- Full Discogs collection stored (up from last 100)");
+        response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
+            "- View when you discovered artists with the exclusive `discoveries` command\n" +
+            "- See discovery dates in the `artist`, `album` and `track` commands");
 
-        response.Embed.AddField("Get featured",
-            $"- Every first Sunday of the month is Supporter Sunday\n" +
-            "- Higher chance for supporters to become featured\n" +
-            $"- Next Supporter Sunday is in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}");
+        response.Embed.AddField("⚙️ Customize your commands",
+            "- Expand your `.fm` footer with extra stats\n" +
+            "- Add more friends for expanded friend commands\n"+
+            "- Set your own personal automatic emote reactions");
 
-        response.Embed.AddField("Add more friends",
-            $"- Friend limit raised to {Constants.MaxFriendsSupporter} (up from {Constants.MaxFriends})\n" +
-            "- Applies to all commands, from `friends` to `friendwhoknows`");
-
-        response.Embed.AddField("Join the community",
-            "- Exclusive role and channel on our [Discord](https://discord.gg/6y3jJjtDqK)\n" +
-            "- Sneak peeks of new features");
+        response.Embed.AddField("⭐ Flex your support",
+            $"- Get a badge after your name to show your support\n" +
+            "- Exclusive role and channel in the [.fmbot server](https://discord.gg/fmbot) with sneak peeks\n" +
+            $"- Higher chance to get featured on Supporter Sundays (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
 
         if (existingSupporter != null)
         {
@@ -137,7 +129,7 @@ public class StaticBuilders
 
             var created = DateTime.SpecifyKind(existingSupporter.Created, DateTimeKind.Utc);
             var createdValue = ((DateTimeOffset)created).ToUnixTimeSeconds();
-            existingSupporterDescription.AppendLine($"Supporter added: <t:{createdValue}:D>");
+            existingSupporterDescription.AppendLine($"Activation date: <t:{createdValue}:D>");
 
             if (existingSupporter.LastPayment.HasValue)
             {
@@ -156,7 +148,7 @@ public class StaticBuilders
 
             if (existingSupporter.SubscriptionType.HasValue)
             {
-                existingSupporterDescription.AppendLine($"Subscription type: {Enum.GetName(existingSupporter.SubscriptionType.Value)}");
+                existingSupporterDescription.AppendLine($"Subscription type: `{Enum.GetName(existingSupporter.SubscriptionType.Value)}`");
             }
 
             existingSupporterDescription.AppendLine($"Name: **{StringExtensions.Sanitize(existingSupporter.Name)}**");
