@@ -12,6 +12,9 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Builders;
 
@@ -19,11 +22,14 @@ public class StaticBuilders
 {
     private readonly SupporterService _supporterService;
     private readonly UserService _userService;
+    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-    public StaticBuilders(SupporterService supporterService, UserService userService)
+
+    public StaticBuilders(SupporterService supporterService, UserService userService, IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._supporterService = supporterService;
         this._userService = userService;
+        this._contextFactory = contextFactory;
     }
 
     public static ResponseModel OutOfSync(
@@ -87,43 +93,35 @@ public class StaticBuilders
         }
         else
         {
-            response.Embed.WithTitle("Become a supporter");
+            response.Embed.WithTitle("Support .fmbot and get supporter");
         }
 
-        response.Embed.AddField("Get more stats",
-            "- See discovery dates for artists/albums/tracks\n" +
-            "- Expanded `stats` command with overall history\n" +
-            "- Extra page on `year` with months and artist discoveries\n" +
-            "- Add up to 8 options to your `fm` footer\n" +
-            "- More coming soon");
+        response.Embed.AddField("📈 Get more stats",
+            "- Your lifetime Last.fm data will be stored for extra stats\n" +
+            "- See first listen dates, have an expanded profile and advanced recaps\n" +
+            "- Ability to store your complete Discogs collection");
 
-        response.Embed.AddField("Make development sustainable",
-            "- Support development and get cool perks\n" +
-            "- Help us remain independent and free for everyone\n" +
-            "- Transparent fundraising on [OpenCollective](https://opencollective.com/fmbot)");
+        response.Embed.AddField("<:history:1131511469096312914> Import your Spotify history",
+            "- Use your full Spotify listening history together with your Last.fm data\n" +
+            "- Get the most accurate playcounts and listening time");
 
-        response.Embed.AddField("Flex your support",
-            "- Get a ⭐ badge after your name\n" +
-            "- Sponsor charts\n" +
-            "- Your name in `supporters`");
+        response.Embed.AddField("🔥 Expanded judge command",
+            "- GPT-4 powered compliments and roasts\n" +
+            "- Increased usage limits and ability to use the command on others");
 
-        response.Embed.AddField("All your music",
-            "- Lifetime scrobble history stored for extra stats\n" +
-            "- All artist/album/track playcounts cached (up from top 4/5/6k)\n" +
-            "- Full Discogs collection stored (up from last 100)");
+        response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
+            "- View when you discovered artists with the exclusive `discoveries` command\n" +
+            "- See discovery dates in the `artist`, `album` and `track` commands");
 
-        response.Embed.AddField("Get featured",
-            $"- Every first Sunday of the month is Supporter Sunday\n" +
-            "- Higher chance for supporters to become featured\n" +
-            $"- Next Supporter Sunday is in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}");
+        response.Embed.AddField("⚙️ Customize your commands",
+            "- Expand your `.fm` footer with extra stats\n" +
+            "- Add more friends for expanded friend commands\n"+
+            "- Set your own personal automatic emote reactions");
 
-        response.Embed.AddField("Add more friends",
-            $"- Friend limit raised to {Constants.MaxFriendsSupporter} (up from {Constants.MaxFriends})\n" +
-            "- Applies to all commands, from `friends` to `friendwhoknows`");
-
-        response.Embed.AddField("Join the community",
-            "- Exclusive role and channel on our [Discord](https://discord.gg/6y3jJjtDqK)\n" +
-            "- Sneak peeks of new features");
+        response.Embed.AddField("⭐ Flex your support",
+            $"- Get a badge after your name to show your support\n" +
+            "- Exclusive role and channel in the [.fmbot server](https://discord.gg/fmbot) with sneak peeks\n" +
+            $"- Higher chance to get featured on Supporter Sundays (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
 
         if (existingSupporter != null)
         {
@@ -131,7 +129,7 @@ public class StaticBuilders
 
             var created = DateTime.SpecifyKind(existingSupporter.Created, DateTimeKind.Utc);
             var createdValue = ((DateTimeOffset)created).ToUnixTimeSeconds();
-            existingSupporterDescription.AppendLine($"Supporter added: <t:{createdValue}:D>");
+            existingSupporterDescription.AppendLine($"Activation date: <t:{createdValue}:D>");
 
             if (existingSupporter.LastPayment.HasValue)
             {
@@ -150,7 +148,7 @@ public class StaticBuilders
 
             if (existingSupporter.SubscriptionType.HasValue)
             {
-                existingSupporterDescription.AppendLine($"Subscription type: {Enum.GetName(existingSupporter.SubscriptionType.Value)}");
+                existingSupporterDescription.AppendLine($"Subscription type: `{Enum.GetName(existingSupporter.SubscriptionType.Value)}`");
             }
 
             existingSupporterDescription.AppendLine($"Name: **{StringExtensions.Sanitize(existingSupporter.Name)}**");
@@ -305,25 +303,53 @@ public class StaticBuilders
             ResponseType = ResponseType.Paginator,
         };
 
-        var existingSupporters = await this._supporterService.GetAllSupporters();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var discordEntitlements = await this._supporterService.GetDiscordEntitlements();
+        var existingSupporters = await db.Supporters
+            .Where(w => w.SubscriptionType == SubscriptionType.Discord &&
+                        w.DiscordUserId.HasValue)
+            .ToListAsync();
 
-        var supporterLists = discordEntitlements.OrderByDescending(o => o.StartsAt).Chunk(10);
+        var userIds = existingSupporters.Select(s => s.DiscordUserId.Value).ToList();
+        var users = await db.Users
+            .AsQueryable()
+            .Where(w => userIds.Contains(w.DiscordUserId))
+            .ToListAsync();
 
-        var description = new StringBuilder();
+        var supporterLists = existingSupporters.OrderByDescending(o => o.Created).Chunk(10);
+
+        var footer = new StringBuilder();
+
+        footer.Append(
+            $"Total: {existingSupporters.Count()}");
+        footer.Append(
+            $" - Active {existingSupporters.Count(c => c.Expired != true)}");
+        footer.AppendLine();
+        footer.Append(
+            $"Average new per day: {Math.Round(existingSupporters.Where(w => w.Created >= DateTime.UtcNow.AddDays(-60)).GroupBy(g => g.Created.Date).Average(c => c.Count()), 1)}");
+        footer.AppendLine();
+        footer.Append(
+            $"New yesterday: {existingSupporters.Count(c => c.Created.Date == DateTime.UtcNow.AddDays(-1).Date)}");
+        footer.Append(
+            $" - New today: {existingSupporters.Count(c => c.Created.Date == DateTime.UtcNow.Date)}");
+        footer.AppendLine();
+        footer.Append(
+            $"New last month: {existingSupporters.Count(c => c.Created.Month == DateTime.UtcNow.AddMonths(-1).Month &&
+                                                             c.Created.Year == DateTime.UtcNow.AddMonths(-1).Year)}");
+        footer.Append(
+            $" - New this month: {existingSupporters.Count(c => c.Created.Month == DateTime.UtcNow.Month &&
+                                                             c.Created.Year == DateTime.UtcNow.Year)}");
 
         var pages = new List<PageBuilder>();
         foreach (var supporterList in supporterLists)
         {
             var supporterString = new StringBuilder();
-            supporterString.Append(description.ToString());
 
             foreach (var supporter in supporterList)
             {
                 supporterString.Append($"**{supporter.DiscordUserId}** - <@{supporter.DiscordUserId}>");
 
-                var user = await this._userService.GetUserAsync(supporter.DiscordUserId);
+                var user = users.FirstOrDefault(f => f.DiscordUserId == supporter.DiscordUserId.Value);
                 if (user != null)
                 {
                     supporterString.Append($" - [{user.UserNameLastFM}]({Constants.LastFMUserUrl}{user.UserNameLastFM})");
@@ -335,32 +361,12 @@ public class StaticBuilders
 
                 supporterString.AppendLine();
 
-                if (supporter.StartsAt.HasValue && supporter.EndsAt.HasValue)
-                {
-                    var existingSupporter =
-                        existingSupporters.FirstOrDefault(f => f.DiscordUserId == supporter.DiscordUserId);
+                var startsAtValue = ((DateTimeOffset)supporter.Created).ToUnixTimeSeconds();
 
-                    DateTime startsAt;
-                    if (existingSupporter != null)
-                    {
-                        startsAt = existingSupporter.Created;
-                    }
-                    else
-                    {
-                        startsAt = DateTime.SpecifyKind(supporter.StartsAt.Value, DateTimeKind.Utc);
-                    }
+                var endsAt = DateTime.SpecifyKind(supporter.LastPayment.Value, DateTimeKind.Utc);
+                var endsAtValue = ((DateTimeOffset)endsAt).ToUnixTimeSeconds();
 
-                    var startsAtValue = ((DateTimeOffset)startsAt).ToUnixTimeSeconds();
-
-                    var endsAt = DateTime.SpecifyKind(supporter.EndsAt.Value, DateTimeKind.Utc);
-                    var endsAtValue = ((DateTimeOffset)endsAt).ToUnixTimeSeconds();
-
-                    supporterString.AppendLine($"Started <t:{startsAtValue}:f> - Ends on <t:{endsAtValue}:D>");
-                }
-                else
-                {
-                    supporterString.AppendLine($"No start or end date (unlimited test entitlement)");
-                }
+                supporterString.AppendLine($"Started <t:{startsAtValue}:f> - Ends on <t:{endsAtValue}:D>");
 
                 supporterString.AppendLine();
             }
@@ -369,8 +375,7 @@ public class StaticBuilders
                 .WithDescription(supporterString.ToString())
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithAuthor(response.EmbedAuthor)
-                .WithFooter($"Discord total: {discordEntitlements.Count} - db total: {existingSupporters.Count(c => c.SubscriptionType == SubscriptionType.Discord)}\n" +
-                            $"Discord active: {discordEntitlements.Count(c => c.Active)} - db active {existingSupporters.Count(c => c.SubscriptionType == SubscriptionType.Discord && c.Expired != true)}")
+                .WithFooter(footer.ToString())
                 .WithTitle(".fmbot Discord supporters overview"));
         }
 
