@@ -144,11 +144,11 @@ public class StartupService
             Log.Information("ShardStartConnection: shard {shardId} - timeout {shardTimeout}", shard.ShardId, shardTimeOut);
             await shard.StartAsync();
             await Task.Delay(shardTimeOut);
-            shardTimeOut += 3;
+            shardTimeOut += 4;
 
-            if (shardTimeOut > 1100)
+            if (shardTimeOut > 1250)
             {
-                shardTimeOut = 1100;
+                shardTimeOut = 1250;
             }
         }
 
