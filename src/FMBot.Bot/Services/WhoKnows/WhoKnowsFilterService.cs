@@ -7,6 +7,7 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using Genius.Models.User;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -103,9 +104,13 @@ public class WhoKnowsFilterService
                 filteredUser.RegisteredLastFm = user.RegisteredLastFm;
             }
 
+            Log.Information("GWKFilter: Found {filterCount} users to filter", newFilteredUsers.Count);
+
             newFilteredUsers = newFilteredUsers
-                .Where(w => usersToSkip.Contains(w.UserNameLastFm, StringComparer.OrdinalIgnoreCase))
+                .Where(w => !usersToSkip.Contains(w.UserNameLastFm, StringComparer.OrdinalIgnoreCase))
                 .ToList();
+
+            Log.Information("GWKFilter: Found {filterCount} users to filter after removing botted users", newFilteredUsers.Count);
 
             return newFilteredUsers;
         }
