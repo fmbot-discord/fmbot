@@ -7,6 +7,7 @@ public class GlobalFilteredUser
 {
     public string UserNameLastFm { get; set; }
     public DateTime? RegisteredLastFm { get; set; }
+    public int? UserId { get; set; }
 
     public GlobalFilterReason Reason { get; set; }
 

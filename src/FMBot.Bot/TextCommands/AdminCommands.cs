@@ -16,6 +16,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
@@ -49,6 +50,7 @@ public class AdminCommands : BaseCommandModule
     private readonly AlbumService _albumService;
     private readonly ArtistsService _artistsService;
     private readonly AliasService _aliasService;
+    private readonly WhoKnowsFilterService _whoKnowsFilterService;
 
     private InteractiveService Interactivity { get; }
 
@@ -69,7 +71,7 @@ public class AdminCommands : BaseCommandModule
         InteractiveService interactivity,
         AlbumService albumService,
         ArtistsService artistsService,
-        AliasService aliasService) : base(botSettings)
+        AliasService aliasService, WhoKnowsFilterService whoKnowsFilterService) : base(botSettings)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -87,6 +89,7 @@ public class AdminCommands : BaseCommandModule
         this._albumService = albumService;
         this._artistsService = artistsService;
         this._aliasService = aliasService;
+        this._whoKnowsFilterService = whoKnowsFilterService;
     }
 
     //[Command("debug")]
@@ -225,6 +228,29 @@ public class AdminCommands : BaseCommandModule
                 PublicProperties.IssuesReason = null;
                 await ReplyAsync("Disabled issue mode");
             }
+
+            this.Context.LogCommandUsed();
+        }
+        else
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("updategwfilter")]
+    [Summary("Toggles issue mode")]
+    public async Task UpdateGlobalWhoKnowsFilter([Remainder] string reason = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            var filteredUsers = await this._whoKnowsFilterService.UpdateGlobalFilteredUsers();
+
+            var description = new StringBuilder();
+
+            description.AppendLine($"Found {filteredUsers.Count(c => c.Reason == GlobalFilterReason.PlayTimeInPeriod)} users exceeding max playtime");
+            description.AppendLine($"Found {filteredUsers.Count(c => c.Reason == GlobalFilterReason.AmountPerPeriod)} users exceeding max amount");
+            await ReplyAsync(description.ToString());
 
             this.Context.LogCommandUsed();
         }
