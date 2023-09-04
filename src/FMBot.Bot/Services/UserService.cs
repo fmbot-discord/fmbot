@@ -82,6 +82,12 @@ public class UserService
         return user;
     }
 
+    private void RemoveUserFromCache(User user)
+    {
+        this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
+        this._cache.Remove(UserLastFmCacheKey(user.UserNameLastFM));
+    }
+
     public static string UserDiscordIdCacheKey(ulong discordUserId)
     {
         return $"user-{discordUserId}";
@@ -169,7 +175,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
+        RemoveUserFromCache(user);
     }
 
     public async Task<User> GetUserWithFriendsAsync(IUser discordUser)
@@ -780,9 +786,9 @@ public class UserService
             db.Update(user);
 
             await db.SaveChangesAsync();
-        }
 
-        this._cache.Remove(UserDiscordIdCacheKey(discordUser.Id));
+            RemoveUserFromCache(user);
+        }
     }
 
     public async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
@@ -824,28 +830,6 @@ public class UserService
         return false;
     }
 
-    public async Task<PrivacyLevel> SetPrivacy(User userToUpdate, string[] extraOptions)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-
-        if (extraOptions.Contains("global") || extraOptions.Contains("Global"))
-        {
-            userToUpdate.PrivacyLevel = PrivacyLevel.Global;
-        }
-        else if (extraOptions.Contains("server") || extraOptions.Contains("Server"))
-        {
-            userToUpdate.PrivacyLevel = PrivacyLevel.Server;
-        }
-
-        db.Update(userToUpdate);
-
-        await db.SaveChangesAsync();
-
-        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
-
-        return userToUpdate.PrivacyLevel;
-    }
-
     public async Task<PrivacyLevel> SetPrivacyLevel(int userId, PrivacyLevel privacyLevel)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -858,24 +842,9 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
+        RemoveUserFromCache(user);
 
         return user.PrivacyLevel;
-    }
-
-    public static User SetWkMode(User userSettings, string[] extraOptions)
-    {
-        extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
-        if (extraOptions.Contains("image") || extraOptions.Contains("img"))
-        {
-            userSettings.Mode = WhoKnowsMode.Image;
-        }
-        else if (extraOptions.Contains("embed") || extraOptions.Contains("embd"))
-        {
-            userSettings.Mode = WhoKnowsMode.Embed;
-        }
-
-        return userSettings;
     }
 
     public async Task<User> SetSettings(User userToUpdate, FmEmbedType embedType, FmCountType? countType)
@@ -889,7 +858,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
+        RemoveUserFromCache(userToUpdate);
 
         return user;
     }
@@ -905,7 +874,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
+        RemoveUserFromCache(userToUpdate);
 
         return user;
     }
@@ -921,7 +890,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
+        RemoveUserFromCache(user);
 
         return user;
     }
@@ -937,12 +906,11 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
+        RemoveUserFromCache(user);
 
         return user;
     }
 
-    // Remove user
     public async Task DeleteUser(int userId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -970,7 +938,7 @@ public class UserService
 
             await db.SaveChangesAsync();
 
-            this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
+            RemoveUserFromCache(user);
 
             PublicProperties.RegisteredUsers.TryRemove(user.DiscordUserId, out _);
 
@@ -1001,7 +969,7 @@ public class UserService
 
         await db.SaveChangesAsync();
 
-        this._cache.Remove(UserDiscordIdCacheKey(userToUpdate.DiscordUserId));
+        RemoveUserFromCache(userToUpdate);
 
         return userToUpdate.RymEnabled;
     }
@@ -1016,7 +984,7 @@ public class UserService
 
         db.Update(user);
 
-        this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
+        RemoveUserFromCache(user);
 
         await db.SaveChangesAsync();
     }
