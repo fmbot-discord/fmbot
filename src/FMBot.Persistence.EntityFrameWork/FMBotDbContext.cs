@@ -26,6 +26,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<UserDiscogs> UserDiscogs { get; set; }
 
         public virtual DbSet<BottedUser> BottedUsers { get; set; }
+        public virtual DbSet<GlobalFilteredUser> GlobalFilteredUsers { get; set; }
         public virtual DbSet<InactiveUsers> InactiveUsers { get; set; }
         public virtual DbSet<BottedUserReport> BottedUserReport { get; set; }
         public virtual DbSet<CensoredMusicReport> CensoredMusicReport { get; set; }
@@ -48,21 +49,21 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
 
-        private readonly IConfiguration _configuration;
+        //private readonly IConfiguration _configuration;
 
-        public FMBotDbContext(IConfiguration configuration)
-        {
-            this._configuration = configuration;
-        }
+        //public FMBotDbContext(IConfiguration configuration)
+        //{
+        //    this._configuration = configuration;
+        //}
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
+                //optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 // Uncomment below connection string when creating migrations, and also comment out the above iconfiguration stuff
-                //optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
+                optionsBuilder.UseNpgsql("Host=localhost;Port=5434;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
@@ -173,6 +174,11 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<BottedUser>(entity =>
             {
                 entity.HasKey(e => e.BottedUserId);
+            });
+
+            modelBuilder.Entity<GlobalFilteredUser>(entity =>
+            {
+                entity.HasKey(e => e.GlobalFilteredUserId);
             });
 
             modelBuilder.Entity<BottedUserReport>(entity =>

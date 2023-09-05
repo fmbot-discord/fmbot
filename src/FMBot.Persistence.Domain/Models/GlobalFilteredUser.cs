@@ -5,6 +5,8 @@ namespace FMBot.Persistence.Domain.Models;
 
 public class GlobalFilteredUser
 {
+    public int GlobalFilteredUserId { get; set; }
+
     public string UserNameLastFm { get; set; }
     public DateTime? RegisteredLastFm { get; set; }
     public int? UserId { get; set; }

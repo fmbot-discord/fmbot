@@ -7,7 +7,6 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using Genius.Models.User;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -21,7 +20,7 @@ public class WhoKnowsFilterService
     private readonly BotSettings _botSettings;
     private readonly TimeService _timeService;
 
-    private const int MaxAmountOfPlaysPerDay = 800;
+    private const int MaxAmountOfPlaysPerDay = 750;
     private const int MaxAmountOfHoursPerPeriod = 144;
     private const int PeriodAmountOfDays = 8;
 
@@ -47,7 +46,7 @@ public class WhoKnowsFilterService
                 .Where(w => w.BanActive)
                 .ToListAsync();
 
-            var usersToSkip = existingBotters
+            var lastFmUsersToSkip = existingBotters
                 .GroupBy(g => g.UserNameLastFM, StringComparer.OrdinalIgnoreCase)
                 .Select(s => s.Key)
                 .ToHashSet();
@@ -107,7 +106,7 @@ public class WhoKnowsFilterService
             Log.Information("GWKFilter: Found {filterCount} users to filter", newFilteredUsers.Count);
 
             newFilteredUsers = newFilteredUsers
-                .Where(w => !usersToSkip.Contains(w.UserNameLastFm, StringComparer.OrdinalIgnoreCase))
+                .Where(w => !lastFmUsersToSkip.Contains(w.UserNameLastFm, StringComparer.OrdinalIgnoreCase))
                 .ToList();
 
             Log.Information("GWKFilter: Found {filterCount} users to filter after removing botted users", newFilteredUsers.Count);
