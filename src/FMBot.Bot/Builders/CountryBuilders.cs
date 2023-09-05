@@ -426,6 +426,7 @@ public class CountryBuilders
             {
                 response.Embed.ErrorResponse(artists.Error, artists.Message, "topgenres", context.DiscordUser);
                 response.CommandResponse = CommandResponse.LastFmError;
+                response.ResponseType = ResponseType.Embed;
                 return response;
             }
         }
@@ -455,6 +456,7 @@ public class CountryBuilders
                 $"Please try again later or try a different time period.");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
