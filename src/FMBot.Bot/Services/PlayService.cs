@@ -887,6 +887,10 @@ public class PlayService
         {
             plays = PlayDataSourceRepository.GetFinalUserPlays(importUser, plays);
         }
+        else if (plays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
+        {
+            plays = plays.Where(w => w.PlaySource != PlaySource.SpotifyImport).ToList();
+        }
 
         var firstRecentTrack = recentTracks.RecentTracks
             .Where(w => w.TimePlayed != null)
