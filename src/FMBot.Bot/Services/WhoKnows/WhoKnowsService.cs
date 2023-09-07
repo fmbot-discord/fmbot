@@ -158,8 +158,13 @@ public class WhoKnowsService
         return (stats, users.ToList());
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IEnumerable<WhoKnowsObjectWithUser> users, bool qualityFilter = false)
+    public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IEnumerable<WhoKnowsObjectWithUser> users, bool qualityFilterDisabled = false)
     {
+        if (qualityFilterDisabled)
+        {
+            return users.ToList();
+        }
+
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var bottedUsers = await db.BottedUsers
             .AsQueryable()
@@ -177,35 +182,35 @@ public class WhoKnowsService
             .Select(s => s.LastFmRegistered)
             .ToHashSet();
 
-        if (qualityFilter)
+
+        var existingFilterData = DateTime.UtcNow.AddMonths(-3);
+        var filteredUsers = await db.GlobalFilteredUsers
+            .AsQueryable()
+            .Where(w => w.Created > existingFilterData)
+            .ToListAsync();
+
+        foreach (var filteredUser in filteredUsers)
         {
-            var existingFilterData = DateTime.UtcNow.AddMonths(-3);
-            var filteredUsers = await db.GlobalFilteredUsers
-                .AsQueryable()
-                .Where(w => w.Created > existingFilterData)
-                .ToListAsync();
-
-            foreach (var filteredUser in filteredUsers)
+            if (!userNamesToFilter.Any(s => string.Equals(s, filteredUser.UserNameLastFm, StringComparison.OrdinalIgnoreCase)))
             {
-                if (!userNamesToFilter.Any(s => string.Equals(s, filteredUser.UserNameLastFm, StringComparison.OrdinalIgnoreCase)))
-                {
-                    userNamesToFilter.Add(filteredUser.UserNameLastFm);
-                }
+                userNamesToFilter.Add(filteredUser.UserNameLastFm);
+            }
 
-                if (filteredUser.RegisteredLastFm.HasValue &&
-                    !userDatesToFilter.Contains(filteredUser.RegisteredLastFm.Value))
-                {
-                    userDatesToFilter.Add(filteredUser.RegisteredLastFm);
-                }
+            if (filteredUser.RegisteredLastFm.HasValue &&
+                !userDatesToFilter.Contains(filteredUser.RegisteredLastFm.Value))
+            {
+                userDatesToFilter.Add(filteredUser.RegisteredLastFm);
             }
         }
 
+        var insensitive = new HashSet<string>(
+            userNamesToFilter, StringComparer.OrdinalIgnoreCase);
+
         return users
             .Where(w =>
-                !userNamesToFilter.Any(s => string.Equals(s, w.LastFMUsername, StringComparison.OrdinalIgnoreCase))
+                !insensitive.Contains(w.LastFMUsername)
                 &&
-                !userDatesToFilter
-                    .Contains(w.RegisteredLastFm))
+                !userDatesToFilter.Contains(w.RegisteredLastFm))
             .ToList();
     }
 
@@ -215,9 +220,9 @@ public class WhoKnowsService
         {
             footer.AppendLine("Admin view enabled - not for public channels");
         }
-        if (settings.QualityFilter)
+        if (settings.QualityFilterDisabled)
         {
-            footer.AppendLine("Global WhoKnows quality filter enabled");
+            footer.AppendLine("Globally botted and filtered users are visible");
         }
         if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
         {

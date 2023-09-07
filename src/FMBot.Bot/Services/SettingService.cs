@@ -475,11 +475,11 @@ public class SettingService
             whoKnowsSettings.DisplayRoleFilter = true;
         }
 
-        var qualityFilter = new[] { "qf", "qualityfilter" };
+        var qualityFilter = new[] { "nf", "nofilter" };
         if (Contains(extraOptions, qualityFilter))
         {
             whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, qualityFilter);
-            whoKnowsSettings.QualityFilter = true;
+            whoKnowsSettings.QualityFilterDisabled = true;
         }
 
         var (enabled, newSearchValue) = RedirectsEnabled(whoKnowsSettings.NewSearchValue);

@@ -15,7 +15,7 @@ public class WhoKnowsSettings
 
     public bool ShowBotters { get; set; }
 
-    public bool QualityFilter { get; set; } = false;
+    public bool QualityFilterDisabled { get; set; } = false;
 
     public bool AdminView { get; set; }
 
