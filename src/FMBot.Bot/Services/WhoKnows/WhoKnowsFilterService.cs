@@ -20,9 +20,9 @@ public class WhoKnowsFilterService
     private readonly BotSettings _botSettings;
     private readonly TimeService _timeService;
 
-    private const int MaxAmountOfPlaysPerDay = 750;
+    public const int MaxAmountOfPlaysPerDay = 750;
     private const int MaxAmountOfHoursPerPeriod = 144;
-    private const int PeriodAmountOfDays = 8;
+    public const int PeriodAmountOfDays = 8;
 
     public WhoKnowsFilterService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, TimeService timeService)
     {

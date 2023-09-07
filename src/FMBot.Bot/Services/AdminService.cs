@@ -145,12 +145,29 @@ public class AdminService
         return true;
     }
 
-    public async Task<BottedUser> GetBottedUserAsync(string lastFmUserName)
+    public async Task<BottedUser> GetBottedUserAsync(string lastFmUserName, DateTime? registeredDateTime = null)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.BottedUsers
+        var bottedUser = await db.BottedUsers
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
+
+        if (bottedUser == null && registeredDateTime.HasValue)
+        {
+            bottedUser = await db.BottedUsers
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.LastFmRegistered == registeredDateTime.Value);
+        }
+
+        return bottedUser;
+    }
+
+    public async Task<GlobalFilteredUser> GetFilteredUserAsync(string lastFmUserName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.GlobalFilteredUsers
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.UserNameLastFm.ToLower() == lastFmUserName.ToLower());
     }
 
     public async Task<List<User>> GetUsersWithLfmUsernameAsync(string lastFmUserName)

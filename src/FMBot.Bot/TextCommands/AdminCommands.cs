@@ -27,6 +27,7 @@ using Hangfire;
 using Hangfire.Storage;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Swan;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -650,6 +651,7 @@ public class AdminCommands : BaseCommandModule
             }
 
             var bottedUser = await this._adminService.GetBottedUserAsync(user);
+            var filteredUser = await this._adminService.GetFilteredUserAsync(user);
 
             var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user);
 
@@ -686,6 +688,33 @@ public class AdminCommands : BaseCommandModule
                 {
                     this._embed.AddField("Last.fm join date banned", "Yes (This means that the gwk ban will survive username changes)");
                 }
+            }
+
+            this._embed.AddField("Globally filtered", filteredUser == null ? "No" : "Yes");
+            if (filteredUser != null)
+            {
+                var filterInfo = new StringBuilder();
+
+                switch (filteredUser.Reason)
+                {
+                    case GlobalFilterReason.PlayTimeInPeriod:
+                        filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` hours of listening time");
+                        break;
+                    case GlobalFilterReason.AmountPerPeriod:
+                        filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` scrobbles ");
+                        break;
+                    case GlobalFilterReason.ShortTrack:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
+                if (filteredUser.OccurrenceStart.HasValue && filteredUser.OccurrenceEnd.HasValue)
+                {
+                    filterInfo.AppendLine($"From <t:{filteredUser.OccurrenceStart.Value.ToUnixEpochDate()}:f> to <t:{filteredUser.OccurrenceEnd.Value.ToUnixEpochDate()}:f>");
+                }
+
+                this._embed.AddField("Filter reason", filterInfo.ToString());
             }
 
             this._embed.WithFooter("Command not intended for use in public channels");
