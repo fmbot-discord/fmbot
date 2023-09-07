@@ -1111,7 +1111,7 @@ public class ArtistBuilders
 
         var usersWithArtist = await this._whoKnowsArtistService.GetGlobalUsersForArtists(context.DiscordGuild, artistSearch.Artist.ArtistName);
 
-        var filteredUsersWithArtist = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
+        var filteredUsersWithArtist = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist, settings.QualityFilter);
 
         filteredUsersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(filteredUsersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
@@ -1171,6 +1171,8 @@ public class ArtistBuilders
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         footer.AppendLine($"Global WhoKnows artist requested by {userTitle}");
 
+        footer = WhoKnowsService.GetGlobalWhoKnowsFooter(footer, settings, context);
+
         if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)
         {
             var globalListeners = filteredUsersWithArtist.Count;
@@ -1189,20 +1191,6 @@ public class ArtistBuilders
         //{
         //    footer.AppendLine(guildAlsoPlaying);
         //}
-
-        if (settings.AdminView)
-        {
-            footer.AppendLine("Admin view enabled - not for public channels");
-        }
-        if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
-        {
-            footer.AppendLine($"You are currently not globally visible - use '{context.Prefix}privacy' to enable.");
-        }
-
-        if (settings.HidePrivateUsers)
-        {
-            footer.AppendLine("All private users are hidden from results");
-        }
 
         response.Embed.WithTitle($"{artistSearch.Artist.ArtistName}{ArtistsService.IsArtistBirthday(cachedArtist?.StartDate)} globally");
 

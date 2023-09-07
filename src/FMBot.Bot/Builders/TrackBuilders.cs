@@ -479,27 +479,18 @@ public class TrackBuilders
 
         var usersWithTrack = await this._whoKnowsTrackService.GetGlobalUsersForTrack(context.DiscordGuild, track.Track.ArtistName, track.Track.TrackName);
 
-        var filteredUsersWithTrack = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack);
+        var filteredUsersWithTrack = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack, settings.QualityFilter);
 
         filteredUsersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(filteredUsersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
         var privacyLevel = PrivacyLevel.Global;
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        var footer = $"Global WhoKnows track requested by {userTitle}";
 
-        if (settings.AdminView)
-        {
-            footer += "\nAdmin view enabled - not for public channels";
-        }
-        if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
-        {
-            footer += $"\nYou are currently not globally visible - use '{context.Prefix}privacy' to enable.";
-        }
-        if (settings.HidePrivateUsers)
-        {
-            footer += "\nAll private users are hidden from results";
-        }
+        var footer = new StringBuilder();
+        footer.AppendLine($"Global WhoKnows track requested by {userTitle}");
+
+        footer = WhoKnowsService.GetGlobalWhoKnowsFooter(footer, settings, context);
 
         if (context.DiscordGuild != null)
         {
@@ -519,7 +510,7 @@ public class TrackBuilders
 
             if (guildAlsoPlaying != null)
             {
-                footer += $"\n{guildAlsoPlaying}";
+                footer.AppendLine(guildAlsoPlaying);
             }
         }
 
@@ -568,15 +559,15 @@ public class TrackBuilders
             }
         }
 
-        if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count() > 1)
+        if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)
         {
-            var serverListeners = filteredUsersWithTrack.Count();
-            var serverPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
-            var avgServerPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
+            var globalListeners = filteredUsersWithTrack.Count;
+            var globalPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
+            var avgPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
 
-            footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
-            footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
-            footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
+            footer.Append($"{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append($"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}");
         }
 
         response.Embed.WithTitle(StringExtensions.TruncateLongString($"{trackName} globally", 255));
@@ -586,7 +577,7 @@ public class TrackBuilders
             response.Embed.WithUrl(track.Track.TrackUrl);
         }
 
-        response.EmbedFooter.WithText(footer);
+        response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
         return response;
