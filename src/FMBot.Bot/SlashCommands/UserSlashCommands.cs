@@ -337,7 +337,7 @@ public class UserSlashCommands : InteractionModuleBase
                                             "This is most likely because we think some of your playcounts have been falsely increased. " +
                                             "This might for example be adding fake scrobbles through OpenScrobbler or listening to a short song a lot of times.");
                     globalStatus.AppendLine();
-                    globalStatus.AppendLine("You can still use all other functionalities of the bot, you just won't be globally visible. " +
+                    globalStatus.AppendLine("You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
                                             "We moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
                 }
                 else if (filteredUser != null && filteredUser.Created > DateTime.UtcNow.AddMonths(-3))
