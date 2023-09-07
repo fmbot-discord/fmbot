@@ -693,33 +693,18 @@ public class AdminCommands : BaseCommandModule
             this._embed.AddField("Globally filtered", filteredUser == null ? "No" : "Yes");
             if (filteredUser != null)
             {
-                var filterInfo = new StringBuilder();
+                this._embed.AddField("Filter reason", WhoKnowsFilterService.FilteredUserReason(filteredUser));
+            }
 
-                switch (filteredUser.Reason)
-                {
-                    case GlobalFilterReason.PlayTimeInPeriod:
-                        filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` hours of listening time");
-                        break;
-                    case GlobalFilterReason.AmountPerPeriod:
-                        filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` scrobbles ");
-                        break;
-                    case GlobalFilterReason.ShortTrack:
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-
-                if (filteredUser.OccurrenceStart.HasValue && filteredUser.OccurrenceEnd.HasValue)
-                {
-                    filterInfo.AppendLine($"From <t:{filteredUser.OccurrenceStart.Value.ToUnixEpochDate()}:f> to <t:{filteredUser.OccurrenceEnd.Value.ToUnixEpochDate()}:f>");
-                }
-
-                this._embed.AddField("Filter reason", filterInfo.ToString());
+            ComponentBuilder components = null;
+            if (filteredUser != null && bottedUser == null)
+            {
+                components = new ComponentBuilder().WithButton($"Convert to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Success);
             }
 
             this._embed.WithFooter("Command not intended for use in public channels");
 
-            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            await ReplyAsync("", false, this._embed.Build(), components: components?.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();
         }
         else

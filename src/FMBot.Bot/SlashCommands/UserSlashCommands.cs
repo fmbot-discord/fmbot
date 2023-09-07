@@ -355,8 +355,7 @@ public class UserSlashCommands : InteractionModuleBase
                                     ".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the listening time threshold again and wait 3 months for the filter to expire. " +
                                     "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
 
-                                infractionDetails.AppendLine($"`{filteredUser.ReasonAmount}` hours of listening time");
-                                infractionDetails.AppendLine($"From <t:{filteredUser.OccurrenceStart.Value.ToUnixEpochDate()}:f> to <t:{filteredUser.OccurrenceEnd.Value.ToUnixEpochDate()}:f>");
+                                infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
                             }
                             break;
                         case GlobalFilterReason.AmountPerPeriod:
@@ -370,8 +369,7 @@ public class UserSlashCommands : InteractionModuleBase
                                     ".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the scrobble count threshold again and wait 3 months for the filter to expire. " +
                                     "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
 
-                                infractionDetails.AppendLine($"`{filteredUser.ReasonAmount}` scrobbles");
-                                infractionDetails.AppendLine($"From <t:{filteredUser.OccurrenceStart.Value.ToUnixEpochDate()}:f> to <t:{filteredUser.OccurrenceEnd.Value.ToUnixEpochDate()}:f>");
+                                infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
                             }
                             break;
                         case GlobalFilterReason.ShortTrack:

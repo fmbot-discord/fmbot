@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Domain.Enums;
@@ -11,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using Swan;
 
 namespace FMBot.Bot.Services.WhoKnows;
 
@@ -145,6 +148,31 @@ public class WhoKnowsFilterService
         await db.SaveChangesAsync();
 
         Log.Information("GWKFilter: Added {filterCount} filtered users to database", filteredUsers.Count);
+    }
+
+    public static string FilteredUserReason(GlobalFilteredUser filteredUser)
+    {
+        var filterInfo = new StringBuilder();
+        switch (filteredUser.Reason)
+        {
+            case GlobalFilterReason.PlayTimeInPeriod:
+                filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` hours of listening time");
+                break;
+            case GlobalFilterReason.AmountPerPeriod:
+                filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` scrobbles ");
+                break;
+            case GlobalFilterReason.ShortTrack:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        if (filteredUser.OccurrenceStart.HasValue && filteredUser.OccurrenceEnd.HasValue)
+        {
+            filterInfo.AppendLine($"From <t:{filteredUser.OccurrenceStart.Value.ToUnixEpochDate()}:f> to <t:{filteredUser.OccurrenceEnd.Value.ToUnixEpochDate()}:f>");
+        }
+
+        return filterInfo.ToString();
     }
 
     private async Task<Dictionary<int, List<UserPlay>>> GetGlobalUserPlays(int topUserId, int botUserId)

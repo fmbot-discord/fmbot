@@ -14,7 +14,9 @@ using Genius.Models.Song;
 using Serilog;
 using Microsoft.Extensions.Options;
 using Discord.WebSocket;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using Genius.Models.User;
 
 namespace FMBot.Bot.Services;
 
@@ -178,6 +180,15 @@ public class AdminService
         }
 
         return filteredUser;
+    }
+
+    public async Task<GlobalFilteredUser> GetFilteredUserForIdAsync(int filteredUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.GlobalFilteredUsers
+               .AsQueryable()
+               .FirstOrDefaultAsync(f => f.GlobalFilteredUserId == filteredUserId);
+
     }
 
     public async Task<List<User>> GetUsersWithLfmUsernameAsync(string lastFmUserName)
@@ -375,6 +386,15 @@ public class AdminService
             if (!string.IsNullOrWhiteSpace(report.ProvidedNote))
             {
                 embed.AddField("Provided note", report.ProvidedNote);
+            }
+
+            var filteredUser = await GetFilteredUserAsync(report.UserNameLastFM);
+
+            if (filteredUser != null)
+            {
+                embed.AddField("User is currently filtered:", WhoKnowsFilterService.FilteredUserReason(filteredUser));
+
+                components.WithButton($"Convert filter to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Success, row: 2);
             }
 
             var reporter = guild.GetUser(report.ReportedByDiscordUserId);
