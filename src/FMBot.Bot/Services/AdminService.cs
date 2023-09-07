@@ -17,6 +17,7 @@ using Discord.WebSocket;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using Genius.Models.User;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
 
