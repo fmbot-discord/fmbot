@@ -336,7 +336,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("discordsupporters", RunMode = RunMode.Async)]
     [Summary("Displays all .fmbot supporters.")]
-    [Alias("dsupporters")]
+    [Alias("dsupporters", "dsupp", "discsupp")]
     public async Task DiscordSupportersAsync()
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
