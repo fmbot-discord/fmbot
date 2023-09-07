@@ -46,11 +46,6 @@ public class WhoKnowsFilterService
                 .Where(w => w.BanActive)
                 .ToListAsync();
 
-            var lastFmUsersToSkip = existingBotters
-                .GroupBy(g => g.UserNameLastFM, StringComparer.OrdinalIgnoreCase)
-                .Select(s => s.Key)
-                .ToHashSet();
-
             for (var i = highestUserId; i >= 0; i -= 10000)
             {
                 var userPlays = await GetGlobalUserPlays(i, i - 10000);
@@ -105,11 +100,32 @@ public class WhoKnowsFilterService
 
             Log.Information("GWKFilter: Found {filterCount} users to filter", newFilteredUsers.Count);
 
+            var lastFmUsersToSkip = existingBotters
+                .GroupBy(g => g.UserNameLastFM, StringComparer.OrdinalIgnoreCase)
+                .Select(s => s.Key)
+                .ToHashSet();
+
+            Log.Information("GWKFilter: Found {filterCount} botters to skip", lastFmUsersToSkip.Count);
+
+            var existingFilterData = DateTime.UtcNow.AddDays(-14);
+            var existingFilteredUsers = await db.GlobalFilteredUsers
+                .Where(w => w.Created >= existingFilterData && w.UserId.HasValue)
+                .Select(s => s.UserId)
+                .ToListAsync();
+
+            var existingFilteredUsersHash = existingFilteredUsers
+                .GroupBy(g => g.Value)
+                .Select(s => s.Key)
+                .ToHashSet();
+
+            Log.Information("GWKFilter: Found {filterCount} existing filtered users to skip", existingFilteredUsersHash.Count);
+
             newFilteredUsers = newFilteredUsers
-                .Where(w => !lastFmUsersToSkip.Contains(w.UserNameLastFm, StringComparer.OrdinalIgnoreCase))
+                .Where(w => !lastFmUsersToSkip.Contains(w.UserNameLastFm, StringComparer.OrdinalIgnoreCase) &&
+                            !existingFilteredUsersHash.Contains(w.UserId.GetValueOrDefault()))
                 .ToList();
 
-            Log.Information("GWKFilter: Found {filterCount} users to filter after removing botted users", newFilteredUsers.Count);
+            Log.Information("GWKFilter: Found {filterCount} users to filter after removing existing and botted users", newFilteredUsers.Count);
 
             return newFilteredUsers;
         }
@@ -118,6 +134,17 @@ public class WhoKnowsFilterService
             Log.Error("GWKFilter: error", e);
             throw;
         }
+    }
+
+    public async Task AddFilteredUsersToDatabase(List<GlobalFilteredUser> filteredUsers)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        await db.GlobalFilteredUsers.AddRangeAsync(filteredUsers);
+
+        await db.SaveChangesAsync();
+
+        Log.Information("GWKFilter: Added {filterCount} filtered users to database", filteredUsers.Count);
     }
 
     private async Task<Dictionary<int, List<UserPlay>>> GetGlobalUserPlays(int topUserId, int botUserId)

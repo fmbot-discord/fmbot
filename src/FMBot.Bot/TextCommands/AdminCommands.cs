@@ -239,12 +239,15 @@ public class AdminCommands : BaseCommandModule
     }
 
     [Command("updategwfilter")]
-    [Summary("Toggles issue mode")]
-    public async Task UpdateGlobalWhoKnowsFilter([Remainder] string reason = null)
+    [Summary("Updates gwk quality filter")]
+    public async Task UpdateGlobalWhoKnowsFilter([Remainder] string _ = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
+            await ReplyAsync("Starting gwk quality filter update..");
+
             var filteredUsers = await this._whoKnowsFilterService.UpdateGlobalFilteredUsers();
+            await this._whoKnowsFilterService.AddFilteredUsersToDatabase(filteredUsers);
 
             var description = new StringBuilder();
 
