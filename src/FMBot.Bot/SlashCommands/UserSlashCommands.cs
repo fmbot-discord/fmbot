@@ -326,7 +326,7 @@ public class UserSlashCommands : InteractionModuleBase
             if (privacyLevel == PrivacyLevel.Global)
             {
                 var bottedUser = await this._adminService.GetBottedUserAsync(userSettings.UserNameLastFM, userSettings.RegisteredLastFm);
-                var filteredUser = await this._adminService.GetFilteredUserAsync(userSettings.UserNameLastFM);
+                var filteredUser = await this._adminService.GetFilteredUserAsync(userSettings.UserNameLastFM, userSettings.RegisteredLastFm);
 
                 var globalStatus = new StringBuilder();
                 var infractionDetails = new StringBuilder();
