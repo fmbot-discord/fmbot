@@ -16,6 +16,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
@@ -26,6 +27,7 @@ using Hangfire;
 using Hangfire.Storage;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Swan;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -49,6 +51,7 @@ public class AdminCommands : BaseCommandModule
     private readonly AlbumService _albumService;
     private readonly ArtistsService _artistsService;
     private readonly AliasService _aliasService;
+    private readonly WhoKnowsFilterService _whoKnowsFilterService;
 
     private InteractiveService Interactivity { get; }
 
@@ -69,7 +72,7 @@ public class AdminCommands : BaseCommandModule
         InteractiveService interactivity,
         AlbumService albumService,
         ArtistsService artistsService,
-        AliasService aliasService) : base(botSettings)
+        AliasService aliasService, WhoKnowsFilterService whoKnowsFilterService) : base(botSettings)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -87,6 +90,7 @@ public class AdminCommands : BaseCommandModule
         this._albumService = albumService;
         this._artistsService = artistsService;
         this._aliasService = aliasService;
+        this._whoKnowsFilterService = whoKnowsFilterService;
     }
 
     //[Command("debug")]
@@ -235,6 +239,32 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("updategwfilter")]
+    [Summary("Updates gwk quality filter")]
+    public async Task UpdateGlobalWhoKnowsFilter([Remainder] string _ = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await ReplyAsync("Starting gwk quality filter update..");
+
+            var filteredUsers = await this._whoKnowsFilterService.UpdateGlobalFilteredUsers();
+            await this._whoKnowsFilterService.AddFilteredUsersToDatabase(filteredUsers);
+
+            var description = new StringBuilder();
+
+            description.AppendLine($"Found {filteredUsers.Count(c => c.Reason == GlobalFilterReason.PlayTimeInPeriod)} users exceeding max playtime");
+            description.AppendLine($"Found {filteredUsers.Count(c => c.Reason == GlobalFilterReason.AmountPerPeriod)} users exceeding max amount");
+            await ReplyAsync(description.ToString());
+
+            this.Context.LogCommandUsed();
+        }
+        else
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
     [Command("purgecache")]
     [Summary("Purges discord caches")]
     public async Task PurgeCacheAsync()
@@ -307,7 +337,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("discordsupporters", RunMode = RunMode.Async)]
     [Summary("Displays all .fmbot supporters.")]
-    [Alias("dsupporters")]
+    [Alias("dsupporters", "dsupp", "discsupp")]
     public async Task DiscordSupportersAsync()
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -621,6 +651,7 @@ public class AdminCommands : BaseCommandModule
             }
 
             var bottedUser = await this._adminService.GetBottedUserAsync(user);
+            var filteredUser = await this._adminService.GetFilteredUserAsync(user);
 
             var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user);
 
@@ -659,9 +690,21 @@ public class AdminCommands : BaseCommandModule
                 }
             }
 
+            this._embed.AddField("Globally filtered", filteredUser == null ? "No" : "Yes");
+            if (filteredUser != null)
+            {
+                this._embed.AddField("Filter reason", WhoKnowsFilterService.FilteredUserReason(filteredUser));
+            }
+
+            ComponentBuilder components = null;
+            if (filteredUser != null && bottedUser == null)
+            {
+                components = new ComponentBuilder().WithButton($"Convert to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Success);
+            }
+
             this._embed.WithFooter("Command not intended for use in public channels");
 
-            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            await ReplyAsync("", false, this._embed.Build(), components: components?.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();
         }
         else

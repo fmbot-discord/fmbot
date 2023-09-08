@@ -146,8 +146,8 @@ public class UpdateService : IUpdateService
         var now = DateTime.UtcNow;
         if (dateFromFilter > now.AddHours(-22) && queueItem.GetAccurateTotalPlaycount)
         {
-            var playsToGet = (int)((DateTime.UtcNow - dateFromFilter).TotalMinutes / 4);
-            count = 75 + playsToGet;
+            var playsToGet = (int)((DateTime.UtcNow - dateFromFilter).TotalMinutes / 3);
+            count = 100 + playsToGet;
             timeFrom = null;
             totalPlaycountCorrect = true;
         }
@@ -158,7 +158,7 @@ public class UpdateService : IUpdateService
             true,
             sessionKey,
             timeFrom,
-            3);
+            4);
 
         if (!recentTracks.Success)
         {

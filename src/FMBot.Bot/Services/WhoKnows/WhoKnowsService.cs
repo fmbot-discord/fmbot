@@ -12,6 +12,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using static SpotifyAPI.Web.PlaylistRemoveItemsRequest;
 
 namespace FMBot.Bot.Services.WhoKnows;
 
@@ -157,8 +158,13 @@ public class WhoKnowsService
         return (stats, users.ToList());
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IEnumerable<WhoKnowsObjectWithUser> users)
+    public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IEnumerable<WhoKnowsObjectWithUser> users, bool qualityFilterDisabled = false)
     {
+        if (qualityFilterDisabled)
+        {
+            return users.ToList();
+        }
+
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var bottedUsers = await db.BottedUsers
             .AsQueryable()
@@ -166,24 +172,68 @@ public class WhoKnowsService
             .ToListAsync();
 
         var userNamesToFilter = bottedUsers
-            .DistinctBy(d => d.UserNameLastFM.ToLower())
-            .Select(s => s.UserNameLastFM.ToLower())
+            .DistinctBy(d => d.UserNameLastFM, StringComparer.OrdinalIgnoreCase)
+            .Select(s => s.UserNameLastFM)
             .ToHashSet();
 
         var userDatesToFilter = bottedUsers
-            .Where(we => we.LastFmRegistered != null)
+            .Where(w => w.LastFmRegistered != null)
             .DistinctBy(d => d.LastFmRegistered)
             .Select(s => s.LastFmRegistered)
             .ToHashSet();
 
+
+        var existingFilterData = DateTime.UtcNow.AddMonths(-3);
+        var filteredUsers = await db.GlobalFilteredUsers
+            .AsQueryable()
+            .Where(w => w.Created > existingFilterData)
+            .ToListAsync();
+
+        foreach (var filteredUser in filteredUsers)
+        {
+            if (!userNamesToFilter.Any(s => string.Equals(s, filteredUser.UserNameLastFm, StringComparison.OrdinalIgnoreCase)))
+            {
+                userNamesToFilter.Add(filteredUser.UserNameLastFm);
+            }
+
+            if (filteredUser.RegisteredLastFm.HasValue &&
+                !userDatesToFilter.Contains(filteredUser.RegisteredLastFm.Value))
+            {
+                userDatesToFilter.Add(filteredUser.RegisteredLastFm);
+            }
+        }
+
+        var insensitive = new HashSet<string>(
+            userNamesToFilter, StringComparer.OrdinalIgnoreCase);
+
         return users
             .Where(w =>
-                !userNamesToFilter
-                    .Contains(w.LastFMUsername.ToLower())
+                !insensitive.Contains(w.LastFMUsername)
                 &&
-                !userDatesToFilter
-                    .Contains(w.RegisteredLastFm))
+                !userDatesToFilter.Contains(w.RegisteredLastFm))
             .ToList();
+    }
+
+    public static StringBuilder GetGlobalWhoKnowsFooter(StringBuilder footer, WhoKnowsSettings settings, ContextModel context)
+    {
+        if (settings.AdminView)
+        {
+            footer.AppendLine("Admin view enabled - not for public channels");
+        }
+        if (settings.QualityFilterDisabled)
+        {
+            footer.AppendLine("Globally botted and filtered users are visible");
+        }
+        if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
+        {
+            footer.AppendLine($"You are currently not globally visible - use '{context.Prefix}privacy' to enable.");
+        }
+        if (settings.HidePrivateUsers)
+        {
+            footer.AppendLine("All private users are hidden from results");
+        }
+
+        return footer;
     }
 
     public static IList<WhoKnowsObjectWithUser> ShowGuildMembersInGlobalWhoKnowsAsync(IList<WhoKnowsObjectWithUser> users, IDictionary<int, FullGuildUser> guildUsers)

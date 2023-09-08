@@ -603,7 +603,7 @@ public class AlbumBuilders
 
         var usersWithAlbum = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(context.DiscordGuild, album.Album.ArtistName, album.Album.AlbumName);
 
-        var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum);
+        var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum, settings.QualityFilterDisabled);
 
         filteredUsersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(filteredUsersWithAlbum, context.ContextUser, albumName, context.DiscordGuild, album.Album.UserPlaycount);
 
@@ -663,31 +663,20 @@ public class AlbumBuilders
         response.Embed.WithDescription(serverUsers);
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        var footer = $"Global WhoKnows album requested by {userTitle}";
+        var footer = new StringBuilder();
+        footer.AppendLine($"Global WhoKnows album requested by {userTitle}");
+
+        footer = WhoKnowsService.GetGlobalWhoKnowsFooter(footer, settings, context);
 
         if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)
         {
-            var serverListeners = filteredUsersWithAlbum.Count;
-            var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
-            var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
+            var globalListeners = filteredUsersWithAlbum.Count;
+            var globalPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
+            var avgPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
-            footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
-            footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
-            footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
-        }
-
-        if (settings.AdminView)
-        {
-            footer += "\nAdmin view enabled - not for public channels";
-        }
-        if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
-        {
-            footer += $"\nYou are currently not globally visible - use " +
-                      $"'{context.Prefix}privacy' to enable.";
-        }
-        if (settings.HidePrivateUsers)
-        {
-            footer += "\nAll private users are hidden from results";
+            footer.Append($"{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append($"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}");
         }
 
         response.Embed.WithTitle($"{albumName} globally");
@@ -701,7 +690,7 @@ public class AlbumBuilders
             response.Embed.WithUrl(url);
         }
 
-        response.EmbedFooter.WithText(footer);
+        response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
         return response;

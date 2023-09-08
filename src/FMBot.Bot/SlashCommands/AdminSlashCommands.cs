@@ -9,11 +9,13 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using Swan;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -278,6 +280,49 @@ public class AdminSlashCommands : InteractionModuleBase
 
         var components =
             new ComponentBuilder().WithButton($"Banned by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
+        await message.ModifyAsync(m => m.Components = components.Build());
+    }
+
+    [ComponentInteraction("gwk-filtered-user-to-ban-*")]
+    public async Task GwkReportBanConfirmed(string filteredUserId)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        var id = int.Parse(filteredUserId);
+        var filteredUser = await this._adminService.GetFilteredUserForIdAsync(id);
+
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(filteredUser.UserNameLastFm);
+        DateTimeOffset? age = null;
+        if (userInfo != null && userInfo.Subscriber)
+        {
+            age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
+        }
+
+        var filterInfo = WhoKnowsFilterService.FilteredUserReason(filteredUser);
+
+        var result = await this._adminService.AddBottedUserAsync(filteredUser.UserNameLastFm, filterInfo.ToString(), age?.DateTime);
+
+        if (result)
+        {
+            await RespondAsync($"Converted filter for `{filteredUser.UserNameLastFm}` into gwk ban, thank you.", ephemeral: true);
+        }
+        else
+        {
+            await RespondAsync($"Something went wrong. Try checking again", ephemeral: true);
+        }
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var components =
+            new ComponentBuilder().WithButton($"Converted to ban by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Success);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
 

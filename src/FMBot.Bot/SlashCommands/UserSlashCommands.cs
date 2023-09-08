@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
@@ -18,6 +17,7 @@ using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
@@ -26,6 +26,8 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using Swan;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -42,6 +44,7 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly OpenAiService _openAiService;
     private readonly ImportService _importService;
     private readonly IPrefixService _prefixService;
+    private readonly AdminService _adminService;
 
     private readonly BotSettings _botSettings;
 
@@ -59,7 +62,7 @@ public class UserSlashCommands : InteractionModuleBase
         ArtistsService artistsService,
         OpenAiService openAiService,
         ImportService importService,
-        IPrefixService prefixService)
+        IPrefixService prefixService, AdminService adminService)
     {
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
@@ -73,6 +76,7 @@ public class UserSlashCommands : InteractionModuleBase
         this._openAiService = openAiService;
         this._importService = importService;
         this._prefixService = prefixService;
+        this._adminService = adminService;
         this._botSettings = botSettings.Value;
     }
 
@@ -318,7 +322,77 @@ public class UserSlashCommands : InteractionModuleBase
         {
             var newPrivacyLevel = await this._userService.SetPrivacyLevel(userSettings.UserId, privacyLevel);
 
-            embed.WithDescription($"Your privacy level has been set to **{newPrivacyLevel}**.");
+            embed.AddField("Your new privacy level", $"Your privacy level has been set to **{newPrivacyLevel}**.");
+            if (privacyLevel == PrivacyLevel.Global)
+            {
+                var bottedUser = await this._adminService.GetBottedUserAsync(userSettings.UserNameLastFM, userSettings.RegisteredLastFm);
+                var filteredUser = await this._adminService.GetFilteredUserAsync(userSettings.UserNameLastFM, userSettings.RegisteredLastFm);
+
+                var globalStatus = new StringBuilder();
+                var infractionDetails = new StringBuilder();
+
+                if (bottedUser is { BanActive: true })
+                {
+                    globalStatus.AppendLine("Sorry, you've been permanently removed from Global WhoKnows leaderboards. " +
+                                            "This is most likely because we think some of your playcounts have been falsely increased. " +
+                                            "This might for example be adding fake scrobbles through OpenScrobbler or listening to a short song a lot of times.");
+                    globalStatus.AppendLine();
+                    globalStatus.AppendLine("You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
+                                            "We moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
+                }
+                else if (filteredUser != null && filteredUser.Created > DateTime.UtcNow.AddMonths(-3))
+                {
+                    switch (filteredUser.Reason)
+                    {
+                        case GlobalFilterReason.PlayTimeInPeriod:
+                            {
+                                globalStatus.AppendLine(
+                                    "Sorry, you've been temporarily removed from Global WhoKnows leaderboards. " +
+                                    $"This is because you've scrobbled over 6 days of listening time within an {WhoKnowsFilterService.PeriodAmountOfDays} day period. " +
+                                    "For example, this can be caused by scrobbling overnight (sleep scrobbling) or because you've added scrobbles with external tools.");
+                                globalStatus.AppendLine();
+                                globalStatus.AppendLine(
+                                    ".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the listening time threshold again and wait 3 months for the filter to expire. " +
+                                    "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
+
+                                infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
+                            }
+                            break;
+                        case GlobalFilterReason.AmountPerPeriod:
+                            {
+                                globalStatus.AppendLine(
+                                    "Sorry, you've been temporarily removed from Global WhoKnows leaderboards. " +
+                                    $"This is because you've scrobbled over {WhoKnowsFilterService.MaxAmountOfPlaysPerDay * WhoKnowsFilterService.PeriodAmountOfDays} plays within a {WhoKnowsFilterService.PeriodAmountOfDays} day period. " +
+                                    "For example, this can be caused by scrobbling very short songs repeatedly or because you've added scrobbles with external tools.");
+                                globalStatus.AppendLine();
+                                globalStatus.AppendLine(
+                                    ".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the scrobble count threshold again and wait 3 months for the filter to expire. " +
+                                    "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
+
+                                infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
+                            }
+                            break;
+                        case GlobalFilterReason.ShortTrack:
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+
+                    globalStatus.AppendLine();
+                    globalStatus.AppendLine("You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
+                                            "We automatically moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
+                }
+
+                if (globalStatus.Length > 0)
+                {
+                    embed.AddField("Global WhoKnows status", globalStatus.ToString());
+                }
+                if (infractionDetails.Length > 0)
+                {
+                    embed.AddField("Infraction details", infractionDetails.ToString());
+                }
+            }
+
             embed.WithColor(DiscordConstants.InformationColorBlue);
             await RespondAsync(embed: embed.Build(), ephemeral: true);
         }

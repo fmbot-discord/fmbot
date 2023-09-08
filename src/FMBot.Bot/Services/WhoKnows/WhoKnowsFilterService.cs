@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -10,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using Swan;
 
 namespace FMBot.Bot.Services.WhoKnows;
 
@@ -19,9 +23,9 @@ public class WhoKnowsFilterService
     private readonly BotSettings _botSettings;
     private readonly TimeService _timeService;
 
-    private const int MaxAmountOfPlaysPerDay = 600;
+    public const int MaxAmountOfPlaysPerDay = 650;
     private const int MaxAmountOfHoursPerPeriod = 144;
-    private const int PeriodAmountOfDays = 8;
+    public const int PeriodAmountOfDays = 8;
 
     public WhoKnowsFilterService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, TimeService timeService)
     {
@@ -30,35 +34,158 @@ public class WhoKnowsFilterService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task UpdateGlobalFilteredUsers()
+    public async Task<List<GlobalFilteredUser>> UpdateGlobalFilteredUsers()
     {
-        Log.Information("Updating whoknows quality filter");
-        var userPlays = await GetGlobalUserPlays();
+        Log.Information("GWKFilter: Running");
 
-        foreach (var user in userPlays)
+        try
         {
-            var timeListened = await this._timeService.GetPlayTimeForPlays(user.Value);
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
-            if (timeListened.TotalHours >= MaxAmountOfHoursPerPeriod)
+            var highestUserId = await GetHighestUserId();
+            var newFilteredUsers = new List<GlobalFilteredUser>();
+
+            var existingBotters = await db.BottedUsers
+                .Where(w => w.BanActive)
+                .ToListAsync();
+
+            for (var i = highestUserId; i >= 0; i -= 10000)
             {
-                Log.Information("Found user {userId} with too much playtime", user.Key);
+                var userPlays = await GetGlobalUserPlays(i, i - 10000);
+
+                foreach (var user in userPlays)
+                {
+                    var timeListened = await this._timeService.GetPlayTimeForPlays(user.Value);
+
+                    if (timeListened.TotalHours >= MaxAmountOfHoursPerPeriod)
+                    {
+                        Log.Information("GWKFilter: Found user {userId} with too much playtime - {totalHours}", user.Key, (int)timeListened.TotalHours);
+
+                        newFilteredUsers.Add(new GlobalFilteredUser
+                        {
+                            Created = DateTime.UtcNow,
+                            OccurrenceStart = user.Value.MinBy(b => b.TimePlayed).TimePlayed,
+                            OccurrenceEnd = user.Value.MaxBy(b => b.TimePlayed).TimePlayed,
+                            Reason = GlobalFilterReason.PlayTimeInPeriod,
+                            ReasonAmount = (int)timeListened.TotalHours,
+                            UserId = user.Key
+                        });
+                    }
+                    else if ((user.Value.Count / PeriodAmountOfDays) >= MaxAmountOfPlaysPerDay)
+                    {
+                        Log.Information("GWKFilter: Found user {userId} with too much plays - {totalPlays} in {totalDays}", user.Key, user.Value.Count, MaxAmountOfPlaysPerDay);
+
+                        newFilteredUsers.Add(new GlobalFilteredUser
+                        {
+                            Created = DateTime.UtcNow,
+                            OccurrenceStart = user.Value.MinBy(b => b.TimePlayed).TimePlayed,
+                            OccurrenceEnd = user.Value.MaxBy(b => b.TimePlayed).TimePlayed,
+                            Reason = GlobalFilterReason.AmountPerPeriod,
+                            ReasonAmount = user.Value.Count,
+                            UserId = user.Key
+                        });
+                    }
+                }
             }
 
-            if ((user.Value.Count / PeriodAmountOfDays) >= MaxAmountOfPlaysPerDay)
+            var userIds = newFilteredUsers.Select(s => s.UserId).ToHashSet();
+            var users = await db.Users
+                .Where(w => userIds.Contains(w.UserId))
+                .ToListAsync();
+
+            foreach (var filteredUser in newFilteredUsers)
             {
-                Log.Information("Found user {userId} with too much plays", user.Key);
+                var user = users.First(f => f.UserId == filteredUser.UserId);
+
+                filteredUser.UserNameLastFm = user.UserNameLastFM;
+                filteredUser.RegisteredLastFm = user.RegisteredLastFm;
             }
+
+            Log.Information("GWKFilter: Found {filterCount} users to filter", newFilteredUsers.Count);
+
+            var lastFmUsersToSkip = existingBotters
+                .GroupBy(g => g.UserNameLastFM, StringComparer.OrdinalIgnoreCase)
+                .Select(s => s.Key)
+                .ToHashSet();
+
+            Log.Information("GWKFilter: Found {filterCount} botters to skip", lastFmUsersToSkip.Count);
+
+            var existingFilterData = DateTime.UtcNow.AddDays(-14);
+            var existingFilteredUsers = await db.GlobalFilteredUsers
+                .Where(w => w.Created >= existingFilterData && w.UserId.HasValue)
+                .Select(s => s.UserId)
+                .ToListAsync();
+
+            var existingFilteredUsersHash = existingFilteredUsers
+                .GroupBy(g => g.Value)
+                .Select(s => s.Key)
+                .ToHashSet();
+
+            Log.Information("GWKFilter: Found {filterCount} existing filtered users to skip", existingFilteredUsersHash.Count);
+
+            newFilteredUsers = newFilteredUsers
+                .Where(w => !lastFmUsersToSkip.Contains(w.UserNameLastFm, StringComparer.OrdinalIgnoreCase) &&
+                            !existingFilteredUsersHash.Contains(w.UserId.GetValueOrDefault()))
+                .ToList();
+
+            Log.Information("GWKFilter: Found {filterCount} users to filter after removing existing and botted users", newFilteredUsers.Count);
+
+            return newFilteredUsers;
+        }
+        catch (Exception e)
+        {
+            Log.Error("GWKFilter: error", e);
+            throw;
         }
     }
 
-    private async Task<Dictionary<int, List<UserPlay>>> GetGlobalUserPlays()
+    public async Task AddFilteredUsersToDatabase(List<GlobalFilteredUser> filteredUsers)
     {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        await db.GlobalFilteredUsers.AddRangeAsync(filteredUsers);
+
+        await db.SaveChangesAsync();
+
+        Log.Information("GWKFilter: Added {filterCount} filtered users to database", filteredUsers.Count);
+    }
+
+    public static string FilteredUserReason(GlobalFilteredUser filteredUser)
+    {
+        var filterInfo = new StringBuilder();
+        switch (filteredUser.Reason)
+        {
+            case GlobalFilterReason.PlayTimeInPeriod:
+                filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` hours of listening time");
+                break;
+            case GlobalFilterReason.AmountPerPeriod:
+                filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` scrobbles ");
+                break;
+            case GlobalFilterReason.ShortTrack:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        if (filteredUser.OccurrenceStart.HasValue && filteredUser.OccurrenceEnd.HasValue)
+        {
+            filterInfo.AppendLine($"From <t:{filteredUser.OccurrenceStart.Value.ToUnixEpochDate()}:f> to <t:{filteredUser.OccurrenceEnd.Value.ToUnixEpochDate()}:f>");
+        }
+
+        return filterInfo.ToString();
+    }
+
+    private async Task<Dictionary<int, List<UserPlay>>> GetGlobalUserPlays(int topUserId, int botUserId)
+    {
+        Log.Information("GWKFilter: Getting plays from userIds {topUserId} to {botUserId}", topUserId, botUserId);
+
         const int start = PeriodAmountOfDays + 3;
         const int end = 3;
 
         var sql = "SELECT up.* " +
                   "FROM user_plays AS up " +
-                  $"WHERE time_played >= current_date - interval '{start}' day AND  time_played <= current_date - interval '{end}' day";
+                  $"WHERE time_played >= current_date - interval '{start}' day AND  time_played <= current_date - interval '{end}' day " +
+                  $"AND user_id  >= {botUserId} AND user_id <= {topUserId}";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -69,5 +196,16 @@ public class WhoKnowsFilterService
         return userPlays
             .GroupBy(g => g.UserId)
             .ToDictionary(d => d.Key, d => d.ToList());
+    }
+
+    private async Task<int> GetHighestUserId()
+    {
+        const string sql = "SELECT MAX (user_id) FROM public.users";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await connection.QueryFirstAsync<int>(sql);
     }
 }
