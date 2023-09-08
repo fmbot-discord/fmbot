@@ -23,7 +23,7 @@ public class WhoKnowsFilterService
     private readonly BotSettings _botSettings;
     private readonly TimeService _timeService;
 
-    public const int MaxAmountOfPlaysPerDay = 750;
+    public const int MaxAmountOfPlaysPerDay = 650;
     private const int MaxAmountOfHoursPerPeriod = 144;
     public const int PeriodAmountOfDays = 8;
 
