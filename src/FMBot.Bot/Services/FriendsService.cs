@@ -32,6 +32,17 @@ namespace FMBot.Bot.Services
             return friends;
         }
 
+        public async Task<List<Friend>> GetFriendedAsync(string lastFmUserName)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+
+            var friended = await db.Friends
+                .Where(f => f.LastFMUserName == lastFmUserName)
+                .ToListAsync();
+            
+            return friended;
+        }
+
         public async Task AddLastFmFriendAsync(User contextUser, string lastFmUserName, int? friendUserId)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();

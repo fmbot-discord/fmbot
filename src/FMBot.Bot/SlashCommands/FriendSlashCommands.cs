@@ -50,4 +50,24 @@ public class FriendSlashCommands : InteractionModuleBase
                 ephemeral: true);
         }
     }
+
+    [SlashCommand("friended", "Displays people who have added you as a friend.")]
+    [UsernameSetRequired]
+    public async Task FriendedAsync()
+    {
+        _ = DeferAsync();
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try {
+            var response = await this._friendBuilders.FriendedAsync(new ContextModel(this.Context, contextUser));
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await ReplyAsync("Unable to show people who follow you due to an internal error.");
+        }
+    }
 }
