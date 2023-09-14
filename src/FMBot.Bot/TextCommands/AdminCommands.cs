@@ -650,8 +650,8 @@ public class AdminCommands : BaseCommandModule
                 user = targetedUser.UserNameLastFm;
             }
 
-            var bottedUser = await this._adminService.GetBottedUserAsync(user);
-            var filteredUser = await this._adminService.GetFilteredUserAsync(user);
+            var bottedUser = await this._adminService.GetBottedUserAsync(user, targetedUser.RegisteredLastFm);
+            var filteredUser = await this._adminService.GetFilteredUserAsync(user, targetedUser.RegisteredLastFm);
 
             var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user);
 
