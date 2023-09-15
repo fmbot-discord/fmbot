@@ -81,7 +81,6 @@ public class FriendsCommands : BaseCommandModule
 
     [Command("friended", RunMode = RunMode.Async)]
     [Summary("Displays people who have added you as a friend.")]
-    [ExcludeFromHelp]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
     public async Task FriendedAsync()

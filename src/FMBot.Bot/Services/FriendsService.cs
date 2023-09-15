@@ -31,12 +31,12 @@ public class FriendsService
         return friends;
     }
 
-    public async Task<List<Friend>> GetFriendedAsync(string lastFmUserName)
+    public async Task<List<Friend>> GetFriendedAsync(int userId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         
         var friended = await db.Friends
-            .Where(f => f.LastFMUserName == lastFmUserName)
+            .Where(f => f.FriendUserId == userId)
             .ToListAsync();
         
         return friended;

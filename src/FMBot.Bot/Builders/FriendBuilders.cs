@@ -400,11 +400,11 @@ public class FriendBuilders
         if (context.DiscordGuild != null)
         {
             response.Embed.WithDescription("This command is only supported in DM");
-            response.CommandResponse = CommandResponse.Error; // unsure if some other type should be used
+            response.CommandResponse = CommandResponse.OnlySupportedInDm;
             return response;
         }
 
-        var friended = await this._friendsService.GetFriendedAsync(context.ContextUser.UserNameLastFM);
+        var friended = await this._friendsService.GetFriendedAsync(context.ContextUser.UserId);
 
         if (friended?.Any() != true)
         {
@@ -426,7 +426,7 @@ public class FriendBuilders
 
             foreach (var friend in friendedPage)
             {
-                friendedPageString.AppendLine($"{counter}. **{friend.User.UserNameLastFM}**");
+                friendedPageString.AppendLine($"{counter}. *[{friend.User.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(friend.User.UserNameLastFM)})*");
                 counter++;
             }
             

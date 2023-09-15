@@ -89,23 +89,4 @@ public class FriendSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
-
-    [SlashCommand("friended", "Displays people who have added you as a friend.")]
-    [UsernameSetRequired]
-    public async Task FriendedAsync()
-    {
-        _ = DeferAsync();
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        try {
-            var response = await this._friendBuilders.FriendedAsync(new ContextModel(this.Context, contextUser));
-
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
 }
