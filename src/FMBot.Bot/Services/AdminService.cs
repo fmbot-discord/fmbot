@@ -395,7 +395,7 @@ public class AdminService
             {
                 embed.AddField("User is currently filtered:", WhoKnowsFilterService.FilteredUserReason(filteredUser));
 
-                components.WithButton($"Convert filter to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Success, row: 2);
+                components.WithButton($"Convert filter to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary, row: 2);
             }
 
             var reporter = guild.GetUser(report.ReportedByDiscordUserId);

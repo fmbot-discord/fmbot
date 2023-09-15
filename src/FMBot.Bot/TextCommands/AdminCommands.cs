@@ -699,7 +699,7 @@ public class AdminCommands : BaseCommandModule
             ComponentBuilder components = null;
             if (filteredUser != null && bottedUser == null)
             {
-                components = new ComponentBuilder().WithButton($"Convert to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Success);
+                components = new ComponentBuilder().WithButton($"Convert to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary);
             }
 
             this._embed.WithFooter("Command not intended for use in public channels");
