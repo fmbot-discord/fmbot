@@ -650,8 +650,8 @@ public class AdminCommands : BaseCommandModule
                 user = targetedUser.UserNameLastFm;
             }
 
-            var bottedUser = await this._adminService.GetBottedUserAsync(user);
-            var filteredUser = await this._adminService.GetFilteredUserAsync(user);
+            var bottedUser = await this._adminService.GetBottedUserAsync(user, targetedUser.RegisteredLastFm);
+            var filteredUser = await this._adminService.GetFilteredUserAsync(user, targetedUser.RegisteredLastFm);
 
             var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user);
 
@@ -699,7 +699,7 @@ public class AdminCommands : BaseCommandModule
             ComponentBuilder components = null;
             if (filteredUser != null && bottedUser == null)
             {
-                components = new ComponentBuilder().WithButton($"Convert to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Success);
+                components = new ComponentBuilder().WithButton($"Convert to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary);
             }
 
             this._embed.WithFooter("Command not intended for use in public channels");
@@ -1756,39 +1756,39 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("globalblacklistadd")]
-    [Summary("Adds a user to the global FMBot blacklist.")]
-    [Alias("globalblocklistadd")]
-    public async Task BlacklistAddAsync(SocketGuildUser user = null)
+    [Command("globalblockadd")]
+    [Summary("Blocks a user from using .fmbot.")]
+    [Alias("globalblocklistadd", "globalblacklistadd")]
+    public async Task BlacklistAddAsync(ulong? user = null)
     {
         try
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                if (user == null)
+                if (!user.HasValue)
                 {
-                    await ReplyAsync("Please specify what user you want to add to the blacklist.");
+                    await ReplyAsync("Please specify what discord user id you want to block from using .fmbot.");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
-                if (user == this.Context.Message.Author)
+                if (user == this.Context.Message.Author.Id)
                 {
-                    await ReplyAsync("You cannot blacklist yourself!");
+                    await ReplyAsync("You cannot block yourself from using .fmbot!");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
-                var blacklistResult = await this._adminService.AddUserToBlocklistAsync(user.Id);
+                var blacklistResult = await this._adminService.AddUserToBlocklistAsync(user.Value);
 
                 if (blacklistResult)
                 {
-                    await ReplyAsync("Added " + user.Username + " to the blacklist.", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync("Blocked " + user + " from using .fmbot.", allowedMentions: AllowedMentions.None);
                 }
                 else
                 {
-                    await ReplyAsync("You have already added " + user.Username +
-                                     " to the blacklist or the blacklist does not exist for this user.", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync("You have already added " + user +
+                                     " to the list of blocked users or something went wrong.", allowedMentions: AllowedMentions.None);
                 }
 
                 this.Context.LogCommandUsed();
@@ -1805,31 +1805,31 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("globalblacklistremove")]
-    [Summary("Removes a user from the global FMBot blacklist.")]
-    [Alias("globalblocklistremove")]
-    public async Task BlackListRemoveAsync(SocketGuildUser user = null)
+    [Command("globalblockremove")]
+    [Summary("Unblocks a user so they can use .fmbot again.")]
+    [Alias("globalblocklistremove", "globalblacklistremove")]
+    public async Task BlackListRemoveAsync(ulong? user = null)
     {
         try
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                if (user == null)
+                if (!user.HasValue)
                 {
-                    await ReplyAsync("Please specify what user you want to remove from the blacklist.");
+                    await ReplyAsync("Please specify what user you want to remove from the list of users who are blocked from using .fmbot.");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
-                var blacklistResult = await this._adminService.RemoveUserFromBlocklistAsync(user.Id);
+                var blacklistResult = await this._adminService.RemoveUserFromBlocklistAsync(user.Value);
 
                 if (blacklistResult)
                 {
-                    await ReplyAsync("Removed " + user.Username + " from the blacklist.", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync("Removed " + user + " from the list of users who are blocked from using .fmbot.", allowedMentions: AllowedMentions.None);
                 }
                 else
                 {
-                    await ReplyAsync("You have already removed " + user.Username + " from the blacklist.", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync("You have already removed " + user + " from the list of users who are blocked from using the bot.", allowedMentions: AllowedMentions.None);
                 }
                 this.Context.LogCommandUsed();
             }
