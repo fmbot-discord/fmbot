@@ -85,7 +85,6 @@ public class FriendsCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Friends)]
     public async Task FriendedAsync()
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 

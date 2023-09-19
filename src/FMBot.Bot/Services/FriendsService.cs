@@ -36,6 +36,7 @@ public class FriendsService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         
         var friended = await db.Friends
+            .Include(f => f.User)
             .Where(f => f.FriendUserId == userId)
             .ToListAsync();
         
