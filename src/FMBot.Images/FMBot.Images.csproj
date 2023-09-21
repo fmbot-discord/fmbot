@@ -17,7 +17,7 @@
     <PackageReference Include="HtmlSanitizer" Version="8.0.692" />
     <PackageReference Include="PuppeteerSharp" Version="10.1.0" />
     <PackageReference Include="Serilog" Version="2.12.0" />
-    <PackageReference Include="SkiaSharp" Version="2.80.2" />
+    <PackageReference Include="SkiaSharp" Version="2.88.6" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.80.2" />
     <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="2.80.2" />
   </ItemGroup>
