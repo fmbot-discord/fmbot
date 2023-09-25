@@ -394,13 +394,14 @@ public class FriendBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.Paginator,
         };
 
         if (context.DiscordGuild != null)
         {
-            response.Embed.WithDescription("This command is only supported in DM");
+            response.Embed.WithDescription("This command is only supported in DMs.");
             response.CommandResponse = CommandResponse.OnlySupportedInDm;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -410,6 +411,7 @@ public class FriendBuilders
         {
             response.Embed.WithDescription("It doesn't seem like anyone's added you as a friend yet.");
             response.CommandResponse = CommandResponse.NotFound;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -426,7 +428,7 @@ public class FriendBuilders
 
             foreach (var friend in friendedPage)
             {
-                friendedPageString.AppendLine($"{counter}. *[{friend.User.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(friend.User.UserNameLastFM)})*");
+                friendedPageString.AppendLine($"{counter}. **[{friend.User.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(friend.User.UserNameLastFM)})**");
                 counter++;
             }
             
