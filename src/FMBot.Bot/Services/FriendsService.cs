@@ -31,6 +31,18 @@ public class FriendsService
         return friends;
     }
 
+    public async Task<List<Friend>> GetFriendedAsync(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        
+        var friended = await db.Friends
+            .Include(f => f.User)
+            .Where(f => f.FriendUserId == userId)
+            .ToListAsync();
+        
+        return friended;
+    }
+
     public async Task AddLastFmFriendAsync(User contextUser, string lastFmUserName, int? friendUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

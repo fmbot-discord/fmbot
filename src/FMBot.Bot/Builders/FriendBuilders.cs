@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using Discord;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -386,6 +387,58 @@ public class FriendBuilders
 
         response.Embed.WithDescription(reply);
 
+        return response;
+    }
+
+    public async Task<ResponseModel> FriendedAsync(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        if (context.DiscordGuild != null)
+        {
+            response.Embed.WithDescription("This command is only supported in DM");
+            response.CommandResponse = CommandResponse.OnlySupportedInDm;
+            return response;
+        }
+
+        var friended = await this._friendsService.GetFriendedAsync(context.ContextUser.UserId);
+
+        if (friended?.Any() != true)
+        {
+            response.Embed.WithDescription("It doesn't seem like anyone's added you as a friend yet.");
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        response.EmbedAuthor.WithName("People who have added you as a friend in .fmbot");
+
+        var pages = new List<PageBuilder>();
+
+        var friendedPages = friended.ChunkBy(10);
+        var counter = 1;
+        var pageCounter = 1;
+        foreach (var friendedPage in friendedPages)
+        {
+            var friendedPageString = new StringBuilder();
+
+            foreach (var friend in friendedPage)
+            {
+                friendedPageString.AppendLine($"{counter}. *[{friend.User.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(friend.User.UserNameLastFM)})*");
+                counter++;
+            }
+            
+            pages.Add(new PageBuilder()
+                .WithDescription(friendedPageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter($"Page {pageCounter}/{friendedPages.Count} - {friended?.Count} users"));
+
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
         return response;
     }
 }
