@@ -27,6 +27,8 @@ public class DiscogsCollectionSettings
                 return (DiscogsFormat.Cassette, format);
             case "cd" or "cds":
                 return (DiscogsFormat.Cd, format);
+            case "8track" or "8tracks" or "8-track cartridge":
+                return (DiscogsFormat.EightTrack, format);
             default:
                 return (DiscogsFormat.Miscellaneous, null);
         }
