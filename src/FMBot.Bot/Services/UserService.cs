@@ -135,7 +135,7 @@ public class UserService
     {
         var user = await GetUserSettingsAsync(discordUser);
 
-        return !string.IsNullOrEmpty(user.SessionKeyLastFm);
+        return !string.IsNullOrEmpty(user?.SessionKeyLastFm);
     }
 
     public async Task UpdateUserLastUsedAsync(ulong discordUserId)

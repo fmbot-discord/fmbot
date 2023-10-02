@@ -730,12 +730,6 @@ public class SupporterService
                 w.SubscriptionType == SubscriptionType.Discord)
             .ToListAsync();
 
-        var discordUsersLeft = existingSupporters
-            .OrderByDescending(o => o.LastPayment)
-            .Select(s => s.DiscordUserId.Value)
-            .Distinct()
-            .ToHashSet();
-
         foreach (var discordSupporter in discordSupporters)
         {
             var existingSupporter =
@@ -762,8 +756,6 @@ public class SupporterService
                     }
                 }
 
-                discordUsersLeft.Remove(discordSupporter.DiscordUserId);
-
                 var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
                 var embed = new EmbedBuilder().WithDescription(
                     $"Added Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
@@ -776,8 +768,6 @@ public class SupporterService
 
             if (existingSupporter != null)
             {
-                discordUsersLeft.Remove(discordSupporter.DiscordUserId);
-
                 if (existingSupporter.LastPayment != discordSupporter.EndsAt && existingSupporter.Expired != true)
                 {
                     Log.Information("Updating Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
@@ -805,8 +795,6 @@ public class SupporterService
                     {
                         await SendSupporterWelcomeMessage(user, false, reActivatedSupporter);
                     }
-
-                    discordUsersLeft.Remove(discordSupporter.DiscordUserId);
 
                     var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
                     var embed = new EmbedBuilder().WithDescription(
@@ -845,11 +833,6 @@ public class SupporterService
                     Log.Information("Removed Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
                 }
             }
-        }
-
-        if (discordUsersLeft.Any())
-        {
-            Log.Warning("Found {count} Discord supporters without attached entitlement", discordUsersLeft.Count);
         }
     }
 
