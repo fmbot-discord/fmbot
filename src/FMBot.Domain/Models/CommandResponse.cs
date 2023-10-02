@@ -34,5 +34,7 @@ public enum CommandResponse
 
     RateLimited = 16,
 
-    SupporterRequired = 17
+    SupporterRequired = 17,
+
+    OnlySupportedInDm = 18,
 }

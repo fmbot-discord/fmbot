@@ -11,7 +11,7 @@ public static class Constants
 
     public const string LastFmNonExistentImageName = "2a96cbd8b46e442fc41c2b86b821562f.png";
 
-    public const int InviteLinkPermissions = 322624;
+    public const long InviteLinkPermissions = 275415092288;
 
     public const ulong BotProductionId = 356268235697553409;
 
@@ -20,8 +20,6 @@ public static class Constants
     public const string DocsUrl = "https://fmbot.xyz";
 
     public const string CompactTimePeriodList = "weekly/monthly/quarterly/half/yearly/alltime";
-
-    public static readonly string ExpandedTimePeriodList = "'weekly', 'monthly', 'quarterly', 'half', 'yearly', or 'alltime'";
 
     public const string UserMentionExample = "`@usermention` / `lfm:fm-bot` / `356268235697553409`";
 
@@ -39,9 +37,6 @@ public static class Constants
     public const string GetSupporterOverviewButton = "View all supporter perks here.";
     public const string GetSupporterOverviewLink = "https://fmbot.xyz/supporter/";
     public const string GetSupporterDiscordLink = "https://discord.com/application-directory/356268235697553409/premium";
-
-    /// <summary>Amount of days to store plays for users for</summary>
-    public const int DaysToStorePlays = 46;
 
     public const int SupporterMessageChance = 12;
     public const int SupporterPromoChance = 10;

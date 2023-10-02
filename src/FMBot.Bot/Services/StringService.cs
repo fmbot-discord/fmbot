@@ -387,6 +387,8 @@ public static class StringService
                 return "💿";
             case "Casette":
                 return "<:casette:1043890774384853012>";
+            case "8-Track Cartridge":
+                return "<:casette:1043890774384853012>";
         }
 
         return null;
