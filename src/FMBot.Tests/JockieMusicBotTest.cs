@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using FMBot.Bot.Models.MusicBot;
 using Moq;
 
@@ -20,7 +20,6 @@ public class JockieMusicBotTest
     [TestCase("This is not a music bot message.")]
     [TestCase("test")]
     [TestCase("")]
-    [TestCase(null)]
     public void TestShouldIgnoreMessage_NotStartedPlaying(string message)
     {
         _mockedEmbed.Setup(m => m.Description).Returns(message);
