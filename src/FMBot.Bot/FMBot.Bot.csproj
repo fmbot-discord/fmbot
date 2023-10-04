@@ -56,7 +56,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
     <PackageReference Include="Serilog.Sinks.Discord" Version="1.2.1" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="5.2.3" />
-    <PackageReference Include="SkiaSharp" Version="2.80.2" />
+    <PackageReference Include="SkiaSharp" Version="2.88.6" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.80.2" />
     <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="2.80.2" />
     <PackageReference Include="SpotifyAPI.Web" Version="7.0.0" />
