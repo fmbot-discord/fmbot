@@ -12,6 +12,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using static SpotifyAPI.Web.PlaylistRemoveItemsRequest;
 
@@ -42,8 +43,8 @@ public class DiscogsBuilder
         var discogsAuth = await this._discogsService.GetDiscogsAuthLink();
 
         response.Embed.WithDescription($"**[Click here to login to Discogs.]({discogsAuth.LoginUrl})**\n\n" +
-                                    $"After authorizing .fmbot a code will be shown.\n" +
-                                    $"**Copy the code and send it in this chat.**");
+                                       $"After authorizing .fmbot a code will be shown.\n" +
+                                       $"**Copy the code and send it in this chat.**");
         response.Embed.WithFooter($"Do not share the code outside of this DM conversation");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -65,7 +66,7 @@ public class DiscogsBuilder
             {
                 m.Embed = new EmbedBuilder()
                     .WithDescription($"❌ Login failed.. link timed out.\n\n" +
-                                        $"Re-run the `{context.Prefix}discogs` command to try again.")
+                                     $"Re-run the `{context.Prefix}discogs` command to try again.")
                     .WithColor(DiscordConstants.WarningColorOrange)
                     .Build();
             });
@@ -76,7 +77,7 @@ public class DiscogsBuilder
         if (result.Value?.Content == null || !Regex.IsMatch(result.Value.Content, @"^[a-zA-Z]+$") || result.Value.Content.Length != 10)
         {
             response.Embed.WithDescription($"Login failed, incorrect input.\n\n" +
-                                        $"Re-run the `{context.Prefix}discogs` command to try again.");
+                                           $"Re-run the `{context.Prefix}discogs` command to try again.");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
             await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
@@ -90,14 +91,13 @@ public class DiscogsBuilder
             await this._discogsService.StoreDiscogsAuth(context.ContextUser.UserId, user.Auth, user.Identity);
 
             response.Embed.WithDescription($"✅ Your Discogs account '[{user.Identity.Username}]({Constants.DiscogsUserUrl}{user.Identity.Username})' has been connected.\n" +
-                                        $"Run the `{context.Prefix}collection` command to view your collection.");
+                                           $"Run the `{context.Prefix}collection` command to view your collection.");
             response.CommandResponse = CommandResponse.Ok;
             await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
-        }
-        else
+        } else
         {
             response.Embed.WithDescription($"Could not connect a Discogs account with provided code.\n\n" +
-                                        $"Re-run the `{context.Prefix}discogs` command to try again.");
+                                           $"Re-run the `{context.Prefix}discogs` command to try again.");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
             await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
@@ -124,8 +124,7 @@ public class DiscogsBuilder
             {
                 response.Embed.WithDescription("To use the Discogs commands you have to connect a Discogs account.\n\n" +
                                                $"Use the `{context.Prefix}discogs` command to get started.");
-            }
-            else
+            } else
             {
                 response.Embed.WithDescription("The user you're trying to look up has not setup their Discogs account yet.");
             }
@@ -213,8 +212,7 @@ public class DiscogsBuilder
             if (justUpdated)
             {
                 footer.AppendLine("Last update just now - Updates max once per hour");
-            }
-            else
+            } else
             {
                 var diff = DateTime.UtcNow - user.UserDiscogs.ReleasesLastUpdated;
 
@@ -268,8 +266,7 @@ public class DiscogsBuilder
             {
                 response.Embed.WithDescription("To use the top artists commands with Discogs you have to connect a Discogs account.\n\n" +
                                                $"Use the `{context.Prefix}discogs` command to get started.");
-            }
-            else
+            } else
             {
                 response.Embed.WithDescription("The user you're trying to look up has not setup their Discogs account yet.");
             }
@@ -295,8 +292,7 @@ public class DiscogsBuilder
                 response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
             }
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        }
-        else
+        } else
         {
             userTitle =
                 $"{user.UserDiscogs.Username}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
@@ -322,7 +318,7 @@ public class DiscogsBuilder
         }
 
         var artistPages = topArtists.OrderByDescending(s => s.UserReleasesInCollection).ToList()
-            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+            .ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;

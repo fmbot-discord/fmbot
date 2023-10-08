@@ -8,6 +8,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
@@ -53,7 +54,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top artists billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL", "Show extra top artists")] bool extraLarge = false,
+        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
         [Summary("Discogs", "Show top artists in Discogs collection")] bool discogs = false)
     {
@@ -62,7 +63,7 @@ public class TopSlashCommands : InteractionModuleBase
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly, discogs ? DateTime.MinValue : null);
 
-        var topListSettings = new TopListSettings(extraLarge, billboard, discogs);
+        var topListSettings = new TopListSettings(embedSize, billboard, discogs);
 
         var response = topListSettings.Discogs
             ? await this._discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, contextUser),
@@ -80,7 +81,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top albums billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL", "Show extra top albums")] bool extraLarge = false,
+        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -88,7 +89,7 @@ public class TopSlashCommands : InteractionModuleBase
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
-        var topListSettings = new TopListSettings(extraLarge, billboard);
+        var topListSettings = new TopListSettings(embedSize, billboard);
 
         var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, contextUser), topListSettings, timeSettings, userSettings);
 
@@ -102,7 +103,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top tracks billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL", "Show extra top tracks")] bool extraLarge = false,
+        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -110,7 +111,7 @@ public class TopSlashCommands : InteractionModuleBase
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
-        var topListSettings = new TopListSettings(extraLarge, billboard);
+        var topListSettings = new TopListSettings(embedSize, billboard);
 
         var response = await this._trackBuilders.TopTracksAsync(new ContextModel(this.Context, contextUser), topListSettings, timeSettings, userSettings);
 
@@ -124,7 +125,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top genres billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL", "Show extra top genres")] bool extraLarge = false,
+        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -132,7 +133,7 @@ public class TopSlashCommands : InteractionModuleBase
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
-        var topListSettings = new TopListSettings(extraLarge, billboard);
+        var topListSettings = new TopListSettings(embedSize, billboard);
 
         var response = await this._genreBuilders.GetTopGenres(new ContextModel(this.Context, contextUser), userSettings, timeSettings, topListSettings);
 
@@ -146,7 +147,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top countries billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL", "Show extra top countries")] bool extraLarge = false,
+        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -154,7 +155,7 @@ public class TopSlashCommands : InteractionModuleBase
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
-        var topListSettings = new TopListSettings(extraLarge, billboard);
+        var topListSettings = new TopListSettings(embedSize, billboard);
 
         var response = await this._countryBuilders.GetTopCountries(new ContextModel(this.Context, contextUser), userSettings, timeSettings, topListSettings);
 

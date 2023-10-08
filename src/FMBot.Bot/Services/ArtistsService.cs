@@ -97,8 +97,7 @@ public class ArtistsService
             if (useCachedArtists)
             {
                 artistCall = await GetCachedArtist(artistValues, lastFmUserName, userId, redirectsEnabled);
-            }
-            else
+            } else
             {
                 artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistValues, lastFmUserName, redirectsEnabled);
             }
@@ -119,16 +118,14 @@ public class ArtistsService
             }
 
             return new ArtistSearch(artistCall.Content, response, rndPosition, rndPlaycount);
-        }
-        else
+        } else
         {
             Response<RecentTrackList> recentScrobbles;
 
             if (userId.HasValue && otherUserUsername == null)
             {
                 recentScrobbles = await this._updateService.UpdateUser(new UpdateUserQueueItem(userId.Value, getAccurateTotalPlaycount: false));
-            }
-            else
+            } else
             {
                 recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
             }
@@ -149,8 +146,7 @@ public class ArtistsService
             if (useCachedArtists)
             {
                 artistCall = await GetCachedArtist(lastPlayedTrack.ArtistName, lastFmUserName, userId, redirectsEnabled);
-            }
-            else
+            } else
             {
                 artistCall = await this._dataSourceFactory.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName, redirectsEnabled);
             }
@@ -175,8 +171,7 @@ public class ArtistsService
         {
             artistInfo = new Response<ArtistInfo>
             {
-                Content = CachedArtistToArtistInfo(cachedArtist),
-                Success = true
+                Content = CachedArtistToArtistInfo(cachedArtist), Success = true
             };
 
             if (userId.HasValue)
@@ -184,8 +179,7 @@ public class ArtistsService
                 var userPlaycount = await this._whoKnowsArtistService.GetArtistPlayCountForUser(cachedArtist.Name, userId.Value);
                 artistInfo.Content.UserPlaycount = userPlaycount;
             }
-        }
-        else
+        } else
         {
             artistInfo = await this._dataSourceFactory.GetArtistInfoAsync(artistName, lastFmUserName, redirectsEnabled);
         }
@@ -197,9 +191,7 @@ public class ArtistsService
     {
         return new ArtistInfo
         {
-            ArtistName = artist.Name,
-            ArtistUrl = artist.LastFmUrl,
-            Mbid = artist.Mbid
+            ArtistName = artist.Name, ArtistUrl = artist.LastFmUrl, Mbid = artist.Mbid
         };
     }
 
@@ -271,8 +263,7 @@ public class ArtistsService
             if (!string.IsNullOrWhiteSpace(name) && name.Length > 24)
             {
                 left += $"**{name.Substring(0, 24)}..**\n";
-            }
-            else
+            } else
             {
                 left += $"**{name}**\n";
             }
@@ -283,8 +274,7 @@ public class ArtistsService
             if (ownPlaycount > otherPlaycount)
             {
                 right += $"**{ownPlaycount}**";
-            }
-            else
+            } else
             {
                 right += $"{ownPlaycount}";
             }
@@ -294,8 +284,7 @@ public class ArtistsService
             if (otherPlaycount > ownPlaycount)
             {
                 right += $"**{otherPlaycount}**";
-            }
-            else
+            } else
             {
                 right += $"{otherPlaycount}";
             }
@@ -306,9 +295,7 @@ public class ArtistsService
 
         return new TasteModels
         {
-            Description = description,
-            LeftDescription = left,
-            RightDescription = right
+            Description = description, LeftDescription = left, RightDescription = right
         };
     }
 
@@ -326,8 +313,7 @@ public class ArtistsService
         var freshTopArtists = (await ArtistRepository.GetUserArtists(userId, connection))
             .Select(s => new TopArtist
             {
-                ArtistName = s.Name,
-                UserPlaycount = s.Playcount
+                ArtistName = s.Name, UserPlaycount = s.Playcount
             })
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
@@ -383,7 +369,10 @@ public class ArtistsService
         {
             var customTable = artists
                 .Take(amount)
-                .ToTasteTable(new[] { type, mainUser, "   ", userToCompare },
+                .ToTasteTable(new[]
+                    {
+                        type, mainUser, "   ", userToCompare
+                    },
                     u => u.Artist,
                     u => u.OwnPlaycount,
                     u => GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
@@ -391,8 +380,7 @@ public class ArtistsService
                 );
 
             description.Append($"```{customTable}```");
-        }
-        else
+        } else
         {
             description.AppendLine();
             description.AppendLine($"No {type.ToLower()} matches... <:404:882220605783560222>");
@@ -408,8 +396,7 @@ public class ArtistsService
         if (!mainUserArtists.Any() || !matchedArtists.Any())
         {
             percentage = 0;
-        }
-        else
+        } else
         {
             percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
         }
@@ -454,7 +441,10 @@ public class ArtistsService
         }
         if (extraOptions.Contains("xl") || extraOptions.Contains("xxl") || extraOptions.Contains("extralarge"))
         {
-            tasteSettings.ExtraLarge = true;
+            tasteSettings.EmbedSize = EmbedSize.Large;
+        } else if (extraOptions.Contains("xs") || extraOptions.Contains("xxs") || extraOptions.Contains("extrasmall"))
+        {
+            tasteSettings.EmbedSize = EmbedSize.Small;
         }
 
         return tasteSettings;
@@ -532,7 +522,10 @@ public class ArtistsService
 
             if (user == null)
             {
-                return new List<string> { Constants.AutoCompleteLoginRequired };
+                return new List<string>
+                {
+                    Constants.AutoCompleteLoginRequired
+                };
             }
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -549,8 +542,7 @@ public class ArtistsService
             this._cache.Set(cacheKey, artists, TimeSpan.FromSeconds(30));
 
             return artists;
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             Log.Error("Error in GetLatestArtists", e);
             throw;
@@ -574,7 +566,10 @@ public class ArtistsService
 
             if (user == null)
             {
-                return new List<string> { Constants.AutoCompleteLoginRequired };
+                return new List<string>
+                {
+                    Constants.AutoCompleteLoginRequired
+                };
             }
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -591,8 +586,7 @@ public class ArtistsService
             this._cache.Set(cacheKey, artists, TimeSpan.FromSeconds(120));
 
             return artists;
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             Log.Error("Error in GetRecentTopArtists", e);
             throw;
@@ -631,8 +625,7 @@ public class ArtistsService
                 .OrderByDescending(o => o.Popularity));
 
             return results;
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             Log.Error("Error in SearchThroughArtists", e);
             throw;

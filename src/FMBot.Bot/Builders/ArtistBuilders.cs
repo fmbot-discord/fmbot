@@ -16,6 +16,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -143,8 +144,7 @@ public class ArtistBuilders
 
                 firstListenInfo = $"Discovered on: <t:{firstListenValue}:D>";
             }
-        }
-        else
+        } else
         {
             var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
@@ -168,8 +168,7 @@ public class ArtistBuilders
                     artistInfo.Append($"**{fullArtist.Disambiguation}**");
                     artistInfo.Append($" from **{fullArtist.Location}**");
                     artistInfo.AppendLine();
-                }
-                else
+                } else
                 {
                     artistInfo.AppendLine($"**{fullArtist.Disambiguation}**");
                 }
@@ -197,8 +196,7 @@ public class ArtistBuilders
                 if (fullArtist.Type?.ToLower() == "person")
                 {
                     artistInfo.AppendLine($"Born: <t:{dateValue}:D> {ArtistsService.IsArtistBirthday(fullArtist.StartDate)}");
-                }
-                else
+                } else
                 {
                     artistInfo.AppendLine($"Started: <t:{dateValue}:D>");
                 }
@@ -215,8 +213,7 @@ public class ArtistBuilders
                 {
                     artistInfo.AppendLine($"Born: <t:{startDateValue}:D> {ArtistsService.IsArtistBirthday(fullArtist.StartDate)}");
                     artistInfo.AppendLine($"Died: <t:{endDateValue}:D>");
-                }
-                else
+                } else
                 {
                     artistInfo.AppendLine($"Started: <t:{startDateValue}:D> {ArtistsService.IsArtistBirthday(fullArtist.StartDate)}");
                     artistInfo.AppendLine($"Stopped: <t:{endDateValue}:D>");
@@ -236,8 +233,7 @@ public class ArtistBuilders
                     response.Embed.WithDescription(
                         artistInfo + "\n" + response.Embed.Description);
 
-                }
-                else
+                } else
                 {
                     response.Embed.WithDescription(artistInfo.ToString());
                 }
@@ -281,8 +277,7 @@ public class ArtistBuilders
                 {
                     footer.AppendLine(guildAlsoPlaying);
                 }
-            }
-            else
+            } else
             {
                 serverStats += $"Run `{context.Prefix}index` to get server stats";
             }
@@ -439,8 +434,7 @@ public class ArtistBuilders
                 footer.AppendLine($"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
                 title.Append($"{userSettings.DisplayName}'s top tracks for '{artistSearch.Artist.ArtistName}'");
-            }
-            else
+            } else
             {
                 footer.Append($"{userTitle} has {artistSearch.Artist.UserPlaycount} total scrobbles on this artist");
                 title.Append($"Your top tracks for '{artistSearch.Artist.ArtistName}'");
@@ -476,8 +470,7 @@ public class ArtistBuilders
         if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
         {
             topGuildArtists = await this._whoKnowsArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, guildListSettings.OrderType);
-        }
-        else
+        } else
         {
             var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
                 guildListSettings.AmountOfDaysWithBillboard);
@@ -528,8 +521,7 @@ public class ArtistBuilders
                     int? previousPosition = previousTopArtist == null ? null : previousTopGuildArtists.IndexOf(previousTopArtist);
 
                     pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false).Text);
-                }
-                else
+                } else
                 {
                     pageString.AppendLine(name);
                 }
@@ -575,8 +567,7 @@ public class ArtistBuilders
                 response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
             }
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        }
-        else
+        } else
         {
             userTitle =
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
@@ -618,8 +609,7 @@ public class ArtistBuilders
             }
         }
 
-        var artistPages = artists.Content.TopArtists
-            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+        var artistPages = artists.Content.TopArtists.ChunkBy((int) topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
@@ -639,8 +629,7 @@ public class ArtistBuilders
                     int? previousPosition = previousTopArtist == null ? null : previousTopArtists.IndexOf(previousTopArtist);
 
                     artistPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
-                }
-                else
+                } else
                 {
                     artistPageString.Append($"{counter}. ");
                     artistPageString.AppendLine(name);
@@ -738,8 +727,7 @@ public class ArtistBuilders
                 response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
             }
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        }
-        else
+        } else
         {
             userTitle =
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
@@ -773,17 +761,13 @@ public class ArtistBuilders
             .GroupBy(g => g.ArtistName, StringComparer.OrdinalIgnoreCase)
             .Select(s => new TopArtist
             {
-                ArtistName = s.Key,
-                UserPlaycount = allArtists[s.Key],
-                FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed,
-                ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.Key)
+                ArtistName = s.Key, UserPlaycount = allArtists[s.Key], FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed, ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.Key)
             })
             .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName, StringComparison.OrdinalIgnoreCase)))
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
 
-        var artistPages = topNewArtists
-            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+        var artistPages = topNewArtists.ChunkBy((int) topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
@@ -890,8 +874,7 @@ public class ArtistBuilders
         {
             reply.Append($"<@{context.DiscordUser.Id}> My estimate is that the user '{StringExtensions.Sanitize(userSettings.UserNameLastFm)}'");
             determiner = "their";
-        }
-        else
+        } else
         {
             reply.Append($"<@{context.DiscordUser.Id}> My estimate is that you");
         }
@@ -1055,8 +1038,7 @@ public class ArtistBuilders
                     .WithMaxValues(25);
 
                 response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
-            }
-            else
+            } else
             {
                 //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
             }
@@ -1350,9 +1332,9 @@ public class ArtistBuilders
         if (lastfmToCompare == null)
         {
             response.Embed.WithDescription($"Please enter a valid Last.fm username or mention someone to compare yourself to.\n" +
-                                        $"Examples:\n" +
-                                        $"- `{context.Prefix}taste fm-bot`\n" +
-                                        $"- `{context.Prefix}taste @.fmbot`");
+                                           $"Examples:\n" +
+                                           $"- `{context.Prefix}taste fm-bot`\n" +
+                                           $"- `{context.Prefix}taste @.fmbot`");
             response.CommandResponse = CommandResponse.WrongInput;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -1360,10 +1342,10 @@ public class ArtistBuilders
         if (lastfmToCompare.ToLower() == ownLastFmUsername)
         {
             response.Embed.WithDescription($"You can't compare your own taste with yourself. For viewing your top artists, use `{context.Prefix}topartists`.\n\n" +
-                                        $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
-                                        $"Examples:\n" +
-                                        $"- `{context.Prefix}taste fm-bot`\n" +
-                                        $"- `{context.Prefix}taste @.fmbot`");
+                                           $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
+                                           $"Examples:\n" +
+                                           $"- `{context.Prefix}taste fm-bot`\n" +
+                                           $"- `{context.Prefix}taste @.fmbot`");
             response.CommandResponse = CommandResponse.WrongInput;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -1399,7 +1381,14 @@ public class ArtistBuilders
             return response;
         }
 
-        var amount = tasteSettings.ExtraLarge ? 28 : 14;
+
+        var amount = tasteSettings.EmbedSize switch
+        {
+            EmbedSize.Default => 14,
+            EmbedSize.Small => 7,
+            EmbedSize.Large => 28,
+            _ => 14
+        };
         var pages = new List<PageBuilder>();
 
         var url = LastfmUrlExtensions.GetUserUrl(lastfmToCompare, $"/library/artists?{timeSettings.UrlParameter}");
@@ -1442,8 +1431,7 @@ public class ArtistBuilders
             artistPage.WithDescription(taste.Description);
             artistPage.AddField("Artist", taste.LeftDescription, true);
             artistPage.AddField("Plays", taste.RightDescription, true);
-        }
-        else
+        } else
         {
             var taste = this._artistsService.GetTableTaste(ownTopArtists, otherTopArtists, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare, "Artist");
 
@@ -1468,7 +1456,7 @@ public class ArtistBuilders
 
             genrePage.WithDescription(taste.result);
             genrePage.WithFooter("⬅️ Artists\n" +
-                                  "➡️ Countries");
+                                 "➡️ Countries");
 
             pages.Add(genrePage);
         }
@@ -1491,9 +1479,8 @@ public class ArtistBuilders
             if (willCreateDiscogsPage)
             {
                 countryPage.WithFooter("⬅️ Genres\n" +
-                                        "➡️ Discogs");
-            }
-            else
+                                       "➡️ Discogs");
+            } else
             {
                 countryPage.WithFooter("⬅️ Genres");
             }
@@ -1615,9 +1602,9 @@ public class ArtistBuilders
                 pageString.AppendLine(
                     $"**{(neighbor.Value.TotalPoints / self.TotalPoints).ToString("P1", numberInfo)}** — " +
                     $"**[{StringExtensions.Sanitize(guildUser?.UserName)}]({LastfmUrlExtensions.GetUserUrl(guildUser?.UserNameLastFM)})** — " +
-                                      $"`{(neighbor.Value.ArtistPoints / self.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
-                                      $"`{(neighbor.Value.GenrePoints / self.GenrePoints).ToString("P0", numberInfo)}` genres, " +
-                                      $"`{(neighbor.Value.CountryPoints / self.CountryPoints).ToString("P0", numberInfo)}` countries");
+                    $"`{(neighbor.Value.ArtistPoints / self.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
+                    $"`{(neighbor.Value.GenrePoints / self.GenrePoints).ToString("P0", numberInfo)}` genres, " +
+                    $"`{(neighbor.Value.CountryPoints / self.CountryPoints).ToString("P0", numberInfo)}` countries");
 
             }
 

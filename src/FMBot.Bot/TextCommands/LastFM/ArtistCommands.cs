@@ -99,8 +99,7 @@ public class ArtistCommands : BaseCommandModule
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
@@ -208,8 +207,7 @@ public class ArtistCommands : BaseCommandModule
                 footer.AppendLine($" - {userSettings.UserNameLastFm} has {artist.Artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
                 title.Append($"{userSettings.DisplayName}'s top albums for '{artist.Artist.ArtistName}'");
-            }
-            else
+            } else
             {
                 footer.Append($" - {userTitle} has {artist.Artist.UserPlaycount} total scrobbles on this artist");
                 title.Append($"Your top albums for '{artist.Artist.ArtistName}'");
@@ -316,8 +314,7 @@ public class ArtistCommands : BaseCommandModule
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
@@ -326,7 +323,7 @@ public class ArtistCommands : BaseCommandModule
     [Command("topartists", RunMode = RunMode.Async)]
     [Summary("Shows your or someone else's top artists over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
-        Constants.BillboardExample, Constants.ExtraLargeExample)]
+        Constants.BillboardExample, Constants.ExtraLargeExample, Constants.ExtraSmallExample)]
     [Examples("ta", "topartists", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]
     [Alias("al", "as", "ta", "artistlist", "artists", "top artists", "artistslist")]
     [UsernameSetRequired]
@@ -365,8 +362,7 @@ public class ArtistCommands : BaseCommandModule
             //{
             //    await this._smallIndexRepository.UpdateUserArtists(contextUser, artists.Content.TopArtists);
             //}
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
@@ -374,7 +370,7 @@ public class ArtistCommands : BaseCommandModule
 
     [Command("discoveries", RunMode = RunMode.Async)]
     [Summary("Shows the artists you've recently discovered.")]
-    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample, Constants.ExtraLargeExample)]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample, Constants.ExtraLargeExample, Constants.ExtraSmallExample)]
     [Examples("d", "discovered", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]
     [Alias("d", "discovered", "discovery", "artistdiscoveries", "firstlistened")]
     [UsernameSetRequired]
@@ -410,8 +406,7 @@ public class ArtistCommands : BaseCommandModule
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
@@ -419,7 +414,7 @@ public class ArtistCommands : BaseCommandModule
 
     [Command("taste", RunMode = RunMode.Async)]
     [Summary("Compares your top artists, genres and countries to those from another user.")]
-    [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`", "XXL")]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`", "XXL", "XXS")]
     [Examples("t frikandel_", "t @user", "taste bitldev", "taste @user monthly embed")]
     [UsernameSetRequired]
     [Alias("t")]
@@ -439,7 +434,7 @@ public class ArtistCommands : BaseCommandModule
 
         var tasteSettings = new TasteSettings
         {
-            ExtraLarge = false
+            EmbedSize = EmbedSize.Default
         };
 
         tasteSettings = this._artistsService.SetTasteSettings(tasteSettings, timeSettings.NewSearchValue);
@@ -451,8 +446,7 @@ public class ArtistCommands : BaseCommandModule
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
@@ -477,9 +471,7 @@ public class ArtistCommands : BaseCommandModule
 
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
-                NewSearchValue = artistValues,
-                DisplayRoleFilter = false
+                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed, NewSearchValue = artistValues, DisplayRoleFilter = false
             };
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
@@ -494,16 +486,14 @@ public class ArtistCommands : BaseCommandModule
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
                                  "Make sure it has permission to 'Embed links' and 'Attach Images'");
-            }
-            else
+            } else
             {
                 await this.Context.HandleCommandException(e);
             }
@@ -541,16 +531,14 @@ public class ArtistCommands : BaseCommandModule
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
                                  "Make sure it has permission to 'Embed links' and 'Attach Images'");
-            }
-            else
+            } else
             {
                 await this.Context.HandleCommandException(e);
             }
@@ -575,8 +563,7 @@ public class ArtistCommands : BaseCommandModule
         {
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
-                NewSearchValue = artistValues
+                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed, NewSearchValue = artistValues
             };
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
@@ -587,16 +574,14 @@ public class ArtistCommands : BaseCommandModule
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
                                  "Make sure it has permission to 'Embed links' and 'Attach Images'");
-            }
-            else
+            } else
             {
                 await this.Context.HandleCommandException(e);
             }
@@ -645,8 +630,7 @@ public class ArtistCommands : BaseCommandModule
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
             this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
@@ -701,8 +685,7 @@ public class ArtistCommands : BaseCommandModule
                     response.StaticPaginator,
                     message,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-            }
-            else
+            } else
             {
                 response = await this._artistBuilders
                     .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers, largeGuild);
@@ -712,8 +695,7 @@ public class ArtistCommands : BaseCommandModule
 
             this.Context.LogCommandUsed(response.CommandResponse);
 
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
@@ -745,16 +727,14 @@ public class ArtistCommands : BaseCommandModule
             }
 
             return artistCall.Content;
-        }
-        else
+        } else
         {
             Response<RecentTrackList> recentScrobbles;
 
             if (user != null)
             {
                 recentScrobbles = await this._updateService.UpdateUserAndGetRecentTracks(user);
-            }
-            else
+            } else
             {
                 recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
             }
