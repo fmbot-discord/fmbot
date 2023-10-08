@@ -385,8 +385,20 @@ public static class StringService
                 return "<:vinyl:1043644602969763861>";
             case "CD":
                 return "💿";
-            case "Casette":
+            case "Cassette":
                 return "<:casette:1043890774384853012>";
+            case "File":
+                return "📁";
+            case "CDr":
+                return "💿";
+            case "DVD":
+                return "📀";
+            case "Box Set":
+                return "📦";
+            case "Flexi-disc":
+                return "<:vinyl:1043644602969763861>";
+            case "Blu-ray":
+                return "📀";
             case "8-Track Cartridge":
                 return "<:casette:1043890774384853012>";
         }
