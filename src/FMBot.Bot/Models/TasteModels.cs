@@ -8,7 +8,7 @@ public class TasteSettings
 {
     public TasteType TasteType { get; set; }
 
-    public EmbedSize EmbedSize { get; set; }
+    public EmbedSize EmbedSize { get; set; } = EmbedSize.Default;
 }
 
 public class TasteModels

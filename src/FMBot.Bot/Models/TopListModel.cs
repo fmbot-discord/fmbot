@@ -4,7 +4,10 @@ namespace FMBot.Bot.Models;
 
 public class TopListSettings
 {
-    public TopListSettings() { }
+    public TopListSettings()
+    {
+        EmbedSize = EmbedSize.Default;
+    }
 
     public TopListSettings(EmbedSize embedSize)
     {
