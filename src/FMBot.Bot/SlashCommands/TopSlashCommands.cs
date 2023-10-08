@@ -54,7 +54,8 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top artists billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
+        [Summary("XXL", "Show more top artists")] bool extraLarge = false,
+        [Summary("XXS", "Show less top artists")] bool extraSmall = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
         [Summary("Discogs", "Show top artists in Discogs collection")] bool discogs = false)
     {
@@ -62,6 +63,9 @@ public class TopSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly, discogs ? DateTime.MinValue : null);
+
+        var embedSize = extraSmall ? EmbedSize.Small : EmbedSize.Default;
+        embedSize = extraLarge ? EmbedSize.Large : embedSize;
 
         var topListSettings = new TopListSettings(embedSize, billboard, discogs);
 
@@ -81,13 +85,17 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top albums billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
+        [Summary("XXL", "Show more top albums")] bool extraLarge = false,
+        [Summary("XXS", "Show less top albums")] bool extraSmall = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
+
+        var embedSize = extraSmall ? EmbedSize.Small : EmbedSize.Default;
+        embedSize = extraLarge ? EmbedSize.Large : embedSize;
 
         var topListSettings = new TopListSettings(embedSize, billboard);
 
@@ -103,13 +111,17 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top tracks billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
+        [Summary("XXL", "Show more top tracks")] bool extraLarge = false,
+        [Summary("XXS", "Show less top tracks")] bool extraSmall = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
+
+        var embedSize = extraSmall ? EmbedSize.Small : EmbedSize.Default;
+        embedSize = extraLarge ? EmbedSize.Large : embedSize;
 
         var topListSettings = new TopListSettings(embedSize, billboard);
 
@@ -125,13 +137,17 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top genres billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
+        [Summary("XXL", "Show more top genres")] bool extraLarge = false,
+        [Summary("XXS", "Show less top genres")] bool extraSmall = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
+
+        var embedSize = extraSmall ? EmbedSize.Small : EmbedSize.Default;
+        embedSize = extraLarge ? EmbedSize.Large : embedSize;
 
         var topListSettings = new TopListSettings(embedSize, billboard);
 
@@ -147,13 +163,17 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top countries billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
+        [Summary("XXL", "Show more top countries")] bool extraLarge = false,
+        [Summary("XXS", "Show less top countries")] bool extraSmall = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
+
+        var embedSize = extraSmall ? EmbedSize.Small : EmbedSize.Default;
+        embedSize = extraLarge ? EmbedSize.Large : embedSize;
 
         var topListSettings = new TopListSettings(embedSize, billboard);
 

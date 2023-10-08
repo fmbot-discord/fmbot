@@ -268,7 +268,8 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task ArtistDiscoveriesAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL/XXS", "Show extra/less top artists")] EmbedSize embedSize = EmbedSize.Default,
+        [Summary("XXL", "Show more discoveries")] bool extraLarge = false,
+        [Summary("XXS", "Show less discoveries")] bool extraSmall = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -288,6 +289,9 @@ public class ArtistSlashCommands : InteractionModuleBase
         _ = DeferAsync(privateResponse);
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
+
+        var embedSize = extraSmall ? EmbedSize.Small : EmbedSize.Default;
+        embedSize = extraLarge ? EmbedSize.Large : embedSize;
 
         var topListSettings = new TopListSettings(embedSize);
 
@@ -311,7 +315,8 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Type", "Taste view type")] TasteType tasteType = TasteType.Table,
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
-        [Summary("XXL/XXS", "Show extra large/small comparison")] EmbedSize embedSize = EmbedSize.Default)
+        [Summary("XXL", "Show more taste comparisons")] bool extraLarge = false,
+        [Summary("XXS", "Show less taste comparisons")] bool extraSmall = false)
     {
         _ = DeferAsync(privateResponse);
 
@@ -321,6 +326,9 @@ public class ArtistSlashCommands : InteractionModuleBase
         try
         {
             var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
+
+            var embedSize = extraSmall ? EmbedSize.Small : EmbedSize.Default;
+            embedSize = extraLarge ? EmbedSize.Large : embedSize;
 
             var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
                 new TasteSettings { TasteType = tasteType, EmbedSize = embedSize }, timeSettings, userSettings);

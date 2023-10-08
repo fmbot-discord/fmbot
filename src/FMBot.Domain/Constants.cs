@@ -45,7 +45,7 @@ public static class Constants
     public const int DefaultPlaysForCrown = 30;
 
     public const int DefaultPageSize = 10;
-    public const int DefaultExtraSmallPageSize = 6;
+    public const int DefaultExtraSmallPageSize = 5;
     public const int DefaultExtraLargePageSize = 16;
 
     public const int FeaturedMinute = 0;
