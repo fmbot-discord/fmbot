@@ -182,7 +182,8 @@ public class TrackBuilders
 
                 response.Embed.WithDescription($"Discovered on: <t:{firstListenValue}:D>");
             }
-        } else
+        }
+        else
         {
             var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
@@ -345,7 +346,8 @@ public class TrackBuilders
                     .WithMaxValues(25);
 
                 response.Components = new ComponentBuilder().WithSelectMenu(allowedRoles);
-            } else
+            }
+            else
             {
                 //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
             }
@@ -600,7 +602,8 @@ public class TrackBuilders
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
                 response.Embed.WithThumbnailUrl(albumCoverUrl);
-            } else
+            }
+            else
             {
                 albumCoverUrl = null;
             }
@@ -672,7 +675,8 @@ public class TrackBuilders
         {
             response.Embed.WithTitle($"❤️ Track already loved");
             response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
-        } else
+        }
+        else
         {
             var trackLoved = await this._dataSourceFactory.LoveTrackAsync(context.ContextUser.SessionKeyLastFm, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
 
@@ -680,7 +684,8 @@ public class TrackBuilders
             {
                 response.Embed.WithTitle($"❤️ Loved track for {userTitle}");
                 response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
-            } else
+            }
+            else
             {
                 response.Text = "Something went wrong while adding loved track.";
                 response.ResponseType = ResponseType.Text;
@@ -713,7 +718,8 @@ public class TrackBuilders
         {
             response.Embed.WithTitle($"💔 Track wasn't loved");
             response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
-        } else
+        }
+        else
         {
             var trackLoved = await this._dataSourceFactory.UnLoveTrackAsync(context.ContextUser.SessionKeyLastFm, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
 
@@ -721,7 +727,8 @@ public class TrackBuilders
             {
                 response.Embed.WithTitle($"💔 Unloved track for {userTitle}");
                 response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(trackSearch.Track));
-            } else
+            }
+            else
             {
                 response.Text = "Something went wrong while unloving track.";
                 response.ResponseType = ResponseType.Text;
@@ -748,7 +755,8 @@ public class TrackBuilders
         if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
         {
             topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, guildListSettings.OrderType, guildListSettings.NewSearchValue);
-        } else
+        }
+        else
         {
             var plays = await this._playService.GetGuildUsersPlays(guild.GuildId, guildListSettings.AmountOfDaysWithBillboard);
 
@@ -810,7 +818,8 @@ public class TrackBuilders
                     int? previousPosition = previousTopTrack == null ? null : previousTopGuildTracks.IndexOf(previousTopTrack);
 
                     pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false).Text);
-                } else
+                }
+                else
                 {
                     pageString.AppendLine(name);
                 }
@@ -856,7 +865,8 @@ public class TrackBuilders
             {
                 response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
             }
-        } else
+        }
+        else
         {
             userTitle =
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
@@ -927,7 +937,8 @@ public class TrackBuilders
                 if (!tooMuchChars)
                 {
                     name.Append($"**{StringExtensions.Sanitize(track.ArtistName)}** - **[{track.TrackName}]({track.TrackUrl})** ");
-                } else
+                }
+                else
                 {
                     name.Append($"**{StringExtensions.Sanitize(track.ArtistName)}** - **{track.TrackName}** ");
                 }
@@ -936,7 +947,8 @@ public class TrackBuilders
                 {
                     name.Append(
                         $"- *{track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)}*");
-                } else
+                }
+                else
                 {
                     name.Append(
                         $"- *{StringExtensions.GetListeningTimeString(track.TimeListened.TotalTimeListened)}*");
@@ -948,7 +960,8 @@ public class TrackBuilders
                     int? previousPosition = previousTopTrack == null ? null : previousTopTracks.IndexOf(previousTopTrack);
 
                     trackPageString.AppendLine(StringService.GetBillboardLine(name.ToString(), counter - 1, previousPosition).Text);
-                } else
+                }
+                else
                 {
                     trackPageString.Append($"{counter}. ");
                     trackPageString.AppendLine(name.ToString());

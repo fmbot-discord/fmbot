@@ -94,7 +94,8 @@ public class DiscogsBuilder
                                            $"Run the `{context.Prefix}collection` command to view your collection.");
             response.CommandResponse = CommandResponse.Ok;
             await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
-        } else
+        }
+        else
         {
             response.Embed.WithDescription($"Could not connect a Discogs account with provided code.\n\n" +
                                            $"Re-run the `{context.Prefix}discogs` command to try again.");
@@ -124,7 +125,8 @@ public class DiscogsBuilder
             {
                 response.Embed.WithDescription("To use the Discogs commands you have to connect a Discogs account.\n\n" +
                                                $"Use the `{context.Prefix}discogs` command to get started.");
-            } else
+            }
+            else
             {
                 response.Embed.WithDescription("The user you're trying to look up has not setup their Discogs account yet.");
             }
@@ -212,7 +214,8 @@ public class DiscogsBuilder
             if (justUpdated)
             {
                 footer.AppendLine("Last update just now - Updates max once per hour");
-            } else
+            }
+            else
             {
                 var diff = DateTime.UtcNow - user.UserDiscogs.ReleasesLastUpdated;
 
@@ -266,7 +269,8 @@ public class DiscogsBuilder
             {
                 response.Embed.WithDescription("To use the top artists commands with Discogs you have to connect a Discogs account.\n\n" +
                                                $"Use the `{context.Prefix}discogs` command to get started.");
-            } else
+            }
+            else
             {
                 response.Embed.WithDescription("The user you're trying to look up has not setup their Discogs account yet.");
             }
@@ -292,7 +296,8 @@ public class DiscogsBuilder
                 response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
             }
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        } else
+        }
+        else
         {
             userTitle =
                 $"{user.UserDiscogs.Username}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
