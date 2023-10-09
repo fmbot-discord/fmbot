@@ -45,10 +45,6 @@ public class WhoKnowsFilterService
             var highestUserId = await GetHighestUserId();
             var newFilteredUsers = new List<GlobalFilteredUser>();
 
-            var existingBotters = await db.BottedUsers
-                .Where(w => w.BanActive)
-                .ToListAsync();
-
             for (var i = highestUserId; i >= 0; i -= 10000)
             {
                 var userPlays = await GetGlobalUserPlays(i, i - 10000);
@@ -103,13 +99,6 @@ public class WhoKnowsFilterService
 
             Log.Information("GWKFilter: Found {filterCount} users to filter", newFilteredUsers.Count);
 
-            var lastFmUsersToSkip = existingBotters
-                .GroupBy(g => g.UserNameLastFM, StringComparer.OrdinalIgnoreCase)
-                .Select(s => s.Key)
-                .ToHashSet();
-
-            Log.Information("GWKFilter: Found {filterCount} botters to skip", lastFmUsersToSkip.Count);
-
             var existingFilterData = DateTime.UtcNow.AddDays(-14);
             var existingFilteredUsers = await db.GlobalFilteredUsers
                 .Where(w => w.Created >= existingFilterData && w.UserId.HasValue)
@@ -124,11 +113,10 @@ public class WhoKnowsFilterService
             Log.Information("GWKFilter: Found {filterCount} existing filtered users to skip", existingFilteredUsersHash.Count);
 
             newFilteredUsers = newFilteredUsers
-                .Where(w => !lastFmUsersToSkip.Contains(w.UserNameLastFm, StringComparer.OrdinalIgnoreCase) &&
-                            !existingFilteredUsersHash.Contains(w.UserId.GetValueOrDefault()))
+                .Where(w => !existingFilteredUsersHash.Contains(w.UserId.GetValueOrDefault()))
                 .ToList();
 
-            Log.Information("GWKFilter: Found {filterCount} users to filter after removing existing and botted users", newFilteredUsers.Count);
+            Log.Information("GWKFilter: Found {filterCount} users to filter after removing existing users", newFilteredUsers.Count);
 
             return newFilteredUsers;
         }
