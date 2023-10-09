@@ -10,6 +10,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -323,9 +324,7 @@ public class CountryBuilders
         var countries = await this._countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists, true);
         var previousTopCountries = await this._countryService.GetTopCountriesForTopArtists(previousTopArtists, true);
 
-        var countryPages = countries.ChunkBy(topListSettings.ExtraLarge
-            ? Constants.DefaultExtraLargePageSize
-            : Constants.DefaultPageSize);
+        var countryPages = countries.ChunkBy((int) topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;

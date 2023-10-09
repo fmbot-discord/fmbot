@@ -416,7 +416,7 @@ public class TrackCommands : BaseCommandModule
     [Command("toptracks", RunMode = RunMode.Async)]
     [Summary("Shows your or someone else's top tracks over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
-        Constants.BillboardExample, Constants.ExtraLargeExample)]
+        Constants.BillboardExample, Constants.EmbedSizeExample)]
     [Examples("tt", "toptracks", "tt y 3", "toptracks weekly @user", "tt bb xl")]
     [Alias("tt", "tl", "tracklist", "tracks", "trackslist", "top tracks", "top track")]
     [UsernameSetRequired]

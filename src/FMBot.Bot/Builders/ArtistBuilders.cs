@@ -16,6 +16,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -618,8 +619,7 @@ public class ArtistBuilders
             }
         }
 
-        var artistPages = artists.Content.TopArtists
-            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+        var artistPages = artists.Content.TopArtists.ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
@@ -782,8 +782,7 @@ public class ArtistBuilders
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
 
-        var artistPages = topNewArtists
-            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+        var artistPages = topNewArtists.ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
@@ -1399,7 +1398,14 @@ public class ArtistBuilders
             return response;
         }
 
-        var amount = tasteSettings.ExtraLarge ? 28 : 14;
+
+        var amount = tasteSettings.EmbedSize switch
+        {
+            EmbedSize.Default => 14,
+            EmbedSize.Small => 7,
+            EmbedSize.Large => 28,
+            _ => 14
+        };
         var pages = new List<PageBuilder>();
 
         var url = LastfmUrlExtensions.GetUserUrl(lastfmToCompare, $"/library/artists?{timeSettings.UrlParameter}");

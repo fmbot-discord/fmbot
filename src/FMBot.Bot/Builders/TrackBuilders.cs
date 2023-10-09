@@ -918,8 +918,8 @@ public class TrackBuilders
                 .ToList();
         }
 
-        var trackPages = topTracks.Content.TopTracks
-            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+        var trackPages = topTracks.Content.TopTracks.
+            ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
@@ -1056,4 +1056,3 @@ public class TrackBuilders
 
 
 }
-
