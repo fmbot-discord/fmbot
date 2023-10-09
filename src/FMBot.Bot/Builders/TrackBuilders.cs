@@ -622,8 +622,7 @@ public class TrackBuilders
             ResponseType = ResponseType.Text,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -774,9 +773,9 @@ public class TrackBuilders
             return response;
         }
 
-        var title = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue)
-            ? $"Top {guildListSettings.TimeDescription.ToLower()} tracks in {context.DiscordGuild.Name}"
-            : $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' tracks in {context.DiscordGuild.Name}";
+        var title = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue) ?
+            $"Top {guildListSettings.TimeDescription.ToLower()} tracks in {context.DiscordGuild.Name}" :
+            $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' tracks in {context.DiscordGuild.Name}";
 
         var footer = new StringBuilder();
         footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
@@ -898,8 +897,7 @@ public class TrackBuilders
         if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
         {
             var previousTopTracksCall = await this._dataSourceFactory
-                .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200,
-                    calculateTimeListened: topListSettings.Type == TopListType.TimeListened);
+                .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200, calculateTimeListened: topListSettings.Type == TopListType.TimeListened);
 
             if (previousTopTracksCall.Success)
             {
@@ -920,7 +918,8 @@ public class TrackBuilders
                 .ToList();
         }
 
-        var trackPages = topTracks.Content.TopTracks.ChunkBy((int)topListSettings.EmbedSize);
+        var trackPages = topTracks.Content.TopTracks.
+            ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
@@ -1054,4 +1053,6 @@ public class TrackBuilders
 
         return response;
     }
+
+
 }

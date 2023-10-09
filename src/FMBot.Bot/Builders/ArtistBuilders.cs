@@ -1349,9 +1349,9 @@ public class ArtistBuilders
         if (lastfmToCompare == null)
         {
             response.Embed.WithDescription($"Please enter a valid Last.fm username or mention someone to compare yourself to.\n" +
-                                           $"Examples:\n" +
-                                           $"- `{context.Prefix}taste fm-bot`\n" +
-                                           $"- `{context.Prefix}taste @.fmbot`");
+                                        $"Examples:\n" +
+                                        $"- `{context.Prefix}taste fm-bot`\n" +
+                                        $"- `{context.Prefix}taste @.fmbot`");
             response.CommandResponse = CommandResponse.WrongInput;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -1359,10 +1359,10 @@ public class ArtistBuilders
         if (lastfmToCompare.ToLower() == ownLastFmUsername)
         {
             response.Embed.WithDescription($"You can't compare your own taste with yourself. For viewing your top artists, use `{context.Prefix}topartists`.\n\n" +
-                                           $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
-                                           $"Examples:\n" +
-                                           $"- `{context.Prefix}taste fm-bot`\n" +
-                                           $"- `{context.Prefix}taste @.fmbot`");
+                                              $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
+                                              $"Examples:\n" +
+                                              $"- `{context.Prefix}taste fm-bot`\n" +
+                                              $"- `{context.Prefix}taste @.fmbot`");
             response.CommandResponse = CommandResponse.WrongInput;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -1474,7 +1474,7 @@ public class ArtistBuilders
 
             genrePage.WithDescription(taste.result);
             genrePage.WithFooter("⬅️ Artists\n" +
-                                 "➡️ Countries");
+                                  "➡️ Countries");
 
             pages.Add(genrePage);
         }
@@ -1497,7 +1497,7 @@ public class ArtistBuilders
             if (willCreateDiscogsPage)
             {
                 countryPage.WithFooter("⬅️ Genres\n" +
-                                       "➡️ Discogs");
+                                        "➡️ Discogs");
             }
             else
             {
@@ -1621,9 +1621,9 @@ public class ArtistBuilders
                 pageString.AppendLine(
                     $"**{(neighbor.Value.TotalPoints / self.TotalPoints).ToString("P1", numberInfo)}** — " +
                     $"**[{StringExtensions.Sanitize(guildUser?.UserName)}]({LastfmUrlExtensions.GetUserUrl(guildUser?.UserNameLastFM)})** — " +
-                    $"`{(neighbor.Value.ArtistPoints / self.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
-                    $"`{(neighbor.Value.GenrePoints / self.GenrePoints).ToString("P0", numberInfo)}` genres, " +
-                    $"`{(neighbor.Value.CountryPoints / self.CountryPoints).ToString("P0", numberInfo)}` countries");
+                                      $"`{(neighbor.Value.ArtistPoints / self.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
+                                      $"`{(neighbor.Value.GenrePoints / self.GenrePoints).ToString("P0", numberInfo)}` genres, " +
+                                      $"`{(neighbor.Value.CountryPoints / self.CountryPoints).ToString("P0", numberInfo)}` countries");
 
             }
 
