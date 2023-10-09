@@ -211,7 +211,6 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
 
-
         try
         {
             var response = await this._artistBuilders.FriendsWhoKnowArtistAsync(new ContextModel(this.Context, contextUser),

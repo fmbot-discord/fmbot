@@ -213,7 +213,7 @@ public static class StringService
         return null;
     }
 
-    public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null, Emote optionEmote = null)
+    public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null, IEmote optionEmote = null)
     {
         var builder = new StaticPaginatorBuilder()
             .WithPages(pages)

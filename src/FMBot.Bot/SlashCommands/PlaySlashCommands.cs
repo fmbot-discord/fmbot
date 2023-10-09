@@ -9,11 +9,12 @@ using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Models.Modals;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using SummaryAttribute = Discord.Interactions.SummaryAttribute;
 
 namespace FMBot.Bot.SlashCommands;
@@ -161,16 +162,15 @@ public class PlaySlashCommands : InteractionModuleBase
     [SlashCommand("streakhistory", "Shows you or someone else their streak history")]
     [UsernameSetRequired]
     public async Task StreakHistory(
-        [Summary("Action", "The action to do")] StreakHistoryAction action = StreakHistoryAction.View,
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Delete", "Enter the deletion ID here to delete a streak")] long? selectedStreak = null)
+        [Summary("Editmode", "Enable or disable editor mode")] bool editMode = false,
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         try
         {
-            var response = await this._playBuilder.StreakHistoryAsync(new ContextModel(this.Context, contextUser), userSettings, action == StreakHistoryAction.Modify, selectedStreak);
+            var response = await this._playBuilder.StreakHistoryAsync(new ContextModel(this.Context, contextUser), userSettings, editMode);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -181,10 +181,27 @@ public class PlaySlashCommands : InteractionModuleBase
         }
     }
 
-    public enum StreakHistoryAction
+    [ComponentInteraction(InteractionConstants.DeleteStreak)]
+    public async Task StreakDeleteButton()
     {
-        View = 1,
-        Modify = 2
+        await this.Context.Interaction.RespondWithModalAsync<DeleteStreakModal>(InteractionConstants.DeleteStreakModal);
+    }
+
+    [ModalInteraction(InteractionConstants.DeleteStreakModal)]
+    public async Task StreakDeleteButton(DeleteStreakModal modal)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (!long.TryParse(modal.StreakId, out var streakId))
+        {
+            await RespondAsync("Invalid input. Please enter the ID of the streak you want to delete.", ephemeral: true);
+            return;
+        }
+
+        var response = await this._playBuilder.DeleteStreakAsync(new ContextModel(this.Context, contextUser), streakId);
+
+        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [SlashCommand("overview", "Shows a daily overview")]
