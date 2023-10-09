@@ -29,6 +29,9 @@ public static class InteractionConstants
     public const string ImportSetting = "user-import-setting";
     public const string ImportClear = "user-import-clear";
 
+    public const string DeleteStreak = "user-streak-delete";
+    public const string DeleteStreakModal = "user-streak-delete-modal";
+
     public const string CensorTypes = "admin-censor-*";
 
     public const string ArtistAlias = "artist-alias-*";

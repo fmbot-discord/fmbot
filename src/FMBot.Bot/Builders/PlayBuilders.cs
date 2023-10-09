@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,14 +18,9 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
-using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
-using Genius.Models.Song;
-using Genius.Models.User;
 using Microsoft.Extensions.Options;
 using Swan;
-using Swan.Cryptography;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -484,8 +478,7 @@ public class PlayBuilder
     public async Task<ResponseModel> StreakHistoryAsync(
         ContextModel context,
         UserSettingsModel userSettings,
-        bool viewIds = false,
-        long? streakToDelete = null)
+        bool viewIds = false)
     {
         var response = new ResponseModel
         {
@@ -506,19 +499,6 @@ public class PlayBuilder
             response.Embed.WithDescription("No saved streaks found for this user.");
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
-            return response;
-        }
-
-        if (streakToDelete.HasValue && !userSettings.DifferentUser)
-        {
-            var streak = streaks.FirstOrDefault(f =>
-                f.UserStreakId == streakToDelete && f.UserId == context.ContextUser.UserId);
-            await this._playService.DeleteStreak(streak.UserStreakId);
-
-            response.Embed.WithTitle("🗑 Streak deleted");
-            response.Embed.WithDescription("Successfully deleted the following streak:\n" +
-                                           PlayService.StreakToText(streak, false));
-            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
@@ -570,9 +550,63 @@ public class PlayBuilder
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        if (pages.Count == 1)
+        {
+            response.ResponseType = ResponseType.Embed;
+            response.Embed.Description = pages[0].Description;
+            response.EmbedAuthor = response.EmbedAuthor;
+            response.EmbedFooter = response.EmbedFooter;
 
+            if (viewIds)
+            {
+                response.Components = new ComponentBuilder()
+                    .WithButton(emote: new Emoji("🗑️"), customId: InteractionConstants.DeleteStreak);
+            }
 
+            return response;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages, viewIds ? InteractionConstants.DeleteStreak : null, viewIds ? new Emoji("🗑️") : null);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> DeleteStreakAsync(
+        ContextModel context,
+        long streakToDelete)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var streaks = await this._playService.GetStreaks(context.ContextUser.UserId);
+
+        if (!streaks.Any())
+        {
+            response.Embed.WithDescription("No saved streaks found for you.");
+            response.ResponseType = ResponseType.Embed;
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var streak = streaks.FirstOrDefault(f =>
+            f.UserStreakId == streakToDelete && f.UserId == context.ContextUser.UserId);
+
+        if (streak == null)
+        {
+            response.Embed.WithDescription("Could not find streak to delete.");
+            response.ResponseType = ResponseType.Embed;
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        await this._playService.DeleteStreak(streak.UserStreakId);
+
+        response.Embed.WithTitle("🗑 Streak deleted");
+        response.Embed.WithDescription("Successfully deleted the following streak:\n" +
+                                       PlayService.StreakToText(streak, false));
+        response.ResponseType = ResponseType.Embed;
         return response;
     }
 

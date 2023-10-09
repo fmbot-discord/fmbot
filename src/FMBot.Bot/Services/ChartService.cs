@@ -323,7 +323,7 @@ public class ChartService
     public static string AlbumUrlToCacheFilePath(string albumUrl)
     {
         var encodedId = StringExtensions.ReplaceInvalidChars(albumUrl.Replace("https://www.last.fm/music/", ""));
-        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 60);
+        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 80);
 
         var fileName = localAlbumId + ".png";
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
@@ -558,13 +558,6 @@ public class ChartService
 
         var timeSettings = SettingService.GetTimePeriod(optionsAsString);
 
-        if (timeSettings.UsePlays)
-        {
-            // Reset to weekly since using plays for charts is not supported yet
-            chartSettings.UsePlays = true;
-            timeSettings = SettingService.GetTimePeriod("weekly");
-        }
-
         chartSettings.TimeSettings = timeSettings;
         chartSettings.TimespanString = timeSettings.Description;
         chartSettings.TimespanUrlString = timeSettings.UrlParameter;
@@ -624,12 +617,6 @@ public class ChartService
         if (chartSettings.ImagesNeeded == 1 && rnd.Next(0, 3) == 1 && !chartSettings.ArtistChart)
         {
             embedDescription += $"*Linus Tech Tip: Use `{prfx}cover` if you just want to see an album cover.*\n";
-        }
-
-        if (chartSettings.UsePlays)
-        {
-            embedDescription +=
-                "⚠️ Sorry, but using time periods that use your play history isn't supported for this command.\n";
         }
 
         if (!string.IsNullOrEmpty(randomSupporter))

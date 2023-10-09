@@ -12,6 +12,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using static SpotifyAPI.Web.PlaylistRemoveItemsRequest;
 
@@ -322,7 +323,7 @@ public class DiscogsBuilder
         }
 
         var artistPages = topArtists.OrderByDescending(s => s.UserReleasesInCollection).ToList()
-            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+            .ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;

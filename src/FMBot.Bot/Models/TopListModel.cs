@@ -1,31 +1,32 @@
+using FMBot.Domain.Enums;
+
 namespace FMBot.Bot.Models;
 
 public class TopListSettings
 {
     public TopListSettings()
     {
+        EmbedSize = EmbedSize.Default;
     }
 
-    public TopListSettings(bool extraLarge)
+    public TopListSettings(EmbedSize embedSize)
     {
-        this.ExtraLarge = extraLarge;
+        this.EmbedSize = embedSize;
     }
 
-    public TopListSettings(bool extraLarge, bool billboard, bool discogs = false)
+    public TopListSettings(EmbedSize embedSize, bool billboard, bool discogs = false)
     {
-        this.ExtraLarge = extraLarge;
+        this.EmbedSize = embedSize;
         this.Billboard = billboard;
         this.Discogs = discogs;
     }
 
-    public bool ExtraLarge { get; set; }
-
+    public EmbedSize EmbedSize { get; set; }
     public bool Billboard { get; set; }
     public bool Discogs { get; set; }
     public string NewSearchValue { get; set; }
 
     public TopListType Type { get; set; }
-
 }
 
 public enum TopListType

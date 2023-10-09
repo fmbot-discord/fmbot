@@ -393,7 +393,7 @@ public class SettingService
         var topListSettings = new TopListSettings
         {
             Billboard = false,
-            ExtraLarge = false,
+            EmbedSize = EmbedSize.Default,
             Discogs = false,
             NewSearchValue = extraOptions
         };
@@ -411,11 +411,18 @@ public class SettingService
         }
 
         var extraLarge = new[] { "xl", "xxl", "extralarge" };
+        var extraSmall = new[] { "xs", "xxs", "extrasmall" };
         if (Contains(extraOptions, extraLarge))
         {
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraLarge);
-            topListSettings.ExtraLarge = true;
+            topListSettings.EmbedSize = EmbedSize.Large;
+        } else if (Contains(extraOptions, extraSmall))
+        {
+            topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraSmall);
+            topListSettings.EmbedSize = EmbedSize.Small;
         }
+
+
         var discogs = new[] { "dc", "discogs" };
         if (Contains(extraOptions, discogs))
         {

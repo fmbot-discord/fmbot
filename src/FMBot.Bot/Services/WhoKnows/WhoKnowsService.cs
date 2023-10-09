@@ -176,12 +176,14 @@ public class WhoKnowsService
             .Select(s => s.UserNameLastFM)
             .ToHashSet();
 
+        var insensitiveUserNames = new HashSet<string>(
+            userNamesToFilter, StringComparer.OrdinalIgnoreCase);
+
         var userDatesToFilter = bottedUsers
             .Where(w => w.LastFmRegistered != null)
             .DistinctBy(d => d.LastFmRegistered)
             .Select(s => s.LastFmRegistered)
             .ToHashSet();
-
 
         var existingFilterData = DateTime.UtcNow.AddMonths(-3);
         var filteredUsers = await db.GlobalFilteredUsers
@@ -191,10 +193,7 @@ public class WhoKnowsService
 
         foreach (var filteredUser in filteredUsers)
         {
-            if (!userNamesToFilter.Any(s => string.Equals(s, filteredUser.UserNameLastFm, StringComparison.OrdinalIgnoreCase)))
-            {
-                userNamesToFilter.Add(filteredUser.UserNameLastFm);
-            }
+            insensitiveUserNames.Add(filteredUser.UserNameLastFm);
 
             if (filteredUser.RegisteredLastFm.HasValue &&
                 !userDatesToFilter.Contains(filteredUser.RegisteredLastFm.Value))
@@ -203,12 +202,9 @@ public class WhoKnowsService
             }
         }
 
-        var insensitive = new HashSet<string>(
-            userNamesToFilter, StringComparer.OrdinalIgnoreCase);
-
         return users
             .Where(w =>
-                !insensitive.Contains(w.LastFMUsername)
+                !insensitiveUserNames.Contains(w.LastFMUsername)
                 &&
                 !userDatesToFilter.Contains(w.RegisteredLastFm))
             .ToList();

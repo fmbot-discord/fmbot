@@ -13,6 +13,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
@@ -210,7 +211,6 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
 
-
         try
         {
             var response = await this._artistBuilders.FriendsWhoKnowArtistAsync(new ContextModel(this.Context, contextUser),
@@ -267,7 +267,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task ArtistDiscoveriesAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL", "Show extra top artists")] bool extraLarge = false,
+        [Summary("Size", "Amount of artists discoveries to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -288,7 +288,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
 
-        var topListSettings = new TopListSettings(extraLarge);
+        var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default);
 
         var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings);
 
@@ -310,7 +310,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Type", "Taste view type")] TasteType tasteType = TasteType.Table,
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
-        [Summary("XXL", "Show extra large comparison")] bool extraLarge = false)
+        [Summary("Size", "Amount of comparisons to show")] EmbedSize? embedSize = null)
     {
         _ = DeferAsync(privateResponse);
 
@@ -322,7 +322,7 @@ public class ArtistSlashCommands : InteractionModuleBase
             var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
 
             var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
-                new TasteSettings { TasteType = tasteType, ExtraLarge = extraLarge }, timeSettings, userSettings);
+                new TasteSettings { TasteType = tasteType, EmbedSize = embedSize ?? EmbedSize.Default }, timeSettings, userSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
             this.Context.LogCommandUsed(response.CommandResponse);
