@@ -21,7 +21,6 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
 
@@ -191,7 +190,7 @@ public class AlbumBuilders
 
             var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.ContextUser.UserId,
             guildUsers, guild, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
-             
+
             if (guildAlsoPlaying != null)
             {
                 footer.AppendLine(guildAlsoPlaying);
@@ -1133,8 +1132,7 @@ public class AlbumBuilders
             }
         }
 
-        var albumPages = albums.Content.TopAlbums
-            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+        var albumPages = albums.Content.TopAlbums.ChunkBy((int) topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;

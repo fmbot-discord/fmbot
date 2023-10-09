@@ -232,7 +232,7 @@ public class GenreBuilders
         var genres = await this._genreService.GetTopGenresForTopArtists(artists.Content.TopArtists);
         var previousTopGenres = await this._genreService.GetTopGenresForTopArtists(previousTopArtists);
 
-        var genrePages = genres.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+        var genrePages = genres.ChunkBy((int) topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;

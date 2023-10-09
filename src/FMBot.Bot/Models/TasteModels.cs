@@ -1,4 +1,5 @@
 using Discord;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Models;
@@ -7,7 +8,7 @@ public class TasteSettings
 {
     public TasteType TasteType { get; set; }
 
-    public bool ExtraLarge { get; set; }
+    public EmbedSize EmbedSize { get; set; } = EmbedSize.Default;
 }
 
 public class TasteModels

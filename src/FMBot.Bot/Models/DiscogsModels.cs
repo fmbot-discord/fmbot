@@ -27,8 +27,20 @@ public class DiscogsCollectionSettings
                 return (DiscogsFormat.Cassette, format);
             case "cd" or "cds":
                 return (DiscogsFormat.Cd, format);
+            case "file" or "files":
+                return (DiscogsFormat.File, format);
+            case "cdr" or "cdrs":
+                return (DiscogsFormat.Cdr, format);
+            case "dvd" or "dvds":
+                return (DiscogsFormat.Dvd, format);
+            case "boxset" or "box set" or "boxsets" or "box sets":
+                return (DiscogsFormat.BoxSet, format);
+            case "flexi-disc" or "flexidisc" or "flexi-discs" or "flexidiscs":
+                return (DiscogsFormat.FlexiDisc, format);
             case "8track" or "8tracks" or "8-track cartridge":
                 return (DiscogsFormat.EightTrack, format);
+            case "blu-ray" or "bluray" or "blu-rays" or "blurays":
+                return (DiscogsFormat.BluRay, format);
             default:
                 return (DiscogsFormat.Miscellaneous, null);
         }

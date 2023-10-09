@@ -454,7 +454,11 @@ public class ArtistsService
         }
         if (extraOptions.Contains("xl") || extraOptions.Contains("xxl") || extraOptions.Contains("extralarge"))
         {
-            tasteSettings.ExtraLarge = true;
+            tasteSettings.EmbedSize = EmbedSize.Large;
+        }
+        else if (extraOptions.Contains("xs") || extraOptions.Contains("xxs") || extraOptions.Contains("extrasmall"))
+        {
+            tasteSettings.EmbedSize = EmbedSize.Small;
         }
 
         return tasteSettings;
