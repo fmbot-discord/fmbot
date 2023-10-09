@@ -92,7 +92,9 @@ public class CountryBuilders
                 if (artist?.CountryCode == null)
                 {
                     response.Embed.WithDescription(
-                        "Sorry, the country or artist you're searching for do not exist or do not have a country associated with them on MusicBrainz.");
+                        artist == null
+                            ? "Sorry, the country or artist you're searching for does not exist."
+                            : "Sorry, the artist you're searching for does not have a country associated with them on MusicBrainz.");
 
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
@@ -108,8 +110,15 @@ public class CountryBuilders
                 foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
 
                 description.AppendLine(
-                    $"**{artist.Name}** is from **{foundCountry.Name}** :flag_{foundCountry.Code.ToLower()}:");
+                    $"### :flag_{foundCountry.Code.ToLower()}: {artist.Name}");
+                description.AppendLine(
+                    $"From **{foundCountry.Name}** ");
 
+                if (artist.Location != null && !string.Equals(artist.Location, foundCountry.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    description.AppendLine(
+                        $"*{artist.Location}*");
+                }
 
                 response.Embed.WithDescription(description.ToString());
 
@@ -128,6 +137,15 @@ public class CountryBuilders
             {
                 var artist = await this._artistsService.GetArtistFromDatabase(countryOptions);
 
+                if (artist?.CountryCode == null)
+                {
+                    var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artist.Name, context.ContextUser.UserNameLastFM);
+                    if (artistCall.Success)
+                    {
+                        artist = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
+                    }
+                }
+
                 if (artist?.CountryCode != null)
                 {
                     var description = new StringBuilder();
@@ -140,7 +158,15 @@ public class CountryBuilders
                     foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
 
                     description.AppendLine(
-                        $"**{artist.Name}** is from **{foundCountry.Name}** :flag_{foundCountry.Code.ToLower()}:");
+                        $"### :flag_{foundCountry.Code.ToLower()}: {artist.Name}");
+                    description.AppendLine(
+                        $"From **{foundCountry.Name}** ");
+
+                    if (artist.Location != null && !string.Equals(artist.Location, foundCountry.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        description.AppendLine(
+                            $"*{artist.Location}*");
+                    }
 
                     response.Embed.WithDescription(description.ToString());
 
@@ -152,7 +178,9 @@ public class CountryBuilders
                 }
 
                 response.Embed.WithDescription(
-                    "Sorry, the country or artist you're searching for do not exist or do not have a country associated with them on MusicBrainz.");
+                    artist == null
+                        ? "Sorry, the country or artist you're searching for does not exist."
+                        : "Sorry, the artist you're searching for does not have a country associated with them on MusicBrainz.");
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
                 return response;
