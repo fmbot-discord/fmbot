@@ -268,8 +268,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task ArtistDiscoveriesAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("XXL", "Show more discoveries")] bool extraLarge = false,
-        [Summary("XXS", "Show less discoveries")] bool extraSmall = false,
+        [Summary("Size", "Amount of artists discoveries to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -290,10 +289,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
 
-        var embedSize = extraSmall ? EmbedSize.Small : EmbedSize.Default;
-        embedSize = extraLarge ? EmbedSize.Large : embedSize;
-
-        var topListSettings = new TopListSettings(embedSize);
+        var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default);
 
         var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings);
 
@@ -315,8 +311,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Type", "Taste view type")] TasteType tasteType = TasteType.Table,
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
-        [Summary("XXL", "Show more taste comparisons")] bool extraLarge = false,
-        [Summary("XXS", "Show less taste comparisons")] bool extraSmall = false)
+        [Summary("Size", "Amount of comparisons to show")] EmbedSize? embedSize = null)
     {
         _ = DeferAsync(privateResponse);
 
@@ -327,11 +322,8 @@ public class ArtistSlashCommands : InteractionModuleBase
         {
             var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
 
-            var embedSize = extraSmall ? EmbedSize.Small : EmbedSize.Default;
-            embedSize = extraLarge ? EmbedSize.Large : embedSize;
-
             var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
-                new TasteSettings { TasteType = tasteType, EmbedSize = embedSize }, timeSettings, userSettings);
+                new TasteSettings { TasteType = tasteType, EmbedSize = embedSize ?? EmbedSize.Default }, timeSettings, userSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
             this.Context.LogCommandUsed(response.CommandResponse);

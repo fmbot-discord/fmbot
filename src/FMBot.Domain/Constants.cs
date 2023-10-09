@@ -24,8 +24,7 @@ public static class Constants
     public const string UserMentionExample = "`@usermention` / `lfm:fm-bot` / `356268235697553409`";
 
     public const string BillboardExample = "`billboard` / `bb`";
-    public const string ExtraLargeExample = "`extralarge` / `xl`";
-    public const string ExtraSmallExample = "`extrasmall` / `xs`";
+    public const string EmbedSizeExample = "`extralarge` / `xl` / 'extrasmall' / 'xs'";
 
     public const string UserMentionOrLfmUserNameExample = "`fm-bot` / `@usermention` / `356268235697553409`";
 

@@ -183,7 +183,7 @@ public class AlbumCommands : BaseCommandModule
     [Command("topalbums", RunMode = RunMode.Async)]
     [Summary("Shows your or someone else's top albums over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
-        Constants.BillboardExample, Constants.ExtraLargeExample, Constants.ExtraSmallExample)]
+        Constants.BillboardExample, Constants.EmbedSizeExample)]
     [Examples("tab", "topalbums", "tab a lfm:fm-bot", "topalbums weekly @user", "tab bb xl")]
     [Alias("abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist")]
     [UsernameSetRequired]

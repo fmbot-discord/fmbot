@@ -761,7 +761,9 @@ public class ArtistBuilders
             .GroupBy(g => g.ArtistName, StringComparer.OrdinalIgnoreCase)
             .Select(s => new TopArtist
             {
-                ArtistName = s.Key, UserPlaycount = allArtists[s.Key], FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed, ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.Key)
+                ArtistName = s.Key, UserPlaycount = allArtists[s.Key],
+                FirstPlay = s.OrderBy(o => o.TimePlayed).First().TimePlayed,
+                ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.Key)
             })
             .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName, StringComparison.OrdinalIgnoreCase)))
             .OrderByDescending(o => o.UserPlaycount)
