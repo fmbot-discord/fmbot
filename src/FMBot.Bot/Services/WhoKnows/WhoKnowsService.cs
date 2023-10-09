@@ -202,7 +202,6 @@ public class WhoKnowsService
             }
         }
 
-
         return users
             .Where(w =>
                 !insensitiveUserNames.Contains(w.LastFMUsername)

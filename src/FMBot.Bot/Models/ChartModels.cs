@@ -16,7 +16,6 @@ public class ChartSettings
 
         this.TitleSetting = TitleSetting.Titles;
         this.SkipWithoutImage = false;
-        this.UsePlays = false;
         this.ContainsNsfw = false;
     }
 
@@ -75,8 +74,6 @@ public class ChartSettings
     public bool CustomOptionsEnabled { get; set; }
 
     public bool RainbowSortingEnabled { get; set; }
-
-    public bool UsePlays { get; set; }
 
     public bool ContainsNsfw { get; set; }
     public int? CensoredItems { get; set; }
