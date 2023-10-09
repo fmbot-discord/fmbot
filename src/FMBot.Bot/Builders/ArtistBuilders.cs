@@ -1359,10 +1359,10 @@ public class ArtistBuilders
         if (lastfmToCompare.ToLower() == ownLastFmUsername)
         {
             response.Embed.WithDescription($"You can't compare your own taste with yourself. For viewing your top artists, use `{context.Prefix}topartists`.\n\n" +
-                                              $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
-                                              $"Examples:\n" +
-                                              $"- `{context.Prefix}taste fm-bot`\n" +
-                                              $"- `{context.Prefix}taste @.fmbot`");
+                                        $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
+                                        $"Examples:\n" +
+                                        $"- `{context.Prefix}taste fm-bot`\n" +
+                                        $"- `{context.Prefix}taste @.fmbot`");
             response.CommandResponse = CommandResponse.WrongInput;
             response.ResponseType = ResponseType.Embed;
             return response;
