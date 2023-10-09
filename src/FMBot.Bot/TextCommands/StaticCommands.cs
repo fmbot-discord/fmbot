@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -731,6 +732,103 @@ public class StaticCommands : BaseCommandModule
         }
 
         await ReplyAsync("Go!");
+        this.Context.LogCommandUsed();
+    }
+
+    [Command("givemefish", RunMode = RunMode.Async)]
+    [ExcludeFromHelp]
+    public async Task FishAsync([Remainder] string extraValues = null)
+    {
+        var reply = new StringBuilder();
+
+        var random1 = RandomNumberGenerator.GetInt32(1, 10);
+        switch (random1)
+        {
+            case 1:
+                reply.AppendLine("🦈 Looks like a shark!");
+                break;
+            case 2:
+                reply.AppendLine("🐟 blub blub. It's a fish");
+                break;
+            case 3:
+                reply.AppendLine("🐠 Wow, a tropical fish!");
+                break;
+            case 4:
+                reply.AppendLine("🦈 omg watch out a shark!");
+                break;
+            case 5:
+                reply.AppendLine("<:blahaj_shark:969501603142983710> it's a real blahaj!");
+                break;
+            case 6:
+                reply.AppendLine("<:lobster:1161015424322908360> A lobster? Does that even count as fish?");
+                break;
+            case 7:
+                reply.AppendLine("🐡 A blowfish. Amazing.");
+                break;
+            case 8:
+                reply.AppendLine("🦐 It's very shrimple. You got a shrimp.");
+                break;
+            case 9:
+                reply.AppendLine("🐳 A whale! It looks happy.");
+                break;
+
+        }
+
+        reply.AppendLine();
+
+        var random2 = RandomNumberGenerator.GetInt32(1, 9);
+        switch (random2)
+        {
+            case 1:
+                reply.AppendLine("*You got scared and threw it back into the water.*");
+                break;
+            case 2:
+                reply.AppendLine("*It looks sad, so you let the fish go so it can mind it's own business.*");
+                break;
+            case 3:
+                reply.AppendLine("*It whispered, \"I have important fishy business to attend to.\", so you throw it back.*");
+                break;
+            case 4:
+                reply.AppendLine("*You felt a strong connection with the fish and decided it was your fishy soulmate, so you let it swim freely.*");
+                break;
+            case 5:
+                reply.AppendLine("*You noticed that it was sleep scrobbling, which is not really your cup of tea. Let's try that again.*");
+                break;
+            case 6:
+                reply.AppendLine("*Seems like someone else caught the fish before you did. Looks like a certain member of LOONA...*");
+                break;
+            case 7:
+                reply.AppendLine("*Wow, it's super heavy! Better to let it swim freely.*");
+                break;
+            case 8:
+                reply.AppendLine("*It's scrobbling 'Rolling in the Deep' from Adele. Sounds like it belongs in the water.*");
+                break;
+        }
+
+        var random3 = RandomNumberGenerator.GetInt32(1, 6);
+        switch (random3)
+        {
+            case 1:
+                this._embed.WithColor(new Color(6, 66, 115));
+                break;
+            case 2:
+                this._embed.WithColor(new Color(118, 182, 196));
+                break;
+            case 3:
+                this._embed.WithColor(new Color(127, 205, 255));
+                break;
+            case 4:
+                this._embed.WithColor(new Color(29, 162, 216));
+                break;
+            case 5:
+                this._embed.WithColor(new Color(222, 243, 246));
+                break;
+        }
+
+        this._embed.WithTitle("You caught a fish!");
+        this._embed.WithDescription(reply.ToString());
+
+        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         this.Context.LogCommandUsed();
     }
 
