@@ -368,9 +368,9 @@ public class GenreBuilders
         }
         else
         {
-            var foundGenre = await this._genreService.GetValidGenre(genreOptions);
+            var foundGenres = await this._genreService.SearchThroughGenres(genreOptions);
 
-            if (foundGenre == null)
+            if (foundGenres == null)
             {
                 var artist = await this._artistsService.GetArtistFromDatabase(genreOptions);
 
@@ -405,7 +405,7 @@ public class GenreBuilders
                 return response;
             }
 
-            genres = new List<string> { foundGenre };
+            genres = foundGenres;
         }
 
         if (!genres.Any())

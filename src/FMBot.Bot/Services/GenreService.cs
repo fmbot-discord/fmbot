@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Models;
@@ -142,11 +143,9 @@ public class GenreService
                 this._cache.Set(cacheKey, genres, TimeSpan.FromHours(2));
             }
 
-            var results = genres.Where(w => w.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase)).ToList();
+            Regex rx = new(@"(?i)\b" + searchValue + @"\b");
 
-            results.AddRange(genres.Where(w => w.Contains(searchValue, StringComparison.OrdinalIgnoreCase)));
-
-            return results;
+            return genres.Where(w => rx.IsMatch(searchValue)).ToList();
         }
         catch (Exception e)
         {
