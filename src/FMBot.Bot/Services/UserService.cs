@@ -238,7 +238,7 @@ public class UserService
                 {
                     foreach (var option in command.Data.Options)
                     {
-                        options.Add(option.Name, option.Value.ToString());
+                        options.Add(option.Name, option.Value?.ToString());
                     }
                 }
 
