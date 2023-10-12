@@ -71,6 +71,20 @@ public class GuildService
             .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
     }
 
+    public async Task<Persistence.Domain.Models.Guild> GetGuildWithWebhooks(ulong? discordGuildId = null)
+    {
+        if (discordGuildId == null)
+        {
+            return null;
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Guilds
+            .Include(i => i.Channels)
+            .Include(i => i.Webhooks)
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+    }
+
     public async Task<Persistence.Domain.Models.Guild> GetGuildForWhoKnows(ulong? discordGuildId = null)
     {
         if (discordGuildId == null)

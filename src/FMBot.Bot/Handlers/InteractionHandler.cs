@@ -95,7 +95,9 @@ public class InteractionHandler
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
         Statistics.SlashCommandsExecuted.WithLabels(command.Name).Inc();
-        _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
+
+        _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
+        _ = Task.Run(() => this._userService.AddUserSlashCommandInteraction(context, command.Name));
     }
 
     private async Task UserCommandAsync(SocketInteraction socketInteraction)

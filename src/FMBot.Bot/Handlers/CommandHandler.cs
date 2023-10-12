@@ -205,6 +205,9 @@ public class CommandHandler
             if (commandPrefixResult.IsSuccess)
             {
                 Statistics.CommandsExecuted.WithLabels("fm").Inc();
+
+                _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
+                _ = Task.Run(() => this._userService.AddUserTextCommandInteraction(context, "fm"));
             }
             else
             {
@@ -298,7 +301,7 @@ public class CommandHandler
         }
 
         var commandName = searchResult.Commands[0].Command.Name;
-        if (msg.Content.ToLower().EndsWith(" help") && commandName != "help")
+        if (msg.Content.EndsWith(" help", StringComparison.OrdinalIgnoreCase) && commandName != "help")
         {
             var embed = new EmbedBuilder();
             var userName = (context.Message.Author as SocketGuildUser)?.DisplayName ?? context.User.GlobalName ?? context.User.Username;
@@ -314,7 +317,9 @@ public class CommandHandler
         if (result.IsSuccess)
         {
             Statistics.CommandsExecuted.WithLabels(commandName).Inc();
-            _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
+
+            _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
+            _ = Task.Run(() => this._userService.AddUserTextCommandInteraction(context, commandName));
         }
         else
         {
@@ -348,8 +353,8 @@ public class CommandHandler
         if (context.Guild != null)
         {
             if (searchResult.Commands != null &&
-                searchResult.Commands.Any(a => a.Command.Name.ToLower() == "togglecommand" ||
-                                               a.Command.Name.ToLower() == "toggleservercommand"))
+                searchResult.Commands.Any(a => a.Command.Name.Equals("togglecommand", StringComparison.OrdinalIgnoreCase) ||
+                                               a.Command.Name.Equals("toggleservercommand", StringComparison.OrdinalIgnoreCase)))
             {
                 return true;
             }

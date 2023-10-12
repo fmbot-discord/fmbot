@@ -7,6 +7,7 @@ using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using Serilog;
@@ -19,6 +20,8 @@ public static class CommandContextExtensions
     {
         Log.Information("CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
             context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse, context.Message.Content);
+
+        PublicProperties.UsedCommandsResponses.TryAdd(context.Message.Id, commandResponse);
     }
 
     public static async Task HandleCommandException(this ICommandContext context, Exception exception, string message = null, bool sendReply = true)
@@ -41,12 +44,16 @@ public static class CommandContextExtensions
                                                        $"*Reference id: `{referenceId}`*", allowedMentions: AllowedMentions.None);
             }
         }
+
+        PublicProperties.UsedCommandsErrorReferences.TryAdd(context.Message.Id, referenceId);
     }
 
     public static void LogCommandWithLastFmError(this ICommandContext context, ResponseStatus? responseStatus)
     {
         Log.Error("CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent} | Last.fm error: {responseStatus}",
             context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.LastFmError, context.Message.Content, responseStatus);
+
+        PublicProperties.UsedCommandsResponses.TryAdd(context.Message.Id, CommandResponse.LastFmError);
     }
 
     public static async Task SendResponse(this ICommandContext context, InteractiveService interactiveService, ResponseModel response)

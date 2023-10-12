@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -56,30 +57,31 @@ public class WebhookCommands : BaseCommandModule
         if (!user.GuildPermissions.ManageWebhooks)
         {
             await ReplyAsync(
-                "In order to create the featured webhook, I need permission to add webhooks.\n" +
+                "In order to create the featured webhook, I need permission to add webhooks.\n\n" +
                 $"You can add this permission by going to `Server Settings` > `Roles` > `{socketCommandContext.Client.CurrentUser.Username}` and enabling the `Manage Webhooks` permission.");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+        var guild = await this._guildService.GetGuildWithWebhooks(this.Context.Guild.Id);
         var botType = this.Context.GetBotType();
 
         if (guild.Webhooks != null && guild.Webhooks.Any(a => a.BotType == botType))
         {
             await ReplyAsync(
-                "This server already has a webhook configured.\n" +
-                "You can change the channel in the webhook settings (`Server settings` > `Integrations` > `Webhooks`)\n" +
+                "This server already has a webhook configured.\n\n" +
+                "You can change the channel in the webhook settings (`Server settings` > `Integrations` > `Webhooks`)\n\n" +
                 "If you recently deleted the webhook and want to make a new one, please run `.testwebhook` once to remove the deleted webhook from our database.");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
 
+        var type = socketCommandContext.Channel.GetChannelType();
+
         var createdWebhook = await this._webhookService.CreateWebhook(this.Context, guild.GuildId);
 
-        await this._webhookService.TestWebhook(createdWebhook, "If you see this message the webhook has been successfully added!\n" +
-                                                               "You will now automatically receive the .fmbot featured message every hour.\n" +
+        await this._webhookService.TestWebhook(createdWebhook, "If you see this message the webhook has been successfully added!\n\n" +
+                                                               "You will now automatically receive the .fmbot featured message every hour.\n\n" +
                                                                "To disable this, simply delete the webhook in your servers integration settings.");
         this.Context.LogCommandUsed();
     }
@@ -100,19 +102,18 @@ public class WebhookCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+        var guild = await this._guildService.GetGuildWithWebhooks(this.Context.Guild.Id);
         var botType = this.Context.GetBotType();
 
         if (guild.Webhooks != null && guild.Webhooks.Any(a => a.BotType == botType))
         {
             var webhook = guild.Webhooks.First(f => f.BotType == botType);
-            var successful = await this._webhookService.TestWebhook(webhook, "If you see this message, then the webhook works!\n" +
+            var successful = await this._webhookService.TestWebhook(webhook, "If you see this message, then the webhook works!\n\n" +
                                                                              "You will automatically receive the .fmbot featured message every hour.");
 
             if (!successful)
             {
-                await ReplyAsync("The previously registered webhook has been removed from our database.\n" +
+                await ReplyAsync("The previously registered webhook has been removed from our database.\n\n" +
                                  "You can now add a new webhook for .fmbot with `.addwebhook`.");
             }
 
@@ -120,7 +121,7 @@ public class WebhookCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("You don't have any webhooks added yet.\n" +
+            await ReplyAsync("You don't have any webhooks added yet.\n\n" +
                              "Add a webhook for .fmbot with `.addwebhook`");
             this.Context.LogCommandUsed();
         }

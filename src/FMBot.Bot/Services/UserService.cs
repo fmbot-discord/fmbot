@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using Discord.Commands;
+using Discord.Interactions;
+using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
@@ -159,6 +161,109 @@ public class UserService
             {
                 Log.Error(e, "Something went wrong while attempting to update user {userId} last used", user.UserId);
             }
+        }
+    }
+
+    public async Task AddUserTextCommandInteraction(ShardedCommandContext context, string commandName)
+    {
+        var user = await GetUserSettingsAsync(context.User);
+
+        await Task.Delay(10000);
+
+        try
+        {
+            if (user != null)
+            {
+                var commandResponse = CommandResponse.Ok;
+                if (PublicProperties.UsedCommandsResponses.TryGetValue(context.Message.Id, out var fetchedResponse))
+                {
+                    commandResponse = fetchedResponse;
+                }
+
+                string errorReference = null;
+                if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Message.Id, out var fetchedErrorId))
+                {
+                    errorReference = fetchedErrorId;
+                }
+
+                var interaction = new UserInteraction
+                {
+                    Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                    CommandContent = context.Message.Content,
+                    CommandName = commandName,
+                    UserId = user.UserId,
+                    DiscordGuildId = context.Guild?.Id,
+                    DiscordChannelId = context.Channel?.Id,
+                    DiscordId = context.Message.Id,
+                    Response = commandResponse,
+                    Type = UserInteractionType.TextCommand,
+                    ErrorReferenceId = errorReference
+                };
+
+                await using var db = await this._contextFactory.CreateDbContextAsync();
+                await db.UserInteractions.AddAsync(interaction);
+                await db.SaveChangesAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "AddUserTextCommandInteraction: Error while adding user interaction");
+        }
+    }
+
+    public async Task AddUserSlashCommandInteraction(ShardedInteractionContext context, string commandName)
+    {
+        var user = await GetUserSettingsAsync(context.User);
+
+        await Task.Delay(10000);
+
+        try
+        {
+            if (user != null)
+            {
+                var commandResponse = CommandResponse.Ok;
+                if (PublicProperties.UsedCommandsResponses.TryGetValue(context.Interaction.Id, out var fetchedResponse))
+                {
+                    commandResponse = fetchedResponse;
+                }
+
+                string errorReference = null;
+                if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Interaction.Id, out var fetchedErrorId))
+                {
+                    errorReference = fetchedErrorId;
+                }
+
+                var options = new Dictionary<string, string>();
+                if (context.Interaction is SocketSlashCommand command)
+                {
+                    foreach (var option in command.Data.Options)
+                    {
+                        options.Add(option.Name, option.Value?.ToString());
+                    }
+                }
+
+                var interaction = new UserInteraction
+                {
+                    Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                    CommandName = commandName,
+                    CommandOptions = options.Any() ? options : null,
+                    UserId = user.UserId,
+                    DiscordGuildId = context.Guild?.Id,
+                    DiscordChannelId = context.Channel?.Id,
+                    DiscordId = context.Interaction.Id,
+                    Response = commandResponse,
+                    Type = UserInteractionType.SlashCommand,
+                    ErrorReferenceId = errorReference
+                };
+
+                await using var db = await this._contextFactory.CreateDbContextAsync();
+                await db.UserInteractions.AddAsync(interaction);
+                await db.SaveChangesAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "AddUserSlashCommandInteraction: Error while adding user interaction");
         }
     }
 
@@ -730,7 +835,7 @@ public class UserService
                 promo = true;
             }
         }
-        
+
         return (promo, description.ToString());
     }
 

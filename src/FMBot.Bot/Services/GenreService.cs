@@ -130,7 +130,7 @@ public class GenreService
             var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<string> genres);
             if (!cacheAvailable && cacheEnabled)
             {
-                const string sql = "SELECT name " +
+                const string sql = "SELECT DISTINCT name " +
                                    "FROM public.artist_genres ";
 
                 DefaultTypeMap.MatchNamesWithUnderscores = true;
