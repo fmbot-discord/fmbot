@@ -9,6 +9,8 @@ public class Webhook
 
     public ulong DiscordWebhookId { get; set; }
 
+    public ulong? DiscordThreadId { get; set; }
+
     public int GuildId { get; set; }
 
     public string Token { get; set; }

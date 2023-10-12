@@ -77,4 +77,6 @@ public class User
     public ICollection<UserStreak> Streaks { get; set; }
 
     public ICollection<AiGeneration> AiGenerations { get; set; }
+
+    public ICollection<UserInteraction> Interactions { get; set; }
 }

@@ -8,6 +8,7 @@ using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using Serilog;
@@ -26,6 +27,8 @@ public static class InteractionContextExtensions
 
         Log.Information("SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
             context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse, commandName);
+
+        PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
     }
 
     public static async Task HandleCommandException(this IInteractionContext context, Exception exception, string message = null, bool sendReply = true, bool deferFirst = false)
@@ -53,6 +56,8 @@ public static class InteractionContextExtensions
             await context.Interaction.FollowupAsync($"Sorry, something went wrong while trying to process `{commandName}`. Please try again later.\n" +
                                                     $"*Reference id: `{referenceId}`*", ephemeral: true);
         }
+
+        PublicProperties.UsedCommandsErrorReferences.TryAdd(context.Interaction.Id, referenceId);
     }
 
     public static void LogCommandWithLastFmError(this IInteractionContext context, ResponseStatus? responseStatus)
@@ -65,6 +70,8 @@ public static class InteractionContextExtensions
 
         Log.Error("SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent} | Last.fm error: {responseStatus}",
             context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.LastFmError, commandName);
+
+        PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, CommandResponse.LastFmError);
     }
 
     public static async Task SendResponse(this IInteractionContext context, InteractiveService interactiveService, ResponseModel response, bool ephemeral = false)

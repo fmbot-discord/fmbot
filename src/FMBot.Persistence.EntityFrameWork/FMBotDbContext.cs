@@ -37,6 +37,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<UserPlay> UserPlays { get; set; }
         public virtual DbSet<UserCrown> UserCrowns { get; set; }
         public virtual DbSet<UserStreak> UserStreaks { get; set; }
+        public virtual DbSet<UserInteraction> UserInteractions { get; set; }
         public virtual DbSet<AiGeneration> AiGenerations { get; set; }
 
         public virtual DbSet<Artist> Artists { get; set; }
@@ -45,6 +46,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<CensoredMusic> CensoredMusic { get; set; }
         public virtual DbSet<FeaturedLog> FeaturedLogs { get; set; }
+        public virtual DbSet<AiPrompt> AiPrompts { get; set; }
 
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
@@ -308,6 +310,16 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Streaks)
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserInteraction>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.Interactions)
                     .HasForeignKey(f => f.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
