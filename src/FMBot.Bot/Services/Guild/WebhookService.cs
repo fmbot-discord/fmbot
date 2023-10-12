@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -46,29 +47,42 @@ public class WebhookService
     {
         await using var fs = File.OpenRead(this._avatarImagePath);
 
-        var socketWebChannel = context.Channel as SocketTextChannel;
-
-        if (socketWebChannel == null)
-        {
-            return null;
-        }
-
         var botType = context.GetBotType();
-
         var botTypeName = botType == BotType.Production ? "" : botType == BotType.Beta ? " develop" : " local";
-        var newWebhook = await socketWebChannel.CreateWebhookAsync($".fmbot{botTypeName} featured", fs,
-            new RequestOptions { AuditLogReason = "Created webhook for .fmbot featured feed." });
 
-        await using var db = await this._contextFactory.CreateDbContextAsync();
         var webhook = new Webhook
         {
             GuildId = guildId,
             BotType = botType,
-            Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
-            DiscordWebhookId = newWebhook.Id,
-            Token = newWebhook.Token
+            Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
         };
 
+        if (context.Channel.GetChannelType() != ChannelType.PublicThread)
+        {
+            var socketTextChannel = context.Channel as SocketTextChannel;
+
+            var newWebhook = await socketTextChannel.CreateWebhookAsync($".fmbot{botTypeName} featured", fs,
+                new RequestOptions { AuditLogReason = "Created webhook for .fmbot featured feed." });
+
+            webhook.DiscordWebhookId = newWebhook.Id;
+            webhook.Token = newWebhook.Token;
+        }
+        else
+        {
+            var socketThreadChannel = context.Channel as SocketThreadChannel;
+
+            var parentChannel = socketThreadChannel.ParentChannel as SocketTextChannel;
+
+            var newWebhook = await parentChannel.CreateWebhookAsync($".fmbot{botTypeName} featured", fs,
+            new RequestOptions { AuditLogReason = "Created webhook for .fmbot featured feed." });
+
+            webhook.DiscordWebhookId = newWebhook.Id;
+            webhook.Token = newWebhook.Token;
+            webhook.DiscordThreadId = context.Channel.Id;
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        
         await db.Webhooks.AddAsync(webhook);
         await db.SaveChangesAsync();
 
@@ -83,7 +97,7 @@ public class WebhookService
         {
             var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
 
-            await webhookClient.SendMessageAsync(text);
+            await webhookClient.SendMessageAsync(text, threadId: webhook.DiscordThreadId);
 
             return true;
         }
@@ -91,7 +105,7 @@ public class WebhookService
         {
             if (e.Message.Contains("Could not find"))
             {
-                await using var db = this._contextFactory.CreateDbContext();
+                await using var db = await this._contextFactory.CreateDbContextAsync();
 
                 db.Webhooks.Remove(webhook);
                 await db.SaveChangesAsync();
@@ -190,7 +204,7 @@ public class WebhookService
                                 false,
                                 builder.Build());
 
-                            if(localFeaturedMsg != null)
+                            if (localFeaturedMsg != null)
                             {
                                 await this._guildService.AddGuildReactionsAsync(localFeaturedMsg, guild, true);
                             }
@@ -239,7 +253,7 @@ public class WebhookService
                 }
             }
 
-            await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
+            await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() }, threadId: webhook.DiscordThreadId);
         }
         catch (Exception e)
         {
