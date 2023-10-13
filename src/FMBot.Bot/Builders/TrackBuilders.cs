@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
@@ -43,6 +44,7 @@ public class TrackBuilders
     private readonly WhoKnowsService _whoKnowsService;
     private readonly AlbumService _albumService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
+    private readonly DiscogsService _discogsService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -59,7 +61,8 @@ public class TrackBuilders
         CensorService censorService,
         WhoKnowsService whoKnowsService,
         AlbumService albumService,
-        WhoKnowsPlayService whoKnowsPlayService)
+        WhoKnowsPlayService whoKnowsPlayService,
+        DiscogsService discogsService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -77,6 +80,7 @@ public class TrackBuilders
         this._whoKnowsService = whoKnowsService;
         this._albumService = albumService;
         this._whoKnowsPlayService = whoKnowsPlayService;
+        this._discogsService = discogsService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -1054,5 +1058,201 @@ public class TrackBuilders
         return response;
     }
 
+    public async Task<ResponseModel> ScrobbleAsync(
+        ContextModel context,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
 
+        if (string.IsNullOrWhiteSpace(searchValue))
+        {
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.Embed.WithTitle($"{context.Prefix}scrobble");
+            response.Embed.WithDescription("Scrobbles a track. You can enter a search value or enter the exact name with separators. " +
+                                        "You can only scrobble tracks that already exist on Last.fm.");
+
+            response.Embed.AddField("Search for a track to scrobble",
+                $"Format: `{context.Prefix}scrobble SearchValue`\n" +
+                $"`{context.Prefix}sb the less i know the better` *(scrobbles The Less I Know The Better by Tame Impala)*\n" +
+                $"`{context.Prefix}scrobble Loona Heart Attack` *(scrobbles Heart Attack (츄) by LOONA)*");
+
+            response.Embed.AddField("Or enter the exact name with separators",
+                $"Format: `{context.Prefix}scrobble Artist | Track`\n" +
+                $"`{context.Prefix}scrobble Mac DeMarco | Chamber of Reflection`\n" +
+                $"`{context.Prefix}scrobble Home | Climbing Out`");
+
+            response.Embed.AddField("You can also specify the album",
+                $"Format: `{context.Prefix}scrobble Artist | Track | Album`\n" +
+                $"`{context.Prefix}scrobble Mac DeMarco | Chamber of Reflection | Salad Days`\n");
+
+            response.Embed.AddField("Or use a Discogs link",
+                $"`{context.Prefix}scrobble https://www.discogs.com/release/249504-Rick-Astley-Never-Gonna-Give-You-Up`");
+
+            response.CommandResponse = CommandResponse.Help;
+            return response;
+        }
+
+        var commandExecutedCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId, "scrobble", DateTime.UtcNow.AddMinutes(-30));
+        var maxCount = SupporterService.IsSupporter(context.ContextUser.UserType) ? 25 : 10;
+
+        if (commandExecutedCount > maxCount)
+        {
+            var reply = new StringBuilder();
+            reply.AppendLine("Please wait before scrobbling to Last.fm again.");
+
+            var globalWhoKnowsCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId, "globalwhoknows", DateTime.UtcNow.AddHours(-3));
+            if (globalWhoKnowsCount >= 1)
+            {
+                reply.AppendLine();
+                reply.AppendLine("Note that users who add fake scrobbles or scrobble from multiple sources at the same time might be subject to removal from Global WhoKnows.");
+            }
+
+            response.Embed.WithDescription(reply.ToString());
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.Cooldown;
+            return response;
+        }
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        if (searchValue.Contains("discogs.com", StringComparison.OrdinalIgnoreCase))
+        {
+            if (context.ContextUser.UserDiscogs?.AccessToken == null)
+            {
+                response.Embed.WithDescription("To use the Discogs commands you have to connect a Discogs account.\n\n" +
+                                                $"Use the `{context.Prefix}discogs` command to get started.");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.UsernameNotSet;
+                return response;
+            }
+
+            var releaseId = DiscogsService.DiscogsReleaseUrlToId(searchValue);
+            if (!releaseId.HasValue)
+            {
+                response.Embed.WithDescription("Invalid Discogs release url.");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.WrongInput;
+                return response;
+            }
+
+            var release = await this._discogsService.GetDiscogsRelease(context.ContextUser.UserId, releaseId.Value);
+
+            if (release == null)
+            {
+                response.Embed.WithDescription("Could not fetch release from Discogs. Please try again and check your URL.");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.NotFound;
+                return response;
+            }
+
+            var reply = new StringBuilder();
+            var scrobbleTime = DateTime.UtcNow;
+            var artistName = Regex.Replace(release.Artists.First().Name, @"\(\d+\)", "").TrimEnd();
+
+            foreach (var track in release.Tracklist)
+            {
+                TimeSpan? trackLength = null;
+
+                if (track.Duration != null)
+                {
+                    var splitDuration = track.Duration.Split(":");
+                    if (int.TryParse(splitDuration[0], out var minutes) && int.TryParse(splitDuration[1], out var seconds))
+                    {
+                        var totalSeconds = minutes * 60 + seconds;
+                        trackLength = TimeSpan.FromSeconds(totalSeconds);
+                    }
+                }
+                else
+                {
+                    var length = this._timeService.GetTrackLengthForTrack(artistName, track.Title);
+                    if (length != 210000)
+                    {
+                        trackLength = TimeSpan.FromMilliseconds(length);
+                    }
+                }
+
+                var trackScrobbled = await this._dataSourceFactory.ScrobbleAsync(context.ContextUser.SessionKeyLastFm, artistName, track.Title, release.Title, scrobbleTime);
+
+                reply.Append($"- ");
+                if (trackScrobbled.Success)
+                {
+                    var dateValue = ((DateTimeOffset)scrobbleTime).ToUnixTimeSeconds();
+                    reply.Append($"<t:{dateValue}:t>");
+                }
+                else
+                {
+                    reply.Append("Last.fm error");
+                }
+
+                reply.Append($" - `{track.Position}` - **{track.Title}**");
+
+                if (trackLength.HasValue)
+                {
+                    var formattedTrackLength =
+                        $"{(trackLength.Value.Hours == 0 ? "" : $"{trackLength.Value.Hours}:")}{trackLength.Value.Minutes}:{trackLength.Value.Seconds:D2}";
+                    reply.Append($" - `{formattedTrackLength}`");
+                }
+
+                reply.AppendLine();
+
+                if (trackLength.HasValue)
+                {
+                    scrobbleTime = scrobbleTime.Add(trackLength.Value);
+                }
+            }
+
+            response.Embed.WithTitle($"Scrobbling Discogs: {artistName} - {release.Title}");
+            response.Embed.WithUrl(release.Uri);
+            response.Embed.WithDescription(reply.ToString());
+            response.Embed.WithFooter($"Scrobbled for {userTitle} - Scrobbling into the future\n" +
+                                      $"Use this command when you start listening to ensure accurate timestamps");
+        }
+        else
+        {
+            var track = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+            if (track.Track == null)
+            {
+                return track.Response;
+            }
+
+            if (searchValue.Contains(" | ") && searchValue.Split(" | ").ElementAtOrDefault(2) != null)
+            {
+                track.Track.AlbumName = searchValue.Split(" | ").ElementAt(2);
+            }
+
+            var trackScrobbled = await this._dataSourceFactory.ScrobbleAsync(context.ContextUser.SessionKeyLastFm, track.Track.ArtistName, track.Track.TrackName, track.Track.AlbumName);
+
+            if (trackScrobbled.Success && trackScrobbled.Content.Accepted)
+            {
+                Statistics.LastfmScrobbles.Inc();
+                response.Embed.WithTitle($"Scrobbled track for {userTitle}");
+                response.Embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track.Track));
+            }
+            else if (trackScrobbled.Success && trackScrobbled.Content.Ignored)
+            {
+                response.Embed.WithTitle($"Last.fm ignored scrobble for {userTitle}");
+                var description = new StringBuilder();
+
+                if (!string.IsNullOrWhiteSpace(trackScrobbled.Content.IgnoreMessage))
+                {
+                    description.AppendLine($"Reason: {trackScrobbled.Content.IgnoreMessage}");
+                }
+
+                description.AppendLine(LastFmRepository.ResponseTrackToLinkedString(track.Track));
+                response.Embed.WithDescription(description.ToString());
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            }
+            else
+            {
+                response.Embed.WithDescription("Something went wrong while scrobbling track :(.");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.Error;
+            }
+        }
+
+        return response;
+    }
 }

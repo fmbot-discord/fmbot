@@ -1205,14 +1205,16 @@ public class LastFmRepository : ILastfmRepository
         };
     }
 
-    public async Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null)
+    public async Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null, DateTime? timeStamp = null)
     {
+        timeStamp ??= DateTime.UtcNow;
+
         var queryParams = new Dictionary<string, string>
         {
             {"artist", artistName},
             {"track", trackName},
             {"sk", lastFmSessionKey},
-            {"timestamp",  ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds().ToString() }
+            {"timestamp",  ((DateTimeOffset)timeStamp).ToUnixTimeSeconds().ToString() }
         };
 
         if (!string.IsNullOrWhiteSpace(albumName))

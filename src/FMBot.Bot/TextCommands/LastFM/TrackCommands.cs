@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord.Commands;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -16,16 +16,14 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
-using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
-using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
+using Google.Apis.Discovery;
 using Microsoft.Extensions.Options;
-using RunMode = Discord.Commands.RunMode;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.TextCommands.LastFM;
@@ -36,65 +34,42 @@ public class TrackCommands : BaseCommandModule
     private readonly GuildService _guildService;
     private readonly IIndexService _indexService;
     private readonly IPrefixService _prefixService;
-    private readonly IUpdateService _updateService;
     private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly PlayService _playService;
     private readonly SettingService _settingService;
-    private readonly SpotifyService _spotifyService;
-    private readonly TimeService _timeService;
     private readonly UserService _userService;
-    private readonly FriendsService _friendsService;
-    private readonly WhoKnowsTrackService _whoKnowsTrackService;
-    private readonly WhoKnowsPlayService _whoKnowsPlayService;
-    private readonly WhoKnowsService _whoKnowsService;
     private readonly TrackService _trackService;
     private readonly TrackBuilders _trackBuilders;
-    private readonly AlbumService _albumService;
+    private readonly DiscogsService _discogsService;
+    private readonly TimeService _timeService;
 
     private InteractiveService Interactivity { get; }
 
-    private static readonly List<DateTimeOffset> StackCooldownTimer = new();
-    private static readonly List<SocketUser> StackCooldownTarget = new();
 
     public TrackCommands(
         GuildService guildService,
         IIndexService indexService,
         IPrefixService prefixService,
-        IUpdateService updateService,
         IDataSourceFactory dataSourceFactory,
-        PlayService playService,
         SettingService settingService,
-        SpotifyService spotifyService,
         UserService userService,
-        WhoKnowsTrackService whoKnowsTrackService,
-        WhoKnowsPlayService whoKnowsPlayService,
         InteractiveService interactivity,
-        WhoKnowsService whoKnowsService,
         IOptions<BotSettings> botSettings,
-        FriendsService friendsService,
-        TimeService timeService,
         TrackService trackService,
-        AlbumService albumService,
-        TrackBuilders trackBuilders) : base(botSettings)
+        TrackBuilders trackBuilders,
+        DiscogsService discogsService,
+        TimeService timeService) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
         this._dataSourceFactory = dataSourceFactory;
-        this._playService = playService;
         this._prefixService = prefixService;
         this._settingService = settingService;
-        this._spotifyService = spotifyService;
-        this._updateService = updateService;
         this._userService = userService;
-        this._whoKnowsTrackService = whoKnowsTrackService;
-        this._whoKnowsPlayService = whoKnowsPlayService;
         this.Interactivity = interactivity;
-        this._whoKnowsService = whoKnowsService;
-        this._friendsService = friendsService;
-        this._timeService = timeService;
         this._trackService = trackService;
-        this._albumService = albumService;
         this._trackBuilders = trackBuilders;
+        this._discogsService = discogsService;
+        this._timeService = timeService;
     }
 
     [Command("track", RunMode = RunMode.Async)]
@@ -312,100 +287,16 @@ public class TrackCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks)]
     public async Task ScrobbleAsync([Remainder] string trackValues = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-        if (string.IsNullOrWhiteSpace(trackValues))
-        {
-            this._embed.WithColor(DiscordConstants.InformationColorBlue);
-            this._embed.WithTitle($"{prfx}scrobble");
-            this._embed.WithDescription("Scrobbles a track. You can enter a search value or enter the exact name with separators. " +
-                                        "You can only scrobble tracks that already exist on Last.fm.");
-
-            this._embed.AddField("Search for a track to scrobble",
-                $"Format: `{prfx}scrobble SearchValue`\n" +
-                $"`{prfx}sb the less i know the better` *(scrobbles The Less I Know The Better by Tame Impala)*\n" +
-                $"`{prfx}scrobble Loona Heart Attack` *(scrobbles Heart Attack (츄) by LOONA)*");
-
-            this._embed.AddField("Or enter the exact name with separators",
-                $"Format: `{prfx}scrobble Artist | Track`\n" +
-                $"`{prfx}scrobble Mac DeMarco | Chamber of Reflection`\n" +
-                $"`{prfx}scrobble Home | Climbing Out`");
-
-            this._embed.AddField("You can also specify the album",
-                $"Format: `{prfx}scrobble Artist | Track | Album`\n" +
-                $"`{prfx}scrobble Mac DeMarco | Chamber of Reflection | Salad Days`\n");
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var track = await this.SearchTrack(trackValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
-        if (track == null)
-        {
-            return;
-        }
+        var response = await this._trackBuilders.ScrobbleAsync(new ContextModel(this.Context, prfx, contextUser),
+            trackValues);
 
-        var commandExecutedCount = await this._userService.GetCommandExecutedAmount(contextUser.UserId, "scrobble", DateTime.UtcNow.AddMinutes(-30));
-        var maxCount = SupporterService.IsSupporter(contextUser.UserType) ? 25 : 10;
-
-        if (commandExecutedCount > maxCount)
-        {
-            var reply = new StringBuilder();
-            reply.AppendLine("Please wait before scrobbling to Last.fm again.");
-
-            var globalWhoKnowsCount = await this._userService.GetCommandExecutedAmount(contextUser.UserId, "globalwhoknows", DateTime.UtcNow.AddHours(-3));
-            if (globalWhoKnowsCount >= 1)
-            {
-                reply.AppendLine();
-                reply.AppendLine("Note that users who add fake scrobbles or scrobble from multiple sources at the same time might be subject to removal from Global WhoKnows.");
-            }
-
-            await ReplyAsync(reply.ToString());
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
-            return;
-        }
-
-        if (trackValues.Contains(" | ") && trackValues.Split(" | ").ElementAtOrDefault(2) != null)
-        {
-            track.AlbumName = trackValues.Split(" | ").ElementAt(2);
-        }
-
-        var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-        var trackScrobbled = await this._dataSourceFactory.ScrobbleAsync(contextUser.SessionKeyLastFm, track.ArtistName, track.TrackName, track.AlbumName);
-
-        if (trackScrobbled.Success && trackScrobbled.Content.Accepted)
-        {
-            Statistics.LastfmScrobbles.Inc();
-            this._embed.WithTitle($"Scrobbled track for {userTitle}");
-            this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track));
-        }
-        else if (trackScrobbled.Success && trackScrobbled.Content.Ignored)
-        {
-            this._embed.WithTitle($"Last.fm ignored scrobble for {userTitle}");
-            var description = new StringBuilder();
-
-            if (!string.IsNullOrWhiteSpace(trackScrobbled.Content.IgnoreMessage))
-            {
-                description.AppendLine($"Reason: {trackScrobbled.Content.IgnoreMessage}");
-            }
-
-            description.AppendLine(LastFmRepository.ResponseTrackToLinkedString(track));
-            this._embed.WithDescription(description.ToString());
-        }
-        else
-        {
-            await this.Context.Message.Channel.SendMessageAsync("Something went wrong while scrobbling track :(.");
-            this.Context.LogCommandWithLastFmError(trackScrobbled.Error);
-            return;
-        }
-
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("toptracks", RunMode = RunMode.Async)]

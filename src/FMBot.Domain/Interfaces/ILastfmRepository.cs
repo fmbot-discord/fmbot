@@ -60,5 +60,5 @@ public interface ILastfmRepository
     Task<bool> UnLoveTrackAsync(string lastFmSessionKey, string artistName, string trackName);
     Task<Response<bool>> SetNowPlayingAsync(string lastFmSessionKey, string artistName, string trackName,
         string albumName = null);
-    Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null);
+    Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null, DateTime? timeStamp = null);
 }

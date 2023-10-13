@@ -435,8 +435,8 @@ public class DataSourceFactory : IDataSourceFactory
         return await this._lastfmRepository.SetNowPlayingAsync(lastFmSessionKey, artistName, trackName, albumName);
     }
 
-    public async Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null)
+    public async Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null, DateTime? timeStamp = null)
     {
-        return await this._lastfmRepository.ScrobbleAsync(lastFmSessionKey, artistName, trackName, albumName);
+        return await this._lastfmRepository.ScrobbleAsync(lastFmSessionKey, artistName, trackName, albumName, timeStamp);
     }
 }
