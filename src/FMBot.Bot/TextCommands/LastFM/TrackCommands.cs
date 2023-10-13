@@ -349,29 +349,24 @@ public class TrackCommands : BaseCommandModule
             return;
         }
 
-        var msg = this.Context.Message as SocketUserMessage;
-        if (StackCooldownTarget.Contains(this.Context.Message.Author))
-        {
-            if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(30) >= DateTimeOffset.Now)
-            {
-                var secondsLeft = (int)(StackCooldownTimer[
-                        StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
-                    .AddSeconds(30) - DateTimeOffset.Now).TotalSeconds;
-                if (secondsLeft <= 28)
-                {
-                    await ReplyAsync("Please wait before scrobbling to Last.fm again.");
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                }
+        var commandExecutedCount = await this._userService.GetCommandExecutedAmount(contextUser.UserId, "scrobble", DateTime.UtcNow.AddMinutes(-30));
+        var maxCount = SupporterService.IsSupporter(contextUser.UserType) ? 25 : 10;
 
-                return;
+        if (commandExecutedCount > maxCount)
+        {
+            var reply = new StringBuilder();
+            reply.AppendLine("Please wait before scrobbling to Last.fm again.");
+
+            var globalWhoKnowsCount = await this._userService.GetCommandExecutedAmount(contextUser.UserId, "globalwhoknows", DateTime.UtcNow.AddHours(-3));
+            if (globalWhoKnowsCount >= 1)
+            {
+                reply.AppendLine();
+                reply.AppendLine("Note that users who add fake scrobbles or scrobble from multiple sources at the same time might be subject to removal from Global WhoKnows.");
             }
 
-            StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
-        }
-        else
-        {
-            StackCooldownTarget.Add(msg.Author);
-            StackCooldownTimer.Add(DateTimeOffset.Now);
+            await ReplyAsync(reply.ToString());
+            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            return;
         }
 
         if (trackValues.Contains(" | ") && trackValues.Split(" | ").ElementAtOrDefault(2) != null)
