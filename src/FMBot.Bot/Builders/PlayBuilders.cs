@@ -380,7 +380,7 @@ public class PlayBuilder
             footer.Append($" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles");
 
             var page = new PageBuilder()
-                .WithDescription(trackPageString.ToString())
+                .WithDescription(StringExtensions.TruncateLongString(trackPageString.ToString(), 4095))
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString());
 

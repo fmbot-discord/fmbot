@@ -163,4 +163,20 @@ public class DiscogsApi
 
         return response.Data;
     }
+
+    public async Task<DiscogsFullRelease> GetRelease(DiscogsAuth discogsAuth, int releaseId)
+    {
+        var client = GetClient(discogsAuth);
+        var request = new RestRequest($"releases/{releaseId}");
+
+        var response = await client.ExecuteAsync<DiscogsFullRelease>(request);
+        Statistics.DiscogsApiCalls.Inc();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return response.Data;
+    }
 }

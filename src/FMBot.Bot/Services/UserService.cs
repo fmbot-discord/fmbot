@@ -267,6 +267,16 @@ public class UserService
         }
     }
 
+    public async Task<int> GetCommandExecutedAmount(int userId, string command, DateTime filterDateTime)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.UserInteractions
+            .CountAsync(c => c.UserId == userId &&
+                             c.Timestamp >= filterDateTime &&
+                             c.Response == CommandResponse.Ok &&
+                             c.CommandName == command);
+    }
+
     public async Task SetUserReactionsAsync(int userId, string[] reactions)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

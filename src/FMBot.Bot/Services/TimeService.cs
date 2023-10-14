@@ -54,7 +54,7 @@ public class TimeService
         return TimeSpan.FromMilliseconds(timeListened);
     }
 
-    private long GetTrackLengthForTrack(string artistName, string trackName)
+    public long GetTrackLengthForTrack(string artistName, string trackName)
     {
         var trackLength = (long?)this._cache.Get(CacheKeyForTrack(trackName.ToLower(), artistName.ToLower()));
 

@@ -237,4 +237,35 @@ public class DiscogsService
             .Where(w => w.UserId == userId)
             .ToListAsync();
     }
+
+    public static int? DiscogsReleaseUrlToId(string url)
+    {
+        var identifier = url
+            .Replace("https://www.discogs.com/release/", "", StringComparison.OrdinalIgnoreCase)
+            .Replace("<", "")
+            .Replace(">", "");
+
+        var splitIdentifier = identifier.Split('-');
+        var id = splitIdentifier[0];
+
+        if (int.TryParse(id, out var result))
+        {
+            return result;
+        }
+
+        return null;
+    }
+
+    public async Task<DiscogsFullRelease> GetDiscogsRelease(int userId, int releaseId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var user = await db.Users
+            .Include(i => i.UserDiscogs)
+            .FirstAsync(f => f.UserId == userId);
+
+        return await this._discogsApi.GetRelease(
+            new DiscogsAuth(user.UserDiscogs.AccessToken, user.UserDiscogs.AccessTokenSecret),
+            releaseId);
+    }
 }
