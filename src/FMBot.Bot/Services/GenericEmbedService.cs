@@ -82,12 +82,9 @@ public static class GenericEmbedService
     {
         embed.WithTitle("Problem while contacting Last.fm");
 
-        var issues = "";
         if (PublicProperties.IssuesAtLastFm && PublicProperties.IssuesReason != null)
         {
-            issues = "\n\n" +
-                     "Note:\n" +
-                     $"*\"{PublicProperties.IssuesReason}\"*";
+            embed.AddField("Note from .fmbot staff:", $"*\"{PublicProperties.IssuesReason}\"*");
         }
 
         var loginCommand = PublicProperties.SlashCommands.ContainsKey("login") ? $"</login:{PublicProperties.SlashCommands["login"]}>" : "`/login`";
@@ -96,20 +93,20 @@ public static class GenericEmbedService
         {
             case ResponseStatus.Failure:
                 embed.WithDescription("Can't retrieve data because Last.fm returned an error. Please try again later. \n" +
-                                      $"Please note that .fmbot isn't affiliated with Last.fm.{issues}");
+                                      $"Please note that .fmbot isn't affiliated with Last.fm.");
                 break;
             case ResponseStatus.LoginRequired:
                 embed.WithDescription("Can't retrieve data because your recent tracks are marked as private in your [Last.fm privacy settings](https://www.last.fm/settings/privacy).\n\n" +
                                       $"You can either change this setting or authorize .fmbot to access your private scrobbles with {loginCommand}.\n\n" +
-                                      $"Please note that .fmbot isn't affiliated with Last.fm.{issues}");
+                                      $"Please note that .fmbot isn't affiliated with Last.fm.");
                 break;
             case ResponseStatus.BadAuth:
                 embed.WithDescription("Can't retrieve data because your Last.fm session is expired, invalid or Last.fm is having issues.\n" +
-                                      $"Please try a re-login to the bot with {loginCommand}.{issues}");
+                                      $"Please try a re-login to the bot with {loginCommand}.");
                 break;
             case ResponseStatus.SessionExpired:
                 embed.WithDescription("Can't retrieve data because your Last.fm session is expired or invalid.\n" +
-                                      $"Please re-login to the bot with {loginCommand}.{issues}");
+                                      $"Please re-login to the bot with {loginCommand}.");
                 break;
             case ResponseStatus.MissingParameters:
                 if (expectedResultType != null)
