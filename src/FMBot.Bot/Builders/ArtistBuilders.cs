@@ -942,7 +942,7 @@ public class ArtistBuilders
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
         await this._indexService.GetOrAddUserToGuild(guildUsers, contextGuild, discordGuildUser, context.ContextUser);
-        await this._indexService.UpdateGuildUser(discordGuildUser, context.ContextUser.UserId, contextGuild);
+        await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, context.ContextUser.UserId, contextGuild);
 
         usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 

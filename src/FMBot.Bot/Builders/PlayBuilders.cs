@@ -143,10 +143,11 @@ public class PlayBuilder
 
             if (guild != null)
             {
-                await this._indexService.UpdateGuildUser(await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId),
-                    context.ContextUser.UserId, guild);
-
                 guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+                var discordGuildUser =
+                    await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId, CacheMode.CacheOnly);
+
+                await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, context.ContextUser.UserId, guild);
             }
         }
 

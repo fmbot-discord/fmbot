@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
@@ -1132,12 +1131,29 @@ public class GuildService
 
     public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild discordGuild)
     {
+        var discordGuildIdCacheKey = GuildDiscordIdCacheKey(discordGuild.Id);
+
+        if (this._cache.TryGetValue(discordGuildIdCacheKey, out Persistence.Domain.Models.Guild guild))
+        {
+            return guild?.LastIndexed;
+        }
+
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var existingGuild = await db.Guilds
+        guild = await db.Guilds
             .AsNoTracking()
             .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
-        return existingGuild?.LastIndexed;
+        if (guild?.LastIndexed != null && guild.LastIndexed > DateTime.UtcNow.AddDays(-120))
+        {
+            this._cache.Set(discordGuildIdCacheKey, guild, TimeSpan.FromHours(1));
+        }
+
+        return guild?.LastIndexed;
+    }
+
+    private static string GuildDiscordIdCacheKey(ulong discordGuildId)
+    {
+        return $"guild-{discordGuildId}";
     }
 
     public async Task UpdateGuildIndexTimestampAsync(IGuild discordGuild, DateTime? timestamp = null)

@@ -656,7 +656,7 @@ public class GenreBuilders
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
         var currentUser = await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
-        await this._indexService.UpdateGuildUser(discordGuildUser, currentUser.UserId, guild);
+        await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, currentUser.UserId, guild);
 
         var (filterStats, filteredUsersWithGenre) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithGenre, guild);
 

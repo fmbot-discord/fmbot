@@ -30,7 +30,8 @@ public interface IIndexService
 
     Task AddGuildUserToDatabase(GuildUser guildUserToAdd);
 
-    Task UpdateGuildUser(IGuildUser discordGuildUser, int userId, Guild guildId);
+    Task UpdateGuildUser(IDictionary<int, FullGuildUser> fullGuildUsers, IGuildUser discordGuildUser, int userId,
+        Guild guildId);
 
     Task AddOrUpdateGuildUser(IGuildUser discordGuildUser);
 
