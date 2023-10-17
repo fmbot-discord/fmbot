@@ -83,7 +83,7 @@ public class TimerService
         if (this._botSettings.LastFm.UserIndexFrequencyInDays != null && this._botSettings.LastFm.UserIndexFrequencyInDays != 0)
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToIndexQueue)}");
-            RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 0,12 * * *");
+            RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 10 * * *");
         }
         else
         {
@@ -193,10 +193,10 @@ public class TimerService
         }
 
         Log.Information("Getting users to index");
-        var timeToIndex = DateTime.UtcNow.AddDays(-25);
+        var timeToIndex = DateTime.UtcNow.AddDays(-120);
 
         var usersToUpdate = (await this._indexService.GetOutdatedUsers(timeToIndex))
-            .Take(2500)
+            .Take(2000)
             .ToList();
 
         Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to index queue");

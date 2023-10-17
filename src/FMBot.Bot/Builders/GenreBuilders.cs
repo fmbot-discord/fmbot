@@ -5,21 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
-using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
-using FMBot.Domain;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
-using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Humanizer;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -36,8 +33,9 @@ public class GenreBuilders
     private readonly ArtistsService _artistsService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SpotifyService _spotifyService;
+    private readonly IIndexService _indexService;
 
-    public GenreBuilders(UserService userService, GuildService guildService, GenreService genreService, WhoKnowsArtistService whoKnowsArtistService, PlayService playService, ArtistsService artistsService, IDataSourceFactory dataSourceFactory, SpotifyService spotifyService)
+    public GenreBuilders(UserService userService, GuildService guildService, GenreService genreService, WhoKnowsArtistService whoKnowsArtistService, PlayService playService, ArtistsService artistsService, IDataSourceFactory dataSourceFactory, SpotifyService spotifyService, IIndexService indexService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -47,6 +45,7 @@ public class GenreBuilders
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
         this._spotifyService = spotifyService;
+        this._indexService = indexService;
     }
 
     public async Task<ResponseModel> GetGuildGenres(ContextModel context, Guild guild, GuildRankingSettings guildListSettings)
@@ -232,7 +231,7 @@ public class GenreBuilders
         var genres = await this._genreService.GetTopGenresForTopArtists(artists.Content.TopArtists);
         var previousTopGenres = await this._genreService.GetTopGenresForTopArtists(previousTopArtists);
 
-        var genrePages = genres.ChunkBy((int) topListSettings.EmbedSize);
+        var genrePages = genres.ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
@@ -582,5 +581,126 @@ public class GenreBuilders
         }
 
         return pages;
+    }
+
+    public async Task<ResponseModel> WhoKnowsGenreAsync(
+        ContextModel context,
+        string genreValues)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (string.IsNullOrWhiteSpace(genreValues))
+        {
+            var recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, 1, true, context.ContextUser.SessionKeyLastFm);
+
+            if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
+            {
+                return GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, context.ContextUser.UserNameLastFM);
+            }
+
+            var artistName = recentScrobbles.Content.RecentTracks.First().ArtistName;
+
+            var foundGenres = await this._genreService.GetGenresForArtist(artistName);
+
+            if (foundGenres != null && foundGenres.Any())
+            {
+                var artist = await this._artistsService.GetArtistFromDatabase(artistName);
+
+                response.Embed.WithTitle($"Genre info for '{artistName}'");
+
+                var genreDescription = new StringBuilder();
+                foreach (var artistGenre in artist.ArtistGenres)
+                {
+                    genreDescription.AppendLine($"- **{artistGenre.Name.Transform(To.TitleCase)}**");
+                }
+
+                if (artist?.SpotifyImageUrl != null)
+                {
+                    response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                }
+
+                response.Embed.WithDescription(genreDescription.ToString());
+
+                response.Embed.WithFooter($"Genre source: Spotify\n" +
+                                       $"Add a genre to this command to WhoKnows this genre");
+
+                return response;
+            }
+            else
+            {
+                response.Embed.WithDescription(
+                    "Sorry, we don't have any stored genres for this artist.");
+                response.CommandResponse = CommandResponse.NotFound;
+                return response;
+            }
+        }
+
+        var genre = await this._genreService.GetValidGenre(genreValues);
+
+        if (genre == null)
+        {
+            response.Embed.WithDescription(
+                "Sorry, Spotify does not have the genre you're searching for.");
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+
+        var guildTopUserArtists = await this._genreService.GetTopUserArtistsForGuildAsync(guild.GuildId, genre);
+        var usersWithGenre = await this._genreService.GetUsersWithGenreForUserArtists(guildTopUserArtists, guildUsers);
+
+        var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
+        var currentUser = await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
+        await this._indexService.UpdateGuildUser(discordGuildUser, currentUser.UserId, guild);
+
+        var (filterStats, filteredUsersWithGenre) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithGenre, guild);
+
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, context.ContextUser.UserId, PrivacyLevel.Server);
+        if (filteredUsersWithGenre.Count == 0)
+        {
+            serverUsers = "Nobody in this server (not even you) has listened to this genre.";
+        }
+
+        response.Embed.WithDescription(serverUsers);
+
+        var footer = new StringBuilder();
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        footer.AppendLine($"WhoKnows genre requested by {userTitle}");
+
+        var rnd = new Random();
+        var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
+        if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
+        {
+            footer.AppendLine($"Missing members? Update with {context.Prefix}refreshmembers");
+        }
+
+        if (filteredUsersWithGenre.Any() && filteredUsersWithGenre.Count > 1)
+        {
+            var serverListeners = filteredUsersWithGenre.Count;
+            var serverPlaycount = filteredUsersWithGenre.Sum(a => a.Playcount);
+            var avgServerPlaycount = filteredUsersWithGenre.Average(a => a.Playcount);
+
+            footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");
+            footer.Append($"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.Append($"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}");
+            footer.AppendLine();
+        }
+
+        if (filterStats.FullDescription != null)
+        {
+            footer.AppendLine(filterStats.FullDescription);
+        }
+
+        response.Embed.WithTitle($"{genre.Transform(To.TitleCase)} in {context.DiscordGuild.Name}");
+        response.EmbedFooter.WithText(footer.ToString());
+        response.Embed.WithFooter(response.EmbedFooter);
+
+        return response;
     }
 }
