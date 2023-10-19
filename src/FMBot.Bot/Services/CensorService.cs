@@ -105,7 +105,7 @@ public class CensorService
 
         var censoredArtist = censoredMusic
             .Where(w => w.Artist)
-            .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower());
+            .FirstOrDefault(f => string.Equals(f.ArtistName, artistName, StringComparison.OrdinalIgnoreCase));
         if (censoredArtist != null)
         {
             await IncreaseCensoredCount(censoredArtist.CensoredMusicId);
@@ -127,13 +127,13 @@ public class CensorService
         if (albumName != null)
         {
             if (censoredMusic
-                .Select(s => s.ArtistName.ToLower())
-                .Contains(artistName.ToLower()))
+                .Select(s => s.ArtistName)
+                .Contains(artistName, StringComparer.OrdinalIgnoreCase))
             {
                 var album = censoredMusic
                     .Where(w => !w.Artist && w.AlbumName != null)
-                    .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower() &&
-                                         f.AlbumName.ToLower() == albumName.ToLower());
+                    .FirstOrDefault(f => string.Equals(f.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) &&
+                                         string.Equals(f.AlbumName, albumName, StringComparison.OrdinalIgnoreCase));
 
                 if (album != null)
                 {
@@ -159,7 +159,7 @@ public class CensorService
 
         var censoredArtist = censoredMusic
             .Where(w => w.Artist)
-            .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower());
+            .FirstOrDefault(f => string.Equals(f.ArtistName, artistName, StringComparison.OrdinalIgnoreCase));
 
         if (censoredArtist != null)
         {

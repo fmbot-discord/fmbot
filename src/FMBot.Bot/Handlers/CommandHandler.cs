@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -32,6 +33,7 @@ public class CommandHandler
     private readonly IServiceProvider _provider;
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
+    private readonly IIndexService _indexService;
 
     // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
     public CommandHandler(
@@ -44,7 +46,8 @@ public class CommandHandler
         IOptions<BotSettings> botSettings,
         GuildService guildService,
         InteractiveService interactiveService,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        IIndexService indexService)
     {
         this._discord = discord;
         this._commands = commands;
@@ -55,6 +58,7 @@ public class CommandHandler
         this._guildService = guildService;
         this._interactiveService = interactiveService;
         this._cache = cache;
+        this._indexService = indexService;
         this._botSettings = botSettings.Value;
         this._discord.MessageReceived += OnMessageReceivedAsync;
         this._discord.MessageUpdated += OnMessageUpdatedAsync;
@@ -291,12 +295,7 @@ public class CommandHandler
             }
             if (lastIndex < DateTime.UtcNow.AddDays(-180))
             {
-                var embed = new EmbedBuilder();
-                embed.WithDescription("Server member cache is out of date, it was last updated over 180 days ago.\n" +
-                                      $"Please run `{prfx}refreshmembers` to update the cached memberlist.");
-                await context.Channel.SendMessageAsync("", false, embed.Build());
-                context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
+                _ = Task.Run(() => this.UpdateGuildIndex(context));
             }
         }
 
@@ -427,5 +426,16 @@ public class CommandHandler
         }
 
         await this._guildService.UpdateGuildUserLastMessageDate(guildUser, userId, guildId);
+    }
+
+    private async Task UpdateGuildIndex(ICommandContext context)
+    {
+        var guildUsers = await context.Guild.GetUsersAsync();
+
+        Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord", guildUsers.Count, context.Guild.Id, context.Guild.Name);
+
+        await this._indexService.StoreGuildUsers(context.Guild, guildUsers);
+
+        await this._guildService.UpdateGuildIndexTimestampAsync(context.Guild, DateTime.UtcNow);
     }
 }

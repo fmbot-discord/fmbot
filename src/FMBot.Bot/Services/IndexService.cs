@@ -558,11 +558,20 @@ public class IndexService : IIndexService
         Log.Information("Added user {guildUserName} | {userId} to guild {guildName}", guildUserToAdd.UserName, guildUserToAdd.UserId, guildUserToAdd.GuildId);
     }
 
-    public async Task UpdateGuildUser(IGuildUser discordGuildUser, int userId, Persistence.Domain.Models.Guild guild)
+    public async Task UpdateGuildUser(IDictionary<int, FullGuildUser> fullGuildUsers, IGuildUser discordGuildUser,
+        int userId, Persistence.Domain.Models.Guild guild)
     {
         try
         {
             if (discordGuildUser == null)
+            {
+                return;
+            }
+
+            fullGuildUsers.TryGetValue(userId, out var existingGuildUser);
+            if (existingGuildUser != null &&
+                existingGuildUser.UserName == discordGuildUser.DisplayName &&
+                !PublicProperties.PremiumServers.ContainsKey(guild.DiscordGuildId))
             {
                 return;
             }

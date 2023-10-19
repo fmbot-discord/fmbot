@@ -348,7 +348,7 @@ public class AlbumBuilders
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
         var currentUser = await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
-        await this._indexService.UpdateGuildUser(discordGuildUser, currentUser.UserId, guild);
+        await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, currentUser.UserId, guild);
 
         usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser, fullAlbumName, context.DiscordGuild, album.Album.UserPlaycount);
 

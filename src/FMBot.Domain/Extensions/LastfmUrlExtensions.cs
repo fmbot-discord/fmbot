@@ -49,4 +49,24 @@ public static class LastfmUrlExtensions
 
         return url;
     }
+
+    public static string GetUserMusicLibraryUrl(string userName, string artist, string albumName = null, string trackName = null)
+    {
+        var url =  $"https://last.fm/user/{UrlEncoder.Default.Encode(userName)}/library/music/{UrlEncoder.Default.Encode(artist)}";
+
+        if (albumName != null)
+        {
+            url += $"/{UrlEncoder.Default.Encode(albumName)}";
+        }
+        if (albumName == null && trackName != null)
+        {
+            url += $"/_";
+        }
+        if (trackName != null)
+        {
+            url += $"/{UrlEncoder.Default.Encode(trackName)}";
+        }
+
+        return url;
+    }
 }
