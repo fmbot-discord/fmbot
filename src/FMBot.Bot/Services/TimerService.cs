@@ -83,7 +83,7 @@ public class TimerService
         if (this._botSettings.LastFm.UserIndexFrequencyInDays != null && this._botSettings.LastFm.UserIndexFrequencyInDays != 0)
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToIndexQueue)}");
-            RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 10 * * *");
+            RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 8 * * *");
         }
         else
         {

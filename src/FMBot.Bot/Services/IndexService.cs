@@ -82,7 +82,7 @@ public class IndexService : IIndexService
     {
         if (queueItem.IndexQueue)
         {
-            Thread.Sleep(15000);
+            Thread.Sleep(16000);
         }
 
         this._cache.Set(IndexConcurrencyCacheKey(queueItem.UserId), true, TimeSpan.FromMinutes(3));
