@@ -335,9 +335,14 @@ public class ArtistBuilders
             if (artistCollection.Any())
             {
                 var artistCollectionDescription = new StringBuilder();
-                foreach (var album in artistCollection.Take(8))
+                foreach (var album in artistCollection.Take(4))
                 {
                     artistCollectionDescription.Append(StringService.UserDiscogsWithAlbumName(album));
+                }
+
+                if (artistCollection.Count > 4)
+                {
+                    artistCollectionDescription.Append($"*Plus {artistCollection.Count - 4} more {StringExtensions.GetItemsString(artistCollection.Count - 4)} in your collection*");
                 }
                 response.Embed.AddField("Your Discogs collection", artistCollectionDescription.ToString());
             }
