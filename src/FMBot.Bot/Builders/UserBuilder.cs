@@ -376,7 +376,7 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
-        List<FeaturedLog> featuredHistory = new();
+        List<FeaturedLog> featuredHistory;
 
         var odds = await this._featuredService.GetFeaturedOddsAsync();
         var footer = new StringBuilder();
@@ -413,9 +413,13 @@ public class UserBuilder
                         $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s featured history");
 
                     var self = userSettings.DifferentUser ? "They" : "You";
-                    footer.AppendLine(featuredHistory.Count == 1
-                        ? $"{self} have only been featured once. Every hour, that is a chance of 1 in {odds}!"
-                        : $"{self} have been featured {featuredHistory.Count} times");
+
+                    if (featuredHistory.Count >= 1)
+                    {
+                        footer.AppendLine(featuredHistory.Count == 1
+                            ? $"{self} have only been featured once. Every hour, that is a chance of 1 in {odds}!"
+                            : $"{self} have been featured {featuredHistory.Count} times");
+                    }
 
                     break;
                 }
@@ -427,13 +431,16 @@ public class UserBuilder
         var nextSupporterSunday = FeaturedService.GetDaysUntilNextSupporterSunday();
         var pages = new List<PageBuilder>();
 
-        if (context.ContextUser.UserType == UserType.Supporter)
+        if (featuredHistory.Any())
         {
-            footer.AppendLine($"As a thank you for supporting, you have better odds every first Sunday of the month.");
-        }
-        else
-        {
-            footer.AppendLine($"Every first Sunday of the month is Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}). Check '{context.Prefix}getsupporter' for info.");
+            if (SupporterService.IsSupporter(context.ContextUser.UserType))
+            {
+                footer.AppendLine($"As a thank you for supporting, you have better odds every first Sunday of the month.");
+            }
+            else
+            {
+                footer.AppendLine($"Every first Sunday of the month is Supporter Sunday (in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}). Check '{context.Prefix}getsupporter' for info.");
+            }
         }
 
         var featuredPages = featuredHistory
@@ -470,7 +477,7 @@ public class UserBuilder
                                 description.AppendLine($"Join [our server](https://discord.gg/6y3jJjtDqK) to get pinged if you get featured.");
                             }
 
-                            if (context.ContextUser.UserType == UserType.Supporter)
+                            if (SupporterService.IsSupporter(context.ContextUser.UserType))
                             {
                                 description.AppendLine();
                                 description.AppendLine($"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday. The next one is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)}.");
@@ -478,7 +485,8 @@ public class UserBuilder
                             else
                             {
                                 description.AppendLine();
-                                description.AppendLine($"Become an [.fmbot supporter](https://opencollective.com/fmbot/contribute) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
+                                description.AppendLine($"Become an [.fmbot supporter]({Constants.GetSupporterDiscordLink}) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
+                                response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
                             }
                         }
                         else
