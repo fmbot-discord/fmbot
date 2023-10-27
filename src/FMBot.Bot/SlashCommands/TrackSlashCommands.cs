@@ -208,6 +208,29 @@ public class TrackSlashCommands : InteractionModuleBase
         }
     }
 
+    [SlashCommand("trackdetails", "Shows metadata details for current track or the one you're searching for.")]
+    [UsernameSetRequired]
+    public async Task TrackDetailsAsync(
+        [Summary("Track", "The track your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._trackBuilders.TrackDetails(new ContextModel(this.Context, contextUser), name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [SlashCommand("love", "Loves track you're currently listening to or searching for on Last.fm")]
     [UserSessionRequired]
     public async Task LoveTrackAsync(
