@@ -69,7 +69,7 @@ public class TimerService
     public void QueueJobs()
     {
         Log.Information($"RecurringJob: Adding {nameof(CheckForNewFeatured)}");
-        RecurringJob.AddOrUpdate(nameof(CheckForNewFeatured), () => CheckForNewFeatured(), "* * * * *");
+        RecurringJob.AddOrUpdate(nameof(CheckForNewFeatured), () => CheckForNewFeatured(), "*/2 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(UpdateMetricsAndStatus)}");
         RecurringJob.AddOrUpdate(nameof(UpdateMetricsAndStatus), () => UpdateMetricsAndStatus(), "* * * * *");

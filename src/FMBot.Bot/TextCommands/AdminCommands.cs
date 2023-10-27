@@ -1521,7 +1521,7 @@ public class AdminCommands : BaseCommandModule
                 updateDescription.AppendLine(newFeature.ImageUrl);
                 updateDescription.AppendLine();
 
-                updateDescription.AppendLine("Featured timer restarted. Can take up to two minutes to show, max 3 times / hour");
+                updateDescription.AppendLine("Featured timer restarted. Can take up to three minutes to show, max 3 times / hour");
 
                 var dateValue = ((DateTimeOffset)feature.DateTime).ToUnixTimeSeconds();
                 this._embed.AddField("Time", $"<t:{dateValue}:F>");
