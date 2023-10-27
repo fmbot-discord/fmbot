@@ -1182,7 +1182,7 @@ public class GuildService
     {
         foreach (var emote in emoteString)
         {
-            if (emote.Length is 2 or 3)
+            if (emote.Length is 1 or 2 or 3)
             {
                 try
                 {
@@ -1234,7 +1234,7 @@ public class GuildService
     {
         foreach (var emoteString in reactions)
         {
-            if (emoteString.Length is 2 or 3)
+            if (emoteString.Length is 1 or 2 or 3)
             {
                 var emote = new Emoji(emoteString);
                 await message.AddReactionAsync(emote);
