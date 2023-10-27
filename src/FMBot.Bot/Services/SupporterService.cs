@@ -22,6 +22,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Swan;
+using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
