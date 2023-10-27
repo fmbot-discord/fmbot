@@ -72,6 +72,32 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
+    [SlashCommand("artistplays", "Shows playcount for current artist or the one you're searching for.")]
+    [UsernameSetRequired]
+    public async Task ArtistPlaysAsync(
+        [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
+        [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true,
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+            var response = await this._artistBuilders.ArtistPlaysAsync(new ContextModel(this.Context, contextUser), userSettings, name, redirectsEnabled);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [SlashCommand("artisttracks", "Shows your top tracks for an artist")]
     [UsernameSetRequired]
     public async Task ArtistTracksAsync(
