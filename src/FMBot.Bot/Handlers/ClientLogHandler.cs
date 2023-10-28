@@ -108,6 +108,8 @@ public class ClientLogHandler
     {
         Statistics.ShardDisConnected.Inc();
 
+        Statistics.ConnectedShards.Set(this._client.Shards.Count(w => w.ConnectionState == ConnectionState.Connected));
+
         Log.Warning("ShardDisconnected: shard #{shardId} Disconnected",
             shard.ShardId, exception);
     }
@@ -116,14 +118,18 @@ public class ClientLogHandler
     {
         Statistics.ShardConnected.Inc();
 
+        Statistics.ConnectedShards.Set(this._client.Shards.Count(w => w.ConnectionState == ConnectionState.Connected));
+
         Log.Information("ShardConnected: shard #{shardId} with {shardLatency} ms",
             shard.ShardId, shard.Latency);
     }
 
     private void ShardLatencyUpdated(int oldPing, int updatePing, DiscordSocketClient shard)
     {
-        // If new or old latency if lager then 500ms.
-        if (updatePing < 500 && oldPing < 500) return;
+        Statistics.ConnectedShards.Set(this._client.Shards.Count(w => w.ConnectionState == ConnectionState.Connected));
+
+        if (updatePing < 400 && oldPing < 400) return;
+
         Log.Information("Shard: #{shardId} Latency update from {oldPing} ms to {updatePing} ms",
             shard.ShardId, oldPing, updatePing);
     }
