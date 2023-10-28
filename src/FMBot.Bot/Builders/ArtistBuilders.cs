@@ -335,9 +335,14 @@ public class ArtistBuilders
             if (artistCollection.Any())
             {
                 var artistCollectionDescription = new StringBuilder();
-                foreach (var album in artistCollection.Take(8))
+                foreach (var album in artistCollection.Take(4))
                 {
                     artistCollectionDescription.Append(StringService.UserDiscogsWithAlbumName(album));
+                }
+
+                if (artistCollection.Count > 4)
+                {
+                    artistCollectionDescription.Append($"*Plus {artistCollection.Count - 4} more {StringExtensions.GetItemsString(artistCollection.Count - 4)} in your collection*");
                 }
                 response.Embed.AddField("Your Discogs collection", artistCollectionDescription.ToString());
             }
@@ -821,6 +826,44 @@ public class ArtistBuilders
         return response;
     }
 
+    public async Task<ResponseModel> ArtistPlaysAsync(ContextModel context,
+    UserSettingsModel userSettings,
+    string artistName,
+    bool redirectsEnabled)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Text,
+        };
+
+        var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistName,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
+        if (artistSearch.Artist == null)
+        {
+            return artistSearch.Response;
+        }
+
+        var reply =
+            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has " +
+            $"`{artistSearch.Artist.UserPlaycount}` {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} for " +
+            $"**{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}**";
+
+        if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
+        {
+            var playsLastWeek =
+                await this._playService.GetArtistPlaycountForTimePeriodAsync(userSettings.UserId, artistSearch.Artist.ArtistName);
+            if (playsLastWeek != 0)
+            {
+                reply += $" (`{playsLastWeek}` last week)";
+            }
+        }
+
+        response.Text = reply;
+
+        return response;
+    }
+
     public async Task<ResponseModel> ArtistPaceAsync(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
@@ -896,7 +939,6 @@ public class ArtistBuilders
         }
 
         reply.AppendLine($" will reach **{goalAmount}** plays on **{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}** on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
-
 
         reply.AppendLine(
             $"This is based on {determiner} avg of {Math.Round(avgPerDay, 1)} per day in the last {Math.Round(totalDays, 0)} days ({artistPlayCount} total - {artistSearch.Artist.UserPlaycount} alltime)");

@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -52,6 +53,7 @@ public class AdminCommands : BaseCommandModule
     private readonly ArtistsService _artistsService;
     private readonly AliasService _aliasService;
     private readonly WhoKnowsFilterService _whoKnowsFilterService;
+    private readonly PlayService _playService;
 
     private InteractiveService Interactivity { get; }
 
@@ -72,7 +74,9 @@ public class AdminCommands : BaseCommandModule
         InteractiveService interactivity,
         AlbumService albumService,
         ArtistsService artistsService,
-        AliasService aliasService, WhoKnowsFilterService whoKnowsFilterService) : base(botSettings)
+        AliasService aliasService,
+        WhoKnowsFilterService whoKnowsFilterService,
+        PlayService playService) : base(botSettings)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -91,6 +95,7 @@ public class AdminCommands : BaseCommandModule
         this._artistsService = artistsService;
         this._aliasService = aliasService;
         this._whoKnowsFilterService = whoKnowsFilterService;
+        this._playService = playService;
     }
 
     //[Command("debug")]
@@ -1516,7 +1521,7 @@ public class AdminCommands : BaseCommandModule
                 updateDescription.AppendLine(newFeature.ImageUrl);
                 updateDescription.AppendLine();
 
-                updateDescription.AppendLine("Featured timer restarted. Can take up to two minutes to show, max 3 times / hour");
+                updateDescription.AppendLine("Featured timer restarted. Can take up to three minutes to show, max 3 times / hour");
 
                 var dateValue = ((DateTimeOffset)feature.DateTime).ToUnixTimeSeconds();
                 this._embed.AddField("Time", $"<t:{dateValue}:F>");
@@ -1880,7 +1885,7 @@ public class AdminCommands : BaseCommandModule
     }
 
     [Command("runtoplistupdate")]
-    [Summary("Runs a toplist update for someone esle")]
+    [Summary("Runs a toplist update for someone else")]
     public async Task RunTopListUpdate([Remainder] string user = null)
     {
         try
@@ -1906,6 +1911,130 @@ public class AdminCommands : BaseCommandModule
                 await ReplyAsync("You are not authorized to use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("importdebug")]
+    [Summary("Debug your import playcount")]
+    [Options("Artist name")]
+    public async Task ImportDebug([Remainder] string user = null)
+    {
+        try
+        {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var userSettings = await this._settingService.GetUser(user, contextUser, this.Context);
+
+            if (!SupporterService.IsSupporter(userSettings.UserType))
+            {
+                await ReplyAsync("You can only debug imports for supporters.");
+                this.Context.LogCommandUsed(CommandResponse.SupporterRequired);
+                return;
+            }
+
+            var dbUser = await this._settingService.GetDifferentUser(userSettings.DiscordUserId.ToString());
+
+            if (dbUser == null)
+            {
+                await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var allPlays = await this._playService.GetAllUserPlays(dbUser.UserId);
+
+            var description = new StringBuilder();
+
+            string artistName = null;
+            if (!string.IsNullOrWhiteSpace(userSettings.NewSearchValue))
+            {
+                description.AppendLine($"Filtering to artist `{userSettings.NewSearchValue}`");
+                description.AppendLine();
+                artistName = userSettings.NewSearchValue;
+            }
+
+            if (dbUser.UserType != UserType.User)
+            {
+                description.AppendLine($"{dbUser.UserType.UserTypeToIcon()} .fmbot {dbUser.UserType.ToString().ToLower()}");
+            }
+            if (dbUser.DataSource != DataSource.LastFm)
+            {
+                var name = dbUser.DataSource.GetAttribute<OptionAttribute>().Name;
+
+                switch (dbUser.DataSource)
+                {
+                    case DataSource.FullSpotifyThenLastFm:
+                    case DataSource.SpotifyThenFullLastFm:
+                        description.AppendLine($"Imported: {name}");
+                        break;
+                    case DataSource.LastFm:
+                    default:
+                        break;
+                }
+
+                description.AppendLine();
+
+                var firstImportPlay = allPlays
+                    .OrderBy(o => o.TimePlayed)
+                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
+                if (firstImportPlay != null)
+                {
+                    var dateValue = ((DateTimeOffset)firstImportPlay.TimePlayed).ToUnixTimeSeconds();
+                    description.AppendLine($"First imported play: <t:{dateValue}:F>");
+                }
+
+                description.AppendLine($"Imported play count: `{allPlays
+                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase)).Count(w => w.PlaySource != PlaySource.LastFm)}`");
+
+                var lastImportPlay = allPlays
+                    .OrderByDescending(o => o.TimePlayed)
+                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
+                if (lastImportPlay != null)
+                {
+                    var dateValue = ((DateTimeOffset)lastImportPlay.TimePlayed).ToUnixTimeSeconds();
+                    description.AppendLine($"Last imported play: <t:{dateValue}:F>");
+                }
+
+                description.AppendLine();
+            }
+
+            var firstLfmPlay = allPlays
+                .OrderBy(o => o.TimePlayed)
+                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
+            if (firstLfmPlay != null)
+            {
+                var dateValue = ((DateTimeOffset)firstLfmPlay.TimePlayed).ToUnixTimeSeconds();
+                description.AppendLine($"First Last.fm play: <t:{dateValue}:F>");
+            }
+
+            description.AppendLine($"Last.fm play count: `{allPlays
+                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase)).Count(w => w.PlaySource == PlaySource.LastFm)}`");
+
+            var lastLfmPlay = allPlays
+                .OrderByDescending(o => o.TimePlayed)
+                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
+            if (lastLfmPlay != null)
+            {
+                var dateValue = ((DateTimeOffset)lastLfmPlay.TimePlayed).ToUnixTimeSeconds();
+                description.AppendLine($"Last Last.fm play: <t:{dateValue}:F>");
+            }
+
+            this._embed.WithDescription(description.ToString());
+            this._embed.WithFooter("Import debug");
+
+            await ReplyAsync(embed: this._embed.Build());
+
+            this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {

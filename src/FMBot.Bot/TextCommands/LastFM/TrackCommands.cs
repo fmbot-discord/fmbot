@@ -128,6 +128,29 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
+    [Command("trackdetails", RunMode = RunMode.Async)]
+    [Summary("Shows metadata for current track or the one you're searching for." )]
+    [Examples(
+        "tp",
+        "trackdetails",
+        "td Mac DeMarco Here Comes The Cowboy",
+        "td Cocteau Twins | Heaven or Las Vegas @user")]
+    [Alias("td", "trackdata", "trackmetadata", "tds")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Tracks)]
+    public async Task TrackDetailsAsync([Remainder] string trackValues = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        var response = await this._trackBuilders.TrackDetails(new ContextModel(this.Context, prfx, contextUser), trackValues);
+
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
     [Command("love", RunMode = RunMode.Async)]
     [Discord.Commands.Summary("Loves a track on Last.fm")]
     [Examples("love", "l", "love Tame Impala Borderline")]

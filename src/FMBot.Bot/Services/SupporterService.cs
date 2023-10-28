@@ -21,6 +21,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Swan;
+using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
@@ -485,6 +487,11 @@ public class SupporterService
                 return;
             }
 
+            if (newSupporter.Transactions.Count > 3)
+            {
+                return;
+            }
+
             embed.WithTitle("New supporter on OpenCollective!");
             embed.WithDescription($"Name: `{newSupporter.Name}`\n" +
                                   $"OpenCollective ID: `{newSupporter.Id}`\n" +
@@ -771,6 +778,7 @@ public class SupporterService
                 if (existingSupporter.LastPayment != discordSupporter.EndsAt && existingSupporter.Expired != true)
                 {
                     Log.Information("Updating Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
+                    var oldDate = existingSupporter.LastPayment;
 
                     existingSupporter.LastPayment = discordSupporter.EndsAt;
                     db.Update(existingSupporter);
@@ -778,7 +786,8 @@ public class SupporterService
 
                     var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
                     var embed = new EmbedBuilder().WithDescription(
-                        $"Updated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                        $"Updated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
+                        $"*End date from <t:{((DateTimeOffset?)oldDate)?.ToUnixTimeSeconds()}:F> to <t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:F>*");
                     await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
                 }
 

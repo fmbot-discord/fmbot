@@ -129,9 +129,6 @@ public class UpdateService : IUpdateService
 
         Log.Debug("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
         string sessionKey = null;
         if (!string.IsNullOrEmpty(user.SessionKeyLastFm))
         {
@@ -160,6 +157,9 @@ public class UpdateService : IUpdateService
             timeFrom,
             4);
 
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
         if (!recentTracks.Success)
         {
             Log.Information("Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}", user.UserId, user.UserNameLastFM, recentTracks.Error);
@@ -185,8 +185,6 @@ public class UpdateService : IUpdateService
         }
 
         AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks);
-
-        _ = RemoveInactiveUserIfExists(user);
 
         if (!recentTracks.Content.RecentTracks.Any())
         {
@@ -592,12 +590,12 @@ public class UpdateService : IUpdateService
 
             var timeSpan = TimeSpan.FromMinutes(timeToCache);
 
-            this._cache.Set($"{userId}-lastplay-artist-{userPlay.ArtistName}", userPlay, timeSpan);
-            this._cache.Set($"{userId}-lastplay-track-{userPlay.ArtistName}-{userPlay.TrackName}", userPlay, timeSpan);
+            this._cache.Set($"{userId}-lp-artist-{userPlay.ArtistName}", userPlay, timeSpan);
+            this._cache.Set($"{userId}-lp-track-{userPlay.ArtistName}-{userPlay.TrackName}", userPlay, timeSpan);
 
             if (userPlay.AlbumName != null)
             {
-                this._cache.Set($"{userId}-lastplay-album-{userPlay.ArtistName}-{userPlay.AlbumName}", userPlay, timeSpan);
+                this._cache.Set($"{userId}-lp-album-{userPlay.ArtistName}-{userPlay.AlbumName}", userPlay, timeSpan);
             }
         }
     }
@@ -685,22 +683,6 @@ public class UpdateService : IUpdateService
         }
 
         await db.SaveChangesAsync();
-    }
-
-    private async Task RemoveInactiveUserIfExists(User user)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-
-        var existingInactiveUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
-
-        if (existingInactiveUser != null)
-        {
-            db.InactiveUsers.Remove(existingInactiveUser);
-
-            Log.Information("InactiveUsers: Removed user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-
-            await db.SaveChangesAsync();
-        }
     }
 
     public async Task CorrectUserArtistPlaycount(int userId, string artistName, long correctPlaycount)

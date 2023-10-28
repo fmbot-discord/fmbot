@@ -46,6 +46,11 @@ public class SmallIndexRepository
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users.FindAsync(indexUser.UserId);
 
+        if (user == null)
+        {
+            return;
+        }
+
         if (user.DataSource != DataSource.LastFm)
         {
             return;

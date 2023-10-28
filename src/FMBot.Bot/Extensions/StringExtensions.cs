@@ -211,6 +211,11 @@ public static class StringExtensions
         return roles == 1 ? "role" : "roles";
     }
 
+    public static string GetItemsString(long? items)
+    {
+        return items == 1 ? "item" : "items";
+    }
+
     public static string GetChangeString(decimal oldValue, decimal newValue)
     {
         if (oldValue < newValue)

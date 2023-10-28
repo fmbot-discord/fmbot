@@ -36,7 +36,7 @@ public class WhoKnowsPlayService
 
         foreach (var user in filter.FilteredGuildUsers.Where(w => w.Key != currentUserId))
         {
-            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-track-{artistName.ToLower()}-{trackName.ToLower()}", out UserPlay userPlay);
+            var userFound = this._cache.TryGetValue($"{user.Key}-lp-track-{artistName.ToLower()}-{trackName.ToLower()}", out UserPlay userPlay);
 
             if (userFound)
             {
@@ -72,7 +72,7 @@ public class WhoKnowsPlayService
 
         foreach (var user in filter.FilteredGuildUsers.Where(w => w.Key != currentUserId))
         {
-            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-album-{artistName.ToLower()}-{albumName.ToLower()}", out UserPlay userPlay);
+            var userFound = this._cache.TryGetValue($"{user.Key}-lp-album-{artistName.ToLower()}-{albumName.ToLower()}", out UserPlay userPlay);
 
             if (userFound)
             {
@@ -107,7 +107,7 @@ public class WhoKnowsPlayService
 
         foreach (var user in filter.FilteredGuildUsers.Where(w => w.Key != currentUserId))
         {
-            var userFound = this._cache.TryGetValue($"{user.Key}-lastplay-artist-{artistName.ToLower()}", out UserPlay userPlay);
+            var userFound = this._cache.TryGetValue($"{user.Key}-lp-artist-{artistName.ToLower()}", out UserPlay userPlay);
 
             if (userFound)
             {

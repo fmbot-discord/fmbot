@@ -657,6 +657,58 @@ public class TrackBuilders
         return response;
     }
 
+    public async Task<ResponseModel> TrackDetails(
+        ContextModel context,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Text,
+        };
+
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        if (trackSearch.Track == null)
+        {
+            return trackSearch.Response;
+        }
+
+        var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(trackSearch.Track);
+
+        var reply = new StringBuilder();
+
+        reply.Append(
+            $"**{StringExtensions.Sanitize(trackSearch.Track.TrackName)}** by **{StringExtensions.Sanitize(trackSearch.Track.ArtistName)}**");
+
+        var duration = spotifyTrack?.DurationMs ?? trackSearch.Track.Duration;
+
+        var trackLength = TimeSpan.FromMilliseconds(duration.GetValueOrDefault());
+        var formattedTrackLength =
+            $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
+
+        if (spotifyTrack.Tempo.HasValue && duration.HasValue)
+        {
+            var bpm = $"{spotifyTrack.Tempo.Value:0.0}";
+            var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
+
+            reply.Append($" has `{bpm}` bpm, is in key `{pitch}` and lasts `{formattedTrackLength}`");
+        }
+        else
+        {
+            if (trackSearch.Track.Duration.HasValue && trackSearch.Track.Duration != 0)
+            {
+                reply.Append($" lasts `{formattedTrackLength}` (No Spotify track metadata found)");
+            }
+            else
+            {
+                reply.Append($" is a track that we don't have any metadata for, sorry <:Whiskeydogearnest:1097591075822129292>");
+            }
+        }
+
+        response.Text = reply.ToString();
+
+        return response;
+    }
+
     public async Task<ResponseModel> LoveTrackAsync(
         ContextModel context,
         string searchValue)

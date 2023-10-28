@@ -60,12 +60,14 @@ public class CommandHandler
         this._cache = cache;
         this._indexService = indexService;
         this._botSettings = botSettings.Value;
-        this._discord.MessageReceived += OnMessageReceivedAsync;
-        this._discord.MessageUpdated += OnMessageUpdatedAsync;
+        this._discord.MessageReceived += MessageReceived;
+        this._discord.MessageUpdated += MessageUpdated;
     }
 
-    private async Task OnMessageReceivedAsync(SocketMessage s)
+    private async Task MessageReceived(SocketMessage s)
     {
+        Statistics.DiscordEvents.WithLabels(nameof(MessageReceived)).Inc();
+
         var msg = s as SocketUserMessage; // Ensure the message is from a user/bot
         if (msg == null)
         {
@@ -150,8 +152,10 @@ public class CommandHandler
         }
     }
 
-    private async Task OnMessageUpdatedAsync(Cacheable<IMessage, ulong> originalMessage, SocketMessage updatedMessage, ISocketMessageChannel sourceChannel)
+    private async Task MessageUpdated(Cacheable<IMessage, ulong> originalMessage, SocketMessage updatedMessage, ISocketMessageChannel sourceChannel)
     {
+        Statistics.DiscordEvents.WithLabels(nameof(MessageUpdated)).Inc();
+
         var msg = updatedMessage as SocketUserMessage;
 
         if (msg == null || msg.Author == null || !msg.Author.IsBot || msg.Interaction == null)

@@ -37,6 +37,12 @@ public class UserEventHandler
     {
         Statistics.DiscordEvents.WithLabels(nameof(GuildMemberUpdated)).Inc();
 
+        if (cacheable.Id == Constants.BotProductionId || newGuildUser.Id == Constants.BotProductionId ||
+            cacheable.Id == Constants.BotBetaId || newGuildUser.Id == Constants.BotBetaId)
+        {
+            return;
+        }
+
         if (!PublicProperties.RegisteredUsers.ContainsKey(cacheable.Id) ||
             !PublicProperties.RegisteredUsers.ContainsKey(newGuildUser.Id))
         {

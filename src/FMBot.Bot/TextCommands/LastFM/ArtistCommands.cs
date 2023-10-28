@@ -258,31 +258,15 @@ public class ArtistCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
-        var artist = await GetArtist(redirectsEnabled.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
-        if (artist == null)
-        {
-            return;
-        }
+        var response = await this._artistBuilders.ArtistPlaysAsync(new ContextModel(this.Context, prfx, contextUser),
+            userSettings,
+            redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
-        var reply =
-            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has " +
-            $"`{artist.UserPlaycount}` {StringExtensions.GetPlaysString(artist.UserPlaycount)} for " +
-            $"**{StringExtensions.Sanitize(artist.ArtistName)}**";
-
-        if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
-        {
-            var playsLastWeek =
-                await this._playService.GetArtistPlaycountForTimePeriodAsync(userSettings.UserId, artist.ArtistName);
-            if (playsLastWeek != 0)
-            {
-                reply += $" (`{playsLastWeek}` last week)";
-            }
-        }
-
-        await this.Context.Channel.SendMessageAsync(reply, allowedMentions: AllowedMentions.None);
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("artistpace", RunMode = RunMode.Async)]
@@ -575,7 +559,8 @@ public class ArtistCommands : BaseCommandModule
         {
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed, NewSearchValue = artistValues
+                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
+                NewSearchValue = artistValues
             };
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
@@ -715,72 +700,6 @@ public class ArtistCommands : BaseCommandModule
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
-        }
-    }
-
-    private async Task<ArtistInfo> GetArtist(string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null, User user = null)
-    {
-        if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
-        {
-            if (otherUserUsername != null)
-            {
-                lastFmUserName = otherUserUsername;
-            }
-
-            var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistValues, lastFmUserName);
-            if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
-            {
-                this._embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return null;
-            }
-            if (!artistCall.Success || artistCall.Content == null)
-            {
-                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context.Message.Content, this.Context.User, "artist");
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                return null;
-            }
-
-            return artistCall.Content;
-        }
-        else
-        {
-            Response<RecentTrackList> recentScrobbles;
-
-            if (user != null)
-            {
-                recentScrobbles = await this._updateService.UpdateUserAndGetRecentTracks(user);
-            }
-            else
-            {
-                recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
-            }
-
-            if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
-            {
-                return null;
-            }
-
-            if (otherUserUsername != null)
-            {
-                lastFmUserName = otherUserUsername;
-            }
-
-            var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
-
-            var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
-
-            if (artistCall.Content == null || !artistCall.Success)
-            {
-                this._embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.ArtistName}**.");
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return null;
-            }
-
-            return artistCall.Content;
         }
     }
 }

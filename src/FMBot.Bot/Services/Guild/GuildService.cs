@@ -178,23 +178,15 @@ public class GuildService
         }
     }
 
-    private async Task RemoveGuildFromCache(ulong discordGuildId)
+    private Task RemoveGuildFromCache(ulong discordGuildId)
     {
         this._cache.Remove(CacheKeyForGuild(discordGuildId));
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var guild = await db.Guilds
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
-        if (guild != null)
-        {
-            this._cache.Remove($"guild-alltime-top-artists-{guild.GuildId}");
-        }
+        return Task.CompletedTask;
     }
 
     private static string CacheKeyForGuild(ulong discordGuildId)
     {
-        return $"guild-full-{discordGuildId}";
+        return $"guild-{discordGuildId}";
     }
 
     public static (FilterStats Stats, IDictionary<int, FullGuildUser> FilteredGuildUsers) FilterGuildUsers(
@@ -1131,7 +1123,7 @@ public class GuildService
 
     public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild discordGuild)
     {
-        var discordGuildIdCacheKey = GuildDiscordIdCacheKey(discordGuild.Id);
+        var discordGuildIdCacheKey = CacheKeyForGuild(discordGuild.Id);
 
         if (this._cache.TryGetValue(discordGuildIdCacheKey, out Persistence.Domain.Models.Guild guild))
         {
@@ -1149,11 +1141,6 @@ public class GuildService
         }
 
         return guild?.LastIndexed;
-    }
-
-    private static string GuildDiscordIdCacheKey(ulong discordGuildId)
-    {
-        return $"guild-{discordGuildId}";
     }
 
     public async Task UpdateGuildIndexTimestampAsync(IGuild discordGuild, DateTime? timestamp = null)
@@ -1195,7 +1182,7 @@ public class GuildService
     {
         foreach (var emote in emoteString)
         {
-            if (emote.Length is 2 or 3)
+            if (emote.Length is 1 or 2 or 3)
             {
                 try
                 {
@@ -1247,7 +1234,7 @@ public class GuildService
     {
         foreach (var emoteString in reactions)
         {
-            if (emoteString.Length is 2 or 3)
+            if (emoteString.Length is 1 or 2 or 3)
             {
                 var emote = new Emoji(emoteString);
                 await message.AddReactionAsync(emote);
