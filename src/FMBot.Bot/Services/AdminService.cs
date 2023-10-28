@@ -171,12 +171,14 @@ public class AdminService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var filteredUser = await db.GlobalFilteredUsers
             .AsQueryable()
+            .OrderByDescending(o => o.Created)
             .FirstOrDefaultAsync(f => f.UserNameLastFm.ToLower() == lastFmUserName.ToLower());
 
         if (filteredUser == null && registeredDateTime.HasValue)
         {
             filteredUser = await db.GlobalFilteredUsers
                 .AsQueryable()
+                .OrderByDescending(o => o.Created)
                 .FirstOrDefaultAsync(f => f.RegisteredLastFm == registeredDateTime.Value);
         }
 
