@@ -439,7 +439,7 @@ public class SupporterService
         return supporter;
     }
 
-    public async Task CheckForNewSupporters()
+    public async Task CheckForNewOcSupporters()
     {
         var openCollectiveSupporters = await this._openCollectiveService.GetOpenCollectiveOverview();
 
@@ -914,6 +914,44 @@ public class SupporterService
         }
     }
 
+    public async Task CheckIfDiscordSupportersHaveCorrectUserType()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var activeSupporters = await db.Supporters
+            .AsQueryable()
+            .Where(w =>
+                w.DiscordUserId != null &&
+                w.SubscriptionType == SubscriptionType.Discord &&
+                w.Expired != true)
+            .ToListAsync();
+
+        var ids = activeSupporters.Select(s => s.DiscordUserId.Value).ToHashSet();
+        var usersThatShouldHaveSupporter = await db.Users
+            .Where(w => ids.Contains(w.DiscordUserId) && w.UserType == UserType.User)
+            .ToListAsync();
+
+        Log.Information("Found {supporterCount} Discord supporters that should have supporter, but don't have the usertype", usersThatShouldHaveSupporter.Count);
+
+        foreach (var dbUser in usersThatShouldHaveSupporter)
+        {
+            var discordSupporter = activeSupporters.First(f => f.DiscordUserId == dbUser.DiscordUserId);
+
+            Log.Information("Re-activating Discord supporter (user was missing type) {discordUserId}", discordSupporter.DiscordUserId);
+
+            await ReActivateSupporterUser(discordSupporter);
+            await ModifyGuildRole(discordSupporter.DiscordUserId.Value);
+            await RunFullUpdate(discordSupporter.DiscordUserId.Value);
+
+            var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+            var embed = new EmbedBuilder().WithDescription(
+                $"Re-activated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
+                $"*User had an active subscription, but their .fmbot account didn't have supporter*");
+            await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
+
+            Log.Information("Re-activated Discord supporter (user was missing type) {discordUserId}", discordSupporter.DiscordUserId);
+        }
+    }
+
     public async Task ModifyGuildRole(ulong discordUserId, bool add = true)
     {
         var baseGuild = await this._client.Rest.GetGuildAsync(this._botSettings.Bot.BaseServerId);
@@ -1027,6 +1065,30 @@ public class SupporterService
         return supporter;
     }
 
+    private async Task<Supporter> ReActivateSupporterUser(Supporter supporter)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var user = await db.Users
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordUserId == supporter.DiscordUserId.Value);
+
+        if (user == null)
+        {
+            Log.Warning("Someone who isn't registered in .fmbot just re-activated their Discord subscription - ID {discordUserId}", supporter.DiscordUserId);
+        }
+        else
+        {
+            if (user.UserType == UserType.User)
+            {
+                user.UserType = UserType.Supporter;
+            }
+
+            db.Update(user);
+        }
+
+        return supporter;
+    }
+
     private async Task ExpireSupporter(ulong id, Supporter supporter)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -1083,6 +1145,14 @@ public class SupporterService
             .Where(w => w.Expired != true)
             .OrderByDescending(o => o.Created)
             .ToListAsync();
+    }
+
+    public async Task<int> GetActiveSupporterCountAsync()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Supporters
+            .AsQueryable()
+            .CountAsync(c => c.Expired != true);
     }
 
     public async Task<IReadOnlyList<Supporter>> GetAllSupporters()

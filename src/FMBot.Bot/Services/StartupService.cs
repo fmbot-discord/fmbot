@@ -138,6 +138,9 @@ public class StartupService
                 Assembly.GetEntryAssembly(),
                 this._provider);
 
+        Log.Information("Preparing cache folder");
+        PrepareCacheFolder();
+
         var shardTimeOut = 800;
         foreach (var shard in this._client.Shards)
         {
@@ -151,9 +154,6 @@ public class StartupService
                 shardTimeOut = 1350;
             }
         }
-
-        Log.Information("Preparing cache folder");
-        PrepareCacheFolder();
 
         await this._timerService.UpdateMetricsAndStatus();
 

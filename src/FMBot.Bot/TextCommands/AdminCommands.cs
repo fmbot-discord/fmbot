@@ -1589,6 +1589,30 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("checkdiscordsupporterusers")]
+    [Summary("Updates all discord supporters")]
+    public async Task CheckDiscordSupporterUserTypes()
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                await ReplyAsync("Fetching supporters from Discord...");
+                await this._supporterService.CheckIfDiscordSupportersHaveCorrectUserType();
+                await ReplyAsync("Updated all Discord supporters");
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
     [Command("updatediscordsupporter")]
     [Summary("Updates single discord supporteer")]
     public async Task UpdateSingleDiscordSupporters([Remainder] string user)

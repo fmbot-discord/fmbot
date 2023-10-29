@@ -111,11 +111,14 @@ public class TimerService
             Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
             RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 12 * * *");
 
-            Log.Information($"RecurringJob: Adding {nameof(CheckForNewSupporters)}");
-            RecurringJob.AddOrUpdate(nameof(CheckForNewSupporters), () => CheckForNewSupporters(), "*/3 * * * *");
+            Log.Information($"RecurringJob: Adding {nameof(CheckForNewOcSupporters)}");
+            RecurringJob.AddOrUpdate(nameof(CheckForNewOcSupporters), () => CheckForNewOcSupporters(), "*/3 * * * *");
 
-            Log.Information($"RecurringJob: Adding {nameof(UpdateExistingSupporters)}");
-            RecurringJob.AddOrUpdate(nameof(UpdateExistingSupporters), () => UpdateExistingSupporters(), "0 * * * *");
+            Log.Information($"RecurringJob: Adding {nameof(UpdateExistingOcSupporters)}");
+            RecurringJob.AddOrUpdate(nameof(UpdateExistingOcSupporters), () => UpdateExistingOcSupporters(), "0 * * * *");
+
+            Log.Information($"RecurringJob: Adding {nameof(CheckDiscordSupportersUserType)}");
+            RecurringJob.AddOrUpdate(nameof(CheckDiscordSupportersUserType), () => CheckDiscordSupportersUserType(), "0 * * * *");
 
             Log.Information($"RecurringJob: Adding {nameof(UpdateDiscogsUsers)}");
             RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");
@@ -133,6 +136,7 @@ public class TimerService
         Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
         Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
         Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
+        Statistics.ActiveSupporterCount.Set(await this._supporterService.GetActiveSupporterCountAsync());
 
         Statistics.OneDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(1));
         Statistics.SevenDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(7));
@@ -264,12 +268,12 @@ public class TimerService
         this.CurrentFeatured = await this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow);
     }
 
-    public async Task CheckForNewSupporters()
+    public async Task CheckForNewOcSupporters()
     {
-        await this._supporterService.CheckForNewSupporters();
+        await this._supporterService.CheckForNewOcSupporters();
     }
 
-    public async Task UpdateExistingSupporters()
+    public async Task UpdateExistingOcSupporters()
     {
         await this._supporterService.UpdateExistingOpenCollectiveSupporters();
     }
@@ -282,6 +286,11 @@ public class TimerService
     public async Task CheckExpiredDiscordSupporters()
     {
         await this._supporterService.CheckExpiredDiscordSupporters();
+    }
+
+    public async Task CheckDiscordSupportersUserType()
+    {
+        await this._supporterService.CheckIfDiscordSupportersHaveCorrectUserType();
     }
 
     public async Task UpdateDiscogsUsers()
