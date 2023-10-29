@@ -1089,6 +1089,8 @@ public class SupporterService
             db.Update(user);
         }
 
+        await db.SaveChangesAsync();
+
         return supporter;
     }
 
