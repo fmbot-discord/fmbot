@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -16,6 +15,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
+using Prometheus;
 using Serilog;
 
 namespace FMBot.Bot.Handlers;
@@ -63,43 +63,47 @@ public class InteractionHandler
             return;
         }
 
-        var context = new ShardedInteractionContext(this._client, socketInteraction);
-        var contextUser = await this._userService.GetUserAsync(context.User.Id);
-
-        var commandSearch = this._interactionService.SearchSlashCommand(socketSlashCommand);
-
-        if (!commandSearch.IsSuccess)
+        using (Statistics.SlashCommandHandlerDuration.NewTimer())
         {
-            Log.Error("Someone tried to execute a non-existent slash command! {slashCommand}", socketSlashCommand.CommandName);
-            return;
+            var context = new ShardedInteractionContext(this._client, socketInteraction);
+            var contextUser = await this._userService.GetUserAsync(context.User.Id);
+
+            var commandSearch = this._interactionService.SearchSlashCommand(socketSlashCommand);
+
+            if (!commandSearch.IsSuccess)
+            {
+                Log.Error("Someone tried to execute a non-existent slash command! {slashCommand}",
+                    socketSlashCommand.CommandName);
+                return;
+            }
+
+            var command = commandSearch.Command;
+
+            if (contextUser?.Blocked == true)
+            {
+                await UserBlockedResponse(context);
+                return;
+            }
+
+            if (!await CommandEnabled(context, command))
+            {
+                return;
+            }
+
+            var keepGoing = await CheckAttributes(context, command.Attributes);
+
+            if (!keepGoing)
+            {
+                return;
+            }
+
+            await this._interactionService.ExecuteCommandAsync(context, this._provider);
+
+            Statistics.SlashCommandsExecuted.WithLabels(command.Name).Inc();
+
+            _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
+            _ = Task.Run(() => this._userService.AddUserSlashCommandInteraction(context, command.Name));
         }
-
-        var command = commandSearch.Command;
-
-        if (contextUser?.Blocked == true)
-        {
-            await UserBlockedResponse(context);
-            return;
-        }
-
-        if (!await CommandEnabled(context, command))
-        {
-            return;
-        }
-
-        var keepGoing = await CheckAttributes(context, command.Attributes);
-
-        if (!keepGoing)
-        {
-            return;
-        }
-
-        await this._interactionService.ExecuteCommandAsync(context, this._provider);
-
-        Statistics.SlashCommandsExecuted.WithLabels(command.Name).Inc();
-
-        _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
-        _ = Task.Run(() => this._userService.AddUserSlashCommandInteraction(context, command.Name));
     }
 
     private async Task UserCommandExecuted(SocketInteraction socketInteraction)
@@ -269,7 +273,7 @@ public class InteractionHandler
 
         return true;
     }
-    
+
     private static async Task<bool> CommandEnabled(ShardedInteractionContext context, ICommandInfo searchResult)
     {
         if (context.Guild != null)

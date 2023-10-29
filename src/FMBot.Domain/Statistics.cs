@@ -59,10 +59,8 @@ public static class Statistics
     public static readonly Counter SpotifyApiCalls = Metrics
         .CreateCounter("spotify_api_calls", "Amount of Spotify API calls");
 
-
     public static readonly Counter MusicBrainzApiCalls = Metrics
         .CreateCounter("musicbrainz_api_calls", "Amount of MusicBrainz API calls");
-
 
     public static readonly Counter DiscogsApiCalls = Metrics
         .CreateCounter("discogs_api_calls", "Amount of Discogs API calls");
@@ -87,6 +85,13 @@ public static class Statistics
             {
                 LabelNames = new[] { "name" }
             });
+
+
+    public static readonly Histogram TextCommandHandlerDuration = Metrics
+        .CreateHistogram("bot_text_command_handler_duration", "Histogram of text command handler duration");
+
+    public static readonly Histogram SlashCommandHandlerDuration = Metrics
+        .CreateHistogram("bot_slash_command_handler_duration", "Histogram of text command handler duration");
 
 
     public static readonly Counter UserCommandsExecuted = Metrics
@@ -122,6 +127,9 @@ public static class Statistics
     public static readonly Gauge RegisteredGuildCount = Metrics
         .CreateGauge("bot_registered_guilds_count", "Total count of all guilds in the database");
 
+    public static readonly Gauge ActiveSupporterCount = Metrics
+        .CreateGauge("bot_active_supporter_count", "Total count of all guilds in the database");
+
 
     public static readonly Gauge OneDayActiveUserCount = Metrics
         .CreateGauge("bot_active_users_count_1d", "Total count of users who've used the bot in the last day");
@@ -140,7 +148,7 @@ public static class Statistics
         .CreateCounter("bot_updated_users", "Amount of updated users");
 
     public static readonly Counter SmallIndexedUsers = Metrics
-        .CreateCounter("bot_updated_users", "Amount of small indexed users");
+        .CreateCounter("bot_smallindexed_users", "Amount of small indexed users");
 
 
     public static readonly Counter ShardConnected = Metrics
