@@ -145,7 +145,7 @@ public class LastfmApi : ILastfmApi
         catch (Exception ex)
         {
             response.Success = false;
-            response.Message = "Something went wrong while deserializing the object last.fm returned. It could be that there are no results.";
+            response.Message = "Something went wrong while deserializing the object Last.fm returned. It could be that there are no results, or that they're having issues.";
             Log.Error("Something went wrong while deserializing the object Last.fm returned - {request} - {ex}", call, ex);
 
             var errorParameters = "";
