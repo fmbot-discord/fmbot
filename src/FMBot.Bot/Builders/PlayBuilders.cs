@@ -479,7 +479,7 @@ public class PlayBuilder
     public async Task<ResponseModel> StreakHistoryAsync(
         ContextModel context,
         UserSettingsModel userSettings,
-        bool viewIds = false)
+        bool editMode = false)
     {
         var response = new ResponseModel
         {
@@ -528,7 +528,7 @@ public class PlayBuilder
                     pageString.Append($"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:f>");
                 }
 
-                if (viewIds && !userSettings.DifferentUser)
+                if (editMode && !userSettings.DifferentUser)
                 {
                     pageString.Append($" · Deletion ID: `{streak.UserStreakId}`");
                 }
@@ -544,6 +544,12 @@ public class PlayBuilder
             var pageFooter = new StringBuilder();
             pageFooter.Append($"Page {pageCounter}/{streakPages.Count}");
 
+            if (editMode)
+            {
+                pageFooter.AppendLine();
+                pageFooter.Append($"Editmode enabled - Use the trash button to delete streaks");
+            }
+
             pages.Add(new PageBuilder()
                 .WithDescription(pageString.ToString())
                 .WithAuthor(response.EmbedAuthor)
@@ -558,7 +564,7 @@ public class PlayBuilder
             response.EmbedAuthor = response.EmbedAuthor;
             response.EmbedFooter = response.EmbedFooter;
 
-            if (viewIds)
+            if (editMode)
             {
                 response.Components = new ComponentBuilder()
                     .WithButton(emote: new Emoji("🗑️"), customId: InteractionConstants.DeleteStreak);
@@ -567,7 +573,7 @@ public class PlayBuilder
             return response;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, viewIds ? InteractionConstants.DeleteStreak : null, viewIds ? new Emoji("🗑️") : null);
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages, editMode ? InteractionConstants.DeleteStreak : null, editMode ? new Emoji("🗑️") : null);
 
         return response;
     }
