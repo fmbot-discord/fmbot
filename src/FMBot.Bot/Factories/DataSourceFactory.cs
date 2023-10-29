@@ -61,8 +61,8 @@ public class DataSourceFactory : IDataSourceFactory
         {
             var discordUserIdCacheKey = UserService.UserDiscordIdCacheKey(user.DiscordUserId);
 
-            this._cache.Set(discordUserIdCacheKey, user, TimeSpan.FromSeconds(3));
-            this._cache.Set(lastFmCacheKey, user, TimeSpan.FromSeconds(3));
+            this._cache.Set(discordUserIdCacheKey, user, TimeSpan.FromSeconds(5));
+            this._cache.Set(lastFmCacheKey, user, TimeSpan.FromSeconds(5));
         }
 
         return user;

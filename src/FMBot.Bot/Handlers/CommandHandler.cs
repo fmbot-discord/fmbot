@@ -69,19 +69,16 @@ public class CommandHandler
     {
         Statistics.DiscordEvents.WithLabels(nameof(MessageReceived)).Inc();
 
-        var msg = s as SocketUserMessage; // Ensure the message is from a user/bot
-        if (msg == null)
+        if (s is not SocketUserMessage msg)
         {
             return;
         }
 
         if (this._discord?.CurrentUser != null && msg.Author?.Id == this._discord.CurrentUser?.Id)
         {
-            return; // Ignore self when checking commands
+            return;
         }
 
-
-        // Create the command context
         var context = new ShardedCommandContext(this._discord, msg);
 
         if (msg.Author != null && msg.Author.IsBot && msg.Flags != MessageFlags.Loading)
@@ -110,12 +107,13 @@ public class CommandHandler
             msg.HasStringPrefix(prfx + "fm", ref argPos, StringComparison.OrdinalIgnoreCase) &&
             msg.Content.Length > $"{prfx}fm".Length)
         {
-            await ExecuteCommand(msg, context, argPos, prfx);
+            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx));
             return;
         }
 
         // Prefix is set to '.fm' and the user uses '.fm'
-        if (prfx == ".fm" && msg.HasStringPrefix(".", ref argPos, StringComparison.OrdinalIgnoreCase))
+        const string fm = ".fm";
+        if (prfx == fm && msg.HasStringPrefix(".", ref argPos, StringComparison.OrdinalIgnoreCase))
         {
             var searchResult = this._commands.Search(context, argPos);
             if (searchResult.IsSuccess &&
@@ -123,7 +121,7 @@ public class CommandHandler
                 searchResult.Commands.Any() &&
                 searchResult.Commands.FirstOrDefault().Command.Name == "fm")
             {
-                await ExecuteCommand(msg, context, argPos, prfx);
+                _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx));
                 return;
             }
         }
@@ -131,14 +129,14 @@ public class CommandHandler
         // Normal or custom prefix
         if (msg.HasStringPrefix(prfx, ref argPos, StringComparison.OrdinalIgnoreCase))
         {
-            await ExecuteCommand(msg, context, argPos, prfx);
+            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx));
             return;
         }
 
         // Mention
         if (this._discord != null && msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
         {
-            await ExecuteCommand(msg, context, argPos, prfx);
+            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx));
             return;
         }
     }
@@ -167,7 +165,6 @@ public class CommandHandler
         }
 
         var context = new ShardedCommandContext(this._discord, msg);
-
 
         if (msg.Flags != MessageFlags.Loading)
         {
@@ -425,13 +422,13 @@ public class CommandHandler
 
     private async Task UpdateUserLastMessageDate(SocketCommandContext context)
     {
-        var cacheKey = $"{context.User.Id}-{context.Guild.Id}-last-message-updated";
+        var cacheKey = $"{context.User.Id}-{context.Guild.Id}-lst-msg-updated";
         if (this._cache.TryGetValue(cacheKey, out _))
         {
             return;
         }
 
-        this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(15));
+        this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(30));
 
         var guildSuccess = PublicProperties.PremiumServers.TryGetValue(context.Guild.Id, out var guildId);
         var userSuccess = PublicProperties.RegisteredUsers.TryGetValue(context.User.Id, out var userId);

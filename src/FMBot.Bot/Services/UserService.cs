@@ -33,7 +33,6 @@ public class UserService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly BotSettings _botSettings;
-    private readonly ArtistRepository _artistRepository;
     private readonly CountryService _countryService;
     private readonly PlayService _playService;
 
@@ -41,14 +40,12 @@ public class UserService
         IDbContextFactory<FMBotDbContext> contextFactory,
         IDataSourceFactory dataSourceFactory,
         IOptions<BotSettings> botSettings,
-        ArtistRepository artistRepository,
         CountryService countryService,
         PlayService playService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
         this._dataSourceFactory = dataSourceFactory;
-        this._artistRepository = artistRepository;
         this._countryService = countryService;
         this._playService = playService;
         this._botSettings = botSettings.Value;
@@ -77,8 +74,8 @@ public class UserService
         {
             var lastFmCacheKey = UserLastFmCacheKey(user.UserNameLastFM);
 
-            this._cache.Set(lastFmCacheKey, user, TimeSpan.FromSeconds(3));
-            this._cache.Set(discordUserIdCacheKey, user, TimeSpan.FromSeconds(3));
+            this._cache.Set(lastFmCacheKey, user, TimeSpan.FromSeconds(5));
+            this._cache.Set(discordUserIdCacheKey, user, TimeSpan.FromSeconds(5));
         }
 
         return user;
