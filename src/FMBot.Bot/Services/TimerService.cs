@@ -118,7 +118,7 @@ public class TimerService
             RecurringJob.AddOrUpdate(nameof(UpdateExistingOcSupporters), () => UpdateExistingOcSupporters(), "0 * * * *");
 
             Log.Information($"RecurringJob: Adding {nameof(CheckDiscordSupportersUserType)}");
-            RecurringJob.AddOrUpdate(nameof(CheckDiscordSupportersUserType), () => CheckDiscordSupportersUserType(), "0 * * * *");
+            RecurringJob.AddOrUpdate(nameof(CheckDiscordSupportersUserType), () => CheckDiscordSupportersUserType(), "30 * * * *");
 
             Log.Information($"RecurringJob: Adding {nameof(UpdateDiscogsUsers)}");
             RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");
