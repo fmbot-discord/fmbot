@@ -2,7 +2,6 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
@@ -28,7 +27,6 @@ using Hangfire;
 using Hangfire.Storage;
 using Microsoft.Extensions.Options;
 using Serilog;
-using Swan;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -1613,8 +1611,60 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("checksupporterroles")]
+    [Summary("Updates all discord supporters")]
+    public async Task CheckDiscordSupporterRoles()
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+                var supporters = await this._supporterService.GetAllVisibleSupporters();
+
+                var members = await this.Context.Guild.GetUsersAsync();
+
+                var discordUserIds = supporters
+                    .Where(w => w.DiscordUserId.HasValue)
+                    .Select(s => s.DiscordUserId.Value)
+                    .ToHashSet();
+
+                var count = 0;
+                var role = this.Context.Guild.Roles.FirstOrDefault(x => x.Name == "Supporter");
+
+                var reply = new StringBuilder();
+
+                foreach (var member in members.Where(w => discordUserIds.Contains(w.Id)))
+                {
+                    if (member.RoleIds.All(a => a != role.Id))
+                    {
+                        await member.AddRoleAsync(role);
+                        reply.AppendLine($"{member.Id} - <@{member.Id}> - {member.DisplayName}");
+
+                        count++;
+                    }
+                }
+
+                reply.AppendLine();
+                reply.AppendLine($"Updated all Discord supporters.");
+                reply.AppendLine($"{count} users didn't have the supporter role when they should have had it.");
+
+                await ReplyAsync(reply.ToString());
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
     [Command("updatediscordsupporter")]
-    [Summary("Updates single discord supporteer")]
+    [Summary("Updates single discord supporter")]
     public async Task UpdateSingleDiscordSupporters([Remainder] string user)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
