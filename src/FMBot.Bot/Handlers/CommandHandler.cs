@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -88,7 +87,7 @@ public class CommandHandler
                 return;
             }
 
-            TryScrobbling(msg, context);
+            _ = Task.Run(() => TryScrobbling(msg, context));
             return;
         }
 
@@ -141,7 +140,7 @@ public class CommandHandler
         }
     }
 
-    private async void TryScrobbling(SocketUserMessage msg, ICommandContext context)
+    private async Task TryScrobbling(SocketUserMessage msg, ICommandContext context)
     {
         foreach (var musicBot in MusicBot.SupportedBots)
         {
@@ -168,7 +167,7 @@ public class CommandHandler
 
         if (msg.Flags != MessageFlags.Loading)
         {
-            TryScrobbling(msg, context);
+            _ = Task.Run(() => TryScrobbling(msg, context));
         }
     }
 
