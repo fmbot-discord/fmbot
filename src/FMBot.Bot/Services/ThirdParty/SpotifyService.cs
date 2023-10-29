@@ -146,7 +146,9 @@ public class SpotifyService
                     }).ToList();
                 }
 
-                if (redirectsEnabled && artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
+                if (redirectsEnabled &&
+                    artistNameBeforeCorrect != null &&
+                    !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.OrdinalIgnoreCase))
                 {
                     await ArtistRepository.AddOrUpdateArtistAlias(artistToAdd.Id, artistNameBeforeCorrect, connection);
                 }
@@ -154,7 +156,9 @@ public class SpotifyService
                 return artistToAdd;
             }
 
-            if (redirectsEnabled && artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
+            if (redirectsEnabled &&
+                artistNameBeforeCorrect != null &&
+                !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.OrdinalIgnoreCase))
             {
                 await ArtistRepository.AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
             }

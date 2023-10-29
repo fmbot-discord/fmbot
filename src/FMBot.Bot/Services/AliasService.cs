@@ -96,7 +96,7 @@ public class AliasService
 
         return await db.ArtistAliases
             .Include(i => i.Artist)
-            .FirstOrDefaultAsync(f => f.Alias.ToLower() == aliasName.ToLower());
+            .FirstOrDefaultAsync(f => f.Alias == aliasName.ToLower());
     }
 
     public async Task<ArtistAlias> GetArtistAliasForId(int aliasId)

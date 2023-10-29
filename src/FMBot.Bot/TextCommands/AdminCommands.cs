@@ -470,7 +470,7 @@ public class AdminCommands : BaseCommandModule
             }
 
             var artistAlias = await this._aliasService.GetArtistAlias(alias);
-            if (alias == null)
+            if (artistAlias == null)
             {
                 await ReplyAsync("Artist alias not found");
                 this.Context.LogCommandUsed(CommandResponse.NotFound);

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -69,6 +70,13 @@ public class ArtistRepository
 
     public static async Task AddOrUpdateArtistAlias(int artistId, string artistNameBeforeCorrect, NpgsqlConnection connection)
     {
+        if (string.Equals(artistNameBeforeCorrect, "rnd", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(artistNameBeforeCorrect, "random", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(artistNameBeforeCorrect, "featured", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
         const string selectQuery = @"SELECT * FROM public.artist_aliases WHERE artist_id = @artistId AND alias = @alias LIMIT 1";
         var result = await connection.QueryFirstOrDefaultAsync<ArtistAlias>(selectQuery, new
         {
