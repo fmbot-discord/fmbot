@@ -128,6 +128,15 @@ public static class StringService
                    : $" | *{StringExtensions.Sanitize(track.AlbumName)}*\n");
     }
 
+    public static string TrackToOneLinedString(RecentTrack track)
+    {
+        return $"{StringExtensions.Sanitize(track.TrackName)}\n" +
+               $"By **{StringExtensions.Sanitize(track.ArtistName)}**" +
+               (string.IsNullOrWhiteSpace(track.AlbumName)
+                   ? "\n"
+                   : $" | *{StringExtensions.Sanitize(track.AlbumName)}*\n");
+    }
+
     public record BillboardLine(string Text, string Name, int PositionsMoved, int NewPosition, int? OldPosition);
 
     public static BillboardLine GetBillboardLine(string name, int newPosition, int? oldPosition, bool counter = true)

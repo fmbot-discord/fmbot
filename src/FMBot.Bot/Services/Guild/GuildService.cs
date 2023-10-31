@@ -977,6 +977,41 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
+    public async Task SetChannelEmbedType(IChannel discordChannel, int guildId, FmEmbedType? embedType, ulong discordGuildId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingChannel = await db.Channels
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
+
+        if (existingChannel == null)
+        {
+            var newChannel = new Channel
+            {
+                DiscordChannelId = discordChannel.Id,
+                Name = discordChannel.Name,
+                GuildId = guildId,
+                FmEmbedType = embedType
+            };
+
+            await db.Channels.AddAsync(newChannel);
+            await db.SaveChangesAsync();
+
+            await RemoveGuildFromCache(discordGuildId);
+
+            return;
+        }
+
+        existingChannel.Name = existingChannel.Name;
+        existingChannel.FmEmbedType = embedType;
+
+        db.Entry(existingChannel).State = EntityState.Modified;
+
+        await RemoveGuildFromCache(discordGuildId);
+
+        await db.SaveChangesAsync();
+    }
+
     public async Task<string[]> EnableChannelCommandsAsync(IChannel discordChannel, List<string> commands, ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

@@ -641,15 +641,19 @@ public class GuildSettingBuilder
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
 
         var fmType = new SelectMenuBuilder()
-            .WithPlaceholder("Select default server embed type")
+            .WithPlaceholder("Forced server 'fm' mode")
             .WithCustomId(InteractionConstants.FmGuildSettingType)
             .WithMinValues(0)
             .WithMaxValues(1);
 
-        foreach (var name in Enum.GetNames(typeof(FmEmbedType)).OrderBy(o => o))
+        foreach (var option in ((FmEmbedType[])Enum.GetValues(typeof(FmEmbedType))).OrderBy(o => o.GetAttribute<OptionOrderAttribute>().Order))
         {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var optionDescription = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+
             var selected = name == guild.FmEmbedType.ToString();
-            fmType.AddOption(new SelectMenuOptionBuilder(name, name, isDefault: selected));
+            fmType.AddOption(new SelectMenuOptionBuilder(name, value, optionDescription, isDefault: selected));
         }
 
         response.Embed.WithTitle("Set server 'fm' mode");
@@ -659,6 +663,8 @@ public class GuildSettingBuilder
         description.AppendLine("This will override whatever mode a user has set themselves.");
         description.AppendLine();
         description.AppendLine("To disable, simply de-select the mode you have selected.");
+        description.AppendLine();
+        description.AppendLine("Use `channelmode` to configure this per-channel.");
         description.AppendLine();
 
         if (guild.FmEmbedType.HasValue)
@@ -886,9 +892,33 @@ public class GuildSettingBuilder
             }
         }
 
+        var fmType = new SelectMenuBuilder()
+            .WithPlaceholder("Forced channel 'fm' mode")
+            .WithCustomId($"{InteractionConstants.ToggleCommandChannelFmType}-{selectedChannel.Id}-{selectedCategoryId}")
+            .WithMinValues(0)
+            .WithMaxValues(1);
+
+        foreach (var option in ((FmEmbedType[])Enum.GetValues(typeof(FmEmbedType))).OrderBy(o => o.GetAttribute<OptionOrderAttribute>().Order))
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var description = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+
+            var active = option == channel.FmEmbedType;
+
+            fmType.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+        }
+
         if (!botDisabled)
         {
             response.Embed.AddField("Disabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
+
+            if (channel.FmEmbedType.HasValue)
+            {
+                var name = channel.FmEmbedType.GetAttribute<OptionAttribute>().Name;
+
+                response.Embed.AddField("Forced 'fm' mode", $"`{name}`");
+            }
         }
         else
         {
@@ -907,6 +937,8 @@ public class GuildSettingBuilder
 
         if (!botDisabled)
         {
+            components.WithSelectMenu(fmType);
+
             components
                 .WithButton("Disable bot in channel", $"{InteractionConstants.ToggleCommandDisableAll}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, row: 1);
         }

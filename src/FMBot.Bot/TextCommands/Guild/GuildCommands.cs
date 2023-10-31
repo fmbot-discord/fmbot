@@ -343,7 +343,7 @@ public class GuildCommands : BaseCommandModule
     [RequiresIndex]
     [Command("togglecommand", RunMode = RunMode.Async)]
     [Summary("Enables or disables a command in a channel")]
-    [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands")]
+    [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands", "channelmode", "channelfmmode")]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task ToggleChannelCommand(string _ = null)
     {

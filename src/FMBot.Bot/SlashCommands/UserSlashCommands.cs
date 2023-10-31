@@ -420,9 +420,13 @@ public class UserSlashCommands : InteractionModuleBase
 
         if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
         {
-            var newUserSettings = await this._userService.SetSettings(userSettings, embedType, FmCountType.None);
+            await this._userService.SetSettings(userSettings, embedType, FmCountType.None);
 
-            embed.WithDescription($"Your `fm` mode has been set to **{newUserSettings.FmEmbedType}**.");
+            var name = embedType.GetAttribute<OptionAttribute>().Name;
+            var description = embedType.GetAttribute<OptionAttribute>().Description;
+
+            embed.WithDescription($"Your `fm` mode has been set to **{name}**.");
+            embed.WithFooter(description);
             embed.WithColor(DiscordConstants.InformationColorBlue);
             await RespondAsync(embed: embed.Build(), ephemeral: true);
         }

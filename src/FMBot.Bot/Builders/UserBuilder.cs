@@ -202,9 +202,15 @@ public class UserBuilder
                 .WithMinValues(1)
                 .WithMaxValues(1);
 
-        foreach (var name in Enum.GetNames(typeof(FmEmbedType)).OrderBy(o => o))
+        foreach (var option in ((FmEmbedType[])Enum.GetValues(typeof(FmEmbedType))).OrderBy(o => o.GetAttribute<OptionOrderAttribute>().Order))
         {
-            fmType.AddOption(new SelectMenuOptionBuilder(name, name));
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var description = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+
+            var active = option == context.ContextUser.FmEmbedType;
+
+            fmType.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
         }
 
         var maxOptions = context.ContextUser.UserType == UserType.User

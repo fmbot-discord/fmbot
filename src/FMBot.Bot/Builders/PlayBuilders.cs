@@ -141,6 +141,12 @@ public class PlayBuilder
                 embedType = guild.FmEmbedType.Value;
             }
 
+            var channel = await this._guildService.GetChannel(context.DiscordChannel.Id);
+            if (channel?.FmEmbedType != null)
+            {
+                embedType = channel.FmEmbedType.Value;
+            }
+
             if (guild != null)
             {
                 guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
@@ -180,6 +186,11 @@ public class PlayBuilder
 
         switch (embedType)
         {
+            case FmEmbedType.TextOneLine:
+                response.Text =$"**{embedTitle}** is listening to **{currentTrack.TrackName}** by **{currentTrack.ArtistName}**".FilterOutMentions();
+
+                response.ResponseType = ResponseType.Text;
+                break;
             case FmEmbedType.TextMini:
             case FmEmbedType.TextFull:
                 if (embedType == FmEmbedType.TextMini)
