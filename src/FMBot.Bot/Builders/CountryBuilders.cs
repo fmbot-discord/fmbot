@@ -222,32 +222,32 @@ public class CountryBuilders
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var pages = new List<PageBuilder>();
 
-        var title = $"Top artists from {country.Name} :flag_{country.Code.ToLower()}: for {userTitle}";
+        var title = $":flag_{country.Code.ToLower()}: Top artists from {country.Name} for {userTitle}";
 
-        var genrePages = countryArtists.ChunkBy(10);
+        var countryPages = countryArtists.ChunkBy(10);
 
         var counter = 1;
         var pageCounter = 1;
-        foreach (var genrePage in genrePages)
+        foreach (var countryPage in countryPages)
         {
-            var genrePageString = new StringBuilder();
-            foreach (var genreArtist in genrePage)
+            var countryPageString = new StringBuilder();
+            foreach (var genreArtist in countryPage)
             {
-                genrePageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** - *{genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
+                countryPageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** - *{genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
                 counter++;
             }
 
             if (country.Code == "UA")
             {
-                genrePageString.AppendLine();
-                genrePageString.AppendLine("<:ukraine:948301778464694272> [Stand For Ukraine](https://standforukraine.com/)");
+                countryPageString.AppendLine();
+                countryPageString.AppendLine("<:ukraine:948301778464694272> [Stand For Ukraine](https://standforukraine.com/)");
             }
 
             var footer = $"Country source: MusicBrainz\n" +
-                         $"Page {pageCounter}/{genrePages.Count} - {countryArtists.Count} total artists - {countryArtists.Sum(s => s.UserPlaycount)} total scrobbles";
+                         $"Page {pageCounter}/{countryPages.Count} - {countryArtists.Count} total artists - {countryArtists.Sum(s => s.UserPlaycount)} total scrobbles";
 
             pages.Add(new PageBuilder()
-                .WithDescription(genrePageString.ToString())
+                .WithDescription(countryPageString.ToString())
                 .WithTitle(title)
                 .WithUrl($"{LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}/library/artists?date_preset=ALL")
                 .WithFooter(footer));
