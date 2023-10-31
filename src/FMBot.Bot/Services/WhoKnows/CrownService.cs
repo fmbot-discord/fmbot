@@ -423,14 +423,20 @@ public class CrownService
 
     public async Task<IList<UserCrown>> GetCrownsForArtist(int guildId, string artistName)
     {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.UserCrowns
-            .AsQueryable()
-            .Include(i => i.User)
-            .OrderByDescending(o => o.CurrentPlaycount)
-            .Where(f => f.GuildId == guildId &&
-                        f.ArtistName.ToLower() == artistName.ToLower())
-            .ToListAsync();
+        const string sql = "SELECT * FROM public.user_crowns AS uc " +
+                           "WHERE uc.guild_id = @guildId AND " +
+                           "UPPER(uc.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "ORDER BY current_playcount DESC";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return (await connection.QueryAsync<UserCrown>(sql, new
+        {
+            guildId,
+            artistName
+        })).ToList();
     }
 
     public async Task RemoveCrowns(IList<UserCrown> crowns)
