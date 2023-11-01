@@ -24,7 +24,7 @@ public class ArtistRepository
     public static async Task<ulong> AddOrReplaceUserArtistsInDatabase(IReadOnlyList<UserArtist> artists, int userId,
         NpgsqlConnection connection)
     {
-        Log.Information($"Inserting {artists.Count} artists for user {userId}");
+        Log.Information("Index: {userId} - Inserting {albumCount} top artists", userId, artists.Count);
 
         var copyHelper = new PostgreSQLCopyHelper<UserArtist>("public", "user_artists")
             .MapText("name", x => x.Name)

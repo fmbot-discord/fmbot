@@ -23,7 +23,7 @@ public class AlbumRepository
     public static async Task<ulong> AddOrReplaceUserAlbumsInDatabase(IReadOnlyList<UserAlbum> albums, int userId,
         NpgsqlConnection connection)
     {
-        Log.Information($"Inserting {albums.Count} albums for user {userId}");
+        Log.Information("Index: {userId} - Inserting {albumCount} top albums", userId, albums.Count);
 
         var copyHelper = new PostgreSQLCopyHelper<UserAlbum>("public", "user_albums")
             .MapText("name", x => x.Name)

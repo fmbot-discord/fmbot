@@ -20,10 +20,10 @@ public class TrackRepository
         this._botSettings = botSettings.Value;
     }
 
-    public static async Task<ulong> AddOrReplaceUserTracksInDatabase(IReadOnlyList<UserTrack> artists, int userId,
+    public static async Task<ulong> AddOrReplaceUserTracksInDatabase(IReadOnlyList<UserTrack> tracks, int userId,
         NpgsqlConnection connection)
     {
-        Log.Information($"Inserting {artists.Count} tracks for user {userId}");
+        Log.Information("Index: {userId} - Inserting {albumCount} top tracks", userId, tracks.Count);
 
         var copyHelper = new PostgreSQLCopyHelper<UserTrack>("public", "user_tracks")
             .MapText("name", x => x.Name)
@@ -34,7 +34,7 @@ public class TrackRepository
         await using var deleteCurrentTracks = new NpgsqlCommand($"DELETE FROM public.user_tracks WHERE user_id = {userId};", connection);
         await deleteCurrentTracks.ExecuteNonQueryAsync();
 
-        return await copyHelper.SaveAllAsync(connection, artists);
+        return await copyHelper.SaveAllAsync(connection, tracks);
     }
 
     public static async Task<Track> GetTrackForName(string artistName, string trackName, NpgsqlConnection connection)
