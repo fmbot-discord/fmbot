@@ -19,6 +19,8 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Services.WhoKnows;
 using Microsoft.Extensions.Options;
 using FMBot.Domain.Enums;
+using SpotifyAPI.Web;
+using Polly;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -269,11 +271,40 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         else
         {
             await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, null);
-
         }
 
         var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context), this.Context.User);
 
+        await this.Context.UpdateInteractionEmbed(response);
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ToggleCommandChannelFmType}-*-*")]
+    [ServerStaffOnly]
+    public async Task SetChannelEmbedType(string channelId, string categoryId, string[] inputs)
+    {
+        var parsedChannelId = ulong.Parse(channelId);
+        var parsedCategoryId = ulong.Parse(categoryId);
+
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
+        {
+            await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var selectedChannel = await this.Context.Guild.GetChannelAsync(parsedChannelId);
+
+        if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
+        {
+            await this._guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, embedType, this.Context.Guild.Id);
+        }
+        else
+        {
+            await this._guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, null, this.Context.Guild.Id);
+        }
+
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 

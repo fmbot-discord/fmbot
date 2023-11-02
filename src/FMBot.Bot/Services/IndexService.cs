@@ -263,14 +263,15 @@ public class IndexService : IIndexService
         }
         catch (Exception e)
         {
-            Log.Error($"Index: Reculculate toplists error happened! User {user.DiscordUserId} / {user.UserId} - {e.Message} - {e.InnerException} - {e.StackTrace}", e);
+            Log.Error("Index: Reculculate toplists error happened! User {userDiscordId} / {userId} - {exceptionMessage} - {innerException} - {stackTrace}", user.DiscordUserId, user.UserId, e.Message, e.InnerException, e.StackTrace, e);
             throw;
         }
     }
 
     private async Task<IReadOnlyList<UserArtist>> GetTopArtistsForUser(User user)
     {
-        Log.Information($"Getting artists for user {user.UserNameLastFM}");
+        Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Getting top artists",
+            user.UserId, user.DiscordUserId, user.UserNameLastFM);
 
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 4;
 
@@ -292,7 +293,8 @@ public class IndexService : IIndexService
 
     private async Task<IReadOnlyList<UserPlay>> GetPlaysForUserFromLastFm(User user)
     {
-        Log.Information($"Getting plays for user {user.UserNameLastFM}");
+        Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Getting plays",
+            user.UserId, user.DiscordUserId, user.UserNameLastFM);
 
         var pages = UserHasHigherIndexLimit(user) ? 750 : 50;
 
@@ -321,7 +323,8 @@ public class IndexService : IIndexService
 
     private async Task<IReadOnlyList<UserAlbum>> GetTopAlbumsForUser(User user)
     {
-        Log.Information($"Getting albums for user {user.UserNameLastFM}");
+        Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Getting top albums",
+            user.UserId, user.DiscordUserId, user.UserNameLastFM);
 
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 5;
 
@@ -347,7 +350,8 @@ public class IndexService : IIndexService
 
     private async Task<IReadOnlyList<UserTrack>> GetTopTracksForUser(User user)
     {
-        Log.Information($"Getting tracks for user {user.UserNameLastFM}");
+        Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Getting top tracks",
+            user.UserId, user.DiscordUserId, user.UserNameLastFM);
 
         var indexLimit = UserHasHigherIndexLimit(user) ? 200 : 6;
 
@@ -366,21 +370,6 @@ public class IndexService : IIndexService
             Playcount = Convert.ToInt32(a.UserPlaycount),
             UserId = user.UserId
         }).ToList();
-    }
-
-    private async Task<DateTime> GetLatestScrobbleDate(User user)
-    {
-        var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(user.UserNameLastFM, count: 2);
-
-        if (!recentTracks.Success ||
-            recentTracks.Content?.RecentTracks == null ||
-            !recentTracks.Content.RecentTracks.Any(a => a.TimePlayed.HasValue))
-        {
-            Log.Information("Recent track call to get latest scrobble date failed!");
-            return DateTime.UtcNow;
-        }
-
-        return recentTracks.Content.RecentTracks.First(f => f.TimePlayed != null).TimePlayed.Value;
     }
 
     private static bool UserHasHigherIndexLimit(User user)

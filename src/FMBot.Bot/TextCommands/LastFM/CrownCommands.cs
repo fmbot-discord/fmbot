@@ -167,12 +167,19 @@ public class CrownCommands : BaseCommandModule
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var guild = await this._guildService.GetGuildWithGuildUsers(this.Context.Guild.Id);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        var response = await this._crownBuilders.CrownAsync(new ContextModel(this.Context, prfx, contextUser), guild, artistValues);
+        try
+        {
+            var response = await this._crownBuilders.CrownAsync(new ContextModel(this.Context, prfx, contextUser), guild, artistValues);
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [Command("crownleaderboard", RunMode = RunMode.Async)]

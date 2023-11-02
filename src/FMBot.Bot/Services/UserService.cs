@@ -137,6 +137,15 @@ public class UserService
         return !string.IsNullOrEmpty(user?.SessionKeyLastFm);
     }
 
+    public async Task<Dictionary<int, User>> GetMultipleUsers(HashSet<int> userIds)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Users
+            .AsNoTracking()
+            .Where(w => userIds.Contains(w.UserId))
+            .ToDictionaryAsync(d => d.UserId, d => d);
+    }
+
     public async Task UpdateUserLastUsedAsync(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

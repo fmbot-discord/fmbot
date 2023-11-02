@@ -1,3 +1,5 @@
+using FMBot.Domain.Models;
+
 namespace FMBot.Persistence.Domain.Models;
 
 public class Channel
@@ -17,4 +19,6 @@ public class Channel
     public int? FmCooldown { get; set; }
 
     public bool? BotDisabled { get; set; }
+
+    public FmEmbedType? FmEmbedType { get; set; }
 }
