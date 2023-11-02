@@ -239,8 +239,8 @@ public class IndexService : IIndexService
         var importUser = await UserRepository.GetImportUserForUserId(user.UserId, connection);
         if (importUser != null)
         {
-            var finalPlays = await PlayRepository.GetUserPlays(user.UserId, connection, 9999999);
-            var filteredPlays = PlayDataSourceRepository.GetFinalUserPlays(importUser, finalPlays);
+            var finalPlays = await PlayRepository.GetAllUserPlays(user.UserId, connection);
+            var filteredPlays = await PlayRepository.GetUserPlays(user.UserId, connection, user.DataSource);
 
             stats.ImportCount = finalPlays.Count(w => w.PlaySource != PlaySource.LastFm);
             stats.TotalCount = filteredPlays.Count;

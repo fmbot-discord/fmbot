@@ -98,7 +98,7 @@ public class ImportBuilders
             footer.AppendLine("To start your import, use the slash command version of this command");
         }
 
-        footer.AppendLine("Spotify importing is currently in beta. Please report any issues you encounter");
+        footer.AppendLine("Having issues with importing? Please open a help thread on discord.gg/fmbot");
 
         response.Embed.WithFooter(footer.ToString());
 

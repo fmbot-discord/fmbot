@@ -831,7 +831,7 @@ public class PlayService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var plays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+        var plays = await PlayRepository.GetAllUserPlays(userId, connection);
 
         if (!plays.Any() || plays.Count < 2000)
         {
@@ -857,19 +857,19 @@ public class PlayService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var plays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+        ICollection<UserPlay> plays = null;
 
         if (finalizeImport)
         {
             var importUser = await UserRepository.GetImportUserForUserId(userId, connection, true);
             if (importUser != null)
             {
-                plays = PlayDataSourceRepository.GetFinalUserPlays(importUser, plays);
+                plays = await PlayRepository.GetUserPlays(userId, connection, importUser.DataSource);
             }
-            else if (plays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
-            {
-                plays = plays.Where(w => w.PlaySource != PlaySource.SpotifyImport).ToList();
-            }
+        }
+        else
+        {
+            plays = await PlayRepository.GetAllUserPlays(userId, connection);
         }
 
         return plays;
@@ -880,17 +880,8 @@ public class PlayService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var plays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
-
         var importUser = await UserRepository.GetImportUserForUserId(userId, connection, true);
-        if (importUser != null)
-        {
-            plays = PlayDataSourceRepository.GetFinalUserPlays(importUser, plays);
-        }
-        else if (plays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
-        {
-            plays = plays.Where(w => w.PlaySource != PlaySource.SpotifyImport).ToList();
-        }
+        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm);
 
         var firstRecentTrack = recentTracks.RecentTracks
             .Where(w => w.TimePlayed != null)

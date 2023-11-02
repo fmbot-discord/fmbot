@@ -134,7 +134,7 @@ public class ImportService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var existingPlays = await PlayRepository.GetUserPlays(userId, connection, 9999999);
+        var existingPlays = await PlayRepository.GetAllUserPlays(userId, connection);
 
         var timestamps = existingPlays
             .Where(w => w.PlaySource == PlaySource.SpotifyImport)

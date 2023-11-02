@@ -138,13 +138,15 @@ public class UpdateService : IUpdateService
         var dateFromFilter = user.LastScrobbleUpdate?.AddHours(-3) ?? DateTime.UtcNow.AddDays(-14);
         var timeFrom = (long?)((DateTimeOffset)dateFromFilter).ToUnixTimeSeconds();
 
-        var count = 900;
+        var count = 1000;
+        var pages = 3;
         var totalPlaycountCorrect = false;
         var now = DateTime.UtcNow;
         if (dateFromFilter > now.AddHours(-22) && queueItem.GetAccurateTotalPlaycount)
         {
             var playsToGet = (int)((DateTime.UtcNow - dateFromFilter).TotalMinutes / 3);
             count = 100 + playsToGet;
+            pages = 1;
             timeFrom = null;
             totalPlaycountCorrect = true;
         }
@@ -155,7 +157,7 @@ public class UpdateService : IUpdateService
             true,
             sessionKey,
             timeFrom,
-            4);
+            pages);
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
