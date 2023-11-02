@@ -857,7 +857,7 @@ public class PlayService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        ICollection<UserPlay> plays = null;
+        ICollection<UserPlay> plays;
 
         if (finalizeImport)
         {
@@ -865,6 +865,10 @@ public class PlayService
             if (importUser != null)
             {
                 plays = await PlayRepository.GetUserPlays(userId, connection, importUser.DataSource);
+            }
+            else
+            {
+                plays = await PlayRepository.GetAllUserPlays(userId, connection);
             }
         }
         else
