@@ -2021,7 +2021,8 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var allPlays = await this._playService.GetAllUserPlays(dbUser.UserId);
+            var allPlays = await this._playService.GetAllUserPlays(dbUser.UserId, false);
+            var allFinalizedPlays = await this._playService.GetAllUserPlays(dbUser.UserId, true);
 
             var description = new StringBuilder();
 
@@ -2078,6 +2079,30 @@ public class AdminCommands : BaseCommandModule
                 }
 
                 description.AppendLine();
+                var firstFinalizedImportPlay = allFinalizedPlays
+                    .OrderBy(o => o.TimePlayed)
+                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
+                if (firstFinalizedImportPlay != null)
+                {
+                    var dateValue = ((DateTimeOffset)firstFinalizedImportPlay.TimePlayed).ToUnixTimeSeconds();
+                    description.AppendLine($"First imported play after filtering: <t:{dateValue}:F>");
+                }
+
+                description.AppendLine($"Imported play count after filtering: `{allFinalizedPlays
+                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase)).Count(w => w.PlaySource != PlaySource.LastFm)}`");
+
+                var lastFinalizedImportPlay = allFinalizedPlays
+                    .OrderByDescending(o => o.TimePlayed)
+                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
+                if (lastFinalizedImportPlay != null)
+                {
+                    var dateValue = ((DateTimeOffset)lastFinalizedImportPlay.TimePlayed).ToUnixTimeSeconds();
+                    description.AppendLine($"Last imported play after filtering: <t:{dateValue}:F>");
+                }
+
+                description.AppendLine();
             }
 
             var firstLfmPlay = allPlays
@@ -2101,6 +2126,53 @@ public class AdminCommands : BaseCommandModule
             {
                 var dateValue = ((DateTimeOffset)lastLfmPlay.TimePlayed).ToUnixTimeSeconds();
                 description.AppendLine($"Last Last.fm play: <t:{dateValue}:F>");
+            }
+
+            description.AppendLine();
+
+            var firstFilteredLfmPlay = allFinalizedPlays
+                .OrderBy(o => o.TimePlayed)
+                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
+            if (firstFilteredLfmPlay != null)
+            {
+                var dateValue = ((DateTimeOffset)firstFilteredLfmPlay.TimePlayed).ToUnixTimeSeconds();
+                description.AppendLine($"First Last.fm play after filtering: <t:{dateValue}:F>");
+            }
+
+            description.AppendLine($"Last.fm play count after filtering: `{allFinalizedPlays
+                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase)).Count(w => w.PlaySource == PlaySource.LastFm)}`");
+
+            var lastFilteredLfmPlay = allFinalizedPlays
+                .OrderByDescending(o => o.TimePlayed)
+                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
+            if (lastFilteredLfmPlay != null)
+            {
+                var dateValue = ((DateTimeOffset)lastFilteredLfmPlay.TimePlayed).ToUnixTimeSeconds();
+                description.AppendLine($"Last Last.fm play after filtering: <t:{dateValue}:F>");
+            }
+
+            description.AppendLine();
+
+            var firstFilteredPlay = allFinalizedPlays
+                .OrderBy(o => o.TimePlayed)
+                .FirstOrDefault(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase));
+            if (firstFilteredPlay != null)
+            {
+                var dateValue = ((DateTimeOffset)firstFilteredPlay.TimePlayed).ToUnixTimeSeconds();
+                description.AppendLine($"Final first play: <t:{dateValue}:F>");
+            }
+
+            description.AppendLine($"Final play count: `{allFinalizedPlays.Count(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))}`");
+
+            var lastFilteredPlay = allFinalizedPlays
+                .OrderByDescending(o => o.TimePlayed)
+                .FirstOrDefault(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase));
+            if (lastFilteredPlay != null)
+            {
+                var dateValue = ((DateTimeOffset)lastFilteredPlay.TimePlayed).ToUnixTimeSeconds();
+                description.AppendLine($"Final last play: <t:{dateValue}:F>");
             }
 
             this._embed.WithDescription(description.ToString());
