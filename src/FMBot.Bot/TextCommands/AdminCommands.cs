@@ -2036,7 +2036,7 @@ public class AdminCommands : BaseCommandModule
 
             if (dbUser.UserType != UserType.User)
             {
-                description.AppendLine($"{dbUser.UserType.UserTypeToIcon()} .fmbot {dbUser.UserType.ToString().ToLower()}");
+                description.AppendLine($"**{StringExtensions.Sanitize(userSettings.DisplayName)} {dbUser.UserType.UserTypeToIcon()}**");
             }
             if (dbUser.DataSource != DataSource.LastFm)
             {
