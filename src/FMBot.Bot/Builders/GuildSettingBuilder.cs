@@ -904,7 +904,7 @@ public class GuildSettingBuilder
             var description = option.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(option);
 
-            var active = option == channel.FmEmbedType;
+            var active = option == channel?.FmEmbedType;
 
             fmType.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
         }
