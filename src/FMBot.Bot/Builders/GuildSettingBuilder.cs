@@ -913,7 +913,7 @@ public class GuildSettingBuilder
         {
             response.Embed.AddField("Disabled commands", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "✅ All commands enabled.");
 
-            if (channel.FmEmbedType.HasValue)
+            if (channel != null && channel.FmEmbedType.HasValue)
             {
                 var name = channel.FmEmbedType.GetAttribute<OptionAttribute>().Name;
 
