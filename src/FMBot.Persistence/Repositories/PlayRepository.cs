@@ -31,7 +31,7 @@ public static class PlayRepository
                 UserId = userId
             }).ToList();
 
-        var existingPlays = await GetUserPlays(userId, connection, plays.Count + 250);
+        var existingPlays = await GetAllUserPlays(userId, connection, plays.Count + 250);
 
         var firstExistingPlay = existingPlays.MinBy(o => o.TimePlayed);
 
@@ -76,7 +76,7 @@ public static class PlayRepository
             Log.Information("Inserting {addedPlaysCount} new time series plays for user {userId}", addedPlays.Count, userId);
             await InsertTimeSeriesPlays(addedPlays, connection);
         }
-        
+
         return new PlayUpdate(addedPlays, removedPlays);
     }
 
@@ -138,7 +138,7 @@ public static class PlayRepository
         return await copyHelper.SaveAllAsync(connection, plays);
     }
 
-    public static async Task<ICollection<UserPlay>> GetUserPlays(int userId, NpgsqlConnection connection, int limit)
+    public static async Task<ICollection<UserPlay>> GetAllUserPlays(int userId, NpgsqlConnection connection, int limit = 99999999)
     {
         const string sql = "SELECT * FROM public.user_plays WHERE user_id = @userId " +
                            "ORDER BY time_played DESC LIMIT @limit";
@@ -148,6 +148,78 @@ public static class PlayRepository
             userId,
             limit
         })).ToList();
+    }
+
+    private static string GetUserPlaysSqlString(string initialSql, DataSource dataSource, DateTime? start = null,
+        DateTime? end = null)
+    {
+        var sql = initialSql;
+
+        sql += dataSource switch
+        {
+            DataSource.LastFm => " FROM public.user_plays WHERE user_id = @userId AND play_source = 0 ",
+            DataSource.FullSpotifyThenLastFm => " FROM public.user_plays WHERE " +
+                                                "user_id = @userId AND ( " +
+                                                "(play_source <> 0 OR time_played > ( " +
+                                                "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source <> 0 " +
+                                                ") OR  " +
+                                                "(play_source <> 0 AND time_played < ( " +
+                                                "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source <> 0 " +
+                                                ")))) ",
+            DataSource.SpotifyThenFullLastFm => " FROM public.user_plays WHERE " +
+                                                "user_id = @userId AND ( " +
+                                                "(play_source = 0 OR time_played > ( " +
+                                                "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 0 " +
+                                                ") OR  " +
+                                                "(play_source <> 0 AND time_played < ( " +
+                                                "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 0 " +
+                                                ")))) ",
+            _ => " FROM public.user_plays WHERE user_id = @userId "
+        };
+
+        if (start.HasValue)
+        {
+            sql += " AND time_played >= @start ";
+        }
+        if (end.HasValue)
+        {
+            sql += " AND time_played <= @end ";
+        }
+
+        if (!initialSql.Contains("COUNT(*)", StringComparison.OrdinalIgnoreCase))
+        {
+            sql += " ORDER BY time_played DESC LIMIT @limit ";
+        }
+
+        return sql;
+    }
+
+    public static async Task<ICollection<UserPlay>> GetUserPlays(int userId, NpgsqlConnection connection, DataSource dataSource, int limit = 9999999, DateTime? start = null, DateTime? end = null)
+    {
+        var sql = GetUserPlaysSqlString("SELECT * ", dataSource, start, end);
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<UserPlay>(sql, new
+        {
+            userId,
+            limit,
+            start,
+            end
+        })).ToList();
+    }
+
+    public static async Task<int> GetUserPlayCount(int userId, NpgsqlConnection connection, DataSource dataSource, DateTime? start = null, DateTime? end = null)
+    {
+        var sql = GetUserPlaysSqlString("SELECT COUNT(*) ", dataSource, start, end);
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return await connection.QueryFirstOrDefaultAsync<int>(sql, new
+        {
+            userId,
+            limit = 9999999,
+            start,
+            end
+        });
     }
 
     public static async Task<ICollection<UserPlay>> GetUserPlaysWithinTimeRange(int userId, NpgsqlConnection connection, DateTime start, DateTime? end = null)
