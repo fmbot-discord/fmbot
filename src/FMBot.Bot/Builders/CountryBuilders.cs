@@ -137,7 +137,7 @@ public class CountryBuilders
             {
                 var artist = await this._artistsService.GetArtistFromDatabase(countryOptions);
 
-                if (artist?.CountryCode == null)
+                if (artist is { CountryCode: null })
                 {
                     var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artist.Name, context.ContextUser.UserNameLastFM);
                     if (artistCall.Success)
