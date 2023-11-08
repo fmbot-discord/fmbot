@@ -11,6 +11,10 @@ using System.Linq;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
+using Fergun.Interactive;
+using FMBot.Domain.Enums;
+using System.Collections.Generic;
+using FMBot.Bot.Extensions;
 
 namespace FMBot.Bot.Builders;
 
@@ -151,5 +155,101 @@ public class CrownBuilders
         description.Append($"*{crown.StartPlaycount} to {crown.CurrentPlaycount} plays*");
 
         return description.ToString();
+    }
+
+    public async Task<ResponseModel> CrownOverviewAsync(
+        ContextModel context,
+        Guild guild,
+        UserSettingsModel userSettings,
+        CrownViewSettings crownViewSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator
+        };
+
+        if (guild.CrownsDisabled == true)
+        {
+            response.Text = "Crown functionality has been disabled in this server.";
+            response.ResponseType = ResponseType.Text;
+            response.CommandResponse = CommandResponse.Disabled;
+            return response;
+        }
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var userCrowns = await this._crownService.GetCrownsForUser(guild, userSettings.UserId, crownViewSettings.CrownViewType);
+
+        var crownType = crownViewSettings.CrownViewType == CrownViewType.Stolen ? "Stolen crowns" : "Crowns";
+        var title = userSettings.DifferentUser
+            ? $"{crownType} for {userSettings.UserNameLastFm}, requested by {userTitle}"
+            : $"{crownType} for {userTitle}";
+
+        if (!userCrowns.Any())
+        {
+            response.Embed.WithDescription($"You or the user you're searching for don't have any crowns yet. \n" +
+                                        $"Use `{context.Prefix}whoknows` to start getting crowns!");
+            response.ResponseType = ResponseType.Embed;
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var pages = new List<PageBuilder>();
+
+        var crownPages = userCrowns.ChunkBy(10);
+
+        var counter = 1;
+        var pageCounter = 1;
+        foreach (var crownPage in crownPages)
+        {
+            var crownPageString = new StringBuilder();
+            foreach (var userCrown in crownPage)
+            {
+                crownPageString.Append($"{counter}. **{userCrown.ArtistName}** — *{userCrown.CurrentPlaycount} plays*");
+
+                if (crownViewSettings.CrownViewType != CrownViewType.Stolen)
+                {
+                    crownPageString.Append($" — Claimed <t:{((DateTimeOffset)userCrown.Created).ToUnixTimeSeconds()}:R>");
+                }
+                else
+                {
+                    crownPageString.Append($" — Stolen <t:{((DateTimeOffset)userCrown.Modified).ToUnixTimeSeconds()}:R>");
+                }
+
+                crownPageString.AppendLine();
+
+                counter++;
+            }
+
+            var footer = new StringBuilder();
+
+            footer.AppendLine($"Page {pageCounter}/{crownPages.Count} - {userCrowns.Count} total crowns");
+
+            switch (crownViewSettings.CrownViewType)
+            {
+                case CrownViewType.Playcount:
+                    footer.AppendLine("Actively held crowns ordered by playcount");
+                    break;
+                case CrownViewType.Recent:
+                    footer.AppendLine("Active crowns that were recently claimed");
+                    break;
+                case CrownViewType.Stolen:
+                    footer.AppendLine("Expired crowns that have recently been stolen");
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            footer.AppendLine("Available options: playcount, recent and stolen");
+
+            pages.Add(new PageBuilder()
+                .WithDescription(crownPageString.ToString())
+                .WithTitle(title)
+                .WithFooter(footer.ToString()));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+
+        return response;
     }
 }

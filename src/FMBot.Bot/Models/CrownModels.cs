@@ -18,11 +18,12 @@ public class CurrentCrownHolderDto
 
 public class CrownViewSettings
 {
-    public CrownOrderType CrownOrderType { get; set; }
+    public CrownViewType CrownViewType { get; set; }
 }
 
-public enum CrownOrderType
+public enum CrownViewType
 {
     Playcount = 1,
-    Recent = 2
+    Recent = 2,
+    Stolen = 3
 }

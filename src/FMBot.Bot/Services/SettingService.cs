@@ -416,7 +416,8 @@ public class SettingService
         {
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraLarge);
             topListSettings.EmbedSize = EmbedSize.Large;
-        } else if (Contains(extraOptions, extraSmall))
+        }
+        else if (Contains(extraOptions, extraSmall))
         {
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraSmall);
             topListSettings.EmbedSize = EmbedSize.Small;
@@ -1062,11 +1063,17 @@ public class SettingService
 
         if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
         {
-            setCrownViewSettings.CrownOrderType = CrownOrderType.Playcount;
+            setCrownViewSettings.CrownViewType = CrownViewType.Playcount;
         }
         if (extraOptions.Contains("r") || extraOptions.Contains("rc") || extraOptions.Contains("recent") || extraOptions.Contains("new") || extraOptions.Contains("latest"))
         {
-            setCrownViewSettings.CrownOrderType = CrownOrderType.Recent;
+            setCrownViewSettings.CrownViewType = CrownViewType.Recent;
+        }
+
+        if (extraOptions.Contains("s") || extraOptions.Contains("stolen") || extraOptions.Contains("yoinked") ||
+            extraOptions.Contains("yeeted"))
+        {
+            setCrownViewSettings.CrownViewType = CrownViewType.Stolen;
         }
 
         return setCrownViewSettings;
