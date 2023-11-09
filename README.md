@@ -2,7 +2,7 @@
    <img src="https://raw.githubusercontent.com/fmbot-discord/fmbot/main/fmbotlogo.png" width="350" alt=".fmbot logo">
 </p>
 <h3 align="center">
-   <a href="https://fmbot.xyz/">An open sourced last.fm Discord bot.</a>
+   <a href="https://fmbot.xyz/">An open sourced Last.fm Discord bot.</a>
 </h3>
 <p align="center">
   <a href="https://ci.appveyor.com/project/fmbotdiscord/fmbot"><img src="https://ci.appveyor.com/api/projects/status/wy7md66rtm8ov1ej?svg=true" alt="Build status"></a>
@@ -11,28 +11,42 @@
   <a href="https://top.gg/bot/356268235697553409"><img src="https://top.gg/api/widget/status/356268235697553409.svg?noavatar=true" alt="Discord bot status"></a>
   <a href="https://top.gg/bot/356268235697553409"><img src="https://top.gg/api/widget/servers/356268235697553409.svg?noavatar=true" alt="Discord bot server amount"></a>
 </p>
+<p align="center">
+.fmbot is a social Discord bot that provides music statistics for you, your friends, and your fellow server members.
+</p>
+<p align="center">
+Easily see who listens to your favorite artist in a server and make new friends. Or discover new artists within your favorite genres.
+</p>
+
 <hr />
 
-Documentation: https://fmbot.xyz/
+Documentation and website: https://fmbot.xyz/
 
-Feel free to join our Discord server: http://server.fmbot.xyz/
+Join our Discord server: http://server.fmbot.xyz/
 
 [Click here to add the bot to your server](http://invite.fmbot.xyz/).
 
 <h3>Funding</h3>
 
-You can help us cover hosting, development and other costs on [our OpenCollective](https://opencollective.com/fmbot/contribute). 
+For funding, see [.fmbot supporter](https://fmbot.xyz/supporter/). 
 
-If you decide to donate you also get .fmbot Supporter, which gives you some small advantages in the hosted bot.
+Supporting helps us maintain and host the bot, while you get some nice perks in return.
 
-<h3>Download Binaries</h3>
-Get them from https://github.com/fmbot-discord/fmbot/releases (Not actively updated) or https://ci.appveyor.com/project/fmbotdiscord/fmbot/build/artifacts (Latest).
+<h3>Packages</h3>
 
-Or see our docker package on [Github Packages](https://github.com/fmbot-discord/fmbot/pkgs/container/fmbot).
+See our Docker builds on [Github Packages](https://github.com/fmbot-discord/fmbot/pkgs/container/fmbot).
 
-<h3>Selfhosting</h3>
+| Git branch | Type      | Discord username     |
+|---|---|---|
+| main   | production    | .fmbot#8173          |
+| dev    | beta/develop  | .fmbot develop#7613  |
 
-Please see https://fmbot.xyz/setup.
+<h3>Contributing </h3>
+
+Please see https://fmbot.xyz/setup on how to setup a local development environment, and see the [CONTRIBUTING.md](CONTRIBUTING.md) for further info.
 
 <h3>Thanks</h3>
+
 Thanks to <a href="https://www.jetbrains.com/?from=fmbot">JetBrains</a> for providing a free license of ReSharper.
+
+And a special thanks to Last.fm and it's community, the Last.fm developer community, the .fmbot community, contributors and staff, all supporters and all others who have helped out.
