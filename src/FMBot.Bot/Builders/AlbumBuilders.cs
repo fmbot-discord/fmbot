@@ -985,7 +985,7 @@ public class AlbumBuilders
         };
 
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            useCachedAlbums: true, userId: context.ContextUser.UserId);
+            useCachedAlbums: false, userId: context.ContextUser.UserId);
         if (albumSearch.Album == null)
         {
             response.ResponseType = ResponseType.Embed;
