@@ -644,16 +644,16 @@ public class PlayService
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        var userAlbums = (await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
+        var userPlaycounts = (await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
         {
             guildId,
         })).ToList();
 
         var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 
-        for (var i = 0; i < userAlbums.Count; i++)
+        for (var i = 0; i < userPlaycounts.Count; i++)
         {
-            var userAlbum = userAlbums[i];
+            var userAlbum = userPlaycounts[i];
 
             if (!guildUsers.TryGetValue(userAlbum.UserId, out var guildUser))
             {

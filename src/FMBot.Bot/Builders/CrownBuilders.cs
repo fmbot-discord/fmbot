@@ -161,7 +161,7 @@ public class CrownBuilders
         ContextModel context,
         Guild guild,
         UserSettingsModel userSettings,
-        CrownViewSettings crownViewSettings)
+        CrownViewType crownViewType)
     {
         var response = new ResponseModel
         {
@@ -177,17 +177,25 @@ public class CrownBuilders
         }
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        var userCrowns = await this._crownService.GetCrownsForUser(guild, userSettings.UserId, crownViewSettings.CrownViewType);
+        var userCrowns = await this._crownService.GetCrownsForUser(guild, userSettings.UserId, crownViewType);
 
-        var crownType = crownViewSettings.CrownViewType == CrownViewType.Stolen ? "Stolen crowns" : "Crowns";
+        var crownType = crownViewType == CrownViewType.Stolen ? "Stolen crowns" : "Crowns";
         var title = userSettings.DifferentUser
             ? $"{crownType} for {userSettings.UserNameLastFm}, requested by {userTitle}"
             : $"{crownType} for {userTitle}";
 
         if (!userCrowns.Any())
         {
-            response.Embed.WithDescription($"You or the user you're searching for don't have any crowns yet. \n" +
-                                        $"Use `{context.Prefix}whoknows` to start getting crowns!");
+            if (crownViewType == CrownViewType.Stolen)
+            {
+                response.Embed.WithDescription($"You or the user you're searching don't have any crowns that got stolen yet.");
+            }
+            else
+            {
+                response.Embed.WithDescription($"You or the user you're searching for don't have any crowns yet. \n\n" +
+                                               $"Use `{context.Prefix}whoknows` to start getting crowns!");
+            }
+            
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
             return response;
@@ -206,7 +214,7 @@ public class CrownBuilders
             {
                 crownPageString.Append($"{counter}. **{userCrown.ArtistName}** — *{userCrown.CurrentPlaycount} plays*");
 
-                if (crownViewSettings.CrownViewType != CrownViewType.Stolen)
+                if (crownViewType != CrownViewType.Stolen)
                 {
                     crownPageString.Append($" — Claimed <t:{((DateTimeOffset)userCrown.Created).ToUnixTimeSeconds()}:R>");
                 }
@@ -224,7 +232,7 @@ public class CrownBuilders
 
             footer.AppendLine($"Page {pageCounter}/{crownPages.Count} - {userCrowns.Count} total crowns");
 
-            switch (crownViewSettings.CrownViewType)
+            switch (crownViewType)
             {
                 case CrownViewType.Playcount:
                     footer.AppendLine("Actively held crowns ordered by playcount");

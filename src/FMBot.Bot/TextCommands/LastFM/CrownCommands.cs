@@ -76,16 +76,11 @@ public class CrownCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        var crownViewSettings = new CrownViewSettings
-        {
-            CrownViewType = CrownViewType.Playcount
-        };
-
-        crownViewSettings = SettingService.SetCrownViewSettings(crownViewSettings, userSettings.NewSearchValue);
+        var crownViewType = SettingService.SetCrownViewSettings(userSettings.NewSearchValue);
 
         try
         {
-            var response = await this._crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, prfx, contextUser), guild, userSettings, crownViewSettings);
+            var response = await this._crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, prfx, contextUser), guild, userSettings, crownViewType);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

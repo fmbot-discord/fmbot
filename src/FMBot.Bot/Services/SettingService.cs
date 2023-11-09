@@ -1052,31 +1052,29 @@ public class SettingService
         return guildRankingSettings;
     }
 
-    public static CrownViewSettings SetCrownViewSettings(CrownViewSettings crownViewSettings, string extraOptions)
+    public static CrownViewType SetCrownViewSettings(string extraOptions)
     {
-        var setCrownViewSettings = crownViewSettings;
-
         if (string.IsNullOrWhiteSpace(extraOptions))
         {
-            return setCrownViewSettings;
+            return CrownViewType.Playcount;
         }
 
         if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
         {
-            setCrownViewSettings.CrownViewType = CrownViewType.Playcount;
+            return CrownViewType.Playcount;
         }
         if (extraOptions.Contains("r") || extraOptions.Contains("rc") || extraOptions.Contains("recent") || extraOptions.Contains("new") || extraOptions.Contains("latest"))
         {
-            setCrownViewSettings.CrownViewType = CrownViewType.Recent;
+            return CrownViewType.Recent;
         }
 
         if (extraOptions.Contains("s") || extraOptions.Contains("stolen") || extraOptions.Contains("yoinked") ||
             extraOptions.Contains("yeeted"))
         {
-            setCrownViewSettings.CrownViewType = CrownViewType.Stolen;
+            return CrownViewType.Stolen;
         }
 
-        return setCrownViewSettings;
+        return CrownViewType.Playcount;
     }
 
     private static bool Contains(string extraOptions, string[] values)

@@ -68,14 +68,10 @@ public class CrownSlashCommands : InteractionModuleBase
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        var crownViewSettings = new CrownViewSettings
-        {
-            CrownViewType = viewType
-        };
 
         try
         {
-            var response = await this._crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser), guild, userSettings, crownViewSettings);
+            var response = await this._crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser), guild, userSettings, viewType);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

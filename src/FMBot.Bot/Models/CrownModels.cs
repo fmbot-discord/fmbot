@@ -16,11 +16,6 @@ public class CurrentCrownHolderDto
     public string UserName { get; set; }
 }
 
-public class CrownViewSettings
-{
-    public CrownViewType CrownViewType { get; set; }
-}
-
 public enum CrownViewType
 {
     Playcount = 1,
