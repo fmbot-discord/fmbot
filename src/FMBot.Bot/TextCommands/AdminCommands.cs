@@ -1397,7 +1397,7 @@ public class AdminCommands : BaseCommandModule
             description.AppendLine();
             description.AppendLine("Optionally you can add a note to your report. Keep in mind that everyone is kept to the same standard regardless of the added note.");
             description.AppendLine();
-            description.AppendLine("Note that we are currently not taking reports for sleep or 24/7 scrobbling, we plan to do automated bans for those accounts in the future.");
+            description.AppendLine("Note that we don't take reports for sleep or 24/7 scrobbling, those get filtered automatically with temporary bans.");
             this._embed.WithDescription(description.ToString());
 
             var components = new ComponentBuilder().WithButton("Report user", style: ButtonStyle.Secondary, customId: InteractionConstants.GlobalWhoKnowsReport);

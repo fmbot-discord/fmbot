@@ -76,82 +76,19 @@ public class CrownCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        if (guild.CrownsDisabled == true)
-        {
-            await ReplyAsync("Crown functionality has been disabled in this server.");
-            this.Context.LogCommandUsed(CommandResponse.Disabled);
-            return;
-        }
-
-        var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-        var crownViewSettings = new CrownViewSettings
-        {
-            CrownOrderType = CrownOrderType.Playcount
-        };
-
-        crownViewSettings = SettingService.SetCrownViewSettings(crownViewSettings, userSettings.NewSearchValue);
-        var userCrowns = await this._crownService.GetCrownsForUser(guild, userSettings.UserId, crownViewSettings.CrownOrderType);
-
-        var title = userSettings.DifferentUser
-            ? $"Crowns for {userSettings.UserNameLastFm}, requested by {userTitle}"
-            : $"Crowns for {userTitle}";
-
-        if (!userCrowns.Any())
-        {
-            this._embed.WithDescription($"You or the user you're searching for don't have any crowns yet. \n" +
-                                        $"Use `{prfx}whoknows` to start getting crowns!");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
-            return;
-        }
+        var crownViewType = SettingService.SetCrownViewSettings(userSettings.NewSearchValue);
 
         try
         {
-            var pages = new List<PageBuilder>();
+            var response = await this._crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, prfx, contextUser), guild, userSettings, crownViewType);
 
-            var crownPages = userCrowns.ChunkBy(10);
-
-            var counter = 1;
-            var pageCounter = 1;
-            foreach (var crownPage in crownPages)
-            {
-                var crownPageString = new StringBuilder();
-                foreach (var userCrown in crownPage)
-                {
-                    crownPageString.AppendLine($"{counter}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed <t:{((DateTimeOffset)userCrown.Created).ToUnixTimeSeconds()}:R>)");
-                    counter++;
-                }
-
-                var footer = new StringBuilder();
-
-                footer.AppendLine($"Page {pageCounter}/{crownPages.Count} - {userCrowns.Count} total crowns");
-
-                footer.AppendLine(crownViewSettings.CrownOrderType == CrownOrderType.Playcount
-                    ? "Ordered by playcount - Available options: playcount and recent"
-                    : "Ordered by recent crowns - Available options: playcount and recent");
-
-                pages.Add(new PageBuilder()
-                    .WithDescription(crownPageString.ToString())
-                    .WithTitle(title)
-                    .WithFooter(footer.ToString()));
-                pageCounter++;
-            }
-
-            var paginator = StringService.BuildStaticPaginator(pages);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            await this.Context.HandleCommandException(e);
         }
-
-        this.Context.LogCommandUsed();
     }
 
     [Command("crown", RunMode = RunMode.Async)]

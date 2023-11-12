@@ -817,6 +817,28 @@ public class SupporterService
 
                 if (existingSupporter.Expired != true && !discordSupporter.Active)
                 {
+                    var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
+                    var ocSupporter = await db.Supporters
+                        .Where(w =>
+                            w.DiscordUserId != null &&
+                            w.SubscriptionType != SubscriptionType.Discord &&
+                            w.Expired != true)
+                        .FirstOrDefaultAsync(f => f.DiscordUserId == existingSupporter.DiscordUserId.Value);
+
+                    if (ocSupporter != null)
+                    {
+                        Log.Information("Not removing Discord supporter because active OC sub - {discordUserId}", discordSupporter.DiscordUserId);
+
+                        var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                            $"Prevented removal of Discord supporter who also has active OpenCollective sub\n" +
+                            $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                        await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { notCancellingEmbed.Build() });
+                        await ExpireSupporter(discordSupporter.DiscordUserId, existingSupporter, false);
+
+                        continue;
+                    }
+
                     Log.Information("Removing Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
 
                     var fmbotUser = await
@@ -834,7 +856,6 @@ public class SupporterService
                         await SendSupporterGoodbyeMessage(user, false, hadImported);
                     }
 
-                    var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
                     var embed = new EmbedBuilder().WithDescription(
                         $"Removed Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
                     await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
@@ -890,6 +911,28 @@ public class SupporterService
 
             if (existingSupporter.Expired != true && !discordSupporter.Active)
             {
+                var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
+                var ocSupporter = await db.Supporters
+                    .Where(w =>
+                        w.DiscordUserId != null &&
+                        w.SubscriptionType != SubscriptionType.Discord &&
+                        w.Expired != true)
+                    .FirstOrDefaultAsync(f => f.DiscordUserId == existingSupporter.DiscordUserId.Value);
+
+                if (ocSupporter != null)
+                {
+                    Log.Information("Not removing Discord supporter because active OC sub - {discordUserId}", discordSupporter.DiscordUserId);
+
+                    var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                        $"Prevented removal of Discord supporter who also has active OpenCollective sub\n" +
+                        $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                    await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { notCancellingEmbed.Build() });
+                    await ExpireSupporter(discordSupporter.DiscordUserId, existingSupporter, false);
+
+                    continue;
+                }
+
                 Log.Information("Removing Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
 
                 var fmbotUser = await
@@ -907,7 +950,6 @@ public class SupporterService
                     await SendSupporterGoodbyeMessage(user, false, hadImported);
                 }
 
-                var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
                 var embed = new EmbedBuilder().WithDescription(
                     $"Removed Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
                 await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
@@ -1094,7 +1136,7 @@ public class SupporterService
         return supporter;
     }
 
-    private async Task ExpireSupporter(ulong id, Supporter supporter)
+    private async Task ExpireSupporter(ulong id, Supporter supporter, bool removeSupporterStatus = true)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
@@ -1105,7 +1147,7 @@ public class SupporterService
         {
             Log.Warning("Someone who isn't registered in .fmbot just cancelled their Discord subscription - ID {discordUserId}", id);
         }
-        else
+        else if (removeSupporterStatus)
         {
             if (user.UserType == UserType.Supporter)
             {
@@ -1115,10 +1157,14 @@ public class SupporterService
             if (user.DataSource != DataSource.LastFm)
             {
                 user.DataSource = DataSource.LastFm;
-                _ = this._indexService.RecalculateTopLists(user);
+                _ = Task.Run(() => this._indexService.RecalculateTopLists(user));
             }
 
             db.Update(user);
+        }
+        else
+        {
+            Log.Information("Expiring Discord supporter without removing supporter status from account - ID {discordUserId}", id);
         }
 
         supporter.Expired = true;

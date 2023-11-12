@@ -565,7 +565,7 @@ public class SpotifyService
             db.Entry(dbAlbum).State = EntityState.Modified;
         }
 
-        if (dbAlbum.Artist == null)
+        if (!dbAlbum.ArtistId.HasValue)
         {
             var artist = await ArtistRepository.GetArtistForName(albumInfo.ArtistName, connection);
 

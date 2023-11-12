@@ -416,7 +416,8 @@ public class SettingService
         {
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraLarge);
             topListSettings.EmbedSize = EmbedSize.Large;
-        } else if (Contains(extraOptions, extraSmall))
+        }
+        else if (Contains(extraOptions, extraSmall))
         {
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraSmall);
             topListSettings.EmbedSize = EmbedSize.Small;
@@ -1051,25 +1052,29 @@ public class SettingService
         return guildRankingSettings;
     }
 
-    public static CrownViewSettings SetCrownViewSettings(CrownViewSettings crownViewSettings, string extraOptions)
+    public static CrownViewType SetCrownViewSettings(string extraOptions)
     {
-        var setCrownViewSettings = crownViewSettings;
-
         if (string.IsNullOrWhiteSpace(extraOptions))
         {
-            return setCrownViewSettings;
+            return CrownViewType.Playcount;
         }
 
         if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
         {
-            setCrownViewSettings.CrownOrderType = CrownOrderType.Playcount;
+            return CrownViewType.Playcount;
         }
         if (extraOptions.Contains("r") || extraOptions.Contains("rc") || extraOptions.Contains("recent") || extraOptions.Contains("new") || extraOptions.Contains("latest"))
         {
-            setCrownViewSettings.CrownOrderType = CrownOrderType.Recent;
+            return CrownViewType.Recent;
         }
 
-        return setCrownViewSettings;
+        if (extraOptions.Contains("s") || extraOptions.Contains("stolen") || extraOptions.Contains("yoinked") ||
+            extraOptions.Contains("yeeted"))
+        {
+            return CrownViewType.Stolen;
+        }
+
+        return CrownViewType.Playcount;
     }
 
     private static bool Contains(string extraOptions, string[] values)

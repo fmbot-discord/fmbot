@@ -451,16 +451,18 @@ public class UserService
                 if (artist.StartDate.Value.Month == DateTime.Today.Month &&
                     artist.StartDate.Value.Day == DateTime.Today.Day)
                 {
-                    options.Add($"🎂 today! ({age})");
+                    options.Add(!artist.EndDate.HasValue ? $"🎂 today! ({age})" : "🎂 today!");
                 }
                 else if (artist.StartDate.Value.Month == DateTime.Today.AddDays(-1).Month &&
                          artist.StartDate.Value.Day == DateTime.Today.AddDays(-1).Day)
                 {
-                    options.Add($"🎂 tomorrow (becomes {age + 1})");
+                    options.Add(!artist.EndDate.HasValue ? $"🎂 tomorrow (becomes {age + 1})" : "🎂 tomorrow");
                 }
                 else
                 {
-                    options.Add($"🎂 {artist.StartDate.Value.ToString("MMMM d")} (currently {age})");
+                    options.Add(!artist.EndDate.HasValue
+                        ? $"🎂 {artist.StartDate.Value.ToString("MMMM d")} (currently {age})"
+                        : $"🎂 {artist.StartDate.Value.ToString("MMMM d")}");
                 }
             }
 
