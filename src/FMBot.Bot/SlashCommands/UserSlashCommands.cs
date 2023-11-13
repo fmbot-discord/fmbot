@@ -507,15 +507,23 @@ public class UserSlashCommands : InteractionModuleBase
         userSettings = await this._userService.SetFooterOptions(userSettings, userSettings.FmFooterOptions);
 
         var description = new StringBuilder();
-        description.AppendLine("Your `fm` footer options have been set to:");
 
-        foreach (var flag in userSettings.FmFooterOptions.GetUniqueFlags())
+        if (userSettings.FmFooterOptions.GetUniqueFlags().Any())
         {
-            if (userSettings.FmFooterOptions.HasFlag(flag))
+            description.AppendLine("Your `fm` footer options have been set to:");
+
+            foreach (var flag in userSettings.FmFooterOptions.GetUniqueFlags())
             {
-                var name = flag.GetAttribute<OptionAttribute>().Name;
-                description.AppendLine($"- **{name}**");
+                if (userSettings.FmFooterOptions.HasFlag(flag))
+                {
+                    var name = flag.GetAttribute<OptionAttribute>().Name;
+                    description.AppendLine($"- **{name}**");
+                }
             }
+        }
+        else
+        {
+            description.AppendLine("You have removed all `fm` footer options.");
         }
 
         embed.WithDescription(description.ToString());
