@@ -216,83 +216,6 @@ public class GuildCommands : BaseCommandModule
         }
     }
 
-    //[Command("togglesupportermessages", RunMode = RunMode.Async)]
-    //[Summary("Enables/ disables the supporter messages on the `chart` command")]
-    //[Alias("togglesupporter", "togglesupporters", "togglesupport")]
-    //[GuildOnly]
-    //[CommandCategories(CommandCategory.ServerSettings)]
-    public async Task ToggleSupportMessagesAsync()
-    {
-        _ = this.Context.Channel.TriggerTypingAsync();
-
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
-        {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
-
-        var messagesDisabled = await this._guildService.ToggleSupporterMessagesAsync(this.Context.Guild);
-
-        if (messagesDisabled == true)
-        {
-            await ReplyAsync($".fmbot supporter messages have been disabled. Supporters are still visible in `{prfx}supporters`, but they will not be shown in `{prfx}chart` or other commands anymore.");
-        }
-        else
-        {
-            await ReplyAsync($".fmbot supporter messages have been re-enabled. These have a 1 in {Constants.SupporterMessageChance} chance of showing up on certain commands.");
-        }
-
-        this.Context.LogCommandUsed();
-    }
-
-    //[Command("export", RunMode = RunMode.Async)]
-    //[Summary("Gets Last.fm usernames from your server members in json format.")]
-    //[Alias("getmembers", "exportmembers")]
-    //[GuildOnly]
-    //[CommandCategories(CommandCategory.ServerSettings)]
-    public async Task GetMembersAsync()
-    {
-        _ = this.Context.Channel.TriggerTypingAsync();
-
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
-        {
-            await ReplyAsync(GuildSettingBuilder.UserNotAllowedResponseText());
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
-
-        try
-        {
-            var serverUsers = await this._guildService.FindAllUsersFromGuildAsync(this.Context.Guild);
-
-            if (serverUsers.Count == 0)
-            {
-                await ReplyAsync("No members found on this server.");
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
-            var userJson = JsonSerializer.Serialize(serverUsers, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
-            await this.Context.User.SendFileAsync(StringToStream(userJson),
-                $"users_{this.Context.Guild.Name}_UTC-{DateTime.UtcNow:u}.json");
-
-            await ReplyAsync("Check your DMs!");
-            this.Context.LogCommandUsed();
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
     [Command("prefix", RunMode = RunMode.Async)]
     [Summary("Changes the `.fm` prefix for your server.\n\n" +
              "For example, with the prefix `!` commands will be used as `!chart` and `!whoknows`\n\n" +
@@ -409,15 +332,5 @@ public class GuildCommands : BaseCommandModule
 
         await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
         this.Context.LogCommandUsed();
-    }
-
-    private static Stream StringToStream(string str)
-    {
-        var stream = new MemoryStream();
-        var writer = new StreamWriter(stream);
-        writer.Write(str);
-        writer.Flush();
-        stream.Position = 0;
-        return stream;
     }
 }

@@ -868,7 +868,7 @@ public class SupporterService
 
     public async Task CheckExpiredDiscordSupporters()
     {
-        var expiredDate = DateTime.UtcNow;
+        var expiredDate = DateTime.UtcNow.AddDays(-3);
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var possiblyExpiredSupporters = await db.Supporters
@@ -956,6 +956,8 @@ public class SupporterService
 
                 Log.Information("Removed Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
             }
+
+            await Task.Delay(500);
         }
     }
 

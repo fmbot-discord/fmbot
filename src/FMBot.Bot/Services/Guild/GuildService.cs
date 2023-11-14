@@ -295,25 +295,6 @@ public class GuildService
             .FirstOrDefault(f => f.UserId == userId);
     }
 
-    // Get all guild users
-    public async Task<List<UserExportModel>> FindAllUsersFromGuildAsync(IGuild discordGuild)
-    {
-        var users = await discordGuild.GetUsersAsync();
-
-        var userIds = users.Select(s => s.Id).ToList();
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var usersObject = db.Users
-            .AsNoTracking()
-            .Where(w => userIds.Contains(w.DiscordUserId))
-            .Select(s =>
-                new UserExportModel(
-                    s.DiscordUserId.ToString(),
-                    s.UserNameLastFM));
-
-        return usersObject.ToList();
-    }
-
     public async Task StaleGuildLastIndexedAsync(IGuild discordGuild)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -444,52 +425,6 @@ public class GuildService
         await db.SaveChangesAsync();
 
         await RemoveGuildFromCache(discordGuild.Id);
-    }
-
-    public async Task<bool?> ToggleSupporterMessagesAsync(IGuild discordGuild)
-    {
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var existingGuild = await db.Guilds
-            .AsQueryable()
-            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
-
-        if (existingGuild == null)
-        {
-            var newGuild = new Persistence.Domain.Models.Guild
-            {
-                DiscordGuildId = discordGuild.Id,
-                Name = discordGuild.Name,
-                DisableSupporterMessages = true
-            };
-
-            await db.Guilds.AddAsync(newGuild);
-
-            await db.SaveChangesAsync();
-
-            await RemoveGuildFromCache(discordGuild.Id);
-
-            return true;
-        }
-        else
-        {
-            existingGuild.Name = discordGuild.Name;
-            if (existingGuild.DisableSupporterMessages == true)
-            {
-                existingGuild.DisableSupporterMessages = false;
-            }
-            else
-            {
-                existingGuild.DisableSupporterMessages = true;
-            }
-
-            db.Entry(existingGuild).State = EntityState.Modified;
-
-            await db.SaveChangesAsync();
-
-            await RemoveGuildFromCache(discordGuild.Id);
-
-            return existingGuild.DisableSupporterMessages;
-        }
     }
 
     public async Task<bool?> ToggleCrownsAsync(IGuild discordGuild)
