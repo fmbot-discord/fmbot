@@ -209,8 +209,8 @@ public class PlayBuilder
                     fmText += StringService.TrackToString(previousTrack).FilterOutMentions();
                 }
 
-                fmText +=
-                    $"`{footerText}`";
+                var formattedFooter = footerText.Length == 0 ? "" : $"`{footerText}`";
+                fmText += formattedFooter;
 
                 response.ResponseType = ResponseType.Text;
                 response.Text = fmText;
