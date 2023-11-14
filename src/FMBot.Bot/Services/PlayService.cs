@@ -629,7 +629,7 @@ public class PlayService
             .ToList();
     }
 
-    public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(ICommandContext context,
+    public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(IGuild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers,
         int guildId)
     {
@@ -664,7 +664,7 @@ public class PlayService
 
             if (i <= 10)
             {
-                var discordUser = await context.Guild.GetUserAsync(guildUser.DiscordUserId);
+                var discordUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
                 if (discordUser != null)
                 {
                     userName = discordUser.DisplayName;

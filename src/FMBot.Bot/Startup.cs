@@ -154,6 +154,7 @@ public class Startup
             .AddSingleton<GeniusService>()
             .AddSingleton<GenreBuilders>()
             .AddSingleton<GenreService>()
+            .AddSingleton<GuildBuilders>()
             .AddSingleton<GuildService>()
             .AddSingleton<GuildSettingBuilder>()
             .AddSingleton<GuildDisabledCommandService>()

@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System;
 using System.Collections.Generic;
+using Discord.Commands;
 using Discord.Interactions;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -14,13 +15,10 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using Discord.WebSocket;
 using FMBot.Bot.Models.Modals;
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Services.WhoKnows;
 using Microsoft.Extensions.Options;
 using FMBot.Domain.Enums;
-using SpotifyAPI.Web;
-using Polly;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -31,6 +29,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
     private readonly GuildSettingBuilder _guildSettingBuilder;
     private readonly IPrefixService _prefixService;
     private readonly GuildService _guildService;
+    private readonly GuildBuilders _guildBuilders;
 
     private readonly CommandService _commands;
 
@@ -53,7 +52,9 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         ChannelDisabledCommandService channelDisabledCommandService,
         DisabledChannelService disabledChannelService,
         GuildDisabledCommandService guildDisabledCommandService,
-        IOptions<BotSettings> botSettings, CrownService crownService)
+        IOptions<BotSettings> botSettings,
+        CrownService crownService,
+        GuildBuilders guildBuilders)
     {
         this._guildSettingBuilder = guildSettingBuilder;
         this.Interactivity = interactivity;
@@ -65,6 +66,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         this._disabledChannelService = disabledChannelService;
         this._guildDisabledCommandService = guildDisabledCommandService;
         this._crownService = crownService;
+        this._guildBuilders = guildBuilders;
         this._botSettings = botSettings.Value;
     }
 
@@ -81,6 +83,30 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             var response = await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, contextUser), guildPermissions);
 
             await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("members", "Shows server members that use .fmbot")]
+    [RequiresIndex]
+    [GuildOnly]
+    public async Task MemberOverviewAsync(
+        [Discord.Interactions.Summary("View", "Statistic you want to view")] GuildViewType viewType)
+    {
+        try
+        {
+            _ = DeferAsync();
+
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild, viewType);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -16,13 +14,10 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
-using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
@@ -31,24 +26,14 @@ namespace FMBot.Bot.TextCommands.LastFM;
 [Name("Plays")]
 public class PlayCommands : BaseCommandModule
 {
-    private readonly CensorService _censorService;
     private readonly GuildService _guildService;
     private readonly IIndexService _indexService;
     private readonly IPrefixService _prefixService;
-    private readonly IUpdateService _updateService;
     private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly PlayService _playService;
-    private readonly GenreService _genreService;
     private readonly SettingService _settingService;
-    private readonly TimeService _timeService;
-    private readonly TrackService _trackService;
     private readonly UserService _userService;
-    private readonly WhoKnowsPlayService _whoKnowsPlayService;
-    private readonly WhoKnowsArtistService _whoKnowsArtistService;
-    private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
-    private readonly WhoKnowsTrackService _whoKnowsTrackService;
     private readonly PlayBuilder _playBuilder;
-    private readonly CountryService _countryService;
+    private readonly GuildBuilders _guildBuilders;
     private InteractiveService Interactivity { get; }
 
     private static readonly List<DateTimeOffset> StackCooldownTimer = new();
@@ -59,43 +44,23 @@ public class PlayCommands : BaseCommandModule
         GuildService guildService,
         IIndexService indexService,
         IPrefixService prefixService,
-        IUpdateService updateService,
         IDataSourceFactory dataSourceFactory,
-        PlayService playService,
         SettingService settingService,
         UserService userService,
-        WhoKnowsPlayService whoKnowsPlayService,
-        CensorService censorService,
-        WhoKnowsArtistService whoKnowsArtistService,
-        WhoKnowsAlbumService whoKnowsAlbumService,
-        WhoKnowsTrackService whoKnowsTrackService,
         InteractiveService interactivity,
         IOptions<BotSettings> botSettings,
-        TimeService timeService,
-        GenreService genreService,
-        TrackService trackService,
         PlayBuilder playBuilder,
-        CountryService countryService) : base(botSettings)
+        GuildBuilders guildBuilders) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
         this._dataSourceFactory = dataSourceFactory;
-        this._playService = playService;
         this._prefixService = prefixService;
         this._settingService = settingService;
-        this._updateService = updateService;
         this._userService = userService;
-        this._whoKnowsPlayService = whoKnowsPlayService;
-        this._censorService = censorService;
-        this._whoKnowsArtistService = whoKnowsArtistService;
-        this._whoKnowsAlbumService = whoKnowsAlbumService;
-        this._whoKnowsTrackService = whoKnowsTrackService;
         this.Interactivity = interactivity;
-        this._timeService = timeService;
-        this._genreService = genreService;
-        this._trackService = trackService;
         this._playBuilder = playBuilder;
-        this._countryService = countryService;
+        this._guildBuilders = guildBuilders;
     }
 
     [Command("fm", RunMode = RunMode.Async)]
@@ -492,60 +457,13 @@ public class PlayCommands : BaseCommandModule
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
-            var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild?.Id);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser),
+                guild, GuildViewType.Plays);
 
-            var topPlaycountUsers = await this._playService.GetGuildUsersTotalPlaycount(this.Context, guildUsers, guild.GuildId);
-
-            var (filterStats, filteredTopPlaycountUsers) = WhoKnowsService.FilterWhoKnowsObjectsAsync(topPlaycountUsers, guild);
-
-            if (!topPlaycountUsers.Any() && filteredTopPlaycountUsers.Any())
-            {
-                this._embed.WithDescription($"No top users in this server. Use `.index` to refresh the cached memberlist");
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                return;
-            }
-
-            var pages = new List<PageBuilder>();
-
-            var title = $"Users with most scrobbles in {this.Context.Guild.Name}";
-
-            var topPlaycountPages = filteredTopPlaycountUsers.ChunkBy(10);
-            var requestedUser = filteredTopPlaycountUsers.FirstOrDefault(f => f.UserId == user.UserId);
-            var location = filteredTopPlaycountUsers.IndexOf(requestedUser);
-
-            var counter = 1;
-            var pageCounter = 1;
-            foreach (var playcountPage in topPlaycountPages)
-            {
-                var playcountString = new StringBuilder();
-                foreach (var userPlaycount in playcountPage)
-                {
-                    playcountString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(userPlaycount)}** - **{userPlaycount.Playcount}** {StringExtensions.GetScrobblesString(userPlaycount.Playcount)}");
-                    counter++;
-                }
-
-                var footer = $"Your ranking: {location + 1}\n" +
-                             $"Page {pageCounter}/{topPlaycountPages.Count} - " +
-                             $"{filteredTopPlaycountUsers.Count} users - " +
-                             $"{filteredTopPlaycountUsers.Sum(s => s.Playcount)} total scrobbles";
-
-                pages.Add(new PageBuilder()
-                    .WithDescription(playcountString.ToString())
-                    .WithTitle(title)
-                    .WithFooter(footer));
-                pageCounter++;
-            }
-
-            var paginator = StringService.BuildStaticPaginator(pages);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -567,65 +485,15 @@ public class PlayCommands : BaseCommandModule
         {
             _ = this.Context.Channel.TriggerTypingAsync();
 
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
-            var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild?.Id);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser),
+                guild, GuildViewType.ListeningTime);
 
-            var userPlays = await this._playService.GetGuildUsersPlaysForTimeLeaderBoard(guild.GuildId);
-
-            var userListeningTime =
-                await this._timeService.UserPlaysToGuildLeaderboard(this.Context, userPlays, guildUsers);
-
-            var (filterStats, filteredTopListeningTimeUsers) = WhoKnowsService.FilterWhoKnowsObjectsAsync(userListeningTime, guild);
-
-            if (!userListeningTime.Any() && filteredTopListeningTimeUsers.Any())
-            {
-                this._embed.WithDescription($"No top users in this server. Use `.index` to refresh the cached memberlist");
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                return;
-            }
-
-            var pages = new List<PageBuilder>();
-
-            var title = $"Users with most listening time in {this.Context.Guild.Name}";
-
-            var topListeningTimePages = filteredTopListeningTimeUsers.ChunkBy(10);
-            var requestedUser = filteredTopListeningTimeUsers.FirstOrDefault(f => f.UserId == user.UserId);
-            var location = filteredTopListeningTimeUsers.IndexOf(requestedUser);
-
-            var counter = 1;
-            var pageCounter = 1;
-            foreach (var listeningTimePAge in topListeningTimePages)
-            {
-                var listeningTimeString = new StringBuilder();
-                foreach (var userPlaycount in listeningTimePAge)
-                {
-                    listeningTimeString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(userPlaycount)}** - **{userPlaycount.Name}**");
-                    counter++;
-                }
-
-                var footer = $"Your ranking: {location + 1} ({requestedUser?.Name})\n" +
-                             $"7 days - From {DateTime.UtcNow.AddDays(-9):MMM dd} to {DateTime.UtcNow.AddDays(-2):MMM dd}\n" +
-                             $"Page {pageCounter}/{topListeningTimePages.Count} - " +
-                             $"{filteredTopListeningTimeUsers.Count} users - " +
-                             $"{filteredTopListeningTimeUsers.Sum(s => s.Playcount)} total minutes";
-
-                pages.Add(new PageBuilder()
-                    .WithDescription(listeningTimeString.ToString())
-                    .WithTitle(title)
-                    .WithFooter(footer));
-                pageCounter++;
-            }
-
-            var paginator = StringService.BuildStaticPaginator(pages);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
