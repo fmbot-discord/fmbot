@@ -121,7 +121,6 @@ public class GuildService
         }
 
         const string sql = "SELECT gu.user_id, " +
-                           "gu.guild_id, " +
                            "gu.user_name, " +
                            "gu.bot, " +
                            "gu.last_message, " +
