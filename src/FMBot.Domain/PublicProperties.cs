@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using FMBot.Domain.Models;
+using SpotifyAPI.Web;
 
 namespace FMBot.Domain;
 
@@ -14,4 +15,6 @@ public static class PublicProperties
 
     public static readonly ConcurrentDictionary<ulong, CommandResponse> UsedCommandsResponses = new();
     public static readonly ConcurrentDictionary<ulong, string> UsedCommandsErrorReferences = new();
+
+    public static SpotifyClientConfig SpotifyConfig = null;
 }

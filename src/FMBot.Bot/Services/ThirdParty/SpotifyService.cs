@@ -664,12 +664,21 @@ public class SpotifyService
 
     private SpotifyClient GetSpotifyWebApi()
     {
-        var config = SpotifyClientConfig
-            .CreateDefault()
-            .WithHTTPClient(new NetHttpClient(this._httpClient))
-            .WithAuthenticator(new ClientCredentialsAuthenticator(this._botSettings.Spotify.Key, this._botSettings.Spotify.Secret));
+        InitApiClientConfig();
 
-        return new SpotifyClient(config);
+        return new SpotifyClient(PublicProperties.SpotifyConfig);
+    }
+
+    public void InitApiClientConfig()
+    {
+        if (PublicProperties.SpotifyConfig == null)
+        {
+            PublicProperties.SpotifyConfig = SpotifyClientConfig
+                .CreateDefault()
+                .WithHTTPClient(new NetHttpClient(this._httpClient))
+                .WithAuthenticator(new ClientCredentialsAuthenticator(this._botSettings.Spotify.Key,
+                    this._botSettings.Spotify.Secret));
+        }
     }
 
     public static RecentTrack SpotifyGameToRecentTrack(SpotifyGame spotifyActivity)
