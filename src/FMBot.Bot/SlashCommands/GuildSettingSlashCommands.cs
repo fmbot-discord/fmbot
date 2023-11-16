@@ -19,6 +19,7 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Services.WhoKnows;
 using Microsoft.Extensions.Options;
 using FMBot.Domain.Enums;
+using Discord;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -107,6 +108,46 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild, viewType);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.GuildMembers)]
+    [RequiresIndex]
+    [GuildOnly]
+    public async Task MemberOverviewAsync(string[] inputs)
+    {
+        try
+        {
+            _ = DeferAsync();
+
+            if (!Enum.TryParse(inputs.First(), out GuildViewType viewType))
+            {
+                return;
+            }
+
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            if (message == null)
+            {
+                return;
+            }
+
+            var name = viewType.GetAttribute<ChoiceDisplayAttribute>().Name;
+
+            var components =
+                new ComponentBuilder().WithButton($"Loading {name.ToLower()} view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+            await message.ModifyAsync(m => m.Components = components.Build());
+
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild, viewType);
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

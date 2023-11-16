@@ -74,7 +74,7 @@ public class GenreSlashCommands : InteractionModuleBase
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Loading server view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Primary);
+            new ComponentBuilder().WithButton($"Loading server view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
         await message.ModifyAsync(m => m.Components = components.Build());
 
         var contextUser = await this._userService.GetUserAsync(ulong.Parse(requesterDiscordUserId));
@@ -107,7 +107,7 @@ public class GenreSlashCommands : InteractionModuleBase
         }
 
         var components =
-            new ComponentBuilder().WithButton($"Loading user view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Primary);
+            new ComponentBuilder().WithButton($"Loading user view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
         await message.ModifyAsync(m => m.Components = components.Build());
 
         var contextUser = await this._userService.GetUserAsync(ulong.Parse(requesterDiscordUserId));

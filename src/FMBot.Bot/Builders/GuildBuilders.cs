@@ -10,6 +10,9 @@ using FMBot.Bot.Services.WhoKnows;
 using System.Linq;
 using FMBot.Bot.Extensions;
 using System.Text;
+using Discord;
+using Discord.Interactions;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Extensions;
 
@@ -250,6 +253,23 @@ public class GuildBuilders
                 throw new ArgumentOutOfRangeException(nameof(guildViewType), guildViewType, null);
         }
 
+
+        var fmType = new SelectMenuBuilder()
+            .WithPlaceholder("Select member view")
+            .WithCustomId(InteractionConstants.GuildMembers)
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in ((GuildViewType[])Enum.GetValues(typeof(GuildViewType))))
+        {
+            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var value = Enum.GetName(option);
+
+            var active = option == guildViewType;
+
+            fmType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+        }
+
         if (!pages.Any())
         {
             response.Embed.WithDescription(noResults);
@@ -258,7 +278,7 @@ public class GuildBuilders
             return response;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, fmType);
 
         return response;
     }

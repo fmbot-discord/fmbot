@@ -247,6 +247,22 @@ public static class StringService
         return builder.Build();
     }
 
+    public static StaticPaginator BuildStaticPaginatorWithSelectMenu(IList<PageBuilder> pages,
+        SelectMenuBuilder selectMenuBuilder)
+    {
+        var builder = new StaticPaginatorBuilder()
+            .WithPages(pages)
+            .WithFooter(PaginatorFooter.None)
+            .WithActionOnTimeout(ActionOnStop.DeleteInput);
+
+        if (pages.Count != 1)
+        {
+            builder.WithOptions(DiscordConstants.PaginationEmotes);
+        }
+
+        return builder.Build();
+    }
+
     public static StaticPaginator BuildSimpleStaticPaginator(IEnumerable<PageBuilder> pages)
     {
         var builder = new StaticPaginatorBuilder()

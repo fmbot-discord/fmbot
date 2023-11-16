@@ -93,4 +93,5 @@ public static class InteractionConstants
     public const string GenreGuild = "genre-guild";
     public const string GenreUser = "genre-user";
 
+    public const string GuildMembers = "guild-members";
 }
