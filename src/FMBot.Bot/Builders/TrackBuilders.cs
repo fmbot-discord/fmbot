@@ -265,7 +265,7 @@ public class TrackBuilders
 
         usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
-        var (filterStats, filteredUsersWithTrack) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithTrack, guild, roles);
+        var (filterStats, filteredUsersWithTrack) = WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guild, roles);
 
         string albumCoverUrl = null;
         if (track.Track.AlbumName != null)

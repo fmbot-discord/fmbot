@@ -72,7 +72,36 @@ public class WhoKnowsService
         return users.OrderByDescending(o => o.Playcount).ToList();
     }
 
-    public static (FilterStats stats, List<WhoKnowsObjectWithUser>) FilterWhoKnowsObjectsAsync(
+    public static (FilterStats stats, IDictionary<int, FullGuildUser> filteredGuildUsers) FilterGuildUsers(
+        IDictionary<int, FullGuildUser> guildUsers,
+        Persistence.Domain.Models.Guild guild,
+        List<ulong> roles = null)
+    {
+        var wkObjects = guildUsers.Select(s => new WhoKnowsObjectWithUser
+        {
+            DiscordName = s.Value.UserName,
+            LastFMUsername = s.Value.UserNameLastFM,
+            LastMessage = s.Value.LastMessage,
+            LastUsed = s.Value.LastUsed,
+            Name = s.Value.UserName,
+            Roles = s.Value.Roles,
+            UserId = s.Key
+        }).ToList();
+
+        var (stats, filteredUsers) = FilterWhoKnowsObjects(wkObjects, guild, roles);
+
+        var userIdsLeft = filteredUsers
+            .Select(s => s.UserId)
+            .ToHashSet();
+
+        var guildUsersLeft = guildUsers
+            .Where(w => userIdsLeft.Contains(w.Key))
+            .ToDictionary(d => d.Key, d => d.Value);
+
+        return (stats, guildUsersLeft);
+    }
+
+    public static (FilterStats stats, List<WhoKnowsObjectWithUser> filteredUsers) FilterWhoKnowsObjects(
         ICollection<WhoKnowsObjectWithUser> users,
         Persistence.Domain.Models.Guild guild,
         List<ulong> roles = null)

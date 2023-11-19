@@ -45,7 +45,6 @@ public class StartupService
     private readonly UserService _userService;
     private readonly TimerService _timerService;
 
-
     public StartupService(
         IServiceProvider provider,
         DiscordShardedClient discord,

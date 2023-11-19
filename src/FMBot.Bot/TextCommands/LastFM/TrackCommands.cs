@@ -133,8 +133,7 @@ public class TrackCommands : BaseCommandModule
     [Examples(
         "tp",
         "trackdetails",
-        "td Mac DeMarco Here Comes The Cowboy",
-        "td Cocteau Twins | Heaven or Las Vegas @user")]
+        "td Mac DeMarco Here Comes The Cowboy")]
     [Alias("td", "trackdata", "trackmetadata", "tds")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]

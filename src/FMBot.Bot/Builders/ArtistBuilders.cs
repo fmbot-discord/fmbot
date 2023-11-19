@@ -255,7 +255,7 @@ public class ArtistBuilders
                 var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
                 var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild, guildUsers, contextGuild.GuildId, artistSearch.Artist.ArtistName);
-                var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithArtist, contextGuild);
+                var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, contextGuild);
 
                 if (filteredUsersWithArtist.Count != 0)
                 {
@@ -988,7 +988,7 @@ public class ArtistBuilders
 
         usersWithArtist = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, context.ContextUser, artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
-        var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterWhoKnowsObjectsAsync(usersWithArtist, contextGuild, roles);
+        var (filterStats, filteredUsersWithArtist) = WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, contextGuild, roles);
 
         CrownModel crownModel = null;
         if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector && redirectsEnabled)
