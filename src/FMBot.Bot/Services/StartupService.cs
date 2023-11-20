@@ -140,7 +140,7 @@ public class StartupService
         Log.Information("Preparing cache folder");
         PrepareCacheFolder();
 
-        var shardTimeOut = 800;
+        var shardTimeOut = 850;
         foreach (var shard in this._client.Shards)
         {
             Log.Information("ShardStartConnection: shard {shardId} - timeout {shardTimeout}", shard.ShardId, shardTimeOut);
@@ -148,9 +148,9 @@ public class StartupService
             await Task.Delay(shardTimeOut);
             shardTimeOut += 4;
 
-            if (shardTimeOut > 1350)
+            if (shardTimeOut > 1450)
             {
-                shardTimeOut = 1350;
+                shardTimeOut = 1450;
             }
         }
 
