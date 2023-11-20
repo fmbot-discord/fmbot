@@ -63,6 +63,11 @@ public class InteractionHandler
             return;
         }
 
+        _ = Task.Run(() => ExecuteSlashCommand(socketInteraction, socketSlashCommand));
+    }
+
+    private async Task ExecuteSlashCommand(SocketInteraction socketInteraction, SocketSlashCommand socketSlashCommand)
+    {
         using (Statistics.SlashCommandHandlerDuration.NewTimer())
         {
             var context = new ShardedInteractionContext(this._client, socketInteraction);
