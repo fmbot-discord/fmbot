@@ -40,7 +40,7 @@ public static class ConfigData
                     BaseServerId = 0000000000000,
                     FeaturedChannelId = 0000000000000,
                     FeaturedPreviewWebhookUrl = "CHANGE-ME-WEBHOOK-URL",
-                    FeaturedMaster = true,
+                    JobMaster = true,
                     UseShardEnvConfig = false
                 },
                 Discord = new DiscordConfig
@@ -100,7 +100,7 @@ public static class ConfigData
             {
                 Log.Information("Config is using shard environment variables");
 
-                Data.Bot.FeaturedMaster = Environment.GetEnvironmentVariable("SHARDS_JOB_MASTER") == "true";
+                Data.Bot.JobMaster = Environment.GetEnvironmentVariable("SHARDS_JOB_MASTER") == "true";
                 Data.Shards = new ShardConfig
                 {
                     MainInstance = Environment.GetEnvironmentVariable("SHARDS_MAIN_INSTANCE") == "true",
@@ -112,7 +112,7 @@ public static class ConfigData
                         : null,
                     TotalShards = Environment.GetEnvironmentVariable("SHARDS_TOTAL_SHARDS") != null
                         ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_TOTAL_SHARDS"))
-                        : null,
+                        : null
                 };
             }
         }

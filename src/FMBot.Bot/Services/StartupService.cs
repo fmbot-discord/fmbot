@@ -163,10 +163,13 @@ public class StartupService
 
         var startDelay = (this._client.Shards.Count * 1) + 10;
 
-        BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(startDelay));
-        BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(startDelay));
+        if (ConfigData.Data.Shards == null || ConfigData.Data.Shards.MainInstance == true)
+        {
+            BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(startDelay));
+            BackgroundJob.Schedule(() => this.StartBotSiteUpdater(), TimeSpan.FromMinutes(15));
+        }
 
-        BackgroundJob.Schedule(() => this.StartBotSiteUpdater(), TimeSpan.FromMinutes(15));
+        BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(startDelay));
 
         await this.CachePremiumGuilds();
         await this.CacheDiscordUserIds();

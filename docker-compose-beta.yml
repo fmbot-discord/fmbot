@@ -9,9 +9,10 @@ services:
       - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/
     command: "--memory=5g"
     environment:
+      - INSTANCE_NAME=fmbot_beta_1
       - SHARDS_MAIN_INSTANCE=true
       - SHARDS_TOTAL_SHARDS=12
-      - SHARDS_START_SHARD=1
+      - SHARDS_START_SHARD=0
       - SHARDS_END_SHARD=6
 
   fmbot_beta_2:
@@ -21,7 +22,10 @@ services:
     volumes:
       - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/
     command: "--memory=5g"
+    depends_on:
+      - fmbot_beta_1
     environment:
+      - INSTANCE_NAME=fmbot_beta_2
       - SHARDS_TOTAL_SHARDS=12
       - SHARDS_START_SHARD=7
-      - SHARDS_END_SHARD=12
+      - SHARDS_END_SHARD=11

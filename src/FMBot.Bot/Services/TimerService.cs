@@ -100,7 +100,7 @@ public class TimerService
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
-        if (this._botSettings.Bot.FeaturedMaster == true)
+        if (this._botSettings.Bot.JobMaster == true)
         {
             Log.Information($"RecurringJob: Adding {nameof(AddLatestDiscordSupporters)}");
             RecurringJob.AddOrUpdate(nameof(AddLatestDiscordSupporters), () => AddLatestDiscordSupporters(), "* * * * *");
@@ -250,7 +250,7 @@ public class TimerService
             }
         }
 
-        if (this._botSettings.Bot.FeaturedMaster == true && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
+        if (this._botSettings.Bot.JobMaster == true && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
         {
             Log.Information("Featured: Posting new featured to webhooks");
 

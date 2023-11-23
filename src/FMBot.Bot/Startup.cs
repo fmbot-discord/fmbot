@@ -78,6 +78,8 @@ public class Startup
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Is(logLevel)
             .Enrich.WithExceptionDetails()
+            .Enrich.WithEnvironmentVariable("INSTANCE_NAME")
+            .Enrich.WithMachineName()
             .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value) ? this.Configuration.GetSection("Environment").Value : "unknown")
             .Enrich.WithProperty("BotUserId", botUserId)
             .WriteTo.Console(consoleLevel)
@@ -131,14 +133,14 @@ public class Startup
 
             var shards = Enumerable.Range(startShard, arrayLength).ToArray();
 
-            Log.Information("Initializing Discord sharded client with {totalShards} total shards, starting at shard {startingShard} til {endingShard} - {shards}",
+            Log.Warning("Initializing Discord sharded client with {totalShards} total shards, starting at shard {startingShard} til {endingShard} - {shards}",
                 ConfigData.Data.Shards.TotalShards, startShard, endShard, shards);
 
             discordClient = new DiscordShardedClient(shards, config);
         }
         else
         {
-            Log.Information("Initializing normal Discord sharded client");
+            Log.Warning("Initializing normal Discord sharded client");
 
             discordClient = new DiscordShardedClient(config);
         }
