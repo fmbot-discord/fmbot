@@ -9,11 +9,11 @@ services:
       - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/
     command: "--memory=5g"
     healthcheck:
-      start_period: 15s
+      start_period: 30s
       interval: 20s
       timeout: 10s
-      retries: 4
-      test: [ "CMD-SHELL", "find /healthcheck -mmin -1" ]
+      retries: 8
+      test: [ "CMD-SHELL", "find healthcheck -mmin -1" ]
     environment:
       - INSTANCE_NAME=fmbot_beta_1
       - SHARDS_MAIN_INSTANCE=true

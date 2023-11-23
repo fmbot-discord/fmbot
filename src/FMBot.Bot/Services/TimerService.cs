@@ -198,7 +198,7 @@ public class TimerService
         }
         catch (Exception e)
         {
-            Log.Error(e, nameof(UpdateMetricsAndStatus));
+            Log.Error(e, nameof(UpdateHealthCheck));
             throw;
         }
     }

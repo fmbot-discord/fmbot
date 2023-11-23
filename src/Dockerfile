@@ -47,3 +47,5 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "FMBot.Bot.dll"]
+
+HEALTHCHECK --interval=20s --timeout=20s --retries=90 CMD find healthcheck -mmin -1
