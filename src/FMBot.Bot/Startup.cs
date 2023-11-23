@@ -68,7 +68,7 @@ public class Startup
     {
         var botUserId = long.Parse(this.Configuration.GetSection("Discord:BotUserId")?.Value ?? "0");
 
-        var consoleLevel = LogEventLevel.Warning;
+        var consoleLevel = LogEventLevel.Information;
         var logLevel = LogEventLevel.Information;
 #if DEBUG
         consoleLevel = LogEventLevel.Verbose;

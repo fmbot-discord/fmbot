@@ -5,10 +5,8 @@ services:
     image: ghcr.io/fmbot-discord/fmbot:dev
     restart: always
     network_mode: host
-    ports:
-      - "4422:4422"
     volumes:
-      - /.configs/beta/:/app/configs/
+      - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/
     command: "--memory=5g"
     environment:
       - SHARDS_MAIN_INSTANCE=true
@@ -20,10 +18,8 @@ services:
     image: ghcr.io/fmbot-discord/fmbot:dev
     restart: always
     network_mode: host
-    ports:
-      - "4422:4422"
     volumes:
-      - /.configs/beta/:/app/configs/
+      - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/
     command: "--memory=5g"
     environment:
       - SHARDS_TOTAL_SHARDS=12
