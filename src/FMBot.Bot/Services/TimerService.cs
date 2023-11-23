@@ -142,7 +142,6 @@ public class TimerService
         Statistics.SevenDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(7));
         Statistics.ThirtyDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(30));
 
-
         try
         {
             if (this._client?.Guilds?.Count == null)
@@ -152,24 +151,17 @@ public class TimerService
             }
 
             Statistics.ConnectedShards.Set(this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected));
+            Statistics.ConnectedDiscordServerCount.Set(this._client.Guilds.Count);
 
             var appInfo = await this._client.GetApplicationInfoAsync();
-            Statistics.DiscordServerCount.Set(appInfo.ApproximateGuildCount.GetValueOrDefault());
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, nameof(UpdateMetricsAndStatus));
-            throw;
-        }
+            Statistics.TotalDiscordServerCount.Set(appInfo.ApproximateGuildCount.GetValueOrDefault());
 
-        try
-        {
             if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
             {
                 if (!PublicProperties.IssuesAtLastFm)
                 {
                     await this._client.SetCustomStatusAsync(
-                        $"{this._botSettings.Bot.Prefix}fm — fmbot.xyz — {this._client.Guilds.Count} servers");
+                        $"{this._botSettings.Bot.Prefix}fm — fmbot.xyz — {appInfo.ApproximateGuildCount.GetValueOrDefault()} servers");
                 }
                 else
                 {

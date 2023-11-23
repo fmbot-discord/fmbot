@@ -237,6 +237,8 @@ public class StaticCommands : BaseCommandModule
         var shardDescription = new StringBuilder();
 
         shardDescription.AppendLine(
+            $"Total connected guilds: `{client.Guilds.Count()}`");
+        shardDescription.AppendLine(
             $"Total shards: `{client.Shards.Count()}`");
         shardDescription.AppendLine(
             $"Connected shards: `{client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected)}`");

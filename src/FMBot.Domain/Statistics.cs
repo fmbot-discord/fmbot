@@ -4,8 +4,11 @@ namespace FMBot.Domain;
 
 public static class Statistics
 {
-    public static readonly Gauge DiscordServerCount = Metrics
+    public static readonly Gauge TotalDiscordServerCount = Metrics
         .CreateGauge("discord_server_count", "Total count of all servers the bot is in");
+
+    public static readonly Gauge ConnectedDiscordServerCount = Metrics
+        .CreateGauge("discord_connected_server_count", "Total count of all servers the bot is connected to");
 
 
     public static readonly Counter LastfmApiCalls = Metrics
