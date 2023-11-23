@@ -3,17 +3,11 @@ version: '3.8'
 services:
   fmbot_beta_1:
     image: ghcr.io/fmbot-discord/fmbot:dev
-    restart: unless-stopped
+    restart: always
     network_mode: host
     volumes:
-      - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/
+      - /fmbot/beta/:/app/configs/
     command: "--memory=5g"
-    healthcheck:
-      start_period: 30s
-      interval: 20s
-      timeout: 10s
-      retries: 8
-      test: [ "CMD-SHELL", "find healthcheck -mmin -1" ]
     environment:
       - INSTANCE_NAME=fmbot_beta_1
       - SHARDS_MAIN_INSTANCE=true
@@ -23,10 +17,10 @@ services:
 
   fmbot_beta_2:
     image: ghcr.io/fmbot-discord/fmbot:dev
-    restart: unless-stopped
+    restart: always
     network_mode: host
     volumes:
-      - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/
+      - /fmbot/beta/:/app/configs/
     command: "--memory=5g"
     depends_on:
       fmbot_beta_1:
