@@ -12,6 +12,8 @@ public class BotSettings
 
     public BotConfig Bot { get; set; }
 
+    public ShardConfig Shards { get; set; }
+
     public LastFmConfig LastFm { get; set; }
 
     public SpotifyConfig Spotify { get; set; }
@@ -52,11 +54,8 @@ public class BotConfig
 
     public ulong BaseServerId { get; set; }
 
-    public ulong AnnouncementChannelId { get; set; }
-
     public ulong FeaturedChannelId { get; set; }
     public bool? FeaturedMaster { get; set; }
-    public bool? MainInstance { get; set; }
     public string FeaturedPreviewWebhookUrl { get; set; }
 
     public string SupporterUpdatesWebhookUrl { get; set; }
@@ -67,10 +66,20 @@ public class BotConfig
 
     public string Status { get; set; }
 
-    public int TotalShards { get; set; }
-
     public string MetricsPusherEndpoint { get; set; }
     public string MetricsPusherName { get; set; }
+
+    public bool? UseShardEnvConfig { get; set; }
+}
+
+public class ShardConfig
+{
+    public bool? MainInstance { get; set; }
+
+    public int? TotalShards { get; set; }
+
+    public int? StartShard { get; set; }
+    public int? EndShard { get; set; }
 }
 
 public class LastFmConfig

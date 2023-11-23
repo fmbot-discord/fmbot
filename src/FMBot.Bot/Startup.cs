@@ -37,6 +37,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Bot.Factories;
 using FMBot.Domain.Enums;
 using FMBot.Persistence.Interfaces;
+using System.Linq;
 
 namespace FMBot.Bot;
 
@@ -109,16 +110,38 @@ public class Startup
     {
         services.Configure<BotSettings>(this.Configuration);
 
-        var totalShards = this.Configuration["Bot:TotalShards"];
-        var discordClient = new DiscordShardedClient(new DiscordSocketConfig
+        var config = new DiscordSocketConfig
         {
             LogLevel = LogSeverity.Info,
             MessageCacheSize = 0,
             GatewayIntents = GatewayIntents.GuildMembers | GatewayIntents.MessageContent |
                              GatewayIntents.DirectMessages | GatewayIntents.GuildMessages | GatewayIntents.Guilds |
                              GatewayIntents.GuildVoiceStates,
-            TotalShards = totalShards != null ? int.Parse(totalShards) : null
-        });
+            TotalShards = ConfigData.Data.Shards?.TotalShards != null ? ConfigData.Data.Shards.TotalShards : null,
+        };
+
+        DiscordShardedClient discordClient;
+
+        if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.StartShard.HasValue && ConfigData.Data.Shards.EndShard.HasValue)
+        {
+            var startShard = ConfigData.Data.Shards.StartShard.Value;
+            var endShard = ConfigData.Data.Shards.EndShard.Value;
+
+            var arrayLength = endShard - startShard + 1;
+
+            var shards = Enumerable.Range(startShard, arrayLength).ToArray();
+
+            Log.Information("Initializing Discord sharded client with {totalShards} total shards, starting at shard {startingShard} til {endingShard} - {shards}",
+                ConfigData.Data.Shards.TotalShards, startShard, endShard, shards);
+
+            discordClient = new DiscordShardedClient(shards, config);
+        }
+        else
+        {
+            Log.Information("Initializing normal Discord sharded client");
+
+            discordClient = new DiscordShardedClient(config);
+        }
 
         services
             .AddSingleton(discordClient)

@@ -237,7 +237,7 @@ public class TimerService
 
         var cached = (string)this._cache.Get("avatar");
 
-        if (this._botSettings.Bot.MainInstance == true && cached != newFeatured.ImageUrl)
+        if ((this._botSettings.Shards == null || this._botSettings.Shards?.MainInstance == true) && cached != newFeatured.ImageUrl)
         {
             try
             {

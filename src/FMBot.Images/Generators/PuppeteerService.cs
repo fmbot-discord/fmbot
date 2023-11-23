@@ -38,7 +38,7 @@ public class PuppeteerService
         });
     }
 
-    public async Task<SKBitmap> GetWorldArtistMap(List<TopCountry> artists)
+    public async Task<SKBitmap> GetWorldArtistMap(IEnumerable<TopCountry> artists)
     {
         await this._initializationTask;
 

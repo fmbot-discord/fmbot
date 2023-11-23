@@ -89,8 +89,6 @@ public class ImportSlashCommands : InteractionModuleBase
         var noAttachments = attachments.All(a => a == null);
         attachments = attachments.Where(w => w != null).ToList();
 
-        await DeferAsync(ephemeral: noAttachments);
-
         var description = new StringBuilder();
         var embed = new EmbedBuilder();
         embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -99,10 +97,12 @@ public class ImportSlashCommands : InteractionModuleBase
         {
             var instructionResponse =
                 await this._importBuilders.GetImportInstructions(new ContextModel(this.Context, contextUser));
-            await this.Context.SendFollowUpResponse(this.Interactivity, instructionResponse);
+            await this.Context.SendResponse(this.Interactivity, instructionResponse);
             this.Context.LogCommandUsed(instructionResponse.CommandResponse);
             return;
         }
+
+        await DeferAsync(ephemeral: noAttachments);
 
         try
         {

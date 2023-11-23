@@ -31,6 +31,9 @@
     <None Update="Pages\receipt.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Pages\top.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Pages\whoknows.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

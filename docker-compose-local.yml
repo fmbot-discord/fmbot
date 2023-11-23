@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  fmbot_test:
+    image: ghcr.io/fmbot-discord/fmbot:dev
+    restart: always
+    network_mode: host
+    ports:
+      - "4422:4422"
+    volumes:
+      - /.configs/test/:/app/configs/
+    command: "--memory=3g"

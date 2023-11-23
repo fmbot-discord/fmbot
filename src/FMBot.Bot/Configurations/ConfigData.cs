@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using FMBot.Domain.Models;
 using Newtonsoft.Json;
+using Serilog;
 
 namespace FMBot.Bot.Configurations;
 
@@ -39,9 +40,9 @@ public static class ConfigData
                     BaseServerId = 0000000000000,
                     FeaturedChannelId = 0000000000000,
                     FeaturedPreviewWebhookUrl = "CHANGE-ME-WEBHOOK-URL",
-                    MainInstance = true,
-                    FeaturedMaster = true
-                }, 
+                    FeaturedMaster = true,
+                    UseShardEnvConfig = false
+                },
                 Discord = new DiscordConfig
                 {
                     BotUserId = 0000000000000,
@@ -56,10 +57,27 @@ public static class ConfigData
                     UserUpdateFrequencyInHours = 24,
                     UserIndexFrequencyInDays = 120
                 },
-                Genius = new GeniusConfig(),
-                Spotify = new SpotifyConfig(),
-                Discogs = new DiscogsConfig(),
-                Environment = "local"
+                Genius = new GeniusConfig
+                {
+                    AccessToken = string.Empty
+                },
+                Spotify = new SpotifyConfig
+                {
+                    Key = string.Empty,
+                    Secret = string.Empty
+                },
+                Discogs = new DiscogsConfig
+                {
+                    Key = string.Empty,
+                    Secret = string.Empty
+                },
+                Environment = "local",
+                OpenAi = new OpenAiConfig
+                {
+                    Key = string.Empty,
+                    RoastPrompt = "Write a roast about me using some of my top artists: ",
+                    ComplimentPrompt = "Write a compliment about me using some of my top artists: ",
+                }
             };
 
             var json = JsonConvert.SerializeObject(Data, Formatting.Indented);
@@ -77,6 +95,26 @@ public static class ConfigData
         {
             var json = File.ReadAllText(ConfigFolder + "/" + ConfigFile);
             Data = JsonConvert.DeserializeObject<BotSettings>(json);
+
+            if (Data.Bot.UseShardEnvConfig == true)
+            {
+                Log.Information("Config is using shard environment variables");
+
+                Data.Bot.FeaturedMaster = Environment.GetEnvironmentVariable("SHARDS_JOB_MASTER") == "true";
+                Data.Shards = new ShardConfig
+                {
+                    MainInstance = Environment.GetEnvironmentVariable("SHARDS_MAIN_INSTANCE") == "true",
+                    StartShard = Environment.GetEnvironmentVariable("SHARDS_START_SHARD") != null
+                        ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_START_SHARD"))
+                        : null,
+                    EndShard = Environment.GetEnvironmentVariable("SHARDS_END_SHARD") != null
+                        ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_END_SHARD"))
+                        : null,
+                    TotalShards = Environment.GetEnvironmentVariable("SHARDS_TOTAL_SHARDS") != null
+                        ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_TOTAL_SHARDS"))
+                        : null,
+                };
+            }
         }
     }
 }

@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  fmbot_beta_1:
+    image: ghcr.io/fmbot-discord/fmbot:dev
+    restart: always
+    network_mode: host
+    ports:
+      - "4422:4422"
+    volumes:
+      - /.configs/beta/:/app/configs/
+    command: "--memory=5g"
+    environment:
+      - SHARDS_MAIN_INSTANCE=true
+      - SHARDS_TOTAL_SHARDS=12
+      - SHARDS_START_SHARD=1
+      - SHARDS_END_SHARD=6
+
+  fmbot_beta_2:
+    image: ghcr.io/fmbot-discord/fmbot:dev
+    restart: always
+    network_mode: host
+    ports:
+      - "4422:4422"
+    volumes:
+      - /.configs/beta/:/app/configs/
+    command: "--memory=5g"
+    environment:
+      - SHARDS_TOTAL_SHARDS=12
+      - SHARDS_START_SHARD=7
+      - SHARDS_END_SHARD=12
