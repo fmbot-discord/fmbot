@@ -1,0 +1,82 @@
+version: '3.8'
+
+name: 'fmbot-prod'
+services:
+  prod_1:
+    image: ghcr.io/fmbot-discord/fmbot:main
+    restart: always
+    network_mode: host
+    volumes:
+      - /fmbot/prod/:/app/configs/
+    command: "--memory=30g"
+    environment:
+      - INSTANCE_NAME=fmbot_prod_1
+      - SHARDS_MAIN_INSTANCE=true
+      - SHARDS_JOB_MASTER=true
+      - SHARDS_TOTAL_SHARDS=336
+      - SHARDS_FIRST_SHARD=0
+      - SHARDS_LAST_SHARD=67
+
+  prod_2:
+    image: ghcr.io/fmbot-discord/fmbot:main
+    restart: always
+    network_mode: host
+    volumes:
+      - /fmbot/prod/:/app/configs/
+    command: "--memory=30g"
+    depends_on:
+      prod_1:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod_2
+      - SHARDS_TOTAL_SHARDS=336
+      - SHARDS_FIRST_SHARD=68
+      - SHARDS_LAST_SHARD=134
+
+  prod_3:
+    image: ghcr.io/fmbot-discord/fmbot:main
+    restart: always
+    network_mode: host
+    volumes:
+      - /fmbot/prod/:/app/configs/
+    command: "--memory=30g"
+    depends_on:
+      prod_2:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod_3
+      - SHARDS_TOTAL_SHARDS=336
+      - SHARDS_FIRST_SHARD=135
+      - SHARDS_LAST_SHARD=201
+
+  prod_4:
+    image: ghcr.io/fmbot-discord/fmbot:main
+    restart: always
+    network_mode: host
+    volumes:
+      - /fmbot/prod/:/app/configs/
+    command: "--memory=30g"
+    depends_on:
+      prod_3:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod_4
+      - SHARDS_TOTAL_SHARDS=336
+      - SHARDS_FIRST_SHARD=202
+      - SHARDS_LAST_SHARD=268
+
+  prod_5:
+    image: ghcr.io/fmbot-discord/fmbot:main
+    restart: always
+    network_mode: host
+    volumes:
+      - /fmbot/prod/:/app/configs/
+    command: "--memory=30g"
+    depends_on:
+      prod_4:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod_5
+      - SHARDS_TOTAL_SHARDS=336
+      - SHARDS_FIRST_SHARD=268
+      - SHARDS_LAST_SHARD=335

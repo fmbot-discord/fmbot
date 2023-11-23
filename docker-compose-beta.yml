@@ -1,7 +1,8 @@
 version: '3.8'
 
+name: 'fmbot-beta'
 services:
-  fmbot_beta_1:
+  beta_1:
     image: ghcr.io/fmbot-discord/fmbot:dev
     restart: always
     network_mode: host
@@ -9,13 +10,13 @@ services:
       - /fmbot/beta/:/app/configs/
     command: "--memory=5g"
     environment:
-      - INSTANCE_NAME=fmbot_beta_1
+      - INSTANCE_NAME=beta_1
       - SHARDS_MAIN_INSTANCE=true
       - SHARDS_TOTAL_SHARDS=12
       - SHARDS_FIRST_SHARD=0
       - SHARDS_LAST_SHARD=5
 
-  fmbot_beta_2:
+  beta_2:
     image: ghcr.io/fmbot-discord/fmbot:dev
     restart: always
     network_mode: host
@@ -23,10 +24,10 @@ services:
       - /fmbot/beta/:/app/configs/
     command: "--memory=5g"
     depends_on:
-      fmbot_beta_1:
+      beta_1:
         condition: service_healthy
     environment:
-      - INSTANCE_NAME=fmbot_beta_2
+      - INSTANCE_NAME=beta_2
       - SHARDS_TOTAL_SHARDS=12
       - SHARDS_FIRST_SHARD=6
       - SHARDS_LAST_SHARD=11

@@ -1,7 +1,8 @@
 version: '3.8'
 
+name: 'fmbot-beta'
 services:
-  fmbot_local_1:
+  alpha:
     image: ghcr.io/fmbot-discord/fmbot:dev
     restart: unless-stopped
     network_mode: host
@@ -15,7 +16,7 @@ services:
       - SHARDS_FIRST_SHARD=0
       - SHARDS_LAST_SHARD=5
 
-  fmbot_local_2:
+  bravo:
     image: ghcr.io/fmbot-discord/fmbot:dev
     restart: unless-stopped
     network_mode: host

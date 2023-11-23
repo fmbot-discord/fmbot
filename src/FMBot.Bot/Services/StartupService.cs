@@ -141,7 +141,7 @@ public class StartupService
         PrepareCacheFolder();
 
         foreach (var shard in this._client.Shards)
-        {
+        { 
             Log.Information("ShardConnectionStart: shard #{shardId}", shard.ShardId);
             await shard.StartAsync();
 
@@ -150,7 +150,7 @@ public class StartupService
                 await Task.Delay(100);
             }
 
-            await Task.Delay(500);
+            await Task.Delay(100);
         }
 
         await this._timerService.UpdateMetricsAndStatus();
