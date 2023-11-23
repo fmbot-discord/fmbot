@@ -13,7 +13,7 @@ services:
       - SHARDS_MAIN_INSTANCE=true
       - SHARDS_TOTAL_SHARDS=12
       - SHARDS_START_SHARD=0
-      - SHARDS_END_SHARD=6
+      - SHARDS_END_SHARD=5
 
   fmbot_beta_2:
     image: ghcr.io/fmbot-discord/fmbot:dev
@@ -27,5 +27,5 @@ services:
     environment:
       - INSTANCE_NAME=fmbot_beta_2
       - SHARDS_TOTAL_SHARDS=12
-      - SHARDS_START_SHARD=7
+      - SHARDS_START_SHARD=6
       - SHARDS_END_SHARD=11

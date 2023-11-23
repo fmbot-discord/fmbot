@@ -120,6 +120,7 @@ public class Startup
                              GatewayIntents.DirectMessages | GatewayIntents.GuildMessages | GatewayIntents.Guilds |
                              GatewayIntents.GuildVoiceStates,
             TotalShards = ConfigData.Data.Shards?.TotalShards != null ? ConfigData.Data.Shards.TotalShards : null,
+            ConnectionTimeout = 60000
         };
 
         DiscordShardedClient discordClient;
