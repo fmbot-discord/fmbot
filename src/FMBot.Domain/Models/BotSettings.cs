@@ -80,6 +80,7 @@ public class ShardConfig
 
     public int? StartShard { get; set; }
     public int? EndShard { get; set; }
+    public string InstanceName { get; set; }
 }
 
 public class LastFmConfig

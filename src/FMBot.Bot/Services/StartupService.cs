@@ -143,7 +143,7 @@ public class StartupService
         var shardTimeOut = 1600;
         foreach (var shard in this._client.Shards)
         {
-            Log.Information("ShardStartConnection: shard {shardId} - timeout {shardTimeout}", shard.ShardId, shardTimeOut);
+            Log.Information("ShardStartConnection: shard {shardId} - waiting {shardTimeout}ms after", shard.ShardId, shardTimeOut);
             await shard.StartAsync();
             await Task.Delay(shardTimeOut);
             shardTimeOut += 25;
@@ -217,11 +217,21 @@ public class StartupService
         }
 
         Log.Information("Starting metrics pusher");
-        var pusher = new MetricPusher(new MetricPusherOptions
+        var options = new MetricPusherOptions
         {
             Endpoint = this._botSettings.Bot.MetricsPusherEndpoint,
-            Job = this._botSettings.Bot.MetricsPusherName
-        });
+            Job = this._botSettings.Bot.MetricsPusherName,
+        };
+
+        if (!string.IsNullOrWhiteSpace(ConfigData.Data.Shards?.InstanceName))
+        {
+            options.AdditionalLabels= new List<Tuple<string, string>>()
+            {
+                new("instance", ConfigData.Data.Shards.InstanceName)
+            };
+        }
+
+        var pusher = new MetricPusher(options);
 
         pusher.Start();
 

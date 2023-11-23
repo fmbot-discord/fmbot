@@ -3,7 +3,7 @@ version: '3.8'
 services:
   fmbot_beta_1:
     image: ghcr.io/fmbot-discord/fmbot:dev
-    restart: always
+    restart: unless-stopped
     network_mode: host
     volumes:
       - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/
@@ -17,7 +17,7 @@ services:
 
   fmbot_beta_2:
     image: ghcr.io/fmbot-discord/fmbot:dev
-    restart: always
+    restart: unless-stopped
     network_mode: host
     volumes:
       - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/

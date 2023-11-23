@@ -85,7 +85,7 @@ public static class ConfigData
 
             Console.WriteLine("Created new bot configuration file with default values. \n" +
                               $"Please set your API keys in {ConfigFolder}/{ConfigFile} before running the bot again. \n \n" +
-                              "Exiting in 10 seconds...", 
+                              "Exiting in 10 seconds...",
                 ConsoleColor.Red);
 
             Thread.Sleep(10000);
@@ -112,7 +112,8 @@ public static class ConfigData
                         : null,
                     TotalShards = Environment.GetEnvironmentVariable("SHARDS_TOTAL_SHARDS") != null
                         ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_TOTAL_SHARDS"))
-                        : null
+                        : null,
+                    InstanceName = Environment.GetEnvironmentVariable("INSTANCE_NAME")
                 };
             }
         }
