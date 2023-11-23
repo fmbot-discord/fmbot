@@ -187,11 +187,11 @@ public class TimerService
 
         try
         {
-            var anyDisconnected = this._client.Shards.Any(shard => shard.ConnectionState == ConnectionState.Disconnected) &&
-                                  this._client.Shards.Any(shard => shard.ConnectionState == ConnectionState.Disconnecting) &&
-                                  this._client.Shards.Any(shard => shard.ConnectionState == ConnectionState.Connecting);
+            var allShardsConnected = this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnected) &&
+                               this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnecting) &&
+                               this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Connecting);
 
-            if (!anyDisconnected)
+            if (allShardsConnected)
             {
                 const string path = "healthcheck";
                 await using var fileStream = File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
