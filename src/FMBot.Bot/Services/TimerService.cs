@@ -187,7 +187,9 @@ public class TimerService
 
         try
         {
-            var anyDisconnected = this._client.Shards.Any(shard => shard.ConnectionState == ConnectionState.Disconnected);
+            var anyDisconnected = this._client.Shards.Any(shard => shard.ConnectionState == ConnectionState.Disconnected) &&
+                                  this._client.Shards.Any(shard => shard.ConnectionState == ConnectionState.Disconnecting) &&
+                                  this._client.Shards.Any(shard => shard.ConnectionState == ConnectionState.Connecting);
 
             if (!anyDisconnected)
             {
