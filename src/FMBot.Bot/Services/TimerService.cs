@@ -103,7 +103,7 @@ public class TimerService
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
-        if (this._botSettings.Bot.JobMaster == true)
+        if (this._botSettings.Shards == null || this._botSettings.Shards.JobMaster == true)
         {
             QueueMasterJobs();
         }
@@ -272,7 +272,7 @@ public class TimerService
             }
         }
 
-        if (this._botSettings.Bot.JobMaster == true && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
+        if ((this._botSettings.Shards == null || this._botSettings.Shards?.JobMaster == true) && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
         {
             Log.Information("Featured: Posting new featured to webhooks");
 

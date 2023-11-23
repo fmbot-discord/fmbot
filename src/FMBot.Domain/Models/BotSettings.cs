@@ -55,7 +55,6 @@ public class BotConfig
     public ulong BaseServerId { get; set; }
 
     public ulong FeaturedChannelId { get; set; }
-    public bool? JobMaster { get; set; }
     public string FeaturedPreviewWebhookUrl { get; set; }
 
     public string SupporterUpdatesWebhookUrl { get; set; }
@@ -74,6 +73,8 @@ public class BotConfig
 
 public class ShardConfig
 {
+    public bool? JobMaster { get; set; }
+
     public bool? MainInstance { get; set; }
 
     public int? TotalShards { get; set; }
