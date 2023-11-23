@@ -287,7 +287,7 @@ public class StaticCommands : BaseCommandModule
             var shardConfig = new StringBuilder();
             shardConfig.AppendLine($"Total shards: `{ConfigData.Data.Shards?.TotalShards}`");
             shardConfig.AppendLine($"First shard: `{ConfigData.Data.Shards?.StartShard}`");
-            shardConfig.AppendLine($"Last shard: `{ConfigData.Data.Shards?.EndShard}");
+            shardConfig.AppendLine($"Last shard: `{ConfigData.Data.Shards?.EndShard}`");
             shardConfig.AppendLine($"Instance: `{ConfigData.Data.Shards?.InstanceName}`");
             shardConfig.AppendLine($"Main instance: `{ConfigData.Data.Shards?.MainInstance}`");
 
