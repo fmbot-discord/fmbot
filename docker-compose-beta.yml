@@ -8,6 +8,12 @@ services:
     volumes:
       - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/
     command: "--memory=5g"
+    healthcheck:
+      start_period: 15s
+      interval: 20s
+      timeout: 10s
+      retries: 4
+      test: [ "CMD-SHELL", "find /healthcheck -mmin -1" ]
     environment:
       - INSTANCE_NAME=fmbot_beta_1
       - SHARDS_MAIN_INSTANCE=true
@@ -23,7 +29,8 @@ services:
       - C:\projects\fmbot\fmbot\.configs\beta:/app/configs/
     command: "--memory=5g"
     depends_on:
-      - fmbot_beta_1
+      fmbot_beta_1:
+        condition: service_healthy
     environment:
       - INSTANCE_NAME=fmbot_beta_2
       - SHARDS_TOTAL_SHARDS=12

@@ -74,6 +74,9 @@ public class TimerService
         Log.Information($"RecurringJob: Adding {nameof(UpdateMetricsAndStatus)}");
         RecurringJob.AddOrUpdate(nameof(UpdateMetricsAndStatus), () => UpdateMetricsAndStatus(), "* * * * *");
 
+        Log.Information($"RecurringJob: Adding {nameof(UpdateHealthCheck)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateHealthCheck), () => UpdateHealthCheck(), "*/20 * * * * *");
+
         Log.Information($"RecurringJob: Adding {nameof(CheckIfShardsNeedReconnect)}");
         RecurringJob.AddOrUpdate(nameof(CheckIfShardsNeedReconnect), () => CheckIfShardsNeedReconnect(), "*/2 * * * *");
 
@@ -169,6 +172,28 @@ public class TimerService
                         $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
                 }
 
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, nameof(UpdateMetricsAndStatus));
+            throw;
+        }
+    }
+
+    public async Task UpdateHealthCheck()
+    {
+        Log.Debug($"Running {nameof(UpdateHealthCheck)}");
+
+        try
+        {
+            var anyDisconnected = this._client.Shards.Any(shard => shard.ConnectionState == ConnectionState.Disconnected);
+
+            if (!anyDisconnected)
+            {
+                const string path = "healthcheck";
+                await using var fileStream = File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+                File.SetLastWriteTimeUtc(path, DateTime.UtcNow);
             }
         }
         catch (Exception e)
