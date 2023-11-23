@@ -1043,13 +1043,6 @@ public class AdminCommands : BaseCommandModule
 
             var supporter = await this._supporterService.GetSupporter(discordUserId);
 
-            if (supporter == null)
-            {
-                await ReplyAsync("Supporter not found");
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
             var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
 
             if (discordUser == null)
