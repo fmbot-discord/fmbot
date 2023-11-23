@@ -149,6 +149,8 @@ public class StartupService
             {
                 await Task.Delay(100);
             }
+
+            await Task.Delay(500);
         }
 
         await this._timerService.UpdateMetricsAndStatus();
