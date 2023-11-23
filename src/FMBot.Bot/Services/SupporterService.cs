@@ -130,7 +130,7 @@ public class SupporterService
 
         var thankYouMessage = new StringBuilder();
 
-        if (supporter.SubscriptionType != SubscriptionType.Discord)
+        if (supporter != null && supporter.SubscriptionType != SubscriptionType.Discord)
         {
             thankYouMessage.AppendLine($"**Thank you for getting .fmbot {supporter.SubscriptionType.ToString().ToLower()} supporter!**");
         }
@@ -139,9 +139,14 @@ public class SupporterService
             thankYouMessage.AppendLine($"**Thank you for getting .fmbot supporter!**");
         }
 
-        thankYouMessage.AppendLine(supporter.SubscriptionType == SubscriptionType.Lifetime
-            ? "Thanks to your purchase we can continue to improve and keep the bot running while you get some nice perks in return. Here's an overview of the new features that are now available to you:"
-            : "Thanks to your subscription we can continue to improve and keep the bot running while you get some nice perks in return. Here's an overview of the new features that are now available to you:");
+        if (supporter != null && supporter.SubscriptionType == SubscriptionType.Lifetime)
+        {
+            thankYouMessage.AppendLine("Thanks to your purchase we can continue to improve and keep the bot running while you get some nice perks in return. Here's an overview of the new features that are now available to you:");
+        }
+        else
+        {
+            thankYouMessage.AppendLine("Thanks to your subscription we can continue to improve and keep the bot running while you get some nice perks in return. Here's an overview of the new features that are now available to you:");
+        }
 
         thankYouMessage.AppendLine();
         thankYouMessage.AppendLine("<:history:1131511469096312914> **Import your Spotify**");
@@ -179,10 +184,14 @@ public class SupporterService
         }
 
         thankYouMessage.AppendLine();
-        thankYouMessage.Append("ℹ️ **Your info**\n" +
-                                   $"Your name in the `supporters` command will be shown as `{supporter.Name}`. This is also the name that will be shown when you sponsor charts. ");
 
-        if (supporter.OpenCollectiveId != null)
+        if (supporter != null)
+        {
+            thankYouMessage.Append("ℹ️ **Your info**\n" +
+                                   $"Your name in the `supporters` command will be shown as `{supporter.Name}`. This is also the name that will be shown when you sponsor charts. ");
+        }
+        
+        if (supporter?.OpenCollectiveId != null)
         {
             thankYouMessage.Append("You can update this through your OpenCollective settings.");
         }
