@@ -104,11 +104,11 @@ public static class ConfigData
                 Data.Shards = new ShardConfig
                 {
                     MainInstance = Environment.GetEnvironmentVariable("SHARDS_MAIN_INSTANCE") == "true",
-                    StartShard = Environment.GetEnvironmentVariable("SHARDS_START_SHARD") != null
-                        ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_START_SHARD"))
+                    StartShard = Environment.GetEnvironmentVariable("SHARDS_FIRST_SHARD") != null
+                        ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_FIRST_SHARD"))
                         : null,
-                    EndShard = Environment.GetEnvironmentVariable("SHARDS_END_SHARD") != null
-                        ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_END_SHARD"))
+                    EndShard = Environment.GetEnvironmentVariable("SHARDS_LAST_SHARD") != null
+                        ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_LAST_SHARD"))
                         : null,
                     TotalShards = Environment.GetEnvironmentVariable("SHARDS_TOTAL_SHARDS") != null
                         ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_TOTAL_SHARDS"))

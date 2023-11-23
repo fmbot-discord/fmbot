@@ -1315,7 +1315,7 @@ public class AdminCommands : BaseCommandModule
     [ExcludeFromHelp]
     [Alias("reconnectshards")]
     [Examples("shard 0", "shard 821660544581763093")]
-    public async Task ShardInfoAsync(ulong? guildId = null)
+    public async Task ReconnectShardAsync(ulong? guildId = null)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {

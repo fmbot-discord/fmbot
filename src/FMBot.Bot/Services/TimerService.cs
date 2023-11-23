@@ -142,6 +142,7 @@ public class TimerService
         Statistics.SevenDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(7));
         Statistics.ThirtyDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(30));
 
+
         try
         {
             if (this._client?.Guilds?.Count == null)
@@ -150,13 +151,10 @@ public class TimerService
                 return;
             }
 
-            var currentProcess = Process.GetCurrentProcess();
-            var startTime = DateTime.Now - currentProcess.StartTime;
+            Statistics.ConnectedShards.Set(this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected));
 
-            if (startTime.Minutes > 8)
-            {
-                Statistics.DiscordServerCount.Set(this._client.Guilds.Count);
-            }
+            var appInfo = await this._client.GetApplicationInfoAsync();
+            Statistics.DiscordServerCount.Set(appInfo.ApproximateGuildCount.GetValueOrDefault());
         }
         catch (Exception e)
         {

@@ -13,6 +13,7 @@ using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -279,6 +280,18 @@ public class StaticCommands : BaseCommandModule
         catch (Exception e)
         {
             Log.Error("Error in shards command", e);
+        }
+
+        if (ConfigData.Data.Shards?.TotalShards != null)
+        {
+            var shardConfig = new StringBuilder();
+            shardConfig.AppendLine($"Total shards: `{ConfigData.Data.Shards?.TotalShards}`");
+            shardConfig.AppendLine($"First shard: `{ConfigData.Data.Shards?.StartShard}`");
+            shardConfig.AppendLine($"Last shard: `{ConfigData.Data.Shards?.EndShard}");
+            shardConfig.AppendLine($"Instance: `{ConfigData.Data.Shards?.InstanceName}`");
+            shardConfig.AppendLine($"Main instance: `{ConfigData.Data.Shards?.MainInstance}`");
+
+            this._embed.AddField("Instance config", shardConfig.ToString());
         }
 
         this._embed.WithDescription(shardDescription.ToString());
