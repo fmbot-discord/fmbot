@@ -105,31 +105,36 @@ public class TimerService
 
         if (this._botSettings.Bot.JobMaster == true)
         {
-            Log.Information($"RecurringJob: Adding {nameof(AddLatestDiscordSupporters)}");
-            RecurringJob.AddOrUpdate(nameof(AddLatestDiscordSupporters), () => AddLatestDiscordSupporters(), "* * * * *");
-
-            Log.Information($"RecurringJob: Adding {nameof(CheckExpiredDiscordSupporters)}");
-            RecurringJob.AddOrUpdate(nameof(CheckExpiredDiscordSupporters), () => CheckExpiredDiscordSupporters(), "0 8,18 * * *");
-
-            Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
-            RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 12 * * *");
-
-            Log.Information($"RecurringJob: Adding {nameof(CheckForNewOcSupporters)}");
-            RecurringJob.AddOrUpdate(nameof(CheckForNewOcSupporters), () => CheckForNewOcSupporters(), "*/3 * * * *");
-
-            Log.Information($"RecurringJob: Adding {nameof(UpdateExistingOcSupporters)}");
-            RecurringJob.AddOrUpdate(nameof(UpdateExistingOcSupporters), () => UpdateExistingOcSupporters(), "0 * * * *");
-
-            Log.Information($"RecurringJob: Adding {nameof(CheckDiscordSupportersUserType)}");
-            RecurringJob.AddOrUpdate(nameof(CheckDiscordSupportersUserType), () => CheckDiscordSupportersUserType(), "30 * * * *");
-
-            Log.Information($"RecurringJob: Adding {nameof(UpdateDiscogsUsers)}");
-            RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");
+            QueueMasterJobs();
         }
         else
         {
-            Log.Warning("FeaturedMaster is not true, not queuing featured and OpenCollective jobs");
+            Log.Warning("JobMaster is not true, not queuing featured and OpenCollective jobs");
         }
+    }
+
+    public void QueueMasterJobs()
+    {
+        Log.Information($"RecurringJob: Adding {nameof(AddLatestDiscordSupporters)}");
+        RecurringJob.AddOrUpdate(nameof(AddLatestDiscordSupporters), () => AddLatestDiscordSupporters(), "* * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(CheckExpiredDiscordSupporters)}");
+        RecurringJob.AddOrUpdate(nameof(CheckExpiredDiscordSupporters), () => CheckExpiredDiscordSupporters(), "0 8,18 * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
+        RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 12 * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(CheckForNewOcSupporters)}");
+        RecurringJob.AddOrUpdate(nameof(CheckForNewOcSupporters), () => CheckForNewOcSupporters(), "*/3 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(UpdateExistingOcSupporters)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateExistingOcSupporters), () => UpdateExistingOcSupporters(), "0 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(CheckDiscordSupportersUserType)}");
+        RecurringJob.AddOrUpdate(nameof(CheckDiscordSupportersUserType), () => CheckDiscordSupportersUserType(), "30 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(UpdateDiscogsUsers)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");
     }
 
     public async Task UpdateMetricsAndStatus()

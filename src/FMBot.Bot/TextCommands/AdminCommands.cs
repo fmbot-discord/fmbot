@@ -1727,6 +1727,13 @@ public class AdminCommands : BaseCommandModule
                     return;
                 }
 
+                if (job == "masterjobs")
+                {
+                    this._timer.QueueMasterJobs();
+                    await ReplyAsync("Added masterjobs");
+                    return;
+                }
+
                 var recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
 
                 var jobToRun = recurringJobs.FirstOrDefault(f => f.Id.ToLower() == job.ToLower());
