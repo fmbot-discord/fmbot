@@ -7,6 +7,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
@@ -272,12 +273,13 @@ public class TimerService
             }
         }
 
-        if ((this._botSettings.Shards == null || this._botSettings.Shards?.JobMaster == true) && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
+        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
+        if (this._client.CurrentUser.Id == Constants.BotProductionId && mainGuildConnected && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
         {
             Log.Information("Featured: Posting new featured to webhooks");
 
             var botType = BotTypeExtension.GetBotType(this._client.CurrentUser.Id);
-            //await this._webhookService.PostFeatured(newFeatured, this._client);
+            await this._webhookService.PostFeatured(newFeatured, this._client);
             await this._featuredService.SetFeatured(newFeatured);
             await this._webhookService.SendFeaturedWebhooks(botType, newFeatured);
 
