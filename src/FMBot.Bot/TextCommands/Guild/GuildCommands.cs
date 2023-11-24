@@ -30,6 +30,7 @@ public class GuildCommands : BaseCommandModule
     private readonly GuildService _guildService;
     private readonly UserService _userService;
     private readonly GuildSettingBuilder _guildSettingBuilder;
+    private readonly GuildBuilders _guildBuilders;
 
     private readonly IMemoryCache _cache;
 
@@ -43,7 +44,8 @@ public class GuildCommands : BaseCommandModule
         IMemoryCache cache,
         GuildSettingBuilder guildSettingBuilder,
         UserService userService,
-        InteractiveService interactivity) : base(botSettings)
+        InteractiveService interactivity,
+        GuildBuilders guildBuilders) : base(botSettings)
     {
         this._prefixService = prefixService;
         this._guildService = guildService;
@@ -51,6 +53,7 @@ public class GuildCommands : BaseCommandModule
         this._guildSettingBuilder = guildSettingBuilder;
         this._userService = userService;
         this.Interactivity = interactivity;
+        this._guildBuilders = guildBuilders;
     }
 
     [Command("configuration", RunMode = RunMode.Async)]
@@ -79,16 +82,42 @@ public class GuildCommands : BaseCommandModule
         }
     }
 
+    [Command("members", RunMode = RunMode.Async)]
+    [Summary("view members in your server that have an .fmbot account")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.ServerSettings)]
+    [Alias("mb", "users", "memberoverview", "mo")]
+    public async Task MemberOverviewAsync([Remainder] string searchValues = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+        try
+        {
+            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser), guild, GuildViewType.Overview);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [Command("keepdata", RunMode = RunMode.Async)]
     [Summary("Allows you to keep your server data when removing the bot from your server")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task KeepDataAsync(params string[] otherSettings)
     {
-        this._cache.Set($"{this.Context.Guild.Id}-keep-data", true, TimeSpan.FromMinutes(5));
+        this._cache.Set($"{this.Context.Guild.Id}-keep-data", true, TimeSpan.FromMinutes(30));
 
         await ReplyAsync(
-            "You can now kick this bot from your server in the next 5 minutes without losing the stored .fmbot data, like server settings and crown history.\n\n" +
+            "You can now kick this bot from your server in the next 30 minutes without losing the stored .fmbot data, like server settings and crown history.\n\n" +
             "If you still wish to remove all server data from the bot you can kick the bot after the time period is over.");
     }
 
