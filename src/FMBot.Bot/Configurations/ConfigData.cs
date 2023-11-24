@@ -102,7 +102,6 @@ public static class ConfigData
                 Data.Shards = new ShardConfig
                 {
                     MainInstance = Environment.GetEnvironmentVariable("SHARDS_MAIN_INSTANCE") == "true",
-                    JobMaster = Environment.GetEnvironmentVariable("SHARDS_JOB_MASTER") == "true",
                     StartShard = Environment.GetEnvironmentVariable("SHARDS_FIRST_SHARD") != null
                         ? int.Parse(Environment.GetEnvironmentVariable("SHARDS_FIRST_SHARD"))
                         : null,
@@ -115,7 +114,7 @@ public static class ConfigData
                     InstanceName = Environment.GetEnvironmentVariable("INSTANCE_NAME")
                 };
 
-                Log.Information("Config initiated - MainInstance {mainInstance} - JobMaster {jobMaster}", Data.Shards.MainInstance, Data.Shards.JobMaster);
+                Log.Information("Config initiated - MainInstance {mainInstance}", Data.Shards.MainInstance);
             }
         }
     }

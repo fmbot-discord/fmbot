@@ -292,7 +292,6 @@ public class StaticCommands : BaseCommandModule
             shardConfig.AppendLine($"Last shard: `{ConfigData.Data.Shards?.EndShard}`");
             shardConfig.AppendLine($"Instance: `{ConfigData.Data.Shards?.InstanceName}`");
             shardConfig.AppendLine($"Main instance: `{ConfigData.Data.Shards?.MainInstance}`");
-            shardConfig.AppendLine($"Job master: `{ConfigData.Data.Shards?.JobMaster}`");
 
             this._embed.AddField("Instance config", shardConfig.ToString());
         }

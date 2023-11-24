@@ -73,8 +73,6 @@ public class BotConfig
 
 public class ShardConfig
 {
-    public bool? JobMaster { get; set; }
-
     public bool? MainInstance { get; set; }
 
     public int? TotalShards { get; set; }

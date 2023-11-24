@@ -104,18 +104,31 @@ public class TimerService
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
-        if (this._botSettings.Shards == null || this._botSettings.Shards.JobMaster == true)
+        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
+        if (this._client.CurrentUser.Id == Constants.BotProductionId && mainGuildConnected)
         {
             QueueMasterJobs();
         }
         else
         {
-            Log.Warning("JobMaster is not true, not queuing featured and OpenCollective jobs");
+            Log.Warning("Main guild not connected, not queuing master jobs");
+            BackgroundJob.Schedule(() => MakeSureMasterJobsAreQueued(), TimeSpan.FromMinutes(2));
+        }
+    }
+
+    private void MakeSureMasterJobsAreQueued()
+    {
+        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
+        if (this._client.CurrentUser.Id == Constants.BotProductionId && mainGuildConnected)
+        {
+            QueueMasterJobs();
         }
     }
 
     public void QueueMasterJobs()
     {
+        Log.Warning("Queueing master jobs on instance {instance}", ConfigData.Data.Shards?.InstanceName);
+
         Log.Information($"RecurringJob: Adding {nameof(AddLatestDiscordSupporters)}");
         RecurringJob.AddOrUpdate(nameof(AddLatestDiscordSupporters), () => AddLatestDiscordSupporters(), "* * * * *");
 
