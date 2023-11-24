@@ -41,7 +41,7 @@ public class SpotifyCommands : BaseCommandModule
 
     [Command("spotify")]
     [Summary("Shares a link to a Spotify track based on what a user is listening to or searching for")]
-    [Alias("sp", "s", "spotifyfind", "spotifysearch", "alexa play")]
+    [Alias("sp", "s", "spotifyfind", "spotifysearch", "alexa play", "hey siri", "hey google", "ok google")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyAsync([Remainder] string searchValue = null)
@@ -52,6 +52,11 @@ public class SpotifyCommands : BaseCommandModule
         try
         {
             _ = this.Context.Channel.TriggerTypingAsync();
+
+            if (searchValue != null && searchValue.StartsWith("play ", StringComparison.OrdinalIgnoreCase))
+            {
+                searchValue = searchValue.Replace("play ", "", StringComparison.OrdinalIgnoreCase);
+            }
 
             string querystring;
             string artistName = null;
