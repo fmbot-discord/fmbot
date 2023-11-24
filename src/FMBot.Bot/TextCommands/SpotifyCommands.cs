@@ -41,7 +41,7 @@ public class SpotifyCommands : BaseCommandModule
 
     [Command("spotify")]
     [Summary("Shares a link to a Spotify track based on what a user is listening to or searching for")]
-    [Alias("sp", "s", "spotifyfind", "spotifysearch")]
+    [Alias("sp", "s", "spotifyfind", "spotifysearch", "alexa play")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task SpotifyAsync([Remainder] string searchValue = null)

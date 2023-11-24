@@ -116,7 +116,7 @@ public class TimerService
         }
     }
 
-    private void MakeSureMasterJobsAreQueued()
+    public void MakeSureMasterJobsAreQueued()
     {
         var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
         if (this._client.CurrentUser.Id == Constants.BotProductionId && mainGuildConnected)
