@@ -8,6 +8,7 @@ services:
     network_mode: host
     volumes:
       - /fmbot/beta/:/app/configs/
+      - /fmbot/cache/:/app/cache/
     command: "--memory=5g"
     environment:
       - INSTANCE_NAME=beta-1
@@ -22,6 +23,7 @@ services:
     network_mode: host
     volumes:
       - /fmbot/beta/:/app/configs/
+      - /fmbot/cache/:/app/cache/
     command: "--memory=5g"
     depends_on:
       beta-1:

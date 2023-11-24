@@ -8,6 +8,7 @@ services:
     network_mode: host
     volumes:
       - /fmbot/prod/:/app/configs/
+      - /fmbot/cache/:/app/cache/
     command: "--memory=30g"
     environment:
       - INSTANCE_NAME=prod-1
@@ -23,6 +24,7 @@ services:
     network_mode: host
     volumes:
       - /fmbot/prod/:/app/configs/
+      - /fmbot/cache/:/app/cache/
     command: "--memory=30g"
     depends_on:
       prod-1:
@@ -39,6 +41,7 @@ services:
     network_mode: host
     volumes:
       - /fmbot/prod/:/app/configs/
+      - /fmbot/cache/:/app/cache/
     command: "--memory=30g"
     depends_on:
       prod-2:
@@ -55,6 +58,7 @@ services:
     network_mode: host
     volumes:
       - /fmbot/prod/:/app/configs/
+      - /fmbot/cache/:/app/cache/
     command: "--memory=30g"
     depends_on:
       prod-3:
@@ -71,6 +75,7 @@ services:
     network_mode: host
     volumes:
       - /fmbot/prod/:/app/configs/
+      - /fmbot/cache/:/app/cache/
     command: "--memory=30g"
     depends_on:
       prod-4:
