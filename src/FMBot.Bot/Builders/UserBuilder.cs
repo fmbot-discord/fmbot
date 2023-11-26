@@ -640,7 +640,10 @@ public class UserBuilder
         }
 
         var lastFmStats = new StringBuilder();
-        lastFmStats.AppendLine($"Name: **{userInfo.Name}**");
+        if (!string.IsNullOrWhiteSpace(userInfo.Name))
+        {
+            lastFmStats.AppendLine($"Name: **{userInfo.Name}**");
+        }
         lastFmStats.AppendLine($"Username: **[{userSettings.UserNameLastFm}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})**");
         if (userInfo.Subscriber)
         {
