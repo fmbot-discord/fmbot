@@ -371,7 +371,7 @@ public class LastFmRepository : ILastfmRepository
             AlbumCount = userCall.Content.User.AlbumCount,
             ArtistCount = userCall.Content.User.ArtistCount,
             TrackCount = userCall.Content.User.TrackCount,
-            Name = userCall.Content.User.Name,
+            Name = userCall.Content.User.Realname,
             Country = userCall.Content.User.Country,
             Url = userCall.Content.User.Url.ToString(),
             Registered = DateTime.UnixEpoch.AddSeconds(userCall.Content.User.Registered.Unixtime).ToUniversalTime(),

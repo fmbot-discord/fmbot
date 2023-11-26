@@ -3,20 +3,20 @@ namespace FMBot.LastFM.Domain.Types;
 public class Call
 {
     public static readonly string
-        ArtistInfo = "Artist.getInfo",
-        AlbumInfo = "Album.getInfo",
-        TrackInfo = "Track.getInfo",
+        ArtistInfo = "artist.getInfo",
+        AlbumInfo = "album.getInfo",
+        TrackInfo = "track.getInfo",
         TrackLove = "track.love",
-        TrackUnLove = "track.unLove",
+        TrackUnLove = "track.unlove",
         TrackScrobble = "track.scrobble",
-        TrackUpdateNowPlaying = "track.updatenowplaying",
-        UserInfo = "User.getInfo",
+        TrackUpdateNowPlaying = "track.updateNowPlaying",
+        UserInfo = "user.getInfo",
         TopTracks = "user.getTopTracks",
         RecentTracks = "user.getRecentTracks",
         LovedTracks = "user.getLovedTracks",
         GetWeeklyArtistChart = "user.getWeeklyArtistChart",
         GetWeeklyAlbumChart = "user.getWeeklyAlbumChart",
         GetWeeklyTrackChart = "user.getWeeklyTrackChart",
-        GetToken = "auth.GetToken",
+        GetToken = "auth.getToken",
         GetAuthSession = "auth.getSession";
 }
