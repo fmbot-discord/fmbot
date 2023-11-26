@@ -640,7 +640,7 @@ public class UserBuilder
         }
 
         var lastFmStats = new StringBuilder();
-        if !(string.IsNullOrWhiteSpace(userInfo.Name))
+        if (!string.IsNullOrWhiteSpace(userInfo.Name))
         {
             lastFmStats.AppendLine($"Name: **{userInfo.Name}**");
         }
