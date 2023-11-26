@@ -30,3 +30,5 @@ Logs/
 packages/
 src/.vs/
 .vs/
+
+.DS_Store
