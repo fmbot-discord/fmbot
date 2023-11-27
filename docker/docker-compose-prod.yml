@@ -83,5 +83,5 @@ services:
     environment:
       - INSTANCE_NAME=prod-5
       - SHARDS_TOTAL_SHARDS=336
-      - SHARDS_FIRST_SHARD=268
+      - SHARDS_FIRST_SHARD=269
       - SHARDS_LAST_SHARD=335
