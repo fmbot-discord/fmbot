@@ -72,7 +72,8 @@ public class UserEventHandler
     {
         Statistics.DiscordEvents.WithLabels(nameof(UserJoined)).Inc();
 
-        if (socketGuildUser.Guild.Id == this._botSettings.Bot.BaseServerId)
+        if (socketGuildUser.Guild.Id == this._botSettings.Bot.BaseServerId &&
+            this._client.CurrentUser.Id == Constants.BotProductionId)
         {
             var user = await this._userService.GetUserAsync(socketGuildUser.Id);
             if (user is { UserType: UserType.Supporter })
