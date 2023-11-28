@@ -91,6 +91,9 @@ public static class InteractionContextExtensions
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     ephemeral: ephemeral);
                 break;
+            case ResponseType.SupporterRequired:
+                await context.Interaction.RespondWithPremiumRequiredAsync();
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }

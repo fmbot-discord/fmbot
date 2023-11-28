@@ -16,6 +16,8 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using Fergun.Interactive;
+using FMBot.Bot.Configurations;
+using FMBot.Domain;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -28,6 +30,7 @@ public class ImportSlashCommands : InteractionModuleBase
     private readonly PlayService _playService;
     private readonly IIndexService _indexService;
     private readonly ImportBuilders _importBuilders;
+    private readonly SupporterService _supporterService;
     private InteractiveService Interactivity { get; }
 
     public ImportSlashCommands(UserService userService,
@@ -36,7 +39,8 @@ public class ImportSlashCommands : InteractionModuleBase
         PlayService playService,
         IIndexService indexService,
         InteractiveService interactivity,
-        ImportBuilders importBuilders)
+        ImportBuilders importBuilders,
+        SupporterService supporterService)
     {
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
@@ -45,6 +49,7 @@ public class ImportSlashCommands : InteractionModuleBase
         this._indexService = indexService;
         this.Interactivity = interactivity;
         this._importBuilders = importBuilders;
+        this._supporterService = supporterService;
     }
 
     private const string SpotifyFileDescription = "Spotify history package (.zip) or history files (.json) ";
@@ -70,10 +75,22 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
+        if (this.Context.Interaction.Entitlements.Any() && !SupporterService.IsSupporter(contextUser.UserType))
+        {
+            await this._supporterService.UpdateSingleDiscordSupporter(this.Context.User.Id);
+            this._userService.RemoveUserFromCache(contextUser);
+            contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        }
+
         var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
 
         if (supporterRequired != null)
         {
+            if (ConfigData.Data.Discord.BotUserId == Constants.BotProductionId)
+            {
+                supporterRequired.ResponseType = ResponseType.SupporterRequired;
+            }
+
             await this.Context.SendResponse(this.Interactivity, supporterRequired);
             this.Context.LogCommandUsed(supporterRequired.CommandResponse);
             return;

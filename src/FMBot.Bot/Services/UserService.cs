@@ -81,7 +81,7 @@ public class UserService
         return user;
     }
 
-    private void RemoveUserFromCache(User user)
+    public void RemoveUserFromCache(User user)
     {
         this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
         this._cache.Remove(UserLastFmCacheKey(user.UserNameLastFM));
