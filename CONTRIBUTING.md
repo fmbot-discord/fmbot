@@ -1,7 +1,7 @@
 # Contributing
 
 When contributing to this repository, please first discuss the change you wish 
-to make via issue, [our support Discord](https://discord.gg/5SZRGnJ), or any other 
+to make via issue, [our support Discord](https://discord.gg/fmbot), or any other 
 method with the owners of this repository before making a change. 
 
 If you make a useful pull request you will also get the contributor status in the 
