@@ -187,7 +187,7 @@ public class PlayBuilder
         switch (embedType)
         {
             case FmEmbedType.TextOneLine:
-                response.Text =$"**{embedTitle}** is listening to **{currentTrack.TrackName}** by **{currentTrack.ArtistName}**".FilterOutMentions();
+                response.Text = $"**{embedTitle}** is listening to **{currentTrack.TrackName}** by **{currentTrack.ArtistName}**".FilterOutMentions();
 
                 response.ResponseType = ResponseType.Text;
                 break;
@@ -294,7 +294,8 @@ public class PlayBuilder
 
     public async Task<ResponseModel> RecentAsync(
         ContextModel context,
-        UserSettingsModel userSettings)
+        UserSettingsModel userSettings,
+        string artistToFilter = null)
     {
         var response = new ResponseModel
         {
@@ -332,15 +333,21 @@ public class PlayBuilder
             return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
         }
 
-        if (SupporterService.IsSupporter(userSettings.UserType))
+        var limit = SupporterService.IsSupporter(userSettings.UserType) ? int.MaxValue : 240;
+        recentTracks.Content =
+            await this._playService.AddUserPlaysToRecentTracks(userSettings.UserId, recentTracks.Content, limit);
+
+        if (!SupporterService.IsSupporter(userSettings.UserType))
         {
-            recentTracks.Content =
-                await this._playService.AddUserPlaysToRecentTracks(userSettings.UserId, recentTracks.Content);
+            recentTracks.Content.RecentTracks = recentTracks.Content.RecentTracks.Take(239).ToList();
         }
-        else
+
+        if (SupporterService.IsSupporter(userSettings.UserType) && !string.IsNullOrWhiteSpace(artistToFilter))
         {
-            recentTracks.Content.RecentTracks = recentTracks.Content.RecentTracks.Take(120).ToList();
+            recentTracks.Content.RecentTracks = recentTracks.Content.RecentTracks
+                .Where(w => artistToFilter.Equals(w.ArtistName, StringComparison.OrdinalIgnoreCase)).ToList();
         }
+
 
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
@@ -390,6 +397,19 @@ public class PlayBuilder
 
             footer.Append($"Page {pageCounter}/{trackPages.Count}");
             footer.Append($" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles");
+
+            if (!string.IsNullOrWhiteSpace(artistToFilter))
+            {
+                footer.AppendLine();
+                if (!SupporterService.IsSupporter(userSettings.UserType))
+                {
+                    footer.Append($"Sorry, artist filtering is only available for supporters");
+                }
+                else
+                {
+                    footer.Append($"Filtering plays to artist '{artistToFilter}'");
+                }
+            }
 
             var page = new PageBuilder()
                 .WithDescription(StringExtensions.TruncateLongString(trackPageString.ToString(), 4095))

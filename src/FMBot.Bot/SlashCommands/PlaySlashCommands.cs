@@ -117,7 +117,8 @@ public class PlaySlashCommands : InteractionModuleBase
     [SlashCommand("recent", "Shows you or someone else their recent tracks")]
     [UsernameSetRequired]
     public async Task RecentAsync(
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Artist", "Artist you want to filter on (Supporter only)")] string artistName = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -125,7 +126,7 @@ public class PlaySlashCommands : InteractionModuleBase
         try
         {
             var response = await this._playBuilder.RecentAsync(new ContextModel(this.Context, contextUser),
-                userSettings);
+                userSettings, artistName);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

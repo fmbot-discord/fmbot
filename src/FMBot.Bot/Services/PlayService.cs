@@ -879,13 +879,13 @@ public class PlayService
         return plays;
     }
 
-    public async Task<RecentTrackList> AddUserPlaysToRecentTracks(int userId, RecentTrackList recentTracks)
+    public async Task<RecentTrackList> AddUserPlaysToRecentTracks(int userId, RecentTrackList recentTracks, int limit = int.MaxValue)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
         var importUser = await UserRepository.GetImportUserForUserId(userId, connection, true);
-        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm);
+        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm, limit);
 
         var firstRecentTrack = recentTracks.RecentTracks
             .Where(w => w.TimePlayed != null)
@@ -898,7 +898,10 @@ public class PlayService
             recentTracks.RecentTracks.Add(UserPlayToRecentTrack(play));
         }
 
-        recentTracks.TotalAmount = recentTracks.RecentTracks.Count;
+        if (limit == int.MaxValue)
+        {
+            recentTracks.TotalAmount = recentTracks.RecentTracks.Count;
+        }
 
         recentTracks.RecentTracks = recentTracks.RecentTracks
             .OrderByDescending(o => o.NowPlaying)

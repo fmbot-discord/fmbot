@@ -219,7 +219,7 @@ public class PlayCommands : BaseCommandModule
         try
         {
             var response = await this._playBuilder.RecentAsync(new ContextModel(this.Context, prfx, contextUser),
-                userSettings);
+                userSettings, userSettings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
