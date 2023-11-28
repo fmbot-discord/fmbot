@@ -897,12 +897,6 @@ public class UserSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
-        {
-            await RespondAsync("Not available yet!");
-            return;
-        }
-
         try
         {
             var hasImported = await this._importService.HasImported(contextUser.UserId);

@@ -9,12 +9,12 @@
 
         body {
             font-family: "worksans";
-            margin-right: 24px;
-            margin-left: 24px;
-            margin-top: 28px;
+            margin-right: 72px;
+            margin-left: 72px;
+            margin-top: 84px;
             background-color: #282424;
             color: #dcddde;
-            background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.75)), url('{{image-url}}');
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.75)), url('https://i.scdn.co/image/ab6761610000e5ebe9348cc01ff5d55971b22433');
             background-position: center;
             background-size: cover;
             background-attachment: fixed;
@@ -57,7 +57,7 @@
         }
 
         .result-container {
-            margin-top: 28px;
+            margin-top: 56px;
             display: flex;
             margin-left: -6px;
             margin-right: -6px;
@@ -115,11 +115,11 @@
             padding: 16px 16px 4px 16px;
             margin: 0 0 0 0;
             list-style-type: none;
-            font-size: 24px;
+            font-size: 28px;
         }
 
         li {
-            margin-bottom: 8px;
+            margin-bottom: 16px;
             overflow: hidden;
             white-space: nowrap;
         }
@@ -142,41 +142,34 @@
 <body>
     <div class="title-container">
         <div class="whoknows subtitle top">
-            {{type}}
+            {{name}}
         </div>
         <div class="whoknows title align-center">
             {{title}}
         </div>
         <div class="whoknows subtitle float-right bottom">
-            {{location}}
+            {{total}}
         </div>
     </div>
     <div class="result-container">
-        <div class="float-child {{hide-img}}">
-            <img src="{{image-url}}">
+        <div class="float-child">
+            <div class="result-list">
+                <ul>
+                    <li>
+                        <div class="num">#1</div> · The Beatles <span class="float-right">312 plays</span>
+                    </li>
+                    <li>
+                        <div class="num">#2</div> · Mall Grab <span class="float-right">292 plays</span>
+                    </li>
+                    <li>
+                        <div class="num">#3</div> · De Jeugd Van Tegenwoordig <span class="float-right">250 plays</span>
+                    </li>
+                </ul>
+            </div>
             <div class="floatleft bottom branding">
                 Powered by .fmbot
             </div>
         </div>
-        <div class="float-child">
-            <div class="result-list">
-                <ul>
-                    {{users}}
-                </ul>
-            </div>
-            <div class="whoknows subtitle bottom align-center flex-wrap stat-view">
-                <span class="float-left">{{listeners}} listeners</span>
-                <span><b>·</b></span>
-                <span class="float-right">{{plays}} plays</span>
-                <span><b>·</b></span>
-                <span>{{average}} avg</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="subtitle bottom align-center flex-wrap crown-view {{crown-hide}}">
-        <span>{{crown-text}}</span>
     </div>
 </body>
-
 </html>

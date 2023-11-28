@@ -236,7 +236,7 @@ public class PuppeteerService
             content = content.Replace("{{plays}}", "0");
             content = content.Replace("{{average}}", "0");
         }
-        
+
 
         await page.SetContentAsync(content);
         await page.WaitForSelectorAsync(".result-list");
@@ -271,6 +271,112 @@ public class PuppeteerService
         var nameWithLink = $"\u2066{sanitizer.Sanitize(discordName)}\u2069";
 
         return nameWithLink;
+    }
+
+    public async Task<SKBitmap> GetTopList(string type, string title, string total, string imageUrl, IList<TopListObject> topListObjects)
+    {
+        await this._initializationTask;
+
+        await using var page = await this._browser.NewPageAsync();
+
+        var extraHeight = 0;
+        if (title.Length > 38)
+        {
+            var lines = (int)(title.Length / 38);
+
+            extraHeight += (lines) * 32;
+        }
+
+        await page.SetViewportAsync(new ViewPortOptions
+        {
+            Width = 800,
+            Height = 900 + extraHeight
+        });
+
+        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "top.html");
+        var content = await File.ReadAllTextAsync(localPath);
+
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.AllowedTags.Clear();
+        sanitizer.AllowedTags.Add("b");
+
+        content = content.Replace("{{type}}", type);
+        content = content.Replace("{{total}}", sanitizer.Sanitize(total));
+
+        content = imageUrl != null ? content.Replace("{{image-url}}", imageUrl) : content.Replace("{{hide-img}}", "hidden");
+
+        content = content.Replace("{{title}}", sanitizer.Sanitize(title));
+
+        var topList = topListObjects
+            .OrderByDescending(o => o.Playcount)
+            .ToList();
+
+        var indexNumber = 1;
+        var timesNameAdded = 0;
+        var requestedUserAdded = false;
+        var addedUsers = new List<int>();
+
+        var userList = new StringBuilder();
+
+        for (var index = 0; timesNameAdded < 8; index++)
+        {
+            if (index >= topList.Count)
+            {
+                break;
+            }
+
+            var topItem = topList[index];
+
+            if (addedUsers.Any(a => a.Equals(topItem.UserId)))
+            {
+                continue;
+            }
+
+            var positionCounter = $"{indexNumber}.";
+
+            userList.Append(GetTopLine(positionCounter, topItem.Name, topItem.Playcount));
+
+            indexNumber += 1;
+            timesNameAdded += 1;
+
+            addedUsers.Add(topItem.UserId);
+
+        }
+
+        var topPlaycount = topListObjects.First().Playcount;
+        content = topPlaycount switch
+        {
+            > 100 and < 1000 => content.Replace("{{num-width}}", "44"),
+            > 1000 and < 10000 => content.Replace("{{num-width}}", "52"),
+            > 10000 => content.Replace("{{num-width}}", "60"),
+            _ => content.Replace("{{num-width}}", "32")
+        };
+
+        if (topListObjects.Any())
+        {
+            content = content.Replace("{{users}}", userList.ToString());
+        }
+        else
+        {
+            content = content.Replace("{{users}}", "No results.");
+        }
+
+        await page.SetContentAsync(content);
+        await page.WaitForSelectorAsync(".result-list");
+
+        var img = await page.ScreenshotDataAsync();
+        return SKBitmap.FromImage(SKImage.FromEncodedData(img));
+    }
+
+    private static string GetTopLine(string position, string name, int plays)
+    {
+        name = name.Length > 18 ? $"{name[..17]}.." : name;
+
+        return $"""
+            <li>
+                <div class="num">{position}</div> {name} <span class="float-right">{plays}</span>
+            </li>
+            """;
     }
 
     public async Task<SKBitmap> GetReceipt(UserSettingsModel user, TopTrackList topTracks,
