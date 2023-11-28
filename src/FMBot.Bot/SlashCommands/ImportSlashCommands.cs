@@ -198,18 +198,6 @@ public class ImportSlashCommands : InteractionModuleBase
 
             await this._importService.UpdateExistingPlays(contextUser);
 
-            var files = new StringBuilder();
-            foreach (var attachment in imports.processedFiles.OrderBy(o => o).Take(4))
-            {
-                files.AppendLine($"`{attachment}`");
-            }
-            if (imports.processedFiles.Count > 4)
-            {
-                files.AppendLine($"*+ {imports.processedFiles.Count - 4} more files..*");
-            }
-
-            embed.AddField("Processed files", files.ToString());
-
             var years = await this._importBuilders.GetImportedYears(contextUser.UserId);
             if (years.Length > 0)
             {
@@ -244,6 +232,7 @@ public class ImportSlashCommands : InteractionModuleBase
             }
 
             embed.AddField("Current import setting", importSetting);
+            embed.WithFooter($"{imports.processedFiles.Count} processed import files");
 
             var components = new ComponentBuilder()
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
