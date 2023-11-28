@@ -86,11 +86,6 @@ public class ImportSlashCommands : InteractionModuleBase
 
         if (supporterRequired != null)
         {
-            if (ConfigData.Data.Discord.BotUserId == Constants.BotProductionId)
-            {
-                supporterRequired.ResponseType = ResponseType.SupporterRequired;
-            }
-
             await this.Context.SendResponse(this.Interactivity, supporterRequired);
             this.Context.LogCommandUsed(supporterRequired.CommandResponse);
             return;
