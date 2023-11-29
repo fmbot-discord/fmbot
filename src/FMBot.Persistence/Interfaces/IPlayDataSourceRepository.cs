@@ -12,6 +12,8 @@ public interface IPlayDataSourceRepository
 
     Task<long?> GetScrobbleCountFromDateAsync(ImportUser user, long? from = null, long? until = null);
 
+    Task<long?> GetStoredPlayCountBeforeDateAsync(User user, DateTime until);
+
     Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(ImportUser user, 
         int milestoneScrobble);
 

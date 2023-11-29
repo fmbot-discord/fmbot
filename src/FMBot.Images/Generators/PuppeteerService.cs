@@ -312,7 +312,10 @@ public class PuppeteerService
 
         content = imageUrl != null ? content.Replace("{{image-url}}", imageUrl) : content.Replace("{{hide-img}}", "hidden");
 
-        content = content.Replace("{{title}}", sanitizer.Sanitize(title));
+        if (totalDifferent == 0)
+        {
+            content = content.Replace("{{diffCount}}", "hidden");
+        }
 
         var topList = topListObjects
             .OrderByDescending(o => o.Playcount)

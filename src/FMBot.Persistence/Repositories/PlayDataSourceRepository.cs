@@ -57,6 +57,14 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         return await PlayRepository.GetUserPlayCount(user.UserId, connection, user.DataSource, start: fromTimeStamp);
     }
 
+    public async Task<long?> GetStoredPlayCountBeforeDateAsync(User user, DateTime until)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await PlayRepository.GetUserPlayCount(user.UserId, connection, user.DataSource, until);
+    }
+
     public async Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(ImportUser user, int milestoneScrobble)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
