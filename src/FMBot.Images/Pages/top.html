@@ -14,7 +14,7 @@
             margin-top: 56px;
             background-color: #282424;
             color: #dcddde;
-            background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.75)), url('{{image-url}}');
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.80), rgba(0, 0, 0, 0.65)), url('{{image-url}}');
             background-position: center;
             background-size: cover;
             background-attachment: fixed;
@@ -165,10 +165,8 @@
                 </ul>
             </div>
             <div class="whoknows subtitle bottom align-center flex-wrap stat-view">
-                <span class="{{diffCount}}">
-                    <span class="float-left">{{totalDifferent}} different {{type}}</span>
-                    <span><b>·</b></span>
-                </span>
+                <span class="float-left {{diffCount}}">{{totalDifferent}} different {{type}}</span>
+                <span class="{{diffCount}}"><b>·</b></span>
                 <span class="float-right">{{totalPlays}} total plays</span>
             </div>
             <div class="floatleft bottom branding">
