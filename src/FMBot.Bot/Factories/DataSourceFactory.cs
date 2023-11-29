@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -176,7 +177,7 @@ public class DataSourceFactory : IDataSourceFactory
             redirectsEnabled = false;
         }
 
-        var track = await this._lastfmRepository.GetTrackInfoAsync(trackName, artistName, redirectsEnabled,username);
+        var track = await this._lastfmRepository.GetTrackInfoAsync(trackName, artistName, redirectsEnabled, username);
 
         var importUser = await this.GetImportUserForLastFmUserName(username);
 
@@ -238,17 +239,32 @@ public class DataSourceFactory : IDataSourceFactory
     public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName, TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
+        Response<TopAlbumList> topAlbums;
 
         if (importUser != null && timeSettings.StartDateTime < importUser.LastImportPlay)
         {
-            return await this._playDataSourceRepository.GetTopAlbumsAsync(importUser, timeSettings, count * amountOfPages);
+            topAlbums = await this._playDataSourceRepository.GetTopAlbumsAsync(importUser, timeSettings, count * amountOfPages);
+            AddAlbumTopList(topAlbums, lastFmUserName);
+            return topAlbums;
         }
 
-        var topAlbums = await this._lastfmRepository.GetTopAlbumsAsync(lastFmUserName, timeSettings, count, amountOfPages);
+        topAlbums = await this._lastfmRepository.GetTopAlbumsAsync(lastFmUserName, timeSettings, count, amountOfPages);
 
         await CorrectTopAlbumNamesInternally(topAlbums);
+        AddAlbumTopList(topAlbums, lastFmUserName);
 
         return topAlbums;
+    }
+
+    private void AddAlbumTopList(Response<TopAlbumList> topAlbums, string lastFmUserName)
+    {
+        topAlbums.TopList = topAlbums.Content?.TopAlbums?.Select(s => new TopListObject
+        {
+            LastFMUsername = lastFmUserName,
+            Name = s.AlbumName,
+            SubName = s.ArtistName,
+            Playcount = s.UserPlaycount.GetValueOrDefault()
+        }).ToList();
     }
 
     public async Task<Response<TopAlbumList>> GetTopAlbumsForCustomTimePeriodAsyncAsync(string lastFmUserName, DateTime startDateTime, DateTime endDateTime,
@@ -287,14 +303,18 @@ public class DataSourceFactory : IDataSourceFactory
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 
+        Response<TopArtistList> topArtists;
         if (importUser != null && timeSettings.StartDateTime < importUser.LastImportPlay)
         {
-            return await this._playDataSourceRepository.GetTopArtistsAsync(importUser, timeSettings, count * amountOfPages);
+            topArtists = await this._playDataSourceRepository.GetTopArtistsAsync(importUser, timeSettings, count * amountOfPages);
+            AddArtistTopList(topArtists, lastFmUserName);
+            return topArtists;
         }
 
-        var topArtists = await this._lastfmRepository.GetTopArtistsAsync(lastFmUserName, timeSettings, count, amountOfPages);
+        topArtists = await this._lastfmRepository.GetTopArtistsAsync(lastFmUserName, timeSettings, count, amountOfPages);
 
         await CorrectTopArtistNamesInternally(topArtists);
+        AddArtistTopList(topArtists, lastFmUserName);
 
         return topArtists;
     }
@@ -331,6 +351,16 @@ public class DataSourceFactory : IDataSourceFactory
         }
     }
 
+    private void AddArtistTopList(Response<TopArtistList> topArtists, string lastFmUserName)
+    {
+        topArtists.TopList = topArtists.Content?.TopArtists?.Select(s => new TopListObject
+        {
+            LastFMUsername = lastFmUserName,
+            Name = s.ArtistName,
+            Playcount = s.UserPlaycount
+        }).ToList();
+    }
+
     public async Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName, TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool calculateTimeListened = false)
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
@@ -357,6 +387,14 @@ public class DataSourceFactory : IDataSourceFactory
                 };
             }
         }
+
+        topTracks.TopList = topTracks.Content?.TopTracks?.Select(s => new TopListObject
+        {
+            LastFMUsername = lastFmUserName,
+            Name = s.TrackName,
+            SubName = s.ArtistName,
+            Playcount = s.UserPlaycount.GetValueOrDefault()
+        }).ToList();
 
         return topTracks;
     }

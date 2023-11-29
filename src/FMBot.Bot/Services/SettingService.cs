@@ -440,6 +440,28 @@ public class SettingService
         return topListSettings;
     }
 
+    public static (ResponseMode mode, string newSearchValue) SetMode (string extraOptions, ResponseMode? userMode)
+    {
+        var newSearchValue = extraOptions;
+
+        var image = new[] { "img", "image" };
+        if (Contains(extraOptions, image))
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, image);
+            userMode = ResponseMode.Image;
+        }
+        var embed = new[] { "embed", "text", "txt" };
+        if (Contains(extraOptions, embed))
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, embed);
+            userMode = ResponseMode.Embed;
+        }
+
+        userMode ??= ResponseMode.Embed;
+
+        return (userMode.Value, newSearchValue);
+    }
+
     public WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions, UserType userType = UserType.User)
     {
         var whoKnowsSettings = currentWhoKnowsSettings;
@@ -449,18 +471,10 @@ public class SettingService
             return whoKnowsSettings;
         }
 
-        var image = new[] { "img", "image" };
-        if (Contains(extraOptions, image))
-        {
-            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, image);
-            whoKnowsSettings.WhoKnowsMode = WhoKnowsMode.Image;
-        }
-        var embed = new[] { "embed", "text", "txt" };
-        if (Contains(extraOptions, embed))
-        {
-            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, embed);
-            whoKnowsSettings.WhoKnowsMode = WhoKnowsMode.Embed;
-        }
+        var mode = SetMode(extraOptions, currentWhoKnowsSettings.ResponseMode);
+
+        whoKnowsSettings.ResponseMode = mode.mode;
+        whoKnowsSettings.NewSearchValue = mode.newSearchValue;
 
         var hidePrivateUsers = new[] { "hp", "hideprivate", "hideprivateusers" };
         if (Contains(extraOptions, hidePrivateUsers))

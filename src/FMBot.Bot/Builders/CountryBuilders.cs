@@ -259,11 +259,11 @@ public class CountryBuilders
         return response;
     }
 
-    public async Task<ResponseModel> GetTopCountries(
-        ContextModel context,
+    public async Task<ResponseModel> GetTopCountries(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
-        TopListSettings topListSettings)
+        TopListSettings topListSettings,
+        ResponseMode mode)
     {
         var response = new ResponseModel
         {
@@ -351,6 +351,28 @@ public class CountryBuilders
 
         var countries = await this._countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists, true);
         var previousTopCountries = await this._countryService.GetTopCountriesForTopArtists(previousTopArtists, true);
+
+        if (mode == ResponseMode.Image && countries.Any())
+        {
+            var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom,
+                userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
+            artists.Content.TopArtists = await this._artistsService.FillArtistImages(artists.Content.TopArtists);
+
+            var validArtists = countries.First().Artists.Select(s => s.ArtistName.ToLower()).ToArray();
+            var firstArtistImage =
+                artists.Content.TopArtists.FirstOrDefault(f => validArtists.Contains(f.ArtistName.ToLower()) && f.ArtistImageUrl != null)?.ArtistImageUrl;
+
+            var image = await this._puppeteerService.GetTopList(userTitle, "Top Countries", "countries", timeSettings.Description,
+                countries.Count, totalPlays.GetValueOrDefault(), firstArtistImage,
+                this._countryService.GetTopListForTopCountries(countries));
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"top-countries-{userSettings.DiscordUserId}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
+        }
 
         var countryPages = countries.ChunkBy((int) topListSettings.EmbedSize);
 

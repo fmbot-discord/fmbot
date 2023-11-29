@@ -273,7 +273,7 @@ public class PuppeteerService
         return nameWithLink;
     }
 
-    public async Task<SKBitmap> GetTopList(string type, string title, string total, string imageUrl, IList<TopListObject> topListObjects)
+    public async Task<SKBitmap> GetTopList(string name, string title, string type, string time, long totalDifferent, long totalPlays, string imageUrl, IList<TopListObject> topListObjects)
     {
         await this._initializationTask;
 
@@ -287,10 +287,12 @@ public class PuppeteerService
             extraHeight += (lines) * 32;
         }
 
+        var subNamesEnabled = topListObjects.Any(a => a.SubName != null);
+
         await page.SetViewportAsync(new ViewPortOptions
         {
-            Width = 800,
-            Height = 900 + extraHeight
+            Width = 700,
+            Height = 810 + extraHeight + (subNamesEnabled ? 125 : 0),
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "top.html");
@@ -300,8 +302,13 @@ public class PuppeteerService
         sanitizer.AllowedTags.Clear();
         sanitizer.AllowedTags.Add("b");
 
-        content = content.Replace("{{type}}", type);
-        content = content.Replace("{{total}}", sanitizer.Sanitize(total));
+        content = content.Replace("{{name}}", sanitizer.Sanitize(name) + "'s");
+        content = content.Replace("{{title}}", sanitizer.Sanitize(title));
+        content = content.Replace("{{time}}", $"{sanitizer.Sanitize(time)} · Playcounts");
+        content = content.Replace("{{type}}", sanitizer.Sanitize(type));
+
+        content = content.Replace("{{totalDifferent}}", totalDifferent.ToString());
+        content = content.Replace("{{totalPlays}}", totalPlays.ToString());
 
         content = imageUrl != null ? content.Replace("{{image-url}}", imageUrl) : content.Replace("{{hide-img}}", "hidden");
 
@@ -313,12 +320,10 @@ public class PuppeteerService
 
         var indexNumber = 1;
         var timesNameAdded = 0;
-        var requestedUserAdded = false;
-        var addedUsers = new List<int>();
 
         var userList = new StringBuilder();
 
-        for (var index = 0; timesNameAdded < 8; index++)
+        for (var index = 0; timesNameAdded < (subNamesEnabled ? 8 : 10); index++)
         {
             if (index >= topList.Count)
             {
@@ -327,20 +332,20 @@ public class PuppeteerService
 
             var topItem = topList[index];
 
-            if (addedUsers.Any(a => a.Equals(topItem.UserId)))
-            {
-                continue;
-            }
 
             var positionCounter = $"{indexNumber}.";
 
-            userList.Append(GetTopLine(positionCounter, topItem.Name, topItem.Playcount));
+            if (subNamesEnabled)
+            {
+                userList.Append(GetTopLineWithSub(positionCounter, topItem.Name, topItem.SubName, topItem.Playcount, sanitizer));
+            }
+            else
+            {
+                userList.Append(GetTopLine(positionCounter, topItem.Name, topItem.Playcount, sanitizer));
+            }
 
             indexNumber += 1;
             timesNameAdded += 1;
-
-            addedUsers.Add(topItem.UserId);
-
         }
 
         var topPlaycount = topListObjects.First().Playcount;
@@ -368,13 +373,34 @@ public class PuppeteerService
         return SKBitmap.FromImage(SKImage.FromEncodedData(img));
     }
 
-    private static string GetTopLine(string position, string name, int plays)
+    private static string GetTopLine(string position, string name, long plays, HtmlSanitizer htmlSanitizer)
     {
-        name = name.Length > 18 ? $"{name[..17]}.." : name;
+        name = htmlSanitizer.Sanitize(name);
+        name = name.Length > 28 ? $"{name[..27]}.." : name;
 
         return $"""
             <li>
                 <div class="num">{position}</div> {name} <span class="float-right">{plays}</span>
+            </li>
+            """;
+    }
+
+    private static string GetTopLineWithSub(string position, string name, string sub, long plays,
+        HtmlSanitizer htmlSanitizer)
+    {
+        name = htmlSanitizer.Sanitize(name);
+        name = name.Length > 28 ? $"{name[..27]}.." : name;
+
+        sub = htmlSanitizer.Sanitize(sub);
+        sub = sub.Length > 36 ? $"{sub[..35]}.." : sub;
+
+        return $"""
+            <li class="flex-wrap">
+                <div class="num" style="padding-top:12px;margin-left:-8px !important;">{position}</div>
+                <div>
+                    <div>{name} <span class="float-right">{plays}</span></div>
+                    <div class="sub">{sub}</div>
+                </div>
             </li>
             """;
     }

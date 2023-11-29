@@ -21,6 +21,7 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Genius.Models.Song;
 using Serilog;
 using SkiaSharp;
 
@@ -45,6 +46,7 @@ public class TrackBuilders
     private readonly AlbumService _albumService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly DiscogsService _discogsService;
+    private readonly ArtistsService _artistsService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -62,7 +64,8 @@ public class TrackBuilders
         WhoKnowsService whoKnowsService,
         AlbumService albumService,
         WhoKnowsPlayService whoKnowsPlayService,
-        DiscogsService discogsService)
+        DiscogsService discogsService,
+        ArtistsService artistsService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -81,6 +84,7 @@ public class TrackBuilders
         this._albumService = albumService;
         this._whoKnowsPlayService = whoKnowsPlayService;
         this._discogsService = discogsService;
+        this._artistsService = artistsService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -232,7 +236,7 @@ public class TrackBuilders
 
     public async Task<ResponseModel> WhoKnowsTrackAsync(
         ContextModel context,
-        WhoKnowsMode mode,
+        ResponseMode mode,
         string trackValues,
         bool displayRoleSelector = false,
         List<ulong> roles = null)
@@ -273,7 +277,7 @@ public class TrackBuilders
             albumCoverUrl = await GetAlbumCoverUrl(context, track, response);
         }
 
-        if (mode == WhoKnowsMode.Image)
+        if (mode == ResponseMode.Image)
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, trackName,
                 filteredUsersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
@@ -362,7 +366,7 @@ public class TrackBuilders
 
     public async Task<ResponseModel> FriendsWhoKnowTrackAsync(
         ContextModel context,
-        WhoKnowsMode mode,
+        ResponseMode mode,
         string trackValues)
     {
         var response = new ResponseModel
@@ -404,7 +408,7 @@ public class TrackBuilders
             albumCoverUrl = await GetAlbumCoverUrl(context, track, response);
         }
 
-        if (mode == WhoKnowsMode.Image)
+        if (mode == ResponseMode.Image)
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"from <b>{userTitle}</b>'s friends", albumCoverUrl, trackName,
                 usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
@@ -524,7 +528,7 @@ public class TrackBuilders
             albumCoverUrl = await GetAlbumCoverUrl(context, track, response);
         }
 
-        if (settings.WhoKnowsMode == WhoKnowsMode.Image)
+        if (settings.ResponseMode == ResponseMode.Image)
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>.fmbot 🌐</b>", albumCoverUrl, trackName,
                 filteredUsersWithTrack, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
@@ -899,11 +903,11 @@ public class TrackBuilders
         return response;
     }
 
-    public async Task<ResponseModel> TopTracksAsync(
-        ContextModel context,
+    public async Task<ResponseModel> TopTracksAsync(ContextModel context,
         TopListSettings topListSettings,
         TimeSettingsModel timeSettings,
-        UserSettingsModel userSettings)
+        UserSettingsModel userSettings,
+        ResponseMode mode)
     {
         var response = new ResponseModel
         {
@@ -946,6 +950,24 @@ public class TrackBuilders
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        if (mode == ResponseMode.Image)
+        {
+            var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom,
+                userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
+            var backgroundImage = (await this._artistsService.GetArtistFromDatabase(topTracks.Content.TopTracks.First()
+                .ArtistName))?.SpotifyImageUrl;
+
+            var image = await this._puppeteerService.GetTopList(userTitle, "Top Tracks", "tracks", timeSettings.Description,
+                topTracks.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), backgroundImage, topTracks.TopList);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"top-tracks-{userSettings.DiscordUserId}";
+            response.ResponseType = ResponseType.ImageOnly;
+
             return response;
         }
 

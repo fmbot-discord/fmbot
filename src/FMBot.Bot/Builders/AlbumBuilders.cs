@@ -320,7 +320,7 @@ public class AlbumBuilders
 
     public async Task<ResponseModel> WhoKnowsAlbumAsync(
         ContextModel context,
-        WhoKnowsMode mode,
+        ResponseMode mode,
         string albumValues,
         bool displayRoleSelector = false,
         List<ulong> roles = null)
@@ -373,7 +373,7 @@ public class AlbumBuilders
             }
         }
 
-        if (mode == WhoKnowsMode.Image)
+        if (mode == ResponseMode.Image)
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, fullAlbumName,
                 filteredUsersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server);
@@ -467,7 +467,7 @@ public class AlbumBuilders
 
     public async Task<ResponseModel> FriendsWhoKnowAlbumAsync(
         ContextModel context,
-        WhoKnowsMode mode,
+        ResponseMode mode,
         string albumValues)
     {
         var response = new ResponseModel
@@ -523,7 +523,7 @@ public class AlbumBuilders
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        if (mode == WhoKnowsMode.Image)
+        if (mode == ResponseMode.Image)
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"from <b>{userTitle}</b>'s friends", albumCoverUrl, albumName,
                 usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server);
@@ -640,7 +640,7 @@ public class AlbumBuilders
             }
         }
 
-        if (settings.WhoKnowsMode == WhoKnowsMode.Image)
+        if (settings.ResponseMode == ResponseMode.Image)
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"in <b>.fmbot 🌐</b>", albumCoverUrl, albumName,
                 filteredUsersWithAlbum, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
@@ -1066,11 +1066,11 @@ public class AlbumBuilders
         return response;
     }
 
-    public async Task<ResponseModel> TopAlbumsAsync(
-        ContextModel context,
+    public async Task<ResponseModel> TopAlbumsAsync(ContextModel context,
         TopListSettings topListSettings,
         TimeSettingsModel timeSettings,
-        UserSettingsModel userSettings)
+        UserSettingsModel userSettings,
+        ResponseMode mode)
     {
         var response = new ResponseModel
         {
@@ -1117,6 +1117,26 @@ public class AlbumBuilders
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        if (mode == ResponseMode.Image)
+        {
+            var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom,
+                userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
+            albums.Content.TopAlbums = await this._albumService.FillMissingAlbumCovers(albums.Content.TopAlbums);
+
+            var firstAlbumImage =
+                albums.Content.TopAlbums.FirstOrDefault(f => f.AlbumCoverUrl != null)?.AlbumCoverUrl;
+
+            var image = await this._puppeteerService.GetTopList(userTitle, "Top Albums", "albums", timeSettings.Description,
+                albums.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), firstAlbumImage, albums.TopList);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"top-albums-{userSettings.DiscordUserId}";
+            response.ResponseType = ResponseType.ImageOnly;
+
             return response;
         }
 

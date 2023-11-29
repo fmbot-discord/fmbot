@@ -335,12 +335,13 @@ public class ArtistCommands : BaseCommandModule
             }
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly, registeredLastFm: userSettings.RegisteredLastFm);
+            var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
             var response = topListSettings.Discogs
                 ? await this._discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
                     topListSettings, timeSettings, userSettings)
                 : await this._artistBuilders.TopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
-                    topListSettings, timeSettings, userSettings);
+                    topListSettings, timeSettings, userSettings, mode.mode);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -461,7 +462,7 @@ public class ArtistCommands : BaseCommandModule
 
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
+                ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
                 NewSearchValue = artistValues,
                 DisplayRoleFilter = false
             };
@@ -471,7 +472,7 @@ public class ArtistCommands : BaseCommandModule
             var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context,
                     prfx,
                     contextUser),
-                settings.WhoKnowsMode,
+                settings.ResponseMode,
                 settings.NewSearchValue,
                 settings.DisplayRoleFilter,
                 redirectsEnabled: settings.RedirectsEnabled);
@@ -515,7 +516,7 @@ public class ArtistCommands : BaseCommandModule
                 ShowBotters = false,
                 AdminView = false,
                 NewSearchValue = artistValues,
-                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed
+                ResponseMode = contextUser.Mode ?? ResponseMode.Embed
             };
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
@@ -559,7 +560,7 @@ public class ArtistCommands : BaseCommandModule
         {
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
+                ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
                 NewSearchValue = artistValues
             };
 
@@ -567,7 +568,7 @@ public class ArtistCommands : BaseCommandModule
 
             var response = await this._artistBuilders
                 .FriendsWhoKnowArtistAsync(new ContextModel(this.Context, prfx, contextUser),
-                    currentSettings.WhoKnowsMode, settings.NewSearchValue, settings.RedirectsEnabled);
+                    currentSettings.ResponseMode, settings.NewSearchValue, settings.RedirectsEnabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

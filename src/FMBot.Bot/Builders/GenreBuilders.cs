@@ -17,8 +17,10 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
+using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
 using Humanizer;
+using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
@@ -34,8 +36,9 @@ public class GenreBuilders
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SpotifyService _spotifyService;
     private readonly IIndexService _indexService;
+    private readonly PuppeteerService _puppeteerService;
 
-    public GenreBuilders(UserService userService, GuildService guildService, GenreService genreService, WhoKnowsArtistService whoKnowsArtistService, PlayService playService, ArtistsService artistsService, IDataSourceFactory dataSourceFactory, SpotifyService spotifyService, IIndexService indexService)
+    public GenreBuilders(UserService userService, GuildService guildService, GenreService genreService, WhoKnowsArtistService whoKnowsArtistService, PlayService playService, ArtistsService artistsService, IDataSourceFactory dataSourceFactory, SpotifyService spotifyService, IIndexService indexService, PuppeteerService puppeteerService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -46,6 +49,7 @@ public class GenreBuilders
         this._dataSourceFactory = dataSourceFactory;
         this._spotifyService = spotifyService;
         this._indexService = indexService;
+        this._puppeteerService = puppeteerService;
     }
 
     public async Task<ResponseModel> GetGuildGenres(ContextModel context, Guild guild, GuildRankingSettings guildListSettings)
@@ -142,11 +146,11 @@ public class GenreBuilders
         return response;
     }
 
-    public async Task<ResponseModel> GetTopGenres(
-        ContextModel context,
+    public async Task<ResponseModel> GetTopGenres(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
-        TopListSettings topListSettings)
+        TopListSettings topListSettings,
+        ResponseMode mode)
     {
         var response = new ResponseModel
         {
@@ -230,6 +234,31 @@ public class GenreBuilders
 
         var genres = await this._genreService.GetTopGenresForTopArtists(artists.Content.TopArtists);
         var previousTopGenres = await this._genreService.GetTopGenresForTopArtists(previousTopArtists);
+
+        if (mode == ResponseMode.Image && genres.Any())
+        {
+            var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom,
+                userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
+            artists.Content.TopArtists = await this._artistsService.FillArtistImages(artists.Content.TopArtists);
+
+            var genresAsString = genres.Select(s => s.GenreName).Take(1).ToList();
+            var userArtistsWithGenres = await this._genreService.GetArtistsForGenres(genresAsString, artists.Content.TopArtists);
+
+            var validArtists = userArtistsWithGenres.First().Artists.Select(s => s.ArtistName.ToLower()).ToArray();
+            var firstArtistImage =
+                artists.Content.TopArtists.FirstOrDefault(f => validArtists.Contains(f.ArtistName.ToLower()) && f.ArtistImageUrl != null)?.ArtistImageUrl;
+
+            var image = await this._puppeteerService.GetTopList(userTitle, "Top Genres", "genres", timeSettings.Description,
+                genres.Count, totalPlays.GetValueOrDefault(), firstArtistImage,
+                this._genreService.GetTopListForTopGenres(genres));
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"top-genres-{userSettings.DiscordUserId}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
+        }
 
         var genrePages = genres.ChunkBy((int)topListSettings.EmbedSize);
 

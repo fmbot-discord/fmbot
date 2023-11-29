@@ -9,12 +9,12 @@
 
         body {
             font-family: "worksans";
-            margin-right: 72px;
-            margin-left: 72px;
-            margin-top: 84px;
+            margin-right: 48px;
+            margin-left: 48px;
+            margin-top: 56px;
             background-color: #282424;
             color: #dcddde;
-            background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.75)), url('https://i.scdn.co/image/ab6761610000e5ebe9348cc01ff5d55971b22433');
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.75)), url('{{image-url}}');
             background-position: center;
             background-size: cover;
             background-attachment: fixed;
@@ -128,9 +128,15 @@
             display: inline-block;
             text-align: center;
             padding-left: -4px;
+            max-width: 52px !important;
         }
         .own-num {
             width: {{num-width}}px !important;
+        }
+        .sub {
+            font-size: 20px;
+            min-width: 400px;
+            margin-bottom: 4px;
         }
 
         .hidden {
@@ -148,23 +154,20 @@
             {{title}}
         </div>
         <div class="whoknows subtitle float-right bottom">
-            {{total}}
+            {{time}}
         </div>
     </div>
     <div class="result-container">
         <div class="float-child">
             <div class="result-list">
                 <ul>
-                    <li>
-                        <div class="num">#1</div> · The Beatles <span class="float-right">312 plays</span>
-                    </li>
-                    <li>
-                        <div class="num">#2</div> · Mall Grab <span class="float-right">292 plays</span>
-                    </li>
-                    <li>
-                        <div class="num">#3</div> · De Jeugd Van Tegenwoordig <span class="float-right">250 plays</span>
-                    </li>
+                    {{users}}
                 </ul>
+            </div>
+            <div class="whoknows subtitle bottom align-center flex-wrap stat-view">
+                <span class="float-left">{{totalDifferent}} different {{type}}</span>
+                <span><b>·</b></span>
+                <span class="float-right">{{totalPlays}} total plays</span>
             </div>
             <div class="floatleft bottom branding">
                 Powered by .fmbot

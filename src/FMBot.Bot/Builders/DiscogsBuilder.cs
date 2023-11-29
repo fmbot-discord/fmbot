@@ -12,9 +12,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
-using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
-using static SpotifyAPI.Web.PlaylistRemoveItemsRequest;
 
 namespace FMBot.Bot.Builders;
 
@@ -365,7 +363,7 @@ public class DiscogsBuilder
 
     public async Task<ResponseModel> WhoHasDiscogsAsync(
         ContextModel context,
-        WhoKnowsMode mode,
+        ResponseMode mode,
         string artistValues,
         bool displayRoleSelector = false,
         List<ulong> roles = null,

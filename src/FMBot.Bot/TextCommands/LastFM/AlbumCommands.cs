@@ -202,9 +202,10 @@ public class AlbumCommands : BaseCommandModule
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
             var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
-                topListSettings, timeSettings, userSettings);
+                topListSettings, timeSettings, userSettings, mode.mode);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -234,14 +235,14 @@ public class AlbumCommands : BaseCommandModule
         {
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
+                ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
                 NewSearchValue = albumValues,
                 DisplayRoleFilter = false
             };
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
-            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, prfx, contextUser), settings.WhoKnowsMode, settings.NewSearchValue, settings.DisplayRoleFilter);
+            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue, settings.DisplayRoleFilter);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -266,7 +267,7 @@ public class AlbumCommands : BaseCommandModule
 
         var currentSettings = new WhoKnowsSettings
         {
-            WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
+            ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
             HidePrivateUsers = false,
             ShowBotters = false,
             AdminView = false,
@@ -315,14 +316,14 @@ public class AlbumCommands : BaseCommandModule
         {
             var currentSettings = new WhoKnowsSettings
             {
-                WhoKnowsMode = contextUser.Mode ?? WhoKnowsMode.Embed,
+                ResponseMode = contextUser.Mode ?? ResponseMode.Embed,
                 NewSearchValue = albumValues
             };
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
             var response = await this._albumBuilders
-                .FriendsWhoKnowAlbumAsync(new ContextModel(this.Context, prfx, contextUser), currentSettings.WhoKnowsMode, settings.NewSearchValue);
+                .FriendsWhoKnowAlbumAsync(new ContextModel(this.Context, prfx, contextUser), currentSettings.ResponseMode, settings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

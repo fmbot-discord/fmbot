@@ -157,6 +157,15 @@ public class CountryService
             .ToList();
     }
 
+    public List<TopListObject> GetTopListForTopCountries(List<TopCountry> topCountries)
+    {
+        return topCountries.Select(s => new TopListObject
+        {
+            Name = s.CountryName,
+            Playcount = s.UserPlaycount.GetValueOrDefault()
+        }).ToList();
+    }
+
     public async Task<List<AffinityItemDto>> GetTopCountriesForTopArtists(IEnumerable<AffinityItemDto> topArtists)
     {
         if (topArtists == null)

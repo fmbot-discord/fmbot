@@ -519,7 +519,6 @@ public class UserCommands : BaseCommandModule
     [Summary("Sends you a dm so you can configure your `fm` command.\n\n" +
              "Servers can override your mode with `{{prfx}}servermode`.")]
     [Examples("mode")]
-    [Alias("md", "mode")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task ModeAsync(params string[] otherSettings)
@@ -550,17 +549,33 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("wkmode", RunMode = RunMode.Async)]
-    [Summary("Change how your whoknows commands look.")]
-    [Examples("wkmode")]
+    [Command("responsemode", RunMode = RunMode.Async)]
+    [Summary("Change how your whoknows and top list commands look.")]
+    [Examples("responsemode")]
     [UsernameSetRequired]
+    [Alias("wkmode", "topmode", "toplistmode")]
     [CommandCategories(CommandCategory.UserSettings)]
-    public async Task WkModeAsync(params string[] otherSettings)
+    public async Task ResponseModeAsync(params string[] otherSettings)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = UserBuilder.WkMode(new ContextModel(this.Context, prfx, contextUser));
+        var response = UserBuilder.ResponseMode(new ContextModel(this.Context, prfx, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [Command("mode", RunMode = RunMode.Async)]
+    [UsernameSetRequired]
+    [ExcludeFromHelp]
+    [Alias("md")]
+    public async Task PickModeAsync(params string[] otherSettings)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        var response = UserBuilder.ModePick(new ContextModel(this.Context, prfx, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

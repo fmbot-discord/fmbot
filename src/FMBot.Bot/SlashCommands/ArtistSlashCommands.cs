@@ -164,7 +164,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task WhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
@@ -172,7 +172,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         try
         {
@@ -210,7 +210,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         try
         {
             // TODO add redirects
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), WhoKnowsMode.Embed, artist.Name, true, roleIds);
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, artist.Name, true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -227,7 +227,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task FriendsWhoKnowAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
@@ -235,7 +235,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
-        mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         try
         {
@@ -257,7 +257,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task GlobalWhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
@@ -271,7 +271,7 @@ public class ArtistSlashCommands : InteractionModuleBase
             ShowBotters = false,
             AdminView = false,
             NewSearchValue = name,
-            WhoKnowsMode = mode ?? contextUser.Mode ?? WhoKnowsMode.Embed,
+            ResponseMode = mode ?? contextUser.Mode ?? ResponseMode.Embed,
             RedirectsEnabled = redirectsEnabled
         };
 

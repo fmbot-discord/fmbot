@@ -60,14 +60,14 @@ public class AlbumSlashCommands : InteractionModuleBase
     public async Task WhoKnowsAlbumAsync(
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         try
         {
@@ -103,7 +103,7 @@ public class AlbumSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), WhoKnowsMode.Embed, $"{album.ArtistName} | {album.Name}", true, roleIds);
+            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, $"{album.ArtistName} | {album.Name}", true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -120,14 +120,14 @@ public class AlbumSlashCommands : InteractionModuleBase
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))]
         string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         _ = DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
-        mode ??= contextUser.Mode ?? WhoKnowsMode.Embed;
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         try
         {
@@ -148,7 +148,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))]
         string name = null,
-        [Summary("Mode", "The type of response you want")] WhoKnowsMode? mode = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
     {
         _ = DeferAsync();
@@ -161,7 +161,7 @@ public class AlbumSlashCommands : InteractionModuleBase
             ShowBotters = false,
             AdminView = false,
             NewSearchValue = name,
-            WhoKnowsMode = mode ?? contextUser.Mode ?? WhoKnowsMode.Embed
+            ResponseMode = mode ?? contextUser.Mode ?? ResponseMode.Embed
         };
 
         try

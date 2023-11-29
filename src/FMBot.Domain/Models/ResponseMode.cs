@@ -1,6 +1,6 @@
 namespace FMBot.Domain.Models;
 
-public enum WhoKnowsMode
+public enum ResponseMode
 {
     Embed = 1,
     Image = 2

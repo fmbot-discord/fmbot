@@ -181,6 +181,15 @@ public class GenreService
             }).ToList();
     }
 
+    public List<TopListObject> GetTopListForTopGenres(List<TopGenre> topGenres)
+    {
+        return topGenres.Select(s => new TopListObject
+        {
+            Name = s.GenreName,
+            Playcount = s.UserPlaycount.GetValueOrDefault()
+        }).ToList();
+    }
+
     public async Task<List<AffinityItemDto>> GetTopGenresWithPositionForTopArtists(IEnumerable<AffinityItemDto> topArtists)
     {
         if (topArtists == null)

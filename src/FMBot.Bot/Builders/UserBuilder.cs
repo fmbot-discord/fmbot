@@ -298,23 +298,23 @@ public class UserBuilder
         return response;
     }
 
-    public static ResponseModel WkMode(ContextModel context)
+    public static ResponseModel ResponseMode(ContextModel context)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
         };
 
-        response.Embed.WithAuthor("Configuring your default WhoKnows mode");
+        response.Embed.WithAuthor("Configuring your default WhoKnows and top list mode");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var fmType = new SelectMenuBuilder()
-                .WithPlaceholder("Select WhoKnows mode")
-                .WithCustomId(InteractionConstants.WkModeSetting)
+                .WithPlaceholder("Select response mode")
+                .WithCustomId(InteractionConstants.ResponseModeSetting)
                 .WithMinValues(1)
                 .WithMaxValues(1);
 
-        foreach (var name in Enum.GetNames(typeof(WhoKnowsMode)).OrderBy(o => o))
+        foreach (var name in Enum.GetNames(typeof(ResponseMode)).OrderBy(o => o))
         {
             var picked = context.SlashCommand && context.ContextUser.Mode.HasValue && Enum.GetName(context.ContextUser.Mode.Value) == name;
 
@@ -329,6 +329,28 @@ public class UserBuilder
         description.AppendLine("You can also override this when using a command:");
         description.AppendLine("- `image` / `img`");
         description.AppendLine("- `embed`");
+
+        response.Embed.WithDescription(description.ToString());
+
+        return response;
+    }
+
+    public static ResponseModel ModePick(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+            Components = new ComponentBuilder()
+                .WithButton("'.fm' mode", InteractionConstants.FmModeChange)
+                .WithButton("Response mode", InteractionConstants.ResponseModeChange)
+        };
+
+        var description = new StringBuilder();
+
+        description.AppendLine("Pick which mode you want to modify:");
+        description.AppendLine();
+        description.AppendLine("- `fm` mode - Changes how your .fm command looks");
+        description.AppendLine("- Response mode - changes default response to `WhoKnows` and top list commands");
 
         response.Embed.WithDescription(description.ToString());
 

@@ -54,12 +54,14 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top artists billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Size", "Amount of artists to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
         [Summary("Discogs", "Show top artists in Discogs collection")] bool discogs = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly, discogs ? DateTime.MinValue : null);
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard, discogs);
@@ -68,7 +70,7 @@ public class TopSlashCommands : InteractionModuleBase
             ? await this._discogsBuilders.DiscogsTopArtistsAsync(new ContextModel(this.Context, contextUser),
                 topListSettings, timeSettings, userSettings)
             : await this._artistBuilders.TopArtistsAsync(new ContextModel(this.Context, contextUser),
-                topListSettings, timeSettings, userSettings);
+                topListSettings, timeSettings, userSettings, mode.Value);
 
         await this.Context.SendResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -80,17 +82,20 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top albums billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Size", "Amount of albums to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
-        var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, contextUser), topListSettings, timeSettings, userSettings);
+        var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, contextUser),
+            topListSettings, timeSettings, userSettings, mode.Value);
 
         await this.Context.SendResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -102,17 +107,20 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top tracks billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Size", "Amount of tracks to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
-        var response = await this._trackBuilders.TopTracksAsync(new ContextModel(this.Context, contextUser), topListSettings, timeSettings, userSettings);
+        var response = await this._trackBuilders.TopTracksAsync(new ContextModel(this.Context, contextUser),
+            topListSettings, timeSettings, userSettings, mode.Value);
 
         await this.Context.SendResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -124,17 +132,20 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top genres billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Size", "Amount of genres to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
-        var response = await this._genreBuilders.GetTopGenres(new ContextModel(this.Context, contextUser), userSettings, timeSettings, topListSettings);
+        var response = await this._genreBuilders.GetTopGenres(new ContextModel(this.Context, contextUser),
+            userSettings, timeSettings, topListSettings, mode.Value);
 
         await this.Context.SendResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -146,17 +157,20 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top countries billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Size", "Amount of countries to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
-        var response = await this._countryBuilders.GetTopCountries(new ContextModel(this.Context, contextUser), userSettings, timeSettings, topListSettings);
+        var response = await this._countryBuilders.GetTopCountries(new ContextModel(this.Context, contextUser),
+            userSettings, timeSettings, topListSettings, mode.Value);
 
         await this.Context.SendResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);

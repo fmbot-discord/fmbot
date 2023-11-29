@@ -1018,7 +1018,7 @@ public class UserService
         return user;
     }
 
-    public async Task<User> SetWkMode(User userToUpdate, WhoKnowsMode mode)
+    public async Task<User> SetResponseMode(User userToUpdate, ResponseMode mode)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);

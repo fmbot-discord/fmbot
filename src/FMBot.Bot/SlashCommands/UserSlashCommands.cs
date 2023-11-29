@@ -129,7 +129,7 @@ public class UserSlashCommands : InteractionModuleBase
                     }
                 case UserSetting.WkMode:
                     {
-                        response = UserBuilder.WkMode(new ContextModel(this.Context, contextUser));
+                        response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
 
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
                         break;
@@ -400,7 +400,20 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("fmmode", "Changes your '/fm' layout")]
     [UsernameSetRequired]
-    public async Task ModeAsync()
+    public async Task FmModeSlashAsync()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
+
+        var response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser), guild);
+
+        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction(InteractionConstants.FmModeChange)]
+    [UsernameSetRequired]
+    public async Task FmModePickAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
@@ -531,30 +544,42 @@ public class UserSlashCommands : InteractionModuleBase
         await RespondAsync(embed: embed.Build(), ephemeral: true);
     }
 
-    [SlashCommand("wkmode", "Changes your default whoknows mode")]
+    [SlashCommand("responsemode", "Changes your default whoknows and top list mode")]
     [UsernameSetRequired]
-    public async Task WkModeAsync()
+    public async Task ResponseModeSlashAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var response = UserBuilder.WkMode(new ContextModel(this.Context, contextUser));
+        var response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction(InteractionConstants.WkModeSetting)]
+    [ComponentInteraction(InteractionConstants.ResponseModeChange)]
     [UsernameSetRequired]
-    public async Task SetWkModeAsync(string[] inputs)
+    public async Task ResponseModePickAsync()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction(InteractionConstants.ResponseModeSetting)]
+    [UsernameSetRequired]
+    public async Task SetResponseModeAsync(string[] inputs)
     {
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (Enum.TryParse(inputs.FirstOrDefault(), out WhoKnowsMode mode))
+        if (Enum.TryParse(inputs.FirstOrDefault(), out ResponseMode mode))
         {
-            var newUserSettings = await this._userService.SetWkMode(userSettings, mode);
+            var newUserSettings = await this._userService.SetResponseMode(userSettings, mode);
 
             var reply = new StringBuilder();
-            reply.Append($"Your default `WhoKnows` mode has been set to **{newUserSettings.Mode}**.");
+            reply.Append($"Your default `WhoKnows` and Top list mode has been set to **{newUserSettings.Mode}**.");
 
             var embed = new EmbedBuilder();
             embed.WithColor(DiscordConstants.InformationColorBlue);

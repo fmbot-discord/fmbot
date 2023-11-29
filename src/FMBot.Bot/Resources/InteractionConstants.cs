@@ -10,7 +10,10 @@ public static class InteractionConstants
     public const string FmSettingFooterSupporter = "fm-footer-menu-supporter";
 
     public const string FmPrivacySetting = "fm-gwk-privacy";
-    public const string WkModeSetting = "wk-mode";
+    public const string ResponseModeSetting = "response-mode-set";
+
+    public const string ResponseModeChange = "response-mode-pick";
+    public const string FmModeChange = "fm-mode-pick";
 
     public const string RemoveFmbotAccount = "remove-account-confirm";
     public const string RemoveFmbotAccountModal = "remove-account-confirm-modal";

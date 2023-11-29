@@ -35,7 +35,7 @@ public class User
 
     public FmFooterOption FmFooterOptions { get; set; }
 
-    public WhoKnowsMode? Mode { get; set; }
+    public ResponseMode? Mode { get; set; }
 
     public PrivacyLevel PrivacyLevel { get; set; }
 
