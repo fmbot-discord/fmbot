@@ -25,6 +25,8 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using Google.Apis.Discovery;
+using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Options;
 using Swan;
 using User = FMBot.Persistence.Domain.Models.User;
@@ -588,6 +590,33 @@ public class UserSlashCommands : InteractionModuleBase
             await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
             this.Context.LogCommandUsed();
         }
+    }
+
+    [SlashCommand("localization", "Configure your timezone in .fmbot")]
+    [UsernameSetRequired]
+    public async Task SetLocalization([Summary("Timezone", "Timezone you want to set")] [Autocomplete(typeof(TimeZoneAutoComplete))] string timezone)
+    {
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var newTimeZone = await this._userService.SetTimeZone(userSettings.UserId, timezone);
+
+        var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(newTimeZone);
+        var dateValue = ((DateTimeOffset)TimeZoneInfo.ConvertTime(DateTime.UtcNow.AddDays(1).Date, timeZoneInfo))
+            .ToUnixTimeSeconds();
+
+        var reply = new StringBuilder();
+        reply.AppendLine($"Your timezone has successfully been updated.");
+        reply.AppendLine();
+        reply.AppendLine($"- ID: `{timeZoneInfo.Id}`");
+        reply.AppendLine($"- Zone: `{timeZoneInfo.DisplayName}`");
+        reply.AppendLine($"- Midnight: <t:{dateValue}:t>");
+
+        var embed = new EmbedBuilder();
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+        embed.WithDescription(reply.ToString());
+
+        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+        this.Context.LogCommandUsed();
     }
 
     [SlashCommand("remove", "Deletes your .fmbot account")]

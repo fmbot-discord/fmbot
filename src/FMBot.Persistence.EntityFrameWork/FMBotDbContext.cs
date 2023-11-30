@@ -65,7 +65,7 @@ namespace FMBot.Persistence.EntityFrameWork
                 optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 // Uncomment below connection string when creating migrations, and also comment out the above iconfiguration stuff
-                // optionsBuilder.UseNpgsql("Host=localhost;Port=5434;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
+                // optionsBuilder.UseNpgsql("Host=localhost;Port=5435;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }

@@ -63,11 +63,13 @@ public class PlayService
                 return null;
             }
 
+            var timeZoneId = "Central Pacific Standard Time";
+
             var overview = new DailyOverview
             {
                 Days = plays
                     .OrderByDescending(o => o.TimePlayed)
-                    .GroupBy(g => g.TimePlayed.Date.AddHours(5))
+                    .GroupBy(g => TimeZoneInfo.ConvertTime(g.TimePlayed.Date, TimeZoneInfo.FindSystemTimeZoneById(timeZoneId)))
                     .Select(s => new DayOverview
                     {
                         Date = s.Key,

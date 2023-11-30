@@ -77,7 +77,8 @@
       },
       {
         "Id": "Cen. Australia Standard Time",
-        "Name": "(UTC+09:30) Adelaide"
+        "Name": "(UTC+09:30) Adelaide",
+        "Default": true
       },
       {
         "Id": "E. Australia Standard Time",
@@ -249,7 +250,8 @@
       },
       {
         "Id": "Central Brazilian Standard Time",
-        "Name": "(UTC-04:00) Cuiaba"
+        "Name": "(UTC-04:00) Cuiaba",
+        "Default": true
       },
       {
         "Id": "SA Western Standard Time",
@@ -341,7 +343,8 @@
       },
       {
         "Id": "Canada Central Standard Time",
-        "Name": "(UTC-06:00) Saskatchewan"
+        "Name": "(UTC-06:00) Saskatchewan",
+        "Default": true
       },
       {
         "Id": "Mountain Standard Time",
@@ -893,7 +896,8 @@
     "WindowsTimeZones": [
       {
         "Id": "Central Asia Standard Time",
-        "Name": "(UTC+06:00) Astana"
+        "Name": "(UTC+06:00) Astana",
+        "Default": true
       },
       {
         "Id": "West Asia Standard Time",
@@ -1113,7 +1117,8 @@
     "WindowsTimeZones": [
       {
         "Id": "Central Standard Time (Mexico)",
-        "Name": "(UTC-06:00) Guadalajara, Mexico City, Monterrey"
+        "Name": "(UTC-06:00) Guadalajara, Mexico City, Monterrey",
+        "Default": true
       },
       {
         "Id": "Eastern Standard Time (Mexico)",
@@ -1445,7 +1450,8 @@
       },
       {
         "Id": "Russian Standard Time",
-        "Name": "(UTC+03:00) Moscow, St. Petersburg, Volgograd"
+        "Name": "(UTC+03:00) Moscow, St. Petersburg, Volgograd",
+        "Default": true
       },
       {
         "Id": "Russia Time Zone 3",
@@ -1797,7 +1803,8 @@
       },
       {
         "Id": "Central Standard Time",
-        "Name": "(UTC-06:00) Central Time (US & Canada)"
+        "Name": "(UTC-06:00) Central Time (US & Canada)",
+        "Default":  true
       },
       {
         "Id": "Mountain Standard Time",

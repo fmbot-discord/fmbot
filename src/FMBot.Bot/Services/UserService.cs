@@ -970,6 +970,23 @@ public class UserService
         return user.PrivacyLevel;
     }
 
+    public async Task<string> SetTimeZone(int userId, string timeZone)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var user = await db.Users.FirstAsync(f => f.UserId == userId);
+
+        user.TimeZone = timeZone;
+
+        db.Update(user);
+
+        await db.SaveChangesAsync();
+
+        RemoveUserFromCache(user);
+
+        return user.TimeZone;
+    }
+
     public async Task<User> SetSettings(User userToUpdate, FmEmbedType embedType, FmCountType? countType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

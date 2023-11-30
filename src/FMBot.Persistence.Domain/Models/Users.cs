@@ -51,6 +51,9 @@ public class User
 
     public string[] EmoteReactions { get; set; }
 
+    public string TimeZone { get; set; }
+    public NumberFormat? NumberFormat { get; set; }
+
     public UserDiscogs UserDiscogs { get; set; }
     public ICollection<UserDiscogsReleases> DiscogsReleases { get; set; }
 

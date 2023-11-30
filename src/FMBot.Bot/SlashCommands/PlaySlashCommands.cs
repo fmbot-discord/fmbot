@@ -118,7 +118,8 @@ public class PlaySlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task RecentAsync(
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Artist", "Artist you want to filter on (Supporter only)")] string artistName = null)
+        [Summary("Artist", "Artist you want to filter on (Supporter only)")]
+        [Autocomplete(typeof(ArtistAutoComplete))] string artistName = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
