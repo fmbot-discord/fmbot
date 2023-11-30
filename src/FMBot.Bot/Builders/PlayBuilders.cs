@@ -1117,6 +1117,12 @@ public class PlayBuilder
                 .OrderBy(o => o.TimePlayed)
                 .GroupBy(g => new { g.TimePlayed.Month, g.TimePlayed.Year });
 
+            var totalPlayTime = await this._timeService.GetPlayTimeForPlays(allPlays.Where(w => w.TimePlayed >= filter && w.TimePlayed <= endFilter));
+            monthDescription.AppendLine(
+                $"**`All`** " +
+                $"- **{allPlays.Count(w => w.TimePlayed >= filter && w.TimePlayed <= endFilter)}** plays " +
+                $"- **{StringExtensions.GetLongListeningTimeString(totalPlayTime)}**");
+
             foreach (var month in monthGroups)
             {
                 if (!allPlays.Any(a => a.TimePlayed < DateTime.UtcNow.AddMonths(-month.Key.Month)))
@@ -1126,7 +1132,7 @@ public class PlayBuilder
 
                 var time = await this._timeService.GetPlayTimeForPlays(month);
                 monthDescription.AppendLine(
-                    $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}`** " +
+                    $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month.Key.Month)}`** " +
                     $"- **{month.Count()}** plays " +
                     $"- **{StringExtensions.GetLongListeningTimeString(time)}**");
             }
