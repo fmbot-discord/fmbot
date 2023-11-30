@@ -401,7 +401,7 @@ public class PuppeteerService
             <li class="flex-wrap">
                 <div class="num" style="padding-top:12px;margin-left:-8px !important;">{position}</div>
                 <div>
-                    <div>{name} <span class="float-right">{plays}</span></div>
+                    <div>{name} <span class="float-right" style="padding-top:12px;">{plays}</span></div>
                     <div class="sub">{sub}</div>
                 </div>
             </li>
