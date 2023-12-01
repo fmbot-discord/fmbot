@@ -54,7 +54,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top artists billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Size", "Amount of artists to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
         [Summary("Discogs", "Show top artists in Discogs collection")] bool discogs = false)
@@ -82,7 +82,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top albums billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Size", "Amount of albums to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
@@ -107,7 +107,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top tracks billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Size", "Amount of tracks to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
@@ -132,7 +132,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top genres billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Size", "Amount of genres to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
@@ -157,7 +157,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Billboard", "Show top countries billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Size", "Amount of countries to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {

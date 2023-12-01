@@ -60,7 +60,7 @@ public class AlbumSlashCommands : InteractionModuleBase
     public async Task WhoKnowsAlbumAsync(
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false)
     {
         _ = DeferAsync();
@@ -120,7 +120,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))]
         string name = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         _ = DeferAsync(privateResponse);
@@ -148,7 +148,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))]
         string name = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
     {
         _ = DeferAsync();

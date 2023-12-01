@@ -66,7 +66,7 @@ public class TrackSlashCommands : InteractionModuleBase
     public async Task WhoKnowsTrackAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false)
     {
         _ = DeferAsync();
@@ -126,7 +126,7 @@ public class TrackSlashCommands : InteractionModuleBase
     public async Task FriendsWhoKnowAlbumAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         _ = DeferAsync(privateResponse);
@@ -153,7 +153,7 @@ public class TrackSlashCommands : InteractionModuleBase
     public async Task GlobalWhoKnowsTrackAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
     {
         _ = DeferAsync();

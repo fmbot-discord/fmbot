@@ -164,7 +164,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task WhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
@@ -227,7 +227,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task FriendsWhoKnowAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
@@ -257,7 +257,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task GlobalWhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
@@ -293,7 +293,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task ArtistDiscoveriesAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
         [Summary("Size", "Amount of artists discoveries to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
