@@ -748,7 +748,8 @@ public class ArtistBuilders
         ContextModel context,
         TopListSettings topListSettings,
         TimeSettingsModel timeSettings,
-        UserSettingsModel userSettings)
+        UserSettingsModel userSettings,
+        ResponseMode mode)
     {
         var response = new ResponseModel
         {
@@ -808,6 +809,29 @@ public class ArtistBuilders
             .Where(w => !knownArtists.Any(a => a.Equals(w.ArtistName, StringComparison.OrdinalIgnoreCase)))
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
+
+        if (mode == ResponseMode.Image && topNewArtists.Any())
+        {
+            var topList = topNewArtists.Select(s => new TopListObject
+            {
+                Name = s.ArtistName,
+                SubName = $"{s.FirstPlay.Value:MMM d yyyy}",
+                Playcount = s.UserPlaycount
+            }).ToList();
+
+            var totalPlays = allPlays.Count(w => w.TimePlayed >= timeSettings.StartDateTime && w.TimePlayed <= timeSettings.EndDateTime);
+            var backgroundImage = (await this._artistsService.GetArtistFromDatabase(topNewArtists.First().ArtistName))?.SpotifyImageUrl;
+
+            var image = await this._puppeteerService.GetTopList(userTitle, "Newly discovered artists", "new artists", timeSettings.Description,
+                topNewArtists.Count, totalPlays, backgroundImage, topList);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"top-tracks-{userSettings.DiscordUserId}";
+            response.ResponseType = ResponseType.ImageOnly;
+
+            return response;
+        }
 
         var artistPages = topNewArtists.ChunkBy((int)topListSettings.EmbedSize);
 

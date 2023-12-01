@@ -390,8 +390,9 @@ public class ArtistCommands : BaseCommandModule
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, TimePeriod.Quarterly, registeredLastFm: userSettings.RegisteredLastFm);
+            var mode = SettingService.SetMode(timeSettings.NewSearchValue, contextUser.Mode);
 
-            var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings);
+            var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings, mode.mode);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

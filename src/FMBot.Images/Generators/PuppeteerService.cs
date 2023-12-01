@@ -291,7 +291,7 @@ public class PuppeteerService
 
         await page.SetViewportAsync(new ViewPortOptions
         {
-            Width = 700,
+            Width = 650,
             Height = 810 + extraHeight + (subNamesEnabled ? 125 : 0),
         });
 

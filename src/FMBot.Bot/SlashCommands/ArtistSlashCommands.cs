@@ -293,11 +293,13 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task ArtistDiscoveriesAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Mode", "The type of response you want")] ResponseMode? mode = null,
         [Summary("Size", "Amount of artists discoveries to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
         var context = new ContextModel(this.Context, contextUser);
 
@@ -316,7 +318,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default);
 
-        var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings);
+        var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings, mode.Value);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
