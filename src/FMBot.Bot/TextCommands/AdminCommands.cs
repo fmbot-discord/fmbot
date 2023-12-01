@@ -1393,7 +1393,7 @@ public class AdminCommands : BaseCommandModule
             description.AppendLine("Note that we don't take reports for sleep or 24/7 scrobbling, those get filtered automatically with temporary bans.");
             this._embed.WithDescription(description.ToString());
 
-            var components = new ComponentBuilder().WithButton("Report user", style: ButtonStyle.Secondary, customId: InteractionConstants.GlobalWhoKnowsReport);
+            var components = new ComponentBuilder().WithButton("Report user", style: ButtonStyle.Secondary, customId: InteractionConstants.ModerationCommands.GlobalWhoKnowsReport);
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
         }
 
@@ -1414,8 +1414,8 @@ public class AdminCommands : BaseCommandModule
             this._embed.WithDescription(description.ToString());
 
             var components = new ComponentBuilder()
-                .WithButton("Report artist image", style: ButtonStyle.Secondary, customId: InteractionConstants.ReportArtist)
-                .WithButton("Report album cover", style: ButtonStyle.Secondary, customId: InteractionConstants.ReportAlbum);
+                .WithButton("Report artist image", style: ButtonStyle.Secondary, customId: InteractionConstants.ModerationCommands.ReportArtist)
+                .WithButton("Report album cover", style: ButtonStyle.Secondary, customId: InteractionConstants.ModerationCommands.ReportAlbum);
 
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
         }

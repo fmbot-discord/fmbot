@@ -345,7 +345,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleCommandChannelFmType}-*-*")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandChannelFmType}-*-*")]
     [ServerStaffOnly]
     public async Task SetChannelEmbedType(string channelId, string categoryId, string[] inputs)
     {
@@ -508,7 +508,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleCommandMove}-*-*")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandMove}-*-*")]
     [ServerStaffOnly]
     public async Task ToggleChannelCommandMove(string channelId, string categoryId)
     {
@@ -519,7 +519,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleCommandAdd}-*-*")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandAdd}-*-*")]
     [ServerStaffOnly]
     public async Task AddDisabledChannelCommand(string channelId, string categoryId)
     {
@@ -530,10 +530,10 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<AddDisabledChannelCommandModal>($"{InteractionConstants.ToggleCommandAddModal}-{channelId}-{categoryId}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<AddDisabledChannelCommandModal>($"{InteractionConstants.ToggleCommand.ToggleCommandAddModal}-{channelId}-{categoryId}-{message.Id}");
     }
 
-    [ModalInteraction($"{InteractionConstants.ToggleCommandAddModal}-*-*-*")]
+    [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandAddModal}-*-*-*")]
     [ServerStaffOnly]
     public async Task AddDisabledChannelCommand(string channelId, string categoryId, string messageId, AddDisabledChannelCommandModal modal)
     {
@@ -578,7 +578,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleCommandRemove}-*-*")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandRemove}-*-*")]
     [ServerStaffOnly]
     public async Task RemoveDisabledChannelCommand(string channelId, string categoryId)
     {
@@ -589,10 +589,10 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledChannelCommandModal>($"{InteractionConstants.ToggleCommandRemoveModal}-{channelId}-{categoryId}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledChannelCommandModal>($"{InteractionConstants.ToggleCommand.ToggleCommandRemoveModal}-{channelId}-{categoryId}-{message.Id}");
     }
 
-    [ModalInteraction($"{InteractionConstants.ToggleCommandRemoveModal}-*-*-*")]
+    [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandRemoveModal}-*-*-*")]
     [ServerStaffOnly]
     public async Task RemoveDisabledChannelCommand(string channelId, string categoryId, string messageId, RemoveDisabledChannelCommandModal modal)
     {
@@ -629,7 +629,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleCommandClear}-*-*")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandClear}-*-*")]
     [ServerStaffOnly]
     public async Task ClearDisabledChannelCommand(string channelId, string categoryId)
     {
@@ -645,7 +645,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleCommandDisableAll}-*-*")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandDisableAll}-*-*")]
     [ServerStaffOnly]
     public async Task DisableChannel(string channelId, string categoryId)
     {
@@ -662,7 +662,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleCommandEnableAll}-*-*")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}-*-*")]
     [ServerStaffOnly]
     public async Task EnableChannel(string channelId, string categoryId)
     {
@@ -678,7 +678,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleGuildCommandAdd}")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandAdd}")]
     [ServerStaffOnly]
     public async Task AddDisabledGuildCommand()
     {
@@ -689,10 +689,10 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<AddDisabledGuildCommandModal>($"{InteractionConstants.ToggleGuildCommandAddModal}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<AddDisabledGuildCommandModal>($"{InteractionConstants.ToggleCommand.ToggleGuildCommandAddModal}-{message.Id}");
     }
 
-    [ModalInteraction($"{InteractionConstants.ToggleGuildCommandAddModal}-*")]
+    [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandAddModal}-*")]
     [ServerStaffOnly]
     public async Task AddDisabledGuildCommand(string messageId, AddDisabledGuildCommandModal modal)
     {
@@ -731,7 +731,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleGuildCommandRemove}")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemove}")]
     [ServerStaffOnly]
     public async Task RemoveDisabledGuildCommand()
     {
@@ -742,10 +742,10 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledGuildCommandModal>($"{InteractionConstants.ToggleGuildCommandRemoveModal}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledGuildCommandModal>($"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemoveModal}-{message.Id}");
     }
 
-    [ModalInteraction($"{InteractionConstants.ToggleGuildCommandRemoveModal}-*")]
+    [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemoveModal}-*")]
     [ServerStaffOnly]
     public async Task RemoveDisabledChannelCommand(string messageId, RemoveDisabledGuildCommandModal modal)
     {
@@ -778,7 +778,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleGuildCommandClear}")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandClear}")]
     [ServerStaffOnly]
     public async Task ClearDisabledChannelCommand()
     {

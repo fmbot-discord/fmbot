@@ -38,7 +38,7 @@ public class AdminSlashCommands : InteractionModuleBase
         this._aliasService = aliasService;
     }
 
-    [ComponentInteraction(InteractionConstants.CensorTypes)]
+    [ComponentInteraction(InteractionConstants.ModerationCommands.CensorTypes)]
     public async Task SetCensoredArtist(string censoredId, string[] inputs)
     {
         var embed = new EmbedBuilder();
@@ -97,7 +97,7 @@ public class AdminSlashCommands : InteractionModuleBase
         await RespondAsync(embed: embed.Build());
     }
 
-    [ComponentInteraction(InteractionConstants.ArtistAlias)]
+    [ComponentInteraction(InteractionConstants.ModerationCommands.ArtistAlias)]
     public async Task SetArtistAliasOptions(string censoredId, string[] inputs)
     {
         var embed = new EmbedBuilder();
@@ -152,13 +152,13 @@ public class AdminSlashCommands : InteractionModuleBase
         await RespondAsync(embed: embed.Build());
     }
 
-    [ComponentInteraction(InteractionConstants.GlobalWhoKnowsReport)]
+    [ComponentInteraction(InteractionConstants.ModerationCommands.GlobalWhoKnowsReport)]
     public async Task ReportGlobalWhoKnowsButton()
     {
-        await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsModal>(InteractionConstants.GlobalWhoKnowsReportModal);
+        await this.Context.Interaction.RespondWithModalAsync<ReportGlobalWhoKnowsModal>(InteractionConstants.ModerationCommands.GlobalWhoKnowsReportModal);
     }
 
-    [ModalInteraction(InteractionConstants.GlobalWhoKnowsReportModal)]
+    [ModalInteraction(InteractionConstants.ModerationCommands.GlobalWhoKnowsReportModal)]
     public async Task ReportGlobalWhoKnowsButton(ReportGlobalWhoKnowsModal modal)
     {
         var positiveResponse = $"Thanks, your report for the user `{modal.UserNameLastFM}` has been received. \n" +
@@ -326,13 +326,13 @@ public class AdminSlashCommands : InteractionModuleBase
         await message.ModifyAsync(m => m.Components = components.Build());
     }
 
-    [ComponentInteraction(InteractionConstants.ReportAlbum)]
+    [ComponentInteraction(InteractionConstants.ModerationCommands.ReportAlbum)]
     public async Task ReportAlbum()
     {
-        await this.Context.Interaction.RespondWithModalAsync<ReportAlbumModal>(InteractionConstants.ReportAlbumModal);
+        await this.Context.Interaction.RespondWithModalAsync<ReportAlbumModal>(InteractionConstants.ModerationCommands.ReportAlbumModal);
     }
 
-    [ModalInteraction(InteractionConstants.ReportAlbumModal)]
+    [ModalInteraction(InteractionConstants.ModerationCommands.ReportAlbumModal)]
     public async Task ReportAlbumButton(ReportAlbumModal modal)
     {
         var existingCensor = await this._censorService.AlbumResult(modal.AlbumName, modal.ArtistName);
@@ -367,13 +367,13 @@ public class AdminSlashCommands : InteractionModuleBase
         await this._censorService.PostReport(report);
     }
 
-    [ComponentInteraction(InteractionConstants.ReportArtist)]
+    [ComponentInteraction(InteractionConstants.ModerationCommands.ReportArtist)]
     public async Task ReportArtist()
     {
-        await this.Context.Interaction.RespondWithModalAsync<ReportArtistModal>(InteractionConstants.ReportArtistModal);
+        await this.Context.Interaction.RespondWithModalAsync<ReportArtistModal>(InteractionConstants.ModerationCommands.ReportArtistModal);
     }
 
-    [ModalInteraction(InteractionConstants.ReportArtistModal)]
+    [ModalInteraction(InteractionConstants.ModerationCommands.ReportArtistModal)]
     public async Task ReportArtistButton(ReportArtistModal modal)
     {
         var existingCensor = await this._censorService.ArtistResult(modal.ArtistName);

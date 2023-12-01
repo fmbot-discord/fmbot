@@ -198,7 +198,7 @@ public class UserBuilder
 
         var fmType = new SelectMenuBuilder()
                 .WithPlaceholder("Select embed type")
-                .WithCustomId(InteractionConstants.FmSettingType)
+                .WithCustomId(InteractionConstants.FmCommand.FmSettingType)
                 .WithMinValues(1)
                 .WithMaxValues(1);
 
@@ -219,13 +219,13 @@ public class UserBuilder
 
         var fmOptions = new SelectMenuBuilder()
             .WithPlaceholder("Select footer options")
-            .WithCustomId(InteractionConstants.FmSettingFooter)
+            .WithCustomId(InteractionConstants.FmCommand.FmSettingFooter)
             .WithMinValues(0)
             .WithMaxValues(maxOptions);
 
         var fmSupporterOptions = new SelectMenuBuilder()
             .WithPlaceholder("Select supporter-exclusive footer option")
-            .WithCustomId(InteractionConstants.FmSettingFooterSupporter)
+            .WithCustomId(InteractionConstants.FmCommand.FmSettingFooterSupporter)
             .WithMinValues(0)
             .WithMaxValues(1);
 
@@ -341,7 +341,7 @@ public class UserBuilder
         {
             ResponseType = ResponseType.Embed,
             Components = new ComponentBuilder()
-                .WithButton("'.fm' mode", InteractionConstants.FmModeChange)
+                .WithButton("'.fm' mode", InteractionConstants.FmCommand.FmModeChange)
                 .WithButton("Response mode", InteractionConstants.ResponseModeChange)
         };
 

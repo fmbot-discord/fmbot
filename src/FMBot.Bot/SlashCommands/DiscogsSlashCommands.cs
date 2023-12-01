@@ -57,7 +57,6 @@ public class DiscogsSlashCommands : InteractionModuleBase
         }
     }
 
-
     [SlashCommand("collection", "Shows your or someone else their Discogs collection")]
     [UsernameSetRequired]
     public async Task AlbumAsync(

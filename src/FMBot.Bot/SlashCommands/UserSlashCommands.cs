@@ -413,7 +413,7 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction(InteractionConstants.FmModeChange)]
+    [ComponentInteraction(InteractionConstants.FmCommand.FmModeChange)]
     [UsernameSetRequired]
     public async Task FmModePickAsync()
     {
@@ -426,7 +426,7 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction(InteractionConstants.FmSettingType)]
+    [ComponentInteraction(InteractionConstants.FmCommand.FmSettingType)]
     [UsernameSetRequired]
     public async Task SetEmbedType(string[] inputs)
     {
@@ -447,7 +447,7 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction(InteractionConstants.FmSettingFooter)]
+    [ComponentInteraction(InteractionConstants.FmCommand.FmSettingFooter)]
     [UsernameSetRequired]
     public async Task SetFooterOptions(string[] inputs)
     {
@@ -480,7 +480,7 @@ public class UserSlashCommands : InteractionModuleBase
         await SaveFooterOptions(userSettings, embed);
     }
 
-    [ComponentInteraction(InteractionConstants.FmSettingFooterSupporter)]
+    [ComponentInteraction(InteractionConstants.FmCommand.FmSettingFooterSupporter)]
     public async Task SetSupporterFooterOptions(string[] inputs)
     {
         var embed = new EmbedBuilder();
