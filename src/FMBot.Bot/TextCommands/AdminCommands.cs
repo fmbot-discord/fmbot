@@ -250,7 +250,7 @@ public class AdminCommands : BaseCommandModule
         {
             await ReplyAsync("Starting gwk quality filter update..");
 
-            var filteredUsers = await this._whoKnowsFilterService.UpdateGlobalFilteredUsers();
+            var filteredUsers = await this._whoKnowsFilterService.GetNewGlobalFilteredUsers();
             await this._whoKnowsFilterService.AddFilteredUsersToDatabase(filteredUsers);
 
             var description = new StringBuilder();

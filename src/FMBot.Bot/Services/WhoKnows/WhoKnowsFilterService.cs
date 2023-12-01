@@ -34,7 +34,7 @@ public class WhoKnowsFilterService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<List<GlobalFilteredUser>> UpdateGlobalFilteredUsers()
+    public async Task<List<GlobalFilteredUser>> GetNewGlobalFilteredUsers()
     {
         Log.Information("GWKFilter: Running");
 

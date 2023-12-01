@@ -12,6 +12,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -37,6 +38,7 @@ public class TimerService
     private readonly SupporterService _supporterService;
     private readonly IMemoryCache _cache;
     private readonly DiscogsService _discogsService;
+    private readonly WhoKnowsFilterService _whoKnowsFilterService;
 
     public FeaturedLog CurrentFeatured;
 
@@ -50,7 +52,8 @@ public class TimerService
         FeaturedService featuredService,
         IMemoryCache cache,
         SupporterService supporterService,
-        DiscogsService discogsService)
+        DiscogsService discogsService,
+        WhoKnowsFilterService whoKnowsFilterService)
     {
         this._client = client;
         this._userService = userService;
@@ -61,6 +64,7 @@ public class TimerService
         this._cache = cache;
         this._supporterService = supporterService;
         this._discogsService = discogsService;
+        this._whoKnowsFilterService = whoKnowsFilterService;
         this._updateService = updateService;
         this._botSettings = botSettings.Value;
 
@@ -84,7 +88,9 @@ public class TimerService
         Log.Information($"RecurringJob: Adding {nameof(ClearUserCache)}");
         RecurringJob.AddOrUpdate(nameof(ClearUserCache), () => ClearUserCache(), "30 */2 * * *");
 
-        if (this._botSettings.LastFm.UserIndexFrequencyInDays != null && this._botSettings.LastFm.UserIndexFrequencyInDays != 0)
+        if (this._botSettings.LastFm.UserIndexFrequencyInDays != null &&
+            this._botSettings.LastFm.UserIndexFrequencyInDays != 0 &&
+            ConfigData.Data.Shards.MainInstance == true)
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToIndexQueue)}");
             RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 8 * * *");
@@ -94,7 +100,9 @@ public class TimerService
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserIndexFrequencyInDays)} set in config, not queuing user index job");
         }
 
-        if (this._botSettings.LastFm.UserUpdateFrequencyInHours != null && this._botSettings.LastFm.UserUpdateFrequencyInHours != 0)
+        if (this._botSettings.LastFm.UserUpdateFrequencyInHours != null &&
+            this._botSettings.LastFm.UserUpdateFrequencyInHours != 0 &&
+            ConfigData.Data.Shards.MainInstance == true)
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToUpdateQueue)}");
             RecurringJob.AddOrUpdate(nameof(AddUsersToUpdateQueue), () => AddUsersToUpdateQueue(), "0 * * * *");
@@ -102,6 +110,12 @@ public class TimerService
         else
         {
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
+        }
+
+        if (this._client.CurrentUser.Id == Constants.BotBetaId && ConfigData.Data.Shards.MainInstance == true)
+        {
+            Log.Information($"RecurringJob: Adding {nameof(UpdateGlobalWhoKnowsFilters)}");
+            RecurringJob.AddOrUpdate(nameof(UpdateGlobalWhoKnowsFilters), () => UpdateGlobalWhoKnowsFilters(), "0 10 * * *");
         }
 
         var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
@@ -442,6 +456,12 @@ public class TimerService
                 this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(25));
             }
         }
+    }
+
+    public async Task UpdateGlobalWhoKnowsFilters()
+    {
+        var filteredUsers = await this._whoKnowsFilterService.GetNewGlobalFilteredUsers();
+        await this._whoKnowsFilterService.AddFilteredUsersToDatabase(filteredUsers);
     }
 
     public void ClearUserCache()
