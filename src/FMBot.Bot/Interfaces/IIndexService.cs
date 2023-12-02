@@ -33,7 +33,7 @@ public interface IIndexService
     Task UpdateGuildUser(IDictionary<int, FullGuildUser> fullGuildUsers, IGuildUser discordGuildUser, int userId,
         Guild guildId);
 
-    Task AddOrUpdateGuildUser(IGuildUser discordGuildUser);
+    Task AddOrUpdateGuildUser(IGuildUser discordGuildUser, bool checkIfRegistered = true);
 
     Task RemoveUserFromGuild(ulong discordUserId, ulong discordGuildId);
 

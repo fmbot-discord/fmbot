@@ -594,11 +594,11 @@ public class IndexService : IIndexService
         }
     }
 
-    public async Task AddOrUpdateGuildUser(IGuildUser discordGuildUser)
+    public async Task AddOrUpdateGuildUser(IGuildUser discordGuildUser, bool checkIfRegistered = true)
     {
         try
         {
-            if (!PublicProperties.RegisteredUsers.TryGetValue(discordGuildUser.Id, out var userId))
+            if (!PublicProperties.RegisteredUsers.TryGetValue(discordGuildUser.Id, out var userId) && checkIfRegistered)
             {
                 return;
             }

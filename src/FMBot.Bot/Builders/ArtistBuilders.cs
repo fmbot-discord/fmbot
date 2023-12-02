@@ -1649,7 +1649,7 @@ public class ArtistBuilders
             var guildUser = await context.DiscordGuild.GetUserAsync(userSettings.DiscordUserId);
             if (guildUser != null)
             {
-                await this._indexService.AddOrUpdateGuildUser(guildUser);
+                await this._indexService.AddOrUpdateGuildUser(guildUser, false);
                 bypassCache = true;
             }
         }
@@ -1707,11 +1707,11 @@ public class ArtistBuilders
             {
                 guildUsers.TryGetValue(neighbor.Key, out var guildUser);
                 pageString.AppendLine(
-                    $"**{(neighbor.Value.TotalPoints / self.TotalPoints).ToString("P1", numberInfo)}** — " +
+                    $"**{CalculateAffinityPercentage(neighbor.Value.TotalPoints, self.TotalPoints)}** — " +
                     $"**[{StringExtensions.Sanitize(guildUser?.UserName)}]({LastfmUrlExtensions.GetUserUrl(guildUser?.UserNameLastFM)})** — " +
-                                      $"`{(neighbor.Value.ArtistPoints / self.ArtistPoints).ToString("P0", numberInfo)}` artists, " +
-                                      $"`{(neighbor.Value.GenrePoints / self.GenrePoints).ToString("P0", numberInfo)}` genres, " +
-                                      $"`{(neighbor.Value.CountryPoints / self.CountryPoints).ToString("P0", numberInfo)}` countries");
+                      $"`{CalculateAffinityPercentage(neighbor.Value.ArtistPoints, self.ArtistPoints)}` artists, " +
+                      $"`{CalculateAffinityPercentage(neighbor.Value.GenrePoints, self.GenrePoints)}` genres, " +
+                      $"`{CalculateAffinityPercentage(neighbor.Value.CountryPoints, self.CountryPoints, 1)}` countries");
 
             }
 
@@ -1734,5 +1734,22 @@ public class ArtistBuilders
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
 
         return response;
+    }
+
+    private string CalculateAffinityPercentage(double neighborPoints, double ownPoints, int multiplier = 2)
+    {
+        var numberInfo = new NumberFormatInfo
+        {
+            PercentPositivePattern = 1
+        };
+
+        var result = neighborPoints / ownPoints * multiplier;
+
+        if (result > 1)
+        {
+            result = 1;
+        }
+
+        return result.ToString("P0", numberInfo);
     }
 }
