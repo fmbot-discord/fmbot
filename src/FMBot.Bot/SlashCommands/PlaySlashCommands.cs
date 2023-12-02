@@ -121,6 +121,8 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("Artist", "Artist you want to filter on (Supporter only)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string artistName = null)
     {
+        _ = DeferAsync();
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
@@ -129,12 +131,12 @@ public class PlaySlashCommands : InteractionModuleBase
             var response = await this._playBuilder.RecentAsync(new ContextModel(this.Context, contextUser),
                 userSettings, artistName);
 
-            await this.Context.SendResponse(this.Interactivity, response);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, deferFirst: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 

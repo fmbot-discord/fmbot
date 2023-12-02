@@ -1693,11 +1693,6 @@ public class ArtistBuilders
             .Chunk(12)
             .ToList();
 
-        var numberInfo = new NumberFormatInfo
-        {
-            PercentPositivePattern = 1
-        };
-
         var pageCounter = 1;
         var pages = new List<PageBuilder>();
         foreach (var page in neighborPages)
