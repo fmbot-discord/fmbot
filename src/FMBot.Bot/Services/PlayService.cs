@@ -48,7 +48,7 @@ public class PlayService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<DailyOverview> GetDailyOverview(int userId, int amountOfDays)
+    public async Task<DailyOverview> GetDailyOverview(int userId, TimeZoneInfo timeZone, int amountOfDays)
     {
         try
         {
@@ -63,13 +63,11 @@ public class PlayService
                 return null;
             }
 
-            var timeZoneId = "Central Pacific Standard Time";
-
             var overview = new DailyOverview
             {
                 Days = plays
                     .OrderByDescending(o => o.TimePlayed)
-                    .GroupBy(g => TimeZoneInfo.ConvertTime(g.TimePlayed, TimeZoneInfo.FindSystemTimeZoneById(timeZoneId)).Date)
+                    .GroupBy(g => TimeZoneInfo.ConvertTime(g.TimePlayed, timeZone).Date)
                     .Select(s => new DayOverview
                     {
                         Date = s.Key,

@@ -622,6 +622,7 @@ public class SettingService
         var settingsModel = new UserSettingsModel
         {
             DifferentUser = false,
+            TimeZone = user.TimeZone,
             UserNameLastFm = user.UserNameLastFM,
             SessionKeyLastFm = user.SessionKeyLastFm,
             DiscordUserId = discordUser.Id,
@@ -648,6 +649,7 @@ public class SettingService
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { options.First() }, true);
 
                 settingsModel.DisplayName = otherUser.UserNameLastFM;
+                settingsModel.TimeZone = otherUser.TimeZone ?? user.TimeZone;
                 settingsModel.DifferentUser = true;
                 settingsModel.DiscordUserId = otherUser.DiscordUserId;
                 settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
@@ -698,6 +700,7 @@ public class SettingService
                 settingsModel.DifferentUser = true;
                 settingsModel.DiscordUserId = otherUser.DiscordUserId;
                 settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
+                settingsModel.TimeZone = otherUser.TimeZone ?? user.TimeZone;
                 settingsModel.UserType = otherUser.UserType;
                 settingsModel.UserId = otherUser.UserId;
                 settingsModel.RegisteredLastFm = otherUser.RegisteredLastFm;
@@ -716,6 +719,7 @@ public class SettingService
                     settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName, $"lfm:{lfmUserName}" }, true);
 
                     settingsModel.DisplayName = foundLfmUser.UserNameLastFM;
+                    settingsModel.TimeZone = foundLfmUser.TimeZone ?? user.TimeZone;
                     settingsModel.DifferentUser = true;
                     settingsModel.DiscordUserId = foundLfmUser.DiscordUserId;
                     settingsModel.UserNameLastFm = foundLfmUser.UserNameLastFM;

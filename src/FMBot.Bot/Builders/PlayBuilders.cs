@@ -660,7 +660,8 @@ public class PlayBuilder
 
         await this._updateService.UpdateUser(context.ContextUser);
 
-        var week = await this._playService.GetDailyOverview(userSettings.UserId, amount);
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById(userSettings.TimeZone);
+        var week = await this._playService.GetDailyOverview(userSettings.UserId, timeZone, amount);
 
         if (week == null)
         {
@@ -690,7 +691,9 @@ public class PlayBuilder
             }
 
             response.Embed.AddField(
-                $"<t:{day.Date.ToUnixEpochDate()}:D> - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - {day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)}",
+                $"<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D> - " +
+                $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} - " +
+                $"{day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)}",
                 $"{genreString}\n" +
                 $"{day.TopArtist}\n" +
                 $"{day.TopAlbum}\n" +

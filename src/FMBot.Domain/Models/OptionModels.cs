@@ -32,6 +32,7 @@ public class TimeSettingsModel
 public class UserSettingsModel
 {
     public string UserNameLastFm { get; set; }
+    public string TimeZone { get; set; }
     public string SessionKeyLastFm { get; set; }
     public bool DifferentUser { get; set; }
     public ulong DiscordUserId { get; set; }
