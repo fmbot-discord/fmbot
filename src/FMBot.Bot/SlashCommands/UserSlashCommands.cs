@@ -601,7 +601,9 @@ public class UserSlashCommands : InteractionModuleBase
         var newTimeZone = await this._userService.SetTimeZone(userSettings.UserId, timezone);
 
         var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(newTimeZone);
-        var dateValue = ((DateTimeOffset)TimeZoneInfo.ConvertTime(DateTime.UtcNow.AddDays(1).Date, timeZoneInfo))
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
+        var nextMidnight = localTime.Date.AddDays(1);
+        var dateValue = ((DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(nextMidnight, timeZoneInfo))
             .ToUnixTimeSeconds();
 
         var reply = new StringBuilder();

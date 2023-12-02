@@ -69,7 +69,7 @@ public class PlayService
             {
                 Days = plays
                     .OrderByDescending(o => o.TimePlayed)
-                    .GroupBy(g => TimeZoneInfo.ConvertTime(g.TimePlayed.Date, TimeZoneInfo.FindSystemTimeZoneById(timeZoneId)))
+                    .GroupBy(g => TimeZoneInfo.ConvertTime(g.TimePlayed, TimeZoneInfo.FindSystemTimeZoneById(timeZoneId)).Date)
                     .Select(s => new DayOverview
                     {
                         Date = s.Key,
