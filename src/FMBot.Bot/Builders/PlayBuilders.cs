@@ -660,7 +660,7 @@ public class PlayBuilder
 
         await this._updateService.UpdateUser(context.ContextUser);
 
-        var timeZone = TimeZoneInfo.FindSystemTimeZoneById(userSettings.TimeZone);
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById(userSettings.TimeZone ?? "Eastern Standard Time");
         var week = await this._playService.GetDailyOverview(userSettings.UserId, timeZone, amount);
 
         if (week == null)
