@@ -54,7 +54,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
     private const string SpotifyFileDescription = "Spotify history package (.zip) or history files (.json) ";
 
-    [SlashCommand("spotify", "Import your Spotify history (Beta)")]
+    [SlashCommand("spotify", "Import your Spotify history into .fmbot")]
     [UsernameSetRequired]
     public async Task SpotifyAsync(
         [Summary("file-1", SpotifyFileDescription)] IAttachment attachment1 = null,
@@ -123,7 +123,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
         try
         {
-            embed.WithTitle("Importing Spotify into .fmbot.. (Beta)");
+            embed.WithTitle("Importing Spotify into .fmbot..");
             embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
             var message = await FollowupAsync(embed: embed.Build());
 
@@ -142,7 +142,7 @@ public class ImportSlashCommands : InteractionModuleBase
                 embed.WithColor(DiscordConstants.WarningColorOrange);
                 await UpdateImportEmbed(message, embed, description, $"❌ Invalid Spotify import files. You have uploaded the wrong Spotify data package.\n\n" +
                                                                      $"We can only process files that are from the ['Extended Streaming History'](https://www.spotify.com/us/account/privacy/) package. Instead you have uploaded the 'Account data' package.", true,
-                    image: "https://cdn.discordapp.com/attachments/821661709214154762/1139326340454158346/IMG_1548.png",
+                    image: "https://fmbot.xyz/img/bot/import-spotify-instructions.png",
                     components: new ComponentBuilder().WithButton("Spotify privacy page", style: ButtonStyle.Link, url: "https://www.spotify.com/us/account/privacy/"));
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
@@ -273,7 +273,7 @@ public class ImportSlashCommands : InteractionModuleBase
         });
     }
 
-    [SlashCommand("manage", "Manage your import settings (Beta)")]
+    [SlashCommand("manage", "Manage your imports and configure how they are used")]
     [UsernameSetRequired]
     public async Task ManageImportAsync()
     {
