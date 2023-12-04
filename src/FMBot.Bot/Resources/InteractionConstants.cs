@@ -41,6 +41,15 @@ public static class InteractionConstants
     public const string DeleteStreak = "user-streak-delete";
     public const string DeleteStreakModal = "user-streak-delete-modal";
 
+    public static class Artist
+    {
+        public const string ArtistInfo = "artist-info";
+        public const string ArtistOverview = "artist-overview";
+
+        public const string ArtistAlbums = "artist-albums";
+        public const string ArtistTracks = "artist-tracks";
+    }
+
     public static class ModerationCommands
     {
         public const string CensorTypes = "admin-censor-*";

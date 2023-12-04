@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
@@ -16,7 +15,6 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -48,7 +46,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         this._artistsService = artistsService;
     }
 
-    [SlashCommand("artist", "Shows artist info for the artist you're currently listening to or searching for")]
+    [SlashCommand("artist", "Shows info for current artist or the one you're searching for.")]
     [UsernameSetRequired]
     public async Task ArtistAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
@@ -58,12 +56,80 @@ public class ArtistSlashCommands : InteractionModuleBase
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+        try
+        {
+            var response = await this._artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, contextUser), name, redirectsEnabled);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Artist.ArtistInfo}-*-*")]
+    [UsernameSetRequired]
+    public async Task ArtistInfoAsync(string artistId, string discordUserId)
+    {
+        _ = DeferAsync();
+        _ = this.Context.DisableInteractionButtons();
+
+        var contextUser = await this._userService.GetUserWithDiscogs(ulong.Parse(discordUserId));
+        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
 
         try
         {
-            var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, contextUser), name, redirectsEnabled);
+            var response = await this._artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, contextUser), artist.Name, false);
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("artistoverview", "Shows overview for current artist or the one you're searching for.")]
+    [UsernameSetRequired]
+    public async Task ArtistOverviewAsync(
+        [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
+        [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+        try
+        {
+            var response = await this._artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, contextUser), name, redirectsEnabled);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Artist.ArtistOverview}-*-*")]
+    [UsernameSetRequired]
+    public async Task ArtistOverviewAsync(string artistId, string discordUserId)
+    {
+        _ = DeferAsync();
+        _ = this.Context.DisableInteractionButtons();
+
+        var contextUser = await this._userService.GetUserWithDiscogs(ulong.Parse(discordUserId));
+        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+
+        try
+        {
+            var response = await this._artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, contextUser), artist.Name, false);
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -116,6 +182,60 @@ public class ArtistSlashCommands : InteractionModuleBase
             userSettings, name, redirectsEnabled);
 
         await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Artist.ArtistTracks}-*-*")]
+    public async Task ArtistTracksAsync(string artistId, string discordUserId)
+    {
+        _ = DeferAsync();
+        _ = this.Context.DisableInteractionButtons();
+
+        var contextUser = await this._userService.GetUserWithDiscogs(ulong.Parse(discordUserId));
+        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
+
+        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), PlayTimePeriod.AllTime), TimePeriod.AllTime);
+
+        var response = await this._artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser), timeSettings,
+            userSettings, artist.Name, false);
+
+        await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [SlashCommand("artistalbums", "Shows your top albums for an artist")]
+    [UsernameSetRequired]
+    public async Task ArtistAlbumsAsync(
+        [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(ArtistAutoComplete))]string name = null,
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        var response = await this._artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, contextUser),
+            userSettings, name, redirectsEnabled);
+
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Artist.ArtistAlbums}-*-*")]
+    public async Task ArtistAlbumsAsync(string artistId, string discordUserId)
+    {
+        _ = DeferAsync();
+        _ = this.Context.DisableInteractionButtons();
+
+        var contextUser = await this._userService.GetUserWithDiscogs(ulong.Parse(discordUserId));
+        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
+
+        var response = await this._artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, contextUser),
+            userSettings, artist.Name, false);
+
+        await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 

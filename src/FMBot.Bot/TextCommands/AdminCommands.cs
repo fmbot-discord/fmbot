@@ -508,7 +508,8 @@ public class AdminCommands : BaseCommandModule
             this._embed.AddField("Alias", artistAlias.Alias);
             this._embed.AddField("Types", censorDescription.ToString());
 
-            this._embed.WithFooter("Case insensitive\n" +
+            this._embed.WithFooter($"Artist id {artistAlias.ArtistId}\n" +
+                                   "Case insensitive\n" +
                                    "Aliases are cached for 5 minutes");
 
             await ReplyAsync(embed: this._embed.Build(), components: builder.Build());

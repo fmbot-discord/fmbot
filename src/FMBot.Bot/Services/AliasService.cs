@@ -35,6 +35,7 @@ public class AliasService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var artistAliases = await db.ArtistAliases
             .AsNoTracking()
+            .Where(w => w.CorrectsInScrobbles)
             .Include(i => i.Artist)
             .Select(s => new CachedAlias
             {
