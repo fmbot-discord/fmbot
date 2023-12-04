@@ -31,6 +31,22 @@ public class DiscogsBuilder
         this._artistsService = artistsService;
     }
 
+    public ResponseModel DiscogsLoginGetLinkAsync(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithDescription($"Click the button below to get your Discogs login link.");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        response.Components = new ComponentBuilder()
+            .WithButton("Get login link", style: ButtonStyle.Primary, customId: InteractionConstants.DiscogsStartAuth);
+
+        return response;
+    }
+
     public async Task<ResponseModel> DiscogsLoginAsync(ContextModel context)
     {
         var response = new ResponseModel
@@ -40,13 +56,16 @@ public class DiscogsBuilder
 
         var discogsAuth = await this._discogsService.GetDiscogsAuthLink();
 
-        response.Embed.WithDescription($"**[Click here to login to Discogs.]({discogsAuth.LoginUrl})**\n\n" +
-                                    $"After authorizing .fmbot a code will be shown.\n" +
-                                    $"**Copy the code and send it in this chat.**");
+        response.Embed.WithDescription($"Login to Discogs with the button below and authorize .fmbot. \n" +
+                                       $"After authorizing a code will be shown.\n\n" +
+                                       $"**Copy the code and send it in this chat.**");
         response.Embed.WithFooter($"Do not share the code outside of this DM conversation");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var dm = await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build());
+        response.Components = new ComponentBuilder()
+            .WithButton("Login to Discogs", style: ButtonStyle.Link, url: discogsAuth.LoginUrl);
+
+        var dm = await context.DiscordUser.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
         response.Embed.Footer = null;
 
         var result = await this._interactivity.NextMessageAsync(x => x.Channel.Id == dm.Channel.Id, timeout: TimeSpan.FromMinutes(15));

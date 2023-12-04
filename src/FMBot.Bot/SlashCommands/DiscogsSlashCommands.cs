@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -45,6 +46,38 @@ public class DiscogsSlashCommands : InteractionModuleBase
             serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
             await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
         }
+
+        try
+        {
+            var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
+            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.DiscogsStartAuth)]
+    public async Task DiscogsStartAuthAsync()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var embed = new EmbedBuilder();
+        embed.WithDescription("Fetching login link...");
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+        await RespondAsync(embed: embed.Build());
+
+        var components = new ComponentBuilder();
+        await message.ModifyAsync(m => m.Components = components.Build());
 
         try
         {
