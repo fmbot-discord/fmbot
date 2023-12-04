@@ -322,7 +322,7 @@ public class ArtistBuilders
         }
 
         response.Components = new ComponentBuilder()
-            .WithButton("View your overview", $"{InteractionConstants.Artist.ArtistOverview}-{fullArtist.Id}-{context.DiscordUser.Id}", style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
+            .WithButton("View your overview", $"{InteractionConstants.Artist.ArtistOverview}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
 
         response.Embed.WithFooter(footer.ToString());
         return response;
@@ -474,17 +474,17 @@ public class ArtistBuilders
         }
 
         var components = new ComponentBuilder()
-            .WithButton("View artist info", $"{InteractionConstants.Artist.ArtistInfo}-{fullArtist.Id}-{context.DiscordUser.Id}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"));
+            .WithButton("View artist info", $"{InteractionConstants.Artist.ArtistInfo}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"));
 
         if (artistTracksButton)
         {
             components.WithButton("All top tracks",
-                $"{InteractionConstants.Artist.ArtistTracks}-{fullArtist.Id}-{context.DiscordUser.Id}", style: ButtonStyle.Secondary);
+                $"{InteractionConstants.Artist.ArtistTracks}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary);
         }
         if (artistAlbumsButton)
         {
             components.WithButton("All top albums",
-                $"{InteractionConstants.Artist.ArtistAlbums}-{fullArtist.Id}-{context.DiscordUser.Id}", style: ButtonStyle.Secondary);
+                $"{InteractionConstants.Artist.ArtistAlbums}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary);
         }
 
         response.Components = components;
