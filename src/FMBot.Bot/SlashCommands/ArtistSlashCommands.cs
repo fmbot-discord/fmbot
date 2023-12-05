@@ -74,7 +74,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task ArtistInfoAsync(string artistId, string discordUserId)
     {
         _ = DeferAsync();
-        _ = this.Context.DisableInteractionButtons();
+        await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetUserWithDiscogs(ulong.Parse(discordUserId));
         var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
@@ -120,7 +120,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task ArtistOverviewAsync(string artistId, string discordUserId)
     {
         _ = DeferAsync();
-        _ = this.Context.DisableInteractionButtons();
+        await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetUserWithDiscogs(ulong.Parse(discordUserId));
         var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
@@ -189,7 +189,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task ArtistTracksAsync(string artistId, string discordUserId)
     {
         _ = DeferAsync();
-        _ = this.Context.DisableInteractionButtons();
+        await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetUserWithDiscogs(ulong.Parse(discordUserId));
         var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
@@ -226,7 +226,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     public async Task ArtistAlbumsAsync(string artistId, string discordUserId)
     {
         _ = DeferAsync();
-        _ = this.Context.DisableInteractionButtons();
+        await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetUserWithDiscogs(ulong.Parse(discordUserId));
         var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
