@@ -190,6 +190,7 @@ public class WhoKnowsTrackService
                            "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
                            "WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true) " +
+                           "AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months') " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ut.playcount DESC) ut " +
                            "ORDER BY playcount DESC";
 

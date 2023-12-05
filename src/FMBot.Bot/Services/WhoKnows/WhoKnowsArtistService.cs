@@ -191,6 +191,7 @@ public class WhoKnowsArtistService
                            "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
                            "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true) " +
+                           "AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months') " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ua " +
                            "ORDER BY playcount DESC";
 

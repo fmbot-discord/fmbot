@@ -625,7 +625,9 @@ public class UserService
 
                 if (requestedUser != null)
                 {
-                    var index = artistListeners.IndexOf(requestedUser);
+                    var lastListenerWithPlaycount = artistListeners.LastOrDefault(l => l.Playcount == requestedUser.Playcount);
+
+                    var index = artistListeners.IndexOf(lastListenerWithPlaycount);
                     options.Add($"GlobalWhoKnows #{index + 1}");
                 }
             }
@@ -641,7 +643,9 @@ public class UserService
 
                 if (requestedUser != null)
                 {
-                    var index = albumListeners.IndexOf(requestedUser);
+                    var lastListenerWithPlaycount = albumListeners.LastOrDefault(l => l.Playcount == requestedUser.Playcount);
+
+                    var index = albumListeners.IndexOf(lastListenerWithPlaycount);
                     options.Add($"GlobalWhoKnows album #{index + 1}");
                 }
             }
@@ -657,7 +661,9 @@ public class UserService
 
                 if (requestedUser != null)
                 {
-                    var index = trackListeners.IndexOf(requestedUser);
+                    var lastListenerWithPlaycount = trackListeners.LastOrDefault(l => l.Playcount == requestedUser.Playcount);
+
+                    var index = trackListeners.IndexOf(lastListenerWithPlaycount);
                     options.Add($"GlobalWhoKnows track #{index + 1}");
                 }
             }
