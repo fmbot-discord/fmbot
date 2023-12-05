@@ -767,7 +767,7 @@ public class UserBuilder
         };
 
         string userTitle;
-        var user2 = context.ContextUser;
+        var user = context.ContextUser;
         if (userSettings.DifferentUser)
         {
             if (userSettings.DifferentUser && context.ContextUser.DiscordUserId == userSettings.DiscordUserId)
@@ -779,7 +779,7 @@ public class UserBuilder
 
             userTitle =
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
-            user2 = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
+            user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
         }
         else
         {
@@ -792,15 +792,15 @@ public class UserBuilder
         var anyHistoryStored = false;
 
         var description = new StringBuilder();
-        if (user2.UserType != UserType.User)
+        if (user.UserType != UserType.User)
         {
             description.AppendLine($"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
         }
-        if (user2.DataSource != DataSource.LastFm)
+        if (user.DataSource != DataSource.LastFm)
         {
-            var name = user2.DataSource.GetAttribute<OptionAttribute>().Name;
+            var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
 
-            switch (user2.DataSource)
+            switch (user.DataSource)
             {
                 case DataSource.FullSpotifyThenLastFm:
                 case DataSource.SpotifyThenFullLastFm:
@@ -892,7 +892,7 @@ public class UserBuilder
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                if (user2.UserDiscogs == null)
+                if (user.UserDiscogs == null)
                 {
                     response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years? " +
                                                      $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
@@ -917,7 +917,7 @@ public class UserBuilder
         response.Embed.WithDescription(description.ToString());
 
         response.Components = new ComponentBuilder()
-            .WithButton("View profile", $"{InteractionConstants.User.Profile}-{user2.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"))
+            .WithButton("View profile", $"{InteractionConstants.User.Profile}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"))
             .WithButton("Last.fm", style: ButtonStyle.Link, url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm), emote: Emote.Parse("<:lastfm:882227627287515166>"));
 
         return response;
