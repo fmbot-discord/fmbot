@@ -36,6 +36,7 @@ public static class CommandContextExtensions
             if (exception?.Message != null && exception.Message.Contains("error 50013"))
             {
                 await context.Channel.SendMessageAsync("Sorry, something went wrong because the bot is missing permissions. Make sure the bot has `Embed links` and `Attach Files`.\n" +
+                                                       "Please adjust .fmbot permissions or ask server staff to do this for you.\n" +
                                                        $"*Reference id: `{referenceId}`*", allowedMentions: AllowedMentions.None);
             }
             else
