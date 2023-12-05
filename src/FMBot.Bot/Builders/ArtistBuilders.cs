@@ -606,7 +606,7 @@ public class ArtistBuilders
         if (pages.Count == 1)
         {
             response.ResponseType = ResponseType.Embed;
-            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "Artist overview");
+            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "View your overview");
         }
         else
         {
@@ -711,7 +711,7 @@ public class ArtistBuilders
         if (pages.Count == 1)
         {
             response.ResponseType = ResponseType.Embed;
-            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "Artist overview");
+            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "View your overview");
         }
         else
         {
