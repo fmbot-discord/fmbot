@@ -746,7 +746,8 @@ public class SettingService
         return settingsModel;
     }
 
-    public async Task<UserSettingsModel> GetOriginalContextUser(ulong discordUserId, ulong requesterUserId, IGuild discordGuild, IUser contextDiscordUser)
+    public async Task<UserSettingsModel> GetOriginalContextUser(
+        ulong discordUserId, ulong requesterUserId, IGuild discordGuild, IUser contextDiscordUser)
     {
         IGuildUser guildUser = null;
         if (discordGuild != null)

@@ -897,16 +897,19 @@ public class UserSlashCommands : InteractionModuleBase
 
     [UsernameSetRequired]
     [ComponentInteraction($"{InteractionConstants.User.Profile}-*-*")]
-    public async Task ProfileAsync(string discordUserId, string requesterDiscordUserId)
+    public async Task ProfileAsync(string discordUser, string requesterDiscordUser)
     {
         _ = DeferAsync();
         await this.Context.DisableInteractionButtons();
 
-        var contextUser = await this._userService.GetFullUserAsync(ulong.Parse(requesterDiscordUserId));
-        var userSettings = await this._settingService.GetOriginalContextUser(
-            ulong.Parse(discordUserId), ulong.Parse(requesterDiscordUserId), this.Context.Guild, this.Context.User);
+        var discordUserId = ulong.Parse(discordUser);
+        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-        var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings);
+        var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
+        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+        var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings);
 
         await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -914,16 +917,20 @@ public class UserSlashCommands : InteractionModuleBase
 
     [UsernameSetRequired]
     [ComponentInteraction($"{InteractionConstants.User.History}-*-*")]
-    public async Task ProfileHistoryAsync(string discordUserId, string requesterDiscordUserId)
+    public async Task ProfileHistoryAsync(string discordUser, string requesterDiscordUser)
     {
         _ = DeferAsync();
         await this.Context.DisableInteractionButtons();
 
-        var contextUser = await this._userService.GetFullUserAsync(ulong.Parse(requesterDiscordUserId));
-        var userSettings = await this._settingService.GetOriginalContextUser(
-            ulong.Parse(discordUserId), ulong.Parse(requesterDiscordUserId), this.Context.Guild, this.Context.User);
+        var discordUserId = ulong.Parse(discordUser);
+        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-        var response = await this._userBuilder.ProfileHistoryAsync(new ContextModel(this.Context, contextUser), userSettings);
+        var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
+        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await this._settingService.GetOriginalContextUser(
+            discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+        var response = await this._userBuilder.ProfileHistoryAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings);
 
         await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
