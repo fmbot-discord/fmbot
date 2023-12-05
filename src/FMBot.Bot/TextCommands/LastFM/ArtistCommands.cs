@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -17,13 +13,8 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
-using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.Domain.Types;
-using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Repositories;
-using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
@@ -95,7 +86,38 @@ public class ArtistCommands : BaseCommandModule
 
         try
         {
-            var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, prfx, contextUser), redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
+            var response = await this._artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, prfx, contextUser), redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("artistoverview", RunMode = RunMode.Async)]
+    [Summary("Artist you're currently listening to or searching for.")]
+    [Examples(
+        "ao",
+        "artistoverview",
+        "ao Gorillaz",
+        "artistoverview Gamma Intel")]
+    [Alias("ao", "artist overview", "artistsoverview", "artists overview")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Artists)]
+    public async Task ArtistOverviewAsync([Remainder] string artistValues = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var redirectsEnabled = SettingService.RedirectsEnabled(artistValues);
+
+        try
+        {
+            var response = await this._artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, prfx, contextUser), redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -148,95 +170,15 @@ public class ArtistCommands : BaseCommandModule
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
-        var response = new ResponseModel();
-        var artist = await this._artistsService.SearchArtist(response,
-            this.Context.User,
-            redirectsEnabled.NewSearchValue,
-            contextUser.UserNameLastFM,
-            contextUser.SessionKeyLastFm,
-            userSettings.UserNameLastFm,
-            true,
-            userSettings.UserId,
-            redirectsEnabled: redirectsEnabled.Enabled);
-        if (artist.Artist == null)
-        {
-            await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed(response.CommandResponse);
-            return;
-        }
+        var response = await this._artistBuilders.ArtistAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
+            userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
-        var topAlbums = await this._artistsService.GetTopAlbumsForArtist(userSettings.UserId, artist.Artist.ArtistName);
-        var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-        if (topAlbums.Count == 0)
-        {
-            this._embed.WithDescription(
-                $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()} has no scrobbles for this artist or their scrobbles have no album associated with them.");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-            return;
-        }
-
-        var url = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/music/{UrlEncoder.Default.Encode(artist.Artist.ArtistName)}";
-        if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-        {
-            this._embedAuthor.WithUrl(url);
-        }
-
-        var pages = new List<PageBuilder>();
-        var albumPages = topAlbums.ChunkBy(10);
-
-        var counter = 1;
-        var pageCounter = 1;
-        foreach (var albumPage in albumPages)
-        {
-            var albumPageString = new StringBuilder();
-            foreach (var artistAlbum in albumPage)
-            {
-                albumPageString.AppendLine($"{counter}. **{artistAlbum.Name}** - *{artistAlbum.Playcount} {StringExtensions.GetPlaysString(artistAlbum.Playcount)}*");
-                counter++;
-            }
-
-            var footer = new StringBuilder();
-            footer.Append($"Page {pageCounter}/{albumPages.Count}");
-            var title = new StringBuilder();
-
-            if (userSettings.DifferentUser && userSettings.UserId != contextUser.UserId)
-            {
-                footer.AppendLine($" - {userSettings.UserNameLastFm} has {artist.Artist.UserPlaycount} total scrobbles on this artist");
-                footer.AppendLine($"Requested by {userTitle}");
-                title.Append($"{userSettings.DisplayName}'s top albums for '{artist.Artist.ArtistName}'");
-            }
-            else
-            {
-                footer.Append($" - {userTitle} has {artist.Artist.UserPlaycount} total scrobbles on this artist");
-                title.Append($"Your top albums for '{artist.Artist.ArtistName}'");
-
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            }
-
-            this._embedAuthor.WithName(title.ToString());
-
-            var page = new PageBuilder()
-                .WithDescription(albumPageString.ToString())
-                .WithAuthor(this._embedAuthor)
-                .WithFooter(footer.ToString());
-
-            pages.Add(page);
-            pageCounter++;
-        }
-
-        var paginator = StringService.BuildStaticPaginator(pages);
-
-        _ = this.Interactivity.SendPaginatorAsync(
-            paginator,
-            this.Context.Channel,
-            TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("artistplays", RunMode = RunMode.Async)]

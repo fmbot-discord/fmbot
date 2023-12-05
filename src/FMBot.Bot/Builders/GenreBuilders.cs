@@ -529,10 +529,21 @@ public class GenreBuilders
         }
 
         var interaction = userView ? InteractionConstants.GenreGuild : InteractionConstants.GenreUser;
-        var emote = userView ? Emote.Parse("<:server:961685224041902140>") : Emote.Parse("<:user:961687127249260634>");
+        var optionEmote = userView ? Emote.Parse("<:server:961685224041902140>") : Emote.Parse("<:user:961687127249260634>");
+        var optionDescription = userView ? "View server overview" : "View user overview";
+        var optionId = $"{interaction}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{userGenre.GenreName}";
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages, $"{interaction}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{userGenre.GenreName}", emote);
-        response.ResponseType = ResponseType.Paginator;
+        if (pages.Count == 1)
+        {
+            response.ResponseType = ResponseType.Embed;
+            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, optionDescription);
+        }
+        else
+        {
+            response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+            response.ResponseType = ResponseType.Paginator;
+        }
+        
         return response;
     }
 

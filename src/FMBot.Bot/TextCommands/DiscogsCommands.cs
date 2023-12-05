@@ -63,7 +63,8 @@ public class DiscogsCommands : BaseCommandModule
             await this.Context.Channel.SendMessageAsync("", false, serverEmbed.Build());
         }
 
-        var response = await this._discogsBuilder.DiscogsLoginAsync(new ContextModel(this.Context, prfx, contextUser));
+        var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, prfx, contextUser));
+        await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 

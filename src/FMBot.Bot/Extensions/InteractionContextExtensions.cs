@@ -148,7 +148,7 @@ public static class InteractionContextExtensions
         }
     }
 
-    public static async Task UpdateInteractionEmbed(this IInteractionContext context, ResponseModel response, InteractiveService interactiveService = null)
+    public static async Task UpdateInteractionEmbed(this IInteractionContext context, ResponseModel response, InteractiveService interactiveService = null, bool defer = true)
     {
         var message = (context.Interaction as SocketMessageComponent)?.Message;
 
@@ -163,7 +163,32 @@ public static class InteractionContextExtensions
             return;
         }
 
-        await context.ModifyMessage(message, response);
+        await context.ModifyMessage(message, response, defer);
+    }
+
+    public static async Task DisableInteractionButtons(this IInteractionContext context)
+    {
+        var message = (context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var newComponents = new ComponentBuilder();
+        foreach (var actionRowComponent in message.Components)
+        {
+            foreach (var component in actionRowComponent.Components)
+            {
+                if (component is ButtonComponent buttonComponent)
+                {
+                    newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                        buttonComponent.Emote, buttonComponent.Url, true);
+                }
+            }
+        }
+
+        await message.ModifyAsync(m => m.Components = newComponents.Build());
     }
 
     public static async Task UpdateMessageEmbed(this IInteractionContext context, ResponseModel response, string messageId)
@@ -179,7 +204,8 @@ public static class InteractionContextExtensions
         await context.ModifyMessage(message, response);
     }
 
-    private static async Task ModifyMessage(this IInteractionContext context, IUserMessage message, ResponseModel response)
+    private static async Task ModifyMessage(this IInteractionContext context, IUserMessage message,
+        ResponseModel response, bool defer = true)
     {
         await message.ModifyAsync(m =>
         {
@@ -187,7 +213,10 @@ public static class InteractionContextExtensions
             m.Embed = response.Embed.Build();
         });
 
-        await context.Interaction.DeferAsync();
+        if (defer)
+        {
+            await context.Interaction.DeferAsync();
+        }
     }
 
     private static async Task ModifyPaginator(this IInteractionContext context, InteractiveService interactiveService, IUserMessage message, ResponseModel response)

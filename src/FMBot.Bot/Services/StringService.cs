@@ -6,6 +6,7 @@ using Discord;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -220,6 +221,23 @@ public static class StringService
         }
 
         return null;
+    }
+
+    public static ResponseModel SinglePageToEmbedResponseWithButton(this ResponseModel response, PageBuilder page, string customOptionId = null,
+        IEmote optionEmote = null, string optionDescription = null)
+    {
+        response.Embed.WithAuthor(page.Author);
+        response.Embed.WithDescription(page.Description);
+        response.Embed.WithUrl(page.Url);
+        response.Embed.WithFooter(page.Footer);
+
+        if (customOptionId != null)
+        {
+            response.Components = new ComponentBuilder()
+                .WithButton(customId: customOptionId, emote: optionEmote, label: optionDescription, style:ButtonStyle.Secondary);
+        }
+
+        return response;
     }
 
     public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null, IEmote optionEmote = null)
