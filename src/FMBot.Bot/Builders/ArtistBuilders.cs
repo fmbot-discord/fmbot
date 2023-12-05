@@ -512,7 +512,7 @@ public class ArtistBuilders
         }
 
         var dbArtist =
-            await this._artistsService.GetArtistFromDatabase(artistSearch.Artist.ArtistName, redirectsEnabled);
+            await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, redirectsEnabled: redirectsEnabled);
 
         if (artistSearch.Artist.UserPlaycount.HasValue && !userSettings.DifferentUser)
         {
@@ -520,7 +520,6 @@ public class ArtistBuilders
                 artistSearch.Artist.UserPlaycount.Value);
         }
 
-        var timeDescription = timeSettings.Description.ToLower();
         List<UserTrack> topTracks;
         switch (timeSettings.TimePeriod)
         {
@@ -531,7 +530,6 @@ public class ArtistBuilders
                 topTracks = await this._playService.GetUserTopTracksForArtist(userSettings.UserId, 31, artistSearch.Artist.ArtistName);
                 break;
             default:
-                timeDescription = "alltime";
                 topTracks = await this._artistsService.GetTopTracksForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
                 break;
         }
@@ -602,8 +600,19 @@ public class ArtistBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages,
-            $"{InteractionConstants.Artist.ArtistOverview}-{dbArtist.Id}-{context.ContextUser.DiscordUserId}", new Emoji("\ud83d\udcca"));
+        var optionId = $"{InteractionConstants.Artist.ArtistOverview}-{dbArtist.Id}-{context.ContextUser.DiscordUserId}";
+        var optionEmote = new Emoji("\ud83d\udcca");
+
+        if (pages.Count == 1)
+        {
+            response.ResponseType = ResponseType.Embed;
+            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "Artist overview");
+        }
+        else
+        {
+            response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+        }
+        
         return response;
     }
 
@@ -627,7 +636,7 @@ public class ArtistBuilders
         }
 
         var dbArtist =
-            await this._artistsService.GetArtistFromDatabase(artistSearch.Artist.ArtistName, redirectsEnabled);
+            await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, redirectsEnabled: redirectsEnabled);
 
         if (artistSearch.Artist.UserPlaycount.HasValue && !userSettings.DifferentUser)
         {
@@ -696,8 +705,18 @@ public class ArtistBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages,
-            $"{InteractionConstants.Artist.ArtistOverview}-{dbArtist.Id}-{context.ContextUser.DiscordUserId}", new Emoji("\ud83d\udcca"));
+        var optionId = $"{InteractionConstants.Artist.ArtistOverview}-{dbArtist.Id}-{context.ContextUser.DiscordUserId}";
+        var optionEmote = new Emoji("\ud83d\udcca");
+
+        if (pages.Count == 1)
+        {
+            response.ResponseType = ResponseType.Embed;
+            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "Artist overview");
+        }
+        else
+        {
+            response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+        }
 
         return response;
     }
