@@ -903,7 +903,8 @@ public class UserSlashCommands : InteractionModuleBase
         await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetFullUserAsync(ulong.Parse(requesterDiscordUserId));
-        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User);
+        var userSettings = await this._settingService.GetOriginalContextUser(
+            ulong.Parse(discordUserId), ulong.Parse(requesterDiscordUserId), this.Context.Guild, this.Context.User);
 
         var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings);
 
@@ -919,7 +920,8 @@ public class UserSlashCommands : InteractionModuleBase
         await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetFullUserAsync(ulong.Parse(requesterDiscordUserId));
-        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User);
+        var userSettings = await this._settingService.GetOriginalContextUser(
+            ulong.Parse(discordUserId), ulong.Parse(requesterDiscordUserId), this.Context.Guild, this.Context.User);
 
         var response = await this._userBuilder.ProfileHistoryAsync(new ContextModel(this.Context, contextUser), userSettings);
 
