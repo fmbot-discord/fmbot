@@ -443,7 +443,7 @@ public class ArtistBuilders
                 foreach (var track in topTracks.Take(8))
                 {
                     topTracksDescription.AppendLine($"{counter}. **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.Name, 40))}** - " +
-                                                    $"*{track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}*");
+                                                    $"*{track.Playcount}x*");
                     counter++;
                 }
 
@@ -460,7 +460,7 @@ public class ArtistBuilders
                 foreach (var album in topAlbums.Take(8))
                 {
                     topAlbumsDescription.AppendLine($"{counter}. **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(album.Name, 40))}** - " +
-                                                    $"*{album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)}*");
+                                                    $"*{album.Playcount}x*");
                     counter++;
                 }
 
