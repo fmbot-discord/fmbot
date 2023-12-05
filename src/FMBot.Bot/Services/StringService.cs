@@ -226,6 +226,7 @@ public static class StringService
     public static ResponseModel SinglePageToEmbedResponseWithButton(this ResponseModel response, PageBuilder page, string customOptionId = null,
         IEmote optionEmote = null, string optionDescription = null)
     {
+        response.Embed.WithTitle(page.Title);
         response.Embed.WithAuthor(page.Author);
         response.Embed.WithDescription(page.Description);
         response.Embed.WithUrl(page.Url);

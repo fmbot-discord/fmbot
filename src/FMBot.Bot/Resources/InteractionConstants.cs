@@ -56,6 +56,12 @@ public static class InteractionConstants
         public const string History = "user-history";
     }
 
+    public static class Album
+    {
+        public const string Info = "album-info";
+        public const string Tracks = "album-tracks";
+    }
+
     public static class ModerationCommands
     {
         public const string CensorTypes = "admin-censor-*";

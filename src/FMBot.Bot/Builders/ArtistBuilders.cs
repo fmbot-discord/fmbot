@@ -127,7 +127,7 @@ public class ArtistBuilders
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        response.EmbedAuthor.WithName($"Artist info about {artistSearch.Artist.ArtistName} for {userTitle}");
+        response.EmbedAuthor.WithName($"Artist: {artistSearch.Artist.ArtistName} for {userTitle}");
         response.EmbedAuthor.WithUrl(artistSearch.Artist.ArtistUrl);
         response.Embed.WithAuthor(response.EmbedAuthor);
 
