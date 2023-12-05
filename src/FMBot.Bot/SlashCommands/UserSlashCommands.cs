@@ -889,7 +889,7 @@ public class UserSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings, contextUser);
+        var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -903,9 +903,9 @@ public class UserSlashCommands : InteractionModuleBase
         await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetFullUserAsync(ulong.Parse(requesterDiscordUserId));
-        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User);
 
-        var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings, contextUser);
+        var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings);
 
         await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -919,9 +919,9 @@ public class UserSlashCommands : InteractionModuleBase
         await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetFullUserAsync(ulong.Parse(requesterDiscordUserId));
-        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User);
 
-        var response = await this._userBuilder.ProfileHistoryAsync(new ContextModel(this.Context, contextUser), userSettings, contextUser);
+        var response = await this._userBuilder.ProfileHistoryAsync(new ContextModel(this.Context, contextUser), userSettings);
 
         await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);

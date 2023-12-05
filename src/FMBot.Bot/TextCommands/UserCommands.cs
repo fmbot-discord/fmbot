@@ -128,15 +128,15 @@ public class UserCommands : BaseCommandModule
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
+        var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
-            var userSettings = await this._settingService.GetUser(userOptions, user, this.Context, true);
+            var userSettings = await this._settingService.GetUser(userOptions, contextUser, this.Context, true);
 
             var response =
-                await this._userBuilder.ProfileAsync(new ContextModel(this.Context, prfx, user), userSettings, user);
+                await this._userBuilder.ProfileAsync(new ContextModel(this.Context, prfx, contextUser), userSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

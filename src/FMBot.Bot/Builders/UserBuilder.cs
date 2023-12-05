@@ -577,7 +577,7 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ProfileAsync(ContextModel context, UserSettingsModel userSettings, User user)
+    public async Task<ResponseModel> ProfileAsync(ContextModel context, UserSettingsModel userSettings)
     {
         var response = new ResponseModel
         {
@@ -585,6 +585,7 @@ public class UserBuilder
         };
 
         string userTitle;
+        var user = context.ContextUser;
         if (userSettings.DifferentUser)
         {
             if (userSettings.DifferentUser && user.DiscordUserId == userSettings.DiscordUserId)
@@ -758,7 +759,7 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ProfileHistoryAsync(ContextModel context, UserSettingsModel userSettings, User user)
+    public async Task<ResponseModel> ProfileHistoryAsync(ContextModel context, UserSettingsModel userSettings)
     {
         var response = new ResponseModel
         {
@@ -766,9 +767,10 @@ public class UserBuilder
         };
 
         string userTitle;
+        var user2 = context.ContextUser;
         if (userSettings.DifferentUser)
         {
-            if (userSettings.DifferentUser && user.DiscordUserId == userSettings.DiscordUserId)
+            if (userSettings.DifferentUser && context.ContextUser.DiscordUserId == userSettings.DiscordUserId)
             {
                 response.Embed.WithDescription("That user is not registered in .fmbot.");
                 response.CommandResponse = CommandResponse.WrongInput;
@@ -777,7 +779,7 @@ public class UserBuilder
 
             userTitle =
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
-            user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
+            user2 = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
         }
         else
         {
@@ -790,15 +792,15 @@ public class UserBuilder
         var anyHistoryStored = false;
 
         var description = new StringBuilder();
-        if (user.UserType != UserType.User)
+        if (user2.UserType != UserType.User)
         {
             description.AppendLine($"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
         }
-        if (user.DataSource != DataSource.LastFm)
+        if (user2.DataSource != DataSource.LastFm)
         {
-            var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
+            var name = user2.DataSource.GetAttribute<OptionAttribute>().Name;
 
-            switch (user.DataSource)
+            switch (user2.DataSource)
             {
                 case DataSource.FullSpotifyThenLastFm:
                 case DataSource.SpotifyThenFullLastFm:
@@ -890,7 +892,7 @@ public class UserBuilder
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                if (user.UserDiscogs == null)
+                if (user2.UserDiscogs == null)
                 {
                     response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years? " +
                                                      $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
@@ -915,7 +917,7 @@ public class UserBuilder
         response.Embed.WithDescription(description.ToString());
 
         response.Components = new ComponentBuilder()
-            .WithButton("View profile", $"{InteractionConstants.User.Profile}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"))
+            .WithButton("View profile", $"{InteractionConstants.User.Profile}-{user2.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"))
             .WithButton("Last.fm", style: ButtonStyle.Link, url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm), emote: Emote.Parse("<:lastfm:882227627287515166>"));
 
         return response;
