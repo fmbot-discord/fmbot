@@ -50,6 +50,12 @@ public static class InteractionConstants
         public const string ArtistTracks = "artist-tracks";
     }
 
+    public static class User
+    {
+        public const string Profile = "user-profile";
+        public const string History = "user-history";
+    }
+
     public static class ModerationCommands
     {
         public const string CensorTypes = "admin-censor-*";

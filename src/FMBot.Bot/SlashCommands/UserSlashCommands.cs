@@ -594,7 +594,7 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("localization", "Configure your timezone in .fmbot")]
     [UsernameSetRequired]
-    public async Task SetLocalization([Summary("Timezone", "Timezone you want to set")] [Autocomplete(typeof(TimeZoneAutoComplete))] string timezone)
+    public async Task SetLocalization([Summary("Timezone", "Timezone you want to set")][Autocomplete(typeof(TimeZoneAutoComplete))] string timezone)
     {
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -879,20 +879,51 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("stats", "Shows you or someone else their profile")]
+    [SlashCommand("profile", "Shows you or someone else their profile")]
     [UsernameSetRequired]
-    public async Task StatsAsync(
+    public async Task ProfileAsync(
         [Summary("User", "The user of which you want to view their profile")] string user = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
-        var userSettings =
-            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var response = await this._userBuilder.StatsAsync(new ContextModel(this.Context, contextUser), userSettings, contextUser);
+        var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings, contextUser);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [UsernameSetRequired]
+    [ComponentInteraction($"{InteractionConstants.User.Profile}-*-*")]
+    public async Task ProfileAsync(string discordUserId, string requesterDiscordUserId)
+    {
+        _ = DeferAsync();
+        await this.Context.DisableInteractionButtons();
+
+        var contextUser = await this._userService.GetFullUserAsync(ulong.Parse(requesterDiscordUserId));
+        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User, true);
+
+        var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings, contextUser);
+
+        await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [UsernameSetRequired]
+    [ComponentInteraction($"{InteractionConstants.User.History}-*-*")]
+    public async Task ProfileHistoryAsync(string discordUserId, string requesterDiscordUserId)
+    {
+        _ = DeferAsync();
+        await this.Context.DisableInteractionButtons();
+
+        var contextUser = await this._userService.GetFullUserAsync(ulong.Parse(requesterDiscordUserId));
+        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User, true);
+
+        var response = await this._userBuilder.ProfileHistoryAsync(new ContextModel(this.Context, contextUser), userSettings, contextUser);
+
+        await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 

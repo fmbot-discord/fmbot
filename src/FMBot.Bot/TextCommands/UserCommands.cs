@@ -119,10 +119,10 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("stats", RunMode = RunMode.Async)]
+    [Command("profile", RunMode = RunMode.Async)]
     [Summary("Displays user stats related to Last.fm and .fmbot")]
     [UsernameSetRequired]
-    [Alias("profile", "user")]
+    [Alias("stats", "user")]
     [CommandCategories(CommandCategory.Other)]
     public async Task StatsAsync([Remainder] string userOptions = null)
     {
@@ -133,10 +133,10 @@ public class UserCommands : BaseCommandModule
 
         try
         {
-            var userSettings = await this._settingService.GetUser(userOptions, user, this.Context);
+            var userSettings = await this._settingService.GetUser(userOptions, user, this.Context, true);
 
             var response =
-                await this._userBuilder.StatsAsync(new ContextModel(this.Context, prfx, user), userSettings, user);
+                await this._userBuilder.ProfileAsync(new ContextModel(this.Context, prfx, user), userSettings, user);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
