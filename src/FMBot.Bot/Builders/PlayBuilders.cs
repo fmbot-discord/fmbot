@@ -19,7 +19,6 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.Persistence.Domain.Models;
-using Microsoft.Extensions.Options;
 using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
@@ -31,61 +30,49 @@ public class PlayBuilder
     private readonly CensorService _censorService;
     private readonly GuildService _guildService;
     private readonly IIndexService _indexService;
-    private readonly IPrefixService _prefixService;
     private readonly IUpdateService _updateService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PlayService _playService;
     private readonly GenreService _genreService;
-    private readonly SettingService _settingService;
     private readonly TimeService _timeService;
     private readonly TrackService _trackService;
     private readonly UserService _userService;
     private readonly CountryService _countryService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
-    private readonly WhoKnowsArtistService _whoKnowsArtistService;
-    private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
-    private readonly WhoKnowsTrackService _whoKnowsTrackService;
+    private readonly AlbumService _albumService;
+
     private InteractiveService Interactivity { get; }
 
     public PlayBuilder(
         GuildService guildService,
         IIndexService indexService,
-        IPrefixService prefixService,
         IUpdateService updateService,
         IDataSourceFactory dataSourceFactory,
         PlayService playService,
-        SettingService settingService,
         UserService userService,
         WhoKnowsPlayService whoKnowsPlayService,
         CensorService censorService,
-        WhoKnowsArtistService whoKnowsArtistService,
-        WhoKnowsAlbumService whoKnowsAlbumService,
-        WhoKnowsTrackService whoKnowsTrackService,
         InteractiveService interactivity,
-        IOptions<BotSettings> botSettings,
         TimeService timeService,
         GenreService genreService,
         TrackService trackService,
-        CountryService countryService)
+        CountryService countryService,
+        AlbumService albumService)
     {
         this._guildService = guildService;
         this._indexService = indexService;
         this._dataSourceFactory = dataSourceFactory;
         this._playService = playService;
-        this._prefixService = prefixService;
-        this._settingService = settingService;
         this._updateService = updateService;
         this._userService = userService;
         this._whoKnowsPlayService = whoKnowsPlayService;
         this._censorService = censorService;
-        this._whoKnowsArtistService = whoKnowsArtistService;
-        this._whoKnowsAlbumService = whoKnowsAlbumService;
-        this._whoKnowsTrackService = whoKnowsTrackService;
         this.Interactivity = interactivity;
         this._timeService = timeService;
         this._genreService = genreService;
         this._trackService = trackService;
         this._countryService = countryService;
+        this._albumService = albumService;
     }
 
     public async Task<ResponseModel> NowPlayingAsync(
@@ -276,13 +263,21 @@ public class PlayBuilder
                     response.Embed.WithUrl(recentTracks.Content.UserUrl);
                 }
 
-                if (currentTrack.AlbumCoverUrl != null && embedType != FmEmbedType.EmbedTiny)
+                if (currentTrack.AlbumName != null)
                 {
-                    var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
-                        currentTrack.AlbumName, currentTrack.ArtistName, currentTrack.AlbumCoverUrl);
-                    if (safeForChannel == CensorService.CensorResult.Safe)
+                    var dbAlbum =
+                        await this._albumService.GetAlbumFromDatabase(currentTrack.ArtistName, currentTrack.AlbumName);
+
+                    var albumCoverUrl = dbAlbum?.SpotifyImageUrl ?? currentTrack.AlbumCoverUrl;
+
+                    if (albumCoverUrl != null && embedType != FmEmbedType.EmbedTiny)
                     {
-                        response.Embed.WithThumbnailUrl(currentTrack.AlbumCoverUrl);
+                        var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+                            currentTrack.AlbumName, currentTrack.ArtistName, albumCoverUrl);
+                        if (safeForChannel == CensorService.CensorResult.Safe)
+                        {
+                            response.Embed.WithThumbnailUrl(albumCoverUrl);
+                        }
                     }
                 }
 
