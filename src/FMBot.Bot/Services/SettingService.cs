@@ -751,10 +751,7 @@ public class SettingService
         IGuildUser guildUser = null;
         if (discordGuild != null)
         {
-            if (discordUserId == requesterUserId)
-            {
-                guildUser = await discordGuild.GetUserAsync(discordUserId, CacheMode.CacheOnly);
-            }
+            guildUser = await discordGuild.GetUserAsync(discordUserId, CacheMode.CacheOnly);
         }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
