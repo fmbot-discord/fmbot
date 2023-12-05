@@ -476,16 +476,11 @@ public class ArtistBuilders
         var components = new ComponentBuilder()
             .WithButton("View artist info", $"{InteractionConstants.Artist.ArtistInfo}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"));
 
-        if (artistTracksButton)
-        {
-            components.WithButton("All top tracks",
-                $"{InteractionConstants.Artist.ArtistTracks}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary);
-        }
-        if (artistAlbumsButton)
-        {
-            components.WithButton("All top albums",
-                $"{InteractionConstants.Artist.ArtistAlbums}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary);
-        }
+        components.WithButton("All top tracks",
+            $"{InteractionConstants.Artist.ArtistTracks}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistTracksButton);
+
+        components.WithButton("All top albums",
+            $"{InteractionConstants.Artist.ArtistAlbums}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistAlbumsButton);
 
         response.Components = components;
 
@@ -612,7 +607,7 @@ public class ArtistBuilders
         {
             response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
         }
-        
+
         return response;
     }
 
