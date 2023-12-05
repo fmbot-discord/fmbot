@@ -761,7 +761,7 @@ public class SettingService
 
         return new UserSettingsModel
         {
-            DiscordUserId = discordUserId,
+            DiscordUserId = targetUser.DiscordUserId,
             DifferentUser = differentUser,
             TimeZone = targetUser.TimeZone,
             UserId = targetUser.UserId,
