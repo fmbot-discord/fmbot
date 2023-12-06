@@ -16,12 +16,12 @@ public class ContextModel
         this.SlashCommand = false;
     }
 
-    public ContextModel(IInteractionContext context, User contextUser = null)
+    public ContextModel(IInteractionContext context, User contextUser = null, IUser discordContextUser = null)
     {
         this.Prefix = "/";
         this.DiscordGuild = context.Guild;
         this.DiscordChannel = context.Channel;
-        this.DiscordUser = context.User;
+        this.DiscordUser = discordContextUser ?? context.User;
         this.ContextUser = contextUser;
         this.SlashCommand = true;
     }

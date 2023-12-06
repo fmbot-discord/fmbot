@@ -107,7 +107,7 @@ public class SupporterService
 
     public bool ShowPromotionalMessage(UserType userType, ulong? guildId)
     {
-        if (userType != UserType.User)
+        if (IsSupporter(userType))
         {
             return false;
         }

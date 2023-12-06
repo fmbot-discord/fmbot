@@ -104,11 +104,7 @@ public class TrackBuilders
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        if (!context.SlashCommand)
-        {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
-        }
-        response.EmbedAuthor.WithName($"Info about {trackSearch.Track.ArtistName} - {trackSearch.Track.TrackName} for {userTitle}");
+        response.EmbedAuthor.WithName($"Track: {trackSearch.Track.ArtistName} - {trackSearch.Track.TrackName} for {userTitle}");
 
         if (trackSearch.Track.TrackUrl != null)
         {
@@ -212,7 +208,7 @@ public class TrackBuilders
             response.Embed.WithFooter(footer.ToString());
         }
 
-        response.Embed.AddField("Statistics", leftStats.ToString(), true);
+        response.Embed.AddField("Stats", leftStats.ToString(), true);
 
         if (rightStats.Length > 0)
         {

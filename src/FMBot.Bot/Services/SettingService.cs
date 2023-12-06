@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -15,7 +16,6 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace FMBot.Bot.Services;
 
@@ -440,7 +440,7 @@ public class SettingService
         return topListSettings;
     }
 
-    public static (ResponseMode mode, string newSearchValue) SetMode (string extraOptions, ResponseMode? userMode)
+    public static (ResponseMode mode, string newSearchValue) SetMode(string extraOptions, ResponseMode? userMode)
     {
         var newSearchValue = extraOptions;
 
@@ -744,6 +744,35 @@ public class SettingService
         }
 
         return settingsModel;
+    }
+
+    public async Task<UserSettingsModel> GetOriginalContextUser(
+        ulong discordUserId, ulong requesterUserId, IGuild discordGuild, IUser contextDiscordUser)
+    {
+        IGuildUser guildUser = null;
+        if (discordGuild != null)
+        {
+            guildUser = await discordGuild.GetUserAsync(discordUserId, CacheMode.CacheOnly);
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var targetUser = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+        var differentUser = discordUserId != requesterUserId;
+
+        return new UserSettingsModel
+        {
+            DiscordUserId = targetUser.DiscordUserId,
+            DifferentUser = differentUser,
+            TimeZone = targetUser.TimeZone,
+            UserId = targetUser.UserId,
+            DisplayName = guildUser?.DisplayName ??
+                          (differentUser ? targetUser.UserNameLastFM : contextDiscordUser.GlobalName ?? contextDiscordUser.Username),
+            RegisteredLastFm = targetUser.RegisteredLastFm,
+            SessionKeyLastFm = targetUser.SessionKeyLastFm,
+            UserNameLastFm = targetUser.UserNameLastFM,
+            UserType = targetUser.UserType
+        };
     }
 
     public async Task<User> GetDifferentUser(string searchValue)

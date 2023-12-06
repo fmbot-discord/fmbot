@@ -127,7 +127,7 @@ public class ArtistBuilders
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        response.EmbedAuthor.WithName($"Artist info about {artistSearch.Artist.ArtistName} for {userTitle}");
+        response.EmbedAuthor.WithName($"Artist: {artistSearch.Artist.ArtistName} for {userTitle}");
         response.EmbedAuthor.WithUrl(artistSearch.Artist.ArtistUrl);
         response.Embed.WithAuthor(response.EmbedAuthor);
 
@@ -477,10 +477,10 @@ public class ArtistBuilders
             .WithButton("View artist info", $"{InteractionConstants.Artist.ArtistInfo}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"));
 
         components.WithButton("All top tracks",
-            $"{InteractionConstants.Artist.ArtistTracks}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistTracksButton);
+            $"{InteractionConstants.Artist.ArtistTracks}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: Emoji.Parse("🎶"));
 
         components.WithButton("All top albums",
-            $"{InteractionConstants.Artist.ArtistAlbums}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistAlbumsButton);
+            $"{InteractionConstants.Artist.ArtistAlbums}-{fullArtist.Id}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: Emoji.Parse("💽"));
 
         response.Components = components;
 
