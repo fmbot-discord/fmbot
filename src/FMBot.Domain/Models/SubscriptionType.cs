@@ -8,5 +8,11 @@ public enum SubscriptionType
 
     Lifetime = 3,
 
-    Discord = 4
+    Discord = 4,
+
+    MonthlyStripe = 5,
+
+    YearlyStripe = 6,
+
+    LifetimeStripe = 7,
 }
