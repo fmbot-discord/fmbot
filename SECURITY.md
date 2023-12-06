@@ -20,7 +20,6 @@ a DM to one of the developers.
 Developers are identified with the role 'Developer'.
 
 It is appreciated if you can include the following:
-- Your name and contact information.
 - A description of the vulnerability.
 - Reproduction steps or a proof-of-concept.
 - Any additional information that may be helpful.
