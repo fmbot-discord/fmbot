@@ -84,9 +84,12 @@ public class ArtistCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var redirectsEnabled = SettingService.RedirectsEnabled(artistValues);
 
+        var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
+
         try
         {
-            var response = await this._artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, prfx, contextUser), redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
+            var response = await this._artistBuilders.ArtistInfoAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -112,12 +115,15 @@ public class ArtistCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+        var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
+
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var redirectsEnabled = SettingService.RedirectsEnabled(artistValues);
+        var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
 
         try
         {
-            var response = await this._artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, prfx, contextUser), redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
+            var response = await this._artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

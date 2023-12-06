@@ -594,7 +594,7 @@ public class UserBuilder
             }
 
             userTitle =
-                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+                $"{userSettings.DisplayName}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
             user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
         }
         else
