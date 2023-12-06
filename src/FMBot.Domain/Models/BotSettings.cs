@@ -8,6 +8,8 @@ public class BotSettings
 
     public DatabaseConfig Database { get; set; }
 
+    public CacheConfig Cache { get; set; }
+
     public LoggingConfig Logging { get; set; }
 
     public BotConfig Bot { get; set; }
@@ -39,6 +41,13 @@ public class DiscordConfig
 public class DatabaseConfig
 {
     public string ConnectionString { get; set; }
+}
+
+
+public class CacheConfig
+{
+    public string ConnectionString { get; set; }
+    public string InstanceName { get; set; }
 }
 
 public class LoggingConfig

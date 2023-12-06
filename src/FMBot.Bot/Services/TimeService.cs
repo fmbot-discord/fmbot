@@ -10,18 +10,21 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using Serilog;
+using DistributedCacheExtensions = FMBot.Bot.Extensions.DistributedCacheExtensions;
 
 namespace FMBot.Bot.Services;
 
 public class TimeService
 {
-    private readonly IMemoryCache _cache;
+    private readonly IDistributedCache _cache;
     private readonly BotSettings _botSettings;
 
-    public TimeService(IMemoryCache cache, IOptions<BotSettings> botSettings)
+    public TimeService(IDistributedCache cache, IOptions<BotSettings> botSettings)
     {
         this._cache = cache;
         this._botSettings = botSettings.Value;
@@ -57,14 +60,14 @@ public class TimeService
 
     public long GetTrackLengthForTrack(string artistName, string trackName)
     {
-        var trackLength = (long?)this._cache.Get(CacheKeyForTrack(trackName.ToLower(), artistName.ToLower()));
+        var trackLength = this._cache.Get<long?>(CacheKeyForTrack(trackName.ToLower(), artistName.ToLower()));
 
         if (trackLength.HasValue)
         {
             return trackLength.Value;
         }
 
-        var avgArtistTrackLength = (long?)this._cache.Get(CacheKeyForArtist(artistName.ToLower()));
+        var avgArtistTrackLength = this._cache.Get<long?>(CacheKeyForArtist(artistName.ToLower()));
 
         return avgArtistTrackLength ?? 210000;
     }
@@ -117,7 +120,7 @@ public class TimeService
 
             if (avgTrackLengthSeconds == null)
             {
-                var avgArtistTrackLength = (long?)this._cache.Get(CacheKeyForArtist(albumTracks.First().ArtistName));
+                var avgArtistTrackLength = this._cache.Get<long?>(CacheKeyForArtist(albumTracks.First().ArtistName));
                 avgTrackLengthSeconds = (avgArtistTrackLength / 1000) ?? 210;
             }
 
@@ -171,7 +174,7 @@ public class TimeService
             }
             else
             {
-                var avgArtistTrackLength = (long?)this._cache.Get(CacheKeyForArtist(artistName));
+                var avgArtistTrackLength = this._cache.Get<long?>(CacheKeyForArtist(artistName));
                 avgTrackLength = (avgArtistTrackLength / 1000) ?? 210;
             }
 
@@ -184,9 +187,9 @@ public class TimeService
     private async Task CacheAllTrackLengths()
     {
         const string cacheKey = "track-lengths-cached";
-        var cacheTime = TimeSpan.FromMinutes(60);
+        var cacheTime = TimeSpan.FromDays(1);
 
-        if (this._cache.TryGetValue(cacheKey, out _))
+        if (this._cache.TryGetValue<bool>(cacheKey, out _))
         {
             return;
         }
@@ -199,18 +202,26 @@ public class TimeService
         await connection.OpenAsync();
 
         var trackLengths = (await connection.QueryAsync<TrackLengthDto>(sql)).ToList();
-
-        foreach (var length in trackLengths)
+        
+        var parallelOptions = new ParallelOptions
         {
-            this._cache.Set(CacheKeyForTrack(length.TrackName, length.ArtistName), length.DurationMs, cacheTime);
-        }
+            MaxDegreeOfParallelism = 8
+        };
 
-        foreach (var artistLength in trackLengths.GroupBy(g => g.ArtistName))
+        var cacheOptions = new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = cacheTime };
+
+        Parallel.ForEach(trackLengths, parallelOptions, length =>
         {
-            this._cache.Set(CacheKeyForArtist(artistLength.Key), (long)artistLength.Average(a => a.DurationMs), cacheTime);
-        }
+            this._cache.SetStringAsync(CacheKeyForTrack(length.TrackName, length.ArtistName), length.DurationMs.ToString());
+        });
 
-        this._cache.Set(cacheKey, true, cacheTime);
+        Parallel.ForEach(trackLengths.GroupBy(g => g.ArtistName), parallelOptions, artistLength =>
+        {
+            this._cache.SetStringAsync(CacheKeyForArtist(artistLength.Key), artistLength.Average(a => a.DurationMs).ToString(), cacheOptions);
+        });
+
+        await this._cache.SetAsync(cacheKey, true, cacheOptions);
+        return;
     }
 
     private static string CacheKeyForTrack(string trackName, string artistName)

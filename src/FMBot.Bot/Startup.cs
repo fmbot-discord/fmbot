@@ -253,6 +253,11 @@ public class Startup
             b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
 
         services.AddMemoryCache();
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = this.Configuration["Cache:ConnectionString"];
+            options.InstanceName = this.Configuration["Cache:InstanceName"];
+        });
     }
 
     public delegate IPlayDataSourceRepository ServiceResolver(DataSource key);
