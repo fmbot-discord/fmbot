@@ -217,12 +217,43 @@ public class AlbumSlashCommands : InteractionModuleBase
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
 
         try
         {
-            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser), name);
+            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser), userSettings, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Album.Cover}-*-*-*")]
+    [UsernameSetRequired]
+    public async Task AlbumCoverAsync(string album, string discordUser, string requesterDiscordUser)
+    {
+        _ = DeferAsync();
+        await this.Context.DisableInteractionButtons();
+
+        var discordUserId = ulong.Parse(discordUser);
+        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+        var albumId = int.Parse(album);
+
+        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+        var dbAlbum = await this._albumService.GetAlbumForId(albumId);
+
+        try
+        {
+            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, $"{dbAlbum.ArtistName} | {dbAlbum.Name}");
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

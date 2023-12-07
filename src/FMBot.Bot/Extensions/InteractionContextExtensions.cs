@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -211,6 +209,10 @@ public static class InteractionContextExtensions
         {
             m.Components = response.Components?.Build();
             m.Embed = response.Embed.Build();
+            m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+            {
+                new(response.Stream, "image.png")
+            }) : null;
         });
 
         if (defer)

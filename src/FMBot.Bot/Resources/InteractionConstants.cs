@@ -60,6 +60,7 @@ public static class InteractionConstants
     {
         public const string Info = "album-info";
         public const string Tracks = "album-tracks";
+        public const string Cover = "album-cover";
     }
 
     public static class ModerationCommands
