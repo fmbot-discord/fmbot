@@ -7,8 +7,10 @@ using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -18,17 +20,19 @@ public class CrownSlashCommands : InteractionModuleBase
     private readonly UserService _userService;
     private readonly GuildService _guildService;
     private readonly SettingService _settingService;
+    private readonly ArtistsService _artistsService;
 
     private InteractiveService Interactivity { get; }
 
 
-    public CrownSlashCommands(CrownBuilders crownBuilders, InteractiveService interactivity, UserService userService, GuildService guildService, SettingService settingService)
+    public CrownSlashCommands(CrownBuilders crownBuilders, InteractiveService interactivity, UserService userService, GuildService guildService, SettingService settingService, ArtistsService artistsService)
     {
         this._crownBuilders = crownBuilders;
         this.Interactivity = interactivity;
         this._userService = userService;
         this._guildService = guildService;
         this._settingService = settingService;
+        this._artistsService = artistsService;
     }
 
     [SlashCommand("crown", "Shows history for a specific crown")]
@@ -47,6 +51,27 @@ public class CrownSlashCommands : InteractionModuleBase
             var response = await this._crownBuilders.CrownAsync(new ContextModel(this.Context, contextUser), guild, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Artist.Crown}-*")]
+    [UsernameSetRequired]
+    public async Task CrownButtonAsync(string artistId)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+        try
+        {
+            var response = await this._crownBuilders.CrownAsync(new ContextModel(this.Context, contextUser), guild, artist.Name);
+
+            await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

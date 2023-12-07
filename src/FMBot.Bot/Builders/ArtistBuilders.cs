@@ -322,7 +322,7 @@ public class ArtistBuilders
         }
 
         response.Components = new ComponentBuilder()
-            .WithButton("View your overview", $"{InteractionConstants.Artist.ArtistOverview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
+            .WithButton("View your overview", $"{InteractionConstants.Artist.Overview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
 
         response.Embed.WithFooter(footer.ToString());
         return response;
@@ -486,13 +486,13 @@ public class ArtistBuilders
         }
 
         var components = new ComponentBuilder()
-            .WithButton("View artist info", $"{InteractionConstants.Artist.ArtistInfo}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"));
+            .WithButton("View artist info", $"{InteractionConstants.Artist.Info}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"));
 
         components.WithButton("All top tracks",
-            $"{InteractionConstants.Artist.ArtistTracks}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: Emoji.Parse("🎶"));
+            $"{InteractionConstants.Artist.Tracks}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: Emoji.Parse("🎶"));
 
         components.WithButton("All top albums",
-            $"{InteractionConstants.Artist.ArtistAlbums}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: Emoji.Parse("💽"));
+            $"{InteractionConstants.Artist.Albums}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: Emoji.Parse("💽"));
 
         response.Components = components;
 
@@ -607,7 +607,7 @@ public class ArtistBuilders
             pageCounter++;
         }
 
-        var optionId = $"{InteractionConstants.Artist.ArtistOverview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+        var optionId = $"{InteractionConstants.Artist.Overview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
         var optionEmote = new Emoji("\ud83d\udcca");
 
         if (pages.Count == 1)
@@ -711,7 +711,7 @@ public class ArtistBuilders
             pageCounter++;
         }
 
-        var optionId = $"{InteractionConstants.Artist.ArtistOverview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+        var optionId = $"{InteractionConstants.Artist.Overview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
         var optionEmote = new Emoji("\ud83d\udcca");
 
         if (pages.Count == 1)
@@ -1257,7 +1257,8 @@ public class ArtistBuilders
         string artistValues,
         bool displayRoleSelector = false,
         List<ulong> roles = null,
-        bool redirectsEnabled = true)
+        bool redirectsEnabled = true,
+        bool showCrownButton = false)
     {
         var response = new ResponseModel
         {
@@ -1300,6 +1301,16 @@ public class ArtistBuilders
         {
             crownModel =
                 await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, contextGuild, artistSearch.Artist.ArtistName);
+            if (crownModel.Stolen)
+            {
+                showCrownButton = true;
+            }
+        }
+
+        if (showCrownButton)
+        {
+            response.Components = new ComponentBuilder()
+                .WithButton("Crown history", $"{InteractionConstants.Artist.Crown}-{cachedArtist.Id}", style: ButtonStyle.Secondary, emote: new Emoji("👑"));
         }
 
         if (mode == ResponseMode.Image)
@@ -1317,6 +1328,10 @@ public class ArtistBuilders
                 response.Spoiler = true;
                 response.Embed.WithTitle("⚠️ NSFW - Click to reveal");
                 response.ResponseType = ResponseType.ImageWithEmbed;
+            }
+            else
+            {
+                response.Embed = null;
             }
 
             return response;

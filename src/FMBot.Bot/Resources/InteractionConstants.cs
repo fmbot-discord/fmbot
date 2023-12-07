@@ -43,11 +43,14 @@ public static class InteractionConstants
 
     public static class Artist
     {
-        public const string ArtistInfo = "artist-info";
-        public const string ArtistOverview = "artist-overview";
+        public const string Info = "artist-info";
+        public const string Overview = "artist-overview";
 
-        public const string ArtistAlbums = "artist-albums";
-        public const string ArtistTracks = "artist-tracks";
+        public const string Albums = "artist-albums";
+        public const string Tracks = "artist-tracks";
+
+        public const string Crown = "artist-crown";
+        public const string WhoKnows = "artist-whoknows";
     }
 
     public static class User

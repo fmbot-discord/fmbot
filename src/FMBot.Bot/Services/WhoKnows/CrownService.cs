@@ -108,7 +108,7 @@ public class CrownService
 
             return new CrownModel
             {
-                Crown = currentCrownHolder,
+                Crown = currentCrownHolder
             };
         }
 
@@ -198,6 +198,7 @@ public class CrownService
                               $"*Previous owner: {currentCrownHolderName ?? crownUser.UserNameLastFM} with `{currentCrownHolder.CurrentPlaycount}` plays*.",
                 CrownHtmlResult = $"Crown stolen by <b>{topUser.DiscordName}</b> with <b>{topUser.Playcount} plays</b>! " +
                               $"Previous owner: <b>{currentCrownHolderName ?? crownUser.UserNameLastFM}</b> with <b>{currentCrownHolder.CurrentPlaycount} plays</b>.",
+                Stolen = true
             };
         }
 

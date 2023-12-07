@@ -71,7 +71,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Artist.ArtistInfo}-*-*-*")]
+    [ComponentInteraction($"{InteractionConstants.Artist.Info}-*-*-*")]
     [UsernameSetRequired]
     public async Task ArtistInfoAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
@@ -126,7 +126,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Artist.ArtistOverview}-*-*-*")]
+    [ComponentInteraction($"{InteractionConstants.Artist.Overview}-*-*-*")]
     [UsernameSetRequired]
     public async Task ArtistOverviewAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
@@ -203,7 +203,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction($"{InteractionConstants.Artist.ArtistTracks}-*-*-*")]
+    [ComponentInteraction($"{InteractionConstants.Artist.Tracks}-*-*-*")]
     public async Task ArtistTracksAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
         _ = DeferAsync();
@@ -244,7 +244,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction($"{InteractionConstants.Artist.ArtistAlbums}-*-*-*")]
+    [ComponentInteraction($"{InteractionConstants.Artist.Albums}-*-*-*")]
     public async Task ArtistAlbumsAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
         _ = DeferAsync();
@@ -360,6 +360,31 @@ public class ArtistSlashCommands : InteractionModuleBase
             var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, artist.Name, true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Artist.WhoKnows}-*")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task WhoKnowsAsync(string artistId)
+    {
+        _ = DeferAsync();
+        await this.Context.DisableInteractionButtons();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
+        var mode = contextUser.Mode ?? ResponseMode.Embed;
+
+        try
+        {
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser), mode, artist.Name, showCrownButton: true);
+
+            await this.Context.UpdateInteractionEmbed(response, defer: false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

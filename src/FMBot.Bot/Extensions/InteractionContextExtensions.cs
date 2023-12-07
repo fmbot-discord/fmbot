@@ -208,7 +208,7 @@ public static class InteractionContextExtensions
         await message.ModifyAsync(m =>
         {
             m.Components = response.Components?.Build();
-            m.Embed = response.Embed.Build();
+            m.Embed = response.Embed?.Build();
             m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
             {
                 new(response.Stream, "image.png")

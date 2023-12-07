@@ -14,7 +14,10 @@ using FMBot.Domain.Interfaces;
 using Fergun.Interactive;
 using FMBot.Domain.Enums;
 using System.Collections.Generic;
+using Discord;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Resources;
+using FMBot.Bot.Services.ThirdParty;
 
 namespace FMBot.Bot.Builders;
 
@@ -25,14 +28,16 @@ public class CrownBuilders
     private readonly ArtistsService _artistsService;
     private readonly GuildService _guildService;
     private readonly IDataSourceFactory _dataSourceFactory;
+    private readonly SpotifyService _spotifyService;
 
-    public CrownBuilders(CrownService crownService, ArtistsService artistsService, IDataSourceFactory dataSourceFactory, UserService userService, GuildService guildService)
+    public CrownBuilders(CrownService crownService, ArtistsService artistsService, IDataSourceFactory dataSourceFactory, UserService userService, GuildService guildService, SpotifyService spotifyService)
     {
         this._crownService = crownService;
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
         this._userService = userService;
         this._guildService = guildService;
+        this._spotifyService = spotifyService;
     }
 
     public async Task<ResponseModel> CrownAsync(
@@ -73,12 +78,17 @@ public class CrownBuilders
             return artistSearch.Response;
         }
 
+        var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+
         var artistCrowns = await this._crownService.GetCrownsForArtist(guild.GuildId, artistSearch.Artist.ArtistName);
 
         var userIds = artistCrowns.Select(s => s.UserId).ToHashSet();
         var users = await this._userService.GetMultipleUsers(userIds);
 
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+
+        response.Components = new ComponentBuilder()
+            .WithButton("WhoKnows", $"{InteractionConstants.Artist.WhoKnows}-{cachedArtist.Id}", style: ButtonStyle.Secondary, emote: new Emoji("📋"));
 
         if (!artistCrowns.Any(a => a.Active))
         {
