@@ -22,6 +22,20 @@ public static class InteractionContextExtensions
         {
             commandName = socketSlashCommand.CommandName;
         }
+        if (context.Interaction is SocketMessageComponent socketMessageComponent)
+        {
+            var customId = socketMessageComponent.Data?.CustomId;
+
+            if (customId != null)
+            {
+                var parts = customId.Split('-');
+
+                if (parts.Length >= 2)
+                {
+                    commandName = parts[0] + '-' + parts[1];
+                }
+            }
+        }
 
         Log.Information("SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
             context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse, commandName);
