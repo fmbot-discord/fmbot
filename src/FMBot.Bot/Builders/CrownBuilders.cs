@@ -138,7 +138,7 @@ public class CrownBuilders
             }
         }
 
-        response.Embed.WithTitle($"Crown info for {currentCrown.ArtistName}");
+        response.Embed.WithTitle($"Crown for {currentCrown.ArtistName}");
 
         var embedDescription = new StringBuilder();
 

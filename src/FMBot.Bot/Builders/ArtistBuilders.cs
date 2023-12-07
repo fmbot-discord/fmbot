@@ -1301,7 +1301,7 @@ public class ArtistBuilders
         {
             crownModel =
                 await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, contextGuild, artistSearch.Artist.ArtistName);
-            if (crownModel.Stolen)
+            if (crownModel?.Stolen == true)
             {
                 showCrownButton = true;
             }
@@ -1309,8 +1309,9 @@ public class ArtistBuilders
 
         if (showCrownButton)
         {
+            var stolen = crownModel?.Stolen == true;
             response.Components = new ComponentBuilder()
-                .WithButton("Crown history", $"{InteractionConstants.Artist.Crown}-{cachedArtist.Id}", style: ButtonStyle.Secondary, emote: new Emoji("👑"));
+                .WithButton("Crown history", $"{InteractionConstants.Artist.Crown}-{cachedArtist.Id}-{stolen}", style: ButtonStyle.Secondary, emote: new Emoji("👑"));
         }
 
         if (mode == ResponseMode.Image)

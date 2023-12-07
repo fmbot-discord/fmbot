@@ -59,9 +59,9 @@ public class CrownSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Artist.Crown}-*")]
+    [ComponentInteraction($"{InteractionConstants.Artist.Crown}-*-*")]
     [UsernameSetRequired]
-    public async Task CrownButtonAsync(string artistId)
+    public async Task CrownButtonAsync(string artistId, string stolen)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var artist = await this._artistsService.GetArtistForId(int.Parse(artistId));
@@ -71,8 +71,19 @@ public class CrownSlashCommands : InteractionModuleBase
         {
             var response = await this._crownBuilders.CrownAsync(new ContextModel(this.Context, contextUser), guild, artist.Name);
 
-            await this.Context.UpdateInteractionEmbed(response);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            if (stolen.Equals("true", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = this.Context.DisableInteractionButtons();
+                response.Components = null;
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
+            else
+            {
+                await this.Context.UpdateInteractionEmbed(response);
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
+
         }
         catch (Exception e)
         {
