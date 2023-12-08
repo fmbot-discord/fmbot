@@ -242,6 +242,12 @@ public class GuildSettingSlashCommands : InteractionModuleBase
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
                     }
                     break;
+                case GuildSetting.RedBotName:
+                {
+                    response = await this._guildSettingBuilder.SetRedBotName(new ContextModel(this.Context));
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -788,5 +794,29 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
 
         await this.Context.UpdateInteractionEmbed(response);
+    }
+
+    [ComponentInteraction(InteractionConstants.SetRedBotName)]
+    [ServerStaffOnly]
+    public async Task SetRedBotName()
+    {
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        await this.Context.Interaction.RespondWithModalAsync<SetRedBotNameModal>($"{InteractionConstants.SetRedBotNameModal}-{message.Id}");
+    }
+
+    [ModalInteraction($"{InteractionConstants.SetRedBotNameModal}-*")]
+    [ServerStaffOnly]
+    public async Task SetRedBotName(string messageId, SetRedBotNameModal modal)
+    {
+        await this._guildService.SetGuildRedBotNameAsync(this.Context.Guild, modal.NewBotName);
+
+        var response = await this._guildSettingBuilder.SetRedBotName(new ContextModel(this.Context), this.Context.User);
+        await this.Context.UpdateMessageEmbed(response, messageId);
     }
 }

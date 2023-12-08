@@ -144,7 +144,7 @@ public class CommandHandler
     {
         foreach (var musicBot in MusicBot.SupportedBots)
         {
-            if (musicBot.IsAuthor(msg.Author))
+            if (await musicBot.IsAuthor(msg.Author, context, this._guildService))
             {
                 await this._musicBotService.Scrobble(musicBot, msg, context);
                 break;

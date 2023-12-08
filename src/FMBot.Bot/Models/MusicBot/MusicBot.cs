@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Services.Guild;
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -16,7 +19,8 @@ public abstract class MusicBot
     {
         new JockieMusicBot(),
         new CakeyBotMusicBot(),
-        new SoundCloudMusicBot()
+        new SoundCloudMusicBot(),
+        new RedMusicBot()
     };
 
     protected MusicBot(string name, bool possiblyIncludesLinks = true, bool skipUploaderName = false)
@@ -26,7 +30,7 @@ public abstract class MusicBot
         this.SkipUploaderName = skipUploaderName;
     }
 
-    public bool IsAuthor(SocketUser user)
+    public virtual async Task<bool> IsAuthor(SocketUser user, ICommandContext context, GuildService guildService)
     {
         return user?.Username?.StartsWith(this.Name, StringComparison.OrdinalIgnoreCase) ?? false;
     }

@@ -60,4 +60,6 @@ public class Guild
     public ICollection<Webhook> Webhooks { get; set; }
 
     public ulong? WhoKnowsWhitelistRoleId { get; set; }
+
+    public string? RedBotName { get; set; }
 }
