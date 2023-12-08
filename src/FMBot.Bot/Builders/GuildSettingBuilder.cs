@@ -18,7 +18,6 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 
 namespace FMBot.Bot.Builders;
 
