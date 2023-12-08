@@ -385,7 +385,23 @@ public class TrackService
                     }
                 }
 
+                // Sometimes track and artist are reversed (esp. with YouTube bots, e.g. "Title - Artist - Topic")
+                // Use the order with the most listeners
                 var trackLfm = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName);
+                var trackLfmReversed = await this._dataSourceFactory.GetTrackInfoAsync(artistName, trackName);
+
+                if (trackLfm.Success && trackLfmReversed.Success)
+                {
+                    trackLfm = trackLfm.Content.TotalListeners >= trackLfmReversed.Content.TotalListeners
+                        ? trackLfm
+                        : trackLfmReversed;
+                }
+                else
+                {
+                    // Try to use the reversed if the normal order is not successful
+                    trackLfm = trackLfm.Success ? trackLfm : trackLfmReversed;
+                }
+
 
                 if (trackLfm.Success)
                 {

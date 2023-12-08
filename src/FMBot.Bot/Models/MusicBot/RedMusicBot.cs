@@ -10,7 +10,7 @@ namespace FMBot.Bot.Models.MusicBot;
 
 internal class RedMusicBot : MusicBot
 {
-    public RedMusicBot() : base("Red", true, true)
+    public RedMusicBot() : base("Red", true, false)
     {
     }
 
@@ -31,7 +31,7 @@ internal class RedMusicBot : MusicBot
 
     public override string GetTrackQuery(IUserMessage msg)
     {
-        return msg.Embeds.First().Description;
+        return msg.Embeds.First().Description.Replace(@"\","");
     }
 
     public override async Task<bool> IsAuthor(SocketUser user, ICommandContext context, GuildService guildService)
