@@ -648,14 +648,16 @@ public class AdminCommands : BaseCommandModule
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var targetedUser = await this._settingService.GetUser(user, contextUser, this.Context);
+            var targetedDate = (DateTime?)null;
 
             if (targetedUser.DifferentUser)
             {
                 user = targetedUser.UserNameLastFm;
+                targetedDate = targetedUser.RegisteredLastFm;
             }
 
-            var bottedUser = await this._adminService.GetBottedUserAsync(user, targetedUser.RegisteredLastFm);
-            var filteredUser = await this._adminService.GetFilteredUserAsync(user, targetedUser.RegisteredLastFm);
+            var bottedUser = await this._adminService.GetBottedUserAsync(user, targetedDate);
+            var filteredUser = await this._adminService.GetFilteredUserAsync(user, targetedDate);
 
             var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user);
 
@@ -694,10 +696,29 @@ public class AdminCommands : BaseCommandModule
                 }
             }
 
-            this._embed.AddField("Globally filtered", filteredUser == null ? "No" : "Yes");
+
             if (filteredUser != null)
             {
-                this._embed.AddField("Filter reason", WhoKnowsFilterService.FilteredUserReason(filteredUser));
+                var startDate = filteredUser.OccurrenceEnd ?? filteredUser.Created;
+                if (startDate > DateTime.UtcNow.AddMonths(-3))
+                {
+                    this._embed.AddField("Globally filtered", "Yes");
+                    this._embed.AddField("Filter reason", WhoKnowsFilterService.FilteredUserReason(filteredUser));
+
+                    var specifiedDateTime = DateTime.SpecifyKind(startDate.AddMonths(3), DateTimeKind.Utc);
+                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                    this._embed.AddField("Filter expires", $"<t:{dateValue}:R> - <t:{dateValue}:F>");
+                }
+                else
+                {
+                    this._embed.AddField("Globally filtered", "No, but was filtered in the past");
+                    this._embed.AddField("Expired filter reason", WhoKnowsFilterService.FilteredUserReason(filteredUser));
+                }
+            }
+            else
+            {
+                this._embed.AddField("Globally filtered", "No");
             }
 
             ComponentBuilder components = null;

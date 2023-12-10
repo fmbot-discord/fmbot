@@ -223,7 +223,8 @@ public static class StringService
         return null;
     }
 
-    public static ResponseModel SinglePageToEmbedResponseWithButton(this ResponseModel response, PageBuilder page, string customOptionId = null,
+    public static void SinglePageToEmbedResponseWithButton(this ResponseModel response, PageBuilder page,
+        string customOptionId = null,
         IEmote optionEmote = null, string optionDescription = null)
     {
         response.Embed.WithTitle(page.Title);
@@ -231,14 +232,13 @@ public static class StringService
         response.Embed.WithDescription(page.Description);
         response.Embed.WithUrl(page.Url);
         response.Embed.WithFooter(page.Footer);
+        response.Embed.Color = null;
 
         if (customOptionId != null)
         {
             response.Components = new ComponentBuilder()
                 .WithButton(customId: customOptionId, emote: optionEmote, label: optionDescription, style:ButtonStyle.Secondary);
         }
-
-        return response;
     }
 
     public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null, IEmote optionEmote = null)

@@ -92,7 +92,8 @@ public static class CommandContextExtensions
                     imageFilename + ".png",
                     null,
                     false,
-                    isSpoiler: response.Spoiler);
+                    isSpoiler: response.Spoiler,
+                    components: response.Components?.Build());
                 await response.Stream.DisposeAsync();
                 break;
             default:

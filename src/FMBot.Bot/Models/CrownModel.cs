@@ -8,4 +8,5 @@ public class CrownModel
 
     public string CrownResult { get; set; }
     public string CrownHtmlResult { get; set; }
+    public bool Stolen { get; set; } = false;
 }

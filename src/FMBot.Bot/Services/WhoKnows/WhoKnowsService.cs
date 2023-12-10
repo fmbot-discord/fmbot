@@ -214,10 +214,10 @@ public class WhoKnowsService
             .Select(s => s.LastFmRegistered)
             .ToHashSet();
 
-        var existingFilterData = DateTime.UtcNow.AddMonths(-3);
+        var existingFilterDate = DateTime.UtcNow.AddMonths(-3);
         var filteredUsers = await db.GlobalFilteredUsers
             .AsQueryable()
-            .Where(w => w.Created > existingFilterData)
+            .Where(w => w.OccurrenceEnd.HasValue ? w.OccurrenceEnd.Value > existingFilterDate : w.Created > existingFilterDate)
             .ToListAsync();
 
         foreach (var filteredUser in filteredUsers)

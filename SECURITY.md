@@ -1,17 +1,30 @@
 # Security Policy
 
-## Supported Versions
+## Guidelines for Responsible Disclosure
+- Provide details of the vulnerability, including information on how it can be reproduced.
+- Avoid any malicious activities that could harm our systems or data.
+- Avoid activity that breaks Terms of Service of third party platforms we use
+- Do not publicly disclose the vulnerability until we have had a chance to address it.
+- Respect the privacy and integrity of our users' data.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.8.x   | :white_check_mark: |
-| 2.7.x   | :x:                |
-| 2.6.x   | :x:                |
-| 2.5.x   | :x:                |
-| 2.3.x   | :x:                |
-| 2.2.x   | :x:                |
-| < 2.0   | :x:                |
+## Out of Scope
+- Getting the app to post bad user content by breaking ToS of third party websites. For
+  example, adding bad content to Last.fm and posting it through the bot.
+- NSFW or NSFL album covers. You can report those in [our server](https://discord.gg/fmbot)
+  with the embed in #rules-info channel.
 
-## Reporting a Vulnerability
+## How to Report a Vulnerability
+To report a vulnerability, please [join our server](https://discord.gg/fmbot) and send 
+a DM to one of the developers. 
 
-Go to https://github.com/fmbot-discord/fmbot/issues and report an issue with the label "security-vuln"
+Developers are identified with the role 'Developer'.
+
+It is appreciated if you can include the following:
+- A description of the vulnerability.
+- Reproduction steps or a proof-of-concept.
+- Any additional information that may be helpful.
+  
+## We commit to:
+- Respond to your report within 24 hours.
+- Keep you informed about the progress of resolving the vulnerability.
+- Acknowledge your efforts if the report is valid.

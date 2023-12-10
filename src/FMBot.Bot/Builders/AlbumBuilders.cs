@@ -266,7 +266,12 @@ public class AlbumBuilders
                 "Album tracks",
                 $"{InteractionConstants.Album.Tracks}-{databaseAlbum.Id}-{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary,
-                emote: Emoji.Parse("🎶"));
+                emote: Emoji.Parse("🎶"))
+            .WithButton(
+                "Cover",
+                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                style: ButtonStyle.Secondary,
+                emote: Emoji.Parse("🖼️"));
 
         response.Embed.WithFooter(footer.ToString());
         return response;
@@ -773,14 +778,14 @@ public class AlbumBuilders
         var spotifySource = false;
 
         List<AlbumTrack> albumTracks;
-        Album dbAlbum = null;
+        var dbAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
+
         if (albumSearch.Album.AlbumTracks != null && albumSearch.Album.AlbumTracks.Any())
         {
             albumTracks = albumSearch.Album.AlbumTracks;
         }
         else
         {
-            dbAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
             dbAlbum.Tracks = await this._spotifyService.GetExistingAlbumTracks(dbAlbum.Id);
 
             if (dbAlbum?.Tracks != null && dbAlbum.Tracks.Any())
@@ -947,6 +952,7 @@ public class AlbumBuilders
 
     public async Task<ResponseModel> CoverAsync(
         ContextModel context,
+        UserSettingsModel userSettings,
         string searchValue)
     {
         var response = new ResponseModel
@@ -1015,12 +1021,6 @@ public class AlbumBuilders
 
         response.Embed.WithDescription(description.ToString());
 
-        if (!context.SlashCommand)
-        {
-            response.EmbedFooter.WithText(
-                $"Album cover requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}");
-        }
-
         response.Embed.WithFooter(response.EmbedFooter);
         response.Stream = image;
         response.FileName =
@@ -1032,6 +1032,10 @@ public class AlbumBuilders
         await ChartService.OverwriteCache(cacheStream, cacheFilePath);
 
         await cacheStream.DisposeAsync();
+
+        response.Components = new ComponentBuilder()
+            .WithButton("View album", $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("💽"))
+            .WithButton($"Requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}", style: ButtonStyle.Secondary, disabled: true, customId: "0");
 
         return response;
     }

@@ -5,10 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.15" />
-    <PackageReference Include="Npgsql" Version="7.0.6" />
+    <PackageReference Include="Dapper" Version="2.1.24" />
+    <PackageReference Include="Npgsql" Version="8.0.1" />
     <PackageReference Include="PostgreSQLCopyHelper" Version="2.8.0" />
-    <PackageReference Include="Serilog" Version="3.0.1" />
+    <PackageReference Include="Serilog" Version="3.1.1" />
     <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
   </ItemGroup>
 

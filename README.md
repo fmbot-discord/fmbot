@@ -36,10 +36,10 @@ Supporting helps us maintain and host the bot, while you get some nice perks in 
 
 See our Docker builds on [Github Packages](https://github.com/fmbot-discord/fmbot/pkgs/container/fmbot).
 
-| Git branch | Type      | Discord username     |
-|---|---|---|
-| main   | production    | .fmbot#8173          |
-| dev    | beta/develop  | .fmbot develop#7613  |
+| Git branch | Type      | Discord username     | Invite link
+|---|---|---|---|
+| main   | production    | .fmbot#8173          | [https://discord.com/api/oa...](https://discord.com/api/oauth2/authorize?client_id=356268235697553409&permissions=275415092288&scope=applications.commands%20bot)
+| dev    | beta/develop  | .fmbot develop#7613  | Closed for invites
 
 <h3>Contributing </h3>
 
