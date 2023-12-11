@@ -111,7 +111,7 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
-        var fullArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled);
+        var fullArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled, true);
 
         var footer = new StringBuilder();
         if (fullArtist.SpotifyImageUrl != null)
@@ -322,8 +322,48 @@ public class ArtistBuilders
         }
 
         response.Components = new ComponentBuilder()
-            .WithButton("View your overview", $"{InteractionConstants.Artist.Overview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
+            .WithButton("Overview", $"{InteractionConstants.Artist.Overview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
 
+        if (fullArtist.SpotifyId != null)
+        {
+            response.Components.WithButton(style: ButtonStyle.Link,
+                emote: Emote.Parse(DiscordConstants.Spotify), url: $"https://open.spotify.com/artist/{fullArtist.SpotifyId}");
+        }
+
+        if (fullArtist.ArtistLinks != null && fullArtist.ArtistLinks.Any())
+        {
+            var facebook = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Facebook);
+            if (facebook != null)
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.Facebook), url: facebook.Url);
+            }
+            var twitter = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Twitter);
+            if (twitter != null)
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.Twitter), url: twitter.Url);
+            }
+            var instagram = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Instagram);
+            if (instagram != null)
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.Instagram), url: instagram.Url);
+            }
+            var tiktok = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.TikTok);
+            if (tiktok != null)
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.TikTok), url: tiktok.Url);
+            }
+            var bandcamp = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Bandcamp);
+            if (bandcamp != null)
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.Bandcamp), url: bandcamp.Url);
+            }
+        }
+        
         response.Embed.WithFooter(footer.ToString());
         return response;
     }
@@ -486,7 +526,7 @@ public class ArtistBuilders
         }
 
         var components = new ComponentBuilder()
-            .WithButton("View artist info", $"{InteractionConstants.Artist.Info}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"));
+            .WithButton("Artist", $"{InteractionConstants.Artist.Info}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.Info));
 
         components.WithButton("All top tracks",
             $"{InteractionConstants.Artist.Tracks}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: Emoji.Parse("🎶"));
@@ -613,7 +653,7 @@ public class ArtistBuilders
         if (pages.Count == 1)
         {
             response.ResponseType = ResponseType.Embed;
-            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "View your overview");
+            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "Overview");
         }
         else
         {
@@ -717,7 +757,7 @@ public class ArtistBuilders
         if (pages.Count == 1)
         {
             response.ResponseType = ResponseType.Embed;
-            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "View your overview");
+            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "Overview");
         }
         else
         {

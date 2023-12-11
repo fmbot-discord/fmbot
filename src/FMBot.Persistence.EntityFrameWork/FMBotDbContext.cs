@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Configuration;
 
 namespace FMBot.Persistence.EntityFrameWork
@@ -50,6 +46,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
+        public virtual DbSet<ArtistLink> ArtistLinks { get; set; }
 
         private readonly IConfiguration _configuration;
 
@@ -65,7 +62,7 @@ namespace FMBot.Persistence.EntityFrameWork
                 optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 // Uncomment below connection string when creating migrations, and also comment out the above iconfiguration stuff
-                // optionsBuilder.UseNpgsql("Host=localhost;Port=5435;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
+                //optionsBuilder.UseNpgsql("Host=localhost;Port=5435;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
@@ -417,6 +414,16 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.ArtistAliases)
+                    .HasForeignKey(d => d.ArtistId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ArtistLink>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasOne(d => d.Artist)
+                    .WithMany(p => p.ArtistLinks)
                     .HasForeignKey(d => d.ArtistId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
