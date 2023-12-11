@@ -380,7 +380,7 @@ public class TrackBuilders
         }
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild?.Id);
-        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
