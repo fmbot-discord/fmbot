@@ -43,4 +43,5 @@ public static class DiscordConstants
     public const string TikTok = "<:social_tiktok:1183831072413335742>";
     public const string Bandcamp = "<:social_bandcamp:1183838619270643823>";
     public const string Spotify = "<:spotify:882221219334725662>";
+    public const string RateYourMusic = "<:rym:1183851241151930399>";
 }

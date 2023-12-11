@@ -324,7 +324,12 @@ public class ArtistBuilders
         response.Components = new ComponentBuilder()
             .WithButton("Overview", $"{InteractionConstants.Artist.Overview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
 
-        if (fullArtist.SpotifyId != null)
+        if (context.ContextUser.RymEnabled == true && fullArtist.ArtistLinks != null && fullArtist.ArtistLinks.Any(a => a.Type == LinkType.RateYourMusic))
+        {
+            var rym = fullArtist.ArtistLinks.First(f => f.Type == LinkType.RateYourMusic);
+            response.Components.WithButton(style: ButtonStyle.Link, emote: Emote.Parse(DiscordConstants.RateYourMusic), url: rym.Url);
+        }
+        else if (fullArtist.SpotifyId != null)
         {
             response.Components.WithButton(style: ButtonStyle.Link,
                 emote: Emote.Parse(DiscordConstants.Spotify), url: $"https://open.spotify.com/artist/{fullArtist.SpotifyId}");
