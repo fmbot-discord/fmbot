@@ -333,22 +333,22 @@ public class ArtistBuilders
         if (fullArtist.ArtistLinks != null && fullArtist.ArtistLinks.Any())
         {
             var facebook = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Facebook);
-            if (facebook != null)
+            if (facebook != null && fullArtist.ArtistLinks.All(a => a.Type != LinkType.Instagram))
             {
                 response.Components.WithButton(style: ButtonStyle.Link,
                     emote: Emote.Parse(DiscordConstants.Facebook), url: facebook.Url);
-            }
-            var twitter = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Twitter);
-            if (twitter != null)
-            {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.Twitter), url: twitter.Url);
             }
             var instagram = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Instagram);
             if (instagram != null)
             {
                 response.Components.WithButton(style: ButtonStyle.Link,
                     emote: Emote.Parse(DiscordConstants.Instagram), url: instagram.Url);
+            }
+            var twitter = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Twitter);
+            if (twitter != null)
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.Twitter), url: twitter.Url);
             }
             var tiktok = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.TikTok);
             if (tiktok != null)
