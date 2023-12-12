@@ -96,11 +96,6 @@ public class SpotifyService
                 if (musicBrainzUpdated.Updated)
                 {
                     artistToAdd = musicBrainzUpdated.Artist;
-
-                    if (artistToAdd.ArtistLinks != null && artistToAdd.ArtistLinks.Any())
-                    {
-                        await ArtistRepository.AddOrUpdateArtistLinks(artistToAdd.Id, artistToAdd.ArtistLinks, connection);
-                    }
                 }
 
                 if (spotifyArtist != null)
@@ -140,6 +135,11 @@ public class SpotifyService
                     {
                         throw new Exception("Artist id is 0!");
                     }
+                }
+
+                if (musicBrainzUpdated.Updated && artistToAdd.ArtistLinks != null && artistToAdd.ArtistLinks.Count != 0 && artistToAdd.Id != 0)
+                {
+                    await ArtistRepository.AddOrUpdateArtistLinks(artistToAdd.Id, artistToAdd.ArtistLinks, connection);
                 }
 
                 if (spotifyArtist != null && spotifyArtist.Genres.Any())
