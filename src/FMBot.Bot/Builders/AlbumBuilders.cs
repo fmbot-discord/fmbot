@@ -1034,7 +1034,7 @@ public class AlbumBuilders
         await cacheStream.DisposeAsync();
 
         response.Components = new ComponentBuilder()
-            .WithButton("View album", $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("💽"))
+            .WithButton("Album", $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("💽"))
             .WithButton($"Requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}", style: ButtonStyle.Secondary, disabled: true, customId: "0");
 
         return response;

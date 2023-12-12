@@ -37,7 +37,7 @@ public class ArtistRepository
         return await copyHelper.SaveAllAsync(connection, artists);
     }
 
-    public static async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection, bool includeGenres = false)
+    public static async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection, bool includeGenres = false, bool includeLinks = false)
     {
         const string getArtistQuery = "SELECT * FROM public.artists " +
                                       "WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))";
@@ -53,6 +53,11 @@ public class ArtistRepository
             artist.ArtistGenres = await GetArtistGenres(artist.Id, connection);
         }
 
+        if (includeLinks && artist != null)
+        {
+            artist.ArtistLinks = await GetArtistLinks(artist.Id, connection);
+        }
+
         return artist;
     }
 
@@ -63,6 +68,18 @@ public class ArtistRepository
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return (await connection.QueryAsync<ArtistGenre>(getArtistGenreQuery, new
+        {
+            artistId
+        })).ToList();
+    }
+
+    private static async Task<ICollection<ArtistLink>> GetArtistLinks(int artistId, NpgsqlConnection connection)
+    {
+        const string getArtistLinkQuery = "SELECT * FROM public.artist_links " +
+                                           "WHERE artist_id = @artistId";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<ArtistLink>(getArtistLinkQuery, new
         {
             artistId
         })).ToList();
@@ -98,7 +115,7 @@ public class ArtistRepository
         }
     }
 
-    public async Task AddOrUpdateArtistGenres(int artistId, IEnumerable<string> genreNames, NpgsqlConnection connection)
+    public static async Task AddOrUpdateArtistGenres(int artistId, IEnumerable<string> genreNames, NpgsqlConnection connection)
     {
         const string deleteQuery = @"DELETE FROM public.artist_genres WHERE artist_id = @artistId";
         await connection.ExecuteAsync(deleteQuery, new { artistId });
@@ -114,6 +131,36 @@ public class ArtistRepository
                 name = genreName
             });
         }
+    }
+
+    public static async Task AddOrUpdateArtistLinks(int artistId, IEnumerable<ArtistLink> links, NpgsqlConnection connection)
+    {
+        try
+        {
+            const string deleteQuery = @"DELETE FROM public.artist_links WHERE artist_id = @artistId AND manually_added = false";
+            await connection.ExecuteAsync(deleteQuery, new { artistId });
+
+            const string insertQuery = @"INSERT INTO public.artist_links(artist_id, url, username, type, manually_added) " +
+                                       "VALUES (@artistId, @url, @username, @type, @manuallyAdded)";
+
+            foreach (var link in links)
+            {
+                await connection.ExecuteAsync(insertQuery, new
+                {
+                    artistId = link.ArtistId,
+                    url = link.Url,
+                    username = link.Username,
+                    type = link.Type,
+                    manuallyAdded = link.ManuallyAdded
+                });
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+        
     }
 
     public static async Task<IReadOnlyCollection<UserArtist>> GetUserArtists(int userId, NpgsqlConnection connection)
