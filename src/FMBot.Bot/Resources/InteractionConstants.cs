@@ -16,7 +16,16 @@ public static class InteractionConstants
 
     public const string FmPrivacySetting = "fm-gwk-privacy";
 
-    public const string DiscogsStartAuth = "fdiscogs-start-auth";
+    public static class Discogs
+    {
+        public const string StartAuth = "discogs-startauth";
+
+        public const string ToggleCollectionValue = "discogs-togglecollectionvalue";
+
+        public const string RemoveAccount = "discogs-remove";
+        public const string RemoveAccountConfirm = "discogs-removeconfirm";
+    }
+
 
     public const string ResponseModeSetting = "response-mode-set";
     public const string ResponseModeChange = "response-mode-pick";

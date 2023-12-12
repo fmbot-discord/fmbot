@@ -42,7 +42,7 @@ public class DiscogsBuilder
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         response.Components = new ComponentBuilder()
-            .WithButton("Get login link", style: ButtonStyle.Primary, customId: InteractionConstants.DiscogsStartAuth);
+            .WithButton("Get login link", style: ButtonStyle.Primary, customId: InteractionConstants.Discogs.StartAuth);
 
         return response;
     }
@@ -377,6 +377,28 @@ public class DiscogsBuilder
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
+    public static ResponseModel DiscogsManage(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+            Components = new ComponentBuilder()
+                .WithButton("Remove Discogs connection", InteractionConstants.Discogs.RemoveAccount)
+                .WithButton("Display collection value", InteractionConstants.Discogs.ToggleCollectionValue)
+        };
+
+        var description = new StringBuilder();
+
+        description.AppendLine("Use the buttons below to manage the Discogs integration for your account.");
+        description.AppendLine();
+        description.AppendLine("- Remove Discogs connection - Remove Discogs from your .fmbot account");
+        description.AppendLine("- Display collection value - Toggles if the value of your collection is shown");
+
+        response.Embed.WithDescription(description.ToString());
+
         return response;
     }
 
