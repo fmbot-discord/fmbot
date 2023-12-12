@@ -17,5 +17,6 @@ public enum LinkType
     Deezer = 23,
     LastFm = 30,
     RateYourMusic = 31,
-    Discogs = 32
+    Discogs = 32,
+    WikiData = 33
 }
