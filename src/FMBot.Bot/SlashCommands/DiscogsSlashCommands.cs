@@ -40,7 +40,7 @@ public class DiscogsSlashCommands : InteractionModuleBase
 
         try
         {
-            if (contextUser.UserDiscogs != null)
+            if (contextUser.UserDiscogs == null)
             {
                 if (this.Context.Guild != null)
                 {
@@ -57,11 +57,55 @@ public class DiscogsSlashCommands : InteractionModuleBase
             }
             else
             {
-                var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
+                if (this.Context.Guild != null)
+                {
+                    var serverEmbed = new EmbedBuilder()
+                        .WithColor(DiscordConstants.InformationColorBlue);
 
-                await this.Context.SendResponse(this.Interactivity, response);
+                    serverEmbed.WithDescription("Check your DMs for a message to manage your connected Discogs account!");
+                    await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+                }
+
+                var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
+                await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
                 this.Context.LogCommandUsed(response.CommandResponse);
             }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Discogs.AuthDm)]
+    [UsernameSetRequired]
+    public async Task SendAuthDm()
+    {
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+
+        try
+        {
+            var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
+            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Discogs.ToggleCollectionValue)]
+    [UsernameSetRequired]
+    public async Task ToggleCollectionValue()
+    {
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+
+        try
+        {
+            var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
+            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

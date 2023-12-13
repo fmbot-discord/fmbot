@@ -47,6 +47,45 @@ public class DiscogsBuilder
         return response;
     }
 
+    public async Task<ResponseModel> DiscogsToggleCollectionValue(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var result = await this._discogsService.ToggleCollectionValueHidden(context.ContextUser.UserId);
+
+        if (result == true)
+        {
+            response.Embed.WithDescription($"Your Discogs collection value is now hidden from all .fmbot commands.");
+        }
+        else
+        {
+            response.Embed.WithDescription($"Your Discogs collection value is now visible in all .fmbot commands.");
+        }
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> DiscogsRemove(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        await this._discogsService.RemoveDiscogs(context.ContextUser.UserId);
+
+        response.Embed.WithDescription($"Your Discogs account has been removed from your Discogs account.");
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        return response;
+    }
+
     public async Task<ResponseModel> DiscogsLoginAsync(ContextModel context)
     {
         var response = new ResponseModel
@@ -386,18 +425,24 @@ public class DiscogsBuilder
         {
             ResponseType = ResponseType.Embed,
             Components = new ComponentBuilder()
-                .WithButton("Remove Discogs connection", InteractionConstants.Discogs.RemoveAccount)
-                .WithButton("Display collection value", InteractionConstants.Discogs.ToggleCollectionValue)
+                .WithButton("View collection", InteractionConstants.Discogs.RemoveAccount)
+                .WithButton(context.ContextUser.UserDiscogs.HideValue == true ? "Show collection value" : "Hide collection value", InteractionConstants.Discogs.ToggleCollectionValue)
+                .WithButton("Remove connection", InteractionConstants.Discogs.RemoveAccount, row: 1)
+                .WithButton("Re-login", InteractionConstants.Discogs.StartAuth, row: 1)
         };
 
         var description = new StringBuilder();
 
         description.AppendLine("Use the buttons below to manage the Discogs integration for your account.");
         description.AppendLine();
-        description.AppendLine("- Remove Discogs connection - Remove Discogs from your .fmbot account");
-        description.AppendLine("- Display collection value - Toggles if the value of your collection is shown");
+        description.AppendLine("- View collection - View your Discogs collection");
+        description.AppendLine("- Show/hide collection value - Changes if the value of your collection is publicly shown");
+
+        description.AppendLine("- Remove connection - Remove Discogs from your .fmbot account");
+        description.AppendLine("- Re-login - Remove Discogs from your .fmbot account");
 
         response.Embed.WithDescription(description.ToString());
+        response.Embed.WithTitle("Manage Discogs connection");
 
         return response;
     }

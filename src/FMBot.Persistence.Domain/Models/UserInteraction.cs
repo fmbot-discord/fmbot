@@ -28,5 +28,9 @@ public class UserInteraction
     public string ErrorReferenceId { get; set; }
     public string ErrorContent { get; set; }
 
+    public string Artist { get; set; }
+    public string Album { get; set; }
+    public string Track { get; set; }
+
     public User User { get; set; }
 }
