@@ -29,7 +29,9 @@ public enum GuildSetting
 
     [Option("Disabled channel commands", "Toggle commands or the bot per channel")]
     DisabledCommands = 30,
-
     [Option("Disabled server commands", "Toggle commands server-wide")]
     DisabledGuildCommands = 31,
+    
+    [Option("Red bot name", "Name of Red bot instance for music bot scrobbling")]
+    RedBotName = 40,
 }

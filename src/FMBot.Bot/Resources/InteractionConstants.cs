@@ -136,6 +136,9 @@ public static class InteractionConstants
         public const string ToggleGuildCommandRemoveModal = "toggle-guild-command-modal-remove";
     }
 
+    public const string SetRedBotName = "set-red-bot-name";
+    public const string SetRedBotNameModal = "set-red-bot-name-modal";
+
     public const string WhoKnowsRolePicker = "whoknows-role-picker";
     public const string WhoKnowsAlbumRolePicker = "whoknows-album-role-picker";
     public const string WhoKnowsTrackRolePicker = "whoknows-track-role-picker";

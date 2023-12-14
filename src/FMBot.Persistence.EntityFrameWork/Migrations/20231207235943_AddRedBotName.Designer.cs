@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231207235943_AddRedBotName")]
+    partial class AddRedBotName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -322,44 +325,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasDatabaseName("ix_artist_genres_artist_id");
 
                     b.ToTable("artist_genres", (string)null);
-                });
-
-            modelBuilder.Entity("FMBot.Persistence.Domain.Models.ArtistLink", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ArtistId")
-                        .HasColumnType("integer")
-                        .HasColumnName("artist_id");
-
-                    b.Property<bool>("ManuallyAdded")
-                        .HasColumnType("boolean")
-                        .HasColumnName("manually_added");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer")
-                        .HasColumnName("type");
-
-                    b.Property<string>("Url")
-                        .HasColumnType("text")
-                        .HasColumnName("url");
-
-                    b.Property<string>("Username")
-                        .HasColumnType("text")
-                        .HasColumnName("username");
-
-                    b.HasKey("Id")
-                        .HasName("pk_artist_links");
-
-                    b.HasIndex("ArtistId")
-                        .HasDatabaseName("ix_artist_links_artist_id");
-
-                    b.ToTable("artist_links", (string)null);
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.BottedUser", b =>
@@ -1945,18 +1910,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Navigation("Artist");
                 });
 
-            modelBuilder.Entity("FMBot.Persistence.Domain.Models.ArtistLink", b =>
-                {
-                    b.HasOne("FMBot.Persistence.Domain.Models.Artist", "Artist")
-                        .WithMany("ArtistLinks")
-                        .HasForeignKey("ArtistId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_artist_links_artists_artist_id");
-
-                    b.Navigation("Artist");
-                });
-
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.CensoredMusicReport", b =>
                 {
                     b.HasOne("FMBot.Persistence.Domain.Models.Album", "Album")
@@ -2277,8 +2230,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Navigation("ArtistAliases");
 
                     b.Navigation("ArtistGenres");
-
-                    b.Navigation("ArtistLinks");
 
                     b.Navigation("Tracks");
                 });

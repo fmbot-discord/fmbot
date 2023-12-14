@@ -92,3 +92,12 @@ public class AddDisabledGuildCommandModal : IModal
     [ModalTextInput("command", placeholder: "whoknows", minLength: 1, maxLength: 40)]
     public string Command { get; set; }
 }
+
+public class SetRedBotNameModal : IModal
+{
+    public string Title => "Set Red bot name";
+
+    [InputLabel("Enter new bot name")]
+    [ModalTextInput("red_bot_name", minLength: 1, maxLength: 15)]
+    public string NewBotName { get; set; }
+}

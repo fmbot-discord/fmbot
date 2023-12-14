@@ -175,7 +175,8 @@ public class UserBuilder
                                     "Currently supported bots:\n" +
                                     "- Cakey Bot\n" +
                                     "- Jockie Music\n" +
-                                    "- SoundCloud"
+                                    "- SoundCloud\n" +
+                                    "- Red"
                                     );
 
         response.Components = new ComponentBuilder()

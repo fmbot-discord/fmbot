@@ -254,7 +254,7 @@ public class GuildService
 
             users = users
                 .Where(w => w.Value.Roles != null && !guild.BlockedRoles.Any(a => w.Value.Roles.Contains(a)))
-                .ToDictionary(i => i.Key, i => i.Value); 
+                .ToDictionary(i => i.Key, i => i.Value);
 
             stats.BlockedRolesFiltered = preFilterCount - users.Count;
         }
@@ -1262,5 +1262,29 @@ public class GuildService
         {
             Log.Error(e, $"Exception in {nameof(UpdateGuildUserLastMessageDate)}");
         }
+    }
+
+    public async Task<bool> SetGuildRedBotNameAsync(IGuild discordGuild, string? botName)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGuild = await db.Guilds
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+        if (existingGuild == null)
+        {
+            return false;
+        }
+
+        existingGuild.Name = discordGuild.Name;
+        existingGuild.RedBotName = botName;
+
+        db.Entry(existingGuild).State = EntityState.Modified;
+
+        await db.SaveChangesAsync();
+
+        await RemoveGuildFromCache(discordGuild.Id);
+
+        return true;
     }
 }

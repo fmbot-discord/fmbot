@@ -170,6 +170,8 @@ public class GuildSettingBuilder
             response.Embed.AddField("Missing server-wide permissions", serverPermission.ToString());
         }
 
+        response.Embed.AddField("Red bot name", guild.RedBotName ?? "N/A");
+
         var guildSettings = new SelectMenuBuilder()
             .WithPlaceholder("Select setting you want to change")
             .WithCustomId(InteractionConstants.GuildSetting)
@@ -946,6 +948,43 @@ public class GuildSettingBuilder
         {
             components
                 .WithButton("Enable bot in channel", $"{InteractionConstants.ToggleCommand.ToggleCommandEnableAll}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Primary, row: 1);
+        }
+
+        response.Components = components;
+
+        return response;
+    }
+
+    public async Task<ResponseModel> SetRedBotName(ContextModel context, IUser lastModifier = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithTitle("Set Red bot name");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var description = new StringBuilder();
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+
+        var redBotName = guild.RedBotName;
+
+        description.AppendLine();
+        description.AppendLine($"Current name: `{redBotName ?? "N/A"}`");
+        description.AppendLine();
+        description.AppendLine("Your Red bot instance's name must start with, or be the same as, the name you enter.");
+        description.AppendLine();
+
+        var components = new ComponentBuilder();
+
+        components.WithButton("Set Red bot name", InteractionConstants.SetRedBotName, style: ButtonStyle.Primary);
+
+        response.Embed.WithDescription(description.ToString());
+
+        if (lastModifier != null)
+        {
+            response.Embed.WithFooter($"Last modified by {lastModifier.Username}");
         }
 
         response.Components = components;

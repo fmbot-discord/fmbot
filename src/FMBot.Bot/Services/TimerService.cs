@@ -88,9 +88,11 @@ public class TimerService
         Log.Information($"RecurringJob: Adding {nameof(ClearUserCache)}");
         RecurringJob.AddOrUpdate(nameof(ClearUserCache), () => ClearUserCache(), "30 */2 * * *");
 
+        Log.Information($"Bot Settings: {ConfigData.Data.Shards}");
+
         if (this._botSettings.LastFm.UserIndexFrequencyInDays != null &&
             this._botSettings.LastFm.UserIndexFrequencyInDays != 0 &&
-            ConfigData.Data.Shards.MainInstance == true)
+            ConfigData.Data.Shards?.MainInstance == true)
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToIndexQueue)}");
             RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 8 * * *");
@@ -102,7 +104,7 @@ public class TimerService
 
         if (this._botSettings.LastFm.UserUpdateFrequencyInHours != null &&
             this._botSettings.LastFm.UserUpdateFrequencyInHours != 0 &&
-            ConfigData.Data.Shards.MainInstance == true)
+            ConfigData.Data.Shards?.MainInstance == true)
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToUpdateQueue)}");
             RecurringJob.AddOrUpdate(nameof(AddUsersToUpdateQueue), () => AddUsersToUpdateQueue(), "0 * * * *");
