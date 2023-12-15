@@ -425,10 +425,10 @@ public class DiscogsBuilder
         {
             ResponseType = ResponseType.Embed,
             Components = new ComponentBuilder()
-                .WithButton("View collection", InteractionConstants.Discogs.RemoveAccount)
-                .WithButton(context.ContextUser.UserDiscogs.HideValue == true ? "Show collection value" : "Hide collection value", InteractionConstants.Discogs.ToggleCollectionValue)
-                .WithButton("Remove connection", InteractionConstants.Discogs.RemoveAccount, row: 1)
-                .WithButton("Re-login", InteractionConstants.Discogs.StartAuth, row: 1)
+                .WithButton("View collection", InteractionConstants.Discogs.Collection, ButtonStyle.Secondary)
+                .WithButton(context.ContextUser.UserDiscogs.HideValue == true ? "Show collection value" : "Hide collection value", InteractionConstants.Discogs.ToggleCollectionValue, ButtonStyle.Secondary)
+                .WithButton("Remove connection", InteractionConstants.Discogs.RemoveAccount, ButtonStyle.Danger, row: 1)
+                .WithButton("Re-login", InteractionConstants.Discogs.StartAuth, ButtonStyle.Secondary, row: 1)
         };
 
         var description = new StringBuilder();
@@ -442,6 +442,7 @@ public class DiscogsBuilder
         description.AppendLine("- Re-login - Remove Discogs from your .fmbot account");
 
         response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Embed.WithTitle("Manage Discogs connection");
 
         return response;

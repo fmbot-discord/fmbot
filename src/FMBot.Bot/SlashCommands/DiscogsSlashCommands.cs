@@ -103,8 +103,8 @@ public class DiscogsSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
-            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+            var response = await this._discogsBuilder.DiscogsToggleCollectionValue(new ContextModel(this.Context, contextUser));
+            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components?.Build());
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
