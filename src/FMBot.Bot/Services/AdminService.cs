@@ -102,9 +102,9 @@ public class AdminService
         return true;
     }
 
-    public async Task<List<UserInteraction>> GetUserInteractions(int userId)
+    public async Task<List<UserInteraction>> GetRecentUserInteractions(int userId)
     {
-        var dateFilter = DateTime.UtcNow.AddDays(-7);
+        var dateFilter = DateTime.UtcNow.AddDays(-3);
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.UserInteractions
             .AsQueryable()

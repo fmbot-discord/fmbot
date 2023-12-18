@@ -297,7 +297,7 @@ public class AdminCommands : BaseCommandModule
                     return;
                 }
 
-                var logs = await this._adminService.GetUserInteractions(userToView.UserId);
+                var logs = await this._adminService.GetRecentUserInteractions(userToView.UserId);
 
                 var logPages = logs.Chunk(10).ToList();
                 var pageCounter = 1;
@@ -368,7 +368,7 @@ public class AdminCommands : BaseCommandModule
 
                     pages.Add(new PageBuilder()
                         .WithDescription(description.ToString())
-                        .WithFooter($"Page {pageCounter}/{logPages.Count()} - Limited to 7 days\n" +
+                        .WithFooter($"Page {pageCounter}/{logPages.Count()} - Limited to 3 days\n" +
                                     $"{userToView.DiscordUserId} - {userToView.UserId}\n" +
                                     $"Command not intended for use in public channels")
                         .WithTitle($"User command log for {userToView.UserNameLastFM}"));
