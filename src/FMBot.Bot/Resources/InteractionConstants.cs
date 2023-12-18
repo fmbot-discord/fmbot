@@ -25,7 +25,6 @@ public static class InteractionConstants
         public const string ToggleCollectionValue = "discogs-togglecollectionvalue";
 
         public const string RemoveAccount = "discogs-remove";
-        public const string RemoveAccountConfirm = "discogs-removeconfirm";
     }
 
     public const string ResponseModeSetting = "response-mode-set";

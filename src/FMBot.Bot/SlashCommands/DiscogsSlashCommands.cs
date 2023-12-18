@@ -86,7 +86,7 @@ public class DiscogsSlashCommands : InteractionModuleBase
         try
         {
             var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
-            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -104,7 +104,30 @@ public class DiscogsSlashCommands : InteractionModuleBase
         try
         {
             var response = await this._discogsBuilder.DiscogsToggleCollectionValue(new ContextModel(this.Context, contextUser));
-            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components?.Build());
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+
+            contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+            var updatedMsg = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
+            await this.Context.UpdateInteractionEmbed(updatedMsg, this.Interactivity, false);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Discogs.RemoveAccount)]
+    [UsernameSetRequired]
+    public async Task RemoveDiscogsLogin()
+    {
+        await this.Context.DisableInteractionButtons();
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+
+        try
+        {
+            var response = await this._discogsBuilder.DiscogsRemove(new ContextModel(this.Context, contextUser));
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

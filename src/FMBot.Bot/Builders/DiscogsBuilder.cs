@@ -188,6 +188,7 @@ public class DiscogsBuilder
             }
 
             response.CommandResponse = CommandResponse.UsernameNotSet;
+            response.Embed.Color = DiscordConstants.WarningColorOrange;
             return response;
         }
 
@@ -260,7 +261,7 @@ public class DiscogsBuilder
                 footer.AppendLine($"Searching for '{StringExtensions.Sanitize(searchValues)}'");
             }
 
-            if (searchValues == null)
+            if (searchValues == null && user.UserDiscogs.HideValue != true)
             {
                 footer.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
                                   $"- {user.UserDiscogs.MedianValue} med" +
@@ -425,21 +426,27 @@ public class DiscogsBuilder
         {
             ResponseType = ResponseType.Embed,
             Components = new ComponentBuilder()
-                .WithButton("View collection", InteractionConstants.Discogs.Collection, ButtonStyle.Secondary)
-                .WithButton(context.ContextUser.UserDiscogs.HideValue == true ? "Show collection value" : "Hide collection value", InteractionConstants.Discogs.ToggleCollectionValue, ButtonStyle.Secondary)
-                .WithButton("Remove connection", InteractionConstants.Discogs.RemoveAccount, ButtonStyle.Danger, row: 1)
-                .WithButton("Re-login", InteractionConstants.Discogs.StartAuth, ButtonStyle.Secondary, row: 1)
+                .WithButton(context.ContextUser.UserDiscogs.HideValue == true ? "Show value" : "Hide value", InteractionConstants.Discogs.ToggleCollectionValue, ButtonStyle.Secondary)
+                .WithButton("Re-login", InteractionConstants.Discogs.StartAuth, ButtonStyle.Secondary)
+                .WithButton("Remove connection", InteractionConstants.Discogs.RemoveAccount, ButtonStyle.Danger)
         };
 
         var description = new StringBuilder();
 
         description.AppendLine("Use the buttons below to manage the Discogs integration for your account.");
         description.AppendLine();
-        description.AppendLine("- View collection - View your Discogs collection");
-        description.AppendLine("- Show/hide collection value - Changes if the value of your collection is publicly shown");
 
+        if (context.ContextUser.UserDiscogs.HideValue == true)
+        {
+            description.AppendLine("- Show value - Shows the value of your collection in commands");
+        }
+        else
+        {
+            description.AppendLine("- Hide value - Hides the value of your collection in commands");
+        }
+
+        description.AppendLine("- Re-login - Re-authorize .fmbot");
         description.AppendLine("- Remove connection - Remove Discogs from your .fmbot account");
-        description.AppendLine("- Re-login - Remove Discogs from your .fmbot account");
 
         response.Embed.WithDescription(description.ToString());
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);

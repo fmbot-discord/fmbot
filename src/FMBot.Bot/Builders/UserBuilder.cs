@@ -713,9 +713,12 @@ public class UserBuilder
         {
             var collection = new StringBuilder();
 
-            collection.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
-                                  $"• {user.UserDiscogs.MedianValue} med " +
-                                  $"• {user.UserDiscogs.MaximumValue} max");
+            if (user.UserDiscogs.HideValue != true)
+            {
+                collection.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
+                                      $"• {user.UserDiscogs.MedianValue} med " +
+                                      $"• {user.UserDiscogs.MaximumValue} max");
+            }
 
             if (user.UserType != UserType.User)
             {
@@ -732,8 +735,11 @@ public class UserBuilder
                 }
             }
 
-            var determiner = userSettings.DifferentUser ? "Their" : "Your";
-            response.Embed.AddField($"{determiner} Discogs collection", collection.ToString());
+            if (collection.Length > 0)
+            {
+                var determiner = userSettings.DifferentUser ? "Their" : "Your";
+                response.Embed.AddField($"{determiner} Discogs collection", collection.ToString());
+            }
         }
 
         var footer = new StringBuilder();

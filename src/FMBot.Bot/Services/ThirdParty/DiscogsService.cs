@@ -220,9 +220,16 @@ public class DiscogsService
 
         var user = await db.Users
             .Include(i => i.UserDiscogs)
+            .Include(i => i.DiscogsReleases)
             .FirstAsync(f => f.UserId == userId);
 
         db.UserDiscogs.Remove(user.UserDiscogs);
+
+        if (user.DiscogsReleases.Count != 0)
+        {
+            db.UserDiscogsReleases.RemoveRange(user.DiscogsReleases);
+        }
+
         await db.SaveChangesAsync();
     }
 
