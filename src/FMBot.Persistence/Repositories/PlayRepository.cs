@@ -163,7 +163,7 @@ public static class PlayRepository
                                                 "(play_source <> 0 OR time_played > ( " +
                                                 "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source <> 0 " +
                                                 ") OR  " +
-                                                "(play_source <> 0 AND time_played < ( " +
+                                                "(play_source <> 0 OR time_played < ( " +
                                                 "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source <> 0 " +
                                                 ")))) ",
             DataSource.SpotifyThenFullLastFm => " FROM public.user_plays WHERE " +
@@ -171,7 +171,7 @@ public static class PlayRepository
                                                 "(play_source = 0 OR time_played > ( " +
                                                 "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 0 " +
                                                 ") OR  " +
-                                                "(play_source <> 0 AND time_played < ( " +
+                                                "(play_source <> 0 OR time_played < ( " +
                                                 "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 0 " +
                                                 ")))) ",
             _ => " FROM public.user_plays WHERE user_id = @userId "
