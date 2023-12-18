@@ -277,6 +277,15 @@ public class AdminCommands : BaseCommandModule
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+                if (guild.SpecialGuild != true)
+                {
+                    await ReplyAsync("This command can only be used in special guilds.");
+                    this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                    return;
+                }
+
                 user ??= this.Context.User.Id.ToString();
 
                 var userToView = await this._settingService.GetDifferentUser(user);
