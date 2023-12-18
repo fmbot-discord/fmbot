@@ -1226,7 +1226,7 @@ public class TrackBuilders
             {
                 TimeSpan? trackLength = null;
 
-                if (track.Duration != null)
+                if (!string.IsNullOrWhiteSpace(track.Duration))
                 {
                     var splitDuration = track.Duration.Split(":");
                     if (int.TryParse(splitDuration[0], out var minutes) && int.TryParse(splitDuration[1], out var seconds))
