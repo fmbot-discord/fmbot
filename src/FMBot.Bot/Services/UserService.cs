@@ -174,7 +174,7 @@ public class UserService
     {
         var user = await GetUserSettingsAsync(context.User);
 
-        await Task.Delay(10000);
+        await Task.Delay(12000);
 
         try
         {
@@ -192,6 +192,24 @@ public class UserService
                     errorReference = fetchedErrorId;
                 }
 
+                string artist = null;
+                if (PublicProperties.UsedCommandsArtists.TryGetValue(context.Message.Id, out var fetchedArtist))
+                {
+                    artist = fetchedArtist;
+                }
+
+                string album = null;
+                if (PublicProperties.UsedCommandsAlbums.TryGetValue(context.Message.Id, out var fetchedAlbum))
+                {
+                    album = fetchedAlbum;
+                }
+
+                string track = null;
+                if (PublicProperties.UsedCommandsTracks.TryGetValue(context.Message.Id, out var fetchedTrack))
+                {
+                    track = fetchedTrack;
+                }
+
                 var interaction = new UserInteraction
                 {
                     Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
@@ -203,7 +221,10 @@ public class UserService
                     DiscordId = context.Message.Id,
                     Response = commandResponse,
                     Type = UserInteractionType.TextCommand,
-                    ErrorReferenceId = errorReference
+                    ErrorReferenceId = errorReference,
+                    Artist = artist,
+                    Album = album,
+                    Track = track
                 };
 
                 await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -221,7 +242,7 @@ public class UserService
     {
         var user = await GetUserSettingsAsync(context.User);
 
-        await Task.Delay(10000);
+        await Task.Delay(12000);
 
         try
         {
@@ -237,6 +258,24 @@ public class UserService
                 if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Interaction.Id, out var fetchedErrorId))
                 {
                     errorReference = fetchedErrorId;
+                }
+
+                string artist = null;
+                if (PublicProperties.UsedCommandsArtists.TryGetValue(context.Interaction.Id, out var fetchedArtist))
+                {
+                    artist = fetchedArtist;
+                }
+
+                string album = null;
+                if (PublicProperties.UsedCommandsAlbums.TryGetValue(context.Interaction.Id, out var fetchedAlbum))
+                {
+                    album = fetchedAlbum;
+                }
+
+                string track = null;
+                if (PublicProperties.UsedCommandsTracks.TryGetValue(context.Interaction.Id, out var fetchedTrack))
+                {
+                    track = fetchedTrack;
                 }
 
                 var options = new Dictionary<string, string>();
@@ -259,7 +298,10 @@ public class UserService
                     DiscordId = context.Interaction.Id,
                     Response = commandResponse,
                     Type = UserInteractionType.SlashCommand,
-                    ErrorReferenceId = errorReference
+                    ErrorReferenceId = errorReference,
+                    Artist = artist,
+                    Album = album,
+                    Track = track
                 };
 
                 await using var db = await this._contextFactory.CreateDbContextAsync();

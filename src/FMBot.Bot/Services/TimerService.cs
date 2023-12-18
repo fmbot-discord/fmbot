@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -87,6 +88,9 @@ public class TimerService
 
         Log.Information($"RecurringJob: Adding {nameof(ClearUserCache)}");
         RecurringJob.AddOrUpdate(nameof(ClearUserCache), () => ClearUserCache(), "30 */2 * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(ClearInternalLogs)}");
+        RecurringJob.AddOrUpdate(nameof(ClearInternalLogs), () => ClearInternalLogs(), "0 8 * * *");
 
         if (this._botSettings.LastFm.UserIndexFrequencyInDays != null &&
             this._botSettings.LastFm.UserIndexFrequencyInDays != 0 &&
@@ -472,5 +476,16 @@ public class TimerService
             socketClient.PurgeUserCache();
         }
         Log.Information("Purged discord caches");
+    }
+
+    public void ClearInternalLogs()
+    {
+        PublicProperties.UsedCommandsResponses = new ConcurrentDictionary<ulong, CommandResponse>();
+        PublicProperties.UsedCommandsErrorReferences = new ConcurrentDictionary<ulong, string>();
+        PublicProperties.UsedCommandsArtists = new ConcurrentDictionary<ulong, string>();
+        PublicProperties.UsedCommandsAlbums = new ConcurrentDictionary<ulong, string>();
+        PublicProperties.UsedCommandsTracks = new ConcurrentDictionary<ulong, string>();
+
+        Log.Information("Cleared internal logs");
     }
 }

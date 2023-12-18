@@ -7,13 +7,13 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Swan;
 using System.Linq;
 using FMBot.Domain.Enums;
 using Genius.Models.Song;
 using Serilog;
 using Microsoft.Extensions.Options;
 using Discord.WebSocket;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using Genius.Models.User;
@@ -36,22 +36,22 @@ public class AdminService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
+    public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType minUserType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var user = await db.Users
+        var contextUser = await db.Users
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
-        if (user == null)
+        if (contextUser == null)
         {
             return false;
         }
 
-        switch (user.UserType)
+        switch (contextUser.UserType)
         {
             case UserType.Admin:
-                switch (userType)
+                switch (minUserType)
                 {
                     case UserType.User:
                         return true;
@@ -61,7 +61,7 @@ public class AdminService
                         return false;
                 }
             case UserType.Owner:
-                switch (userType)
+                switch (minUserType)
                 {
                     case UserType.User:
                         return true;
@@ -71,7 +71,7 @@ public class AdminService
                         return true;
                 }
             default:
-                switch (userType)
+                switch (minUserType)
                 {
                     case UserType.User:
                         return true;
@@ -100,6 +100,17 @@ public class AdminService
         await db.SaveChangesAsync();
 
         return true;
+    }
+
+    public async Task<List<UserInteraction>> GetUserInteractions(int userId)
+    {
+        var dateFilter = DateTime.UtcNow.AddDays(-7);
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.UserInteractions
+            .AsQueryable()
+            .Where(w => w.Timestamp > dateFilter && w.UserId == userId)
+            .OrderByDescending(o => o.Timestamp)
+            .ToListAsync();
     }
 
     public async Task<bool> AddUserToBlocklistAsync(ulong discordUserId)
@@ -449,18 +460,5 @@ public class AdminService
         await db.SaveChangesAsync();
 
         return existingGuild.SpecialGuild;
-    }
-
-    public async Task FixValues()
-    {
-        await using var db = this._contextFactory.CreateDbContext();
-        await db.Database.ExecuteSqlRawAsync("SELECT pg_catalog.setval(pg_get_serial_sequence('users', 'user_id'), (SELECT MAX(user_id) FROM users)+1);");
-        Console.WriteLine("User key value has been fixed.");
-
-        await db.Database.ExecuteSqlRawAsync("SELECT pg_catalog.setval(pg_get_serial_sequence('friends', 'friend_id'), (SELECT MAX(friend_id) FROM friends)+1);");
-        Console.WriteLine("Friend key value has been fixed.");
-
-        await db.Database.ExecuteSqlRawAsync("SELECT pg_catalog.setval(pg_get_serial_sequence('guilds', 'guild_id'), (SELECT MAX(guild_id) FROM guilds)+1);");
-        Console.WriteLine("Guild key value has been fixed.");
     }
 }

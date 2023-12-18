@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -265,6 +266,130 @@ public class AdminCommands : BaseCommandModule
         {
             await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("debuglogs")]
+    [Summary("View user command logs")]
+    public async Task DebugLogs([Remainder] string user = null)
+    {
+        try
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                var userToView = await this._settingService.GetDifferentUser(user);
+
+                if (userToView == null)
+                {
+                    await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                var logs = await this._adminService.GetUserInteractions(userToView.UserId);
+
+                var logPages = logs.Chunk(10).ToList();
+                var pageCounter = 1;
+
+                var pages = new List<PageBuilder>();
+                foreach (var logPage in logPages)
+                {
+                    var description = new StringBuilder();
+
+                    foreach (var log in logPage)
+                    {
+                        if (log.Type == UserInteractionType.SlashCommand)
+                        {
+                            description.Append($"/");
+                        }
+                        description.Append($"**{log.CommandName}** - <t:{log.Timestamp.ToUnixEpochDate()}:R>");
+
+                        if (log.ErrorReferenceId != null)
+                        {
+                            description.Append($" - ❌");
+                        }
+                        else if (log.Response != CommandResponse.Ok)
+                        {
+                            description.Append($" - 🫥");
+                        }
+                        else
+                        {
+                            description.Append($" - ✅");
+                        }
+
+                        description.AppendLine();
+
+                        if (log.Artist != null || log.Album != null || log.Track != null)
+                        {
+                            description.Append("*");
+                            if (log.Artist != null)
+                            {
+                                description.Append(log.Artist);
+                            }
+                            if (log.Album != null)
+                            {
+                                description.Append($" - {log.Album}");
+                            }
+                            if (log.Track != null)
+                            {
+                                description.Append($" - {log.Track}");
+                            }
+                            description.Append("*");
+                            description.AppendLine();
+                        }
+
+                        if (log.Type == UserInteractionType.TextCommand)
+                        {
+                            description.AppendLine($"*`{log.CommandContent}`*");
+                        }
+
+                        if (log.ErrorReferenceId != null)
+                        {
+                            description.AppendLine($"Error - Reference {log.ErrorReferenceId}");
+                        }
+                        else if (log.Response != CommandResponse.Ok)
+                        {
+                            description.AppendLine($"{Enum.GetName(log.Response)}");
+                        }
+
+                        description.AppendLine();
+                    }
+
+                    pages.Add(new PageBuilder()
+                        .WithDescription(description.ToString())
+                        .WithFooter($"Page {pageCounter}/{logPages.Count()} - Limited to 7 days\n" +
+                                    $"Command not intended for use in public channels")
+                        .WithTitle($"User command log for {this.Context.Guild.Id}"));
+
+                    pageCounter++;
+                }
+
+                if (!pages.Any())
+                {
+                    pages.Add(new PageBuilder()
+                        .WithDescription("No bot scrobbling logs yet, make sure fmbot can see the 'Now playing' message")
+                        .WithFooter($"Page {pageCounter}/{logPages.Count()}")
+                        .WithTitle($"Bot scrobbling debug log for {this.Context.Guild.Name} | {this.Context.Guild.Id}"));
+                }
+
+                var paginator = StringService.BuildStaticPaginator(pages);
+
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("You are not authorized to use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -1384,7 +1509,7 @@ public class AdminCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("postembed"), Summary("Changes the avatar to be an album.")]
+    [Command("postembed"), Summary("Posts one of the reporting embeds")]
     [Examples("postembed \"gwkreporter\"")]
     public async Task PostAdminEmbed([Remainder] string type = null)
     {

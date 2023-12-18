@@ -62,7 +62,7 @@ public class ArtistsService
     }
 
     public async Task<ArtistSearch> SearchArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
-        bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true)
+        bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true, ulong? interactionId = null)
     {
         if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
         {
@@ -101,6 +101,11 @@ public class ArtistsService
             else
             {
                 artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistValues, lastFmUserName, redirectsEnabled);
+            }
+
+            if (interactionId.HasValue)
+            {
+                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, artistValues);
             }
 
             if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
@@ -153,6 +158,11 @@ public class ArtistsService
             else
             {
                 artistCall = await this._dataSourceFactory.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName, redirectsEnabled);
+            }
+
+            if (interactionId.HasValue)
+            {
+                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
             }
 
             if (artistCall.Content == null || !artistCall.Success)

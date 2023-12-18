@@ -96,7 +96,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -244,7 +246,7 @@ public class TrackBuilders
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (track.Track == null)
         {
             return track.Response;
@@ -384,7 +386,7 @@ public class TrackBuilders
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (track.Track == null)
         {
             return track.Response;
@@ -471,7 +473,7 @@ public class TrackBuilders
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (track.Track == null)
         {
             return track.Response;
@@ -626,7 +628,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Text,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -666,7 +670,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Text,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -718,7 +724,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -761,7 +769,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -1282,7 +1292,9 @@ public class TrackBuilders
         }
         else
         {
-            var track = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+            var track = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+                context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+                userId: context.ContextUser.UserId, interactionId: context.InteractionId);
             if (track.Track == null)
             {
                 return track.Response;
