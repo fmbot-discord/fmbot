@@ -569,9 +569,9 @@ public class LastFmRepository : ILastfmRepository
                 Content = new AlbumInfo
                 {
                     AlbumName = albumCall.Content.Album.Name,
-                    AlbumUrl = Uri.IsWellFormedUriString(albumCall.Content.Album.Url, UriKind.Absolute)
-                        ? albumCall.Content.Album.Url
-                        : null,
+                    AlbumUrl = Uri.IsWellFormedUriString(albumCall.Content.Album.Url.Trim(), UriKind.Absolute)
+                        ? albumCall.Content.Album.Url.Trim()
+                        : LastfmUrlExtensions.GetAlbumUrl(albumCall.Content.Album.Artist, albumCall.Content.Album.Name),
                     ArtistName = albumCall.Content.Album.Artist,
                     ArtistUrl = LastfmUrlExtensions.GetArtistUrl(albumCall.Content.Album.Artist),
                     Mbid = !string.IsNullOrWhiteSpace(albumCall.Content.Album.Mbid)
