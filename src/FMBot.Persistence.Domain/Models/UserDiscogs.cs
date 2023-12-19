@@ -17,6 +17,8 @@ public class UserDiscogs
     public string MedianValue { get; set; }
     public string MaximumValue { get; set; }
 
+    public bool? HideValue { get; set; }
+
     public DateTime? LastUpdated { get; set; }
     public DateTime? ReleasesLastUpdated { get; set; }
 

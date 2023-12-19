@@ -197,6 +197,10 @@ public class MusicBrainzService
                 {
                     return new LinkTypeAndUsername(LinkType.Discogs, username);
                 }
+            case "wikidata":
+                {
+                    return new LinkTypeAndUsername(LinkType.WikiData, username);
+                }
             default:
                 return null;
         }

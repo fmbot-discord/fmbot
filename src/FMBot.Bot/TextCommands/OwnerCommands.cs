@@ -115,12 +115,12 @@ public class OwnerCommands : BaseCommandModule
         {
             try
             {
-                DriveInfo[] drives = DriveInfo.GetDrives();
+                var drives = DriveInfo.GetDrives();
 
-                EmbedBuilder builder = new EmbedBuilder();
+                var builder = new EmbedBuilder();
                 builder.WithDescription("Server Drive Info");
 
-                foreach (DriveInfo drive in drives.Where(w => w.IsReady))
+                foreach (var drive in drives.Where(w => w.IsReady && w.TotalSize > 10000))
                 {
                     builder.AddField(drive.Name + " - " + drive.VolumeLabel + ":",
                         drive.AvailableFreeSpace.ToFormattedByteString() + " free of " +
@@ -194,22 +194,6 @@ public class OwnerCommands : BaseCommandModule
         else
         {
             await ReplyAsync("Error: Insufficient rights. Only FMBot admins can check timer.");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-        }
-    }
-
-    [Command("fixvalues"), Summary("Fixes postgresql index values")]
-    public async Task FixIndexValuesAsync()
-    {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
-        {
-            await this._adminService.FixValues();
-            await ReplyAsync("Postgres values have been fixed.");
-            this.Context.LogCommandUsed();
-        }
-        else
-        {
-            await ReplyAsync("Only .fmbot owners can execute this command.");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }

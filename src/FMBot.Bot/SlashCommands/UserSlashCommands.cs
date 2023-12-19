@@ -25,10 +25,7 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
-using Google.Apis.Discovery;
-using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Options;
-using Swan;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.SlashCommands;

@@ -36,6 +36,7 @@ public static class DiscordConstants
     public const string New = "<:new:912087988001980446>";
 
     public const string Info = "<:info:1183840696457777153>";
+    public const string Vinyl = "<:vinyl:1043644602969763861>";
 
     public const string Facebook = "<:social_facebook:1183830516533825656>";
     public const string Twitter = "<:social_twitter:1183831922917511298>";

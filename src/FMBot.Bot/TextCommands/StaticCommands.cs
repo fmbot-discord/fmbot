@@ -24,7 +24,6 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using Serilog;
-using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.TextCommands;

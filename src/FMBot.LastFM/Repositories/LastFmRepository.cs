@@ -471,7 +471,7 @@ public class LastFmRepository : ILastfmRepository
                         : null,
                     TotalPlaycount = trackCall.Content.Track.Playcount ?? 0,
                     TotalListeners = trackCall.Content.Track.Listeners ?? 0,
-                    Duration = trackCall.Content.Track.Duration,
+                    Duration = trackCall.Content.Track.Duration != 0 ? trackCall.Content.Track.Duration : (long?)null,
                     UserPlaycount = trackCall.Content.Track.Userplaycount,
                     Loved = trackCall.Content.Track.Userloved == "1",
                     Tags = trackCall.Content.Track.Toptags?.Tag?.Select(s => new Tag

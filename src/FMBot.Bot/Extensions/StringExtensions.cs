@@ -63,6 +63,12 @@ public static class StringExtensions
 
         return trackName;
     }
+    public static long ToUnixEpochDate(this DateTime @this)
+    {
+        DateTimeOffset dateTimeOffset = new(@this);
+        dateTimeOffset = dateTimeOffset.ToUniversalTime();
+        return dateTimeOffset.ToUnixTimeSeconds();
+    }
 
     private static readonly string[] SensitiveCharacters = {
         "\\",

@@ -36,21 +36,57 @@ public class DiscogsSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task DiscogsAsync()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
 
-        if (this.Context.Guild != null)
+        try
         {
-            var serverEmbed = new EmbedBuilder()
-                .WithColor(DiscordConstants.InformationColorBlue);
+            if (contextUser.UserDiscogs == null)
+            {
+                if (this.Context.Guild != null)
+                {
+                    var serverEmbed = new EmbedBuilder()
+                        .WithColor(DiscordConstants.InformationColorBlue);
 
-            serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
-            await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+                    serverEmbed.WithDescription("Check your DMs for a link to connect your Discogs account to .fmbot!");
+                    await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+                }
+
+                var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
+                await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
+            else
+            {
+                if (this.Context.Guild != null)
+                {
+                    var serverEmbed = new EmbedBuilder()
+                        .WithColor(DiscordConstants.InformationColorBlue);
+
+                    serverEmbed.WithDescription("Check your DMs for a message to manage your connected Discogs account!");
+                    await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+                }
+
+                var response = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
+                await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
         }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Discogs.AuthDm)]
+    [UsernameSetRequired]
+    public async Task SendAuthDm()
+    {
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
 
         try
         {
             var response = this._discogsBuilder.DiscogsLoginGetLinkAsync(new ContextModel(this.Context, contextUser));
-            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -59,7 +95,48 @@ public class DiscogsSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction(InteractionConstants.DiscogsStartAuth)]
+    [ComponentInteraction(InteractionConstants.Discogs.ToggleCollectionValue)]
+    [UsernameSetRequired]
+    public async Task ToggleCollectionValue()
+    {
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+
+        try
+        {
+            var response = await this._discogsBuilder.DiscogsToggleCollectionValue(new ContextModel(this.Context, contextUser));
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+
+            contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+            var updatedMsg = DiscogsBuilder.DiscogsManage(new ContextModel(this.Context, contextUser));
+            await this.Context.UpdateInteractionEmbed(updatedMsg, this.Interactivity, false);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Discogs.RemoveAccount)]
+    [UsernameSetRequired]
+    public async Task RemoveDiscogsLogin()
+    {
+        await this.Context.DisableInteractionButtons();
+        var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
+
+        try
+        {
+            var response = await this._discogsBuilder.DiscogsRemove(new ContextModel(this.Context, contextUser));
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Discogs.StartAuth)]
     public async Task DiscogsStartAuthAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -103,7 +180,7 @@ public class DiscogsSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         var collectionSettings = new DiscogsCollectionSettings
         {
-            Formats = format != null ? new List<DiscogsFormat>{(DiscogsFormat)format} : new()
+            Formats = format != null ? new List<DiscogsFormat> { (DiscogsFormat)format } : new()
         };
 
         try
