@@ -77,8 +77,8 @@ public class TimerService
         Log.Information($"RecurringJob: Adding {nameof(CheckForNewFeatured)}");
         RecurringJob.AddOrUpdate(nameof(CheckForNewFeatured), () => CheckForNewFeatured(), "*/2 * * * *");
 
-        Log.Information($"RecurringJob: Adding {nameof(UpdateMetricsAndStatus)}");
-        RecurringJob.AddOrUpdate(nameof(UpdateMetricsAndStatus), () => UpdateMetricsAndStatus(), "* * * * *");
+        Log.Information($"RecurringJob: Adding {nameof(UpdateStatus)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateStatus), () => UpdateStatus(), "* * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(UpdateHealthCheck)}");
         RecurringJob.AddOrUpdate(nameof(UpdateHealthCheck), () => UpdateHealthCheck(), "*/20 * * * * *");
@@ -147,6 +147,9 @@ public class TimerService
     {
         Log.Warning("Queueing master jobs on instance {instance}", ConfigData.Data.Shards?.InstanceName);
 
+        Log.Information($"RecurringJob: Adding {nameof(UpdateMetrics)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateMetrics), () => UpdateMetrics(), "* * * * *");
+
         Log.Information($"RecurringJob: Adding {nameof(AddLatestDiscordSupporters)}");
         RecurringJob.AddOrUpdate(nameof(AddLatestDiscordSupporters), () => AddLatestDiscordSupporters(), "* * * * *");
 
@@ -169,9 +172,46 @@ public class TimerService
         RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");
     }
 
-    public async Task UpdateMetricsAndStatus()
+    public async Task UpdateStatus()
     {
-        Log.Information($"Running {nameof(UpdateMetricsAndStatus)}");
+        Log.Information($"Running {nameof(UpdateStatus)}");
+
+        try
+        {
+            if (this._client?.Guilds?.Count == null)
+            {
+                Log.Information($"Client guild count is null, cancelling {nameof(UpdateStatus)}");
+                return;
+            }
+
+            Statistics.ConnectedShards.Set(this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected));
+            Statistics.ConnectedDiscordServerCount.Set(this._client.Guilds.Count);
+
+            if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
+            {
+                if (!PublicProperties.IssuesAtLastFm)
+                {
+                    var appInfo = await this._client.GetApplicationInfoAsync();
+                    await this._client.SetCustomStatusAsync(
+                        $"{this._botSettings.Bot.Prefix}fm — fmbot.xyz — {appInfo.ApproximateGuildCount.GetValueOrDefault()} servers");
+                }
+                else
+                {
+                    await this._client.SetCustomStatusAsync(
+                        $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, nameof(UpdateStatus));
+            throw;
+        }
+    }
+
+    public async Task UpdateMetrics()
+    {
+        Log.Information($"Running {nameof(UpdateMetrics)}");
 
         Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
         Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
@@ -186,34 +226,16 @@ public class TimerService
         {
             if (this._client?.Guilds?.Count == null)
             {
-                Log.Information($"Client guild count is null, cancelling {nameof(UpdateMetricsAndStatus)}");
+                Log.Information($"Client guild count is null, cancelling {nameof(UpdateMetrics)}");
                 return;
             }
 
-            Statistics.ConnectedShards.Set(this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected));
-            Statistics.ConnectedDiscordServerCount.Set(this._client.Guilds.Count);
-
             var appInfo = await this._client.GetApplicationInfoAsync();
             Statistics.TotalDiscordServerCount.Set(appInfo.ApproximateGuildCount.GetValueOrDefault());
-
-            if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
-            {
-                if (!PublicProperties.IssuesAtLastFm)
-                {
-                    await this._client.SetCustomStatusAsync(
-                        $"{this._botSettings.Bot.Prefix}fm — fmbot.xyz — {appInfo.ApproximateGuildCount.GetValueOrDefault()} servers");
-                }
-                else
-                {
-                    await this._client.SetCustomStatusAsync(
-                        $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
-                }
-
-            }
         }
         catch (Exception e)
         {
-            Log.Error(e, nameof(UpdateMetricsAndStatus));
+            Log.Error(e, nameof(UpdateMetrics));
             throw;
         }
     }
