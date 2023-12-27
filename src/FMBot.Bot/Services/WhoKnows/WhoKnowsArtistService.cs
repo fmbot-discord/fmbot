@@ -41,7 +41,7 @@ public class WhoKnowsArtistService
                            "ua.name, " +
                            "ua.playcount " +
                            "FROM user_artists AS ua " +
-                           "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
+                           "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "AND ua.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
                            "ORDER BY ua.playcount DESC ";
 
@@ -101,7 +101,7 @@ public class WhoKnowsArtistService
                            "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id " +
                            "INNER JOIN guilds AS guild ON guild.guild_id = @guildId " +
-                           "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
+                           "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "AND ua.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
                            "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                            "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +

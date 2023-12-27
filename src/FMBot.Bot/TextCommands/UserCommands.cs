@@ -751,7 +751,9 @@ public class UserCommands : BaseCommandModule
             {
                 m.Embed = new EmbedBuilder()
                     .WithDescription($"Login expired. Re-run the command to try again.\n\n" +
-                                     $"Having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.")
+                                     $"Getting 'Invalid API key' error? This is a [known Last.fm issue](https://support.last.fm/t/invalid-api-key-error-when-connecting-to-discord-fmbot-on-iphone/65329) on iOS. " +
+                                     $"Current workaround is to try connecting on a different device.\n\n" +
+                                     $"Still having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.")
                     .WithColor(DiscordConstants.WarningColorOrange)
                     .Build();
             });
