@@ -292,7 +292,7 @@ public class SpotifyService
                     Name = trackInfo.TrackName,
                     AlbumName = trackInfo.AlbumName,
                     ArtistName = trackInfo.ArtistName,
-                    DurationMs = (int)trackInfo.Duration,
+                    DurationMs = (int?)trackInfo.Duration,
                     LastFmUrl = trackInfo.TrackUrl,
                     LastFmDescription = trackInfo.Description,
                     LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
