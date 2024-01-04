@@ -56,14 +56,14 @@ public class OpenCollectiveService
 
         if (lastDescription.ToLower().Contains("monthly"))
         {
-            return SubscriptionType.Monthly;
+            return SubscriptionType.MonthlyOpenCollective;
         }
         if (lastDescription.ToLower().Contains("yearly"))
         {
-            return SubscriptionType.Yearly;
+            return SubscriptionType.YearlyOpenCollective;
         }
 
-        return SubscriptionType.Lifetime;
+        return SubscriptionType.LifetimeOpenCollective;
     }
 
     private async Task<OpenCollectiveResponseModel> GetBackersFromOpenCollective()
