@@ -237,7 +237,7 @@ public static class StringService
         if (customOptionId != null)
         {
             response.Components = new ComponentBuilder()
-                .WithButton(customId: customOptionId, emote: optionEmote, label: optionDescription, style:ButtonStyle.Secondary);
+                .WithButton(customId: customOptionId, emote: optionEmote, label: optionDescription, style: ButtonStyle.Secondary);
         }
     }
 
@@ -277,6 +277,16 @@ public static class StringService
         if (pages.Count != 1)
         {
             builder.WithOptions(DiscordConstants.PaginationEmotes);
+        }
+
+        if (pages.Count >= 10)
+        {
+            builder.AddOption(new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"), PaginatorAction.Jump));
+        }
+
+        if (selectMenuBuilder != null)
+        {
+            builder.WithSelectMenus(new List<SelectMenuBuilder> { selectMenuBuilder });
         }
 
         return builder.Build();

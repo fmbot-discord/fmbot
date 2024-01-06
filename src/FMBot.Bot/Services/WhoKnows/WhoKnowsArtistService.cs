@@ -68,7 +68,7 @@ public class WhoKnowsArtistService
 
             var userName = guildUser.UserName ?? guildUser.UserNameLastFM;
 
-            if (i < 15)
+            if (i < 15 && discordGuild != null)
             {
                 var discordGuildUser = await discordGuild.GetUserAsync(guildUser.DiscordUserId, CacheMode.CacheOnly);
                 if (discordGuildUser != null)
@@ -91,34 +91,6 @@ public class WhoKnowsArtistService
         }
 
         return whoKnowsArtistList;
-    }
-
-    public static async Task<IList<WhoKnowsObjectWithUser>> GetBasicUsersForArtist(NpgsqlConnection connection, int guildId, string artistName)
-    {
-        const string sql = "SELECT ua.user_id, " +
-                           "ua.playcount " +
-                           "FROM user_artists AS ua " +
-                           "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
-                           "INNER JOIN guild_users AS gu ON gu.user_id = ua.user_id " +
-                           "INNER JOIN guilds AS guild ON guild.guild_id = @guildId " +
-                           "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                           "AND ua.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
-                           "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                           "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                           "AND (guild.activity_threshold_days IS NULL OR u.last_used IS NOT NULL AND u.last_used > now()::DATE - guild.activity_threshold_days) " +
-                           "ORDER BY ua.playcount DESC ";
-
-        var userArtists = (await connection.QueryAsync<WhoKnowsArtistDto>(sql, new
-        {
-            guildId,
-            artistName
-        })).ToList();
-
-        return userArtists.Select(s => new WhoKnowsObjectWithUser
-        {
-            UserId = s.UserId,
-            Playcount = s.Playcount
-        }).ToList();
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(IGuild discordGuild, string artistName)

@@ -1995,7 +1995,7 @@ public class ArtistBuilders
         if (self == null)
         {
             response.Embed.WithDescription(
-                "Sorry, you are not added to this server yet. Run `/refreshmembers` and try again.");
+                "Sorry, you are not added to this server yet or you are not in the results. Run `/refreshmembers`, wait a bit and try again.");
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
             return response;

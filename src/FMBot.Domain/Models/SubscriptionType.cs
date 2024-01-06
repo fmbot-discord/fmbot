@@ -2,11 +2,11 @@ namespace FMBot.Domain.Models;
 
 public enum SubscriptionType
 {
-    Monthly = 1,
+    MonthlyOpenCollective = 1,
 
-    Yearly = 2,
+    YearlyOpenCollective = 2,
 
-    Lifetime = 3,
+    LifetimeOpenCollective = 3,
 
     Discord = 4,
 

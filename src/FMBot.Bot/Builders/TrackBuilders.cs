@@ -691,7 +691,7 @@ public class TrackBuilders
         var formattedTrackLength =
             $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
 
-        if (spotifyTrack.Tempo.HasValue && duration.HasValue)
+        if (spotifyTrack is { Tempo: not null } && duration.HasValue)
         {
             var bpm = $"{spotifyTrack.Tempo.Value:0.0}";
             var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());

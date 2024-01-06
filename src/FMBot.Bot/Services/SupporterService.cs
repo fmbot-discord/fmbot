@@ -138,7 +138,7 @@ public class SupporterService
             thankYouMessage.AppendLine($"**Thank you for getting .fmbot supporter!**");
         }
 
-        if (supporter != null && supporter.SubscriptionType == SubscriptionType.Lifetime)
+        if (supporter != null && supporter.SubscriptionType == SubscriptionType.LifetimeOpenCollective)
         {
             thankYouMessage.AppendLine("Thanks to your purchase we can continue to improve and keep the bot running while you get some nice perks in return. Here's an overview of the new features that are now available to you:");
         }
@@ -612,7 +612,7 @@ public class SupporterService
                 }
             }
 
-            if (existingSupporter.SubscriptionType == SubscriptionType.Monthly)
+            if (existingSupporter.SubscriptionType == SubscriptionType.MonthlyOpenCollective)
             {
                 if (existingSupporter.Expired != true && existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-63) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-60))
                 {
@@ -639,7 +639,7 @@ public class SupporterService
                 }
             }
 
-            if (existingSupporter.SubscriptionType == SubscriptionType.Yearly)
+            if (existingSupporter.SubscriptionType == SubscriptionType.YearlyOpenCollective)
             {
                 if (existingSupporter.Expired != true && existingSupporter.LastPayment > DateTime.UtcNow.AddDays(-388) && existingSupporter.LastPayment < DateTime.UtcNow.AddDays(-385))
                 {
@@ -691,13 +691,6 @@ public class SupporterService
     public async Task AddLatestDiscordSupporters()
     {
         var discordSupporters = await this._discordSkuService.GetEntitlements(after: SnowflakeUtils.ToSnowflake(DateTime.UtcNow.AddDays(-2)));
-
-        await UpdateDiscordSupporters(discordSupporters);
-    }
-
-    public async Task UpdateGenerallyAllDiscordSupporters()
-    {
-        var discordSupporters = await this._discordSkuService.GetEntitlements(before: SnowflakeUtils.ToSnowflake(DateTime.UtcNow.AddDays(-1)));
 
         await UpdateDiscordSupporters(discordSupporters);
     }
@@ -827,23 +820,8 @@ public class SupporterService
                 {
                     var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
-                    var ocSupporter = await db.Supporters
-                        .Where(w =>
-                            w.DiscordUserId != null &&
-                            w.SubscriptionType != SubscriptionType.Discord &&
-                            w.Expired != true)
-                        .FirstOrDefaultAsync(f => f.DiscordUserId == existingSupporter.DiscordUserId.Value);
-
-                    if (ocSupporter != null)
+                    if (await DiscordSubbedElsewhereExpiryFlow(existingSupporter, discordSupporter, supporterAuditLogChannel))
                     {
-                        Log.Information("Not removing Discord supporter because active OC sub - {discordUserId}", discordSupporter.DiscordUserId);
-
-                        var notCancellingEmbed = new EmbedBuilder().WithDescription(
-                            $"Prevented removal of Discord supporter who also has active OpenCollective sub\n" +
-                            $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
-                        await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { notCancellingEmbed.Build() });
-                        await ExpireSupporter(discordSupporter.DiscordUserId, existingSupporter, false);
-
                         continue;
                     }
 
@@ -921,23 +899,8 @@ public class SupporterService
             {
                 var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
-                var ocSupporter = await db.Supporters
-                    .Where(w =>
-                        w.DiscordUserId != null &&
-                        w.SubscriptionType != SubscriptionType.Discord &&
-                        w.Expired != true)
-                    .FirstOrDefaultAsync(f => f.DiscordUserId == existingSupporter.DiscordUserId.Value);
-
-                if (ocSupporter != null)
+                if (await DiscordSubbedElsewhereExpiryFlow(existingSupporter, discordSupporter, supporterAuditLogChannel))
                 {
-                    Log.Information("Not removing Discord supporter because active OC sub - {discordUserId}", discordSupporter.DiscordUserId);
-
-                    var notCancellingEmbed = new EmbedBuilder().WithDescription(
-                        $"Prevented removal of Discord supporter who also has active OpenCollective sub\n" +
-                        $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
-                    await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { notCancellingEmbed.Build() });
-                    await ExpireSupporter(discordSupporter.DiscordUserId, existingSupporter, false);
-
                     continue;
                 }
 
@@ -967,6 +930,51 @@ public class SupporterService
 
             await Task.Delay(500);
         }
+    }
+
+    private async Task<bool> DiscordSubbedElsewhereExpiryFlow(Supporter existingSupporter, DiscordEntitlement discordSupporter,
+    DiscordWebhookClient supporterAuditLogChannel)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var otherSupporterSubscription = await db.Supporters
+            .Where(w =>
+                w.DiscordUserId != null &&
+                w.SubscriptionType != SubscriptionType.Discord &&
+                w.Expired != true)
+            .FirstOrDefaultAsync(f => f.DiscordUserId == existingSupporter.DiscordUserId.Value);
+
+        if (otherSupporterSubscription != null)
+        {
+            if (otherSupporterSubscription.SubscriptionType == SubscriptionType.LifetimeOpenCollective ||
+                otherSupporterSubscription.SubscriptionType == SubscriptionType.YearlyOpenCollective ||
+                otherSupporterSubscription.SubscriptionType == SubscriptionType.MonthlyOpenCollective)
+            {
+                Log.Information("Not removing Discord supporter because active OpenCollective sub - {discordUserId}",
+                    discordSupporter.DiscordUserId);
+
+                var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                    $"Prevented removal of Discord supporter who also has active OpenCollective sub\n" +
+                    $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { notCancellingEmbed.Build() });
+            }
+            else
+            {
+                Log.Information("Not removing Discord supporter because active Stripe sub - {discordUserId}",
+                    discordSupporter.DiscordUserId);
+
+                var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                    $"Prevented removal of Discord supporter who also has active Stripe sub\n" +
+                    $"{discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { notCancellingEmbed.Build() });
+            }
+
+            await ExpireSupporter(discordSupporter.DiscordUserId, existingSupporter, false);
+
+            return true;
+        }
+
+        return false;
     }
 
     public async Task CheckIfDiscordSupportersHaveCorrectUserType()
