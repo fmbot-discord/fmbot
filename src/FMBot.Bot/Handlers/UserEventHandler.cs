@@ -1,6 +1,8 @@
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
@@ -30,6 +32,7 @@ public class UserEventHandler
         this._client.UserLeft += UserLeft;
         this._client.UserBanned += UserBanned;
         this._client.GuildMemberUpdated += GuildMemberUpdated;
+        this._client.EntitlementCreated += EntitlementCreated;
         this._botSettings = botSettings.Value;
     }
 
@@ -80,6 +83,16 @@ public class UserEventHandler
             {
                 await this._supporterService.ModifyGuildRole(socketGuildUser.Id);
             }
+        }
+    }
+
+    private async Task EntitlementCreated(SocketEntitlement entitlement)
+    {
+        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
+
+        if (entitlement.User.HasValue && mainGuildConnected)
+        {
+            await this._supporterService.UpdateSingleDiscordSupporter(entitlement.User.Value.Id);
         }
     }
 
