@@ -158,22 +158,19 @@ public static class PlayRepository
         sql += dataSource switch
         {
             DataSource.LastFm => " FROM public.user_plays WHERE user_id = @userId AND play_source = 0 ",
-            DataSource.FullSpotifyThenLastFm => " FROM public.user_plays WHERE " +
-                                                "user_id = @userId AND ( " +
-                                                "(play_source <> 0 OR time_played > ( " +
-                                                "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source <> 0 " +
-                                                ") OR  " +
-                                                "(play_source <> 0 AND time_played < ( " +
-                                                "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source <> 0 " +
-                                                ")))) ",
-            DataSource.SpotifyThenFullLastFm => " FROM public.user_plays WHERE " +
-                                                "user_id = @userId AND ( " +
-                                                "(play_source = 0 OR time_played > ( " +
-                                                "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 0 " +
-                                                ") OR  " +
-                                                "(play_source <> 0 AND time_played < ( " +
+            DataSource.FullSpotifyThenLastFm => " FROM public.user_plays WHERE user_id = @userId AND ( " +
+                                                "play_source = 1 OR  " +
+                                                "(play_source = 0 AND time_played >= ( " +
+                                                "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 1 " +
+                                                ")) OR  " +
+                                                "(play_source = 0 AND time_played <= ( " +
+                                                "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 1 " +
+                                                "))) ",
+            DataSource.SpotifyThenFullLastFm => " FROM public.user_plays WHERE user_id = @userId AND ( " +
+                                                "play_source = 0 OR " +
+                                                "(play_source = 1 AND time_played < ( " +
                                                 "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 0 " +
-                                                ")))) ",
+                                                "))) ",
             _ => " FROM public.user_plays WHERE user_id = @userId "
         };
 
