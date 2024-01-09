@@ -251,8 +251,8 @@ public class TimerService
         try
         {
             var allShardsConnected = this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnected) &&
-                                     this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnecting) &&
-                                     this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Connecting);
+                                this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnecting) &&
+                                this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Connecting);
 
             if (allShardsConnected)
             {
