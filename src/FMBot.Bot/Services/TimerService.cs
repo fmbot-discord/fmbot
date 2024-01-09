@@ -94,7 +94,8 @@ public class TimerService
 
         if (this._botSettings.LastFm.UserIndexFrequencyInDays != null &&
             this._botSettings.LastFm.UserIndexFrequencyInDays != 0 &&
-            ConfigData.Data.Shards.MainInstance == true)
+            (ConfigData.Data.Shards == null ||
+             ConfigData.Data.Shards.MainInstance == true))
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToIndexQueue)}");
             RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 8 * * *");
@@ -106,7 +107,8 @@ public class TimerService
 
         if (this._botSettings.LastFm.UserUpdateFrequencyInHours != null &&
             this._botSettings.LastFm.UserUpdateFrequencyInHours != 0 &&
-            ConfigData.Data.Shards.MainInstance == true)
+            (ConfigData.Data.Shards == null ||
+             ConfigData.Data.Shards.MainInstance == true))
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToUpdateQueue)}");
             RecurringJob.AddOrUpdate(nameof(AddUsersToUpdateQueue), () => AddUsersToUpdateQueue(), "0 * * * *");
@@ -116,7 +118,9 @@ public class TimerService
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
-        if (this._client.CurrentUser.Id == Constants.BotBetaId && ConfigData.Data.Shards.MainInstance == true)
+        if (this._client.CurrentUser.Id == Constants.BotBetaId &&
+            (ConfigData.Data.Shards == null ||
+             ConfigData.Data.Shards.MainInstance == true))
         {
             Log.Information($"RecurringJob: Adding {nameof(UpdateGlobalWhoKnowsFilters)}");
             RecurringJob.AddOrUpdate(nameof(UpdateGlobalWhoKnowsFilters), () => UpdateGlobalWhoKnowsFilters(), "0 10 * * *");
@@ -247,8 +251,8 @@ public class TimerService
         try
         {
             var allShardsConnected = this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnected) &&
-                               this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnecting) &&
-                               this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Connecting);
+                                this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnecting) &&
+                                this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Connecting);
 
             if (allShardsConnected)
             {
