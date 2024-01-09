@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231211185028_AddArtistLinks")]
+    partial class AddArtistLinks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1578,10 +1581,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("discogs_id");
 
-                    b.Property<bool?>("HideValue")
-                        .HasColumnType("boolean")
-                        .HasColumnName("hide_value");
-
                     b.Property<DateTime?>("LastUpdated")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_updated");
@@ -1666,14 +1665,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("Album")
-                        .HasColumnType("text")
-                        .HasColumnName("album");
-
-                    b.Property<string>("Artist")
-                        .HasColumnType("text")
-                        .HasColumnName("artist");
-
                     b.Property<string>("CommandContent")
                         .HasColumnType("text")
                         .HasColumnName("command_content");
@@ -1713,10 +1704,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("timestamp");
-
-                    b.Property<string>("Track")
-                        .HasColumnType("text")
-                        .HasColumnName("track");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer")

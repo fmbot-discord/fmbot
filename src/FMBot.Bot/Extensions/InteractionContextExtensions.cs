@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -23,6 +21,20 @@ public static class InteractionContextExtensions
         if (context.Interaction is SocketSlashCommand socketSlashCommand)
         {
             commandName = socketSlashCommand.CommandName;
+        }
+        if (context.Interaction is SocketMessageComponent socketMessageComponent)
+        {
+            var customId = socketMessageComponent.Data?.CustomId;
+
+            if (customId != null)
+            {
+                var parts = customId.Split('-');
+
+                if (parts.Length >= 2)
+                {
+                    commandName = parts[0] + '-' + parts[1];
+                }
+            }
         }
 
         Log.Information("SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
@@ -210,7 +222,11 @@ public static class InteractionContextExtensions
         await message.ModifyAsync(m =>
         {
             m.Components = response.Components?.Build();
-            m.Embed = response.Embed.Build();
+            m.Embed = response.Embed?.Build();
+            m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+            {
+                new(response.Stream, "image.png")
+            }) : null;
         });
 
         if (defer)

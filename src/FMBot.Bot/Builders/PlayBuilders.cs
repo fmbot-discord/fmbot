@@ -19,7 +19,6 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.Persistence.Domain.Models;
-using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -160,7 +159,7 @@ public class PlayBuilder
 
         var fmText = "";
         var footerText = await this._userService.GetFooterAsync(context.ContextUser.FmFooterOptions, userSettings,
-            currentTrack.ArtistName, currentTrack.AlbumName, currentTrack.TrackName, currentTrack.Loved, totalPlaycount, guild);
+            currentTrack.ArtistName, currentTrack.AlbumName, currentTrack.TrackName, currentTrack.Loved, totalPlaycount, guild, guildUsers);
 
         if (!userSettings.DifferentUser &&
             !currentTrack.NowPlaying &&

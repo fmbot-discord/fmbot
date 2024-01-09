@@ -42,7 +42,46 @@ public class DiscogsBuilder
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         response.Components = new ComponentBuilder()
-            .WithButton("Get login link", style: ButtonStyle.Primary, customId: InteractionConstants.DiscogsStartAuth);
+            .WithButton("Get login link", style: ButtonStyle.Primary, customId: InteractionConstants.Discogs.StartAuth);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> DiscogsToggleCollectionValue(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var result = await this._discogsService.ToggleCollectionValueHidden(context.ContextUser.UserId);
+
+        if (result == true)
+        {
+            response.Embed.WithDescription($"Your Discogs collection value is now hidden from all .fmbot commands.");
+        }
+        else
+        {
+            response.Embed.WithDescription($"Your Discogs collection value is now visible in all .fmbot commands.");
+        }
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> DiscogsRemove(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        await this._discogsService.RemoveDiscogs(context.ContextUser.UserId);
+
+        response.Embed.WithDescription($"Your Discogs account has been removed from your Discogs account.");
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         return response;
     }
@@ -149,6 +188,7 @@ public class DiscogsBuilder
             }
 
             response.CommandResponse = CommandResponse.UsernameNotSet;
+            response.Embed.Color = DiscordConstants.WarningColorOrange;
             return response;
         }
 
@@ -221,7 +261,7 @@ public class DiscogsBuilder
                 footer.AppendLine($"Searching for '{StringExtensions.Sanitize(searchValues)}'");
             }
 
-            if (searchValues == null)
+            if (searchValues == null && user.UserDiscogs.HideValue != true)
             {
                 footer.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
                                   $"- {user.UserDiscogs.MedianValue} med" +
@@ -380,6 +420,41 @@ public class DiscogsBuilder
         return response;
     }
 
+    public static ResponseModel DiscogsManage(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+            Components = new ComponentBuilder()
+                .WithButton(context.ContextUser.UserDiscogs.HideValue == true ? "Show value" : "Hide value", InteractionConstants.Discogs.ToggleCollectionValue, ButtonStyle.Secondary)
+                .WithButton("Re-login", InteractionConstants.Discogs.StartAuth, ButtonStyle.Secondary)
+                .WithButton("Remove connection", InteractionConstants.Discogs.RemoveAccount, ButtonStyle.Danger)
+        };
+
+        var description = new StringBuilder();
+
+        description.AppendLine("Use the buttons below to manage the Discogs integration for your account.");
+        description.AppendLine();
+
+        if (context.ContextUser.UserDiscogs.HideValue == true)
+        {
+            description.AppendLine("- Show value - Shows the value of your collection in commands");
+        }
+        else
+        {
+            description.AppendLine("- Hide value - Hides the value of your collection in commands");
+        }
+
+        description.AppendLine("- Re-login - Re-authorize .fmbot");
+        description.AppendLine("- Remove connection - Remove Discogs from your .fmbot account");
+
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        response.Embed.WithTitle("Manage Discogs connection");
+
+        return response;
+    }
+
     public async Task<ResponseModel> WhoHasDiscogsAsync(
         ContextModel context,
         ResponseMode mode,
@@ -395,7 +470,7 @@ public class DiscogsBuilder
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;

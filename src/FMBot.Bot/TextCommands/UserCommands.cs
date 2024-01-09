@@ -154,15 +154,20 @@ public class UserCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task LinkAsync([Remainder] string userOptions = null)
     {
-        var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
+        var user = await this._userService.GetUserAsync(this.Context.User.Id);
 
         try
         {
             var userSettings = await this._settingService.GetUser(userOptions, user, this.Context, true);
+            var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild?.Id);
 
-            if (userSettings.DifferentUser)
+            if (userSettings.DifferentUser && guildUsers.ContainsKey(userSettings.UserId))
             {
                 await this.Context.Channel.SendMessageAsync($"<@{userSettings.DiscordUserId}>'s Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}", allowedMentions: AllowedMentions.None);
+            }
+            else if (userSettings.DifferentUser)
+            {
+                await this.Context.Channel.SendMessageAsync($"Their Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}", allowedMentions: AllowedMentions.None);
             }
             else
             {
@@ -170,6 +175,8 @@ public class UserCommands : BaseCommandModule
             }
 
             this.Context.LogCommandUsed();
+
+
         }
         catch (Exception e)
         {
@@ -751,7 +758,9 @@ public class UserCommands : BaseCommandModule
             {
                 m.Embed = new EmbedBuilder()
                     .WithDescription($"Login expired. Re-run the command to try again.\n\n" +
-                                     $"Having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.")
+                                     $"Getting 'Invalid API key' error? This is a [known Last.fm issue](https://support.last.fm/t/invalid-api-key-error-when-connecting-to-discord-fmbot-on-iphone/65329) on iOS. " +
+                                     $"Current workaround is to try connecting on a different device.\n\n" +
+                                     $"Still having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.")
                     .WithColor(DiscordConstants.WarningColorOrange)
                     .Build();
             });

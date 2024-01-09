@@ -152,7 +152,7 @@ public class StartupService
 
         }
 
-        await this._timerService.UpdateMetricsAndStatus();
+        await this._timerService.UpdateStatus();
         await this._timerService.UpdateHealthCheck();
 
         InitializeHangfireConfig();

@@ -34,4 +34,15 @@ public static class DiscordConstants
     public const string OneToFiveDown = "<:1_to_5_down:912085138245029888>";
     public const string FiveOrMoreDown = "<:5_or_more_down:912380324753838140>";
     public const string New = "<:new:912087988001980446>";
+
+    public const string Info = "<:info:1183840696457777153>";
+    public const string Vinyl = "<:vinyl:1043644602969763861>";
+
+    public const string Facebook = "<:social_facebook:1183830516533825656>";
+    public const string Twitter = "<:social_twitter:1183831922917511298>";
+    public const string Instagram = "<:social_instagram:1183829878458548224>";
+    public const string TikTok = "<:social_tiktok:1183831072413335742>";
+    public const string Bandcamp = "<:social_bandcamp:1183838619270643823>";
+    public const string Spotify = "<:spotify:882221219334725662>";
+    public const string RateYourMusic = "<:rym:1183851241151930399>";
 }

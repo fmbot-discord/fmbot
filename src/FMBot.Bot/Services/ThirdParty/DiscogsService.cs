@@ -198,6 +198,41 @@ public class DiscogsService
         return user.UserDiscogs;
     }
 
+    public async Task<bool?> ToggleCollectionValueHidden(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var user = await db.Users
+            .Include(i => i.UserDiscogs)
+            .FirstAsync(f => f.UserId == userId);
+
+        user.UserDiscogs.HideValue = user.UserDiscogs.HideValue != true;
+
+        db.UserDiscogs.Update(user.UserDiscogs);
+        await db.SaveChangesAsync();
+
+        return user.UserDiscogs.HideValue;
+    }
+
+    public async Task RemoveDiscogs(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var user = await db.Users
+            .Include(i => i.UserDiscogs)
+            .Include(i => i.DiscogsReleases)
+            .FirstAsync(f => f.UserId == userId);
+
+        db.UserDiscogs.Remove(user.UserDiscogs);
+
+        if (user.DiscogsReleases.Count != 0)
+        {
+            db.UserDiscogsReleases.RemoveRange(user.DiscogsReleases);
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     public async Task UpdateDiscogsUsers(List<User> usersToUpdate)
     {
         foreach (var user in usersToUpdate)

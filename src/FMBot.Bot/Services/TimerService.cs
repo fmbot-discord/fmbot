@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -76,8 +77,8 @@ public class TimerService
         Log.Information($"RecurringJob: Adding {nameof(CheckForNewFeatured)}");
         RecurringJob.AddOrUpdate(nameof(CheckForNewFeatured), () => CheckForNewFeatured(), "*/2 * * * *");
 
-        Log.Information($"RecurringJob: Adding {nameof(UpdateMetricsAndStatus)}");
-        RecurringJob.AddOrUpdate(nameof(UpdateMetricsAndStatus), () => UpdateMetricsAndStatus(), "* * * * *");
+        Log.Information($"RecurringJob: Adding {nameof(UpdateStatus)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateStatus), () => UpdateStatus(), "* * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(UpdateHealthCheck)}");
         RecurringJob.AddOrUpdate(nameof(UpdateHealthCheck), () => UpdateHealthCheck(), "*/20 * * * * *");
@@ -88,9 +89,13 @@ public class TimerService
         Log.Information($"RecurringJob: Adding {nameof(ClearUserCache)}");
         RecurringJob.AddOrUpdate(nameof(ClearUserCache), () => ClearUserCache(), "30 */2 * * *");
 
+        Log.Information($"RecurringJob: Adding {nameof(ClearInternalLogs)}");
+        RecurringJob.AddOrUpdate(nameof(ClearInternalLogs), () => ClearInternalLogs(), "0 8 * * *");
+
         if (this._botSettings.LastFm.UserIndexFrequencyInDays != null &&
             this._botSettings.LastFm.UserIndexFrequencyInDays != 0 &&
-            ConfigData.Data.Shards.MainInstance == true)
+            (ConfigData.Data.Shards == null ||
+             ConfigData.Data.Shards.MainInstance == true))
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToIndexQueue)}");
             RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 8 * * *");
@@ -102,7 +107,8 @@ public class TimerService
 
         if (this._botSettings.LastFm.UserUpdateFrequencyInHours != null &&
             this._botSettings.LastFm.UserUpdateFrequencyInHours != 0 &&
-            ConfigData.Data.Shards.MainInstance == true)
+            (ConfigData.Data.Shards == null ||
+             ConfigData.Data.Shards.MainInstance == true))
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToUpdateQueue)}");
             RecurringJob.AddOrUpdate(nameof(AddUsersToUpdateQueue), () => AddUsersToUpdateQueue(), "0 * * * *");
@@ -112,7 +118,9 @@ public class TimerService
             Log.Warning($"No {nameof(this._botSettings.LastFm.UserUpdateFrequencyInHours)} set in config, not queuing user update job");
         }
 
-        if (this._client.CurrentUser.Id == Constants.BotBetaId && ConfigData.Data.Shards.MainInstance == true)
+        if (this._client.CurrentUser.Id == Constants.BotBetaId &&
+            (ConfigData.Data.Shards == null ||
+             ConfigData.Data.Shards.MainInstance == true))
         {
             Log.Information($"RecurringJob: Adding {nameof(UpdateGlobalWhoKnowsFilters)}");
             RecurringJob.AddOrUpdate(nameof(UpdateGlobalWhoKnowsFilters), () => UpdateGlobalWhoKnowsFilters(), "0 10 * * *");
@@ -143,6 +151,9 @@ public class TimerService
     {
         Log.Warning("Queueing master jobs on instance {instance}", ConfigData.Data.Shards?.InstanceName);
 
+        Log.Information($"RecurringJob: Adding {nameof(UpdateMetrics)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateMetrics), () => UpdateMetrics(), "* * * * *");
+
         Log.Information($"RecurringJob: Adding {nameof(AddLatestDiscordSupporters)}");
         RecurringJob.AddOrUpdate(nameof(AddLatestDiscordSupporters), () => AddLatestDiscordSupporters(), "* * * * *");
 
@@ -165,9 +176,46 @@ public class TimerService
         RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");
     }
 
-    public async Task UpdateMetricsAndStatus()
+    public async Task UpdateStatus()
     {
-        Log.Information($"Running {nameof(UpdateMetricsAndStatus)}");
+        Log.Information($"Running {nameof(UpdateStatus)}");
+
+        try
+        {
+            if (this._client?.Guilds?.Count == null)
+            {
+                Log.Information($"Client guild count is null, cancelling {nameof(UpdateStatus)}");
+                return;
+            }
+
+            Statistics.ConnectedShards.Set(this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected));
+            Statistics.ConnectedDiscordServerCount.Set(this._client.Guilds.Count);
+
+            if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
+            {
+                if (!PublicProperties.IssuesAtLastFm)
+                {
+                    var appInfo = await this._client.GetApplicationInfoAsync();
+                    await this._client.SetCustomStatusAsync(
+                        $"{this._botSettings.Bot.Prefix}fm — fmbot.xyz — {appInfo.ApproximateGuildCount.GetValueOrDefault()} servers");
+                }
+                else
+                {
+                    await this._client.SetCustomStatusAsync(
+                        $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, nameof(UpdateStatus));
+            throw;
+        }
+    }
+
+    public async Task UpdateMetrics()
+    {
+        Log.Information($"Running {nameof(UpdateMetrics)}");
 
         Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
         Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
@@ -182,34 +230,16 @@ public class TimerService
         {
             if (this._client?.Guilds?.Count == null)
             {
-                Log.Information($"Client guild count is null, cancelling {nameof(UpdateMetricsAndStatus)}");
+                Log.Information($"Client guild count is null, cancelling {nameof(UpdateMetrics)}");
                 return;
             }
 
-            Statistics.ConnectedShards.Set(this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected));
-            Statistics.ConnectedDiscordServerCount.Set(this._client.Guilds.Count);
-
             var appInfo = await this._client.GetApplicationInfoAsync();
             Statistics.TotalDiscordServerCount.Set(appInfo.ApproximateGuildCount.GetValueOrDefault());
-
-            if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
-            {
-                if (!PublicProperties.IssuesAtLastFm)
-                {
-                    await this._client.SetCustomStatusAsync(
-                        $"{this._botSettings.Bot.Prefix}fm — fmbot.xyz — {appInfo.ApproximateGuildCount.GetValueOrDefault()} servers");
-                }
-                else
-                {
-                    await this._client.SetCustomStatusAsync(
-                        $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
-                }
-
-            }
         }
         catch (Exception e)
         {
-            Log.Error(e, nameof(UpdateMetricsAndStatus));
+            Log.Error(e, nameof(UpdateMetrics));
             throw;
         }
     }
@@ -221,8 +251,8 @@ public class TimerService
         try
         {
             var allShardsConnected = this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnected) &&
-                               this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnecting) &&
-                               this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Connecting);
+                                this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnecting) &&
+                                this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Connecting);
 
             if (allShardsConnected)
             {
@@ -472,5 +502,16 @@ public class TimerService
             socketClient.PurgeUserCache();
         }
         Log.Information("Purged discord caches");
+    }
+
+    public void ClearInternalLogs()
+    {
+        PublicProperties.UsedCommandsResponses = new ConcurrentDictionary<ulong, CommandResponse>();
+        PublicProperties.UsedCommandsErrorReferences = new ConcurrentDictionary<ulong, string>();
+        PublicProperties.UsedCommandsArtists = new ConcurrentDictionary<ulong, string>();
+        PublicProperties.UsedCommandsAlbums = new ConcurrentDictionary<ulong, string>();
+        PublicProperties.UsedCommandsTracks = new ConcurrentDictionary<ulong, string>();
+
+        Log.Information("Cleared internal logs");
     }
 }

@@ -9,6 +9,7 @@ using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
@@ -16,7 +17,6 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
-using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 
@@ -207,7 +207,7 @@ public class FriendBuilders
             }
 
             var foundFriend = await this._settingService.GetUser(enteredFriendParameter, context.ContextUser,
-                context.DiscordGuild, context.DiscordUser, true);
+                context.DiscordGuild, context.DiscordUser, true, true);
 
             string friendUsername;
             int? friendUserId = null;
@@ -250,6 +250,7 @@ public class FriendBuilders
 
         if (friendLimitReached)
         {
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             if (context.ContextUser.UserType == UserType.User)
             {
                 response.Embed.AddField("Friend limit reached",
@@ -326,7 +327,7 @@ public class FriendBuilders
         foreach (var enteredFriendParameter in enteredFriends)
         {
             var foundFriend =
-                await this._settingService.GetUser(enteredFriendParameter, context.ContextUser, context.DiscordGuild, context.DiscordUser, true);
+                await this._settingService.GetUser(enteredFriendParameter, context.ContextUser, context.DiscordGuild, context.DiscordUser, true, true);
 
             var friendUsername = foundFriend.DifferentUser ? foundFriend.UserNameLastFm : enteredFriendParameter;
 

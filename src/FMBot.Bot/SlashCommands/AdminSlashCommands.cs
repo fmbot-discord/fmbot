@@ -15,7 +15,6 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using Swan;
 
 namespace FMBot.Bot.SlashCommands;
 

@@ -25,10 +25,7 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
-using Google.Apis.Discovery;
-using Google.Apis.YouTube.v3.Data;
 using Microsoft.Extensions.Options;
-using Swan;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.SlashCommands;
@@ -288,7 +285,9 @@ public class UserSlashCommands : InteractionModuleBase
                 followUpEmbed.WithColor(DiscordConstants.WarningColorOrange);
                 followUpEmbed.WithDescription(
                     $"Login expired. Re-run the command to try again.\n\n" +
-                    $"Having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.");
+                    $"Getting 'Invalid API key' error? This is a [known Last.fm issue](https://support.last.fm/t/invalid-api-key-error-when-connecting-to-discord-fmbot-on-iphone/65329) on iOS. " +
+                    $"Current workaround is to try connecting on a different device.\n\n" +
+                    $"Still having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.");
 
                 await FollowupAsync(null, new[] { followUpEmbed.Build() }, ephemeral: true);
 

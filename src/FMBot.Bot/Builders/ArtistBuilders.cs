@@ -25,7 +25,6 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Genius.Models.Song;
 using SkiaSharp;
-using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
@@ -105,13 +104,13 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
         }
 
-        var fullArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled);
+        var fullArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled, true);
 
         var footer = new StringBuilder();
         if (fullArtist.SpotifyImageUrl != null)
@@ -322,8 +321,53 @@ public class ArtistBuilders
         }
 
         response.Components = new ComponentBuilder()
-            .WithButton("View your overview", $"{InteractionConstants.Artist.ArtistOverview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
+            .WithButton("Overview", $"{InteractionConstants.Artist.Overview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
 
+        if (context.ContextUser.RymEnabled == true && fullArtist.ArtistLinks != null && fullArtist.ArtistLinks.Any(a => a.Type == LinkType.RateYourMusic))
+        {
+            var rym = fullArtist.ArtistLinks.First(f => f.Type == LinkType.RateYourMusic);
+            response.Components.WithButton(style: ButtonStyle.Link, emote: Emote.Parse(DiscordConstants.RateYourMusic), url: rym.Url);
+        }
+        else if (fullArtist.SpotifyId != null)
+        {
+            response.Components.WithButton(style: ButtonStyle.Link,
+                emote: Emote.Parse(DiscordConstants.Spotify), url: $"https://open.spotify.com/artist/{fullArtist.SpotifyId}");
+        }
+
+        if (fullArtist.ArtistLinks != null && fullArtist.ArtistLinks.Any())
+        {
+            var facebook = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Facebook);
+            if (facebook != null && fullArtist.ArtistLinks.All(a => a.Type != LinkType.Instagram))
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.Facebook), url: facebook.Url);
+            }
+            var instagram = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Instagram);
+            if (instagram != null)
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.Instagram), url: instagram.Url);
+            }
+            var twitter = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Twitter);
+            if (twitter != null)
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.Twitter), url: twitter.Url);
+            }
+            var tiktok = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.TikTok);
+            if (tiktok != null)
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.TikTok), url: tiktok.Url);
+            }
+            var bandcamp = fullArtist.ArtistLinks.FirstOrDefault(f => f.Type == LinkType.Bandcamp);
+            if (bandcamp != null)
+            {
+                response.Components.WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.Bandcamp), url: bandcamp.Url);
+            }
+        }
+        
         response.Embed.WithFooter(footer.ToString());
         return response;
     }
@@ -340,7 +384,7 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId,
-            otherUserUsername: userSettings.UserNameLastFm, redirectsEnabled: redirectsEnabled);
+            otherUserUsername: userSettings.UserNameLastFm, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -486,13 +530,13 @@ public class ArtistBuilders
         }
 
         var components = new ComponentBuilder()
-            .WithButton("View artist info", $"{InteractionConstants.Artist.ArtistInfo}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("ℹ"));
+            .WithButton("Artist", $"{InteractionConstants.Artist.Info}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.Info));
 
         components.WithButton("All top tracks",
-            $"{InteractionConstants.Artist.ArtistTracks}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: Emoji.Parse("🎶"));
+            $"{InteractionConstants.Artist.Tracks}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: Emoji.Parse("🎶"));
 
         components.WithButton("All top albums",
-            $"{InteractionConstants.Artist.ArtistAlbums}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: Emoji.Parse("💽"));
+            $"{InteractionConstants.Artist.Albums}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: Emoji.Parse("💽"));
 
         response.Components = components;
 
@@ -512,7 +556,7 @@ public class ArtistBuilders
         };
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM,
-            context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId, redirectsEnabled: redirectsEnabled);
+            context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -607,13 +651,13 @@ public class ArtistBuilders
             pageCounter++;
         }
 
-        var optionId = $"{InteractionConstants.Artist.ArtistOverview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+        var optionId = $"{InteractionConstants.Artist.Overview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
         var optionEmote = new Emoji("\ud83d\udcca");
 
         if (pages.Count == 1)
         {
             response.ResponseType = ResponseType.Embed;
-            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "View your overview");
+            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "Overview");
         }
         else
         {
@@ -635,7 +679,7 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
-            true, userSettings.UserId, redirectsEnabled: redirectsEnabled);
+            true, userSettings.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -711,13 +755,13 @@ public class ArtistBuilders
             pageCounter++;
         }
 
-        var optionId = $"{InteractionConstants.Artist.ArtistOverview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+        var optionId = $"{InteractionConstants.Artist.Overview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
         var optionEmote = new Emoji("\ud83d\udcca");
 
         if (pages.Count == 1)
         {
             response.ResponseType = ResponseType.Embed;
-            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "View your overview");
+            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, "Overview");
         }
         else
         {
@@ -1143,7 +1187,7 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistName,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1193,7 +1237,7 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistName,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1257,7 +1301,8 @@ public class ArtistBuilders
         string artistValues,
         bool displayRoleSelector = false,
         List<ulong> roles = null,
-        bool redirectsEnabled = true)
+        bool redirectsEnabled = true,
+        bool showCrownButton = false)
     {
         var response = new ResponseModel
         {
@@ -1266,7 +1311,7 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1300,6 +1345,17 @@ public class ArtistBuilders
         {
             crownModel =
                 await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, contextGuild, artistSearch.Artist.ArtistName);
+            if (crownModel?.Stolen == true)
+            {
+                showCrownButton = true;
+            }
+        }
+
+        if (showCrownButton)
+        {
+            var stolen = crownModel?.Stolen == true;
+            response.Components = new ComponentBuilder()
+                .WithButton("Crown history", $"{InteractionConstants.Artist.Crown}-{cachedArtist.Id}-{stolen}", style: ButtonStyle.Secondary, emote: new Emoji("👑"));
         }
 
         if (mode == ResponseMode.Image)
@@ -1317,6 +1373,10 @@ public class ArtistBuilders
                 response.Spoiler = true;
                 response.Embed.WithTitle("⚠️ NSFW - Click to reveal");
                 response.ResponseType = ResponseType.ImageWithEmbed;
+            }
+            else
+            {
+                response.Embed = null;
             }
 
             return response;
@@ -1439,7 +1499,7 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser,
             settings.NewSearchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            useCachedArtists: true, userId: context.ContextUser.UserId, redirectsEnabled: settings.RedirectsEnabled);
+            useCachedArtists: true, userId: context.ContextUser.UserId, redirectsEnabled: settings.RedirectsEnabled, interactionId: context.InteractionId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1577,7 +1637,7 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1935,7 +1995,7 @@ public class ArtistBuilders
         if (self == null)
         {
             response.Embed.WithDescription(
-                "Sorry, you are not added to this server yet. Run `/refreshmembers` and try again.");
+                "Sorry, you are not added to this server yet or you are not in the results. Run `/refreshmembers`, wait a bit and try again.");
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
             return response;

@@ -14,6 +14,7 @@ public class ContextModel
         this.DiscordUser = context.User;
         this.ContextUser = contextUser;
         this.SlashCommand = false;
+        this.InteractionId = context.Message.Id;
     }
 
     public ContextModel(IInteractionContext context, User contextUser = null, IUser discordContextUser = null)
@@ -24,6 +25,7 @@ public class ContextModel
         this.DiscordUser = discordContextUser ?? context.User;
         this.ContextUser = contextUser;
         this.SlashCommand = true;
+        this.InteractionId = context.Interaction.Id;
     }
 
     public bool SlashCommand { get; set; }
@@ -33,6 +35,8 @@ public class ContextModel
     public IGuild DiscordGuild { get; set; }
     public IChannel DiscordChannel { get; set; }
     public IUser DiscordUser { get; set; }
+
+    public ulong InteractionId { get; set; }
 
     public User ContextUser { get; set; }
 }

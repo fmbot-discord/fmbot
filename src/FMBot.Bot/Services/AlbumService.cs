@@ -57,7 +57,7 @@ public class AlbumService
     }
 
     public async Task<AlbumSearch> SearchAlbum(ResponseModel response, IUser discordUser, string albumValues, string lastFmUserName, string sessionKey = null,
-            string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null)
+            string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null)
     {
         string searchValue;
         if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.Length != 0)
@@ -105,6 +105,12 @@ public class AlbumService
                 {
                     albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(searchArtistName, searchAlbumName,
                         lastFmUserName);
+                }
+
+                if (interactionId.HasValue)
+                {
+                    PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, searchArtistName);
+                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, searchAlbumName);
                 }
 
                 if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
@@ -172,6 +178,12 @@ public class AlbumService
                     lastFmUserName);
             }
 
+            if (interactionId.HasValue)
+            {
+                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
+                PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, lastPlayedTrack.AlbumName);
+            }
+
             if (albumInfo?.Content == null || !albumInfo.Success)
             {
                 response.Embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
@@ -205,6 +217,12 @@ public class AlbumService
             {
                 albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(album.ArtistName, album.AlbumName,
                     lastFmUserName);
+            }
+
+            if (interactionId.HasValue)
+            {
+                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, albumInfo.Content.ArtistName);
+                PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, albumInfo.Content.AlbumName);
             }
 
             return new AlbumSearch(albumInfo.Content, response);

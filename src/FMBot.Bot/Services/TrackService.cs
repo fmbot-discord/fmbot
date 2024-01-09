@@ -72,8 +72,8 @@ public class TrackService
     }
 
     public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string trackValues,
-        string lastFmUserName, string sessionKey = null,
-        string otherUserUsername = null, bool useCachedTracks = false, int? userId = null)
+        string lastFmUserName, string sessionKey = null, string otherUserUsername = null, bool useCachedTracks = false,
+        int? userId = null, ulong? interactionId = null)
     {
         string searchValue;
         if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.Length != 0)
@@ -105,6 +105,16 @@ public class TrackService
                 {
                     trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, trackArtist,
                         lastFmUserName);
+                }
+
+                if (interactionId.HasValue)
+                {
+                    PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, trackArtist);
+                    PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, trackName);
+                    if (!string.IsNullOrWhiteSpace(trackInfo.Content?.AlbumName))
+                    {
+                        PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, trackInfo.Content.AlbumName);
+                    }
                 }
 
                 if (!trackInfo.Success && trackInfo.Error == ResponseStatus.MissingParameters)
@@ -163,6 +173,16 @@ public class TrackService
                     lastFmUserName);
             }
 
+            if (interactionId.HasValue)
+            {
+                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
+                PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, lastPlayedTrack.TrackName);
+                if (!string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName))
+                {
+                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, lastPlayedTrack.AlbumName);
+                }
+            }
+
             if (trackInfo?.Content == null || !trackInfo.Success)
             {
                 response.Embed.WithDescription(
@@ -205,6 +225,16 @@ public class TrackService
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
                 return new TrackSearch(null, response);
+            }
+
+            if (interactionId.HasValue)
+            {
+                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, result.Content.ArtistName);
+                PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, result.Content.TrackName);
+                if (!string.IsNullOrWhiteSpace(trackInfo.Content?.AlbumName))
+                {
+                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, trackInfo.Content.AlbumName);
+                }
             }
 
             return new TrackSearch(trackInfo.Content, response);

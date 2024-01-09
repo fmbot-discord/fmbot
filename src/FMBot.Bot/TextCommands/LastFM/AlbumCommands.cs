@@ -167,9 +167,11 @@ public class AlbumCommands : BaseCommandModule
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
+        var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
+
         try
         {
-            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);
+            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, albumValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

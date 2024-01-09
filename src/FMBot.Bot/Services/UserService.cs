@@ -35,19 +35,28 @@ public class UserService
     private readonly BotSettings _botSettings;
     private readonly CountryService _countryService;
     private readonly PlayService _playService;
+    private readonly WhoKnowsArtistService _whoKnowsArtistService;
+    private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
+    private readonly WhoKnowsTrackService _whoKnowsTrackService;
 
     public UserService(IMemoryCache cache,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IDataSourceFactory dataSourceFactory,
         IOptions<BotSettings> botSettings,
         CountryService countryService,
-        PlayService playService)
+        PlayService playService,
+        WhoKnowsArtistService whoKnowsArtistService,
+        WhoKnowsAlbumService whoKnowsAlbumService,
+        WhoKnowsTrackService whoKnowsTrackService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
         this._dataSourceFactory = dataSourceFactory;
         this._countryService = countryService;
         this._playService = playService;
+        this._whoKnowsArtistService = whoKnowsArtistService;
+        this._whoKnowsAlbumService = whoKnowsAlbumService;
+        this._whoKnowsTrackService = whoKnowsTrackService;
         this._botSettings = botSettings.Value;
     }
 
@@ -174,7 +183,7 @@ public class UserService
     {
         var user = await GetUserSettingsAsync(context.User);
 
-        await Task.Delay(10000);
+        await Task.Delay(12000);
 
         try
         {
@@ -192,6 +201,24 @@ public class UserService
                     errorReference = fetchedErrorId;
                 }
 
+                string artist = null;
+                if (PublicProperties.UsedCommandsArtists.TryGetValue(context.Message.Id, out var fetchedArtist))
+                {
+                    artist = fetchedArtist;
+                }
+
+                string album = null;
+                if (PublicProperties.UsedCommandsAlbums.TryGetValue(context.Message.Id, out var fetchedAlbum))
+                {
+                    album = fetchedAlbum;
+                }
+
+                string track = null;
+                if (PublicProperties.UsedCommandsTracks.TryGetValue(context.Message.Id, out var fetchedTrack))
+                {
+                    track = fetchedTrack;
+                }
+
                 var interaction = new UserInteraction
                 {
                     Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
@@ -203,7 +230,10 @@ public class UserService
                     DiscordId = context.Message.Id,
                     Response = commandResponse,
                     Type = UserInteractionType.TextCommand,
-                    ErrorReferenceId = errorReference
+                    ErrorReferenceId = errorReference,
+                    Artist = artist,
+                    Album = album,
+                    Track = track
                 };
 
                 await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -221,7 +251,7 @@ public class UserService
     {
         var user = await GetUserSettingsAsync(context.User);
 
-        await Task.Delay(10000);
+        await Task.Delay(12000);
 
         try
         {
@@ -237,6 +267,24 @@ public class UserService
                 if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Interaction.Id, out var fetchedErrorId))
                 {
                     errorReference = fetchedErrorId;
+                }
+
+                string artist = null;
+                if (PublicProperties.UsedCommandsArtists.TryGetValue(context.Interaction.Id, out var fetchedArtist))
+                {
+                    artist = fetchedArtist;
+                }
+
+                string album = null;
+                if (PublicProperties.UsedCommandsAlbums.TryGetValue(context.Interaction.Id, out var fetchedAlbum))
+                {
+                    album = fetchedAlbum;
+                }
+
+                string track = null;
+                if (PublicProperties.UsedCommandsTracks.TryGetValue(context.Interaction.Id, out var fetchedTrack))
+                {
+                    track = fetchedTrack;
                 }
 
                 var options = new Dictionary<string, string>();
@@ -259,7 +307,10 @@ public class UserService
                     DiscordId = context.Interaction.Id,
                     Response = commandResponse,
                     Type = UserInteractionType.SlashCommand,
-                    ErrorReferenceId = errorReference
+                    ErrorReferenceId = errorReference,
+                    Artist = artist,
+                    Album = album,
+                    Track = track
                 };
 
                 await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -546,7 +597,9 @@ public class UserService
             if (footerOptions.HasFlag(FmFooterOption.ServerArtistRank) || footerOptions.HasFlag(FmFooterOption.ServerArtistListeners))
             {
                 var artistListeners =
-                    await WhoKnowsArtistService.GetBasicUsersForArtist(connection, guild.GuildId, artistName);
+                    await this._whoKnowsArtistService.GetIndexedUsersForArtist(null, guildUsers, guild.GuildId, artistName);
+
+                artistListeners = WhoKnowsService.FilterWhoKnowsObjects(artistListeners, guild).filteredUsers;
 
                 if (artistListeners.Any())
                 {
@@ -569,7 +622,9 @@ public class UserService
             if ((footerOptions.HasFlag(FmFooterOption.ServerAlbumRank) || footerOptions.HasFlag(FmFooterOption.ServerAlbumListeners)) && albumName != null)
             {
                 var albumListeners =
-                    await WhoKnowsAlbumService.GetBasicUsersForAlbum(connection, guild.GuildId, artistName, albumName);
+                    await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(null, guildUsers, guild.GuildId, artistName, albumName);
+
+                albumListeners = WhoKnowsService.FilterWhoKnowsObjects(albumListeners, guild).filteredUsers;
 
                 if (albumListeners.Any())
                 {
@@ -592,7 +647,9 @@ public class UserService
             if (footerOptions.HasFlag(FmFooterOption.ServerTrackRank) || footerOptions.HasFlag(FmFooterOption.ServerTrackListeners))
             {
                 var trackListeners =
-                    await WhoKnowsTrackService.GetBasicUsersFromTrack(connection, guild.GuildId, artistName, trackName);
+                    await this._whoKnowsTrackService.GetIndexedUsersForTrack(null, guildUsers, guild.GuildId, artistName, trackName);
+
+                trackListeners = WhoKnowsService.FilterWhoKnowsObjects(trackListeners, guild).filteredUsers;
 
                 if (trackListeners.Any())
                 {

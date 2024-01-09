@@ -606,7 +606,8 @@ public class SettingService
         User user,
         IGuild discordGuild,
         IUser discordUser,
-        bool firstOptionIsLfmUsername = false)
+        bool firstOptionIsLfmUsername = false,
+        bool allowNonFmbot = false)
     {
         string discordUserName;
         if (discordGuild != null)
@@ -661,19 +662,22 @@ public class SettingService
                 return settingsModel;
             }
 
-            if (options.First().Length is >= 3 and <= 15)
+            if (allowNonFmbot)
             {
-                var lfmUserName = options.First().ToLower();
+                if (options.First().Length is >= 3 and <= 15)
+                {
+                    var lfmUserName = options.First().ToLower();
 
-                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
-                settingsModel.UserNameLastFm = lfmUserName;
-                settingsModel.DisplayName = lfmUserName;
-                settingsModel.SessionKeyLastFm = null;
-                settingsModel.RegisteredLastFm = null;
-                settingsModel.UserId = 0;
-                settingsModel.DifferentUser = true;
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
+                    settingsModel.UserNameLastFm = lfmUserName;
+                    settingsModel.DisplayName = lfmUserName;
+                    settingsModel.SessionKeyLastFm = null;
+                    settingsModel.RegisteredLastFm = null;
+                    settingsModel.UserId = 0;
+                    settingsModel.DifferentUser = true;
 
-                return settingsModel;
+                    return settingsModel;
+                }
             }
         }
 
@@ -731,15 +735,18 @@ public class SettingService
                     return settingsModel;
                 }
 
-                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
-                settingsModel.UserNameLastFm = lfmUserName;
-                settingsModel.DisplayName = lfmUserName;
-                settingsModel.SessionKeyLastFm = null;
-                settingsModel.RegisteredLastFm = null;
-                settingsModel.UserId = 0;
-                settingsModel.DifferentUser = true;
+                if (allowNonFmbot)
+                {
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
+                    settingsModel.UserNameLastFm = lfmUserName;
+                    settingsModel.DisplayName = lfmUserName;
+                    settingsModel.SessionKeyLastFm = null;
+                    settingsModel.RegisteredLastFm = null;
+                    settingsModel.UserId = 0;
+                    settingsModel.DifferentUser = true;
 
-                return settingsModel;
+                    return settingsModel;
+                }
             }
         }
 

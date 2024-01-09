@@ -195,7 +195,7 @@ public class TimeService
         }
 
         const string sql = "SELECT LOWER(artist_name) as artist_name, LOWER(name) as track_name, duration_ms " +
-                           "FROM public.tracks where duration_ms is not null;";
+                           "FROM public.tracks where duration_ms is not null and duration_ms != 0;";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

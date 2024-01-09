@@ -392,7 +392,7 @@ public class FeaturedService
     {
         var album = await this._dataSourceFactory.GetAlbumInfoAsync(artistName, albumName);
 
-        if (!album.Success || album.Content == null || album.Content.TotalListeners < 2500)
+        if (!album.Success || album.Content == null || album.Content.TotalListeners <= 1500)
         {
             Log.Information("Featured: Album call failed or album not popular enough");
             return false;

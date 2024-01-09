@@ -16,7 +16,16 @@ public static class InteractionConstants
 
     public const string FmPrivacySetting = "fm-gwk-privacy";
 
-    public const string DiscogsStartAuth = "fdiscogs-start-auth";
+    public static class Discogs
+    {
+        public const string AuthDm = "discogs-authdm";
+        public const string StartAuth = "discogs-startauth";
+
+        public const string Collection = "discogs-collection";
+        public const string ToggleCollectionValue = "discogs-togglecollectionvalue";
+
+        public const string RemoveAccount = "discogs-remove";
+    }
 
     public const string ResponseModeSetting = "response-mode-set";
     public const string ResponseModeChange = "response-mode-pick";
@@ -43,11 +52,14 @@ public static class InteractionConstants
 
     public static class Artist
     {
-        public const string ArtistInfo = "artist-info";
-        public const string ArtistOverview = "artist-overview";
+        public const string Info = "artist-info";
+        public const string Overview = "artist-overview";
 
-        public const string ArtistAlbums = "artist-albums";
-        public const string ArtistTracks = "artist-tracks";
+        public const string Albums = "artist-albums";
+        public const string Tracks = "artist-tracks";
+
+        public const string Crown = "artist-crown";
+        public const string WhoKnows = "artist-whoknows";
     }
 
     public static class User
@@ -60,6 +72,7 @@ public static class InteractionConstants
     {
         public const string Info = "album-info";
         public const string Tracks = "album-tracks";
+        public const string Cover = "album-cover";
     }
 
     public static class ModerationCommands

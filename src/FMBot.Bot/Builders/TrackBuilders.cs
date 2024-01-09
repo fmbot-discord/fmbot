@@ -96,7 +96,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -244,7 +246,7 @@ public class TrackBuilders
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (track.Track == null)
         {
             return track.Response;
@@ -380,11 +382,11 @@ public class TrackBuilders
         }
 
         var guild = await this._guildService.GetGuildAsync(context.DiscordGuild?.Id);
-        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (track.Track == null)
         {
             return track.Response;
@@ -471,7 +473,7 @@ public class TrackBuilders
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (track.Track == null)
         {
             return track.Response;
@@ -626,7 +628,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Text,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -666,7 +670,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Text,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -685,7 +691,7 @@ public class TrackBuilders
         var formattedTrackLength =
             $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
 
-        if (spotifyTrack.Tempo.HasValue && duration.HasValue)
+        if (spotifyTrack is { Tempo: not null } && duration.HasValue)
         {
             var bpm = $"{spotifyTrack.Tempo.Value:0.0}";
             var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
@@ -718,7 +724,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -761,7 +769,9 @@ public class TrackBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -1226,7 +1236,7 @@ public class TrackBuilders
             {
                 TimeSpan? trackLength = null;
 
-                if (track.Duration != null)
+                if (!string.IsNullOrWhiteSpace(track.Duration))
                 {
                     var splitDuration = track.Duration.Split(":");
                     if (int.TryParse(splitDuration[0], out var minutes) && int.TryParse(splitDuration[1], out var seconds))
@@ -1282,7 +1292,9 @@ public class TrackBuilders
         }
         else
         {
-            var track = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+            var track = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+                context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+                userId: context.ContextUser.UserId, interactionId: context.InteractionId);
             if (track.Track == null)
             {
                 return track.Response;

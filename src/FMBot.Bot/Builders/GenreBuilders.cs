@@ -37,8 +37,19 @@ public class GenreBuilders
     private readonly SpotifyService _spotifyService;
     private readonly IIndexService _indexService;
     private readonly PuppeteerService _puppeteerService;
+    private readonly CensorService _censorService;
 
-    public GenreBuilders(UserService userService, GuildService guildService, GenreService genreService, WhoKnowsArtistService whoKnowsArtistService, PlayService playService, ArtistsService artistsService, IDataSourceFactory dataSourceFactory, SpotifyService spotifyService, IIndexService indexService, PuppeteerService puppeteerService)
+    public GenreBuilders(UserService userService,
+        GuildService guildService,
+        GenreService genreService,
+        WhoKnowsArtistService whoKnowsArtistService,
+        PlayService playService,
+        ArtistsService artistsService,
+        IDataSourceFactory dataSourceFactory,
+        SpotifyService spotifyService,
+        IIndexService indexService,
+        PuppeteerService puppeteerService,
+        CensorService censorService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -50,6 +61,7 @@ public class GenreBuilders
         this._spotifyService = spotifyService;
         this._indexService = indexService;
         this._puppeteerService = puppeteerService;
+        this._censorService = censorService;
     }
 
     public async Task<ResponseModel> GetGuildGenres(ContextModel context, Guild guild, GuildRankingSettings guildListSettings)
@@ -412,7 +424,8 @@ public class GenreBuilders
                         genreDescription.AppendLine($"- **{artistGenre.Name.Transform(To.TitleCase)}**");
                     }
 
-                    if (artist?.SpotifyImageUrl != null)
+                    var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, artist.Name);
+                    if (artist.SpotifyImageUrl != null && safeForChannel == CensorService.CensorResult.Safe)
                     {
                         response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
                     }

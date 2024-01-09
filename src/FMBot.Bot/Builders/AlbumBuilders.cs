@@ -87,7 +87,9 @@ public class AlbumBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId);
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -266,7 +268,12 @@ public class AlbumBuilders
                 "Album tracks",
                 $"{InteractionConstants.Album.Tracks}-{databaseAlbum.Id}-{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary,
-                emote: Emoji.Parse("🎶"));
+                emote: Emoji.Parse("🎶"))
+            .WithButton(
+                "Cover",
+                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                style: ButtonStyle.Secondary,
+                emote: Emoji.Parse("🖼️"));
 
         response.Embed.WithFooter(footer.ToString());
         return response;
@@ -286,7 +293,7 @@ public class AlbumBuilders
 
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (album.Album == null)
         {
             return album.Response;
@@ -440,7 +447,7 @@ public class AlbumBuilders
 
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (album.Album == null)
         {
             return album.Response;
@@ -544,7 +551,7 @@ public class AlbumBuilders
 
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
-            userId: context.ContextUser.UserId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (album.Album == null)
         {
             return album.Response;
@@ -762,7 +769,9 @@ public class AlbumBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, userId: context.ContextUser.UserId);
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -773,14 +782,14 @@ public class AlbumBuilders
         var spotifySource = false;
 
         List<AlbumTrack> albumTracks;
-        Album dbAlbum = null;
+        var dbAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
+
         if (albumSearch.Album.AlbumTracks != null && albumSearch.Album.AlbumTracks.Any())
         {
             albumTracks = albumSearch.Album.AlbumTracks;
         }
         else
         {
-            dbAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
             dbAlbum.Tracks = await this._spotifyService.GetExistingAlbumTracks(dbAlbum.Id);
 
             if (dbAlbum?.Tracks != null && dbAlbum.Tracks.Any())
@@ -914,7 +923,9 @@ public class AlbumBuilders
             ResponseType = ResponseType.Text,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId);
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -947,6 +958,7 @@ public class AlbumBuilders
 
     public async Task<ResponseModel> CoverAsync(
         ContextModel context,
+        UserSettingsModel userSettings,
         string searchValue)
     {
         var response = new ResponseModel
@@ -955,7 +967,7 @@ public class AlbumBuilders
         };
 
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            useCachedAlbums: false, userId: context.ContextUser.UserId);
+            useCachedAlbums: false, userId: context.ContextUser.UserId, interactionId: context.InteractionId);
         if (albumSearch.Album == null)
         {
             response.ResponseType = ResponseType.Embed;
@@ -1015,12 +1027,6 @@ public class AlbumBuilders
 
         response.Embed.WithDescription(description.ToString());
 
-        if (!context.SlashCommand)
-        {
-            response.EmbedFooter.WithText(
-                $"Album cover requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}");
-        }
-
         response.Embed.WithFooter(response.EmbedFooter);
         response.Stream = image;
         response.FileName =
@@ -1032,6 +1038,10 @@ public class AlbumBuilders
         await ChartService.OverwriteCache(cacheStream, cacheFilePath);
 
         await cacheStream.DisposeAsync();
+
+        response.Components = new ComponentBuilder()
+            .WithButton("Album", $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("💽"))
+            .WithButton($"Requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}", style: ButtonStyle.Secondary, disabled: true, customId: "0");
 
         return response;
     }
