@@ -215,11 +215,11 @@ public class TimeService
 
     private static string CacheKeyForTrack(string trackName, string artistName)
     {
-        return $"tr-l-{trackName}-{artistName}";
+        return $"tr-l-{trackName.Trim().Replace(" ", "")}-{artistName.Trim().Replace(" ", "")}";
     }
     private static string CacheKeyForArtist(string artistName)
     {
-        return $"at-l-avg-{artistName}";
+        return $"at-l-avg-{artistName.Trim().Replace(" ", "")}";
     }
 
     public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(IGuild discordGuild, List<UserPlay> userPlays, IDictionary<int, FullGuildUser> guildUsers)
