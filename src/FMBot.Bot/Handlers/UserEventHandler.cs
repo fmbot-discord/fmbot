@@ -89,6 +89,8 @@ public class UserEventHandler
 
     private async Task EntitlementCreated(SocketEntitlement entitlement)
     {
+        Statistics.DiscordEvents.WithLabels(nameof(EntitlementCreated)).Inc();
+
         if (entitlement.User.HasValue)
         {
             Log.Information("Entitlement created - {userId} - received event", entitlement.User.Value.Id);
