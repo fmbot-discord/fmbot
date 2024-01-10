@@ -690,7 +690,7 @@ public class SupporterService
 
     public async Task AddLatestDiscordSupporters()
     {
-        var discordSupporters = await this._discordSkuService.GetEntitlements(after: SnowflakeUtils.ToSnowflake(DateTime.UtcNow.AddDays(-2)));
+        var discordSupporters = await this._discordSkuService.GetEntitlements(after: SnowflakeUtils.ToSnowflake(DateTime.UtcNow.AddDays(-1)));
 
         await UpdateDiscordSupporters(discordSupporters);
     }

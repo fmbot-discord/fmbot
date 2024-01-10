@@ -155,7 +155,7 @@ public class TimerService
         RecurringJob.AddOrUpdate(nameof(UpdateMetrics), () => UpdateMetrics(), "* * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(AddLatestDiscordSupporters)}");
-        RecurringJob.AddOrUpdate(nameof(AddLatestDiscordSupporters), () => AddLatestDiscordSupporters(), "* * * * *");
+        RecurringJob.AddOrUpdate(nameof(AddLatestDiscordSupporters), () => AddLatestDiscordSupporters(), "*/5 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(CheckExpiredDiscordSupporters)}");
         RecurringJob.AddOrUpdate(nameof(CheckExpiredDiscordSupporters), () => CheckExpiredDiscordSupporters(), "0 8,18 * * *");
@@ -170,7 +170,7 @@ public class TimerService
         RecurringJob.AddOrUpdate(nameof(UpdateExistingOcSupporters), () => UpdateExistingOcSupporters(), "0 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(CheckDiscordSupportersUserType)}");
-        RecurringJob.AddOrUpdate(nameof(CheckDiscordSupportersUserType), () => CheckDiscordSupportersUserType(), "30 * * * *");
+        RecurringJob.AddOrUpdate(nameof(CheckDiscordSupportersUserType), () => CheckDiscordSupportersUserType(), "*/10 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(UpdateDiscogsUsers)}");
         RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");

@@ -34,6 +34,7 @@ public class UserEventHandler
         this._client.UserBanned += UserBanned;
         this._client.GuildMemberUpdated += GuildMemberUpdated;
         this._client.EntitlementCreated += EntitlementCreated;
+        this._client.EntitlementUpdated += EntitlementUpdated;
         this._botSettings = botSettings.Value;
     }
 
@@ -93,16 +94,21 @@ public class UserEventHandler
 
         if (entitlement.User.HasValue)
         {
-            Log.Information("Entitlement created - {userId} - received event", entitlement.User.Value.Id);
+            Log.Information("EntitlementCreated - {userId} - received event", entitlement.User.Value.Id);
 
-            var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
+            await this._supporterService.UpdateSingleDiscordSupporter(entitlement.User.Value.Id);
+        }
+    }
 
-            if (mainGuildConnected)
-            {
-                Log.Information("Entitlement created - {userId} - going through", entitlement.User.Value.Id);
+    private async Task EntitlementUpdated(Cacheable<SocketEntitlement, ulong> cacheable, SocketEntitlement entitlement)
+    {
+        Statistics.DiscordEvents.WithLabels(nameof(EntitlementCreated)).Inc();
 
-                await this._supporterService.UpdateSingleDiscordSupporter(entitlement.User.Value.Id);
-            }
+        if (entitlement.User.HasValue)
+        {
+            Log.Information("EntitlementUpdated - {userId} - received event", entitlement.User.Value.Id);
+
+            await this._supporterService.UpdateSingleDiscordSupporter(entitlement.User.Value.Id);
         }
     }
 
