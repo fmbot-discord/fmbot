@@ -9,6 +9,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace FMBot.Bot.Handlers;
 
@@ -88,11 +89,20 @@ public class UserEventHandler
 
     private async Task EntitlementCreated(SocketEntitlement entitlement)
     {
-        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
+        Statistics.DiscordEvents.WithLabels(nameof(EntitlementCreated)).Inc();
 
-        if (entitlement.User.HasValue && mainGuildConnected)
+        if (entitlement.User.HasValue)
         {
-            await this._supporterService.UpdateSingleDiscordSupporter(entitlement.User.Value.Id);
+            Log.Information("Entitlement created - {userId} - received event", entitlement.User.Value.Id);
+
+            var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
+
+            if (mainGuildConnected)
+            {
+                Log.Information("Entitlement created - {userId} - going through", entitlement.User.Value.Id);
+
+                await this._supporterService.UpdateSingleDiscordSupporter(entitlement.User.Value.Id);
+            }
         }
     }
 

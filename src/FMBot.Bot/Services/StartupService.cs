@@ -140,17 +140,49 @@ public class StartupService
         Log.Information("Preparing cache folder");
         PrepareCacheFolder();
 
-        foreach (var shard in this._client.Shards)
-        { 
-            Log.Information("ShardConnectionStart: shard #{shardId}", shard.ShardId);
-            await shard.StartAsync();
+        var gateway = await this._client.GetBotGatewayAsync();
+        Log.Information("ShardStarter: connects left {connectsLeft} - reset after {resetAfter}", gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter);
 
-            while (shard.ConnectionState != ConnectionState.Connected)
-            {
-                await Task.Delay(100);
-            }
-
+        var maxConcurrency = gateway.SessionStartLimit.MaxConcurrency;
+        if (maxConcurrency > 4)
+        {
+            maxConcurrency = 4;
         }
+
+        Log.Information("ShardStarter: max concurrency {maxConcurrency}, total shards {shardCount}", maxConcurrency, this._client.Shards.Count);
+
+        var connectTasks = new List<Task>();
+        var connectingShards = new List<int>();
+
+        foreach (var shard in this._client.Shards)
+        {
+            Log.Information("ShardConnectionStart: shard #{shardId}", shard.ShardId);
+
+            connectTasks.Add(shard.StartAsync());
+            connectingShards.Add(shard.ShardId);
+
+            if (connectTasks.Count >= maxConcurrency)
+            {
+                await Task.WhenAll(connectTasks);
+
+                while (this._client.Shards
+                       .Where(w => connectingShards.Contains(w.ShardId))
+                       .Any(a => a.ConnectionState != ConnectionState.Connected))
+                {
+                    await Task.Delay(100);
+                }
+
+                Log.Information("ShardStarter: All shards in group concurrently connected");
+                connectTasks = new();
+            }
+        }
+
+        Log.Information("ShardStarter: All connects started, waiting until all are connected");
+        while (this._client.Shards.Any(a => a.ConnectionState != ConnectionState.Connected))
+        {
+            await Task.Delay(100);
+        }
+        Log.Information("ShardStarter: Done");
 
         await this._timerService.UpdateStatus();
         await this._timerService.UpdateHealthCheck();
@@ -224,7 +256,7 @@ public class StartupService
 
         if (!string.IsNullOrWhiteSpace(ConfigData.Data.Shards?.InstanceName))
         {
-            options.AdditionalLabels= new List<Tuple<string, string>>()
+            options.AdditionalLabels = new List<Tuple<string, string>>()
             {
                 new("instance", ConfigData.Data.Shards.InstanceName)
             };
