@@ -102,7 +102,7 @@ public class UserEventHandler
 
     private async Task EntitlementUpdated(Cacheable<SocketEntitlement, ulong> cacheable, SocketEntitlement entitlement)
     {
-        Statistics.DiscordEvents.WithLabels(nameof(EntitlementCreated)).Inc();
+        Statistics.DiscordEvents.WithLabels(nameof(EntitlementUpdated)).Inc();
 
         if (entitlement.User.HasValue)
         {
