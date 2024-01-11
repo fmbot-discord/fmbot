@@ -1015,6 +1015,26 @@ public class SupporterService
         }
     }
 
+    public async Task AddRoleToNewSupporters()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var dateFilter = DateTime.UtcNow.AddHours(-1);
+        var newSupporters = await db.Supporters
+            .AsQueryable()
+            .Where(w =>
+                w.DiscordUserId != null &&
+                w.SubscriptionType == SubscriptionType.Discord &&
+                w.Expired != true &&
+                w.Created >= dateFilter)
+            .ToListAsync();
+
+        foreach (var newSupporter in newSupporters)
+        {
+            await ModifyGuildRole(newSupporter.DiscordUserId.Value);
+        }
+    }
+
     public async Task ModifyGuildRole(ulong discordUserId, bool add = true)
     {
         var baseGuild = await this._client.Rest.GetGuildAsync(this._botSettings.Bot.BaseServerId);
@@ -1026,25 +1046,33 @@ public class SupporterService
                 var guildUser = await baseGuild.GetUserAsync(discordUserId);
                 if (guildUser != null)
                 {
-                    var role = baseGuild.Roles.FirstOrDefault(x => x.Name == "Supporter");
+                    var supporterRole = baseGuild.Roles.FirstOrDefault(x => x.Name == "Supporter");
 
-                    if (add)
+                    if (add && supporterRole != null)
                     {
-                        await guildUser.AddRoleAsync(role, new RequestOptions
+                        if (guildUser.RoleIds.All(a => a != supporterRole.Id))
+                        {
+                            await guildUser.AddRoleAsync(supporterRole, new RequestOptions
+                            {
+                                AuditLogReason = "Automated supporter integration"
+                            });
+
+                            Log.Information("Modifying supporter role succeeded for {id} - added", discordUserId);
+
+                            return;
+                        }
+                    }
+                    else if (supporterRole != null)
+                    {
+                        await guildUser.RemoveRoleAsync(supporterRole, new RequestOptions
                         {
                             AuditLogReason = "Automated supporter integration"
                         });
-                    }
-                    else
-                    {
-                        await guildUser.RemoveRoleAsync(role, new RequestOptions
-                        {
-                            AuditLogReason = "Automated supporter integration"
-                        });
-                    }
 
-                    Log.Information("Modifying supporter role succeeded for {id}", discordUserId);
-                    return;
+                        Log.Information("Modifying supporter role succeeded for {id} - removed", discordUserId);
+
+                        return;
+                    }
                 }
             }
             catch (Exception e)
