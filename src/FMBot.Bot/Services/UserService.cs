@@ -38,6 +38,7 @@ public class UserService
     private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
+    private readonly FriendsService _friendsService;
 
     public UserService(IMemoryCache cache,
         IDbContextFactory<FMBotDbContext> contextFactory,
@@ -47,7 +48,8 @@ public class UserService
         PlayService playService,
         WhoKnowsArtistService whoKnowsArtistService,
         WhoKnowsAlbumService whoKnowsAlbumService,
-        WhoKnowsTrackService whoKnowsTrackService)
+        WhoKnowsTrackService whoKnowsTrackService,
+        FriendsService friendsService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
@@ -57,6 +59,7 @@ public class UserService
         this._whoKnowsArtistService = whoKnowsArtistService;
         this._whoKnowsAlbumService = whoKnowsAlbumService;
         this._whoKnowsTrackService = whoKnowsTrackService;
+        this._friendsService = friendsService;
         this._botSettings = botSettings.Value;
     }
 
@@ -1227,7 +1230,7 @@ public class UserService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var inactiveUsers = await db.InactiveUsers
             .AsQueryable()
-            .Where(w => w.MissingParametersErrorCount >= 1 && w.Updated > DateTime.UtcNow.AddDays(-3))
+            .Where(w => w.MissingParametersErrorCount >= 1 && w.Updated > DateTime.UtcNow.AddDays(-7))
             .ToListAsync();
 
         foreach (var inactiveUser in inactiveUsers)
@@ -1235,13 +1238,15 @@ public class UserService
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.UserId == inactiveUser.UserId &&
-                                          (f.LastUsed == null || f.LastUsed < DateTime.UtcNow.AddDays(-30)) &&
-                                          string.IsNullOrWhiteSpace(f.SessionKeyLastFm));
+                                          (f.LastUsed == null || f.LastUsed < DateTime.UtcNow.AddDays(-30)));
 
             if (user != null)
             {
                 if (!await this._dataSourceFactory.LastFmUserExistsAsync(user.UserNameLastFM))
                 {
+                    await this._friendsService.RemoveAllFriendsAsync(user.UserId);
+                    await this._friendsService.RemoveUserFromOtherFriendsAsync(user.UserId);
+
                     await DeleteUser(user.UserId);
                     Log.Information("DeleteInactiveUsers: User {userNameLastFm} | {userId} | {discordUserId} deleted", user.UserNameLastFM, user.UserId, user.DiscordUserId);
                     deletedInactiveUsers++;
