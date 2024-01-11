@@ -130,17 +130,17 @@ public class StaticCommands : BaseCommandModule
         var embedDescription = new StringBuilder();
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        embedDescription.AppendLine(".fmbot is open-source, non-profit and maintained by volunteers.");
+        embedDescription.AppendLine(".fmbot is a source-available Discord bot.");
         embedDescription.AppendLine("The bot is written in C#, uses .NET 8 and Discord.Net.");
 
         this._embed.WithDescription(embedDescription.ToString());
 
         this._embed.AddField("Links",
-            "[Main repository](https://github.com/fmbot-discord/fmbot/)\n" +
+            "[Main GitHub repository](https://github.com/fmbot-discord/fmbot/)\n" +
             "[Docs repository](https://github.com/fmbot-discord/docs)\n" +
             "[File an issue](https://github.com/fmbot-discord/fmbot/issues/new/choose)\n" +
-            "[Development instructions](https://fmbot.xyz/setup/)\n" +
-            "[OpenCollective](https://opencollective.com/fmbot)");
+            "[Development](https://fmbot.xyz/setup/)\n" +
+            "[Supporter](https://fmbot.xyz/supporter)");
 
         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         this.Context.LogCommandUsed();
