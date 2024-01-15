@@ -27,11 +27,11 @@ public class TimeService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<TimeSpan> GetPlayTimeForPlays(IEnumerable<UserPlay> plays)
+    public async Task<TimeSpan> GetPlayTimeForPlays(IEnumerable<UserPlay> plays, long? defaultTrackLength = null)
     {
         await CacheAllTrackLengths();
 
-        var totalMs = plays.Sum(userPlay => GetTrackLengthForTrack(userPlay.ArtistName, userPlay.TrackName));
+        var totalMs = plays.Sum(userPlay => GetTrackLengthForTrack(userPlay.ArtistName, userPlay.TrackName, defaultTrackLength));
 
         return TimeSpan.FromMilliseconds(totalMs);
     }
@@ -55,7 +55,7 @@ public class TimeService
         return TimeSpan.FromMilliseconds(timeListened);
     }
 
-    public long GetTrackLengthForTrack(string artistName, string trackName)
+    public long GetTrackLengthForTrack(string artistName, string trackName, long? defaultTrackLength = null)
     {
         var trackLength = (long?)this._cache.Get(CacheKeyForTrack(trackName.ToLower(), artistName.ToLower()));
 
@@ -66,7 +66,7 @@ public class TimeService
 
         var avgArtistTrackLength = (long?)this._cache.Get(CacheKeyForArtist(artistName.ToLower()));
 
-        return avgArtistTrackLength ?? 210000;
+        return avgArtistTrackLength ?? defaultTrackLength ?? 210000;
     }
 
     public async Task<TimeSpan> GetAllTimePlayTimeForAlbum(List<AlbumTrack> albumTracks, List<UserTrack> userTracks, long totalPlaycount, TopTimeListened topTimeListened = null)

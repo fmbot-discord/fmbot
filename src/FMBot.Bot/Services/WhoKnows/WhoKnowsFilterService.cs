@@ -51,7 +51,7 @@ public class WhoKnowsFilterService
 
                 foreach (var user in userPlays)
                 {
-                    var timeListened = await this._timeService.GetPlayTimeForPlays(user.Value);
+                    var timeListened = await this._timeService.GetPlayTimeForPlays(user.Value, 60000);
 
                     if (timeListened.TotalHours >= MaxAmountOfHoursPerPeriod)
                     {
