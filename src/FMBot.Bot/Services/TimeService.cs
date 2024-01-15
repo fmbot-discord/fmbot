@@ -27,11 +27,11 @@ public class TimeService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<TimeSpan> GetPlayTimeForPlays(IEnumerable<UserPlay> plays, long? defaultTrackLength = null)
+    public async Task<TimeSpan> GetPlayTimeForPlays(IEnumerable<UserPlay> plays, bool adjustForBans = false)
     {
         await CacheAllTrackLengths();
 
-        var totalMs = plays.Sum(userPlay => GetTrackLengthForTrack(userPlay.ArtistName, userPlay.TrackName, defaultTrackLength));
+        var totalMs = plays.Sum(userPlay => GetTrackLengthForTrack(userPlay.ArtistName, userPlay.TrackName, adjustForBans));
 
         return TimeSpan.FromMilliseconds(totalMs);
     }
@@ -55,7 +55,7 @@ public class TimeService
         return TimeSpan.FromMilliseconds(timeListened);
     }
 
-    public long GetTrackLengthForTrack(string artistName, string trackName, long? defaultTrackLength = null)
+    public long GetTrackLengthForTrack(string artistName, string trackName, bool adjustForBans = false)
     {
         var trackLength = (long?)this._cache.Get(CacheKeyForTrack(trackName.ToLower(), artistName.ToLower()));
 
@@ -66,7 +66,19 @@ public class TimeService
 
         var avgArtistTrackLength = (long?)this._cache.Get(CacheKeyForArtist(artistName.ToLower()));
 
-        return avgArtistTrackLength ?? defaultTrackLength ?? 210000;
+        var avgOverallLength = 210000;
+
+        if (adjustForBans)
+        {
+            if (avgArtistTrackLength is > 120000)
+            {
+                avgArtistTrackLength -= 60000;
+            }
+
+            avgOverallLength = 60000;
+        }
+
+        return avgArtistTrackLength ?? avgOverallLength;
     }
 
     public async Task<TimeSpan> GetAllTimePlayTimeForAlbum(List<AlbumTrack> albumTracks, List<UserTrack> userTracks, long totalPlaycount, TopTimeListened topTimeListened = null)
