@@ -29,10 +29,9 @@ internal class GreenBotMusicBot : MusicBot
         }
 
         var description = embed.Description ?? string.Empty;
-        var songDetails = description.Split(new string[] { " by " }, StringSplitOptions.None);
+        var songDetails = description.Split(" by ", StringSplitOptions.None);
 
-        if (
-            songDetails.Length < 2)
+        if (songDetails.Length < 2)
         {
             return string.Empty; 
         }
