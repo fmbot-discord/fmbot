@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Discord;
 using Discord.WebSocket;
+using System.Text.RegularExpressions; 
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -33,16 +34,16 @@ internal class GreenBotMusicBot : MusicBot
         }
 
         var description = embed.Description ?? string.Empty;
-        var songDetails = description.Split(" by ", StringSplitOptions.None);
+        var matches = Regex.Matches(description, @"\[(.*?)\]\(.*?\)");
 
-        if (songDetails.Length < 2)
+        if (matches.Count < 2)
         {
             return string.Empty; 
         }
 
-        var songName = songDetails[0].Trim();
-        var author = songDetails[1].Trim();
+        var songName = matches[0].Groups[1].Value.Trim();
+        var artist = matches[1].Groups[1].Value.Trim();
 
-        return $"{songName} - {author}";
+        return $"{songName} - {artist}";
     }
 }
