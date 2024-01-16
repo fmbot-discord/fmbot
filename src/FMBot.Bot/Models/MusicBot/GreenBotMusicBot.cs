@@ -8,6 +8,10 @@ namespace FMBot.Bot.Models.MusicBot;
 internal class GreenBotMusicBot : MusicBot
 {
     private const string NowPlayingStatus = "- Now Playing";
+    public GreenBotMusicBot() : base("Green-bot", true)
+    {
+    }
+
     public override bool ShouldIgnoreMessage(IUserMessage msg)
     {
         var embed = msg.Embeds.FirstOrDefault();
