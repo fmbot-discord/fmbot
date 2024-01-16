@@ -16,7 +16,9 @@ public abstract class MusicBot
     {
         new JockieMusicBot(),
         new CakeyBotMusicBot(),
-        new SoundCloudMusicBot()
+        new SoundCloudMusicBot(),
+        new GreenBotMusicBot(),
+        new BettyMusicBot()
     };
 
     protected MusicBot(string name, bool possiblyIncludesLinks = true, bool skipUploaderName = false)
