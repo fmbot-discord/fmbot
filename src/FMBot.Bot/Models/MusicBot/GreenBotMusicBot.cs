@@ -9,7 +9,7 @@ namespace FMBot.Bot.Models.MusicBot;
 internal class GreenBotMusicBot : MusicBot
 {
     private const string NowPlayingStatus = "- Now Playing";
-    public GreenBotMusicBot() : base("Green-bot", true)
+    public GreenBotMusicBot() : base("Green-bot", false)
     {
     }
 
@@ -44,6 +44,6 @@ internal class GreenBotMusicBot : MusicBot
         var songName = matches[0].Groups[1].Value.Trim();
         var artist = matches[1].Groups[1].Value.Trim();
 
-        return $"{songName} - {artist}";
+        return $"{artist} - {songName}";
     }
 }
