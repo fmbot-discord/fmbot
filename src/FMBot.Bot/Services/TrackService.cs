@@ -291,7 +291,7 @@ public class TrackService
         return trackInfo;
     }
 
-    public async Task<TrackSearchResult> GetTrackFromLink(string description, bool possiblyContainsLinks = true, bool skipUploaderName = false)
+    public async Task<TrackSearchResult> GetTrackFromLink(string description, bool possiblyContainsLinks = true, bool skipUploaderName = false, bool trackNameFirst = false)
     {
         try
         {
@@ -377,6 +377,11 @@ public class TrackService
                 {
                     artistName = splitDesc[1];
                     trackName = splitDesc[2];
+                }
+                else if (trackNameFirst)
+                {
+                    artistName = splitDesc[1];
+                    trackName = splitDesc[0];
                 }
                 else
                 {
