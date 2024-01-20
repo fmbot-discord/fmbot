@@ -384,7 +384,7 @@ public class AlbumService
         var freshTopAlbums = (await AlbumRepository.GetUserAlbums(userId, connection))
             .Select(s => new TopAlbum()
             {
-                ArtistName = s.Name,
+                ArtistName = s.ArtistName,
                 AlbumName = s.Name,
                 UserPlaycount = s.Playcount
             })
