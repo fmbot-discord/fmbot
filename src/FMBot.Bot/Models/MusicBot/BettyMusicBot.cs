@@ -8,7 +8,7 @@ namespace FMBot.Bot.Models.MusicBot;
 internal class BettyMusicBot : MusicBot
 {
     private const string NowPlaying = "・Now Playing";
-    public BettyMusicBot() : base("Betty", true)
+    public BettyMusicBot() : base("Betty", false, trackNameFirst: true)
     {
     }
 

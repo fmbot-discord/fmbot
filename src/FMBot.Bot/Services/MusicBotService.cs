@@ -69,7 +69,7 @@ public class MusicBotService
             }
 
             var trackDescription = musicBot.GetTrackQuery(msg);
-            var trackResult = await this._trackService.GetTrackFromLink(trackDescription, musicBot.PossiblyIncludesLinks, musicBot.SkipUploaderName);
+            var trackResult = await this._trackService.GetTrackFromLink(trackDescription, musicBot.PossiblyIncludesLinks, musicBot.SkipUploaderName, musicBot.TrackNameFirst);
             if (trackResult == null)
             {
                 Log.Information("BotScrobbling({botName}): Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", musicBot.Name, usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);

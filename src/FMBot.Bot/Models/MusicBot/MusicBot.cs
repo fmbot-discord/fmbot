@@ -12,6 +12,8 @@ public abstract class MusicBot
 
     public bool SkipUploaderName { get; }
 
+    public bool TrackNameFirst { get; }
+
     public static IEnumerable<MusicBot> SupportedBots { get; } = new List<MusicBot>
     {
         new JockieMusicBot(),
@@ -21,11 +23,12 @@ public abstract class MusicBot
         new BettyMusicBot()
     };
 
-    protected MusicBot(string name, bool possiblyIncludesLinks = true, bool skipUploaderName = false)
+    protected MusicBot(string name, bool possiblyIncludesLinks = true, bool skipUploaderName = false, bool trackNameFirst = false)
     {
         this.Name = name;
         this.PossiblyIncludesLinks = possiblyIncludesLinks;
         this.SkipUploaderName = skipUploaderName;
+        this.TrackNameFirst = trackNameFirst;
     }
 
     public bool IsAuthor(SocketUser user)
