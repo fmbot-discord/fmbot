@@ -255,8 +255,6 @@ public class Startup
         services.AddMemoryCache();
     }
 
-    public delegate IPlayDataSourceRepository ServiceResolver(DataSource key);
-
     private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         if (Log.Logger != null && e.ExceptionObject is Exception exception)

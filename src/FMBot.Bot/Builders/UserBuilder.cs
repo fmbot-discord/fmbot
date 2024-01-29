@@ -742,6 +742,8 @@ public class UserBuilder
             }
         }
 
+        var featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId);
+
         var footer = new StringBuilder();
         if (user.Friends?.Count > 0)
         {
@@ -750,6 +752,11 @@ public class UserBuilder
         if (user.FriendedByUsers?.Count > 0)
         {
             footer.AppendLine($"Befriended by: {user.FriendedByUsers?.Count}");
+        }
+        if (featuredHistory.Count >= 1)
+        {
+            var times = featuredHistory.Count == 1 ? "time" : "times";
+            footer.AppendLine($"Got featured in .fmbot {featuredHistory.Count} {times}");
         }
         if (footer.Length > 0)
         {

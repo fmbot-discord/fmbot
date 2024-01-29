@@ -103,7 +103,7 @@ public class AdminCommands : BaseCommandModule
     //public async Task DebugAsync(IUser user = null)
     //{
     //    var chosenUser = user ?? this.Context.Message.Author;
-    //    var userSettings = await this._userService.GetFullUserAsync(chosenUser);
+    //    var userSettings = await this._userService.GetFullUserAsync(chosenUser.Id);
 
     //    if (userSettings?.UserNameLastFM == null)
     //    {
@@ -114,34 +114,10 @@ public class AdminCommands : BaseCommandModule
 
     //    this._embed.WithTitle($"Debug for {chosenUser.ToString()}");
 
-    //    var description = "";
-    //    foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(userSettings))
-    //    {
-    //        var name = descriptor.Name;
-    //        var value = descriptor.GetValue(userSettings);
-
-    //        if (descriptor.PropertyType.Name == "ICollection`1")
-    //        {
-    //            continue;
-    //        }
-
-    //        if (value != null)
-    //        {
-    //            description += $"{name}: `{value}` \n";
-    //        }
-    //        else
-    //        {
-    //            description += $"{name}: null \n";
-    //        }
-    //    }
-
-    //    description += $"Friends: `{userSettings.Friends.Count}`\n";
-    //    description += $"Befriended by: `{userSettings.FriendedByUsers.Count}`\n";
-    //    //description += $"Indexed artists: `{userSettings.Artists.Count}`";
-    //    //description += $"Indexed albums: `{userSettings.Albums.Count}`";
-    //    //description += $"Indexed tracks: `{userSettings.Tracks.Count}`";
+    //    var description = new StringBuilder();
 
     //    this._embed.WithDescription(description);
+    //    this._embed.WithFooter("")
     //    await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
     //    this.Context.LogCommandUsed();
     //}
