@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Webhook;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
@@ -8,6 +9,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -84,6 +86,20 @@ public class UserEventHandler
             if (user is { UserType: UserType.Supporter })
             {
                 await this._supporterService.ModifyGuildRole(socketGuildUser.Id);
+            }
+
+            if (user == null)
+            {
+                var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
+                var embed = new EmbedBuilder();
+
+                embed.WithTitle("User without .fmbot account joined");
+                embed.WithDescription($"<@{socketGuildUser.Id}> - `{socketGuildUser.Username}` - **{socketGuildUser.DisplayName}**");
+                embed.WithCurrentTimestamp();
+                embed.WithFooter($"{socketGuildUser.Id}");
+
+                await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
             }
         }
     }
