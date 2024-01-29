@@ -302,7 +302,8 @@ public class PlayService
         return await db.UserStreaks
             .Where(w => w.UserId == userId)
             .Where(w => w.ArtistName != null || w.AlbumName != null || w.TrackName != null)
-            .OrderByDescending(o => o.ArtistPlaycount)
+            .OrderByDescending(o => o.ArtistPlaycount.HasValue)
+            .ThenByDescending(o => o.ArtistPlaycount)
             .ToListAsync();
     }
 
