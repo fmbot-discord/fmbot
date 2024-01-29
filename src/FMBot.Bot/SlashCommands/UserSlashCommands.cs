@@ -342,7 +342,7 @@ public class UserSlashCommands : InteractionModuleBase
                     globalStatus.AppendLine("You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
                                             "We moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
                 }
-                else if (filteredUser != null && filteredUser.Created > DateTime.UtcNow.AddMonths(-3))
+                else if (filteredUser != null && (filteredUser.OccurrenceEnd ?? filteredUser.Created) > DateTime.UtcNow.AddMonths(-3))
                 {
                     switch (filteredUser.Reason)
                     {
