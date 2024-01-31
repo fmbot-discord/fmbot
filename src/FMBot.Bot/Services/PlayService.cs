@@ -866,7 +866,7 @@ public class PlayService
             }
             else
             {
-                plays = await PlayRepository.GetAllUserPlays(userId, connection);
+                plays = await PlayRepository.GetUserPlays(userId, connection, DataSource.LastFm);
             }
         }
         else
