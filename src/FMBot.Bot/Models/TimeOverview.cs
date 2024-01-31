@@ -7,12 +7,6 @@ namespace FMBot.Bot.Models;
 
 public class DailyOverview
 {
-    public int Uniques { get; set; }
-
-    public int Playcount { get; set; }
-
-    public double AvgPerDay { get; set; }
-
     public List<DayOverview> Days { get; set; }
 }
 

@@ -655,9 +655,11 @@ public class PlayBuilder
         await this._updateService.UpdateUser(context.ContextUser);
 
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById(userSettings.TimeZone ?? "Eastern Standard Time");
-        var week = await this._playService.GetDailyOverview(userSettings.UserId, timeZone, amount);
 
-        if (week == null)
+        var limit = SupporterService.IsSupporter(userSettings.UserType) ? 99999 : 30;
+        var dailyOverview = await this._playService.GetDailyOverview(userSettings.UserId, timeZone, limit);
+
+        if (dailyOverview == null)
         {
             response.ResponseType = ResponseType.Text;
             response.Text = "Sorry, we don't have plays for this user in the selected amount of days.";
@@ -665,58 +667,76 @@ public class PlayBuilder
             return response;
         }
 
-        var description = new StringBuilder();
-
-        foreach (var day in week.Days.OrderByDescending(o => o.Date))
-        {
-            var genreString = new StringBuilder();
-            if (day.TopGenres != null && day.TopGenres.Any())
-            {
-                for (var i = 0; i < day.TopGenres.Count; i++)
-                {
-                    if (i != 0)
-                    {
-                        genreString.Append(" - ");
-                    }
-
-                    var genre = day.TopGenres[i];
-                    genreString.Append($"{genre}");
-                }
-            }
-
-            response.Embed.AddField(
-                $"<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D> - " +
-                $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} - " +
-                $"{day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)}",
-                $"{genreString}\n" +
-                $"{day.TopArtist}\n" +
-                $"{day.TopAlbum}\n" +
-                $"{day.TopTrack}\n"
-            );
-        }
-
-        response.Embed.WithDescription(description.ToString());
+        var dayPages = dailyOverview.Days.Chunk(amount).ToList();
 
         response.EmbedAuthor.WithName($"Daily overview for {StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}");
-
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS");
-        response.Embed.WithAuthor(response.EmbedAuthor);
 
-        var footer = new StringBuilder();
-
-        footer.AppendLine($"Top genres, artist, album and track for last {amount} days");
-
-        if (week.Days.Count < amount)
+        var pageCounter = 1;
+        var pages = new List<PageBuilder>();
+        foreach (var days in dayPages)
         {
-            footer.AppendLine($"{amount - week.Days.Count} days not shown because of no plays.");
+            var plays = new List<UserPlay>();
+
+            foreach (var day in days.OrderByDescending(o => o.Date))
+            {
+                var genreString = new StringBuilder();
+                if (day.TopGenres != null && day.TopGenres.Any())
+                {
+                    for (var i = 0; i < day.TopGenres.Count; i++)
+                    {
+                        if (i != 0)
+                        {
+                            genreString.Append(" - ");
+                        }
+
+                        var genre = day.TopGenres[i];
+                        genreString.Append($"{genre}");
+                    }
+                }
+
+                response.Embed.AddField(
+                    $"<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D> - " +
+                    $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} - " +
+                    $"{day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)}",
+                    $"{genreString}\n" +
+                    $"{day.TopArtist}\n" +
+                    $"{day.TopAlbum}\n" +
+                    $"{day.TopTrack}\n"
+                );
+
+                plays.AddRange(day.Plays);
+            }
+
+            var pageFooter = new StringBuilder();
+
+            pageFooter.AppendLine($"Page {pageCounter}/{dayPages.Count}");
+            pageFooter.AppendLine($"Top genres, artist, album and track per {amount} days");
+            pageFooter.AppendLine(
+                $"{PlayService.GetUniqueCount(plays)} unique tracks - {plays.Count} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(plays), 1)} per day");
+
+            if (days.Count() < amount)
+            {
+                pageFooter.AppendLine($"{amount - days.Count()} days not shown because of no plays.");
+            }
+
+            pages.Add(new PageBuilder()
+                .WithFields(response.Embed.Fields)
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(pageFooter.ToString()));
+            pageCounter++;
+            response.Embed.Fields = new();
         }
 
-        footer.AppendLine(
-            $"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 1)} per day");
-
-        response.EmbedFooter.WithText(footer.ToString());
-        response.Embed.WithFooter(response.EmbedFooter);
-
+        if (SupporterService.IsSupporter(userSettings.UserType))
+        {
+            response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        }
+        else
+        {
+            response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        }
+        response.ResponseType = ResponseType.Paginator;
         return response;
     }
 

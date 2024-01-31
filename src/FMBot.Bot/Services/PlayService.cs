@@ -77,9 +77,6 @@ public class PlayService
                         TopAlbum = GetTopAlbumForPlays(s.ToList()),
                         TopArtist = GetTopArtistForPlays(s.ToList()),
                     }).Take(amountOfDays).ToList(),
-                Playcount = plays.Count,
-                Uniques = GetUniqueCount(plays.ToList()),
-                AvgPerDay = GetAvgPerDayCount(plays.ToList()),
             };
 
             foreach (var day in overview.Days.Where(w => w.Plays.Any()))
@@ -204,14 +201,14 @@ public class PlayService
         return yearOverview;
     }
 
-    private static int GetUniqueCount(IEnumerable<UserPlay> plays)
+    public static int GetUniqueCount(IEnumerable<UserPlay> plays)
     {
         return plays
             .GroupBy(x => new { x.ArtistName, x.TrackName })
             .Count();
     }
 
-    private static double GetAvgPerDayCount(IEnumerable<UserPlay> plays)
+    public static double GetAvgPerDayCount(IEnumerable<UserPlay> plays)
     {
         return plays
             .GroupBy(g => g.TimePlayed.Date)
