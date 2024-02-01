@@ -96,7 +96,7 @@ public class PlaySlashCommands : InteractionModuleBase
         {
             if (message != null && response.CommandResponse == CommandResponse.Ok)
             {
-                if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any())
+                if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
                 {
                     await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
                 }
