@@ -44,6 +44,7 @@ public class AlbumBuilders
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly PuppeteerService _puppeteerService;
     private readonly WhoKnowsService _whoKnowsService;
+    private readonly FeaturedService _featuredService;
 
     public AlbumBuilders(UserService userService,
         GuildService guildService,
@@ -59,7 +60,9 @@ public class AlbumBuilders
         SupporterService supporterService,
         IIndexService indexService,
         WhoKnowsPlayService whoKnowsPlayService,
-        PuppeteerService puppeteerService, WhoKnowsService whoKnowsService)
+        PuppeteerService puppeteerService,
+        WhoKnowsService whoKnowsService,
+        FeaturedService featuredService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -77,6 +80,7 @@ public class AlbumBuilders
         this._whoKnowsPlayService = whoKnowsPlayService;
         this._puppeteerService = puppeteerService;
         this._whoKnowsService = whoKnowsService;
+        this._featuredService = featuredService;
     }
 
     public async Task<ResponseModel> AlbumAsync(ContextModel context,
@@ -136,6 +140,12 @@ public class AlbumBuilders
 
         var footer = new StringBuilder();
 
+        var featuredHistory = await this._featuredService.GetAlbumFeaturedHistory(albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+        if (featuredHistory.Any())
+        {
+            footer.AppendLine($"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
+        }
+
         if (databaseAlbum?.Label != null)
         {
             footer.AppendLine($"Label: {databaseAlbum.Label}");
@@ -143,7 +153,7 @@ public class AlbumBuilders
 
         if (context.ContextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 10)
         {
-            footer.AppendLine($"{(decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your scrobbles are on this album");
+            footer.AppendLine($"{(decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your plays are on this album");
         }
 
         if (footer.Length > 0)

@@ -755,8 +755,7 @@ public class UserBuilder
         }
         if (featuredHistory.Count >= 1)
         {
-            var times = featuredHistory.Count == 1 ? "time" : "times";
-            footer.AppendLine($"Got featured in .fmbot {featuredHistory.Count} {times}");
+            footer.AppendLine($"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
         }
         if (footer.Length > 0)
         {

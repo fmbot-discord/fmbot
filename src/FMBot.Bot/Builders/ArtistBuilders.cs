@@ -50,6 +50,7 @@ public class ArtistBuilders
     private readonly GenreService _genreService;
     private readonly DiscogsService _discogsService;
     private readonly CensorService _censorService;
+    private readonly FeaturedService _featuredService;
 
     public ArtistBuilders(ArtistsService artistsService,
         IDataSourceFactory dataSourceFactory,
@@ -69,7 +70,8 @@ public class ArtistBuilders
         CountryService countryService,
         GenreService genreService,
         DiscogsService discogsService,
-        CensorService censorService)
+        CensorService censorService,
+        FeaturedService featuredService)
     {
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
@@ -90,6 +92,7 @@ public class ArtistBuilders
         this._genreService = genreService;
         this._discogsService = discogsService;
         this._censorService = censorService;
+        this._featuredService = featuredService;
     }
 
     public async Task<ResponseModel> ArtistInfoAsync(ContextModel context,
@@ -113,6 +116,14 @@ public class ArtistBuilders
         var fullArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled, true);
 
         var footer = new StringBuilder();
+        
+
+        var featuredHistory = await this._featuredService.GetArtistFeaturedHistory(artistSearch.Artist.ArtistName);
+        if (featuredHistory.Any())
+        {
+            footer.AppendLine($"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
+        }
+
         if (fullArtist.SpotifyImageUrl != null)
         {
             response.Embed.WithThumbnailUrl(fullArtist.SpotifyImageUrl);
@@ -121,7 +132,7 @@ public class ArtistBuilders
 
         if (context.ContextUser.TotalPlaycount.HasValue && artistSearch.Artist.UserPlaycount is >= 10)
         {
-            footer.AppendLine($"{(decimal)artistSearch.Artist.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your scrobbles are on this artist");
+            footer.AppendLine($"{(decimal)artistSearch.Artist.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your plays are on this artist");
         }
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);

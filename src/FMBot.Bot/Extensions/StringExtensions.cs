@@ -222,6 +222,11 @@ public static class StringExtensions
         return items == 1 ? "item" : "items";
     }
 
+    public static string GetTimesString(long? times)
+    {
+        return times == 1 ? "time" : "times";
+    }
+
     public static string GetChangeString(decimal oldValue, decimal newValue)
     {
         if (oldValue < newValue)

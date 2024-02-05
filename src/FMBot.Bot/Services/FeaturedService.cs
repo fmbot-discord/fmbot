@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
@@ -13,6 +14,8 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using Npgsql;
 using Serilog;
 
 namespace FMBot.Bot.Services;
@@ -25,11 +28,16 @@ public class FeaturedService
     private readonly CensorService _censorService;
     private readonly UserService _userService;
     private readonly IMemoryCache _cache;
+    private readonly BotSettings _botSettings;
 
     public FeaturedService(IDataSourceFactory dataSourceFactory,
         IDbContextFactory<FMBotDbContext> contextFactory,
         CensorService censorService,
-        UserService userService, IMemoryCache cache, ILastfmRepository lastfmRepository)
+        UserService userService,
+        IMemoryCache cache,
+        ILastfmRepository lastfmRepository,
+        IOptions<BotSettings> botSettings
+    )
     {
         this._dataSourceFactory = dataSourceFactory;
         this._contextFactory = contextFactory;
@@ -37,6 +45,7 @@ public class FeaturedService
         this._userService = userService;
         this._cache = cache;
         this._lastfmRepository = lastfmRepository;
+        this._botSettings = botSettings.Value;
     }
 
     public async Task<FeaturedLog> NewFeatured(DateTime? dateTime = null)
@@ -268,6 +277,44 @@ public class FeaturedService
             .OrderByDescending(o => o.DateTime)
             .Take(240)
             .ToListAsync();
+    }
+
+    public async Task<List<FeaturedLog>> GetTrackFeaturedHistory(string artistName, string trackName)
+    {
+        var artistHistory = await GetArtistFeaturedHistory(artistName);
+
+        return artistHistory
+            .Where(w =>
+                w.TrackName != null &&
+                string.Equals(w.TrackName, trackName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    public async Task<List<FeaturedLog>> GetAlbumFeaturedHistory(string artistName, string albumName)
+    {
+        var artistHistory = await GetArtistFeaturedHistory(artistName);
+
+        return artistHistory
+            .Where(w =>
+                w.AlbumName != null &&
+                string.Equals(w.AlbumName, albumName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    public async Task<List<FeaturedLog>> GetArtistFeaturedHistory(string artistName)
+    {
+        const string sql = "SELECT * FROM public.featured_logs where UPPER(artist_name) = UPPER(@artistName) ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var query = await connection.QueryAsync<FeaturedLog>(sql, new
+        {
+            artistName
+        });
+
+        return query.ToList();
     }
 
     public async Task<List<FeaturedLog>> GetFeaturedHistoryForGuild(IDictionary<int, FullGuildUser> users)

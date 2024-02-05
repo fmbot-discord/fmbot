@@ -21,7 +21,6 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
-using Genius.Models.Song;
 using Serilog;
 using SkiaSharp;
 
@@ -47,6 +46,7 @@ public class TrackBuilders
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly DiscogsService _discogsService;
     private readonly ArtistsService _artistsService;
+    private readonly FeaturedService _featuredService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -65,7 +65,8 @@ public class TrackBuilders
         AlbumService albumService,
         WhoKnowsPlayService whoKnowsPlayService,
         DiscogsService discogsService,
-        ArtistsService artistsService)
+        ArtistsService artistsService,
+        FeaturedService featuredService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -85,6 +86,7 @@ public class TrackBuilders
         this._whoKnowsPlayService = whoKnowsPlayService;
         this._discogsService = discogsService;
         this._artistsService = artistsService;
+        this._featuredService = featuredService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -116,13 +118,13 @@ public class TrackBuilders
         response.Embed.WithAuthor(response.EmbedAuthor);
 
         var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(trackSearch.Track);
-        var leftStats = new StringBuilder();
-        var rightStats = new StringBuilder();
+        var stats = new StringBuilder();
+        var info = new StringBuilder();
         var footer = new StringBuilder();
 
-        leftStats.AppendLine($"`{trackSearch.Track.TotalListeners}` listeners");
-        leftStats.AppendLine($"`{trackSearch.Track.TotalPlaycount}` global {StringExtensions.GetPlaysString(trackSearch.Track.TotalPlaycount)}");
-        leftStats.AppendLine($"`{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} by you");
+        stats.AppendLine($"`{trackSearch.Track.TotalListeners}` listeners");
+        stats.AppendLine($"`{trackSearch.Track.TotalPlaycount}` global {StringExtensions.GetPlaysString(trackSearch.Track.TotalPlaycount)}");
+        stats.AppendLine($"`{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} by you");
 
         if (trackSearch.Track.UserPlaycount.HasValue)
         {
@@ -137,7 +139,7 @@ public class TrackBuilders
             var formattedTrackLength =
                 $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
 
-            rightStats.AppendLine($"`{formattedTrackLength}` duration");
+            info.AppendLine($"`{formattedTrackLength}` duration");
 
             if (trackSearch.Track.UserPlaycount > 1)
             {
@@ -145,25 +147,29 @@ public class TrackBuilders
                     await this._timeService.GetPlayTimeForTrackWithPlaycount(trackSearch.Track.ArtistName, trackSearch.Track.TrackName,
                         trackSearch.Track.UserPlaycount.GetValueOrDefault());
 
-                leftStats.AppendLine($"`{StringExtensions.GetLongListeningTimeString(listeningTime)}` spent listening");
+                stats.AppendLine($"`{StringExtensions.GetLongListeningTimeString(listeningTime)}` spent listening");
             }
         }
+
+        var audioFeatures = new StringBuilder();
+
 
         if (spotifyTrack != null && !string.IsNullOrEmpty(spotifyTrack.SpotifyId))
         {
             var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
 
-            rightStats.AppendLine($"`{pitch}` key");
+            info.AppendLine($"`{pitch}` key");
 
             if (spotifyTrack.Tempo.HasValue)
             {
                 var bpm = $"{spotifyTrack.Tempo.Value:0.0}";
-                rightStats.AppendLine($"`{bpm}` bpm");
+                info.AppendLine($"`{bpm}` bpm");
             }
 
             if (spotifyTrack.Danceability.HasValue && spotifyTrack.Energy.HasValue && spotifyTrack.Instrumentalness.HasValue &&
                 spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue && spotifyTrack.Liveness.HasValue && spotifyTrack.Valence.HasValue)
             {
+
                 var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
                 var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
                 var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
@@ -171,9 +177,14 @@ public class TrackBuilders
                 var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
                 var liveness = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
                 var valence = ((decimal)(spotifyTrack.Valence / 1)).ToString("0%");
-                footer.AppendLine($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
-                                  $"{instrumental} instrumental - {speechful} speechful - {liveness} liveness\n" +
-                                  $"{valence} valence (musical positiveness)");
+
+                audioFeatures.AppendLine($"`{danceability}` danceable");
+                audioFeatures.AppendLine($"`{energetic}` energetic");
+                audioFeatures.AppendLine($"`{acoustic}` acoustic");
+                audioFeatures.AppendLine($"`{instrumental}` instrumental");
+                audioFeatures.AppendLine($"`{speechful}` speechful");
+                audioFeatures.AppendLine($"`{liveness}` liveness");
+                audioFeatures.AppendLine($"`{valence}` happy");
             }
         }
 
@@ -200,9 +211,15 @@ public class TrackBuilders
             }
         }
 
+        var featuredHistory = await this._featuredService.GetTrackFeaturedHistory(trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+        if (featuredHistory.Any())
+        {
+            footer.AppendLine($"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
+        }
+
         if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 10)
         {
-            footer.AppendLine($"{(decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your scrobbles are on this track");
+            footer.AppendLine($"{(decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your plays are on this track");
         }
 
         if (footer.Length > 0)
@@ -210,11 +227,16 @@ public class TrackBuilders
             response.Embed.WithFooter(footer.ToString());
         }
 
-        response.Embed.AddField("Stats", leftStats.ToString(), true);
-
-        if (rightStats.Length > 0)
+        if (audioFeatures.Length > 0)
         {
-            response.Embed.AddField("Info", rightStats.ToString(), true);
+            response.Embed.AddField("Audio features", audioFeatures.ToString(), true);
+        }
+
+        response.Embed.AddField("Stats", stats.ToString(), true);
+
+        if (info.Length > 0)
+        {
+            response.Embed.AddField("Info", info.ToString(), true);
         }
 
         if (!string.IsNullOrWhiteSpace(trackSearch.Track.Description))
