@@ -71,10 +71,11 @@ public static class CommandContextExtensions
                 responseId = embed.Id;
                 break;
             case ResponseType.Paginator:
-                _ = await interactiveService.SendPaginatorAsync(
+                var paginator = await interactiveService.SendPaginatorAsync(
                     response.StaticPaginator,
                     context.Channel,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                responseId = paginator.Message.Id;
                 break;
             case ResponseType.ImageWithEmbed:
                 var imageEmbedFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
