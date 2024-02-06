@@ -173,10 +173,12 @@ public class UserBuilder
                                     "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
                                     "Only tracks that already exist on Last.fm will be scrobbled. The bot reads the 'Now Playing' message a bot sends and tries to retrieve the artist and track name from there.\n\n" +
                                     "Currently supported bots:\n" +
-                                    "- Cakey Bot\n" +
                                     "- Jockie Music\n" +
-                                    "- SoundCloud"
-                                    );
+                                    "- SoundCloud\n" +
+                                    "- Tempo Bot\n" +
+                                    "- Green-Bot\n" +
+                                    "- Cakey Bot\n" +
+                                    "- Betty");
 
         response.Components = new ComponentBuilder()
             .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Success, new Emoji("✅"))
