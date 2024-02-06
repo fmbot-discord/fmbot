@@ -274,10 +274,7 @@ public static class StringService
             .WithFooter(PaginatorFooter.None)
             .WithActionOnTimeout(ActionOnStop.DeleteInput);
 
-        if (pages.Count != 1)
-        {
-            builder.WithOptions(DiscordConstants.PaginationEmotes);
-        }
+        builder.WithOptions(DiscordConstants.PaginationEmotes);
 
         if (pages.Count >= 10)
         {

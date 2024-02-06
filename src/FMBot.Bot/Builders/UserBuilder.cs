@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -572,7 +573,23 @@ public class UserBuilder
             response.Embed.WithFooter(footer.ToString());
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        var viewType = new SelectMenuBuilder()
+            .WithPlaceholder("Select featured view")
+            .WithCustomId(InteractionConstants.FeaturedLog)
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in ((FeaturedView[])Enum.GetValues(typeof(FeaturedView))))
+        {
+            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var value = $"{Enum.GetName(option)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+
+            var active = option == view;
+
+            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

@@ -171,6 +171,11 @@ public static class InteractionContextExtensions
 
         if (response.ResponseType == ResponseType.Paginator)
         {
+            if (defer)
+            {
+                await context.Interaction.DeferAsync();
+            }
+
             await context.ModifyPaginator(interactiveService, message, response);
             return;
         }

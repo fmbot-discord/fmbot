@@ -147,7 +147,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
 
             var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild, viewType);
 
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity);
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

@@ -143,4 +143,5 @@ public static class InteractionConstants
     public const string GenreUser = "genre-user";
 
     public const string GuildMembers = "guild-members";
+    public const string FeaturedLog = "featured-log";
 }
