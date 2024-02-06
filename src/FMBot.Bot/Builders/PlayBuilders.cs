@@ -152,6 +152,13 @@ public class PlayBuilder
             totalPlaycount = recentTracks.Content.TotalAmount;
         }
 
+        PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, currentTrack.ArtistName);
+        PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, currentTrack.TrackName);
+        if (!string.IsNullOrWhiteSpace(currentTrack.AlbumName))
+        {
+            PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, currentTrack.AlbumName);
+        }
+
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"

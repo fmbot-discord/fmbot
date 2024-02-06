@@ -100,7 +100,8 @@ public class TrackBuilders
 
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -268,7 +269,8 @@ public class TrackBuilders
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (track.Track == null)
         {
             return track.Response;
@@ -408,7 +410,8 @@ public class TrackBuilders
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (track.Track == null)
         {
             return track.Response;
@@ -495,7 +498,8 @@ public class TrackBuilders
 
         var track = await this._trackService.SearchTrack(response, context.DiscordUser, trackValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedTracks: true,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (track.Track == null)
         {
             return track.Response;
@@ -652,7 +656,8 @@ public class TrackBuilders
 
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -694,7 +699,8 @@ public class TrackBuilders
 
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -748,7 +754,8 @@ public class TrackBuilders
 
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -793,7 +800,8 @@ public class TrackBuilders
 
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (trackSearch.Track == null)
         {
             return trackSearch.Response;
@@ -1316,7 +1324,8 @@ public class TrackBuilders
         {
             var track = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
                 context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-                userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+                userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+                referencedMessage: context.ReferencedMessage);
             if (track.Track == null)
             {
                 return track.Response;

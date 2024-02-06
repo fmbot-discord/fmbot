@@ -14,6 +14,8 @@ public static class PublicProperties
     public static readonly ConcurrentDictionary<ulong, int> RegisteredUsers = new();
 
     public static ConcurrentDictionary<ulong, CommandResponse> UsedCommandsResponses = new();
+    public static ConcurrentDictionary<ulong, ulong> UsedCommandsResponseMessageId = new();
+    public static ConcurrentDictionary<ulong, ulong> UsedCommandsResponseContextId = new();
     public static ConcurrentDictionary<ulong, string> UsedCommandsErrorReferences = new();
 
     public static ConcurrentDictionary<ulong, string> UsedCommandsArtists = new();

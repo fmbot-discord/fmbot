@@ -45,6 +45,7 @@ public class TrackService
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
     private readonly IUpdateService _updateService;
     private readonly AliasService _aliasService;
+    private readonly UserService _userService;
 
     public TrackService(HttpClient httpClient,
         IDataSourceFactory dataSourceFactory,
@@ -56,7 +57,8 @@ public class TrackService
         AlbumService albumService,
         WhoKnowsTrackService whoKnowsTrackService,
         IUpdateService updateService,
-        AliasService aliasService)
+        AliasService aliasService,
+        UserService userService)
     {
         this._dataSourceFactory = dataSourceFactory;
         this._spotifyService = spotifyService;
@@ -69,13 +71,26 @@ public class TrackService
         this._whoKnowsTrackService = whoKnowsTrackService;
         this._updateService = updateService;
         this._aliasService = aliasService;
+        this._userService = userService;
     }
 
     public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string trackValues,
         string lastFmUserName, string sessionKey = null, string otherUserUsername = null, bool useCachedTracks = false,
-        int? userId = null, ulong? interactionId = null)
+        int? userId = null, ulong? interactionId = null, IUserMessage referencedMessage = null)
     {
         string searchValue;
+        if (referencedMessage != null && string.IsNullOrWhiteSpace(trackValues))
+        {
+            var internalLookup = CommandContextExtensions.GetReferencedMusic(referencedMessage.Id)
+                                 ??
+                                 await this._userService.GetReferencedMusic(referencedMessage.Id);
+
+            if (internalLookup?.Track != null)
+            {
+                trackValues = $"{internalLookup.Artist} | {internalLookup.Track}";
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.Length != 0)
         {
             searchValue = trackValues;

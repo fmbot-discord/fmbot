@@ -515,6 +515,8 @@ public class TimerService
     public void ClearInternalLogs()
     {
         PublicProperties.UsedCommandsResponses = new ConcurrentDictionary<ulong, CommandResponse>();
+        PublicProperties.UsedCommandsResponseMessageId = new ConcurrentDictionary<ulong, ulong>();
+        PublicProperties.UsedCommandsResponseContextId = new ConcurrentDictionary<ulong, ulong>();
         PublicProperties.UsedCommandsErrorReferences = new ConcurrentDictionary<ulong, string>();
         PublicProperties.UsedCommandsArtists = new ConcurrentDictionary<ulong, string>();
         PublicProperties.UsedCommandsAlbums = new ConcurrentDictionary<ulong, string>();

@@ -490,7 +490,7 @@ public class AdminCommands : BaseCommandModule
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues, userSettings.UserNameLastFM);
+            var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues, userSettings.UserNameLastFM, referencedMessage: this.Context.Message.ReferencedMessage);
             if (albumSearch.Album == null)
             {
                 await this.Context.SendResponse(this.Interactivity, albumSearch.Response);
