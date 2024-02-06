@@ -156,7 +156,7 @@ public class PlayBuilder
         PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, currentTrack.TrackName);
         if (!string.IsNullOrWhiteSpace(currentTrack.AlbumName))
         {
-            PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, currentTrack.AlbumName);
+            PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, currentTrack.AlbumName);
         }
 
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
@@ -488,6 +488,19 @@ public class PlayBuilder
                 {
                     response.Embed.WithFooter($"Only streaks with {Constants.StreakSaveThreshold} plays or higher are saved.");
                 }
+            }
+
+            if (!string.IsNullOrWhiteSpace(streak.ArtistName))
+            {
+                PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, streak.ArtistName);
+            }
+            if (!string.IsNullOrWhiteSpace(streak.AlbumName))
+            {
+                PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, streak.AlbumName);
+            }
+            if (!string.IsNullOrWhiteSpace(streak.TrackName))
+            {
+                PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, streak.TrackName);
             }
         }
         else
