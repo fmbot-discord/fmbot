@@ -20,7 +20,8 @@ public abstract class MusicBot
         new CakeyBotMusicBot(),
         new SoundCloudMusicBot(),
         new GreenBotMusicBot(),
-        new BettyMusicBot()
+        new BettyMusicBot(),
+        new TempoMusicBot()
     };
 
     protected MusicBot(string name, bool possiblyIncludesLinks = true, bool skipUploaderName = false, bool trackNameFirst = false)

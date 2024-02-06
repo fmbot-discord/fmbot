@@ -349,6 +349,15 @@ public class TrackService
 
             if (!description.Contains("-"))
             {
+                if (description.Contains(" by ", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new TrackSearchResult
+                    {
+                        TrackName = description.Split(" by ")[0],
+                        ArtistName = description.Split(" by ")[1]
+                    };
+                }
+
                 var lastFmResult = await this._dataSourceFactory.SearchTrackAsync(description);
                 if (lastFmResult.Success && lastFmResult.Content != null)
                 {
