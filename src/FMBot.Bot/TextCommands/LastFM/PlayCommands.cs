@@ -332,16 +332,36 @@ public class PlayCommands : BaseCommandModule
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+        try
+        {
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
 
-        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
-        var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+            var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, mileStoneAmount, userInfo.Playcount);
+            if (string.IsNullOrWhiteSpace(extraOptions) &&
+                !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
+            {
+                var splitContent = this.Context.Message.ReferencedMessage.Content.Split(" ");
+                foreach (var value in splitContent)
+                {
+                    if (int.TryParse(value, out var number) && number <= userInfo.Playcount)
+                    {
+                        mileStoneAmount = number;
+                    }
+                }
+            }
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, mileStoneAmount, userInfo.Playcount);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [Command("plays", RunMode = RunMode.Async)]
