@@ -13,6 +13,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -338,6 +339,18 @@ public class GenreBuilders
             ResponseType = ResponseType.Embed
         };
 
+        if (context.ReferencedMessage != null)
+        {
+            var internalLookup = CommandContextExtensions.GetReferencedMusic(context.ReferencedMessage.Id)
+                                 ??
+                                 await this._userService.GetReferencedMusic(context.ReferencedMessage.Id);
+
+            if (internalLookup?.Artist != null)
+            {
+                genreOptions = internalLookup.Artist;
+            }
+        }
+
         var genres = new List<string>();
         if (string.IsNullOrWhiteSpace(genreOptions))
         {
@@ -392,11 +405,12 @@ public class GenreBuilders
                     genreDescription.AppendLine($"- **{artistGenre.Name.Transform(To.TitleCase)}**");
                 }
 
-                if (artist?.SpotifyImageUrl != null)
+                if (artist.SpotifyImageUrl != null)
                 {
                     response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
                 }
 
+                PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
                 response.Embed.WithDescription(genreDescription.ToString());
 
                 response.Embed.WithFooter($"Genre source: Spotify\n" +
@@ -430,6 +444,7 @@ public class GenreBuilders
                         response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
                     }
 
+                    PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
                     response.Embed.WithDescription(genreDescription.ToString());
 
                     response.Embed.WithFooter($"Genre source: Spotify\n" +
