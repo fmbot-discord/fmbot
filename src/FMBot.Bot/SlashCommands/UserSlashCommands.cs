@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
@@ -26,6 +27,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Google.Apis.YouTube.v3.Data;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Options;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -886,6 +888,43 @@ public class UserSlashCommands : InteractionModuleBase
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction(InteractionConstants.FeaturedLog)]
+    [RequiresIndex]
+    [GuildOnly]
+    public async Task FeaturedLogAsync(string[] inputs)
+    {
+        try
+        {
+            var splitInput = inputs.First().Split("-");
+            if (!Enum.TryParse(splitInput[0], out FeaturedView viewType))
+            {
+                return;
+            }
+
+            var discordUserId = ulong.Parse(splitInput[1]);
+            var requesterDiscordUserId = ulong.Parse(splitInput[2]);
+
+            var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+            var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            if (message == null)
+            {
+                return;
+            }
+
+            var response = await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, viewType);
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [SlashCommand("profile", "Shows you or someone else their profile")]

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -173,10 +174,12 @@ public class UserBuilder
                                     "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
                                     "Only tracks that already exist on Last.fm will be scrobbled. The bot reads the 'Now Playing' message a bot sends and tries to retrieve the artist and track name from there.\n\n" +
                                     "Currently supported bots:\n" +
-                                    "- Cakey Bot\n" +
                                     "- Jockie Music\n" +
-                                    "- SoundCloud"
-                                    );
+                                    "- SoundCloud\n" +
+                                    "- Tempo Bot\n" +
+                                    "- Green-Bot\n" +
+                                    "- Cakey Bot\n" +
+                                    "- Betty");
 
         response.Components = new ComponentBuilder()
             .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Success, new Emoji("✅"))
@@ -570,7 +573,23 @@ public class UserBuilder
             response.Embed.WithFooter(footer.ToString());
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        var viewType = new SelectMenuBuilder()
+            .WithPlaceholder("Select featured view")
+            .WithCustomId(InteractionConstants.FeaturedLog)
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in ((FeaturedView[])Enum.GetValues(typeof(FeaturedView))))
+        {
+            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var value = $"{Enum.GetName(option)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+
+            var active = option == view;
+
+            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
@@ -755,8 +774,7 @@ public class UserBuilder
         }
         if (featuredHistory.Count >= 1)
         {
-            var times = featuredHistory.Count == 1 ? "time" : "times";
-            footer.AppendLine($"Got featured in .fmbot {featuredHistory.Count} {times}");
+            footer.AppendLine($"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
         }
         if (footer.Length > 0)
         {

@@ -85,7 +85,7 @@ public class GenreSlashCommands : InteractionModuleBase
         {
             var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, contextUser), genre, userSettings, guild, false);
 
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity);
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -123,7 +123,7 @@ public class GenreSlashCommands : InteractionModuleBase
 
             var response = await this._genreBuilders.GenreAsync(context, genre, userSettings, guild);
 
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity);
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

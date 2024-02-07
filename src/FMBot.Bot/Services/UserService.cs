@@ -10,6 +10,7 @@ using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
@@ -222,6 +223,12 @@ public class UserService
                     track = fetchedTrack;
                 }
 
+                ulong? responseId = null;
+                if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Message.Id, out var fetchedResponseId))
+                {
+                    responseId = fetchedResponseId;
+                }
+
                 var interaction = new UserInteraction
                 {
                     Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
@@ -231,6 +238,7 @@ public class UserService
                     DiscordGuildId = context.Guild?.Id,
                     DiscordChannelId = context.Channel?.Id,
                     DiscordId = context.Message.Id,
+                    DiscordResponseId = responseId,
                     Response = commandResponse,
                     Type = UserInteractionType.TextCommand,
                     ErrorReferenceId = errorReference,
@@ -290,6 +298,12 @@ public class UserService
                     track = fetchedTrack;
                 }
 
+                ulong? responseId = null;
+                if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Interaction.Id, out var fetchedResponseId))
+                {
+                    responseId = fetchedResponseId;
+                }
+
                 var options = new Dictionary<string, string>();
                 if (context.Interaction is SocketSlashCommand command)
                 {
@@ -308,6 +322,7 @@ public class UserService
                     DiscordGuildId = context.Guild?.Id,
                     DiscordChannelId = context.Channel?.Id,
                     DiscordId = context.Interaction.Id,
+                    DiscordResponseId = responseId,
                     Response = commandResponse,
                     Type = UserInteractionType.SlashCommand,
                     ErrorReferenceId = errorReference,
@@ -325,6 +340,32 @@ public class UserService
         {
             Log.Error(e, "AddUserSlashCommandInteraction: Error while adding user interaction");
         }
+    }
+
+    public async Task<ReferencedMusic> GetReferencedMusic(ulong lookupId)
+    {
+        const string sql = "SELECT * FROM public.user_interactions WHERE discord_id = @lookupId OR discord_response_id = @lookupId ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var interaction = await connection.QueryFirstOrDefaultAsync<UserInteraction>(sql, new
+        {
+            lookupId = (decimal)lookupId
+        });
+
+        if (interaction is { Artist: not null })
+        {
+            return new ReferencedMusic
+            {
+                Artist = interaction.Artist,
+                Album = interaction.Album,
+                Track = interaction.Track
+            };
+        }
+
+        return null;
     }
 
     public async Task<int> GetCommandExecutedAmount(int userId, string command, DateTime filterDateTime)

@@ -87,7 +87,7 @@ public class Startup
             .CreateLogger();
 
         AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;
-             
+
         Log.Information(".fmbot starting up...");
 
         var services = new ServiceCollection(); // Create a new instance of a service collection
@@ -187,6 +187,11 @@ public class Startup
             .AddSingleton<IIndexService, IndexService>()
             .AddSingleton<IPrefixService, PrefixService>()
             .AddSingleton<ImportBuilders>()
+            .AddSingleton(new InteractiveConfig
+            {
+                ReturnAfterSendingPaginator = true,
+                ProcessSinglePagePaginators = true
+            })
             .AddSingleton<InteractiveService>()
             .AddSingleton<IUserIndexQueue, UserIndexQueue>()
             .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()

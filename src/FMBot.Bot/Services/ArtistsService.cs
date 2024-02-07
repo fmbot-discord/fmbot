@@ -16,7 +16,6 @@ using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
@@ -39,6 +38,7 @@ public class ArtistsService
     private readonly TimerService _timer;
     private readonly IUpdateService _updateService;
     private readonly AliasService _aliasService;
+    private readonly UserService _userService;
 
     public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
@@ -48,7 +48,8 @@ public class ArtistsService
         WhoKnowsArtistService whoKnowsArtistService,
         TimerService timer,
         IUpdateService updateService,
-        AliasService aliasService)
+        AliasService aliasService,
+        UserService userService)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
@@ -58,12 +59,25 @@ public class ArtistsService
         this._timer = timer;
         this._updateService = updateService;
         this._aliasService = aliasService;
+        this._userService = userService;
         this._botSettings = botSettings.Value;
     }
 
     public async Task<ArtistSearch> SearchArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
-        bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true, ulong? interactionId = null)
+        bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true, ulong? interactionId = null, IUserMessage referencedMessage = null)
     {
+        if (referencedMessage != null && string.IsNullOrWhiteSpace(artistValues))
+        {
+            var internalLookup = CommandContextExtensions.GetReferencedMusic(referencedMessage.Id)
+                                 ??
+                                 await this._userService.GetReferencedMusic(referencedMessage.Id);
+
+            if (internalLookup?.Artist != null)
+            {
+                artistValues = internalLookup.Artist;
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
         {
             if (otherUserUsername != null)

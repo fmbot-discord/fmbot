@@ -16,6 +16,7 @@ public class UserInteraction
     public ulong? DiscordGuildId { get; set; }
     public ulong? DiscordChannelId { get; set; }
     public ulong? DiscordId { get; set; }
+    public ulong? DiscordResponseId { get; set; }
 
     public UserInteractionType Type { get; set; }
 

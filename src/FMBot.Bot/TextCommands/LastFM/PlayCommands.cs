@@ -160,6 +160,9 @@ public class PlayCommands : BaseCommandModule
                 message = await ReplyAsync(response.Text, allowedMentions: AllowedMentions.None);
             }
 
+            PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Message.Id, message.Id);
+            PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Message.Id);
+
             try
             {
                 if (message != null && response.CommandResponse == CommandResponse.Ok)

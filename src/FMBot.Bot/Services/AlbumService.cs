@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
@@ -36,6 +37,7 @@ public class AlbumService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IUpdateService _updateService;
     private readonly AliasService _aliasService;
+    private readonly UserService _userService;
 
     public AlbumService(IMemoryCache cache,
         IOptions<BotSettings> botSettings,
@@ -44,7 +46,8 @@ public class AlbumService
         WhoKnowsAlbumService whoKnowsAlbumService,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IUpdateService updateService,
-        AliasService aliasService)
+        AliasService aliasService,
+        UserService userService)
     {
         this._cache = cache;
         this._dataSourceFactory = dataSourceFactory;
@@ -53,13 +56,26 @@ public class AlbumService
         this._contextFactory = contextFactory;
         this._updateService = updateService;
         this._aliasService = aliasService;
+        this._userService = userService;
         this._botSettings = botSettings.Value;
     }
 
     public async Task<AlbumSearch> SearchAlbum(ResponseModel response, IUser discordUser, string albumValues, string lastFmUserName, string sessionKey = null,
-            string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null)
+            string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null, IUserMessage referencedMessage = null)
     {
         string searchValue;
+        if (referencedMessage != null && string.IsNullOrWhiteSpace(albumValues))
+        {
+            var internalLookup = CommandContextExtensions.GetReferencedMusic(referencedMessage.Id)
+                                 ??
+                                 await this._userService.GetReferencedMusic(referencedMessage.Id);
+
+            if (internalLookup?.Album != null)
+            {
+                albumValues = $"{internalLookup.Artist} | {internalLookup.Album}";
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.Length != 0)
         {
             searchValue = albumValues;

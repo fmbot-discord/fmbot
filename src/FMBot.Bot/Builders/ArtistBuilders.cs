@@ -50,6 +50,7 @@ public class ArtistBuilders
     private readonly GenreService _genreService;
     private readonly DiscogsService _discogsService;
     private readonly CensorService _censorService;
+    private readonly FeaturedService _featuredService;
 
     public ArtistBuilders(ArtistsService artistsService,
         IDataSourceFactory dataSourceFactory,
@@ -69,7 +70,8 @@ public class ArtistBuilders
         CountryService countryService,
         GenreService genreService,
         DiscogsService discogsService,
-        CensorService censorService)
+        CensorService censorService,
+        FeaturedService featuredService)
     {
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
@@ -90,6 +92,7 @@ public class ArtistBuilders
         this._genreService = genreService;
         this._discogsService = discogsService;
         this._censorService = censorService;
+        this._featuredService = featuredService;
     }
 
     public async Task<ResponseModel> ArtistInfoAsync(ContextModel context,
@@ -104,7 +107,8 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -113,6 +117,14 @@ public class ArtistBuilders
         var fullArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled, true);
 
         var footer = new StringBuilder();
+        
+
+        var featuredHistory = await this._featuredService.GetArtistFeaturedHistory(artistSearch.Artist.ArtistName);
+        if (featuredHistory.Any())
+        {
+            footer.AppendLine($"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
+        }
+
         if (fullArtist.SpotifyImageUrl != null)
         {
             response.Embed.WithThumbnailUrl(fullArtist.SpotifyImageUrl);
@@ -121,7 +133,7 @@ public class ArtistBuilders
 
         if (context.ContextUser.TotalPlaycount.HasValue && artistSearch.Artist.UserPlaycount is >= 10)
         {
-            footer.AppendLine($"{(decimal)artistSearch.Artist.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your scrobbles are on this artist");
+            footer.AppendLine($"{(decimal)artistSearch.Artist.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your plays are on this artist");
         }
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
@@ -384,7 +396,8 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userId: context.ContextUser.UserId,
-            otherUserUsername: userSettings.UserNameLastFm, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
+            otherUserUsername: userSettings.UserNameLastFm, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -556,7 +569,8 @@ public class ArtistBuilders
         };
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM,
-            context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
+            context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -679,7 +693,8 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
-            true, userSettings.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
+            true, userSettings.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1187,7 +1202,8 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistName,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1237,7 +1253,8 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistName,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1311,7 +1328,8 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1499,7 +1517,8 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser,
             settings.NewSearchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            useCachedArtists: true, userId: context.ContextUser.UserId, redirectsEnabled: settings.RedirectsEnabled, interactionId: context.InteractionId);
+            useCachedArtists: true, userId: context.ContextUser.UserId, redirectsEnabled: settings.RedirectsEnabled, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;
@@ -1637,7 +1656,8 @@ public class ArtistBuilders
 
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
-            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (artistSearch.Artist == null)
         {
             return artistSearch.Response;

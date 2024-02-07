@@ -44,6 +44,7 @@ public class AlbumBuilders
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly PuppeteerService _puppeteerService;
     private readonly WhoKnowsService _whoKnowsService;
+    private readonly FeaturedService _featuredService;
 
     public AlbumBuilders(UserService userService,
         GuildService guildService,
@@ -59,7 +60,9 @@ public class AlbumBuilders
         SupporterService supporterService,
         IIndexService indexService,
         WhoKnowsPlayService whoKnowsPlayService,
-        PuppeteerService puppeteerService, WhoKnowsService whoKnowsService)
+        PuppeteerService puppeteerService,
+        WhoKnowsService whoKnowsService,
+        FeaturedService featuredService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -77,6 +80,7 @@ public class AlbumBuilders
         this._whoKnowsPlayService = whoKnowsPlayService;
         this._puppeteerService = puppeteerService;
         this._whoKnowsService = whoKnowsService;
+        this._featuredService = featuredService;
     }
 
     public async Task<ResponseModel> AlbumAsync(ContextModel context,
@@ -89,7 +93,8 @@ public class AlbumBuilders
 
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -136,6 +141,12 @@ public class AlbumBuilders
 
         var footer = new StringBuilder();
 
+        var featuredHistory = await this._featuredService.GetAlbumFeaturedHistory(albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+        if (featuredHistory.Any())
+        {
+            footer.AppendLine($"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
+        }
+
         if (databaseAlbum?.Label != null)
         {
             footer.AppendLine($"Label: {databaseAlbum.Label}");
@@ -143,7 +154,7 @@ public class AlbumBuilders
 
         if (context.ContextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 10)
         {
-            footer.AppendLine($"{(decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your scrobbles are on this album");
+            footer.AppendLine($"{(decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your plays are on this album");
         }
 
         if (footer.Length > 0)
@@ -293,7 +304,8 @@ public class AlbumBuilders
 
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (album.Album == null)
         {
             return album.Response;
@@ -447,7 +459,8 @@ public class AlbumBuilders
 
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (album.Album == null)
         {
             return album.Response;
@@ -551,7 +564,8 @@ public class AlbumBuilders
 
         var album = await this._albumService.SearchAlbum(response, context.DiscordUser, albumValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedAlbums: true,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (album.Album == null)
         {
             return album.Response;
@@ -771,7 +785,8 @@ public class AlbumBuilders
 
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, userSettings.UserNameLastFm,
-            userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -925,7 +940,8 @@ public class AlbumBuilders
 
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -967,7 +983,7 @@ public class AlbumBuilders
         };
 
         var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            useCachedAlbums: false, userId: context.ContextUser.UserId, interactionId: context.InteractionId);
+            useCachedAlbums: false, userId: context.ContextUser.UserId, interactionId: context.InteractionId, referencedMessage: context.ReferencedMessage);
         if (albumSearch.Album == null)
         {
             response.ResponseType = ResponseType.Embed;

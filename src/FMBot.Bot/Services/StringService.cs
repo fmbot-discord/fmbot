@@ -248,7 +248,11 @@ public static class StringService
             .WithFooter(PaginatorFooter.None)
             .WithActionOnTimeout(ActionOnStop.DeleteInput);
 
-        if (pages.Count != 1 || customOptionId != null)
+        if (pages.Count == 1)
+        {
+            builder.WithOptions(new List<IPaginatorButton> { PaginatorButton.Hidden });
+        }
+        else if (pages.Count != 1 || customOptionId != null)
         {
             builder.WithOptions(DiscordConstants.PaginationEmotes);
         }
@@ -274,7 +278,11 @@ public static class StringService
             .WithFooter(PaginatorFooter.None)
             .WithActionOnTimeout(ActionOnStop.DeleteInput);
 
-        if (pages.Count != 1)
+        if (pages.Count == 1)
+        {
+            builder.WithOptions(new List<IPaginatorButton> { PaginatorButton.Hidden });
+        }
+        else
         {
             builder.WithOptions(DiscordConstants.PaginationEmotes);
         }

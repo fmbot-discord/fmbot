@@ -28,7 +28,7 @@
     <PackageReference Include="Discord.Net.Core" Version="3.13.0" />
     <PackageReference Include="Discord.Net.Rest" Version="3.13.0" />
     <PackageReference Include="Discord.Net.WebSocket" Version="3.13.0" />
-    <PackageReference Include="Fergun.Interactive" Version="1.7.5-dev" />
+    <PackageReference Include="Fergun.Interactive" Version="1.7.5" />
     <PackageReference Include="Genius.NET" Version="4.0.1" />
     <PackageReference Include="Google.Apis" Version="1.64.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.64.0.3205" />

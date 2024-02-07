@@ -59,23 +59,27 @@ public static class CommandContextExtensions
 
     public static async Task SendResponse(this ICommandContext context, InteractiveService interactiveService, ResponseModel response)
     {
+        ulong? responseId = null;
         switch (response.ResponseType)
         {
             case ResponseType.Text:
-                await context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None, components: response.Components?.Build());
+                var text = await context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None, components: response.Components?.Build());
+                responseId = text.Id;
                 break;
             case ResponseType.Embed:
-                await context.Channel.SendMessageAsync("", false, response.Embed.Build(), components: response.Components?.Build());
+                var embed = await context.Channel.SendMessageAsync("", false, response.Embed.Build(), components: response.Components?.Build());
+                responseId = embed.Id;
                 break;
             case ResponseType.Paginator:
-                _ = interactiveService.SendPaginatorAsync(
+                var paginator = await interactiveService.SendPaginatorAsync(
                     response.StaticPaginator,
                     context.Channel,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                responseId = paginator.Message.Id;
                 break;
             case ResponseType.ImageWithEmbed:
                 var imageEmbedFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
-                await context.Channel.SendFileAsync(
+                var imageWithEmbed = await context.Channel.SendFileAsync(
                     response.Stream,
                     imageEmbedFilename + ".png",
                     null,
@@ -83,21 +87,31 @@ public static class CommandContextExtensions
                     response.Embed.Build(),
                     isSpoiler: response.Spoiler,
                     components: response.Components?.Build());
+
                 await response.Stream.DisposeAsync();
+                responseId = imageWithEmbed.Id;
                 break;
             case ResponseType.ImageOnly:
                 var imageFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
-                await context.Channel.SendFileAsync(
+                var image = await context.Channel.SendFileAsync(
                     response.Stream,
                     imageFilename + ".png",
                     null,
                     false,
                     isSpoiler: response.Spoiler,
                     components: response.Components?.Build());
+
                 await response.Stream.DisposeAsync();
+                responseId = image.Id;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
+        }
+
+        if (responseId.HasValue)
+        {
+            PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Message.Id, responseId.Value);
+            PublicProperties.UsedCommandsResponseContextId.TryAdd(responseId.Value, context.Message.Id);
         }
     }
 
@@ -121,5 +135,31 @@ public static class CommandContextExtensions
         }
 
         return result.ToString();
+    }
+
+    public static ReferencedMusic GetReferencedMusic(ulong lookupId)
+    {
+        if (PublicProperties.UsedCommandsResponseContextId.ContainsKey(lookupId))
+        {
+            PublicProperties.UsedCommandsResponseContextId.TryGetValue(lookupId, out lookupId);
+        }
+
+        if (PublicProperties.UsedCommandsArtists.ContainsKey(lookupId) ||
+            PublicProperties.UsedCommandsAlbums.ContainsKey(lookupId) ||
+            PublicProperties.UsedCommandsTracks.ContainsKey(lookupId))
+        {
+            PublicProperties.UsedCommandsArtists.TryGetValue(lookupId, out var artist);
+            PublicProperties.UsedCommandsAlbums.TryGetValue(lookupId, out var album);
+            PublicProperties.UsedCommandsTracks.TryGetValue(lookupId, out var track);
+
+            return new ReferencedMusic
+            {
+                Artist = artist,
+                Album = album,
+                Track = track
+            };
+        }
+
+        return null;
     }
 }
