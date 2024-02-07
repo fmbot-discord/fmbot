@@ -312,6 +312,12 @@ public class PlayCommands : BaseCommandModule
         var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
+        if (string.IsNullOrWhiteSpace(extraOptions) &&
+            !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
+        {
+            goalAmount = SettingService.GetGoalAmount(this.Context.Message.ReferencedMessage.Content, userInfo.Playcount);
+        }
+
         var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);
 
@@ -343,14 +349,7 @@ public class PlayCommands : BaseCommandModule
             if (string.IsNullOrWhiteSpace(extraOptions) &&
                 !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
             {
-                var splitContent = this.Context.Message.ReferencedMessage.Content.Split(" ");
-                foreach (var value in splitContent)
-                {
-                    if (int.TryParse(value, out var number) && number >= 1 && number <= userInfo.Playcount)
-                    {
-                        mileStoneAmount = number;
-                    }
-                }
+                mileStoneAmount = SettingService.GetMilestoneAmount(this.Context.Message.ReferencedMessage.Content, userInfo.Playcount);
             }
 
             var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, mileStoneAmount, userInfo.Playcount);
