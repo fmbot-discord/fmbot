@@ -90,7 +90,7 @@ public class UserSlashCommands : InteractionModuleBase
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._userBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
+            var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, contextUser));
 
             await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -138,7 +138,7 @@ public class UserSlashCommands : InteractionModuleBase
                     }
                 case UserSetting.BotScrobbling:
                     {
-                        response = await this._userBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
+                        response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
                         break;
@@ -629,6 +629,7 @@ public class UserSlashCommands : InteractionModuleBase
         {
             await RespondAsync("Something went wrong while setting localization. Please check if you entered a valid timezone.", ephemeral: true);
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            await this.Context.HandleCommandException(e, sendReply: false);
         }
     }
 
@@ -747,7 +748,7 @@ public class UserSlashCommands : InteractionModuleBase
         try
         {
             var response =
-                await this._userBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings, contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
+                UserBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings, contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
 
             if (commandUsesLeft <= 0)
             {
@@ -818,7 +819,7 @@ public class UserSlashCommands : InteractionModuleBase
     public async Task BotScrobblingAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var response = await this._userBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
+        var response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

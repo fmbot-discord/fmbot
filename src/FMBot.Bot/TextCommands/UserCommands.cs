@@ -108,7 +108,7 @@ public class UserCommands : BaseCommandModule
 
         try
         {
-            var response = await this._userBuilder.GetUserSettings(new ContextModel(this.Context, prfx, contextUser));
+            var response = UserBuilder.GetUserSettings(new ContextModel(this.Context, prfx, contextUser));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -232,7 +232,7 @@ public class UserCommands : BaseCommandModule
         try
         {
             var response =
-                await this._userBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings, contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
+                UserBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings, contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
 
             if (commandUsesLeft <= 0)
             {
@@ -511,7 +511,7 @@ public class UserCommands : BaseCommandModule
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var response =
-                await this._userBuilder.BotScrobblingAsync(new ContextModel(this.Context, prfx, contextUser));
+                UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, prfx, contextUser));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

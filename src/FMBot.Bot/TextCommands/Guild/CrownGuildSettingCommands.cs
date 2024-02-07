@@ -270,7 +270,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            await ReplyAsync("Something went wrong while attempting to remove crowns for user, please contact .fmbot staff.");
+            await this.Context.HandleCommandException(e);
         }
     }
 

@@ -254,11 +254,12 @@ public static class InteractionContextExtensions
         }
     }
 
-    private static async Task ModifyPaginator(this IInteractionContext context, InteractiveService interactiveService, IUserMessage message, ResponseModel response)
+    private static Task ModifyPaginator(this IInteractionContext context, InteractiveService interactiveService, IUserMessage message, ResponseModel response)
     {
         _ = interactiveService.SendPaginatorAsync(
             response.StaticPaginator,
             message,
             TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+        return Task.CompletedTask;
     }
 }
