@@ -1,11 +1,10 @@
 using System;
 using System.Linq;
-using System.Text.RegularExpressions;
 using Discord;
 
 namespace FMBot.Bot.Models.MusicBot;
 
-internal class BleedMusicBot : MusicBot
+internal partial class BleedMusicBot : MusicBot
 {
     private const string StartedPlaying = "Now playing ";
     public BleedMusicBot() : base("bleed", false, trackNameFirst: true)
@@ -31,9 +30,11 @@ internal class BleedMusicBot : MusicBot
         var description = msg.Embeds.First().Description;
         var embedTrack = description.Replace(StartedPlaying, "", StringComparison.OrdinalIgnoreCase);
 
-        const string pattern = @"\[\`(.+?)\`\]\(.+?\) by \*\*(.+?)\*\*";
         const string replacement = "$1 - $2";
 
-        return Regex.Replace(embedTrack, pattern, replacement);
+        return BleedRegex().Replace(embedTrack, replacement);
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\[\`(.+?)\`\]\(.+?\) by \*\*(.+?)\*\*")]
+    private static partial System.Text.RegularExpressions.Regex BleedRegex();
 }
