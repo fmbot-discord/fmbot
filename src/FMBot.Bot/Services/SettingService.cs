@@ -928,7 +928,12 @@ public class SettingService
 
         if (extraOptions != null)
         {
-            var options = extraOptions.Split(' ');
+            var options = extraOptions
+                .Replace("(", "")
+                .Replace(")", "")
+                .Replace("*", "")
+                .Replace("`", "")
+                .Split(' ');
 
             foreach (var option in options)
             {
@@ -983,7 +988,12 @@ public class SettingService
 
         if (extraOptions != null)
         {
-            var options = extraOptions.Split(' ');
+            var options = extraOptions
+                .Replace("(", "")
+                .Replace(")", "")
+                .Replace("*", "")
+                .Replace("`", "")
+                .Split(' ');
 
             foreach (var option in options)
             {
