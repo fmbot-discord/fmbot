@@ -21,7 +21,8 @@ public abstract class MusicBot
         new SoundCloudMusicBot(),
         new GreenBotMusicBot(),
         new BettyMusicBot(),
-        new TempoMusicBot()
+        new TempoMusicBot(),
+        new BleedMusicBot()
     };
 
     protected MusicBot(string name, bool possiblyIncludesLinks = true, bool skipUploaderName = false, bool trackNameFirst = false)
