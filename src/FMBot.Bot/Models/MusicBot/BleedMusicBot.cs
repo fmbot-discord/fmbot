@@ -17,8 +17,8 @@ internal partial class BleedMusicBot : MusicBot
         {
             return true;
         }
-        var title = msg.Embeds.First().Description;
-        return string.IsNullOrEmpty(title) || !title.StartsWith(StartedPlaying, StringComparison.OrdinalIgnoreCase);
+        var description = msg.Embeds.First().Description;
+        return string.IsNullOrEmpty(description) || !description.StartsWith(StartedPlaying, StringComparison.OrdinalIgnoreCase);
     }
 
     /**
