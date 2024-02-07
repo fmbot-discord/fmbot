@@ -346,7 +346,7 @@ public class PlayCommands : BaseCommandModule
                 var splitContent = this.Context.Message.ReferencedMessage.Content.Split(" ");
                 foreach (var value in splitContent)
                 {
-                    if (int.TryParse(value, out var number) && number <= userInfo.Playcount)
+                    if (int.TryParse(value, out var number) && number >= 1 && number <= userInfo.Playcount)
                     {
                         mileStoneAmount = number;
                     }
