@@ -70,7 +70,7 @@ public class UserBuilder
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<ResponseModel> GetUserSettings(ContextModel context)
+    public static ResponseModel GetUserSettings(ContextModel context)
     {
         var response = new ResponseModel
         {
@@ -163,7 +163,7 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> BotScrobblingAsync(ContextModel context)
+    public static ResponseModel BotScrobblingAsync(ContextModel context)
     {
         var response = new ResponseModel
         {
@@ -952,7 +952,7 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> JudgeAsync(ContextModel context,
+    public static ResponseModel JudgeAsync(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         UserType userType,

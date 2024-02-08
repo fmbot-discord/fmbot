@@ -760,7 +760,7 @@ public class SupporterService
                     }
                     catch (Exception e)
                     {
-                        Log.Error("Could not send welcome dm to new Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
+                        Log.Error("Could not send welcome dm to new Discord supporter {discordUserId}", discordSupporter.DiscordUserId, e);
                     }
                 }
 

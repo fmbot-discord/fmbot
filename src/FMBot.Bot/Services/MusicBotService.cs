@@ -98,7 +98,7 @@ public class MusicBotService
             $"Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");
         embed.WithFooter($"Use '{prfx}botscrobbling' for more information.");
 
-        this.Interactivity.DelayedDeleteMessageAsync(
+        _ = this.Interactivity.DelayedDeleteMessageAsync(
             await context.Channel.SendMessageAsync(embed: embed.Build()),
             TimeSpan.FromSeconds(120));
 
@@ -107,12 +107,14 @@ public class MusicBotService
     }
 
 
-    private async Task RegisterTrack(IEnumerable<User> users, TrackSearchResult result, MusicBot musicBot)
+    private Task RegisterTrack(IEnumerable<User> users, TrackSearchResult result, MusicBot musicBot)
     {
         foreach (var user in users)
         {
             _ = RegisterTrackForUser(user, result, musicBot);
         }
+
+        return Task.CompletedTask;
     }
 
     private async Task RegisterTrackForUser(User user, TrackSearchResult result, MusicBot musicBot)

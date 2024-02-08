@@ -52,6 +52,18 @@ public class CountryBuilders
             ResponseType = ResponseType.Embed
         };
 
+        if (context.ReferencedMessage != null)
+        {
+            var internalLookup = CommandContextExtensions.GetReferencedMusic(context.ReferencedMessage.Id)
+                                 ??
+                                 await this._userService.GetReferencedMusic(context.ReferencedMessage.Id);
+
+            if (internalLookup?.Artist != null)
+            {
+                countryOptions = internalLookup.Artist;
+            }
+        }
+
         CountryInfo country = null;
         if (string.IsNullOrWhiteSpace(countryOptions))
         {
@@ -101,10 +113,12 @@ public class CountryBuilders
                     return response;
                 }
 
-                if (artist?.SpotifyImageUrl != null)
+                if (artist.SpotifyImageUrl != null)
                 {
                     response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
                 }
+
+                PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
 
                 var description = new StringBuilder();
                 foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
@@ -168,6 +182,7 @@ public class CountryBuilders
                             $"*{artist.Location}*");
                     }
 
+                    PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
                     response.Embed.WithDescription(description.ToString());
 
                     response.Embed.WithFooter($"Country source: MusicBrainz\n" +
@@ -374,7 +389,7 @@ public class CountryBuilders
             return response;
         }
 
-        var countryPages = countries.ChunkBy((int) topListSettings.EmbedSize);
+        var countryPages = countries.ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;

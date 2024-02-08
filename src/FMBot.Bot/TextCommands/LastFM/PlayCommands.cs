@@ -312,6 +312,12 @@ public class PlayCommands : BaseCommandModule
         var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
+        if (string.IsNullOrWhiteSpace(extraOptions) &&
+            !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
+        {
+            goalAmount = SettingService.GetGoalAmount(this.Context.Message.ReferencedMessage.Content, userInfo.Playcount);
+        }
+
         var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);
 
@@ -332,16 +338,29 @@ public class PlayCommands : BaseCommandModule
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+        try
+        {
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
 
-        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
-        var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+            var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, mileStoneAmount, userInfo.Playcount);
+            if (string.IsNullOrWhiteSpace(extraOptions) &&
+                !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
+            {
+                mileStoneAmount = SettingService.GetMilestoneAmount(this.Context.Message.ReferencedMessage.Content, userInfo.Playcount);
+            }
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, mileStoneAmount, userInfo.Playcount);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [Command("plays", RunMode = RunMode.Async)]
