@@ -91,18 +91,18 @@ public class PuppeteerService
         {
             var lines = (int)(title.Length / 38);
 
-            extraHeight += (lines) * 32;
+            extraHeight += (lines) * 48;
         }
 
         if (crownText != null)
         {
-            extraHeight += 64;
+            extraHeight += 96;
         }
 
         await page.SetViewportAsync(new ViewPortOptions
         {
-            Width = 850,
-            Height = 592 + extraHeight
+            Width = 1275,
+            Height = 888 + extraHeight
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "whoknows.html");
@@ -209,10 +209,10 @@ public class PuppeteerService
 
                 content = position switch
                 {
-                    > 100 and < 1000 => content.Replace("{{num-width}}", "44"),
-                    > 1000 and < 10000 => content.Replace("{{num-width}}", "52"),
-                    > 10000 => content.Replace("{{num-width}}", "60"),
-                    _ => content.Replace("{{num-width}}", "32")
+                    > 100 and < 1000 => content.Replace("{{num-width}}", "66"),
+                    > 1000 and < 10000 => content.Replace("{{num-width}}", "78"),
+                    > 10000 => content.Replace("{{num-width}}", "90"),
+                    _ => content.Replace("{{num-width}}", "48")
                 };
 
                 userList.Append(GetWhoKnowsLine($"{position}.",
