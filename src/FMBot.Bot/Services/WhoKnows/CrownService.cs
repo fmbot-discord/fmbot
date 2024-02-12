@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -308,6 +309,19 @@ public class CrownService
         });
     }
 
+    private class UserIdArtistNameComparer : IEqualityComparer<(int UserId, string ArtistName)>
+    {
+        public bool Equals((int UserId, string ArtistName) x, (int UserId, string ArtistName) y)
+        {
+            return x.UserId == y.UserId && string.Equals(x.ArtistName, y.ArtistName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public int GetHashCode((int UserId, string ArtistName) obj)
+        {
+            return HashCode.Combine(obj.UserId, obj.ArtistName.ToLowerInvariant());
+        }
+    }
+
     public async Task<int> SeedCrownsForGuild(Persistence.Domain.Models.Guild guild, IList<UserCrown> existingCrowns)
     {
         const string sql = "SELECT DISTINCT ON(ua.name) " +
@@ -336,17 +350,17 @@ public class CrownService
 
         try
         {
-            var existingCrownsDict = existingCrowns?
+            var existingActiveCrownsDict = existingCrowns?
                 .OrderByDescending(o => o.CurrentPlaycount)
                 .Where(w => w.Active)
-                .DistinctBy(d => new { d.UserId, d.ArtistName })
+                .DistinctBy(d => (d.UserId, d.ArtistName), new UserIdArtistNameComparer())
                 .ToDictionary(c => (c.UserId, c.ArtistName.ToLower()));
 
             var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
             var crownsToSeed = topUsersForPlaycount.Select(s =>
             {
                 UserCrown existingCrown = null;
-                existingCrownsDict?.TryGetValue((s.UserId, s.Name.ToLower()), out existingCrown);
+                existingActiveCrownsDict?.TryGetValue((s.UserId, s.Name.ToLower()), out existingCrown);
                 return new UserCrown
                 {
                     UserId = s.UserId,
