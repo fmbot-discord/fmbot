@@ -179,7 +179,8 @@ public class UserBuilder
                                     "- Tempo Bot\n" +
                                     "- Green-Bot\n" +
                                     "- Cakey Bot\n" +
-                                    "- Betty");
+                                    "- Betty\n" +
+                                    "- Bleed");
 
         response.Components = new ComponentBuilder()
             .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Success, new Emoji("✅"))
