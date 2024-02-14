@@ -1,18 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
-using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Google.Protobuf.Collections;
-using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -39,7 +35,7 @@ public class TimeService
         {
             MaxReceiveMessageSize = null
         });
-        var client = new Greeter.GreeterClient(channel);
+        var client = new TimeEnrichment.TimeEnrichmentClient(channel);
 
         var simplePlays = plays.Select(s => new SimpleUserPlay
         {
@@ -63,50 +59,50 @@ public class TimeService
         return TimeSpan.FromSeconds(reply.TotalPlayTime.Seconds);
     }
 
-public static TimeSpan GetPlayTimeForEnrichedPlays(IEnumerable<UserPlay> plays, bool adjustForBans = false)
-{
-    return TimeSpan.FromMilliseconds(plays.Sum(s => s.MsPlayed.GetValueOrDefault()));
-}
-
-public static async Task<(ICollection<UserPlay> enrichedPlays, TimeSpan totalPlayTime)> EnrichPlaysWithPlayTime(ICollection<UserPlay> plays, bool adjustForBans = false)
-{
-    using var channel = GrpcChannel.ForAddress("http://localhost:5285", new GrpcChannelOptions
+    public static TimeSpan GetPlayTimeForEnrichedPlays(IEnumerable<UserPlay> plays, bool adjustForBans = false)
     {
-        MaxReceiveMessageSize = null
-    });
-    var client = new Greeter.GreeterClient(channel);
-
-    var simplePlays = plays.Select(s => new SimpleUserPlay
-    {
-        UserPlayId = s.UserPlayId,
-        ArtistName = s.ArtistName,
-        MsPlayed = s.MsPlayed.GetValueOrDefault(),
-        TrackName = s.TrackName
-    });
-
-    var repeatedField = new RepeatedField<SimpleUserPlay>();
-    repeatedField.AddRange(simplePlays);
-
-    var userPlayList = new UserPlayList
-    {
-        UserPlays = { repeatedField }
-    };
-
-    await client.CacheReadyAsync(new CacheReadyRequest());
-    var reply = await client.ProcessUserPlaysAsync(userPlayList);
-
-    var enrichedPlays = reply.UserPlays.ToDictionary(d => d.UserPlayId);
-    foreach (var play in plays)
-    {
-        if (enrichedPlays.TryGetValue(play.UserPlayId, out var enrichedPlay))
-        {
-            play.MsPlayed = enrichedPlay.MsPlayed;
-        }
+        return TimeSpan.FromMilliseconds(plays.Sum(s => s.MsPlayed.GetValueOrDefault()));
     }
 
-    var totalPlayTime = TimeSpan.FromSeconds(reply.TotalPlayTime.Seconds);
-    return (plays, totalPlayTime);
-}
+    public static async Task<(ICollection<UserPlay> enrichedPlays, TimeSpan totalPlayTime)> EnrichPlaysWithPlayTime(ICollection<UserPlay> plays, bool adjustForBans = false)
+    {
+        using var channel = GrpcChannel.ForAddress("http://localhost:5285", new GrpcChannelOptions
+        {
+            MaxReceiveMessageSize = null
+        });
+        var client = new TimeEnrichment.TimeEnrichmentClient(channel);
+
+        var simplePlays = plays.Select(s => new SimpleUserPlay
+        {
+            UserPlayId = s.UserPlayId,
+            ArtistName = s.ArtistName,
+            MsPlayed = s.MsPlayed.GetValueOrDefault(),
+            TrackName = s.TrackName
+        });
+
+        var repeatedField = new RepeatedField<SimpleUserPlay>();
+        repeatedField.AddRange(simplePlays);
+
+        var userPlayList = new UserPlayList
+        {
+            UserPlays = { repeatedField }
+        };
+
+        await client.CacheReadyAsync(new CacheReadyRequest());
+        var reply = await client.ProcessUserPlaysAsync(userPlayList);
+
+        var enrichedPlays = reply.UserPlays.ToDictionary(d => d.UserPlayId);
+        foreach (var play in plays)
+        {
+            if (enrichedPlays.TryGetValue(play.UserPlayId, out var enrichedPlay))
+            {
+                play.MsPlayed = enrichedPlay.MsPlayed;
+            }
+        }
+
+        var totalPlayTime = TimeSpan.FromSeconds(reply.TotalPlayTime.Seconds);
+        return (plays, totalPlayTime);
+    }
 
     public async Task<TimeSpan> GetPlayTimeForTrackWithPlaycount(string artistName, string trackName, long playcount, TopTimeListened topTimeListened = null)
     {

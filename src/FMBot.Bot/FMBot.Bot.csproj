@@ -70,7 +70,7 @@
     <PackageReference Include="System.Drawing.Common" Version="8.0.1" />
     <PackageReference Include="System.Reactive" Version="6.0.0" />
     <PackageReference Include="System.Reactive.Linq" Version="6.0.0" />
-    <Protobuf Include="..\Web.InternalApi.Protos\greet.proto" GrpcServices="Client" Link="Protos\greet.proto" />
+    <Protobuf Include="..\Web.InternalApi.Protos\time.proto" GrpcServices="Client" Link="Protos\time.proto" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FMBot.Discogs\FMBot.Discogs.csproj" />
