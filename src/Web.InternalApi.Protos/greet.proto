@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+package greet;
+
+// The greeting service definition.
+service Greeter {
+  // Sends a greeting
+  rpc SayHello (HelloRequest) returns (HelloReply);
+
+  rpc CacheReady (CacheReadyRequest) returns (CacheReadyReply);
+
+    // Processes user plays and returns total play time
+  rpc ProcessUserPlays (UserPlayList) returns (TotalPlayTimeReply);
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings.
+message HelloReply {
+  string message = 1;
+}
+
+message CacheReadyRequest {}
+message CacheReadyReply {}
+
+// A single user play event.
+message SimpleUserPlay {
+  int64 userPlayId = 1;
+  string trackName = 2;
+  string artistName = 3;
+  int64 msPlayed = 4;
+}
+
+// The request message containing a list of user play events.
+message UserPlayList {
+  repeated SimpleUserPlay userPlays = 1;
+}
+
+// The response message containing the total play time as a TimeSpan.
+message TotalPlayTimeReply {
+  repeated SimpleUserPlay userPlays = 1;
+  google.protobuf.Duration totalPlayTime = 2; // Total play time represented as a Duration
+}

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -7,7 +8,7 @@ namespace FMBot.Bot.Models;
 
 public class DailyOverview
 {
-    public List<DayOverview> Days { get; set; }
+    public ConcurrentBag<DayOverview> Days { get; set; }
 }
 
 public class DayOverview
