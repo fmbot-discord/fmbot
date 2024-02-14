@@ -32,9 +32,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Tests", "FMBot.Tests\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Web", "Web", "{8934F160-CC0F-4C75-B7EA-BAD9B7977371}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Web.InternalApi", "..\..\fmbot-web-backend\src\Web.InternalApi\Web.InternalApi.csproj", "{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.InternalApi", "..\..\fmbot-web-backend\src\Web.InternalApi\Web.InternalApi.csproj", "{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Web.InternalApi.Protos", "Web.InternalApi.Protos\Web.InternalApi.Protos.csproj", "{02842C9F-DB8F-41B7-93B1-529AB023488B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.InternalApi.Protos", "Web.InternalApi.Protos\Web.InternalApi.Protos.csproj", "{02842C9F-DB8F-41B7-93B1-529AB023488B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -93,7 +93,6 @@ Global
 		{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}.Release|Any CPU.Build.0 = Release|Any CPU
 		{02842C9F-DB8F-41B7-93B1-529AB023488B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{02842C9F-DB8F-41B7-93B1-529AB023488B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02842C9F-DB8F-41B7-93B1-529AB023488B}.Release|Any CPU.ActiveCfg = Release|Any CPU
