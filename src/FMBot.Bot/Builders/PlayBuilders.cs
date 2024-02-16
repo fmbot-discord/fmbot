@@ -730,7 +730,12 @@ public class PlayBuilder
 
             var pageFooter = new StringBuilder();
 
-            pageFooter.AppendLine($"Page {pageCounter}/{dayPages.Count}");
+            pageFooter.Append($"Page {pageCounter}/{dayPages.Count}");
+            if (amount == 7)
+            {
+                pageFooter.Append($" - 🫡");
+            }
+            pageFooter.AppendLine();
             pageFooter.AppendLine($"Top genres, artist, album and track per {amount} days");
             pageFooter.AppendLine(
                 $"{PlayService.GetUniqueCount(plays)} unique tracks - {plays.Count} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(plays), 1)} per day");

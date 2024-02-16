@@ -154,7 +154,7 @@ public class SupporterService
         thankYouMessage.AppendLine("- Use `/import manage` to configure how your data is combined with Last.fm");
         thankYouMessage.AppendLine();
         thankYouMessage.AppendLine("📈 **More stats and expanded commands**");
-        thankYouMessage.AppendLine("- `toptracks timelistened` with the most accurate listening time" );
+        thankYouMessage.AppendLine("- `toptracks timelistened` with the most accurate listening time");
         thankYouMessage.AppendLine("- `year` with an extra page");
         thankYouMessage.AppendLine("- `stats` command with listening times and a yearly overview");
         thankYouMessage.AppendLine("- `recent` with your lifetime play history");
@@ -189,7 +189,7 @@ public class SupporterService
             thankYouMessage.Append("ℹ️ **Your info**\n" +
                                    $"Your name in the `supporters` command will be shown as `{supporter.Name}`. This is also the name that will be shown when you sponsor charts. ");
         }
-        
+
         if (supporter?.OpenCollectiveId != null)
         {
             thankYouMessage.Append("You can update this through your OpenCollective settings.");
@@ -230,8 +230,14 @@ public class SupporterService
                 "Didn't cancel? It could be that there was an issue with your payment going through. Feel free to open a help thread if you need assistance.");
         }
 
+        ComponentBuilder buttons = null;
+        if (!openCollective)
+        {
+            buttons = new ComponentBuilder().WithButton("Manage subscription", style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+        }
+
         goodbyeEmbed.WithDescription(goodbyeMessage.ToString());
-        await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build());
+        await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons?.Build());
     }
 
     public async Task<string> GetPromotionalUpdateMessage(User user, string prfx, IDiscordClient contextClient,
