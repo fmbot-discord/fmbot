@@ -42,7 +42,7 @@ public class TimerService
     private readonly IMemoryCache _cache;
     private readonly DiscogsService _discogsService;
     private readonly WhoKnowsFilterService _whoKnowsFilterService;
-    private readonly StatusHandler.StatusHandlerClient _statusService;
+    private readonly StatusHandler.StatusHandlerClient _statusHandler;
 
 
     public FeaturedLog CurrentFeatured;
@@ -59,7 +59,7 @@ public class TimerService
         SupporterService supporterService,
         DiscogsService discogsService,
         WhoKnowsFilterService whoKnowsFilterService,
-        StatusHandler.StatusHandlerClient statusService)
+        StatusHandler.StatusHandlerClient statusHandler)
     {
         this._client = client;
         this._userService = userService;
@@ -71,7 +71,7 @@ public class TimerService
         this._supporterService = supporterService;
         this._discogsService = discogsService;
         this._whoKnowsFilterService = whoKnowsFilterService;
-        this._statusService = statusService;
+        this._statusHandler = statusHandler;
         this._updateService = updateService;
         this._botSettings = botSettings.Value;
 
@@ -273,7 +273,7 @@ public class TimerService
             var currentProcess = Process.GetCurrentProcess();
             var currentMemoryUsage = currentProcess.WorkingSet64;
 
-            await this._statusService.SendHeartbeatAsync(new InstanceHeartbeat
+            await this._statusHandler.SendHeartbeatAsync(new InstanceHeartbeat
             {
                 InstanceName = this._botSettings.Shards.InstanceName,
                 ConnectedGuilds = this._client.Guilds.Count(c => c.IsConnected),

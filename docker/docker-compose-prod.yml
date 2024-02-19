@@ -9,7 +9,7 @@ services:
     volumes:
       - /fmbot/prod/:/app/configs/
       - /fmbot/cache/:/app/cache/
-    command: "--memory=30g"
+    command: "--memory=25g"
     environment:
       - INSTANCE_NAME=prod-1
       - SHARDS_MAIN_INSTANCE=true
@@ -25,7 +25,7 @@ services:
     volumes:
       - /fmbot/prod/:/app/configs/
       - /fmbot/cache/:/app/cache/
-    command: "--memory=30g"
+    command: "--memory=25g"
     depends_on:
       prod-1:
         condition: service_healthy
@@ -59,7 +59,7 @@ services:
     volumes:
       - /fmbot/prod/:/app/configs/
       - /fmbot/cache/:/app/cache/
-    command: "--memory=30g"
+    command: "--memory=25g"
     depends_on:
       prod-3:
         condition: service_healthy
@@ -76,7 +76,7 @@ services:
     volumes:
       - /fmbot/prod/:/app/configs/
       - /fmbot/cache/:/app/cache/
-    command: "--memory=30g"
+    command: "--memory=25g"
     depends_on:
       prod-4:
         condition: service_healthy

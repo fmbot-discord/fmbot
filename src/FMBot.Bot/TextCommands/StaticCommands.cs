@@ -43,9 +43,8 @@ public class StaticCommands : BaseCommandModule
     private readonly UserService _userService;
     private readonly MusicBotService _musicBotService;
     private readonly StaticBuilders _staticBuilders;
-    private readonly StatusHandler.StatusHandlerClient _statusService;
+    private readonly StatusHandler.StatusHandlerClient _statusHandler;
     private readonly DiscordShardedClient _client;
-
 
     private InteractiveService Interactivity { get; }
 
@@ -63,7 +62,7 @@ public class StaticCommands : BaseCommandModule
         InteractiveService interactivity,
         MusicBotService musicBotService,
         StaticBuilders staticBuilders,
-        StatusHandler.StatusHandlerClient statusService,
+        StatusHandler.StatusHandlerClient statusHandler,
         DiscordShardedClient client) : base(botSettings)
     {
         this._friendService = friendsService;
@@ -75,7 +74,7 @@ public class StaticCommands : BaseCommandModule
         this.Interactivity = interactivity;
         this._musicBotService = musicBotService;
         this._staticBuilders = staticBuilders;
-        this._statusService = statusService;
+        this._statusHandler = statusHandler;
         this._client = client;
     }
 
@@ -228,9 +227,9 @@ public class StaticCommands : BaseCommandModule
         var instanceOverviewDescription = new StringBuilder();
         try
         {
-            var instanceOverview = await this._statusService.SendHeartbeatAsync(new InstanceHeartbeat
+            var instanceOverview = await this._statusHandler.SendHeartbeatAsync(new InstanceHeartbeat
             {
-                InstanceName = "dev-2",
+                InstanceName = this._botSettings.Shards.InstanceName,
                 ConnectedGuilds = this._client.Guilds.Count(c => c.IsConnected),
                 TotalGuilds = this._client.Guilds.Count,
                 ConnectedShards = this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected),
