@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using AngleSharp.Attributes;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
@@ -21,6 +22,7 @@ using Hangfire;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Web.InternalApi;
 using Image = Discord.Image;
 
 namespace FMBot.Bot.Services;
@@ -40,6 +42,8 @@ public class TimerService
     private readonly IMemoryCache _cache;
     private readonly DiscogsService _discogsService;
     private readonly WhoKnowsFilterService _whoKnowsFilterService;
+    private readonly StatusHandler.StatusHandlerClient _statusService;
+
 
     public FeaturedLog CurrentFeatured;
 
@@ -54,7 +58,8 @@ public class TimerService
         IMemoryCache cache,
         SupporterService supporterService,
         DiscogsService discogsService,
-        WhoKnowsFilterService whoKnowsFilterService)
+        WhoKnowsFilterService whoKnowsFilterService,
+        StatusHandler.StatusHandlerClient statusService)
     {
         this._client = client;
         this._userService = userService;
@@ -66,6 +71,7 @@ public class TimerService
         this._supporterService = supporterService;
         this._discogsService = discogsService;
         this._whoKnowsFilterService = whoKnowsFilterService;
+        this._statusService = statusService;
         this._updateService = updateService;
         this._botSettings = botSettings.Value;
 
@@ -263,6 +269,19 @@ public class TimerService
                 await using var fileStream = File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
                 File.SetLastWriteTimeUtc(path, DateTime.UtcNow);
             }
+
+            var currentProcess = Process.GetCurrentProcess();
+            var currentMemoryUsage = currentProcess.WorkingSet64;
+
+            await this._statusService.SendHeartbeatAsync(new InstanceHeartbeat
+            {
+                InstanceName = this._botSettings.Shards.InstanceName,
+                ConnectedGuilds = this._client.Guilds.Count(c => c.IsConnected),
+                TotalGuilds = this._client.Guilds.Count,
+                ConnectedShards = this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected),
+                TotalShards = this._client.Shards.Count,
+                MemoryBytesUsed = currentMemoryUsage
+            });
         }
         catch (Exception e)
         {

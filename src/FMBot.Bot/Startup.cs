@@ -38,6 +38,7 @@ using FMBot.Bot.Factories;
 using FMBot.Domain.Enums;
 using FMBot.Persistence.Interfaces;
 using System.Linq;
+using Web.InternalApi;
 
 namespace FMBot.Bot;
 
@@ -251,6 +252,19 @@ public class Startup
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("fmbot-discord", "1.0"));
             client.Timeout = TimeSpan.FromSeconds(10);
         });
+
+        services.AddGrpcClient<TimeEnrichment.TimeEnrichmentClient>(o =>
+        {
+            o.Address = new Uri("http://localhost:5285");
+        }).ConfigureChannel(o =>
+        {
+            o.MaxReceiveMessageSize = null;
+        }); ;
+
+        services.AddGrpcClient<StatusHandler.StatusHandlerClient>(o =>
+        {
+            o.Address = new Uri("http://localhost:5285");
+        }) ;
 
         services.AddHealthChecks();
 

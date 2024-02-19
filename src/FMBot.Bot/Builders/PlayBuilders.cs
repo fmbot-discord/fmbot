@@ -687,7 +687,7 @@ public class PlayBuilder
             return response;
         }
 
-        var dayPages = dailyOverview.Days.Chunk(amount).ToList();
+        var dayPages = dailyOverview.Days.OrderByDescending(o => o.Date).Chunk(amount).ToList();
 
         response.EmbedAuthor.WithName($"Daily overview for {StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}");
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS");
@@ -1117,7 +1117,7 @@ public class PlayBuilder
             fields = new List<EmbedFieldBuilder>();
 
             var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
-            allPlays = (await TimeService.EnrichPlaysWithPlayTime(allPlays)).enrichedPlays;
+            allPlays = (await this._timeService.EnrichPlaysWithPlayTime(allPlays)).enrichedPlays;
 
             var filter = new DateTime(year, 01, 01);
             var endFilter = new DateTime(year, 12, 12, 23, 59, 59);

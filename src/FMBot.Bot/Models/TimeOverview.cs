@@ -8,7 +8,7 @@ namespace FMBot.Bot.Models;
 
 public class DailyOverview
 {
-    public ConcurrentBag<DayOverview> Days { get; set; }
+    public List<DayOverview> Days { get; set; }
 }
 
 public class DayOverview

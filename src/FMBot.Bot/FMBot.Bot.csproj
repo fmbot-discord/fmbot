@@ -34,6 +34,7 @@
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.66.0.3309" />
     <PackageReference Include="Google.Protobuf" Version="3.25.2" />
     <PackageReference Include="Grpc.Net.Client" Version="2.60.0" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.60.0" />
     <PackageReference Include="Grpc.Tools" Version="2.61.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -71,6 +72,7 @@
     <PackageReference Include="System.Reactive" Version="6.0.0" />
     <PackageReference Include="System.Reactive.Linq" Version="6.0.0" />
     <Protobuf Include="..\Web.InternalApi.Protos\time.proto" GrpcServices="Client" Link="Protos\time.proto" />
+    <Protobuf Include="..\Web.InternalApi.Protos\status.proto" GrpcServices="Client" Link="Protos\status.proto" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FMBot.Discogs\FMBot.Discogs.csproj" />

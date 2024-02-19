@@ -22,41 +22,13 @@ public class TimeService
 {
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
+    private readonly TimeEnrichment.TimeEnrichmentClient _timeEnrichment;
 
-    public TimeService(IMemoryCache cache, IOptions<BotSettings> botSettings)
+    public TimeService(IMemoryCache cache, IOptions<BotSettings> botSettings, TimeEnrichment.TimeEnrichmentClient timeEnrichment)
     {
         this._cache = cache;
+        this._timeEnrichment = timeEnrichment;
         this._botSettings = botSettings.Value;
-    }
-
-    public async Task<TimeSpan> GetPlayTimeForPlays(IEnumerable<UserPlay> plays, bool adjustForBans = false)
-    {
-        using var channel = GrpcChannel.ForAddress("http://localhost:5285", new GrpcChannelOptions
-        {
-            MaxReceiveMessageSize = null
-        });
-        var client = new TimeEnrichment.TimeEnrichmentClient(channel);
-
-        var simplePlays = plays.Select(s => new SimpleUserPlay
-        {
-            UserPlayId = s.UserPlayId,
-            ArtistName = s.ArtistName,
-            MsPlayed = s.MsPlayed.GetValueOrDefault(),
-            TrackName = s.TrackName
-        });
-
-        var repeatedField = new RepeatedField<SimpleUserPlay>();
-        repeatedField.AddRange(simplePlays);
-
-        var userPlayList = new UserPlayList
-        {
-            UserPlays = { repeatedField }
-        };
-
-        await client.CacheReadyAsync(new CacheReadyRequest());
-        var reply = await client.ProcessUserPlaysAsync(userPlayList);
-
-        return TimeSpan.FromSeconds(reply.TotalPlayTime.Seconds);
     }
 
     public static TimeSpan GetPlayTimeForEnrichedPlays(IEnumerable<UserPlay> plays, bool adjustForBans = false)
@@ -64,14 +36,8 @@ public class TimeService
         return TimeSpan.FromMilliseconds(plays.Sum(s => s.MsPlayed.GetValueOrDefault()));
     }
 
-    public static async Task<(ICollection<UserPlay> enrichedPlays, TimeSpan totalPlayTime)> EnrichPlaysWithPlayTime(ICollection<UserPlay> plays, bool adjustForBans = false)
+    public async Task<(ICollection<UserPlay> enrichedPlays, TimeSpan totalPlayTime)> EnrichPlaysWithPlayTime(ICollection<UserPlay> plays, bool adjustForBans = false)
     {
-        using var channel = GrpcChannel.ForAddress("http://localhost:5285", new GrpcChannelOptions
-        {
-            MaxReceiveMessageSize = null
-        });
-        var client = new TimeEnrichment.TimeEnrichmentClient(channel);
-
         var simplePlays = plays.Select(s => new SimpleUserPlay
         {
             UserPlayId = s.UserPlayId,
@@ -88,8 +54,7 @@ public class TimeService
             UserPlays = { repeatedField }
         };
 
-        await client.CacheReadyAsync(new CacheReadyRequest());
-        var reply = await client.ProcessUserPlaysAsync(userPlayList);
+        var reply = await this._timeEnrichment.ProcessUserPlaysAsync(userPlayList);
 
         var enrichedPlays = reply.UserPlays.ToDictionary(d => d.UserPlayId);
         foreach (var play in plays)
@@ -312,7 +277,7 @@ public class TimeService
 
         foreach (var user in userPlaysPerUser)
         {
-            var timeListened = await GetPlayTimeForPlays(user);
+            var timeListened = await EnrichPlaysWithPlayTime(user.ToList());
 
             if (guildUsers.TryGetValue(user.Key, out var guildUser))
             {
@@ -327,13 +292,13 @@ public class TimeService
                 whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
                 {
                     DiscordName = userName,
-                    Playcount = (int)timeListened.TotalMinutes,
+                    Playcount = (int)timeListened.totalPlayTime.TotalMinutes,
                     LastFMUsername = guildUser.UserNameLastFM,
                     UserId = user.Key,
                     LastUsed = guildUser.LastUsed,
                     LastMessage = guildUser.LastMessage,
                     Roles = guildUser.Roles,
-                    Name = StringExtensions.GetListeningTimeString(timeListened)
+                    Name = StringExtensions.GetListeningTimeString(timeListened.totalPlayTime)
                 });
             }
         }

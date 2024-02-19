@@ -859,7 +859,7 @@ public class UserBuilder
         }
 
         var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
-        allPlays = (await TimeService.EnrichPlaysWithPlayTime(allPlays)).enrichedPlays;
+        allPlays = (await this._timeService.EnrichPlaysWithPlayTime(allPlays)).enrichedPlays;
 
         var monthDescription = new StringBuilder();
         var monthGroups = allPlays

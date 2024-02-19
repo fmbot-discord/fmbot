@@ -15,6 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="status.proto">
+      <GrpcServices>Server</GrpcServices>
+    </None>
     <None Update="time.proto">
       <GrpcServices>Server</GrpcServices>
     </None>

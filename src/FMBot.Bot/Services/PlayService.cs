@@ -58,15 +58,15 @@ public class PlayService
                 return null;
             }
 
-            var enrichedPlays = await TimeService.EnrichPlaysWithPlayTime(plays);
+            var enrichedPlays = await this._timeService.EnrichPlaysWithPlayTime(plays);
 
             var overview = new DailyOverview
             {
-                Days = new ConcurrentBag<DayOverview>()
+                Days = []
             };
 
             foreach (var day in enrichedPlays.enrichedPlays
-                         .OrderByDescending(o => o.TimePlayed)
+                         .OrderBy(o => o.TimePlayed)
                          .GroupBy(g => TimeZoneInfo.ConvertTime(g.TimePlayed, timeZone).Date))
             {
                 overview.Days.Add(new DayOverview
@@ -804,7 +804,7 @@ public class PlayService
 
     public async Task<List<UserPlay>> GetGuildUsersPlaysForTimeLeaderBoard(int guildId)
     {
-        const string sql = "SELECT up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
+        const string sql = "SELECT up.user_play_id, up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
                            "FROM public.user_plays AS up " +
                            "INNER JOIN users AS u ON up.user_id = u.user_id " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
