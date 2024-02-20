@@ -34,7 +34,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Web", "Web", "{8934F160-CC0
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.InternalApi", "..\..\fmbot-web-backend\src\Web.InternalApi\Web.InternalApi.csproj", "{B2464F03-8E0A-448E-AF32-2F67FBCEEC53}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.InternalApi.Protos", "Web.InternalApi.Protos\Web.InternalApi.Protos.csproj", "{02842C9F-DB8F-41B7-93B1-529AB023488B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared.Protos", "Shared.Protos\Shared.Protos.csproj", "{02842C9F-DB8F-41B7-93B1-529AB023488B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
