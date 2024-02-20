@@ -68,6 +68,8 @@ public class BotConfig
     public string MetricsPusherEndpoint { get; set; }
     public string MetricsPusherName { get; set; }
 
+    public string InternalApiEndpoint { get; set; }
+
     public bool? UseShardEnvConfig { get; set; }
 }
 

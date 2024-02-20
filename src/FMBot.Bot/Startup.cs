@@ -253,18 +253,21 @@ public class Startup
             client.Timeout = TimeSpan.FromSeconds(10);
         });
 
-        services.AddGrpcClient<TimeEnrichment.TimeEnrichmentClient>(o =>
+        if (!string.IsNullOrWhiteSpace(this.Configuration["Bot:InternalApiEndpoint"]))
         {
-            o.Address = new Uri("http://localhost:5285");
-        }).ConfigureChannel(o =>
-        {
-            o.MaxReceiveMessageSize = null;
-        }); ;
+            services.AddGrpcClient<TimeEnrichment.TimeEnrichmentClient>(o =>
+            {
+                o.Address = new Uri(this.Configuration["Bot:InternalApiEndpoint"]);
+            }).ConfigureChannel(o =>
+            {
+                o.MaxReceiveMessageSize = null;
+            }); ;
 
-        services.AddGrpcClient<StatusHandler.StatusHandlerClient>(o =>
-        {
-            o.Address = new Uri("http://localhost:5285");
-        }) ;
+            services.AddGrpcClient<StatusHandler.StatusHandlerClient>(o =>
+            {
+                o.Address = new Uri(this.Configuration["Bot:InternalApiEndpoint"]);
+            });
+        }
 
         services.AddHealthChecks();
 

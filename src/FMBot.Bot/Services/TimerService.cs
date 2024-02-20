@@ -273,15 +273,18 @@ public class TimerService
             var currentProcess = Process.GetCurrentProcess();
             var currentMemoryUsage = currentProcess.WorkingSet64;
 
-            await this._statusHandler.SendHeartbeatAsync(new InstanceHeartbeat
+            if (!string.IsNullOrWhiteSpace(this._botSettings.Bot.InternalApiEndpoint))
             {
-                InstanceName = this._botSettings.Shards.InstanceName,
-                ConnectedGuilds = this._client.Guilds.Count(c => c.IsConnected),
-                TotalGuilds = this._client.Guilds.Count,
-                ConnectedShards = this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected),
-                TotalShards = this._client.Shards.Count,
-                MemoryBytesUsed = currentMemoryUsage
-            });
+                await this._statusHandler.SendHeartbeatAsync(new InstanceHeartbeat
+                {
+                    InstanceName = this._botSettings.Shards.InstanceName,
+                    ConnectedGuilds = this._client.Guilds.Count(c => c.IsConnected),
+                    TotalGuilds = this._client.Guilds.Count,
+                    ConnectedShards = this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected),
+                    TotalShards = this._client.Shards.Count,
+                    MemoryBytesUsed = currentMemoryUsage
+                });
+            }
         }
         catch (Exception e)
         {
