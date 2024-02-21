@@ -273,7 +273,7 @@ public class TimerService
             var currentProcess = Process.GetCurrentProcess();
             var currentMemoryUsage = currentProcess.WorkingSet64;
 
-            if (!string.IsNullOrWhiteSpace(this._botSettings.Bot.InternalApiEndpoint))
+            if (!string.IsNullOrWhiteSpace(this._botSettings.ApiConfig?.InternalEndpoint))
             {
                 await this._statusHandler.SendHeartbeatAsync(new InstanceHeartbeat
                 {

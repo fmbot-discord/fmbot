@@ -38,7 +38,10 @@ using FMBot.Bot.Factories;
 using FMBot.Domain.Enums;
 using FMBot.Persistence.Interfaces;
 using System.Linq;
+using FMBot.Bot.Extensions;
 using Web.InternalApi;
+using Grpc.Core.Interceptors;
+using Grpc.Core;
 
 namespace FMBot.Bot;
 
@@ -253,20 +256,11 @@ public class Startup
             client.Timeout = TimeSpan.FromSeconds(10);
         });
 
-        if (!string.IsNullOrWhiteSpace(this.Configuration["Bot:InternalApiEndpoint"]))
-        {
-            services.AddGrpcClient<TimeEnrichment.TimeEnrichmentClient>(o =>
-            {
-                o.Address = new Uri(this.Configuration["Bot:InternalApiEndpoint"]);
-            }).ConfigureChannel(o =>
-            {
-                o.MaxReceiveMessageSize = null;
-            }); ;
 
-            services.AddGrpcClient<StatusHandler.StatusHandlerClient>(o =>
-            {
-                o.Address = new Uri(this.Configuration["Bot:InternalApiEndpoint"]);
-            });
+        if (!string.IsNullOrWhiteSpace(this.Configuration["ApiConfig:InternalEndpoint"]))
+        {
+            services.AddConfiguredGrpcClient<TimeEnrichment.TimeEnrichmentClient>(this.Configuration);
+            services.AddConfiguredGrpcClient<StatusHandler.StatusHandlerClient>(this.Configuration);
         }
 
         services.AddHealthChecks();
@@ -276,6 +270,7 @@ public class Startup
 
         services.AddMemoryCache();
     }
+
 
     private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
