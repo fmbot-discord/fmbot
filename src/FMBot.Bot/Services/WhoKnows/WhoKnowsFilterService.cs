@@ -172,7 +172,7 @@ public class WhoKnowsFilterService
         var sql = "SELECT up.* " +
                   "FROM user_plays AS up " +
                   $"WHERE time_played >= current_date - interval '{start}' day AND  time_played <= current_date - interval '{end}' day " +
-                  $"AND user_id  >= {botUserId} AND user_id <= {topUserId}";
+                  $"AND user_id  >= {botUserId} AND user_id <= {topUserId} AND play_source = 0";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

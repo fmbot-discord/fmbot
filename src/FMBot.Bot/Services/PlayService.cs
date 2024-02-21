@@ -51,7 +51,8 @@ public class PlayService
             await connection.OpenAsync();
 
             var start = DateTime.UtcNow.AddDays(-amountOfDays);
-            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
+            var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
+            var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm, start: start);
 
             if (!plays.Any())
             {
