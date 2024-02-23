@@ -256,12 +256,8 @@ public class Startup
             client.Timeout = TimeSpan.FromSeconds(10);
         });
 
-
-        if (!string.IsNullOrWhiteSpace(this.Configuration["ApiConfig:InternalEndpoint"]))
-        {
-            services.AddConfiguredGrpcClient<TimeEnrichment.TimeEnrichmentClient>(this.Configuration);
-            services.AddConfiguredGrpcClient<StatusHandler.StatusHandlerClient>(this.Configuration);
-        }
+        services.AddConfiguredGrpcClient<TimeEnrichment.TimeEnrichmentClient>(this.Configuration);
+        services.AddConfiguredGrpcClient<StatusHandler.StatusHandlerClient>(this.Configuration);
 
         services.AddHealthChecks();
 

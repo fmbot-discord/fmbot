@@ -6,7 +6,7 @@ public class UserAlbum
 
     public int UserId { get; set; }
 
-    public int? AlbumId { get; set; }
+    //public int? AlbumId { get; set; }
 
     public string Name { get; set; }
 
@@ -16,5 +16,5 @@ public class UserAlbum
 
     public User User { get; set; }
     
-    public Album Album { get; set; }
+    //public Album Album { get; set; }
 }

@@ -9,7 +9,7 @@ public class UserPlay
 
     public int UserId { get; set; }
 
-    public int? TrackId { get; set; }
+    //public int? TrackId { get; set; }
 
     public string TrackName { get; set; }
 
@@ -25,5 +25,5 @@ public class UserPlay
 
     public User User { get; set; }
 
-    public Track Track { get; set; }
+    //public Track Track { get; set; }
 }
