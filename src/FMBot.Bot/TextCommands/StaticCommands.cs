@@ -252,7 +252,7 @@ public class StaticCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            Log.Error("Error in gRPC status update", e);
+            Log.Error("Error in gRPC status update, {exceptionMessage}", e.Message, e);
             instanceOverviewDescription.AppendLine("Error");
         }
 
