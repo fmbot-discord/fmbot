@@ -7,17 +7,20 @@ import "google/protobuf/duration.proto";
 
 package time;
 
-// The greeting service definition.
 service TimeEnrichment {
-  rpc CacheReady (CacheReadyRequest) returns (CacheReadyReply);
-
   rpc ProcessUserPlays (UserPlayList) returns (TotalPlayTimeReply);
+
+  rpc GetTrackLength (TrackLengthRequest) returns (TrackLengthReply);
+
+  rpc GetAverageArtistTrackLength (AverageArtistTrackLengthRequest) returns (AverageArtistTrackLengthReply);
+
+  rpc FilterInvalidSpotifyImports (SpotifyImportsRequest) returns (ValidSpotifyImportsReply);
 }
 
-message CacheReadyRequest {}
-message CacheReadyReply {}
+message UserPlayList {
+  repeated SimpleUserPlay userPlays = 1;
+}
 
-// A single user play event.
 message SimpleUserPlay {
   int64 userPlayId = 1;
   string trackName = 2;
@@ -25,13 +28,44 @@ message SimpleUserPlay {
   int64 msPlayed = 4;
 }
 
-// The request message containing a list of user play events.
-message UserPlayList {
-  repeated SimpleUserPlay userPlays = 1;
-}
-
-// The response message containing the total play time as a TimeSpan.
 message TotalPlayTimeReply {
   repeated SimpleUserPlay userPlays = 1;
-  google.protobuf.Duration totalPlayTime = 2; // Total play time represented as a Duration
+  google.protobuf.Duration totalPlayTime = 2; 
+}
+
+message TrackLengthRequest {
+  string trackName = 1;
+  string artistName = 2;
+  bool useAverages = 3;
+  bool adjustForBans = 4;
+}
+
+message TrackLengthReply {
+  google.protobuf.Duration trackLength = 1; 
+}
+
+message AverageArtistTrackLengthRequest {
+  string artistName = 1;
+}
+
+message AverageArtistTrackLengthReply {
+  google.protobuf.Duration avgLength = 1; 
+}
+
+
+message SpotifyImportsRequest {
+  repeated SpotifyImportModel importedEndSongs = 1;
+}
+
+message SpotifyImportModel {
+  google.protobuf.Timestamp ts = 1;
+  int32 msPlayed = 2;
+  string masterMetadataTrackName = 3;
+  string masterMetadataAlbumArtistName = 4;
+  string masterMetadataAlbumAlbumName = 5;
+}
+
+message ValidSpotifyImportsReply {
+  repeated SpotifyImportModel validImports = 1;
+  int32 invalidPlays = 2;
 }
