@@ -229,11 +229,11 @@ public class StaticCommands : BaseCommandModule
         {
             var instanceOverview = await this._statusHandler.SendHeartbeatAsync(new InstanceHeartbeat
             {
-                InstanceName = this._botSettings.Shards.InstanceName,
-                ConnectedGuilds = this._client.Guilds.Count(c => c.IsConnected),
-                TotalGuilds = this._client.Guilds.Count,
-                ConnectedShards = this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected),
-                TotalShards = this._client.Shards.Count,
+                InstanceName = this._botSettings.Shards?.InstanceName ?? "unknown",
+                ConnectedGuilds = this._client?.Guilds?.Count(c => c.IsConnected) ?? 0,
+                TotalGuilds = this._client?.Guilds?.Count ?? 0,
+                ConnectedShards = this._client?.Shards?.Count(c => c.ConnectionState == ConnectionState.Connected) ?? 0,
+                TotalShards = this._client?.Shards?.Count ?? 0,
                 MemoryBytesUsed = currentMemoryUsage
             });
 
