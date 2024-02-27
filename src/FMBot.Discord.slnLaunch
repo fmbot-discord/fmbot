@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "API \u002B Bot",
+    "Projects": [
+      {
+        "Name": "..\\..\\fmbot-web-backend\\src\\Web.InternalApi\\Web.InternalApi.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      },
+      {
+        "Name": "FMBot.Bot\\FMBot.Bot.csproj",
+        "Action": "Start",
+        "DebugTarget": "FMBot.Bot"
+      }
+    ]
+  }
+]

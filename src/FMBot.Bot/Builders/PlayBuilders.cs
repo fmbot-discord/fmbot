@@ -687,7 +687,7 @@ public class PlayBuilder
             return response;
         }
 
-        var dayPages = dailyOverview.Days.Chunk(amount).ToList();
+        var dayPages = dailyOverview.Days.OrderByDescending(o => o.Date).Chunk(amount).ToList();
 
         response.EmbedAuthor.WithName($"Daily overview for {StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}");
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS");
@@ -1117,6 +1117,7 @@ public class PlayBuilder
             fields = new List<EmbedFieldBuilder>();
 
             var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+            allPlays = (await this._timeService.EnrichPlaysWithPlayTime(allPlays)).enrichedPlays;
 
             var filter = new DateTime(year, 01, 01);
             var endFilter = new DateTime(year, 12, 12, 23, 59, 59);
@@ -1159,7 +1160,7 @@ public class PlayBuilder
                 .OrderBy(o => o.TimePlayed)
                 .GroupBy(g => new { g.TimePlayed.Month, g.TimePlayed.Year });
 
-            var totalPlayTime = await this._timeService.GetPlayTimeForPlays(allPlays.Where(w => w.TimePlayed >= filter && w.TimePlayed <= endFilter));
+            var totalPlayTime = TimeService.GetPlayTimeForEnrichedPlays(allPlays.Where(w => w.TimePlayed >= filter && w.TimePlayed <= endFilter));
             monthDescription.AppendLine(
                 $"**`All`** " +
                 $"- **{allPlays.Count(w => w.TimePlayed >= filter && w.TimePlayed <= endFilter)}** plays " +
@@ -1172,7 +1173,7 @@ public class PlayBuilder
                     break;
                 }
 
-                var time = await this._timeService.GetPlayTimeForPlays(month);
+                var time = TimeService.GetPlayTimeForEnrichedPlays(month);
                 monthDescription.AppendLine(
                     $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month.Key.Month)}`** " +
                     $"- **{month.Count()}** plays " +

@@ -12,9 +12,12 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.Repositories;
+using Google.Protobuf.Collections;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
 
@@ -23,11 +26,14 @@ public class ImportService
     private readonly HttpClient _httpClient;
     private readonly TimeService _timeService;
     private readonly BotSettings _botSettings;
+    private readonly TimeEnrichment.TimeEnrichmentClient _timeEnrichment;
 
-    public ImportService(HttpClient httpClient, TimeService timeService, IOptions<BotSettings> botSettings)
+
+    public ImportService(HttpClient httpClient, TimeService timeService, IOptions<BotSettings> botSettings, TimeEnrichment.TimeEnrichmentClient timeEnrichment)
     {
         this._httpClient = httpClient;
         this._timeService = timeService;
+        this._timeEnrichment = timeEnrichment;
         this._botSettings = botSettings.Value;
     }
 
@@ -93,40 +99,41 @@ public class ImportService
 
     public async Task<List<UserPlay>> SpotifyImportToUserPlays(User user, List<SpotifyEndSongImportModel> spotifyPlays)
     {
-        var userPlays = new List<UserPlay>();
-
-        var invalidPlays = 0;
-
-        foreach (var spotifyPlay in spotifyPlays
-                     .Where(w => w.MasterMetadataAlbumArtistName != null &&
-                                 w.MasterMetadataTrackName != null))
+        var simplePlays = spotifyPlays
+            .Where(w => w.MasterMetadataAlbumArtistName != null &&
+                        w.MasterMetadataTrackName != null)
+            .Select(s => new SpotifyImportModel
         {
-            var validScrobble = await this._timeService.IsValidScrobble(
-                spotifyPlay.MasterMetadataAlbumArtistName, spotifyPlay.MasterMetadataTrackName, spotifyPlay.MsPlayed);
+            MsPlayed = s.MsPlayed,
+            MasterMetadataAlbumAlbumName = s.MasterMetadataAlbumAlbumName ?? "",
+            MasterMetadataAlbumArtistName = s.MasterMetadataAlbumArtistName,
+            MasterMetadataTrackName = s.MasterMetadataTrackName,
+            Ts = Timestamp.FromDateTime(s.Ts.ToUniversalTime())
+        });
 
-            if (validScrobble)
-            {
-                userPlays.Add(new UserPlay
-                {
-                    UserId = user.UserId,
-                    TimePlayed = DateTime.SpecifyKind(spotifyPlay.Ts, DateTimeKind.Utc),
-                    ArtistName = spotifyPlay.MasterMetadataAlbumArtistName,
-                    AlbumName = spotifyPlay.MasterMetadataAlbumAlbumName,
-                    TrackName = spotifyPlay.MasterMetadataTrackName,
-                    PlaySource = PlaySource.SpotifyImport,
-                    MsPlayed = spotifyPlay.MsPlayed
-                });
-            }
-            else
-            {
-                invalidPlays++;
-            }
-        }
+        var repeatedField = new RepeatedField<SpotifyImportModel>();
+        repeatedField.AddRange(simplePlays);
+
+        var spotifyImports = new SpotifyImportsRequest
+        {
+            ImportedEndSongs = { repeatedField }
+        };
+
+        var filterInvalidPlays = await this._timeEnrichment.FilterInvalidSpotifyImportsAsync(spotifyImports);
 
         Log.Information("Importing: {userId} / {discordUserId} - SpotifyImportToUserPlays found {validPlays} valid plays and {invalidPlays} invalid plays",
-            user.UserId, user.DiscordUserId, userPlays.Count, invalidPlays);
+            user.UserId, user.DiscordUserId, filterInvalidPlays.ValidImports.Count, filterInvalidPlays.InvalidPlays);
 
-        return userPlays;
+        return filterInvalidPlays.ValidImports.Select(s => new UserPlay
+        {
+            UserId = user.UserId,
+            TimePlayed = DateTime.SpecifyKind(s.Ts.ToDateTime(), DateTimeKind.Utc),
+            ArtistName = s.MasterMetadataAlbumArtistName,
+            AlbumName = !string.IsNullOrWhiteSpace(s.MasterMetadataAlbumAlbumName) ? s.MasterMetadataAlbumAlbumName : null,
+            TrackName = s.MasterMetadataTrackName,
+            PlaySource = PlaySource.SpotifyImport,
+            MsPlayed = s.MsPlayed
+        }).ToList();
     }
 
     public async Task<List<UserPlay>> RemoveDuplicateSpotifyImports(int userId, IEnumerable<UserPlay> userPlays)

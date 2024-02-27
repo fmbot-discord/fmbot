@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -51,11 +50,11 @@ public class WhoKnowsFilterService
 
                 foreach (var user in userPlays)
                 {
-                    var timeListened = await this._timeService.GetPlayTimeForPlays(user.Value, true);
+                    var timeListened = await this._timeService.EnrichPlaysWithPlayTime(user.Value, true);
 
-                    if (timeListened.TotalHours >= MaxAmountOfHoursPerPeriod)
+                    if (timeListened.totalPlayTime.TotalHours >= MaxAmountOfHoursPerPeriod)
                     {
-                        Log.Information("GWKFilter: Found user {userId} with too much playtime - {totalHours}", user.Key, (int)timeListened.TotalHours);
+                        Log.Information("GWKFilter: Found user {userId} with too much playtime - {totalHours}", user.Key, (int)timeListened.totalPlayTime.TotalHours);
 
                         newFilteredUsers.Add(new GlobalFilteredUser
                         {
@@ -63,7 +62,7 @@ public class WhoKnowsFilterService
                             OccurrenceStart = user.Value.MinBy(b => b.TimePlayed).TimePlayed,
                             OccurrenceEnd = user.Value.MaxBy(b => b.TimePlayed).TimePlayed,
                             Reason = GlobalFilterReason.PlayTimeInPeriod,
-                            ReasonAmount = (int)timeListened.TotalHours,
+                            ReasonAmount = (int)timeListened.totalPlayTime.TotalHours,
                             UserId = user.Key
                         });
                     }

@@ -9,6 +9,8 @@ public class UserPlay
 
     public int UserId { get; set; }
 
+    //public int? TrackId { get; set; }
+
     public string TrackName { get; set; }
 
     public string AlbumName { get; set; }
@@ -22,4 +24,6 @@ public class UserPlay
     public PlaySource? PlaySource { get; set; }
 
     public User User { get; set; }
+
+    //public Track Track { get; set; }
 }

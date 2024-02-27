@@ -38,6 +38,10 @@ using FMBot.Bot.Factories;
 using FMBot.Domain.Enums;
 using FMBot.Persistence.Interfaces;
 using System.Linq;
+using FMBot.Bot.Extensions;
+using Web.InternalApi;
+using Grpc.Core.Interceptors;
+using Grpc.Core;
 
 namespace FMBot.Bot;
 
@@ -252,6 +256,9 @@ public class Startup
             client.Timeout = TimeSpan.FromSeconds(10);
         });
 
+        services.AddConfiguredGrpcClient<TimeEnrichment.TimeEnrichmentClient>(this.Configuration);
+        services.AddConfiguredGrpcClient<StatusHandler.StatusHandlerClient>(this.Configuration);
+
         services.AddHealthChecks();
 
         services.AddDbContextFactory<FMBotDbContext>(b =>
@@ -259,6 +266,7 @@ public class Startup
 
         services.AddMemoryCache();
     }
+
 
     private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {

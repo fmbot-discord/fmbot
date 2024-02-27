@@ -6,6 +6,8 @@ public class UserTrack
 
     public int UserId { get; set; }
 
+    //public int? TrackId { get; set; }
+
     public string Name { get; set; }
 
     public string ArtistName { get; set; }
@@ -13,4 +15,6 @@ public class UserTrack
     public int Playcount { get; set; }
 
     public User User { get; set; }
+
+    //public Track Track { get; set; }
 }

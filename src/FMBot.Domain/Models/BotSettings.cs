@@ -11,6 +11,8 @@ public class BotSettings
     public LoggingConfig Logging { get; set; }
 
     public BotConfig Bot { get; set; }
+    
+    public InternalApiConfig ApiConfig { get; set; }
 
     public ShardConfig Shards { get; set; }
 
@@ -69,6 +71,12 @@ public class BotConfig
     public string MetricsPusherName { get; set; }
 
     public bool? UseShardEnvConfig { get; set; }
+}
+
+public class InternalApiConfig
+{
+    public string InternalEndpoint { get; set; }
+    public string InternalSecretKey { get; set; }
 }
 
 public class ShardConfig

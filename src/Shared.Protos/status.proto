@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+package status;
+
+// The greeting service definition.
+service StatusHandler {
+  rpc SendHeartbeat (InstanceHeartbeat) returns (InstanceOverviewReply);
+}
+
+message InstanceHeartbeat {
+  string instanceName = 1;
+  int32 connectedGuilds = 2;
+  int32 totalGuilds = 3;
+  int32 connectedShards = 4;
+  int32 totalShards = 5;
+  int64 memoryBytesUsed = 6;
+}
+
+message InstanceOverviewReply {
+  repeated InstanceStatus instances = 1;
+}
+
+message InstanceStatus {
+  string instanceName = 1;
+  google.protobuf.Timestamp lastHeartbeat = 2;
+  int32 connectedGuilds = 3;
+  int32 totalGuilds = 4;
+  int32 connectedShards = 5;
+  int32 totalShards = 6;
+  int64 memoryBytesUsed = 7;
+}
