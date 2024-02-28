@@ -58,8 +58,6 @@ public class WhoKnowsArtistDto
 {
     public int UserId { get; set; }
 
-    public string Name { get; set; }
-
     public string UserNameLastFm { get; set; }
 
     public int Playcount { get; set; }
@@ -68,8 +66,6 @@ public class WhoKnowsArtistDto
 public class WhoKnowsGlobalArtistDto
 {
     public int UserId { get; set; }
-
-    public string Name { get; set; }
 
     public int Playcount { get; set; }
 

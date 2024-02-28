@@ -1418,14 +1418,16 @@ public class ArtistBuilders
             footer.AppendLine($"{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}");
         }
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        footer.AppendLine($"WhoKnows artist requested by {userTitle}");
-
         var rnd = new Random();
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
             footer.AppendLine($"Missing members? Update with {context.Prefix}refreshmembers");
+        }
+
+        if (filterStats.FullDescription != null)
+        {
+            footer.AppendLine(filterStats.FullDescription);
         }
 
         if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)
@@ -1434,14 +1436,10 @@ public class ArtistBuilders
             var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
             var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
 
+            footer.Append("Artist - ");
             footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ");
-            footer.AppendLine($"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}");
-        }
-
-        if (filterStats.FullDescription != null)
-        {
-            footer.AppendLine(filterStats.FullDescription);
+            footer.Append($"{serverPlaycount} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.AppendLine($"{(int)avgServerPlaycount} avg");
         }
 
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
@@ -1593,9 +1591,6 @@ public class ArtistBuilders
             footer.AppendLine($"{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}");
         }
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        footer.AppendLine($"Global WhoKnows artist requested by {userTitle}");
-
         footer = WhoKnowsService.GetGlobalWhoKnowsFooter(footer, settings, context);
 
         if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)
@@ -1604,9 +1599,10 @@ public class ArtistBuilders
             var globalPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
             var avgPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
 
+            footer.Append($"Global artist - ");
             footer.Append($"{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ");
-            footer.AppendLine($"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}");
+            footer.Append($"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{(int)avgPlaycount} avg");
         }
 
         //var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
@@ -1710,20 +1706,18 @@ public class ArtistBuilders
 
         response.Embed.WithDescription(serverUsers);
 
-        var footer = "";
+        var footer = new StringBuilder();
 
         if (cachedArtist.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
         {
-            footer += $"\n{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}";
+            footer.AppendLine($"{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}");
         }
 
         var amountOfHiddenFriends = context.ContextUser.Friends.Count(c => !c.FriendUserId.HasValue);
         if (amountOfHiddenFriends > 0)
         {
-            footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
+            footer.AppendLine($"{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible");
         }
-
-        footer += $"\nFriends WhoKnow artist requested by {userTitle}";
 
         if (usersWithArtist.Any() && usersWithArtist.Count > 1)
         {
@@ -1731,10 +1725,12 @@ public class ArtistBuilders
             var globalPlaycount = usersWithArtist.Sum(a => a.Playcount);
             var avgPlaycount = usersWithArtist.Average(a => a.Playcount);
 
-            footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
-            footer += $"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ";
-            footer += $"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}";
+            footer.Append($"{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append($"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{(int)avgPlaycount} avg");
         }
+
+        footer.AppendLine($"Friends WhoKnow artist for {userTitle}");
 
         response.Embed.WithTitle($"{cachedArtist.Name} with friends");
 
@@ -1743,7 +1739,7 @@ public class ArtistBuilders
             response.Embed.WithUrl(cachedArtist.LastFmUrl);
         }
 
-        response.EmbedFooter.WithText(footer);
+        response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)

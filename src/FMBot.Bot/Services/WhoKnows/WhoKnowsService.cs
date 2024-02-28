@@ -325,7 +325,7 @@ public class WhoKnowsService
                 nameWithLink = NameWithLink(user);
                 if (user.UserId == requestedUserId)
                 {
-                    nameWithLink = $"**{nameWithLink}**";
+                    nameWithLink = $"**{nameWithLink}";
                 }
             }
 
@@ -345,7 +345,15 @@ public class WhoKnowsService
 
             reply.Append($"{positionCounter}{afterPositionSpacer}{nameWithLink}");
 
-            reply.Append($" - **{user.Playcount}** {playString}\n");
+            if (user.UserId == requestedUserId)
+            {
+                reply.Append($" - {user.Playcount} {playString}**\n");
+
+            }
+            else
+            {
+                reply.Append($" - **{user.Playcount}** {playString}\n");
+            }
 
             indexNumber += 1;
             timesNameAdded += 1;
@@ -366,9 +374,9 @@ public class WhoKnowsService
                 var nameWithLink = NameWithLink(requestedUser);
                 var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
 
-                reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink}** ");
+                reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink} ");
 
-                reply.Append($" - **{requestedUser.Playcount}** {playString}\n");
+                reply.Append($" - {requestedUser.Playcount} {playString}**\n");
             }
         }
 

@@ -320,14 +320,18 @@ public class TrackBuilders
 
         response.Embed.WithDescription(serverUsers);
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        var footer = $"WhoKnows track requested by {userTitle}";
+        var footer = new StringBuilder();
 
         var rnd = new Random();
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
-            footer += $"\nMissing members? Update with {context.Prefix}refreshmembers";
+            footer.AppendLine($"Missing members? Update with {context.Prefix}refreshmembers");
+        }
+
+        if (filterStats.FullDescription != null)
+        {
+            footer.AppendLine($"{filterStats.FullDescription}");
         }
 
         if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)
@@ -336,14 +340,10 @@ public class TrackBuilders
             var serverPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
             var avgServerPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
 
-            footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
-            footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
-            footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
-        }
-
-        if (filterStats.FullDescription != null)
-        {
-            footer += $"\n{filterStats.FullDescription}";
+            footer.Append($"Track - ");
+            footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");
+            footer.Append($"{serverPlaycount} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.AppendLine($"{(int)avgServerPlaycount} avg");
         }
 
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
@@ -351,7 +351,7 @@ public class TrackBuilders
 
         if (guildAlsoPlaying != null)
         {
-            footer += $"\n{guildAlsoPlaying}";
+            footer.AppendLine(guildAlsoPlaying);
         }
 
         response.Embed.WithTitle(StringExtensions.TruncateLongString($"{trackName} in {context.DiscordGuild.Name}", 255));
@@ -361,7 +361,7 @@ public class TrackBuilders
             response.Embed.WithUrl(track.Track.TrackUrl);
         }
 
-        response.EmbedFooter.WithText(footer);
+        response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
         if (displayRoleSelector)
@@ -460,8 +460,6 @@ public class TrackBuilders
             footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
         }
 
-        footer += $"\nFriends WhoKnow track requested by {userTitle}";
-
         if (usersWithTrack.Any() && usersWithTrack.Count() > 1)
         {
             var globalListeners = usersWithTrack.Count();
@@ -469,9 +467,11 @@ public class TrackBuilders
             var avgPlaycount = usersWithTrack.Average(a => a.Playcount);
 
             footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
-            footer += $"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ";
-            footer += $"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}";
+            footer += $"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+            footer += $"{(int)avgPlaycount} avg";
         }
+
+        footer += $"\nFriends WhoKnow track for {userTitle}";
 
         response.Embed.WithTitle($"{trackName} with friends");
 
@@ -520,7 +520,6 @@ public class TrackBuilders
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
         var footer = new StringBuilder();
-        footer.AppendLine($"Global WhoKnows track requested by {userTitle}");
 
         footer = WhoKnowsService.GetGlobalWhoKnowsFooter(footer, settings, context);
 
@@ -573,7 +572,6 @@ public class TrackBuilders
 
         response.Embed.WithDescription(serverUsers);
 
-
         var duration = spotifyTrack?.DurationMs ?? track.Track.Duration;
 
         if (duration is > 0)
@@ -597,9 +595,10 @@ public class TrackBuilders
             var globalPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
             var avgPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
 
+            footer.Append($"Global track - ");
             footer.Append($"{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ");
-            footer.AppendLine($"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}");
+            footer.Append($"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{(int)avgPlaycount} avg");
         }
 
         response.Embed.WithTitle(StringExtensions.TruncateLongString($"{trackName} globally", 255));

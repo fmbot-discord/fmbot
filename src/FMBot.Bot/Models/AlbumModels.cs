@@ -47,10 +47,6 @@ public class WhoKnowsAlbumDto
 
     public string UserNameLastFm { get; set; }
 
-    public string Name { get; set; }
-
-    public string ArtistName { get; set; }
-
     public int Playcount { get; set; }
 }
 
@@ -67,10 +63,6 @@ public class AlbumCoverDto
 public class WhoKnowsGlobalAlbumDto
 {
     public int UserId { get; set; }
-
-    public string Name { get; set; }
-
-    public string ArtistName { get; set; }
 
     public int Playcount { get; set; }
 

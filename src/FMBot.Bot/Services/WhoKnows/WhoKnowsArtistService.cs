@@ -38,7 +38,6 @@ public class WhoKnowsArtistService
         IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName)
     {
         const string sql = "SELECT ua.user_id, " +
-                           "ua.name, " +
                            "ua.playcount " +
                            "FROM user_artists AS ua " +
                            "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
@@ -79,7 +78,6 @@ public class WhoKnowsArtistService
 
             whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
             {
-                Name = userArtist.Name,
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
                 LastFMUsername = guildUser.UserNameLastFM,
@@ -98,7 +96,6 @@ public class WhoKnowsArtistService
         const string sql = "SELECT * " +
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ua.user_id, " +
-                           "ua.name, " +
                            "ua.playcount, " +
                            "u.user_name_last_fm, " +
                            "u.discord_user_id, " +
@@ -141,7 +138,6 @@ public class WhoKnowsArtistService
 
             whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
             {
-                Name = userArtist.Name,
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
                 LastFMUsername = userArtist.UserNameLastFm,
@@ -186,7 +182,6 @@ public class WhoKnowsArtistService
         const string sql = "SELECT * " +
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ua.user_id, " +
-                           "ua.name, " +
                            "ua.playcount, " +
                            "u.user_name_last_fm " +
                            "FROM user_artists AS ua " +
@@ -228,7 +223,6 @@ public class WhoKnowsArtistService
 
             whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
             {
-                Name = userArtist.Name,
                 DiscordName = userName,
                 Playcount = userArtist.Playcount,
                 LastFMUsername = userArtist.UserNameLastFm,

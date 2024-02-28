@@ -4,11 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
-using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -32,8 +29,6 @@ public class WhoKnowsTrackService
         IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName, string trackName)
     {
         const string sql = "SELECT ut.user_id, " +
-                           "ut.name, " +
-                           "ut.artist_name, " +
                            "ut.playcount " +
                            "FROM user_tracks AS ut " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = ut.user_id " +
@@ -75,7 +70,6 @@ public class WhoKnowsTrackService
 
             whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
             {
-                Name = $"{trackName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userTrack.Playcount,
                 LastFMUsername = guildUser.UserNameLastFM,
@@ -94,8 +88,6 @@ public class WhoKnowsTrackService
         const string sql = "SELECT * " +
                            "FROM(SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ut.user_id, " +
-                           "ut.name, " +
-                           "ut.artist_name, " +
                            "ut.playcount," +
                            "u.user_name_last_fm, " +
                            "u.discord_user_id, " +
@@ -139,7 +131,6 @@ public class WhoKnowsTrackService
 
             whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
             {
-                Name = $"{trackName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userTrack.Playcount,
                 LastFMUsername = userTrack.UserNameLastFm,
