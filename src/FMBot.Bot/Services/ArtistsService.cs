@@ -252,12 +252,14 @@ public class ArtistsService
     private async Task CacheSpotifyArtistImages()
     {
         const string cacheKey = "artist-spotify-covers";
-        var cacheTime = TimeSpan.FromMinutes(5);
 
         if (this._cache.TryGetValue(cacheKey, out _))
         {
             return;
         }
+
+        this._cache.Set(cacheKey, true, TimeSpan.FromMinutes(10));
+        var cacheTime = TimeSpan.FromMinutes(20);
 
         const string sql = "SELECT LOWER(spotify_image_url) as spotify_image_url, LOWER(name) as artist_name " +
                            "FROM public.artists where last_fm_url is not null and spotify_image_url is not null;";
@@ -272,8 +274,6 @@ public class ArtistsService
         {
             this._cache.Set(CacheKeyForArtist(artistCover.ArtistName), artistCover.SpotifyImageUrl, cacheTime);
         }
-
-        this._cache.Set(cacheKey, true, cacheTime);
     }
 
     public static string CacheKeyForArtist(string artistName)
