@@ -117,7 +117,7 @@ public class ArtistBuilders
         var fullArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled, true);
 
         var footer = new StringBuilder();
-        
+
 
         var featuredHistory = await this._featuredService.GetArtistFeaturedHistory(artistSearch.Artist.ArtistName);
         if (featuredHistory.Any())
@@ -379,7 +379,7 @@ public class ArtistBuilders
                     emote: Emote.Parse(DiscordConstants.Bandcamp), url: bandcamp.Url);
             }
         }
-        
+
         response.Embed.WithFooter(footer.ToString());
         return response;
     }
@@ -599,6 +599,16 @@ public class ArtistBuilders
                 break;
         }
 
+        if (topTracks.Count == 0 &&
+            timeSettings.TimePeriod == TimePeriod.AllTime &&
+            artistSearch.Artist.UserPlaycount >= 15 &&
+            !userSettings.DifferentUser)
+        {
+            var user = await this._userService.GetUserForIdAsync(userSettings.UserId);
+            await this._indexService.ModularUpdate(user, UpdateType.Tracks);
+            topTracks = await this._artistsService.GetTopTracksForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
+        }
+
         var pages = new List<PageBuilder>();
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
@@ -711,6 +721,15 @@ public class ArtistBuilders
 
         var topAlbums = await this._artistsService.GetTopAlbumsForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        if (topAlbums.Count == 0 &&
+            artistSearch.Artist.UserPlaycount >= 15 &&
+            !userSettings.DifferentUser)
+        {
+            var user = await this._userService.GetUserForIdAsync(userSettings.UserId);
+            await this._indexService.ModularUpdate(user, UpdateType.Albums);
+            topAlbums = await this._artistsService.GetTopAlbumsForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
+        }
 
         if (topAlbums.Count == 0)
         {
@@ -1318,7 +1337,7 @@ public class ArtistBuilders
             var goalDate = DateTime.UtcNow.AddDays(daysToAdd);
             goalDateString = $"on **<t:{goalDate.ToUnixEpochDate()}:D>**.";
         }
-        
+
         reply.AppendLine($" will reach **{goalAmount}** plays on **{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}** {goalDateString}");
 
         reply.AppendLine(
