@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices.JavaScript;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,8 +23,11 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Hangfire.Logging;
+using Hangfire.Logging.LogProviders;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Web.InternalApi;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.TextCommands;
@@ -39,6 +43,9 @@ public class StaticCommands : BaseCommandModule
     private readonly UserService _userService;
     private readonly MusicBotService _musicBotService;
     private readonly StaticBuilders _staticBuilders;
+    private readonly StatusHandler.StatusHandlerClient _statusHandler;
+    private readonly DiscordShardedClient _client;
+
     private InteractiveService Interactivity { get; }
 
     private static readonly List<DateTimeOffset> StackCooldownTimer = new();
@@ -54,7 +61,9 @@ public class StaticCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         InteractiveService interactivity,
         MusicBotService musicBotService,
-        StaticBuilders staticBuilders) : base(botSettings)
+        StaticBuilders staticBuilders,
+        StatusHandler.StatusHandlerClient statusHandler,
+        DiscordShardedClient client) : base(botSettings)
     {
         this._friendService = friendsService;
         this._guildService = guildService;
@@ -65,6 +74,8 @@ public class StaticCommands : BaseCommandModule
         this.Interactivity = interactivity;
         this._musicBotService = musicBotService;
         this._staticBuilders = staticBuilders;
+        this._statusHandler = statusHandler;
+        this._client = client;
     }
 
     [Command("invite", RunMode = RunMode.Async)]
@@ -211,12 +222,41 @@ public class StaticCommands : BaseCommandModule
         description += $"**Usercount:** `{await this._userService.GetTotalUserCountAsync()}`  (Authorized: `{await this._userService.GetTotalAuthorizedUserCountAsync()}` | Discord: `{client.Guilds.Select(s => s.MemberCount).Sum()}`)\n";
         description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
         description += $"**Servercount:** `{client.Guilds.Count}`  (Shards: `{client.Shards.Count}` (`{client.GetShardIdFor(this.Context.Guild)}`))\n";
-        description += $"**MusicBrainz API calls:** `{Statistics.MusicBrainzApiCalls.Value}`\n";
-        description += $"**Botscrobbles:** `{Statistics.LastfmScrobbles.Value}`  (Now playing updates: `{Statistics.LastfmNowPlayingUpdates.Value}`)\n";
         description += $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}`  (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
-        description += $"**Average shard latency:** `{Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms`"}\n";
-        //description += $"**Bot version:** `{assemblyVersion}`\n";
-        //description += $"**Self-hosted:** `{IsBotSelfHosted(this.Context.Client.CurrentUser.Id).ToString()}`\n";
+
+        var instanceOverviewDescription = new StringBuilder();
+        try
+        {
+            var instanceOverview = await this._statusHandler.SendHeartbeatAsync(new InstanceHeartbeat
+            {
+                InstanceName = ConfigData.Data.Shards?.InstanceName ?? "unknown",
+                ConnectedGuilds = this._client?.Guilds?.Count(c => c.IsConnected) ?? 0,
+                TotalGuilds = this._client?.Guilds?.Count ?? 0,
+                ConnectedShards = this._client?.Shards?.Count(c => c.ConnectionState == ConnectionState.Connected) ?? 0,
+                TotalShards = this._client?.Shards?.Count ?? 0,
+                MemoryBytesUsed = currentMemoryUsage
+            });
+
+            foreach (var instance in instanceOverview.Instances.OrderBy(o => o.InstanceName))
+            {
+                instanceOverviewDescription.Append(
+                    $"- **{instance.InstanceName}**");
+                instanceOverviewDescription.Append(
+                    $" - {instance.ConnectedGuilds}/{instance.TotalGuilds} guilds");
+                instanceOverviewDescription.Append(
+                    $" - {instance.ConnectedShards}/{instance.TotalShards} shards");
+                instanceOverviewDescription.Append(
+                    $" - <t:{instance.LastHeartbeat.ToDateTime().ToUnixEpochDate()}:R>");
+                instanceOverviewDescription.AppendLine();
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error("Error in gRPC status update, {exceptionMessage}", e.Message, e);
+            instanceOverviewDescription.AppendLine("Error");
+        }
+
+        this._embed.AddField("Instance heartbeat overview - connected/total", instanceOverviewDescription);
 
         this._embed.WithDescription(description);
 

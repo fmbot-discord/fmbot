@@ -106,6 +106,7 @@ public class UpdateService : IUpdateService
 
     public async Task<Response<RecentTrackList>> UpdateUser(UpdateUserQueueItem queueItem)
     {
+        await this._aliasService.CacheArtistAliases();
         if (queueItem.UpdateQueue)
         {
             Thread.Sleep(1200);

@@ -1,13 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Dapper;
 using Discord;
-using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
@@ -15,8 +14,6 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
@@ -24,8 +21,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using Genius.Models.User;
-using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
 
@@ -64,21 +59,27 @@ public class PlayService
                 return null;
             }
 
+            var enrichedPlays = await this._timeService.EnrichPlaysWithPlayTime(plays);
+
             var overview = new DailyOverview
             {
-                Days = plays
-                    .OrderByDescending(o => o.TimePlayed)
-                    .GroupBy(g => TimeZoneInfo.ConvertTime(g.TimePlayed, timeZone).Date)
-                    .Select(s => new DayOverview
-                    {
-                        Date = s.Key,
-                        Playcount = s.Count(),
-                        Plays = s.ToList(),
-                        TopTrack = GetTopTrackForPlays(s.ToList()),
-                        TopAlbum = GetTopAlbumForPlays(s.ToList()),
-                        TopArtist = GetTopArtistForPlays(s.ToList()),
-                    }).Take(amountOfDays).ToList(),
+                Days = []
             };
+
+            foreach (var day in enrichedPlays.enrichedPlays
+                         .OrderBy(o => o.TimePlayed)
+                         .GroupBy(g => TimeZoneInfo.ConvertTime(g.TimePlayed, timeZone).Date))
+            {
+                overview.Days.Add(new DayOverview
+                {
+                    Date = day.Key,
+                    Playcount = day.Count(),
+                    Plays = day.ToList(),
+                    TopTrack = GetTopTrackForPlays(day.ToList()),
+                    TopAlbum = GetTopAlbumForPlays(day.ToList()),
+                    TopArtist = GetTopArtistForPlays(day.ToList()),
+                });
+            }
 
             foreach (var day in overview.Days.Where(w => w.Plays.Any()))
             {
@@ -86,7 +87,7 @@ public class PlayService
             }
             foreach (var day in overview.Days.Where(w => w.Plays.Any()))
             {
-                day.ListeningTime = await this._timeService.GetPlayTimeForPlays(day.Plays);
+                day.ListeningTime = TimeService.GetPlayTimeForEnrichedPlays(day.Plays);
             }
 
             return overview;
@@ -804,7 +805,7 @@ public class PlayService
 
     public async Task<List<UserPlay>> GetGuildUsersPlaysForTimeLeaderBoard(int guildId)
     {
-        const string sql = "SELECT up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
+        const string sql = "SELECT up.user_play_id, up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
                            "FROM public.user_plays AS up " +
                            "INNER JOIN users AS u ON up.user_id = u.user_id " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +

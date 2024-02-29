@@ -28,12 +28,10 @@ public class WhoKnowsAlbumService
         IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName, string albumName)
     {
         const string sql = "SELECT ub.user_id, " +
-                           "ub.name, " +
-                           "ub.artist_name, " +
                            "ub.playcount " +
                            "FROM user_albums AS ub " +
-                           "INNER JOIN guild_users AS gu ON gu.user_id = ub.user_id " +
-                           "WHERE gu.guild_id = @guildId AND UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                           "AND ub.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
                            "ORDER BY ub.playcount DESC ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -72,7 +70,6 @@ public class WhoKnowsAlbumService
             whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
             {
                 DiscordName = userName,
-                Name = $"{albumName} by {artistName}",
                 Playcount = userAlbum.Playcount,
                 LastFMUsername = guildUser.UserNameLastFM,
                 UserId = userAlbum.UserId,
@@ -90,8 +87,6 @@ public class WhoKnowsAlbumService
         const string sql = "SELECT * " +
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ub.user_id, " +
-                           "ub.name, " +
-                           "ub.artist_name, " +
                            "ub.playcount, " +
                            "u.user_name_last_fm, " +
                            "u.discord_user_id, " +
@@ -135,7 +130,6 @@ public class WhoKnowsAlbumService
 
             whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
             {
-                Name = $"{albumName} by {artistName}",
                 DiscordName = userName,
                 Playcount = userAlbum.Playcount,
                 LastFMUsername = userAlbum.UserNameLastFm,

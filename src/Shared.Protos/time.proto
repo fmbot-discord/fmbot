@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+package time;
+
+service TimeEnrichment {
+  rpc ProcessUserPlays (UserPlayList) returns (TotalPlayTimeReply);
+
+  rpc GetTrackLength (TrackLengthRequest) returns (TrackLengthReply);
+
+  rpc GetAverageArtistTrackLength (AverageArtistTrackLengthRequest) returns (AverageArtistTrackLengthReply);
+
+  rpc FilterInvalidSpotifyImports (SpotifyImportsRequest) returns (ValidSpotifyImportsReply);
+}
+
+message UserPlayList {
+  repeated SimpleUserPlay userPlays = 1;
+}
+
+message SimpleUserPlay {
+  int64 userPlayId = 1;
+  string trackName = 2;
+  string artistName = 3;
+  int64 msPlayed = 4;
+}
+
+message TotalPlayTimeReply {
+  repeated SimpleUserPlay userPlays = 1;
+  google.protobuf.Duration totalPlayTime = 2; 
+}
+
+message TrackLengthRequest {
+  string trackName = 1;
+  string artistName = 2;
+  bool useAverages = 3;
+  bool adjustForBans = 4;
+}
+
+message TrackLengthReply {
+  google.protobuf.Duration trackLength = 1; 
+}
+
+message AverageArtistTrackLengthRequest {
+  string artistName = 1;
+}
+
+message AverageArtistTrackLengthReply {
+  google.protobuf.Duration avgLength = 1; 
+}
+
+
+message SpotifyImportsRequest {
+  repeated SpotifyImportModel importedEndSongs = 1;
+}
+
+message SpotifyImportModel {
+  google.protobuf.Timestamp ts = 1;
+  int32 msPlayed = 2;
+  string masterMetadataTrackName = 3;
+  string masterMetadataAlbumArtistName = 4;
+  string masterMetadataAlbumAlbumName = 5;
+}
+
+message ValidSpotifyImportsReply {
+  repeated SpotifyImportModel validImports = 1;
+  int32 invalidPlays = 2;
+}

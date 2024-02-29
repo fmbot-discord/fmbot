@@ -25,12 +25,14 @@ public class AliasService
     public async Task CacheArtistAliases()
     {
         const string cacheKey = "artist-aliases";
-        var cacheTime = TimeSpan.FromMinutes(5);
-
         if (this._cache.TryGetValue(cacheKey, out _))
         {
             return;
         }
+
+        this._cache.Set(cacheKey, true, TimeSpan.FromMinutes(10));
+        
+        var cacheTime = TimeSpan.FromMinutes(20);
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var artistAliases = await db.ArtistAliases
@@ -58,7 +60,6 @@ public class AliasService
             }
         }
 
-        this._cache.Set(cacheKey, true, cacheTime);
         Log.Information($"Added {artistAliases.Count} artist aliases to memory cache");
     }
 

@@ -16,8 +16,6 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using Fergun.Interactive;
-using FMBot.Bot.Configurations;
-using FMBot.Domain;
 
 namespace FMBot.Bot.SlashCommands;
 

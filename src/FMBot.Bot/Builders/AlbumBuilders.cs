@@ -367,14 +367,18 @@ public class AlbumBuilders
 
         response.Embed.WithDescription(serverUsers);
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        var footer = $"WhoKnows album requested by {userTitle}";
+        var footer = new StringBuilder();
 
         var rnd = new Random();
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
         {
-            footer += $"\nMissing members? Update with {context.Prefix}refreshmembers";
+            footer.AppendLine($"Missing members? Update with {context.Prefix}refreshmembers");
+        }
+
+        if (filterStats.FullDescription != null)
+        {
+            footer.AppendLine($"{filterStats.FullDescription}");
         }
 
         if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)
@@ -383,14 +387,10 @@ public class AlbumBuilders
             var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
             var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
-            footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
-            footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
-            footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
-        }
-
-        if (filterStats.FullDescription != null)
-        {
-            footer += $"\n{filterStats.FullDescription}";
+            footer.Append($"Album - ");
+            footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");
+            footer.Append($"{serverPlaycount} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.AppendLine($"{(int)avgServerPlaycount} avg");
         }
 
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.ContextUser.UserId,
@@ -398,8 +398,7 @@ public class AlbumBuilders
 
         if (guildAlsoPlaying != null)
         {
-            footer += "\n";
-            footer += guildAlsoPlaying;
+            footer.AppendLine(guildAlsoPlaying);
         }
 
         response.Embed.WithTitle(StringExtensions.TruncateLongString($"{fullAlbumName} in {context.DiscordGuild.Name}", 255));
@@ -413,7 +412,7 @@ public class AlbumBuilders
             response.Embed.WithUrl(url);
         }
 
-        response.EmbedFooter.WithText(footer);
+        response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
         if (displayRoleSelector)
@@ -526,8 +525,6 @@ public class AlbumBuilders
             footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
         }
 
-        footer += $"\nFriends WhoKnow album requested by {userTitle}";
-
         if (usersWithAlbum.Any() && usersWithAlbum.Count > 1)
         {
             var globalListeners = usersWithAlbum.Count;
@@ -535,9 +532,11 @@ public class AlbumBuilders
             var avgPlaycount = usersWithAlbum.Average(a => a.Playcount);
 
             footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
-            footer += $"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ";
-            footer += $"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}";
+            footer += $"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+            footer += $"{(int)avgPlaycount} avg";
         }
+
+        footer += $"\nFriends WhoKnow album for {userTitle}";
 
         response.Embed.WithTitle($"{albumName} with friends");
 
@@ -636,9 +635,7 @@ public class AlbumBuilders
 
         response.Embed.WithDescription(serverUsers);
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var footer = new StringBuilder();
-        footer.AppendLine($"Global WhoKnows album requested by {userTitle}");
 
         footer = WhoKnowsService.GetGlobalWhoKnowsFooter(footer, settings, context);
 
@@ -648,9 +645,10 @@ public class AlbumBuilders
             var globalPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
             var avgPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
+            footer.Append($"Global album - ");
             footer.Append($"{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ");
-            footer.AppendLine($"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}");
+            footer.Append($"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{(int)avgPlaycount} avg");
         }
 
         response.Embed.WithTitle($"{albumName} globally");
@@ -1057,7 +1055,7 @@ public class AlbumBuilders
 
         response.Components = new ComponentBuilder()
             .WithButton("Album", $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("💽"))
-            .WithButton($"Requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}", style: ButtonStyle.Secondary, disabled: true, customId: "0");
+            .WithButton($"For {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}", style: ButtonStyle.Secondary, disabled: true, customId: "0");
 
         return response;
     }

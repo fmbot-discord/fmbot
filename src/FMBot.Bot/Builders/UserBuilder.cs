@@ -859,6 +859,7 @@ public class UserBuilder
         }
 
         var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+        allPlays = (await this._timeService.EnrichPlaysWithPlayTime(allPlays)).enrichedPlays;
 
         var monthDescription = new StringBuilder();
         var monthGroups = allPlays
@@ -873,7 +874,7 @@ public class UserBuilder
                 break;
             }
 
-            var time = await this._timeService.GetPlayTimeForPlays(month);
+            var time = TimeService.GetPlayTimeForEnrichedPlays(month);
             monthDescription.AppendLine(
                 $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}`** " +
                 $"- **{month.Count()}** plays " +
@@ -893,7 +894,7 @@ public class UserBuilder
                 .OrderByDescending(o => o.TimePlayed)
                 .GroupBy(g => g.TimePlayed.Year);
 
-            var totalTime = await this._timeService.GetPlayTimeForPlays(allPlays);
+            var totalTime = TimeService.GetPlayTimeForEnrichedPlays(allPlays);
             if (totalTime.TotalSeconds > 0)
             {
                 yearDescription.AppendLine(
@@ -904,7 +905,7 @@ public class UserBuilder
 
             foreach (var year in yearGroups)
             {
-                var time = await this._timeService.GetPlayTimeForPlays(year);
+                var time = TimeService.GetPlayTimeForEnrichedPlays(year);
                 yearDescription.AppendLine(
                     $"`{year.Key}`** " +
                     $"- **{year.Count()}** plays " +

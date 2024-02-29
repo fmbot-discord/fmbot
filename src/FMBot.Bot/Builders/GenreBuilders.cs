@@ -738,9 +738,6 @@ public class GenreBuilders
 
         var footer = new StringBuilder();
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        footer.AppendLine($"WhoKnows genre requested by {userTitle}");
-
         var rnd = new Random();
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
@@ -754,9 +751,10 @@ public class GenreBuilders
             var serverPlaycount = filteredUsersWithGenre.Sum(a => a.Playcount);
             var avgServerPlaycount = filteredUsersWithGenre.Average(a => a.Playcount);
 
+            footer.Append($"Genre - ");
             footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ");
-            footer.Append($"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}");
+            footer.Append($"{serverPlaycount} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.Append($"{(int)avgServerPlaycount} avg");
             footer.AppendLine();
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
