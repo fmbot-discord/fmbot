@@ -1288,8 +1288,12 @@ public class ArtistBuilders
         var playsLeft = goalAmount - artistSearch.Artist.UserPlaycount.GetValueOrDefault(0);
 
         var avgPerDay = artistPlayCount / totalDays;
+        var daysToAdd = playsLeft / avgPerDay;
 
-        var goalDate = DateTime.UtcNow.AddDays(playsLeft / avgPerDay);
+        var limitDate = new DateTime(9999, 12, 31);
+
+        var timeLeft = limitDate - DateTime.Today;
+        var daysUntilLimit = timeLeft.Days;
 
         var reply = new StringBuilder();
 
@@ -1304,10 +1308,21 @@ public class ArtistBuilders
             reply.Append($"<@{context.DiscordUser.Id}> My estimate is that you");
         }
 
-        reply.AppendLine($" will reach **{goalAmount}** plays on **{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}** on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
+        string goalDateString;
+        if (daysUntilLimit <= daysToAdd)
+        {
+            goalDateString = $"on a date beyond the year 9999! 🚀";
+        }
+        else
+        {
+            var goalDate = DateTime.UtcNow.AddDays(daysToAdd);
+            goalDateString = $"on **<t:{goalDate.ToUnixEpochDate()}:D>**.";
+        }
+        
+        reply.AppendLine($" will reach **{goalAmount}** plays on **{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}** {goalDateString}");
 
         reply.AppendLine(
-            $"This is based on {determiner} avg of {Math.Round(avgPerDay, 1)} per day in the last {Math.Round(totalDays, 0)} days ({artistPlayCount} total - {artistSearch.Artist.UserPlaycount} alltime)");
+            $"This is based on {determiner} avg of {Math.Round(avgPerDay, 2)} per day in the last {Math.Round(totalDays, 0)} days ({artistPlayCount} total - {artistSearch.Artist.UserPlaycount} alltime)");
 
         response.Text = reply.ToString();
         return response;
