@@ -78,13 +78,6 @@ public class WhoKnowsGlobalArtistDto
     public PrivacyLevel PrivacyLevel { get; set; }
 }
 
-public class ArtistSpotifyCoverDto
-{
-    public string ArtistName { get; set; }
-
-    public string SpotifyImageUrl { get; set; }
-}
-
 public class AffinityItemDto
 {
     public int UserId { get; set; }

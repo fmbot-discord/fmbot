@@ -24,6 +24,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
 
@@ -39,6 +40,7 @@ public class ArtistsService
     private readonly IUpdateService _updateService;
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
+    private readonly ArtistEnrichment.ArtistEnrichmentClient _artistEnrichment;
 
     public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory,
         IMemoryCache cache,
@@ -49,7 +51,8 @@ public class ArtistsService
         TimerService timer,
         IUpdateService updateService,
         AliasService aliasService,
-        UserService userService)
+        UserService userService,
+        ArtistEnrichment.ArtistEnrichmentClient artistEnrichment)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
@@ -60,6 +63,7 @@ public class ArtistsService
         this._updateService = updateService;
         this._aliasService = aliasService;
         this._userService = userService;
+        this._artistEnrichment = artistEnrichment;
         this._botSettings = botSettings.Value;
     }
 
@@ -110,7 +114,7 @@ public class ArtistsService
             Response<ArtistInfo> artistCall;
             if (useCachedArtists)
             {
-                artistCall = await GetCachedArtist(artistValues, lastFmUserName, userId, redirectsEnabled);
+                artistCall = await GetDatabaseArtist(artistValues, lastFmUserName, userId, redirectsEnabled);
             }
             else
             {
@@ -167,7 +171,7 @@ public class ArtistsService
             Response<ArtistInfo> artistCall;
             if (useCachedArtists)
             {
-                artistCall = await GetCachedArtist(lastPlayedTrack.ArtistName, lastFmUserName, userId, redirectsEnabled);
+                artistCall = await GetDatabaseArtist(lastPlayedTrack.ArtistName, lastFmUserName, userId, redirectsEnabled);
             }
             else
             {
@@ -191,7 +195,7 @@ public class ArtistsService
         }
     }
 
-    private async Task<Response<ArtistInfo>> GetCachedArtist(string artistName, string lastFmUserName, int? userId = null, bool redirectsEnabled = true)
+    private async Task<Response<ArtistInfo>> GetDatabaseArtist(string artistName, string lastFmUserName, int? userId = null, bool redirectsEnabled = true)
     {
         Response<ArtistInfo> artistInfo;
         var cachedArtist = await GetArtistFromDatabase(artistName, redirectsEnabled);
@@ -199,7 +203,7 @@ public class ArtistsService
         {
             artistInfo = new Response<ArtistInfo>
             {
-                Content = CachedArtistToArtistInfo(cachedArtist),
+                Content = DatabaseArtistToArtistInfo(cachedArtist),
                 Success = true
             };
 
@@ -217,7 +221,7 @@ public class ArtistsService
         return artistInfo;
     }
 
-    private ArtistInfo CachedArtistToArtistInfo(Artist artist)
+    private static ArtistInfo DatabaseArtistToArtistInfo(Artist artist)
     {
         return new ArtistInfo
         {
@@ -229,56 +233,32 @@ public class ArtistsService
 
     public async Task<List<TopArtist>> FillArtistImages(List<TopArtist> topArtists)
     {
-        if (topArtists.All(a => a.ArtistImageUrl != null))
+        var request = new ArtistRequest
         {
-            return topArtists;
-        }
+            Artists =
+            {
+                topArtists.Select(s => new ArtistWithImage
+                {
+                    ArtistName = s.ArtistName,
+                    ArtistImageUrl = s.ArtistImageUrl ?? ""
+                })
+            }
+        };
 
-        await CacheSpotifyArtistImages();
+        var artists = await this._artistEnrichment.AddMissingArtistImagesAsync(request);
 
         foreach (var topArtist in topArtists.Where(w => w.ArtistImageUrl == null))
         {
-            var artistImage = (string)this._cache.Get(CacheKeyForArtist(topArtist.ArtistName));
+            var artist = artists.Artists.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f.ArtistImageUrl) &&
+                                                          f.ArtistName == topArtist.ArtistName);
 
-            if (artistImage != null)
+            if (artist != null)
             {
-                topArtist.ArtistImageUrl = artistImage;
+                topArtist.ArtistImageUrl = artist.ArtistImageUrl;
             }
         }
 
         return topArtists;
-    }
-
-    private async Task CacheSpotifyArtistImages()
-    {
-        const string cacheKey = "artist-spotify-covers";
-
-        if (this._cache.TryGetValue(cacheKey, out _))
-        {
-            return;
-        }
-
-        this._cache.Set(cacheKey, true, TimeSpan.FromMinutes(10));
-        var cacheTime = TimeSpan.FromMinutes(20);
-
-        const string sql = "SELECT LOWER(spotify_image_url) as spotify_image_url, LOWER(name) as artist_name " +
-                           "FROM public.artists where last_fm_url is not null and spotify_image_url is not null;";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var artistCovers = (await connection.QueryAsync<ArtistSpotifyCoverDto>(sql)).ToList();
-
-        foreach (var artistCover in artistCovers)
-        {
-            this._cache.Set(CacheKeyForArtist(artistCover.ArtistName), artistCover.SpotifyImageUrl, cacheTime);
-        }
-    }
-
-    public static string CacheKeyForArtist(string artistName)
-    {
-        return $"artist-spotify-image-{artistName.ToLower()}";
     }
 
     // Top artists for 2 users

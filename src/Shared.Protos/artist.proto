@@ -2,22 +2,30 @@ syntax = "proto3";
 
 option csharp_namespace = "Web.InternalApi";
 
+import "google/protobuf/empty.proto";
+
 package artist;
 
 // The greeting service definition.
 service ArtistEnrichment {
   rpc AddMissingArtistImages (ArtistRequest) returns (ArtistReply);
+  rpc AddArtistImageToCache (AddedArtistImage) returns (google.protobuf.Empty);
 }
 
 message ArtistRequest {
-  repeated Artist artists = 1;
+  repeated ArtistWithImage artists = 1;
 }
 
-message Artist {
+message ArtistWithImage {
   string artistName = 1;
   string artistImageUrl = 2;
 }
 
 message ArtistReply {
-  repeated Artist artists = 1;
+  repeated ArtistWithImage artists = 1;
+}
+
+message AddedArtistImage {
+  string artistName = 1;
+  string artistImageUrl = 2;
 }

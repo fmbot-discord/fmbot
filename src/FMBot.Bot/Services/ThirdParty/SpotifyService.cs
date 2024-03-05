@@ -31,6 +31,7 @@ public class SpotifyService
     private readonly MusicBrainzService _musicBrainzService;
     private readonly HttpClient _httpClient;
     private readonly AlbumEnrichment.AlbumEnrichmentClient _albumEnrichment;
+    private readonly ArtistEnrichment.ArtistEnrichmentClient _artistEnrichment;
 
 
     public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory,
@@ -38,13 +39,15 @@ public class SpotifyService
         IMemoryCache cache,
         MusicBrainzService musicBrainzService,
         HttpClient httpClient,
-        AlbumEnrichment.AlbumEnrichmentClient albumEnrichment)
+        AlbumEnrichment.AlbumEnrichmentClient albumEnrichment,
+        ArtistEnrichment.ArtistEnrichmentClient artistEnrichment)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
         this._musicBrainzService = musicBrainzService;
         this._httpClient = httpClient;
         this._albumEnrichment = albumEnrichment;
+        this._artistEnrichment = artistEnrichment;
         this._botSettings = botSettings.Value;
     }
 
@@ -106,7 +109,11 @@ public class SpotifyService
 
                         if (artistInfo.ArtistUrl != null)
                         {
-                            this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistName), artistToAdd.SpotifyImageUrl, TimeSpan.FromMinutes(5));
+                            await this._artistEnrichment.AddArtistImageToCacheAsync(new AddedArtistImage
+                            {
+                                ArtistName = artistInfo.ArtistName,
+                                ArtistImageUrl = artistToAdd.SpotifyImageUrl
+                            });
                         }
                     }
 
@@ -205,7 +212,11 @@ public class SpotifyService
 
                     if (artistInfo.ArtistUrl != null)
                     {
-                        this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistName), dbArtist.SpotifyImageUrl, TimeSpan.FromMinutes(5));
+                        await this._artistEnrichment.AddArtistImageToCacheAsync(new AddedArtistImage
+                        {
+                            ArtistName = artistInfo.ArtistName,
+                            ArtistImageUrl = dbArtist.SpotifyImageUrl
+                        });
                     }
                 }
 
@@ -544,7 +555,8 @@ public class SpotifyService
                     ArtistName = albumInfo.ArtistName,
                     AlbumName = albumInfo.AlbumName,
                     AlbumCoverUrl = coverUrl
-                });}
+                });
+            }
 
             albumToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
