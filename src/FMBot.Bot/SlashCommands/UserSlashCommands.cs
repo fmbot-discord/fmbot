@@ -697,6 +697,44 @@ public class UserSlashCommands : InteractionModuleBase
         await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
     }
 
+    [MessageCommand("Delete response")]
+    [UsernameSetRequired]
+    public async Task DeleteResponseAsync(IMessage message)
+    {
+        var interactionToDelete = await this._userService.GetMessageIdToDelete(message.Id);
+
+        if (interactionToDelete == null)
+        {
+            await RespondAsync("No .fmbot response to delete or interaction wasn't stored. \n" +
+                               "You can only use this option on the command itself or on the .fmbot response.", ephemeral: true);
+            return;
+        }
+
+        if (interactionToDelete.DiscordUserId != this.Context.User.Id)
+        {
+            await RespondAsync("You can only delete .fmbot responses to your own commands.", ephemeral: true);
+            return;
+        }
+
+        var fetchedMessage = await this.Context.Channel.GetMessageAsync(interactionToDelete.MessageId);
+
+        if (fetchedMessage == null)
+        {
+            await RespondAsync("Sorry, .fmbot couldn't fetch the message you want to delete.", ephemeral: true);
+            return;
+        }
+
+        var ogMessage = await this.Context.Channel.GetMessageAsync(interactionToDelete.ContextId);
+        if (ogMessage != null)
+        {
+            await ogMessage.AddReactionAsync(new Emoji("🚮"));
+        }
+
+        await fetchedMessage.DeleteAsync(options: new RequestOptions
+        { AuditLogReason = "Deleted through message command " });
+
+        await RespondAsync("Removed .fmbot response.", ephemeral: true);
+    }
 
     [SlashCommand("judge", "Judges your music taste using AI")]
     [UsernameSetRequired]

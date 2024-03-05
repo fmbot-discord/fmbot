@@ -51,6 +51,7 @@ public class InteractionHandler
         this._client.SelectMenuExecuted += SelectMenuExecuted;
         this._client.ModalSubmitted += ModalSubmitted;
         this._client.UserCommandExecuted += UserCommandExecuted;
+        this._client.MessageCommandExecuted += MessageCommandExecuted;
         this._client.ButtonExecuted += ButtonExecuted;
     }
 
@@ -138,6 +139,35 @@ public class InteractionHandler
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
         Statistics.UserCommandsExecuted.Inc();
+    }
+
+    private async Task MessageCommandExecuted(SocketInteraction socketInteraction)
+    {
+        Statistics.DiscordEvents.WithLabels(nameof(MessageCommandExecuted)).Inc();
+
+        if (socketInteraction is not SocketMessageCommand socketMessageCommand)
+        {
+            return;
+        }
+
+        var context = new ShardedInteractionContext(this._client, socketInteraction);
+        var commandSearch = this._interactionService.SearchMessageCommand(socketMessageCommand);
+
+        if (!commandSearch.IsSuccess)
+        {
+            return;
+        }
+
+        var keepGoing = await CheckAttributes(context, commandSearch.Command?.Attributes);
+
+        if (!keepGoing)
+        {
+            return;
+        }
+
+        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+
+        Statistics.MessageCommandsExecuted.Inc();
     }
 
     private async Task AutoCompleteExecuted(SocketInteraction socketInteraction)
