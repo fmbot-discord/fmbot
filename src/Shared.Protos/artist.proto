@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+package artist;
+
+// The greeting service definition.
+service ArtistEnrichment {
+  rpc AddMissingArtistImages (ArtistRequest) returns (ArtistReply);
+}
+
+message ArtistRequest {
+  repeated Artist artists = 1;
+}
+
+message Artist {
+  string artistName = 1;
+  string artistImageUrl = 2;
+}
+
+message ArtistReply {
+  repeated Artist artists = 1;
+}

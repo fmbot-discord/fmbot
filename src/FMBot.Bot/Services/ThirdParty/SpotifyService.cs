@@ -17,6 +17,7 @@ using Npgsql;
 using Serilog;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
+using Web.InternalApi;
 using Album = FMBot.Persistence.Domain.Models.Album;
 using Artist = FMBot.Persistence.Domain.Models.Artist;
 
@@ -26,29 +27,24 @@ public class SpotifyService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
-    private readonly ArtistRepository _artistRepository;
-    private readonly AlbumRepository _albumRepository;
-    private readonly TrackRepository _trackRepository;
     private readonly IMemoryCache _cache;
     private readonly MusicBrainzService _musicBrainzService;
     private readonly HttpClient _httpClient;
+    private readonly AlbumEnrichment.AlbumEnrichmentClient _albumEnrichment;
+
 
     public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory,
         IOptions<BotSettings> botSettings,
-        ArtistRepository artistRepository,
-        TrackRepository trackRepository,
-        AlbumRepository albumRepository,
         IMemoryCache cache,
         MusicBrainzService musicBrainzService,
-        HttpClient httpClient)
+        HttpClient httpClient,
+        AlbumEnrichment.AlbumEnrichmentClient albumEnrichment)
     {
         this._contextFactory = contextFactory;
-        this._artistRepository = artistRepository;
-        this._trackRepository = trackRepository;
-        this._albumRepository = albumRepository;
         this._cache = cache;
         this._musicBrainzService = musicBrainzService;
         this._httpClient = httpClient;
+        this._albumEnrichment = albumEnrichment;
         this._botSettings = botSettings.Value;
     }
 
@@ -543,8 +539,12 @@ public class SpotifyService
             var coverUrl = albumInfo.AlbumCoverUrl ?? albumToAdd.SpotifyImageUrl;
             if (coverUrl != null && albumInfo.AlbumUrl != null)
             {
-                this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.ArtistName, albumInfo.AlbumName), coverUrl, TimeSpan.FromMinutes(5));
-            }
+                await this._albumEnrichment.AddAlbumCoverToCacheAsync(new AddedAlbumCover
+                {
+                    ArtistName = albumInfo.ArtistName,
+                    AlbumName = albumInfo.AlbumName,
+                    AlbumCoverUrl = coverUrl
+                });}
 
             albumToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
@@ -603,7 +603,12 @@ public class SpotifyService
             var coverUrl = albumInfo.AlbumCoverUrl ?? dbAlbum.SpotifyImageUrl;
             if (coverUrl != null && albumInfo.AlbumUrl != null)
             {
-                this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.ArtistName, albumInfo.AlbumName), coverUrl, TimeSpan.FromMinutes(5));
+                await this._albumEnrichment.AddAlbumCoverToCacheAsync(new AddedAlbumCover
+                {
+                    ArtistName = albumInfo.ArtistName,
+                    AlbumName = albumInfo.AlbumName,
+                    AlbumCoverUrl = coverUrl
+                });
             }
 
             dbAlbum.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
@@ -687,17 +692,5 @@ public class SpotifyService
                 .WithAuthenticator(new ClientCredentialsAuthenticator(this._botSettings.Spotify.Key,
                     this._botSettings.Spotify.Secret));
         }
-    }
-
-    public static RecentTrack SpotifyGameToRecentTrack(SpotifyGame spotifyActivity)
-    {
-        return new RecentTrack
-        {
-            TrackName = spotifyActivity.TrackTitle,
-            AlbumName = spotifyActivity.AlbumTitle,
-            ArtistName = spotifyActivity.Artists.First(),
-            AlbumCoverUrl = spotifyActivity.AlbumArtUrl,
-            TrackUrl = spotifyActivity.TrackUrl
-        };
     }
 }

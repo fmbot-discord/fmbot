@@ -73,6 +73,8 @@
     <PackageReference Include="System.Reactive.Linq" Version="6.0.0" />
     <Protobuf Include="..\Shared.Protos\time.proto" GrpcServices="Client" Link="Protos\time.proto" />
     <Protobuf Include="..\Shared.Protos\status.proto" GrpcServices="Client" Link="Protos\status.proto" />
+    <Protobuf Include="..\Shared.Protos\album.proto" GrpcServices="Client" Link="Protos\album.proto" />
+    <Protobuf Include="..\Shared.Protos\artist.proto" GrpcServices="Client" Link="Protos\artist.proto" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FMBot.Discogs\FMBot.Discogs.csproj" />
