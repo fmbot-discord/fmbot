@@ -24,6 +24,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
 
@@ -38,6 +39,7 @@ public class AlbumService
     private readonly IUpdateService _updateService;
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
+    private readonly AlbumEnrichment.AlbumEnrichmentClient _albumEnrichment;
 
     public AlbumService(IMemoryCache cache,
         IOptions<BotSettings> botSettings,
@@ -47,7 +49,8 @@ public class AlbumService
         IDbContextFactory<FMBotDbContext> contextFactory,
         IUpdateService updateService,
         AliasService aliasService,
-        UserService userService)
+        UserService userService,
+        AlbumEnrichment.AlbumEnrichmentClient albumEnrichment)
     {
         this._cache = cache;
         this._dataSourceFactory = dataSourceFactory;
@@ -57,6 +60,7 @@ public class AlbumService
         this._updateService = updateService;
         this._aliasService = aliasService;
         this._userService = userService;
+        this._albumEnrichment = albumEnrichment;
         this._botSettings = botSettings.Value;
     }
 
@@ -289,55 +293,34 @@ public class AlbumService
 
     public async Task<List<TopAlbum>> FillMissingAlbumCovers(List<TopAlbum> topAlbums)
     {
-        if (topAlbums.All(a => a.AlbumCoverUrl != null))
+        var request = new AlbumRequest
         {
-            return topAlbums;
-        }
+            Albums =
+            {
+                topAlbums.Select(s => new AlbumWithCover
+                {
+                    ArtistName = s.ArtistName,
+                    AlbumName = s.AlbumName,
+                    AlbumCoverUrl = s.AlbumCoverUrl ?? ""
+                })
+            }
+        };
 
-        await CacheAllAlbumCovers();
+        var albums = await this._albumEnrichment.AddMissingAlbumCoversAsync(request);
 
         foreach (var topAlbum in topAlbums.Where(w => w.AlbumCoverUrl == null))
         {
-            var albumCover = (string)this._cache.Get(CacheKeyForAlbumCover(topAlbum.ArtistName, topAlbum.AlbumName));
+            var album = albums.Albums.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f.AlbumCoverUrl) &&
+                                                        f.AlbumName == topAlbum.AlbumName &&
+                                                        f.ArtistName == topAlbum.ArtistName);
 
-            if (albumCover != null)
+            if (album != null)
             {
-                topAlbum.AlbumCoverUrl = albumCover;
+                topAlbum.AlbumCoverUrl = album.AlbumCoverUrl;
             }
         }
 
         return topAlbums;
-    }
-
-    private async Task CacheAllAlbumCovers()
-    {
-        const string cacheKey = "album-covers";
-        if (this._cache.TryGetValue(cacheKey, out _))
-        {
-            return;
-        }
-        
-        this._cache.Set(cacheKey, true, TimeSpan.FromMinutes(10));
-        var cacheTime = TimeSpan.FromMinutes(20);
-
-        const string sql = "SELECT LOWER(lastfm_image_url) as lastfm_image_url, LOWER(spotify_image_url) as spotify_image_url, LOWER(artist_name) as artist_name, LOWER(name) as album_name " +
-                           "FROM public.albums where (spotify_image_url is not null or lastfm_image_url is not null);";
-
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        var albumCovers = (await connection.QueryAsync<AlbumCoverDto>(sql)).ToList();
-
-        foreach (var cover in albumCovers)
-        {
-            this._cache.Set(CacheKeyForAlbumCover(cover.ArtistName, cover.AlbumName), cover.LastfmImageUrl ?? cover.SpotifyImageUrl, cacheTime);
-        }
-    }
-
-    public static string CacheKeyForAlbumCover(string artist, string album)
-    {
-        return $"ab-co-{album.ToLower()}-{artist.ToLower()}";
     }
 
     public async Task<Album> GetAlbumForId(int albumId)

@@ -100,6 +100,9 @@ public static class Statistics
     public static readonly Counter UserCommandsExecuted = Metrics
         .CreateCounter("bot_user_commands_executed", "Amount of user commands executed");
 
+    public static readonly Counter MessageCommandsExecuted = Metrics
+        .CreateCounter("bot_message_commands_executed", "Amount of message commands executed");
+
     public static readonly Counter AutoCompletesExecuted = Metrics
         .CreateCounter("bot_autocompletes_executed", "Amount of autocompletes executed");
 

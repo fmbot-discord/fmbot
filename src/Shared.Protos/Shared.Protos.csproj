@@ -15,6 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="artist.proto">
+      <GrpcServices>Server</GrpcServices>
+    </None>
+    <None Update="album.proto">
+      <GrpcServices>Server</GrpcServices>
+    </None>
     <None Update="status.proto">
       <GrpcServices>Server</GrpcServices>
     </None>

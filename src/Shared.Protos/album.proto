@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+import "google/protobuf/empty.proto";
+
+package album;
+
+// The greeting service definition.
+service AlbumEnrichment {
+  rpc AddMissingAlbumCovers (AlbumRequest) returns (AlbumReply);
+  rpc AddAlbumCoverToCache (AddedAlbumCover) returns (google.protobuf.Empty);
+}
+
+message AlbumRequest {
+  repeated AlbumWithCover albums = 1;
+}
+
+message AlbumWithCover {
+  string artistName = 1;
+  string albumName = 2;
+  string albumCoverUrl = 3;
+}
+
+message AlbumReply {
+  repeated AlbumWithCover albums = 1;
+}
+
+message AddedAlbumCover {
+  string artistName = 1;
+  string albumName = 2;
+  string albumCoverUrl = 3;
+}
