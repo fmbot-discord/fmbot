@@ -143,7 +143,8 @@ public class WhoKnowsFilterService
         switch (filteredUser.Reason)
         {
             case GlobalFilterReason.PlayTimeInPeriod:
-                filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` hours of listening time");
+                var avgPerDay = filteredUser.ReasonAmount.Value / PeriodAmountOfDays;
+                filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` hours of listening time - Around `{avgPerDay}`hr per day");
                 break;
             case GlobalFilterReason.AmountPerPeriod:
                 filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` scrobbles ");
