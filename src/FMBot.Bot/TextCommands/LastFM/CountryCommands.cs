@@ -61,7 +61,7 @@ public class CountryCommands : BaseCommandModule
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
             var response = await this._countryBuilders.GetTopCountries(new ContextModel(this.Context, prfx, contextUser),
@@ -91,7 +91,8 @@ public class CountryCommands : BaseCommandModule
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, defaultTimePeriod: TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, defaultTimePeriod: TimePeriod.AllTime,
+                timeZone: userSettings.TimeZone);
 
             var response = await this._countryBuilders.GetTopCountryChart(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, topListSettings);

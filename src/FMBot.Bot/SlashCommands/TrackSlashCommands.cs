@@ -287,12 +287,12 @@ public class TrackSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         if (timeSettings.DefaultPicked)
         {
             var monthName = DateTime.UtcNow.AddDays(-24).ToString("MMM", CultureInfo.InvariantCulture);
-            timeSettings = SettingService.GetTimePeriod(monthName, registeredLastFm: userSettings.RegisteredLastFm);
+            timeSettings = SettingService.GetTimePeriod(monthName, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
         }
 
         var response = await this._trackBuilders.GetReceipt(new ContextModel(this.Context, contextUser), userSettings, timeSettings);

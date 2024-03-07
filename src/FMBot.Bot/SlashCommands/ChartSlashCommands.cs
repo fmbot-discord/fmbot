@@ -44,7 +44,7 @@ public class ChartSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
-        var timeSettings = SettingService.GetTimePeriod(timePeriod);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         var chartSettings = new ChartSettings(this.Context.User)
         {
@@ -90,7 +90,7 @@ public class ChartSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
-        var timeSettings = SettingService.GetTimePeriod(timePeriod);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         var chartSettings = new ChartSettings(this.Context.User)
         {

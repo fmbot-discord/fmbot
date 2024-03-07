@@ -254,7 +254,7 @@ public class PlaySlashCommands : InteractionModuleBase
         {
             var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var goalAmount = SettingService.GetGoalAmount(amount.ToString(), userInfo.Playcount);
-            var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
 
             var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.RegisteredUnix);

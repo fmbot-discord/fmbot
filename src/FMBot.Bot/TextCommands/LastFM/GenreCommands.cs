@@ -77,7 +77,7 @@ public class GenreCommands : BaseCommandModule
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
             var response = await this._genreBuilders.GetTopGenres(new ContextModel(this.Context, prfx, contextUser),

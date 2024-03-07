@@ -236,11 +236,11 @@ public class ArtistCommands : BaseCommandModule
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
-            var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.Monthly, cachedOrAllTimeOnly: true);
+            var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.Monthly, cachedOrAllTimeOnly: true, timeZone: userSettings.TimeZone);
 
             if (timeSettings.TimePeriod == TimePeriod.AllTime)
             {
-                timeSettings = SettingService.GetTimePeriod("monthly", TimePeriod.Monthly);
+                timeSettings = SettingService.GetTimePeriod("monthly", TimePeriod.Monthly, timeZone: userSettings.TimeZone);
             }
 
             var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, prfx, contextUser),
@@ -282,7 +282,8 @@ public class ArtistCommands : BaseCommandModule
                 userSettings.RegisteredLastFm = DateTime.MinValue;
             }
 
-            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly, registeredLastFm: userSettings.RegisteredLastFm);
+            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly,
+                registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
             var response = topListSettings.Discogs
@@ -337,7 +338,8 @@ public class ArtistCommands : BaseCommandModule
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
-            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, TimePeriod.Quarterly, registeredLastFm: userSettings.RegisteredLastFm);
+            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, TimePeriod.Quarterly, registeredLastFm: userSettings.RegisteredLastFm,
+                timeZone: userSettings.TimeZone);
             var mode = SettingService.SetMode(timeSettings.NewSearchValue, contextUser.Mode);
 
             var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings, mode.mode);
@@ -369,7 +371,8 @@ public class ArtistCommands : BaseCommandModule
 
         var timeSettings = SettingService.GetTimePeriod(
             otherUser.NewSearchValue,
-            TimePeriod.AllTime);
+            TimePeriod.AllTime,
+            timeZone: userSettings.TimeZone);
 
         var tasteSettings = new TasteSettings
         {

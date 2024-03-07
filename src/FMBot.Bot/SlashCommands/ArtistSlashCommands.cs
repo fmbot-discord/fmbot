@@ -486,7 +486,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         _ = DeferAsync(privateResponse);
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly, timeZone: userSettings.TimeZone);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default);
 
@@ -519,7 +519,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
 
             var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
                 new TasteSettings { TasteType = tasteType, EmbedSize = embedSize ?? EmbedSize.Default }, timeSettings, userSettings);

@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -32,7 +31,8 @@ public class SettingService
         TimePeriod defaultTimePeriod = TimePeriod.Weekly,
         DateTime? registeredLastFm = null,
         bool cachedOrAllTimeOnly = false,
-        bool dailyTimePeriods = true)
+        bool dailyTimePeriods = true,
+        string timeZone = null)
     {
         var settingsModel = new TimeSettingsModel();
         bool? customTimePeriod = null;
@@ -44,17 +44,21 @@ public class SettingService
         settingsModel.EndDateTime = DateTime.UtcNow;
         settingsModel.DefaultPicked = false;
 
+        var timeZoneInfo = timeZone != null ? TimeZoneInfo.FindSystemTimeZoneById(timeZone) : TimeZoneInfo.Utc;
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc), timeZoneInfo);
+        var localMidnightInUtc = TimeZoneInfo.ConvertTimeToUtc(localTime.Date, timeZoneInfo);
+
         var year = GetYear(options);
         var month = GetMonth(options);
 
         if ((year != null || month != null) && !cachedOrAllTimeOnly)
         {
             settingsModel.StartDateTime = new DateTime(
-                year.GetValueOrDefault(DateTime.Today.Year),
+                year.GetValueOrDefault(localMidnightInUtc.Year),
                 month.GetValueOrDefault(1),
                 1);
 
-            if (month.HasValue && month.Value > DateTime.UtcNow.Month && !year.HasValue)
+            if (month.HasValue && month.Value > localTime.Month && !year.HasValue)
             {
                 settingsModel.StartDateTime = settingsModel.StartDateTime.Value.AddYears(-1);
                 year = settingsModel.StartDateTime.Value.Year;
@@ -107,6 +111,7 @@ public class SettingService
         }
 
         var oneDay = new[] { "1-day", "1day", "1d", "today", "day", "daily" };
+        var yesterday = new[] { "yesterday", "yd" };
         var twoDays = new[] { "2-day", "2day", "2d" };
         var threeDays = new[] { "3-day", "3day", "3d" };
         var fourDays = new[] { "4-day", "4day", "4d" };
@@ -197,74 +202,87 @@ public class SettingService
         else if (Contains(options, sixDays) && dailyTimePeriods)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, sixDays);
-            var dateString = DateTime.Today.AddDays(-6).ToString("yyyy-M-dd");
+            var dateString = localTime.AddDays(-5).ToString("yyyy-M-dd");
             settingsModel.Description = "6-day";
             settingsModel.AltDescription = "last 6 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
             settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 6;
-            settingsModel.StartDateTime = DateTime.Today.AddDays(-6);
+            settingsModel.StartDateTime = localMidnightInUtc.AddDays(-5);
         }
         else if (Contains(options, fiveDays) && dailyTimePeriods)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, fiveDays);
-            var dateString = DateTime.Today.AddDays(-5).ToString("yyyy-M-dd");
+            var dateString = localTime.AddDays(-4).ToString("yyyy-M-dd");
             settingsModel.Description = "5-day";
             settingsModel.AltDescription = "last 5 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
             settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 5;
-            settingsModel.StartDateTime = DateTime.Today.AddDays(-5);
+            settingsModel.StartDateTime = localMidnightInUtc.AddDays(-4);
         }
         else if (Contains(options, fourDays) && dailyTimePeriods)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, fourDays);
-            var dateString = DateTime.Today.AddDays(-4).ToString("yyyy-M-dd");
+            var dateString = localTime.AddDays(-3).ToString("yyyy-M-dd");
             settingsModel.Description = "4-day";
             settingsModel.AltDescription = "last 4 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
             settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 4;
-            settingsModel.StartDateTime = DateTime.Today.AddDays(-4);
+            settingsModel.StartDateTime = localMidnightInUtc.AddDays(-3);
         }
         else if (Contains(options, threeDays) && dailyTimePeriods)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, threeDays);
-            var dateString = DateTime.Today.AddDays(-3).ToString("yyyy-M-dd");
+            var dateString = localTime.AddDays(-2).ToString("yyyy-M-dd");
             settingsModel.Description = "3-day";
             settingsModel.AltDescription = "last 3 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
             settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 3;
-            settingsModel.StartDateTime = DateTime.Today.AddDays(-3);
+            settingsModel.StartDateTime = localMidnightInUtc.AddDays(-2);
         }
         else if (Contains(options, twoDays) && dailyTimePeriods)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, twoDays);
-            var dateString = DateTime.Today.AddDays(-2).ToString("yyyy-M-dd");
+            var dateString = localTime.AddDays(-1).ToString("yyyy-M-dd");
             settingsModel.Description = "2-day";
             settingsModel.AltDescription = "last 2 days";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
             settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 2;
-            settingsModel.StartDateTime = DateTime.Today.AddDays(-2);
+            settingsModel.StartDateTime = localMidnightInUtc.AddDays(-1);
+        }
+        else if (Contains(options, yesterday) && dailyTimePeriods)
+        {
+            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, oneDay);
+            var dateString = localTime.AddDays(-1).ToString("yyyy-M-dd");
+            settingsModel.Description = "yesterday";
+            settingsModel.AltDescription = "yesterday";
+            settingsModel.UrlParameter = $"from={dateString}&to={dateString}";
+            settingsModel.UsePlays = true;
+            settingsModel.UseCustomTimePeriod = true;
+            settingsModel.PlayDays = 2;
+            settingsModel.StartDateTime = localMidnightInUtc.AddDays(-1);
+            settingsModel.EndDateTime = localMidnightInUtc;
         }
         else if (Contains(options, oneDay) && dailyTimePeriods)
         {
             settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, oneDay);
-            var dateString = DateTime.Today.AddDays(-1).ToString("yyyy-M-dd");
-            settingsModel.Description = "1-day";
-            settingsModel.AltDescription = "last 24 hours";
+            var dateString = localTime.ToString("yyyy-M-dd");
+            settingsModel.Description = "day";
+            settingsModel.AltDescription = "day";
             settingsModel.UrlParameter = $"from={dateString}";
             settingsModel.UsePlays = true;
             settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 1;
-            settingsModel.StartDateTime = DateTime.Today.AddDays(-1);
+            settingsModel.StartDateTime = localMidnightInUtc;
         }
         else
         {

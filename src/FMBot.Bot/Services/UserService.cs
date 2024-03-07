@@ -1114,6 +1114,7 @@ public class UserService
         var user = await db.Users.FirstAsync(f => f.UserId == userId);
 
         user.PrivacyLevel = privacyLevel;
+        db.Entry(user).State = EntityState.Modified;
 
         db.Update(user);
 
@@ -1131,6 +1132,7 @@ public class UserService
         var user = await db.Users.FirstAsync(f => f.UserId == userId);
 
         user.TimeZone = timeZone;
+        db.Entry(user).State = EntityState.Modified;
 
         db.Update(user);
 
@@ -1163,6 +1165,7 @@ public class UserService
         var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
 
         user.DataSource = dataSource;
+        db.Entry(user).State = EntityState.Modified;
 
         db.Update(user);
 
@@ -1179,6 +1182,7 @@ public class UserService
         var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
 
         user.FmFooterOptions = fmFooterOption;
+        db.Entry(user).State = EntityState.Modified;
 
         db.Update(user);
 
@@ -1197,6 +1201,7 @@ public class UserService
         user.Mode = mode;
 
         db.Update(user);
+        db.Entry(user).State = EntityState.Modified;
 
         await db.SaveChangesAsync();
 
@@ -1260,6 +1265,7 @@ public class UserService
         }
 
         db.Update(userToUpdate);
+        db.Entry(userToUpdate).State = EntityState.Modified;
 
         await db.SaveChangesAsync();
 
@@ -1275,6 +1281,7 @@ public class UserService
         var user = await db.Users.FirstAsync(f => f.UserId == userId);
 
         user.MusicBotTrackingDisabled = disabled;
+        db.Entry(user).State = EntityState.Modified;
 
         db.Update(user);
 

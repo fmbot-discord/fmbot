@@ -309,7 +309,7 @@ public class PlayCommands : BaseCommandModule
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
 
         var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
-        var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         if (string.IsNullOrWhiteSpace(extraOptions) &&
@@ -376,8 +376,8 @@ public class PlayCommands : BaseCommandModule
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
-        var userSettings = await this._settingService.GetUser(timeSettings.NewSearchValue, user, this.Context, true);
+        var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context, true);
+        var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
 
         var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 

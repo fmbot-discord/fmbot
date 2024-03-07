@@ -63,7 +63,7 @@ public class TopSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly, discogs ? DateTime.MinValue : null);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, discogs ? TimePeriod.AllTime : TimePeriod.Weekly, discogs ? DateTime.MinValue : null, timeZone: userSettings.TimeZone);
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard, discogs);
 
         var response = topListSettings.Discogs
@@ -90,7 +90,7 @@ public class TopSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
@@ -115,7 +115,7 @@ public class TopSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
@@ -140,7 +140,7 @@ public class TopSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
@@ -165,7 +165,7 @@ public class TopSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 

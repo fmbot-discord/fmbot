@@ -501,7 +501,8 @@ public class ChartService
         bitmapCanvas.DrawText(album.AlbumName, 4, 22, textPaint);
     }
 
-    public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions)
+    public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions,
+        UserSettingsModel userSettings)
     {
         var chartSettings = currentChartSettings;
         chartSettings.CustomOptionsEnabled = false;
@@ -556,7 +557,7 @@ public class ChartService
             optionsAsString = string.Join(" ", extraOptions);
         }
 
-        var timeSettings = SettingService.GetTimePeriod(optionsAsString);
+        var timeSettings = SettingService.GetTimePeriod(optionsAsString, timeZone: userSettings.TimeZone);
 
         chartSettings.TimeSettings = timeSettings;
         chartSettings.TimespanString = timeSettings.Description;

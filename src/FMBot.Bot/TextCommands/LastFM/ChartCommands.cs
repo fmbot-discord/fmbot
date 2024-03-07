@@ -123,7 +123,7 @@ public class ChartCommands : BaseCommandModule
                 ArtistChart = false
             };
 
-            chartSettings = this._chartService.SetSettings(chartSettings, otherSettings);
+            chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, userSettings);
 
             var response = await this._chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
@@ -206,7 +206,7 @@ public class ChartCommands : BaseCommandModule
 
             var chartSettings = new ChartSettings(this.Context.User) { ArtistChart = true };
 
-            chartSettings = this._chartService.SetSettings(chartSettings, otherSettings);
+            chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, userSettings);
 
             var response = await this._chartBuilders.ArtistChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
