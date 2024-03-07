@@ -753,7 +753,7 @@ public class AlbumBuilders
 
                 counter++;
             }
-
+            
             var pageFooter = new StringBuilder();
             pageFooter.Append($"Page {pageCounter}/{albumPages.Count}");
             pageFooter.Append(footer);

@@ -261,7 +261,7 @@ public class TrackCommands : BaseCommandModule
 
             var lovedTrackPages = lovedTracks.Content.RecentTracks.ChunkBy(10);
 
-            var counter = lovedTracks.Content.RecentTracks.Count;
+            var counter = lovedTracks.Content.TotalAmount;
             foreach (var lovedTrackPage in lovedTrackPages)
             {
                 var albumPageString = new StringBuilder();
