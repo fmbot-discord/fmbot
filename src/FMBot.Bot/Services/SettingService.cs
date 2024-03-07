@@ -53,10 +53,12 @@ public class SettingService
 
         if ((year != null || month != null) && !cachedOrAllTimeOnly)
         {
-            settingsModel.StartDateTime = new DateTime(
+            var startUnspecified = new DateTime(
                 year.GetValueOrDefault(localMidnightInUtc.Year),
                 month.GetValueOrDefault(1),
                 1);
+
+            settingsModel.StartDateTime = TimeZoneInfo.ConvertTimeToUtc(startUnspecified.Date, timeZoneInfo);
 
             if (month.HasValue && month.Value > localTime.Month && !year.HasValue)
             {
