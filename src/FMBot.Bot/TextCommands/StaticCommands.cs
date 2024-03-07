@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices.JavaScript;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,11 +22,11 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using Hangfire.Logging;
-using Hangfire.Logging.LogProviders;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Web.InternalApi;
+using Enum = System.Enum;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.TextCommands;
@@ -227,15 +226,7 @@ public class StaticCommands : BaseCommandModule
         var instanceOverviewDescription = new StringBuilder();
         try
         {
-            var instanceOverview = await this._statusHandler.SendHeartbeatAsync(new InstanceHeartbeat
-            {
-                InstanceName = ConfigData.Data.Shards?.InstanceName ?? "unknown",
-                ConnectedGuilds = this._client?.Guilds?.Count(c => c.IsConnected) ?? 0,
-                TotalGuilds = this._client?.Guilds?.Count ?? 0,
-                ConnectedShards = this._client?.Shards?.Count(c => c.ConnectionState == ConnectionState.Connected) ?? 0,
-                TotalShards = this._client?.Shards?.Count ?? 0,
-                MemoryBytesUsed = currentMemoryUsage
-            });
+            var instanceOverview = await this._statusHandler.GetOverviewAsync(new Empty());
 
             foreach (var instance in instanceOverview.Instances.OrderBy(o => o.InstanceName))
             {
@@ -252,7 +243,7 @@ public class StaticCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            Log.Error("Error in gRPC status update, {exceptionMessage}", e.Message, e);
+            Log.Error("Error in gRPC status fetch, {exceptionMessage}", e.Message, e);
             instanceOverviewDescription.AppendLine("Error");
         }
 

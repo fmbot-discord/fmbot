@@ -18,6 +18,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using Google.Protobuf.WellKnownTypes;
 using Hangfire;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -200,13 +201,14 @@ public class TimerService
             Statistics.ConnectedShards.Set(this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected));
             Statistics.ConnectedDiscordServerCount.Set(this._client.Guilds.Count);
 
-            if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
+            if (string.IsNullOrEmpty(this._botSettings.Bot.Status) &&
+                !string.IsNullOrWhiteSpace(this._botSettings.ApiConfig?.InternalEndpoint))
             {
                 if (!PublicProperties.IssuesAtLastFm)
                 {
-                    var appInfo = await this._client.GetApplicationInfoAsync();
+                    var overview = await this._statusHandler.GetOverviewAsync(new Empty());
                     await this._client.SetCustomStatusAsync(
-                        $"{this._botSettings.Bot.Prefix}fm — fmbot.xyz — {appInfo.ApproximateGuildCount.GetValueOrDefault()} servers");
+                        $"{this._botSettings.Bot.Prefix}fm — fmbot.xyz — {overview.TotalGuilds} servers");
                 }
                 else
                 {
@@ -235,6 +237,12 @@ public class TimerService
         Statistics.SevenDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(7));
         Statistics.ThirtyDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(30));
 
+        if (!string.IsNullOrWhiteSpace(this._botSettings.ApiConfig?.InternalEndpoint))
+        {
+            var overview = await this._statusHandler.GetOverviewAsync(new Empty());
+            Statistics.TotalDiscordServerCount.Set(overview.TotalGuilds);
+        }
+
         try
         {
             if (this._client?.Guilds?.Count == null)
@@ -243,8 +251,8 @@ public class TimerService
                 return;
             }
 
-            var appInfo = await this._client.GetApplicationInfoAsync();
-            Statistics.TotalDiscordServerCount.Set(appInfo.ApproximateGuildCount.GetValueOrDefault());
+            Statistics.ConnectedShards.Set(this._client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected));
+            Statistics.ConnectedDiscordServerCount.Set(this._client.Guilds.Count);
         }
         catch (Exception e)
         {

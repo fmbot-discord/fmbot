@@ -734,6 +734,7 @@ public class UserSlashCommands : InteractionModuleBase
         { AuditLogReason = "Deleted through message command " });
 
         await RespondAsync("Removed .fmbot response.", ephemeral: true);
+        this.Context.LogCommandUsed();
     }
 
     [SlashCommand("judge", "Judges your music taste using AI")]
