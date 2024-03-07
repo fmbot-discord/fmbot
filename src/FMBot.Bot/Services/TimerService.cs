@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
-using AngleSharp.Attributes;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
@@ -31,6 +34,7 @@ namespace FMBot.Bot.Services;
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
 public class TimerService
 {
+    private readonly HttpClient _httpClient;
     private readonly UserService _userService;
     private readonly IUpdateService _updateService;
     private readonly IIndexService _indexService;
@@ -44,7 +48,6 @@ public class TimerService
     private readonly DiscogsService _discogsService;
     private readonly WhoKnowsFilterService _whoKnowsFilterService;
     private readonly StatusHandler.StatusHandlerClient _statusHandler;
-
 
     public FeaturedLog CurrentFeatured;
 
@@ -60,7 +63,8 @@ public class TimerService
         SupporterService supporterService,
         DiscogsService discogsService,
         WhoKnowsFilterService whoKnowsFilterService,
-        StatusHandler.StatusHandlerClient statusHandler)
+        StatusHandler.StatusHandlerClient statusHandler,
+        HttpClient httpClient)
     {
         this._client = client;
         this._userService = userService;
@@ -73,6 +77,7 @@ public class TimerService
         this._discogsService = discogsService;
         this._whoKnowsFilterService = whoKnowsFilterService;
         this._statusHandler = statusHandler;
+        this._httpClient = httpClient;
         this._updateService = updateService;
         this._botSettings = botSettings.Value;
 
@@ -181,6 +186,9 @@ public class TimerService
 
         Log.Information($"RecurringJob: Adding {nameof(CheckDiscordSupportersUserType)}");
         RecurringJob.AddOrUpdate(nameof(CheckDiscordSupportersUserType), () => CheckDiscordSupportersUserType(), "*/10 * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(UpdateBotLists)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateBotLists), () => UpdateBotLists(), "*/10 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(UpdateDiscogsUsers)}");
         RecurringJob.AddOrUpdate(nameof(UpdateDiscogsUsers), () => UpdateDiscogsUsers(), "0 12 * * *");
@@ -554,5 +562,45 @@ public class TimerService
         PublicProperties.UsedCommandsTracks = new ConcurrentDictionary<ulong, string>();
 
         Log.Information("Cleared internal logs");
+    }
+
+    public async Task UpdateBotLists()
+    {
+        if (ConfigData.Data.BotLists?.TopGgApiToken == null ||
+            ConfigData.Data.BotLists?.BotsForDiscordToken == null ||
+            ConfigData.Data.BotLists?.BotsOnDiscordToken == null)
+        {
+            return;
+        }
+        
+        var currentProcess = Process.GetCurrentProcess();
+        var startTime = DateTime.Now - currentProcess.StartTime;
+
+        if (startTime.Minutes <= 30)
+        {
+            Log.Information($"Skipping {nameof(UpdateBotLists)} because bot only just started");
+            return;
+        }
+
+        Log.Information("Updating bot lists");
+        const string requestUri = "https://botblock.org/api/count";
+
+        var overview = await this._statusHandler.GetOverviewAsync(new Empty());
+        var postData = new Dictionary<string, object>
+        {
+            { "server_count",  overview.TotalGuilds },
+            { "bot_id", "356268235697553409" },
+            { "top.gg", ConfigData.Data.BotLists.TopGgApiToken },
+            { "discords.com", ConfigData.Data.BotLists.BotsForDiscordToken },
+            { "bots.ondiscord.xyz", ConfigData.Data.BotLists.BotsOnDiscordToken }
+        };
+
+        var json = JsonSerializer.Serialize(postData);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await this._httpClient.PostAsync(requestUri, content);
+        Log.Information(response.IsSuccessStatusCode
+            ? $"{nameof(UpdateBotLists)}: Updated successfully"
+            : $"{nameof(UpdateBotLists)}: Failed to post data. Status code: {response.StatusCode}");
     }
 }

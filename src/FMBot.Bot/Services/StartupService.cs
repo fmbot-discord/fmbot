@@ -197,7 +197,6 @@ public class StartupService
         if (ConfigData.Data.Shards == null || ConfigData.Data.Shards.MainInstance == true)
         {
             BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(startDelay));
-            BackgroundJob.Schedule(() => this.StartBotSiteUpdater(), TimeSpan.FromMinutes(15));
         }
 
         BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(startDelay));
@@ -280,51 +279,6 @@ public class StartupService
             Log.Information("Registering slash commands globally");
             await this._interactionService.RegisterCommandsGloballyAsync();
 #endif
-    }
-
-    public void StartBotSiteUpdater()
-    {
-        if (!this._client.CurrentUser.Id.Equals(Constants.BotProductionId))
-        {
-            Log.Information("Cancelled botlist updater, non-production bot detected");
-            return;
-        }
-
-        Log.Information("Starting botlist updater");
-
-        var listConfig = new ListConfig();
-
-        if (this._botSettings.BotLists != null)
-        {
-            if (!string.IsNullOrWhiteSpace(this._botSettings.BotLists.TopGgApiToken))
-            {
-                listConfig.TopGG = this._botSettings.BotLists.TopGgApiToken;
-            }
-            if (!string.IsNullOrWhiteSpace(this._botSettings.BotLists.BotsForDiscordToken))
-            {
-                listConfig.BotsForDiscord = this._botSettings.BotLists.BotsForDiscordToken;
-            }
-            if (!string.IsNullOrWhiteSpace(this._botSettings.BotLists.BotsOnDiscordToken))
-            {
-                listConfig.BotsOnDiscord = this._botSettings.BotLists.BotsOnDiscordToken;
-            }
-        }
-        else
-        {
-            Log.Information("Cancelled botlist updater, no botlist tokens in config");
-            return;
-        }
-
-        try
-        {
-            var listClient = new ListClient(this._client, listConfig);
-
-            listClient.Start();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Exception while attempting to start botlist updater!");
-        }
     }
 
     private static void PrepareCacheFolder()
