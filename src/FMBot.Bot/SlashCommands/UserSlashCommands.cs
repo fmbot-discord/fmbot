@@ -849,6 +849,9 @@ public class UserSlashCommands : InteractionModuleBase
 
         if (message != null && response.CommandResponse == CommandResponse.Ok)
         {
+            PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Interaction.Id, message.Id);
+            PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Interaction.Id);
+
             if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
             {
                 await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);

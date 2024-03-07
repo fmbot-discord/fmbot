@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -146,6 +147,19 @@ public class UserBuilder
                         ? $"Oh hey, it's you! You'll be featured until <t:{dateValue}:t>."
                         : $"This user is in this server as **{guildUser.UserName}**.");
             }
+        }
+
+        if (!string.IsNullOrWhiteSpace(this._timer.CurrentFeatured.ArtistName))
+        {
+            PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, this._timer.CurrentFeatured.ArtistName);
+        }
+        if (!string.IsNullOrWhiteSpace(this._timer.CurrentFeatured.AlbumName))
+        {
+            PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, this._timer.CurrentFeatured.AlbumName);
+        }
+        if (!string.IsNullOrWhiteSpace(this._timer.CurrentFeatured.TrackName))
+        {
+            PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, this._timer.CurrentFeatured.TrackName);
         }
 
         if (this._timer.CurrentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)

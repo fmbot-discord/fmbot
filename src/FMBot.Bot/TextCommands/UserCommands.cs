@@ -378,6 +378,9 @@ public class UserCommands : BaseCommandModule
 
             if (message != null && response.CommandResponse == CommandResponse.Ok)
             {
+                PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Message.Id, message.Id);
+                PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Message.Id);
+
                 if (contextUser?.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
                 {
                     await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
