@@ -172,7 +172,14 @@ public class UserSlashCommands : InteractionModuleBase
                             return;
                         }
 
-                        response = UserBuilder.UserReactionsAsync(new ContextModel(this.Context, contextUser), prfx);
+                        response = UserBuilder.UserReactions(new ContextModel(this.Context, contextUser), prfx);
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                case UserSetting.Localization:
+                    {
+                        response = UserBuilder.Localization(new ContextModel(this.Context, contextUser));
 
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
                         break;

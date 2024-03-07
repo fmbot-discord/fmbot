@@ -1281,7 +1281,7 @@ public class UserBuilder
         return response;
     }
 
-    public static ResponseModel UserReactionsAsync(ContextModel context, string prfx)
+    public static ResponseModel UserReactions(ContextModel context, string prfx)
     {
         var response = new ResponseModel
         {
@@ -1298,6 +1298,27 @@ public class UserBuilder
         description.AppendLine("Examples:");
         description.AppendLine($"`{prfx}userreactions :PagChomp: :PensiveBlob:`");
         description.AppendLine($"`{prfx}userreactions 😀 😯 🥵`");
+
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        return response;
+    }
+
+    public static ResponseModel Localization(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var description = new StringBuilder();
+        description.AppendLine("Use the `/localization` command to set your timezone for .fmbot commands. ");
+        description.AppendLine();
+        description.AppendLine("Pick your timezone through the option in the slash command.");
+        description.AppendLine();
+        description.Append("*Note: This does not update the localization setting on the Last.fm website. You can do that [here](https://www.last.fm/settings/website). ");
+        description.AppendLine("The bot is not affiliated with Last.fm.*");
 
         response.Embed.WithDescription(description.ToString());
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);

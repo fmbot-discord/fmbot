@@ -7,7 +7,6 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
-using Fergun.Interactive.Extensions;
 using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -17,13 +16,10 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
-using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
@@ -32,21 +28,14 @@ namespace FMBot.Bot.TextCommands;
 [Name("User settings")]
 public class UserCommands : BaseCommandModule
 {
-    private readonly CrownService _crownService;
-    private readonly FriendsService _friendsService;
-    private readonly FeaturedService _featuredService;
     private readonly GuildService _guildService;
     private readonly IIndexService _indexService;
     private readonly IPrefixService _prefixService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SettingService _settingService;
-    private readonly TimerService _timer;
     private readonly UserService _userService;
-    public readonly UserBuilder _userBuilder;
+    private readonly UserBuilder _userBuilder;
     private readonly ArtistsService _artistsService;
-    private readonly PlayService _playService;
-    private readonly TimeService _timeService;
-    private readonly CommandService _commands;
     private readonly OpenAiService _openAiService;
 
 
@@ -56,41 +45,27 @@ public class UserCommands : BaseCommandModule
     private static readonly List<SocketUser> StackCooldownTarget = new();
 
     public UserCommands(
-        FriendsService friendsService,
         GuildService guildService,
         IIndexService indexService,
         IPrefixService prefixService,
         IDataSourceFactory dataSourceFactory,
         SettingService settingService,
-        TimerService timer,
         UserService userService,
-        CrownService crownService,
         IOptions<BotSettings> botSettings,
-        FeaturedService featuredService,
         UserBuilder userBuilder,
         InteractiveService interactivity,
         ArtistsService artistsService,
-        PlayService playService,
-        TimeService timeService,
-        CommandService commands,
         OpenAiService openAiService) : base(botSettings)
     {
-        this._friendsService = friendsService;
         this._guildService = guildService;
         this._indexService = indexService;
         this._dataSourceFactory = dataSourceFactory;
         this._prefixService = prefixService;
         this._settingService = settingService;
-        this._timer = timer;
         this._userService = userService;
-        this._crownService = crownService;
-        this._featuredService = featuredService;
         this._userBuilder = userBuilder;
         this.Interactivity = interactivity;
         this._artistsService = artistsService;
-        this._playService = playService;
-        this._timeService = timeService;
-        this._commands = commands;
         this._openAiService = openAiService;
     }
 
@@ -98,7 +73,7 @@ public class UserCommands : BaseCommandModule
     [Summary("Shows user settings for .fmbot")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ServerSettings)]
-    [Alias("userconfig", "usersettings", "usersetting")]
+    [Alias("userconfig", "usersettings", "usersetting", "setting")]
     public async Task UserSettingsAsync([Remainder] string searchValues = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -175,8 +150,6 @@ public class UserCommands : BaseCommandModule
             }
 
             this.Context.LogCommandUsed();
-
-
         }
         catch (Exception e)
         {
