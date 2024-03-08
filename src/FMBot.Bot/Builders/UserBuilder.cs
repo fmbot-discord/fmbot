@@ -1151,8 +1151,8 @@ public class UserBuilder
 
         var supporter = context.ContextUser.UserType != UserType.User;
 
-        var enhanced = supporter ? "enhanced " : null;
-        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot {enhanced}AI judgement - Compliment 🙂");
+        var enhanced = supporter ? " - Enhanced ⭐" : null;
+        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Compliment 🙂{enhanced}");
         response.Embed.WithColor(new Color(186, 237, 169));
 
         var openAiResponse =
@@ -1180,8 +1180,8 @@ public class UserBuilder
         };
 
         var supporter = context.ContextUser.UserType != UserType.User;
-        var enhanced = supporter ? "enhanced " : null;
-        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot {enhanced}AI judgement - Roast 🔥");
+        var enhanced = supporter ? " - Enhanced ⭐" : null;
+        response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Roast 🔥{enhanced}");
         response.Embed.WithColor(new Color(255, 122, 1));
 
         var openAiResponse =
