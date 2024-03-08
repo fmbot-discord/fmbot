@@ -1065,7 +1065,7 @@ public class UserSlashCommands : InteractionModuleBase
             await this._indexService.RecalculateTopLists(newUserSettings);
 
             embed.WithDescription("✅ Your stored top artist/albums/tracks have successfully been recalculated.");
-            await FollowupAsync(null, new[] { embed.Build() }, ephemeral: true, components: components?.Build());
+            await FollowupAsync(null, new[] { embed.Build() }, ephemeral: true);
         }
     }
 
