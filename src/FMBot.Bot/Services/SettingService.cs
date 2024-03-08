@@ -54,7 +54,7 @@ public class SettingService
         if ((year != null || month != null) && !cachedOrAllTimeOnly)
         {
             var startUnspecified = new DateTime(
-                year.GetValueOrDefault(localMidnightInUtc.Year),
+                year.GetValueOrDefault(DateTime.UtcNow.Year),
                 month.GetValueOrDefault(1),
                 1);
 
@@ -77,25 +77,25 @@ public class SettingService
             if (!year.HasValue && month.HasValue)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { month.Value.ToString(), DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value) });
-                settingsModel.Description = settingsModel.StartDateTime.Value.ToString("MMMM");
-                settingsModel.AltDescription = $"month {settingsModel.StartDateTime.Value.ToString("MMMM")}";
+                settingsModel.Description = startUnspecified.ToString("MMMM");
+                settingsModel.AltDescription = $"month {startUnspecified.ToString("MMMM")}";
                 settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
-                settingsModel.BillboardTimeDescription = $"{settingsModel.StartDateTime.Value.AddMonths(-1):MMMM}";
+                settingsModel.BillboardTimeDescription = $"{startUnspecified.AddMonths(-1):MMMM}";
             }
             if (year.HasValue && month.HasValue)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { year.Value.ToString(), month.Value.ToString(), DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value) });
 
-                settingsModel.Description = $"{settingsModel.StartDateTime.Value:MMMM} {year}";
-                settingsModel.AltDescription = $"month {settingsModel.StartDateTime.Value:MMMM} of {year}";
+                settingsModel.Description = $"{startUnspecified:MMMM} {year}";
+                settingsModel.AltDescription = $"month {startUnspecified:MMMM} of {year}";
                 settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
             }
 
             settingsModel.PlayDays =
                 (int)(settingsModel.EndDateTime.Value - settingsModel.StartDateTime.Value).TotalDays;
 
-            var startDateString = settingsModel.StartDateTime.Value.ToString("yyyy-M-dd");
-            var endDateString = settingsModel.EndDateTime.Value.ToString("yyyy-M-dd");
+            var startDateString = startUnspecified.ToString("yyyy-M-dd");
+            var endDateString = settingsModel.EndDateTime.Value.AddHours(-12).ToString("yyyy-M-dd");
 
             settingsModel.BillboardStartDateTime =
                 settingsModel.StartDateTime.Value.AddDays(-settingsModel.PlayDays.Value);
