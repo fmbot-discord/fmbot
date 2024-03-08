@@ -47,7 +47,7 @@ public class BotListService
         var overview = await this._statusHandler.GetOverviewAsync(new Empty());
         var postData = new Dictionary<string, object>
         {
-            { "server_count",  387000 },
+            { "server_count",  overview.TotalGuilds },
             { "bot_id", "356268235697553409" },
             { "top.gg", ConfigData.Data.BotLists.TopGgApiToken },
             { "discords.com", ConfigData.Data.BotLists.BotsForDiscordToken },
