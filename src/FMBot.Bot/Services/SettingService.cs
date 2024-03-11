@@ -112,7 +112,8 @@ public class SettingService
             return settingsModel;
         }
 
-        var oneDay = new[] { "1-day", "1day", "1d", "today", "day", "daily" };
+        var oneDay = new[] { "1-day", "1day", "1d", "24h","24-h", "24hr","24-hr", "24hours"};
+        var today = new[] { "today", "day", "daily" };
         var yesterday = new[] { "yesterday", "yd" };
         var twoDays = new[] { "2-day", "2day", "2d" };
         var threeDays = new[] { "3-day", "3day", "3d" };
@@ -274,9 +275,9 @@ public class SettingService
             settingsModel.StartDateTime = localMidnightInUtc.AddDays(-1);
             settingsModel.EndDateTime = localMidnightInUtc;
         }
-        else if (Contains(options, oneDay) && dailyTimePeriods)
+        else if (Contains(options, today) && dailyTimePeriods)
         {
-            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, oneDay);
+            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, today);
             var dateString = localTime.ToString("yyyy-M-dd");
             settingsModel.Description = "day";
             settingsModel.AltDescription = "day";
@@ -285,6 +286,18 @@ public class SettingService
             settingsModel.UseCustomTimePeriod = true;
             settingsModel.PlayDays = 1;
             settingsModel.StartDateTime = localMidnightInUtc;
+        }
+        else if (Contains(options, oneDay) && dailyTimePeriods)
+        {
+            settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, oneDay);
+            var dateString = localTime.ToString("yyyy-M-dd");
+            settingsModel.Description = "24h";
+            settingsModel.AltDescription = "24h";
+            settingsModel.UrlParameter = $"from={dateString}";
+            settingsModel.UsePlays = true;
+            settingsModel.UseCustomTimePeriod = true;
+            settingsModel.PlayDays = 1;
+            settingsModel.StartDateTime = DateTime.UtcNow.AddDays(-1);
         }
         else
         {
