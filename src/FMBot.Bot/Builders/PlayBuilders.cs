@@ -879,6 +879,13 @@ public class PlayBuilder
             response.Embed.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?from={dateString}&to={dateString}");
 
             reply.AppendLine($"Date played: **<t:{mileStonePlay.Content.TimePlayed.Value.ToUnixEpochDate()}:D>**");
+
+            PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, mileStonePlay.Content.ArtistName);
+            PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, mileStonePlay.Content.TrackName);
+            if (!string.IsNullOrWhiteSpace(mileStonePlay.Content.AlbumName))
+            {
+                PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, mileStonePlay.Content.AlbumName);
+            }
         }
 
         response.Embed.WithDescription(reply.ToString());
