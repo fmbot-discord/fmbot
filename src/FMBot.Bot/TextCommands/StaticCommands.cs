@@ -196,7 +196,7 @@ public class StaticCommands : BaseCommandModule
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         this._embedAuthor.WithIconUrl(selfUser.GetAvatarUrl());
-        this._embedAuthor.WithName(selfUser.Username);
+        this._embedAuthor.WithName($"{selfUser.Username}");
         this._embedAuthor.WithUrl("https://fmbot.xyz/");
 
         this._embed.WithAuthor(this._embedAuthor);
@@ -209,14 +209,13 @@ public class StaticCommands : BaseCommandModule
 
         var client = this.Context.Client as DiscordShardedClient;
 
-        var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-
         var ticks = Stopwatch.GetTimestamp();
         var upTime = (double)ticks / Stopwatch.Frequency;
         var upTimeInSeconds = TimeSpan.FromSeconds(upTime);
 
         var description = "";
-        description += $"**Bot Uptime:** `{startTime.ToReadableString()}`\n";
+        description += $"**Current Instance:** `{ConfigData.Data.Shards?.InstanceName}`\n";
+        description += $"**Instance Uptime:** `{startTime.ToReadableString()}`\n";
         description += $"**Server Uptime:** `{upTimeInSeconds.ToReadableString()}`\n";
         description += $"**Usercount:** `{await this._userService.GetTotalUserCountAsync()}`  (Authorized: `{await this._userService.GetTotalAuthorizedUserCountAsync()}` | Discord: `{client.Guilds.Select(s => s.MemberCount).Sum()}`)\n";
         description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
