@@ -230,12 +230,30 @@ public class StaticCommands : BaseCommandModule
 
             foreach (var instance in instanceOverview.Instances.OrderBy(o => o.InstanceName))
             {
+                if (instance.LastHeartbeat.ToDateTime() >= DateTime.UtcNow.AddSeconds(-22))
+                {
+                    instanceOverviewDescription.Append(
+                        $"{DiscordConstants.OneToFiveUp}");
+                }
+                else if (instance.LastHeartbeat.ToDateTime() >= DateTime.UtcNow.AddMinutes(-1))
+                {
+                    instanceOverviewDescription.Append(
+                        $"{DiscordConstants.SamePosition}");
+                }
+                else
+                {
+                    instanceOverviewDescription.Append(
+                        $"{DiscordConstants.OneToFiveDown}");
+                }
+                
                 instanceOverviewDescription.Append(
-                    $"- **{instance.InstanceName}**");
+                    $" `{instance.InstanceName}`");
                 instanceOverviewDescription.Append(
                     $" - {instance.ConnectedGuilds}/{instance.TotalGuilds} guilds");
                 instanceOverviewDescription.Append(
                     $" - {instance.ConnectedShards}/{instance.TotalShards} shards");
+                instanceOverviewDescription.Append(
+                    $" - {instance.MemoryBytesUsed.ToFormattedByteString()}");
                 instanceOverviewDescription.Append(
                     $" - <t:{instance.LastHeartbeat.ToDateTime().ToUnixEpochDate()}:R>");
                 instanceOverviewDescription.AppendLine();
