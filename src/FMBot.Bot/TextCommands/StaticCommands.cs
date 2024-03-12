@@ -229,7 +229,7 @@ public class StaticCommands : BaseCommandModule
 
             foreach (var instance in instanceOverview.Instances.OrderBy(o => o.InstanceName))
             {
-                if (instance.LastHeartbeat.ToDateTime() >= DateTime.UtcNow.AddSeconds(-22))
+                if (instance.LastHeartbeat.ToDateTime() >= DateTime.UtcNow.AddSeconds(-30))
                 {
                     instanceOverviewDescription.Append(
                         $"{DiscordConstants.OneToFiveUp}");
