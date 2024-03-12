@@ -184,7 +184,8 @@ public class AlbumCommands : BaseCommandModule
 
     [Command("topalbums", RunMode = RunMode.Async)]
     [Summary("Shows your or someone else's top albums over a certain time period.")]
-    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
+    [Options(Constants.CompactTimePeriodList,
+        "Albums released in year: `r:2023`, `released:2023`", Constants.UserMentionExample,
         Constants.BillboardExample, Constants.EmbedSizeExample)]
     [Examples("tab", "topalbums", "tab a lfm:fm-bot", "topalbums weekly @user", "tab bb xl")]
     [Alias("abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist")]
@@ -202,7 +203,7 @@ public class AlbumCommands : BaseCommandModule
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, topListSettings.ReleaseYearFilter.HasValue ? TimePeriod.Monthly : TimePeriod.Weekly, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 

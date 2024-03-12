@@ -14,11 +14,12 @@ public class TopListSettings
         this.EmbedSize = embedSize;
     }
 
-    public TopListSettings(EmbedSize embedSize, bool billboard, bool discogs = false)
+    public TopListSettings(EmbedSize embedSize, bool billboard, bool discogs = false, int? year = null)
     {
         this.EmbedSize = embedSize;
         this.Billboard = billboard;
         this.Discogs = discogs;
+        this.ReleaseYearFilter = year;
     }
 
     public EmbedSize EmbedSize { get; set; }
