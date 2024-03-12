@@ -914,7 +914,7 @@ public class SettingService
         {
             if (option.Length == 4 && int.TryParse(option, out var result))
             {
-                if (result > 2000 && result <= DateTime.Today.AddDays(1).Year)
+                if (result >= 1900 && result <= DateTime.Today.AddDays(1).Year)
                 {
                     return result;
                 }
