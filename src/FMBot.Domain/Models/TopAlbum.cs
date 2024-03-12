@@ -30,5 +30,8 @@ public class TopAlbum
 
     public TopTimeListened TimeListened { get; set; }
 
+    public DateTime? ReleaseDate { get; set; }
+    public string ReleaseDatePrecision { get; set; }
+
     public Guid? Mbid { get; set; }
 }

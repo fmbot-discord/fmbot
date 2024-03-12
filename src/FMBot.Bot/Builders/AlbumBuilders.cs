@@ -101,7 +101,7 @@ public class AlbumBuilders
         }
 
         var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
-        databaseAlbum.Tracks = await this._spotifyService.GetExistingAlbumTracks(databaseAlbum.Id);
+        var cachedAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         response.EmbedAuthor.WithName(
@@ -113,11 +113,6 @@ public class AlbumBuilders
         }
 
         response.Embed.WithAuthor(response.EmbedAuthor);
-
-        if (databaseAlbum.ReleaseDate != null)
-        {
-            response.Embed.WithDescription($"Release date: `{databaseAlbum.ReleaseDate}`");
-        }
 
         var artistUserTracks = await this._trackService.GetArtistUserTracks(context.ContextUser.UserId, albumSearch.Album.ArtistName);
 
@@ -226,6 +221,12 @@ public class AlbumBuilders
             }
         }
 
+        var description = new StringBuilder();
+        if (cachedAlbum.ReleaseDate != null)
+        {
+            description.AppendLine($"Release date: `{cachedAlbum.ReleaseDate}`");
+        }
+
         if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)
         {
             var firstPlay =
@@ -234,8 +235,7 @@ public class AlbumBuilders
             if (firstPlay != null)
             {
                 var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
-
-                response.Embed.WithDescription($"Discovered on: <t:{firstListenValue}:D>");
+                description.AppendLine($"Discovered on: <t:{firstListenValue}:D>");
             }
         }
         else
@@ -244,9 +244,13 @@ public class AlbumBuilders
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                response.Embed.WithDescription($"*Supporters can see the date they discovered an album. " +
-                                               $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterDiscordLink})*");
+                description.AppendLine($"*[Supporters]({Constants.GetSupporterDiscordLink}) can see album discovery dates.*");
             }
+        }
+
+        if (description.Length > 0)
+        {
+            response.Embed.WithDescription(description.ToString());
         }
 
         if (albumSearch.Album.Description != null)
@@ -753,7 +757,7 @@ public class AlbumBuilders
 
                 counter++;
             }
-            
+
             var pageFooter = new StringBuilder();
             pageFooter.Append($"Page {pageCounter}/{albumPages.Count}");
             pageFooter.Append(footer);
@@ -803,7 +807,7 @@ public class AlbumBuilders
         }
         else
         {
-            dbAlbum.Tracks = await this._spotifyService.GetExistingAlbumTracks(dbAlbum.Id);
+            dbAlbum.Tracks = await this._spotifyService.GetDatabaseAlbumTracks(dbAlbum.Id);
 
             if (dbAlbum?.Tracks != null && dbAlbum.Tracks.Any())
             {
@@ -1095,7 +1099,7 @@ public class AlbumBuilders
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
-        const int amount = 200;
+        var amount = topListSettings.ReleaseYearFilter.HasValue ? 1000 : 200;
 
         var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
         if (!albums.Success || albums.Content == null)
@@ -1112,6 +1116,11 @@ public class AlbumBuilders
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
             return response;
+        }
+
+        if (topListSettings.ReleaseYearFilter.HasValue)
+        {
+            albums.Content.TopAlbums = await this._albumService.FilterAlbumToReleaseDate(albums.Content?.TopAlbums, topListSettings.ReleaseYearFilter.Value);
         }
 
         if (mode == ResponseMode.Image)
@@ -1196,6 +1205,12 @@ public class AlbumBuilders
             {
                 footer.AppendLine();
                 footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+            }
+
+            if (topListSettings.ReleaseYearFilter.HasValue)
+            {
+                footer.AppendLine();
+                footer.Append($"Filtering to albums released in {topListSettings.ReleaseYearFilter.Value}");
             }
 
             if (rnd == 1 && !topListSettings.Billboard)

@@ -13,6 +13,7 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using Google.Protobuf.WellKnownTypes;
 using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -112,7 +113,7 @@ public class SettingService
             return settingsModel;
         }
 
-        var oneDay = new[] { "1-day", "1day", "1d", "24h","24-h", "24hr","24-hr", "24hours"};
+        var oneDay = new[] { "1-day", "1day", "1d", "24h", "24-h", "24hr", "24-hr", "24hours" };
         var today = new[] { "today", "day", "daily" };
         var yesterday = new[] { "yesterday", "yd" };
         var twoDays = new[] { "2-day", "2day", "2d" };
@@ -468,6 +469,23 @@ public class SettingService
         {
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, timeListened);
             topListSettings.Type = TopListType.TimeListened;
+        }
+
+        foreach (var option in extraOptions.Split(" "))
+        {
+            if (option.StartsWith("r:", StringComparison.OrdinalIgnoreCase) ||
+                option.StartsWith("released:", StringComparison.OrdinalIgnoreCase))
+            {
+                var yearString = option
+                    .Replace("r:", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("released:", "", StringComparison.OrdinalIgnoreCase);
+
+                if (int.TryParse(yearString, out var year) && year <= DateTime.UtcNow.Year && year >= 1900)
+                {
+                    topListSettings.ReleaseYearFilter = year;
+                    topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, [$"r:{year}", $"released:{year}"]);
+                }
+            }
         }
 
         return topListSettings;

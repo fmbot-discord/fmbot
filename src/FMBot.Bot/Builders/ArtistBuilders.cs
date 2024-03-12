@@ -161,8 +161,7 @@ public class ArtistBuilders
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                response.Embed.WithDescription($"*Supporters can see the date they discovered an artist. " +
-                                               $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterDiscordLink})*");
+                response.Embed.WithDescription($"*[Supporters]({Constants.GetSupporterDiscordLink}) can see artist discovery dates.*");
             }
         }
 
@@ -449,8 +448,7 @@ public class ArtistBuilders
             if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
-                description.AppendLine($"*Supporters can see the date they discovered an artist. " +
-                                       $"[{Constants.GetSupporterOverviewButton}]({Constants.GetSupporterDiscordLink})*");
+                description.AppendLine($"*[Supporters]({Constants.GetSupporterDiscordLink}) can see artist discovery dates.*");
             }
         }
 

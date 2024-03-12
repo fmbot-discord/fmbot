@@ -19,6 +19,7 @@ using FMBot.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -321,6 +322,47 @@ public class AlbumService
         }
 
         return topAlbums;
+    }
+
+    public async Task<List<TopAlbum>> FilterAlbumToReleaseDate(List<TopAlbum> topAlbums, int year)
+    {
+        var minTimestamp = Timestamp.FromDateTime(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
+        var request = new AlbumReleaseDateRequest
+        {
+            Albums =
+            {
+                topAlbums.Select(s => new AlbumWithDate
+                {
+                    ArtistName = s.ArtistName,
+                    AlbumName = s.AlbumName,
+                    ReleaseDate = minTimestamp,
+                    ReleaseDatePrecision = s.ReleaseDatePrecision ?? ""
+                })
+            }
+        };
+
+        var albums = await this._albumEnrichment.AddAlbumReleaseDatesAsync(request);
+
+        foreach (var topAlbum in topAlbums.Where(w => w.ReleaseDate == null))
+        {
+            var album = albums.Albums.FirstOrDefault(f => f.ReleaseDate != minTimestamp &&
+                                                          string.Equals(f.AlbumName, topAlbum.AlbumName, StringComparison.OrdinalIgnoreCase) &&
+                                                          string.Equals(f.ArtistName, topAlbum.ArtistName, StringComparison.OrdinalIgnoreCase));
+
+            if (album != null)
+            {
+                topAlbum.ReleaseDate = album.ReleaseDate.ToDateTime();
+                topAlbum.ReleaseDatePrecision = album.ReleaseDatePrecision;
+            }
+        }
+
+        var yearStart = new DateTime(year, 1, 1);
+        var yearEnd = yearStart.AddYears(1).AddSeconds(-1);
+        return topAlbums
+            .Where(w => w.ReleaseDate.HasValue &&
+                        w.ReleaseDate.Value >= yearStart &&
+                        w.ReleaseDate.Value <= yearEnd)
+            .ToList();
     }
 
     public async Task<Album> GetAlbumForId(int albumId)

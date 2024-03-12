@@ -676,7 +676,7 @@ public class SpotifyService
         await db.SaveChangesAsync();
     }
 
-    public async Task<ICollection<Track>> GetExistingAlbumTracks(int albumId)
+    public async Task<ICollection<Track>> GetDatabaseAlbumTracks(int albumId)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
