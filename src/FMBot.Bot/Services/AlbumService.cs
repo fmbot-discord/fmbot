@@ -318,7 +318,7 @@ public class AlbumService
             if (album != null)
             {
                 topAlbum.AlbumCoverUrl = album.AlbumCoverUrl;
-            }
+            } 
         }
 
         return topAlbums;
@@ -343,19 +343,26 @@ public class AlbumService
 
         var albums = await this._albumEnrichment.AddAlbumReleaseDatesAsync(request);
 
-        var albumDictionary = albums.Albums
+        var albumGroups = albums.Albums
             .Where(a => a.ReleaseDate != minTimestamp)
-            .ToDictionary(a => (a.AlbumName.ToLower(), a.ArtistName.ToLower()), a => a);
+            .GroupBy(a => (a.AlbumName.ToLower(), a.ArtistName.ToLower()))
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         foreach (var topAlbum in topAlbums.Where(w => w.ReleaseDate == null))
         {
             var key = (topAlbum.AlbumName.ToLower(), topAlbum.ArtistName.ToLower());
-            if (albumDictionary.TryGetValue(key, out var album))
+
+            if (albumGroups.TryGetValue(key, out var matchedAlbums))
             {
-                topAlbum.ReleaseDate = album.ReleaseDate.ToDateTime();
-                topAlbum.ReleaseDatePrecision = album.ReleaseDatePrecision;
+                var album = matchedAlbums.FirstOrDefault();
+                if (album != null)
+                {
+                    topAlbum.ReleaseDate = album.ReleaseDate.ToDateTime();
+                    topAlbum.ReleaseDatePrecision = album.ReleaseDatePrecision;
+                }
             }
         }
+
 
         var yearStart = new DateTime(year, 1, 1);
         var yearEnd = yearStart.AddYears(1).AddSeconds(-1);
