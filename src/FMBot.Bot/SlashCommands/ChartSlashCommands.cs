@@ -46,7 +46,7 @@ public class ChartSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) ? TimePeriod.Monthly : TimePeriod.Weekly,  timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) ? TimePeriod.AllTime : TimePeriod.Weekly,  timeZone: userSettings.TimeZone);
 
         var chartSettings = new ChartSettings(this.Context.User)
         {

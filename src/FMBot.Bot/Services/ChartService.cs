@@ -574,7 +574,7 @@ public class ChartService
             chartSettings.CustomOptionsEnabled = true;
         }
 
-        var timeSettings = SettingService.GetTimePeriod(optionsAsString, aoty ? TimePeriod.Monthly : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(optionsAsString, aoty ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
         foreach (var option in extraOptions)
         {

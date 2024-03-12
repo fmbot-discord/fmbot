@@ -91,7 +91,7 @@ public class TopSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) ? TimePeriod.Monthly : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard, year: year != null ? int.Parse(year) : null);
 
