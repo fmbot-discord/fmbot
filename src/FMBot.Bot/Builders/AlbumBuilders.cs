@@ -1100,8 +1100,8 @@ public class AlbumBuilders
         response.EmbedAuthor.WithUrl(userUrl);
 
         var amount = topListSettings.ReleaseYearFilter.HasValue ? 1000 : 200;
-
         var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
+
         if (!albums.Success || albums.Content == null)
         {
             response.Embed.ErrorResponse(albums.Error, albums.Message, "top albums", context.DiscordUser);
@@ -1116,6 +1116,15 @@ public class AlbumBuilders
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
             return response;
+        }
+
+        if (topListSettings.ReleaseYearFilter.HasValue && timeSettings.TimePeriod == TimePeriod.AllTime)
+        {
+            var topAllTimeDb = await this._albumService.GetUserAllTimeTopAlbums(userSettings.UserId);
+            if (topAllTimeDb.Count > 1000)
+            {
+                albums.Content.TopAlbums = topAllTimeDb;
+            }
         }
 
         if (topListSettings.ReleaseYearFilter.HasValue)

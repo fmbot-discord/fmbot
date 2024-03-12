@@ -343,13 +343,14 @@ public class AlbumService
 
         var albums = await this._albumEnrichment.AddAlbumReleaseDatesAsync(request);
 
+        var albumDictionary = albums.Albums
+            .Where(a => a.ReleaseDate != minTimestamp)
+            .ToDictionary(a => (a.AlbumName.ToLower(), a.ArtistName.ToLower()), a => a);
+
         foreach (var topAlbum in topAlbums.Where(w => w.ReleaseDate == null))
         {
-            var album = albums.Albums.FirstOrDefault(f => f.ReleaseDate != minTimestamp &&
-                                                          string.Equals(f.AlbumName, topAlbum.AlbumName, StringComparison.OrdinalIgnoreCase) &&
-                                                          string.Equals(f.ArtistName, topAlbum.ArtistName, StringComparison.OrdinalIgnoreCase));
-
-            if (album != null)
+            var key = (topAlbum.AlbumName.ToLower(), topAlbum.ArtistName.ToLower());
+            if (albumDictionary.TryGetValue(key, out var album))
             {
                 topAlbum.ReleaseDate = album.ReleaseDate.ToDateTime();
                 topAlbum.ReleaseDatePrecision = album.ReleaseDatePrecision;
@@ -426,7 +427,9 @@ public class AlbumService
             {
                 ArtistName = s.ArtistName,
                 AlbumName = s.Name,
-                UserPlaycount = s.Playcount
+                UserPlaycount = s.Playcount,
+                ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.ArtistName),
+                AlbumUrl = LastfmUrlExtensions.GetAlbumUrl(s.ArtistName, s.Name),
             })
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();

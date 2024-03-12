@@ -92,6 +92,15 @@ public class ChartBuilders
             return response;
         }
 
+        if (chartSettings.ReleaseYearFilter.HasValue && chartSettings.TimeSettings.TimePeriod == TimePeriod.AllTime)
+        {
+            var topAllTimeDb = await this._albumService.GetUserAllTimeTopAlbums(userSettings.UserId);
+            if (topAllTimeDb.Count > 1000)
+            {
+                albums.Content.TopAlbums = topAllTimeDb;
+            }
+        }
+
         var topAlbums = albums.Content.TopAlbums;
 
         topAlbums = await this._albumService.FillMissingAlbumCovers(topAlbums);
