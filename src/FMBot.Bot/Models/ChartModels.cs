@@ -75,6 +75,8 @@ public class ChartSettings
 
     public bool RainbowSortingEnabled { get; set; }
 
+    public int? ReleaseYearFilter { get; set; }
+
     public bool ContainsNsfw { get; set; }
     public int? CensoredItems { get; set; }
 }

@@ -32,6 +32,7 @@ public class ChartSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task AlbumChartAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [Summary("Released", "Filter to albums released in year")][Autocomplete(typeof(YearAutoComplete))] string year = null,
         [Summary("Size", "Chart size")][Autocomplete(typeof(ChartSizeAutoComplete))] string size = "3x3",
         [Summary("Titles", "Title display setting")] TitleSetting titleSetting = TitleSetting.Titles,
         [Summary("Skip", "Skip albums without an image")] bool skip = false,
@@ -56,6 +57,7 @@ public class ChartSlashCommands : InteractionModuleBase
             TimeSettings = timeSettings,
             TimespanString = timeSettings.Description,
             TimespanUrlString = timeSettings.UrlParameter,
+            ReleaseYearFilter = !string.IsNullOrWhiteSpace(year) ? int.Parse(year) : null,
             CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || sfwOnly || rainbow
         };
 

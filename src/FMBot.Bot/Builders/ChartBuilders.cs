@@ -71,14 +71,11 @@ public class ChartBuilders
             extraAlbums = chartSettings.Height;
         }
 
-        var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
-
-        var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
+        var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, chartSettings.ReleaseYearFilter.HasValue ? 1000 : 250);
 
         if (albums.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
         {
             var count = albums.Content?.TopAlbums?.Count ?? 0;
-
             var reply =
                 $"User hasn't listened to enough albums ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
                 $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
@@ -98,6 +95,21 @@ public class ChartBuilders
         var topAlbums = albums.Content.TopAlbums;
 
         topAlbums = await this._albumService.FillMissingAlbumCovers(topAlbums);
+        if (chartSettings.ReleaseYearFilter.HasValue)
+        {
+            topAlbums = await this._albumService.FilterAlbumToReleaseDate(topAlbums, chartSettings.ReleaseYearFilter.Value);
+
+            if (topAlbums.Count < chartSettings.ImagesNeeded)
+            {
+                response.Text = $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({topAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.";
+                response.ResponseType = ResponseType.Text;
+                response.CommandResponse = CommandResponse.WrongInput;
+                return response;
+            }
+        }
+
+        var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
+        topAlbums = topAlbums.Take(imagesToRequest).ToList();
 
         var albumsWithoutImage = topAlbums.Where(f => f.AlbumCoverUrl == null).ToList();
 

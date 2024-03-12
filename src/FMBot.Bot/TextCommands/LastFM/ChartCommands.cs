@@ -54,46 +54,27 @@ public class ChartCommands : BaseCommandModule
     [Summary("Generates an album image chart.")]
     [Options(
         Constants.CompactTimePeriodList,
+        "Albums released in year: `r:2023`, `released:2023`",
         "Disable titles: `notitles` / `nt`",
         "Skip albums with no image: `skipemptyimages` / `s`",
         "Skip NSFW albums: `sfw`",
         "Size: `WidthxHeight` - `2x2`, `3x3`, `4x5`, `20x4` up to 100 total images",
         Constants.UserMentionExample)]
-    [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly")]
-    [Alias("c", "aoty")]
+    [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly", "aoty 2023")]
+    [Alias("c", "aoty", "albumsoftheyear", "albumoftheyear")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Albums)]
     public async Task ChartAsync(params string[] otherSettings)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-        var msg = this.Context.Message as SocketUserMessage;
-        if (StackCooldownTarget.Contains(this.Context.Message.Author))
-        {
-            if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(5) >= DateTimeOffset.Now)
-            {
-                var secondsLeft = (int)(StackCooldownTimer[
-                        StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
-                    .AddSeconds(6) - DateTimeOffset.Now).TotalSeconds;
-                if (secondsLeft <= 2)
-                {
-                    var secondString = secondsLeft == 1 ? "second" : "seconds";
-                    await ReplyAsync($"Please wait {secondsLeft} {secondString} before generating a chart again.");
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                }
-
-                return;
-            }
-
-            StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
-        }
-        else
-        {
-            StackCooldownTarget.Add(msg.Author);
-            StackCooldownTimer.Add(DateTimeOffset.Now);
-        }
-
         var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var chartCount = await this._userService.GetCommandExecutedAmount(user.UserId, "chart", DateTime.UtcNow.AddSeconds(-45));
+        if (chartCount >= 3)
+        {
+            await ReplyAsync($"Please wait a minute before generating charts again.");
+            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            return;
+        }
 
         var optionsAsString = "";
         if (otherSettings != null && otherSettings.Any())
@@ -102,13 +83,12 @@ public class ChartCommands : BaseCommandModule
         }
         var userSettings = await this._settingService.GetUser(optionsAsString, user, this.Context);
 
-        if (!this._guildService.CheckIfDM(this.Context))
+        if (this.Context.Guild != null)
         {
             var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
             if (!perms.AttachFiles)
             {
-                await ReplyAsync(
-                    "I'm missing the 'Attach files' permission in this server, so I can't post a chart.");
+                await ReplyAsync("I'm missing the 'Attach files' permission in this server, so I can't post a chart.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -123,7 +103,10 @@ public class ChartCommands : BaseCommandModule
                 ArtistChart = false
             };
 
-            chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, userSettings);
+            var messageContent = this.Context.Message.Content.ToLower();
+            var aoty = messageContent.Contains("aoty") || messageContent.Contains("albumsoftheyear") || messageContent.Contains("albumoftheyear");
+                
+            chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, userSettings, aoty);
 
             var response = await this._chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
@@ -152,34 +135,14 @@ public class ChartCommands : BaseCommandModule
     public async Task ArtistChartAsync(params string[] otherSettings)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-        var msg = this.Context.Message as SocketUserMessage;
-        if (StackCooldownTarget.Contains(this.Context.Message.Author))
-        {
-            if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(5) >= DateTimeOffset.Now)
-            {
-                var secondsLeft = (int)(StackCooldownTimer[
-                        StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
-                    .AddSeconds(6) - DateTimeOffset.Now).TotalSeconds;
-                if (secondsLeft <= 2)
-                {
-                    var secondString = secondsLeft == 1 ? "second" : "seconds";
-                    await ReplyAsync($"Please wait {secondsLeft} {secondString} before generating a chart again.");
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                }
-
-                return;
-            }
-
-            StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
-        }
-        else
-        {
-            StackCooldownTarget.Add(msg.Author);
-            StackCooldownTimer.Add(DateTimeOffset.Now);
-        }
-
         var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var chartCount = await this._userService.GetCommandExecutedAmount(user.UserId, "artistchart", DateTime.UtcNow.AddSeconds(-45));
+        if (chartCount >= 3)
+        {
+            await ReplyAsync($"Please wait a minute before generating charts again.");
+            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            return;
+        }
 
         var optionsAsString = "";
         if (otherSettings != null && otherSettings.Any())
@@ -188,13 +151,12 @@ public class ChartCommands : BaseCommandModule
         }
         var userSettings = await this._settingService.GetUser(optionsAsString, user, this.Context);
 
-        if (!this._guildService.CheckIfDM(this.Context))
+        if (this.Context.Guild != null)
         {
             var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
             if (!perms.AttachFiles)
             {
-                await ReplyAsync(
-                    "I'm missing the 'Attach files' permission in this server, so I can't post an artist chart.");
+                await ReplyAsync("I'm missing the 'Attach files' permission in this server, so I can't post a chart.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }

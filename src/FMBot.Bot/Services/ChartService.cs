@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Extensions;
@@ -502,7 +503,7 @@ public class ChartService
     }
 
     public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions,
-        UserSettingsModel userSettings)
+        UserSettingsModel userSettings, bool aoty = false)
     {
         var chartSettings = currentChartSettings;
         chartSettings.CustomOptionsEnabled = false;
@@ -557,7 +558,40 @@ public class ChartService
             optionsAsString = string.Join(" ", extraOptions);
         }
 
+        if (aoty)
+        {
+            var year = SettingService.GetYear(optionsAsString);
+            if (year != null)
+            {
+                chartSettings.ReleaseYearFilter = year;
+                optionsAsString = optionsAsString.Replace($"{year}", "");
+            }
+            else
+            {
+                chartSettings.ReleaseYearFilter = DateTime.UtcNow.Year;
+            }
+
+            chartSettings.CustomOptionsEnabled = true;
+        }
+
         var timeSettings = SettingService.GetTimePeriod(optionsAsString, timeZone: userSettings.TimeZone);
+
+        foreach (var option in extraOptions)
+        {
+            if (option.StartsWith("r:", StringComparison.OrdinalIgnoreCase) ||
+                option.StartsWith("released:", StringComparison.OrdinalIgnoreCase))
+            {
+                var yearString = option
+                    .Replace("r:", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("released:", "", StringComparison.OrdinalIgnoreCase);
+
+                if (int.TryParse(yearString, out var year) && year <= DateTime.UtcNow.Year && year >= 1900)
+                {
+                    chartSettings.CustomOptionsEnabled = true;
+                    chartSettings.ReleaseYearFilter = year;
+                }
+            }
+        }
 
         chartSettings.TimeSettings = timeSettings;
         chartSettings.TimespanString = timeSettings.Description;
@@ -592,6 +626,10 @@ public class ChartService
         if (chartSettings.CustomOptionsEnabled)
         {
             embedDescription += "Chart options:\n";
+        }
+        if (chartSettings.ReleaseYearFilter.HasValue)
+        {
+            embedDescription += $"- Filtering to albums released in {chartSettings.ReleaseYearFilter.Value}\n";
         }
         if (chartSettings.SkipWithoutImage)
         {
