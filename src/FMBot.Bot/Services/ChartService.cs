@@ -574,8 +574,6 @@ public class ChartService
             chartSettings.CustomOptionsEnabled = true;
         }
 
-        var timeSettings = SettingService.GetTimePeriod(optionsAsString, aoty ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
-
         foreach (var option in extraOptions)
         {
             if (option.StartsWith("r:", StringComparison.OrdinalIgnoreCase) ||
@@ -589,9 +587,12 @@ public class ChartService
                 {
                     chartSettings.CustomOptionsEnabled = true;
                     chartSettings.ReleaseYearFilter = year;
+                    aoty = true;
                 }
             }
         }
+
+        var timeSettings = SettingService.GetTimePeriod(optionsAsString, aoty ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
         chartSettings.TimeSettings = timeSettings;
         chartSettings.TimespanString = timeSettings.Description;

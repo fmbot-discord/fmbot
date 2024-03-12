@@ -98,6 +98,7 @@ public class ChartBuilders
             if (topAllTimeDb.Count > 1000)
             {
                 albums.Content.TopAlbums = topAllTimeDb;
+                albums.Content.TotalAmount = topAllTimeDb.Count;
             }
         }
 
