@@ -101,7 +101,8 @@ public class ChartBuilders
 
             if (topAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Text = $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({topAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.";
+                response.Text = $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({topAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
+                                $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
                 response.ResponseType = ResponseType.Text;
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
