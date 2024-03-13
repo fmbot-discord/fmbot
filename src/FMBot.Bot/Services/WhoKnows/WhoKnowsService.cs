@@ -251,7 +251,7 @@ public class WhoKnowsService
         }
         if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
         {
-            footer.AppendLine($"You are currently not globally visible - use '{context.Prefix}privacy' to enable.");
+            footer.AppendLine($"You're currently not globally visible - use '{context.Prefix}privacy' to enable.");
         }
         if (settings.HidePrivateUsers)
         {

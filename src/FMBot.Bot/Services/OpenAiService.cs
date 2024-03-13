@@ -75,7 +75,7 @@ public class OpenAiService
              artistList.Add(artist[..Math.Min(artist.Length, 36)]);
         }
 
-        var model = supporter ? "gpt-4" : "gpt-3.5-turbo";
+        var model = supporter ? prompt.PremiumModel : prompt.FreeModel;
 
         return await SendRequest($"{prompt.Prompt} {string.Join(", ", artistList)}", model);
     }
