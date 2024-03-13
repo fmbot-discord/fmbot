@@ -74,8 +74,6 @@ public static class ConfigData
                 OpenAi = new OpenAiConfig
                 {
                     Key = string.Empty,
-                    RoastPrompt = "Write a roast about me using some of my top artists: ",
-                    ComplimentPrompt = "Write a compliment about me using some of my top artists: ",
                 }
             };
 

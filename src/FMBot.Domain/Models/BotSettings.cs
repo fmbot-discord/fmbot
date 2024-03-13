@@ -120,9 +120,6 @@ public class DiscogsConfig
 public class OpenAiConfig
 {
     public string Key { get; set; }
-
-    public string ComplimentPrompt { get; set; }
-    public string RoastPrompt { get; set; }
 }
 
 public class GeniusConfig

@@ -8,6 +8,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using System;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -60,19 +61,23 @@ public class OpenAiService
         return responseModel;
     }
 
-    public async Task<OpenAiResponse> GetJudgeResponse(List<string> artists, bool compliment, bool supporter = false)
+    public async Task<OpenAiResponse> GetJudgeResponse(List<string> artists, PromptType promptType, bool supporter = false, string language = "en-us")
     {
-        var prompt = compliment ? this._botSettings.OpenAi.ComplimentPrompt : this._botSettings.OpenAi.RoastPrompt;
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var prompt = await db.AiPrompts
+            .OrderByDescending(o => o.Version)
+            .FirstAsync(f => f.Type == promptType &&
+                             f.Language == language);
 
         var artistList = new List<string>();
         foreach (var artist in artists)
         {
-             artistList.Add(artist[..Math.Min(artist.Length, 34)]);
+             artistList.Add(artist[..Math.Min(artist.Length, 36)]);
         }
 
         var model = supporter ? "gpt-4" : "gpt-3.5-turbo";
 
-        return await SendRequest($"{prompt} {string.Join(", ", artistList)}", model);
+        return await SendRequest($"{prompt.Prompt} {string.Join(", ", artistList)}", model);
     }
 
     public async Task<AiGeneration> StoreAiGeneration(OpenAiResponse response, int userId, int? targetedUserId)

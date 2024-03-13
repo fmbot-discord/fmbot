@@ -1156,7 +1156,7 @@ public class UserBuilder
         response.Embed.WithColor(new Color(186, 237, 169));
 
         var openAiResponse =
-            await this._openAiService.GetJudgeResponse(topArtists, true, supporter);
+            await this._openAiService.GetJudgeResponse(topArtists, PromptType.Compliment, supporter);
 
         if (openAiResponse.Choices == null)
         {
@@ -1185,7 +1185,7 @@ public class UserBuilder
         response.Embed.WithColor(new Color(255, 122, 1));
 
         var openAiResponse =
-            await this._openAiService.GetJudgeResponse(topArtists, false, supporter);
+            await this._openAiService.GetJudgeResponse(topArtists, PromptType.Roast, supporter);
 
         if (openAiResponse.Choices == null)
         {
