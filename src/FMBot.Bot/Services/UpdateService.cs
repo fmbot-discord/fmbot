@@ -167,13 +167,9 @@ public class UpdateService : IUpdateService
         {
             Log.Information("Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}", user.UserId, user.UserNameLastFM, recentTracks.Error);
 
-            if (recentTracks.Error == ResponseStatus.MissingParameters)
+            if (recentTracks.Error != null)
             {
-                await AddOrUpdateInactiveUserMissingParameterError(user);
-            }
-            if (recentTracks.Error == ResponseStatus.LoginRequired)
-            {
-                await AddOrUpdatePrivateUserMissingParameterError(user);
+                await AddLfmInactiveUserLog(user, recentTracks.Error.Value);
             }
 
             await SetUserUpdateTime(user, DateTime.UtcNow.AddHours(-2), connection);
@@ -233,6 +229,8 @@ public class UpdateService : IUpdateService
             var cacheKey = $"{user.UserId}-update-in-progress";
             if (this._cache.TryGetValue(cacheKey, out bool _))
             {
+                await connection.CloseAsync();
+
                 return recentTracks;
             }
 
@@ -612,78 +610,22 @@ public class UpdateService : IUpdateService
         return timeToCache;
     }
 
-    private async Task AddOrUpdateInactiveUserMissingParameterError(User user)
+    private async Task AddLfmInactiveUserLog(User user, ResponseStatus responseStatus)
     {
-        if (user.LastUsed > DateTime.UtcNow.AddDays(-20) || !string.IsNullOrEmpty(user.SessionKeyLastFm))
+        if (user.LastUsed > DateTime.UtcNow.AddDays(-10))
         {
             return;
         }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var existingInactiveUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
 
-        if (existingInactiveUser == null)
+        await db.InactiveUserLog.AddAsync(new InactiveUserLog
         {
-            var inactiveUser = new InactiveUsers
-            {
-                UserNameLastFM = user.UserNameLastFM,
-                UserId = user.UserId,
-                Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
-                Updated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
-                MissingParametersErrorCount = 1
-            };
-
-            await db.InactiveUsers.AddAsync(inactiveUser);
-
-            Log.Information("InactiveUsers: Added user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-        }
-        else
-        {
-            existingInactiveUser.MissingParametersErrorCount++;
-            existingInactiveUser.Updated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-
-            db.Entry(existingInactiveUser).State = EntityState.Modified;
-
-            Log.Information("InactiveUsers: Updated user {userId} | {userNameLastFm} (missingparameter +1)", user.UserId, user.UserNameLastFM);
-        }
-
-        await db.SaveChangesAsync();
-    }
-
-    private async Task AddOrUpdatePrivateUserMissingParameterError(User user)
-    {
-        if (user.LastUsed > DateTime.UtcNow.AddDays(-20) || !string.IsNullOrEmpty(user.SessionKeyLastFm))
-        {
-            return;
-        }
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var existingPrivateUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
-
-        if (existingPrivateUser == null)
-        {
-            var inactiveUser = new InactiveUsers
-            {
-                UserNameLastFM = user.UserNameLastFM,
-                UserId = user.UserId,
-                Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
-                Updated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
-                RecentTracksPrivateCount = 1
-            };
-
-            await db.InactiveUsers.AddAsync(inactiveUser);
-
-            Log.Information("InactiveUsers: Added private user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-        }
-        else
-        {
-            existingPrivateUser.RecentTracksPrivateCount++;
-            existingPrivateUser.Updated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-
-            db.Entry(existingPrivateUser).State = EntityState.Modified;
-
-            Log.Information("InactiveUsers: Updated private user {userId} | {userNameLastFm} (RecentTracksPrivateCount +1)", user.UserId, user.UserNameLastFM);
-        }
+            Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+            ResponseStatus = responseStatus,
+            UserId = user.UserId,
+            UserNameLastFM = user.UserNameLastFM
+        });
 
         await db.SaveChangesAsync();
     }

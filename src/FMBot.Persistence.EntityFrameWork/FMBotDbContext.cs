@@ -24,6 +24,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<BottedUser> BottedUsers { get; set; }
         public virtual DbSet<GlobalFilteredUser> GlobalFilteredUsers { get; set; }
         public virtual DbSet<InactiveUsers> InactiveUsers { get; set; }
+        public virtual DbSet<InactiveUserLog> InactiveUserLog { get; set; }
         public virtual DbSet<BottedUserReport> BottedUserReport { get; set; }
         public virtual DbSet<CensoredMusicReport> CensoredMusicReport { get; set; }
 
