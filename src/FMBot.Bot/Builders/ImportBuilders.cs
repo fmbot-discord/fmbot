@@ -29,7 +29,7 @@ public class ImportBuilders
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            response.Embed.WithDescription($"Only supporters can import and use their Spotify history.");
+            response.Embed.WithDescription($"Only supporters can import and use their Spotify or Apple Music history.");
 
             response.Components = new ComponentBuilder()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink)
@@ -43,7 +43,7 @@ public class ImportBuilders
         return null;
     }
 
-    public async Task<ResponseModel> GetImportInstructions(ContextModel context)
+    public async Task<ResponseModel> GetSpotifyImportInstructions(ContextModel context)
     {
         var response = new ResponseModel
         {
@@ -106,6 +106,72 @@ public class ImportBuilders
 
         response.Components = new ComponentBuilder()
             .WithButton("Spotify privacy page", style: ButtonStyle.Link, url: "https://www.spotify.com/us/account/privacy/");
+
+        return response;
+    }
+
+    public async Task<ResponseModel> GetAppleMusicImportInstructions(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        response.Embed.WithColor(DiscordConstants.AppleMusicRed);
+
+        response.Embed.WithTitle("Apple Music import instructions");
+
+        var description = new StringBuilder();
+
+        description.AppendLine("### Requesting your data from Apple");
+        description.AppendLine("1. Go to your **[Apple privacy settings](https://privacy.apple.com/)**");
+        description.AppendLine("2. Sign in to your account");
+        description.AppendLine("3. Click on **Request a copy of your data**");
+        description.AppendLine("4. Select **Apple Media Services Information**");
+        description.AppendLine("5. Press **Continue**");
+        description.AppendLine("5. Press **Complete request**");
+        description.AppendLine("7. Wait up to 7 days for Apple to deliver your files");
+
+        description.AppendLine("### Importing your data into .fmbot");
+        description.AppendLine("1. Download the file Apple provided");
+
+        if (context.SlashCommand)
+        {
+            description.AppendLine("2. Use this command and add the `.zip` file as an attachment through the options");
+        }
+        else
+        {
+            description.AppendLine($"2. Use `/import applemusic` and add the `.zip` file as an attachment through the options");
+        }
+
+        description.AppendLine("3. Having issues? You can also attach the `Apple Music Play Activity.csv` file separately");
+
+        description.AppendLine("### Notes");
+        description.AppendLine("- Apple provides their data without artist names. We try to find these as best as possible");
+        description.AppendLine("- You can select what from your import you want to use with `/import manage`");
+
+        var importedYears = await this.GetImportedYears(context.ContextUser.UserId);
+        if (importedYears != null)
+        {
+            description.AppendLine("### Total imported plays");
+            description.AppendLine(importedYears);
+        }
+
+        var footer = new StringBuilder();
+        if (!context.SlashCommand)
+        {
+            footer.AppendLine("Do not share your import files publicly");
+            footer.AppendLine("To start your import, use the slash command version of this command");
+        }
+
+        footer.AppendLine("Having issues with importing? Please open a help thread on discord.gg/fmbot");
+
+        response.Embed.WithFooter(footer.ToString());
+
+        response.Embed.WithDescription(description.ToString());
+
+        response.Components = new ComponentBuilder()
+            .WithButton("Apple Data and Privacy", style: ButtonStyle.Link, url: "https://privacy.apple.com/");
 
         return response;
     }

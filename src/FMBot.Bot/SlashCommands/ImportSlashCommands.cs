@@ -114,7 +114,7 @@ public class ImportSlashCommands : InteractionModuleBase
         if (noAttachments)
         {
             var instructionResponse =
-                await this._importBuilders.GetImportInstructions(new ContextModel(this.Context, contextUser));
+                await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser));
             await this.Context.SendResponse(this.Interactivity, instructionResponse);
             this.Context.LogCommandUsed(instructionResponse.CommandResponse);
             return;
@@ -283,7 +283,7 @@ public class ImportSlashCommands : InteractionModuleBase
         if (attachment == null)
         {
             var instructionResponse =
-                await this._importBuilders.GetImportInstructions(new ContextModel(this.Context, contextUser));
+                await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser));
             await this.Context.SendResponse(this.Interactivity, instructionResponse);
             this.Context.LogCommandUsed(instructionResponse.CommandResponse);
             return;
@@ -302,7 +302,7 @@ public class ImportSlashCommands : InteractionModuleBase
             if (imports.status == ImportStatus.UnknownFailure)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateImportEmbed(message, embed, description, $"❌ Invalid Apple Music import file, or something went wrong.", true);
+                await UpdateImportEmbed(message, embed, description, $"❌ Invalid Apple Music import file, or something went wrong. Please open a help thread on [our server](https://discord.gg/fmbot).", true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }

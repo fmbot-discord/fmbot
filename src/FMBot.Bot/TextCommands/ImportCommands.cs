@@ -52,7 +52,7 @@ public class ImportCommands : BaseCommandModule
             return;
         }
 
-        var response = await this._importBuilders.GetImportInstructions(new ContextModel(this.Context, prfx, userSettings));
+        var response = await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, userSettings));
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
