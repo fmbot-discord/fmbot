@@ -878,6 +878,14 @@ public class PlayService
 
         return plays;
     }
+    
+    public async Task<ICollection<UserPlay>> GetPlaysWithDataSource(int userId, DataSource dataSource)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await PlayRepository.GetUserPlays(userId, connection, dataSource);
+    }
 
     public async Task<RecentTrackList> AddUserPlaysToRecentTracks(int userId, RecentTrackList recentTracks, int limit = int.MaxValue)
     {

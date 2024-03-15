@@ -29,6 +29,7 @@ public class ImportSlashCommands : InteractionModuleBase
     private readonly IIndexService _indexService;
     private readonly ImportBuilders _importBuilders;
     private readonly SupporterService _supporterService;
+    private readonly UserBuilder _userBuilder;
     private InteractiveService Interactivity { get; }
 
     public ImportSlashCommands(UserService userService,
@@ -38,7 +39,8 @@ public class ImportSlashCommands : InteractionModuleBase
         IIndexService indexService,
         InteractiveService interactivity,
         ImportBuilders importBuilders,
-        SupporterService supporterService)
+        SupporterService supporterService,
+        UserBuilder userBuilder)
     {
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
@@ -48,6 +50,7 @@ public class ImportSlashCommands : InteractionModuleBase
         this.Interactivity = interactivity;
         this._importBuilders = importBuilders;
         this._supporterService = supporterService;
+        this._userBuilder = userBuilder;
     }
 
     private const string SpotifyFileDescription = "Spotify history package (.zip) or history files (.json) ";
@@ -173,7 +176,7 @@ public class ImportSlashCommands : InteractionModuleBase
             await UpdateImportEmbed(message, embed, description, $"- **{plays.Count}** actual plays found");
 
             var playsWithoutDuplicates =
-                await this._importService.RemoveDuplicateSpotifyImports(contextUser.UserId, plays);
+                await this._importService.RemoveDuplicateImports(contextUser.UserId, plays);
             await UpdateImportEmbed(message, embed, description, $"- **{playsWithoutDuplicates.Count}** new plays found");
 
             if (playsWithoutDuplicates.Count > 0)
@@ -187,11 +190,11 @@ public class ImportSlashCommands : InteractionModuleBase
 
                     if (userHasImportedLastfm)
                     {
-                        await this._userService.SetDataSource(contextUser, DataSource.FullSpotifyThenLastFm);
+                        await this._userService.SetDataSource(contextUser, DataSource.FullImportThenLastFm);
                     }
                     else
                     {
-                        await this._userService.SetDataSource(contextUser, DataSource.SpotifyThenFullLastFm);
+                        await this._userService.SetDataSource(contextUser, DataSource.ImportThenFullLastFm);
                     }
                 }
             }
@@ -222,11 +225,11 @@ public class ImportSlashCommands : InteractionModuleBase
                     importSetting.AppendLine(
                         "Your play data source is currently still set to just Last.fm. You can change this manually with the button below.");
                     break;
-                case DataSource.FullSpotifyThenLastFm:
+                case DataSource.FullImportThenLastFm:
                     importSetting.AppendLine(
                         "Your data source has been set to `Full Spotify, then Last.fm`. This uses your full Spotify history and adds your Last.fm scrobbles afterwards.");
                     break;
-                case DataSource.SpotifyThenFullLastFm:
+                case DataSource.ImportThenFullLastFm:
                     importSetting.AppendLine(
                         "Your data source has been set to `Spotify, then full Last.fm`. This uses your Spotify history up until you started using Last.fm.");
                     break;
@@ -241,6 +244,152 @@ public class ImportSlashCommands : InteractionModuleBase
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
 
             embed.WithColor(DiscordConstants.SpotifyColorGreen);
+            await UpdateImportEmbed(message, embed, description, $"- ✅ Import complete", true, components);
+
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("applemusic", "Import your Apple Music history into .fmbot")]
+    [UsernameSetRequired]
+    public async Task AppleMusicAsync([Summary("file", "'Apple Media Services information.zip' or 'Apple Music Play Activity.csv' file")] IAttachment attachment = null)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (this.Context.Interaction.Entitlements.Any() && !SupporterService.IsSupporter(contextUser.UserType))
+        {
+            await this._supporterService.UpdateSingleDiscordSupporter(this.Context.User.Id);
+            this._userService.RemoveUserFromCache(contextUser);
+            contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        }
+
+        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+        if (supporterRequired != null)
+        {
+            await this.Context.SendResponse(this.Interactivity, supporterRequired);
+            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+            return;
+        }
+
+        var description = new StringBuilder();
+        var embed = new EmbedBuilder();
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        if (attachment == null)
+        {
+            var instructionResponse =
+                await this._importBuilders.GetImportInstructions(new ContextModel(this.Context, contextUser));
+            await this.Context.SendResponse(this.Interactivity, instructionResponse);
+            this.Context.LogCommandUsed(instructionResponse.CommandResponse);
+            return;
+        }
+
+        await DeferAsync(ephemeral: false);
+
+        try
+        {
+            embed.WithTitle("Importing Apple Music into .fmbot..");
+            embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
+            var message = await FollowupAsync(embed: embed.Build());
+
+            var imports = await this._importService.HandleAppleMusicFiles(contextUser, attachment);
+
+            if (imports.status == ImportStatus.UnknownFailure)
+            {
+                embed.WithColor(DiscordConstants.WarningColorOrange);
+                await UpdateImportEmbed(message, embed, description, $"❌ Invalid Apple Music import file, or something went wrong.", true);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            await UpdateImportEmbed(message, embed, description, $"- **{imports.result.Count}** Apple Music imports found");
+
+            var importsWithArtist = await this._importService.AppleMusicImportAddArtists(contextUser, imports.result);
+            await UpdateImportEmbed(message, embed, description, $"- **{importsWithArtist.matchFoundPercentage}** of artist names found for imports");
+            await UpdateImportEmbed(message, embed, description, $"- **{importsWithArtist.userPlays.Count(c => !string.IsNullOrWhiteSpace(c.ArtistName))}** with artist names");
+
+            var test = importsWithArtist.userPlays.Where(c => string.IsNullOrWhiteSpace(c.ArtistName)).ToList();
+
+
+            var plays = ImportService.AppleMusicImportsToValidUserPlays(contextUser, importsWithArtist.userPlays);
+            await UpdateImportEmbed(message, embed, description, $"- **{plays.Count}** actual plays found");
+
+            var playsWithoutDuplicates =
+                await this._importService.RemoveDuplicateImports(contextUser.UserId, plays);
+            await UpdateImportEmbed(message, embed, description, $"- **{playsWithoutDuplicates.Count}** new plays found");
+
+            if (playsWithoutDuplicates.Count > 0)
+            {
+                await this._importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
+                await UpdateImportEmbed(message, embed, description, $"- Added plays to database");
+
+                if (contextUser.DataSource == DataSource.LastFm)
+                {
+                    var userHasImportedLastfm = await this._playService.UserHasImportedLastFm(contextUser.UserId);
+
+                    if (userHasImportedLastfm)
+                    {
+                        await this._userService.SetDataSource(contextUser, DataSource.FullImportThenLastFm);
+                    }
+                    else
+                    {
+                        await this._userService.SetDataSource(contextUser, DataSource.ImportThenFullLastFm);
+                    }
+                }
+            }
+
+            if (contextUser.DataSource != DataSource.LastFm)
+            {
+                await this._indexService.RecalculateTopLists(contextUser);
+                await UpdateImportEmbed(message, embed, description, $"- Recalculated top lists");
+            }
+            
+            await this._importService.UpdateExistingPlays(contextUser);
+
+            var years = await this._importBuilders.GetImportedYears(contextUser.UserId);
+            if (years.Length > 0)
+            {
+                embed.AddField("Total imported plays", years);
+            }
+
+            var examples = new StringBuilder();
+            examples.AppendLine($"- Get an overview for each year with the `year` command");
+            examples.AppendLine($"- View all your combined plays with `recent`");
+            examples.AppendLine($"- Or use the `top artists` command for top lists");
+
+            embed.AddField("Start exploring your full streaming history", examples);
+
+            contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var importSetting = new StringBuilder();
+            switch (contextUser.DataSource)
+            {
+                case DataSource.LastFm:
+                    importSetting.AppendLine(
+                        "Your play data source is currently still set to just Last.fm. You can change this manually with the button below.");
+                    break;
+                case DataSource.FullImportThenLastFm:
+                    importSetting.AppendLine(
+                        "Your data source has been set to `Full Imports, then Last.fm`. This uses your full imported history and adds your Last.fm scrobbles afterwards.");
+                    break;
+                case DataSource.ImportThenFullLastFm:
+                    importSetting.AppendLine(
+                        "Your data source has been set to `Imports, then full Last.fm`. This uses your imported history up until you started using Last.fm.");
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            embed.AddField("Current import setting", importSetting);
+
+            var components = new ComponentBuilder()
+                .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
+
+            embed.WithColor(DiscordConstants.AppleMusicRed);
             await UpdateImportEmbed(message, embed, description, $"- ✅ Import complete", true, components);
 
             this.Context.LogCommandUsed();
@@ -290,8 +439,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
         try
         {
-            var hasImported = await this._importService.HasImported(contextUser.UserId);
-            var response = UserBuilder.ImportMode(new ContextModel(this.Context, contextUser), hasImported);
+            var response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);

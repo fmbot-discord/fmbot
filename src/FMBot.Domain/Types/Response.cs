@@ -12,7 +12,7 @@ public class Response<T>
 
     public ResponseStatus? Error { get; set; }
 
-    public PlaySource? PlaySource { get; set; }
+    public List<PlaySource> PlaySources { get; set; }
 
     public List<TopListObject> TopList { get; set; }
 

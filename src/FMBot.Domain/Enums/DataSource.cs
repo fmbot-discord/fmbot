@@ -6,8 +6,8 @@ public enum DataSource
 {
     [Option("Last.fm", "Only use Last.fm")]
     LastFm = 1,
-    [Option("Full Spotify, then Last.fm", "Use your full Spotify history and add Last.fm afterwards")]
-    FullSpotifyThenLastFm = 2,
-    [Option("Spotify until full Last.fm", "Use your Spotify history up until you started scrobbling")]
-    SpotifyThenFullLastFm = 3
+    [Option("Full Imports, then Last.fm", "Use your full imported history and add Last.fm afterwards")]
+    FullImportThenLastFm = 2,
+    [Option("Import until full Last.fm", "Use your imported history up until you started scrobbling")]
+    ImportThenFullLastFm = 3
 }

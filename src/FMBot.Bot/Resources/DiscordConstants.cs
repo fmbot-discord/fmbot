@@ -16,7 +16,8 @@ public static class DiscordConstants
     public static Color InformationColorBlue = new(68, 138, 255);
 
     public static Color SpotifyColorGreen = new(30, 215, 97);
-
+    
+    public static Color AppleMusicRed = new(249, 87, 107);
 
     public static readonly IDictionary<IEmote, PaginatorAction> PaginationEmotes = new Dictionary<IEmote, PaginatorAction>
     {

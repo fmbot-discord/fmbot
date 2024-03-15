@@ -47,6 +47,7 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly ImportService _importService;
     private readonly IPrefixService _prefixService;
     private readonly AdminService _adminService;
+    private readonly PlayService _playService;
 
     private readonly BotSettings _botSettings;
 
@@ -64,7 +65,7 @@ public class UserSlashCommands : InteractionModuleBase
         ArtistsService artistsService,
         OpenAiService openAiService,
         ImportService importService,
-        IPrefixService prefixService, AdminService adminService)
+        IPrefixService prefixService, AdminService adminService, PlayService playService)
     {
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
@@ -79,6 +80,7 @@ public class UserSlashCommands : InteractionModuleBase
         this._importService = importService;
         this._prefixService = prefixService;
         this._adminService = adminService;
+        this._playService = playService;
         this._botSettings = botSettings.Value;
     }
 
@@ -154,9 +156,7 @@ public class UserSlashCommands : InteractionModuleBase
                             return;
                         }
 
-                        var hasImported = await this._importService.HasImported(contextUser.UserId);
-
-                        response = UserBuilder.ImportMode(new ContextModel(this.Context, contextUser), hasImported);
+                        response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
                         break;
@@ -1056,7 +1056,8 @@ public class UserSlashCommands : InteractionModuleBase
             if (dataSource == DataSource.LastFm)
             {
                 components = new ComponentBuilder()
-                    .WithButton("Also delete all imported plays", InteractionConstants.ImportClear, style: ButtonStyle.Danger);
+                    .WithButton("Delete imported Spotify history", InteractionConstants.ImportClearSpotify, style: ButtonStyle.Danger, row: 0)
+                    .WithButton("Delete imported Apple Music history", InteractionConstants.ImportClearAppleMusic, style: ButtonStyle.Danger, row: 0);
             }
 
             await RespondAsync(null, new[] { embed.Build() }, ephemeral: true, components: components?.Build());
@@ -1069,16 +1070,32 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction(InteractionConstants.ImportClear)]
+    [ComponentInteraction(InteractionConstants.ImportClearSpotify)]
     [UsernameSetRequired]
-    public async Task ClearImports()
+    public async Task ClearImportSpotify()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        await this._importService.RemoveImportPlays(contextUser);
+        await this._importService.RemoveImportedSpotifyPlays(contextUser);
 
         var embed = new EmbedBuilder();
-        embed.WithDescription($"All your imported plays have been removed from .fmbot.");
+        embed.WithDescription($"All your imported Spotify history has been removed from .fmbot.");
+        embed.WithColor(DiscordConstants.SuccessColorGreen);
+
+        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+        this.Context.LogCommandUsed();
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportClearAppleMusic)]
+    [UsernameSetRequired]
+    public async Task ClearImportAppleMusic()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        await this._importService.RemoveImportedAppleMusicPlays(contextUser);
+
+        var embed = new EmbedBuilder();
+        embed.WithDescription($"All your imported Apple Music history has been removed from .fmbot.");
         embed.WithColor(DiscordConstants.SuccessColorGreen);
 
         await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
@@ -1093,8 +1110,7 @@ public class UserSlashCommands : InteractionModuleBase
 
         try
         {
-            var hasImported = await this._importService.HasImported(contextUser.UserId);
-            var response = UserBuilder.ImportMode(new ContextModel(this.Context, contextUser), hasImported);
+            var response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
             await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);

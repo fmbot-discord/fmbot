@@ -2179,8 +2179,8 @@ public class AdminCommands : BaseCommandModule
 
                 switch (dbUser.DataSource)
                 {
-                    case DataSource.FullSpotifyThenLastFm:
-                    case DataSource.SpotifyThenFullLastFm:
+                    case DataSource.FullImportThenLastFm:
+                    case DataSource.ImportThenFullLastFm:
                         description.AppendLine($"Imported: {name}");
                         break;
                     case DataSource.LastFm:

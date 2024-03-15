@@ -1013,7 +1013,7 @@ public class ArtistBuilders
 
             var footer = new StringBuilder();
 
-            ImportService.AddImportDescription(footer, artists.PlaySource);
+            ImportService.AddImportDescription(footer, artists.PlaySources);
 
             footer.Append($"Page {pageCounter}/{artistPages.Count}");
 

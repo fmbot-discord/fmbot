@@ -117,7 +117,7 @@ public class ImportBuilders
             .GetAllUserPlays(userId, false);
 
         var yearGroups = allPlays
-            .Where(w => w.PlaySource == PlaySource.SpotifyImport)
+            .Where(w => w.PlaySource == PlaySource.SpotifyImport || w.PlaySource == PlaySource.AppleMusicImport)
             .OrderByDescending(o => o.TimePlayed)
             .GroupBy(g => g.TimePlayed.Year);
 

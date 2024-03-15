@@ -98,11 +98,22 @@ public static class PlayRepository
         await deletePlays.ExecuteNonQueryAsync();
     }
 
-    public static async Task RemoveAllImportPlays(int userId, NpgsqlConnection connection)
+    public static async Task RemoveAllImportedSpotifyPlays(int userId, NpgsqlConnection connection)
     {
         await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
                                                         "WHERE user_id = @userId " +
                                                         "AND play_source = 1", connection);
+
+        deletePlays.Parameters.AddWithValue("userId", userId);
+
+        await deletePlays.ExecuteNonQueryAsync();
+    }
+
+    public static async Task RemoveAllImportedAppleMusicPlays(int userId, NpgsqlConnection connection)
+    {
+        await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source = 2", connection);
 
         deletePlays.Parameters.AddWithValue("userId", userId);
 
@@ -157,18 +168,18 @@ public static class PlayRepository
 
         sql += dataSource switch
         {
-            DataSource.LastFm => " FROM public.user_plays WHERE user_id = @userId AND play_source = 0 ",
-            DataSource.FullSpotifyThenLastFm => " FROM public.user_plays WHERE user_id = @userId AND ( " +
-                                                "play_source = 1 OR  " +
+            DataSource.LastFm => " FROM public.user_plays WHERE user_id = @userId AND artist_name IS NOT NULL AND play_source = 0 ",
+            DataSource.FullImportThenLastFm => " FROM public.user_plays WHERE user_id = @userId AND artist_name IS NOT NULL AND ( " +
+                                                "(play_source = 1 OR play_source = 2) OR  " +
                                                 "(play_source = 0 AND time_played >= ( " +
-                                                "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 1 " +
+                                                "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND (play_source = 1 OR play_source = 2) " +
                                                 ")) OR  " +
                                                 "(play_source = 0 AND time_played <= ( " +
-                                                "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 1 " +
+                                                "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND (play_source = 1 OR play_source = 2) " +
                                                 "))) ",
-            DataSource.SpotifyThenFullLastFm => " FROM public.user_plays WHERE user_id = @userId AND ( " +
+            DataSource.ImportThenFullLastFm => " FROM public.user_plays WHERE user_id = @userId  AND artist_name IS NOT NULL AND ( " +
                                                 "play_source = 0 OR " +
-                                                "(play_source = 1 AND time_played < ( " +
+                                                "((play_source = 1 OR play_source = 2) AND time_played < ( " +
                                                 "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 0 " +
                                                 "))) ",
             _ => " FROM public.user_plays WHERE user_id = @userId "

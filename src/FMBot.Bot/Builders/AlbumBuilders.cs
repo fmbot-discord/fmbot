@@ -1203,7 +1203,7 @@ public class AlbumBuilders
 
             var footer = new StringBuilder();
 
-            ImportService.AddImportDescription(footer, albums.PlaySource);
+            ImportService.AddImportDescription(footer, albums.PlaySources);
 
             footer.Append($"Page {pageCounter}/{albumPages.Count}");
             if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)

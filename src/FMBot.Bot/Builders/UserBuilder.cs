@@ -658,8 +658,8 @@ public class UserBuilder
 
             switch (user.DataSource)
             {
-                case DataSource.FullSpotifyThenLastFm:
-                case DataSource.SpotifyThenFullLastFm:
+                case DataSource.FullImportThenLastFm:
+                case DataSource.ImportThenFullLastFm:
                     description.AppendLine($"Imported: {name}");
                     break;
                 case DataSource.LastFm:
@@ -846,8 +846,8 @@ public class UserBuilder
 
             switch (user.DataSource)
             {
-                case DataSource.FullSpotifyThenLastFm:
-                case DataSource.SpotifyThenFullLastFm:
+                case DataSource.FullImportThenLastFm:
+                case DataSource.ImportThenFullLastFm:
                     description.AppendLine($"Imported: {name}");
                     break;
                 case DataSource.LastFm:
@@ -1340,7 +1340,7 @@ public class UserBuilder
         return response;
     }
 
-    public static ResponseModel ImportMode(ContextModel context, bool hasImported = false)
+    public async Task<ResponseModel> ImportMode(ContextModel context, int userId)
     {
         var response = new ResponseModel
         {
@@ -1352,6 +1352,9 @@ public class UserBuilder
                 .WithCustomId(InteractionConstants.ImportSetting)
                 .WithMinValues(1)
                 .WithMaxValues(1);
+
+        var allPlays = await this._playService.GetAllUserPlays(userId, false);
+        var hasImported = allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport || a.PlaySource == PlaySource.AppleMusicImport);
 
         if (!hasImported && context.ContextUser.DataSource == DataSource.LastFm)
         {
@@ -1374,28 +1377,69 @@ public class UserBuilder
         response.Embed.WithAuthor("Configuring your import settings");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
+        var importSource = "Imports";
+        if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport && a.PlaySource == PlaySource.SpotifyImport))
+        {
+            importSource = "Imports";
+        }
+        else if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport))
+        {
+            importSource = "Apple Music";
+        }
+        else if (allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
+        {
+            importSource = "Spotify";
+        }
+
         var embedDescription = new StringBuilder();
 
         embedDescription.AppendLine("**Last.fm**");
         embedDescription.AppendLine("- Use only your Last.fm for stats and ignore imports");
+        embedDescription.AppendLine($"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
         embedDescription.AppendLine();
 
-        embedDescription.AppendLine("**Full Spotify, then Last.fm**");
-        embedDescription.AppendLine("- Uses your full Spotify history and adds Last.fm afterwards");
-        embedDescription.AppendLine("- Recommended if you have imported Spotify onto Last.fm before");
+        embedDescription.AppendLine($"**Full Imports, then Last.fm**");
+        embedDescription.AppendLine($"- Uses your full {importSource} history and adds Last.fm afterwards");
+        embedDescription.AppendLine($"- Recommended if you have imported {importSource} onto Last.fm before");
         embedDescription.AppendLine("- Plays from other music apps you scrobbled to Last.fm will not be included");
+
+        var playsWithFullImportThenLastFm = await this._playService.GetPlaysWithDataSource(userId, DataSource.FullImportThenLastFm);
+        embedDescription.Append($"- {playsWithFullImportThenLastFm.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport)} imports + ");
+        embedDescription.Append($"{playsWithFullImportThenLastFm.Count(c => c.PlaySource == PlaySource.LastFm)} scrobbles = ");
+        embedDescription.Append($"{playsWithFullImportThenLastFm.Count()} plays");
+        embedDescription.AppendLine();
         embedDescription.AppendLine();
 
-        embedDescription.AppendLine("**Spotify until full Last.fm**");
-        embedDescription.AppendLine("- Uses your Spotify history up until the point you started scrobbling on Last.fm");
+        embedDescription.AppendLine($"**Imports until full Last.fm**");
+        embedDescription.AppendLine($"- Uses your {importSource} history up until the point you started scrobbling on Last.fm");
         embedDescription.AppendLine("- Do not use this if you have imported onto Last.fm before");
-        embedDescription.AppendLine("- Best if you have scrobbles on Last.fm from sources other then Spotify");
+        embedDescription.AppendLine($"- Best if you have scrobbles on Last.fm from sources other then {importSource}");
+
+        var playsWithImportUntilFullLastFm = await this._playService.GetPlaysWithDataSource(userId, DataSource.ImportThenFullLastFm);
+        embedDescription.Append($"- {playsWithImportUntilFullLastFm.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport)} imports + ");
+        embedDescription.Append($"{playsWithImportUntilFullLastFm.Count(c => c.PlaySource == PlaySource.LastFm)} scrobbles = ");
+        embedDescription.Append($"{playsWithImportUntilFullLastFm.Count()} plays");
+        embedDescription.AppendLine();
 
         if (!hasImported)
         {
             embedDescription.AppendLine();
             embedDescription.AppendLine("Run the `/import spotify` command to see how to request your data and to get started with imports. " +
                                         "After importing you'll be able to change these settings.");
+        }
+        else
+        {
+            embedDescription.AppendLine();
+            embedDescription.AppendLine($"**Total counts**");
+            if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport))
+            {
+                embedDescription.AppendLine($"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} imported Apple Music plays");
+            }
+            if (allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
+            {
+                embedDescription.AppendLine($"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} imported Spotify plays");
+            }
+            embedDescription.AppendLine($"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
         }
 
         response.Embed.WithDescription(embedDescription.ToString());

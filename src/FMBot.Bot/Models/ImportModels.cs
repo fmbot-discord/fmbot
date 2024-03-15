@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using System;
+using CsvHelper.Configuration.Attributes;
 using FMBot.Domain.Enums;
 
 namespace FMBot.Bot.Models;
@@ -69,6 +70,31 @@ public class SpotifyEndSongImportModel
     //[JsonPropertyName("incognito_mode")]
     //public bool IncognitoMode { get; set; }
 }
+
+public class AppleMusicCsvImportModel
+{
+    [Name("Album Name")]
+    public string AlbumName { get; set; }
+
+    [Name("Song Name")]
+    public string SongName { get; set; }
+
+    [Name("Container Artist Name")]
+    public string ArtistName { get; set; }
+
+    [Name("Play Duration Milliseconds")]
+    public long? PlayDurationMs { get; set; }
+
+    [Name("Media Duration In Milliseconds")]
+    public long? MediaDurationMs { get; set; }
+
+    [Name("Event Start Timestamp")]
+    public DateTime? EventStartTimestamp { get; set; }
+
+    [Name("Event Type")]
+    public string EventType { get; set; }
+}
+
 
 public enum ImportStatus
 {
