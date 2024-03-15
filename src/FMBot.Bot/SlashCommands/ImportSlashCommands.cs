@@ -199,8 +199,11 @@ public class ImportSlashCommands : InteractionModuleBase
                 }
             }
 
-            await this._indexService.RecalculateTopLists(contextUser);
-            await UpdateImportEmbed(message, embed, description, $"- Recalculated top lists");
+            if (contextUser.DataSource != DataSource.LastFm)
+            {
+                await this._indexService.RecalculateTopLists(contextUser);
+                await UpdateImportEmbed(message, embed, description, $"- Recalculated top lists");
+            }
 
             await this._importService.UpdateExistingPlays(contextUser);
 
@@ -227,11 +230,11 @@ public class ImportSlashCommands : InteractionModuleBase
                     break;
                 case DataSource.FullImportThenLastFm:
                     importSetting.AppendLine(
-                        "Your data source has been set to `Full Spotify, then Last.fm`. This uses your full Spotify history and adds your Last.fm scrobbles afterwards.");
+                        "Your data source has been set to `Full imports, then Last.fm`. This uses your full Spotify history and adds your Last.fm scrobbles afterwards.");
                     break;
                 case DataSource.ImportThenFullLastFm:
                     importSetting.AppendLine(
-                        "Your data source has been set to `Spotify, then full Last.fm`. This uses your Spotify history up until you started using Last.fm.");
+                        "Your data source has been set to `Imports, then full Last.fm`. This uses your Spotify history up until you started using Last.fm.");
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -250,7 +253,7 @@ public class ImportSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            await UpdateImportEmbed(message, embed, description, $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).");
+            await UpdateImportEmbed(message, embed, description, $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).", true);
             await this.Context.HandleCommandException(e, sendReply: false);
         }
     }
@@ -375,7 +378,7 @@ public class ImportSlashCommands : InteractionModuleBase
                     break;
                 case DataSource.FullImportThenLastFm:
                     importSetting.AppendLine(
-                        "Your data source has been set to `Full Imports, then Last.fm`. This uses your full imported history and adds your Last.fm scrobbles afterwards.");
+                        "Your data source has been set to `Full imports, then Last.fm`. This uses your full imported history and adds your Last.fm scrobbles afterwards.");
                     break;
                 case DataSource.ImportThenFullLastFm:
                     importSetting.AppendLine(
@@ -397,7 +400,7 @@ public class ImportSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            await UpdateImportEmbed(message, embed, description, $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).");
+            await UpdateImportEmbed(message, embed, description, $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).", true);
             await this.Context.HandleCommandException(e, sendReply: false);
         }
     }

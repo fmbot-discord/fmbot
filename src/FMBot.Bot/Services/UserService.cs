@@ -1164,6 +1164,8 @@ public class UserService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
 
+        userToUpdate.DataSource = dataSource;
+        
         user.DataSource = dataSource;
         db.Entry(user).State = EntityState.Modified;
 

@@ -1107,12 +1107,13 @@ public class UserSlashCommands : InteractionModuleBase
     public async Task ImportManage()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
+        await DeferAsync(true);
+        
         try
         {
             var response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
-            await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
