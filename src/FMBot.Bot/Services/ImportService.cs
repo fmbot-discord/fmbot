@@ -373,6 +373,10 @@ public class ImportService
 
     public static string AddImportDescription(StringBuilder stringBuilder, List<PlaySource> playSources)
     {
+        if (playSources == null || playSources.Count == 0)
+        {
+            return null;
+        }
         if (playSources.Contains(PlaySource.SpotifyImport) && playSources.Contains(PlaySource.AppleMusicImport))
         {
             stringBuilder.AppendLine("Contains imported Spotify and Apple Music plays");
