@@ -26,8 +26,6 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
-using Google.Apis.YouTube.v3.Data;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Options;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -47,7 +45,7 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly ImportService _importService;
     private readonly IPrefixService _prefixService;
     private readonly AdminService _adminService;
-    private readonly PlayService _playService;
+    private readonly ImportBuilders _importBuilders;
 
     private readonly BotSettings _botSettings;
 
@@ -65,7 +63,9 @@ public class UserSlashCommands : InteractionModuleBase
         ArtistsService artistsService,
         OpenAiService openAiService,
         ImportService importService,
-        IPrefixService prefixService, AdminService adminService, PlayService playService)
+        IPrefixService prefixService,
+        AdminService adminService,
+        ImportBuilders importBuilders)
     {
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
@@ -80,7 +80,7 @@ public class UserSlashCommands : InteractionModuleBase
         this._importService = importService;
         this._prefixService = prefixService;
         this._adminService = adminService;
-        this._playService = playService;
+        this._importBuilders = importBuilders;
         this._botSettings = botSettings.Value;
     }
 
@@ -1113,6 +1113,44 @@ public class UserSlashCommands : InteractionModuleBase
             var response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
             await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportInstructionsSpotify)]
+    [UsernameSetRequired]
+    public async Task ImportInstructionsSpotify()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser), true);
+
+            await this.Context.UpdateInteractionEmbed(response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportInstructionsAppleMusic)]
+    [UsernameSetRequired]
+    public async Task ImportInstructionsAppleMusic()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser), true);
+
+            await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Fergun.Interactive;
@@ -34,7 +35,7 @@ public class ImportCommands : BaseCommandModule
 
     [Command("import")]
     [Summary("Imports your Spotify history into .fmbot")]
-    [Alias("import spotify", "spotifyimport", "spotifyimport")]
+    [Alias("import spotify", "import apple", "import applemusic", "spotifyimport", "spotifyimport")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Importing)]
     public async Task ImportSpotifyAsync([Remainder] string _ = null)
@@ -52,7 +53,19 @@ public class ImportCommands : BaseCommandModule
             return;
         }
 
-        var response = await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, userSettings));
+        ResponseModel response;
+        if (this.Context.Message.Content.Contains("spotify", StringComparison.OrdinalIgnoreCase))
+        {
+            response = await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, userSettings));
+        }
+        else if (this.Context.Message.Content.Contains("apple", StringComparison.OrdinalIgnoreCase))
+        {
+            response = await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, prfx, userSettings));
+        }
+        else
+        {
+            response = this._importBuilders.ImportInstructionsPickSource(new ContextModel(this.Context, prfx, userSettings));
+        }
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

@@ -43,7 +43,32 @@ public class ImportBuilders
         return null;
     }
 
-    public async Task<ResponseModel> GetSpotifyImportInstructions(ContextModel context)
+    public ResponseModel ImportInstructionsPickSource(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+
+        var description = new StringBuilder();
+
+        description.AppendLine("What music service history would you like to import?");
+
+        response.Components = new ComponentBuilder()
+            .WithButton("Spotify", InteractionConstants.ImportInstructionsSpotify,
+                emote: Emote.Parse("<:spotify:882221219334725662>"))
+            .WithButton("Apple Music", InteractionConstants.ImportInstructionsAppleMusic,
+                emote: Emote.Parse("<:apple_music:1218182727149420544>"));
+        
+        response.Embed.WithDescription(description.ToString());
+        
+        return response;
+    }
+
+    public async Task<ResponseModel> GetSpotifyImportInstructions(ContextModel context, bool directToSlash = false)
     {
         var response = new ResponseModel
         {
@@ -82,17 +107,16 @@ public class ImportBuilders
         description.AppendLine("### Notes");
         description.AppendLine("- We filter out duplicates and skips, so don't worry about submitting the same file twice");
         description.AppendLine("- You can select what from your import you want to use with `/import manage`");
-        description.AppendLine("- Discord mobile breaks `.json` files, use the full `.zip` instead.");
 
-        var importedYears = await this.GetImportedYears(context.ContextUser.UserId);
+        var importedYears = await this.GetImportedYears(context.ContextUser.UserId, PlaySource.SpotifyImport);
         if (importedYears != null)
         {
-            description.AppendLine("### Total imported plays");
+            description.AppendLine("### Total imported Spotify plays");
             description.AppendLine(importedYears);
         }
 
         var footer = new StringBuilder();
-        if (!context.SlashCommand)
+        if (!context.SlashCommand || directToSlash)
         {
             footer.AppendLine("Do not share your import files publicly");
             footer.AppendLine("To start your import, use the slash command version of this command");
@@ -110,7 +134,7 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> GetAppleMusicImportInstructions(ContextModel context)
+    public async Task<ResponseModel> GetAppleMusicImportInstructions(ContextModel context, bool directToSlash = false)
     {
         var response = new ResponseModel
         {
@@ -147,18 +171,18 @@ public class ImportBuilders
         description.AppendLine("3. Having issues? You can also attach the `Apple Music Play Activity.csv` file separately");
 
         description.AppendLine("### Notes");
-        description.AppendLine("- Apple provides their data without artist names. We try to find these as best as possible");
+        description.AppendLine("- Apple provides their data without artist names. We try to find and match these as close as possible to your plays.");
         description.AppendLine("- You can select what from your import you want to use with `/import manage`");
 
-        var importedYears = await this.GetImportedYears(context.ContextUser.UserId);
+        var importedYears = await this.GetImportedYears(context.ContextUser.UserId, PlaySource.AppleMusicImport);
         if (importedYears != null)
         {
-            description.AppendLine("### Total imported plays");
+            description.AppendLine("### Total imported Apple Music plays");
             description.AppendLine(importedYears);
         }
 
         var footer = new StringBuilder();
-        if (!context.SlashCommand)
+        if (!context.SlashCommand || directToSlash)
         {
             footer.AppendLine("Do not share your import files publicly");
             footer.AppendLine("To start your import, use the slash command version of this command");
@@ -176,14 +200,14 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<string> GetImportedYears(int userId)
+    public async Task<string> GetImportedYears(int userId, PlaySource playSource)
     {
         var years = new StringBuilder();
         var allPlays = await this._playService
             .GetAllUserPlays(userId, false);
 
         var yearGroups = allPlays
-            .Where(w => w.PlaySource == PlaySource.SpotifyImport || w.PlaySource == PlaySource.AppleMusicImport)
+            .Where(w => w.PlaySource == playSource)
             .OrderByDescending(o => o.TimePlayed)
             .GroupBy(g => g.TimePlayed.Year);
 

@@ -122,12 +122,12 @@ public class ImportSlashCommands : InteractionModuleBase
 
         await DeferAsync(ephemeral: noAttachments);
 
+        embed.WithTitle("Importing Spotify into .fmbot..");
+        embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
+        var message = await FollowupAsync(embed: embed.Build());
+
         try
         {
-            embed.WithTitle("Importing Spotify into .fmbot..");
-            embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
-            var message = await FollowupAsync(embed: embed.Build());
-
             var imports = await this._importService.HandleSpotifyFiles(contextUser, attachments);
 
             if (imports.status == ImportStatus.UnknownFailure)
@@ -204,10 +204,10 @@ public class ImportSlashCommands : InteractionModuleBase
 
             await this._importService.UpdateExistingPlays(contextUser);
 
-            var years = await this._importBuilders.GetImportedYears(contextUser.UserId);
+            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.SpotifyImport);
             if (years.Length > 0)
             {
-                embed.AddField("Total imported plays", years);
+                embed.AddField("Total imported Spotify plays", years);
             }
 
             var examples = new StringBuilder();
@@ -250,7 +250,8 @@ public class ImportSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await UpdateImportEmbed(message, embed, description, $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).");
+            await this.Context.HandleCommandException(e, sendReply: false);
         }
     }
 
@@ -291,12 +292,12 @@ public class ImportSlashCommands : InteractionModuleBase
 
         await DeferAsync(ephemeral: false);
 
+        embed.WithTitle("Importing Apple Music into .fmbot..");
+        embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
+        var message = await FollowupAsync(embed: embed.Build());
+
         try
         {
-            embed.WithTitle("Importing Apple Music into .fmbot..");
-            embed.WithDescription("- <a:loading:821676038102056991> Loading import files...");
-            var message = await FollowupAsync(embed: embed.Build());
-
             var imports = await this._importService.HandleAppleMusicFiles(contextUser, attachment);
 
             if (imports.status == ImportStatus.UnknownFailure)
@@ -348,13 +349,13 @@ public class ImportSlashCommands : InteractionModuleBase
                 await this._indexService.RecalculateTopLists(contextUser);
                 await UpdateImportEmbed(message, embed, description, $"- Recalculated top lists");
             }
-            
+
             await this._importService.UpdateExistingPlays(contextUser);
 
-            var years = await this._importBuilders.GetImportedYears(contextUser.UserId);
+            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.AppleMusicImport);
             if (years.Length > 0)
             {
-                embed.AddField("Total imported plays", years);
+                embed.AddField("Total imported Apple Music plays", years);
             }
 
             var examples = new StringBuilder();
@@ -396,7 +397,8 @@ public class ImportSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await UpdateImportEmbed(message, embed, description, $"- ❌ Sorry, an internal error occured. Please try again later, or open a help thread on [our server](https://discord.gg/fmbot).");
+            await this.Context.HandleCommandException(e, sendReply: false);
         }
     }
 

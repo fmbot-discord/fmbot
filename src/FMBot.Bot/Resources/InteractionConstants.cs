@@ -48,6 +48,9 @@ public static class InteractionConstants
     public const string ImportClearSpotify = "user-import-clear-spotify";
     public const string ImportClearAppleMusic = "user-import-clear-applemusic";
 
+    public const string ImportInstructionsSpotify = "import-spotify-instructions";
+    public const string ImportInstructionsAppleMusic = "import-applemusic-instructions";
+
     public const string DeleteStreak = "user-streak-delete";
     public const string DeleteStreakModal = "user-streak-delete-modal";
 

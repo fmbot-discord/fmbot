@@ -126,7 +126,7 @@ public static class PlayRepository
         {
             await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
                                                             "WHERE user_id = @userId AND time_played = @timePlayed " +
-                                                            "AND play_source != 1", connection);
+                                                            "AND play_source != 1 AND play_source != 2", connection);
 
             deletePlays.Parameters.AddWithValue("userId", playToRemove.UserId);
             deletePlays.Parameters.AddWithValue("timePlayed", playToRemove.TimePlayed);
