@@ -899,6 +899,8 @@ public class SupporterService
                     $"Updated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
                     $"*End date from <t:{((DateTimeOffset?)oldDate)?.ToUnixTimeSeconds()}:f> to <t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>*");
                 await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
+
+                continue;
             }
 
             if (existingSupporter.Expired != true && !discordSupporter.Active)
@@ -1226,6 +1228,17 @@ public class SupporterService
         db.Update(supporter);
 
         await db.SaveChangesAsync();
+    }
+
+    private static DiscordEntitlement DiscordEntitlement(IGrouping<ulong, IEntitlement> s)
+    {
+        return new DiscordEntitlement
+        {
+            DiscordUserId = s.OrderByDescending(o => o.EndsAt).First().UserId.Value,
+            Active = !s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue || s.OrderByDescending(o => o.EndsAt).First().EndsAt.Value > DateTime.UtcNow.AddDays(-2),
+            StartsAt = s.OrderByDescending(o => o.EndsAt).First().StartsAt.HasValue ? DateTime.SpecifyKind(s.OrderByDescending(o => o.EndsAt.Value.DateTime).First().StartsAt.Value.DateTime, DateTimeKind.Utc) : null,
+            EndsAt = s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue ? DateTime.SpecifyKind(s.OrderByDescending(o => o.EndsAt.Value.DateTime).First().EndsAt.Value.DateTime, DateTimeKind.Utc) : null
+        };
     }
 
     private async Task RunFullUpdate(ulong id)
