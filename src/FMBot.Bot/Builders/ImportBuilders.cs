@@ -171,7 +171,7 @@ public class ImportBuilders
         description.AppendLine("3. Having issues? You can also attach the `Apple Music Play Activity.csv` file separately");
 
         description.AppendLine("### Notes");
-        description.AppendLine("- Apple provides their data without artist names. We try to find and match these as close as possible to your plays.");
+        description.AppendLine("- Apple provides their history data without artist names. We try to find these as best as possible based on the album and track name.");
         description.AppendLine("- You can select what from your import you want to use with `/import manage`");
 
         var importedYears = await this.GetImportedYears(context.ContextUser.UserId, PlaySource.AppleMusicImport);

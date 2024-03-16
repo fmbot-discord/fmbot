@@ -1374,13 +1374,14 @@ public class UserBuilder
 
         response.Components = new ComponentBuilder().WithSelectMenu(importSetting);
 
-        response.Embed.WithAuthor("Configuring your import settings");
+        response.Embed.WithAuthor("Configuring how imports are combined with your Last.fm");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var importSource = "Imports";
-        if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport && a.PlaySource == PlaySource.SpotifyImport))
+        var importSource = "import data";
+        if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport) &&
+            allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
         {
-            importSource = "Imports";
+            importSource = "Apple Music & Spotify";
         }
         else if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport))
         {
@@ -1400,7 +1401,6 @@ public class UserBuilder
 
         embedDescription.AppendLine($"**Full Imports, then Last.fm**");
         embedDescription.AppendLine($"- Uses your full {importSource} history and adds Last.fm afterwards");
-        embedDescription.AppendLine($"- Recommended if you have imported {importSource} onto Last.fm before");
         embedDescription.AppendLine("- Plays from other music apps you scrobbled to Last.fm will not be included");
 
         var playsWithFullImportThenLastFm = await this._playService.GetPlaysWithDataSource(userId, DataSource.FullImportThenLastFm);
@@ -1412,7 +1412,6 @@ public class UserBuilder
 
         embedDescription.AppendLine($"**Imports until full Last.fm**");
         embedDescription.AppendLine($"- Uses your {importSource} history up until the point you started scrobbling on Last.fm");
-        embedDescription.AppendLine("- Do not use this if you have imported onto Last.fm before");
         embedDescription.AppendLine($"- Best if you have scrobbles on Last.fm from sources other then {importSource}");
 
         var playsWithImportUntilFullLastFm = await this._playService.GetPlaysWithDataSource(userId, DataSource.ImportThenFullLastFm);
