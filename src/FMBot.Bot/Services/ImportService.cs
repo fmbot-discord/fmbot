@@ -60,7 +60,7 @@ public class ImportService
             var innerZipEntry = zip.GetEntry("Apple Media Services information/Apple_Media_Services.zip");
             if (innerZipEntry == null)
             {
-                return (ImportStatus.WrongPackageFailure, null);
+                return (ImportStatus.UnknownFailure, null);
             }
 
             await using var innerZipStream = innerZipEntry.Open();
@@ -69,7 +69,7 @@ public class ImportService
             var csvEntry = innerZip.GetEntry("Apple_Media_Services/Apple Music Activity/Apple Music Play Activity.csv");
             if (csvEntry == null)
             {
-                return (ImportStatus.WrongPackageFailure, null);
+                return (ImportStatus.UnknownFailure, null);
             }
 
             await using var innerCsvStream = csvEntry.Open();
