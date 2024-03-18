@@ -9,14 +9,14 @@ services:
     volumes:
       - /fmbot/prod/:/app/configs/
       - /fmbot/cache/:/app/cache/
-    command: "--memory=25g"
+    command: "--memory=22g"
     environment:
       - INSTANCE_NAME=prod-1
       - SHARDS_MAIN_INSTANCE=true
       - SHARDS_JOB_MASTER=true
-      - SHARDS_TOTAL_SHARDS=336
+      - SHARDS_TOTAL_SHARDS=384
       - SHARDS_FIRST_SHARD=0
-      - SHARDS_LAST_SHARD=67
+      - SHARDS_LAST_SHARD=63
 
   prod-2:
     image: ghcr.io/fmbot-discord/fmbot:main
@@ -25,15 +25,15 @@ services:
     volumes:
       - /fmbot/prod/:/app/configs/
       - /fmbot/cache/:/app/cache/
-    command: "--memory=25g"
+    command: "--memory=22g"
     depends_on:
       prod-1:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-2
-      - SHARDS_TOTAL_SHARDS=336
-      - SHARDS_FIRST_SHARD=68
-      - SHARDS_LAST_SHARD=134
+      - SHARDS_TOTAL_SHARDS=384
+      - SHARDS_FIRST_SHARD=64
+      - SHARDS_LAST_SHARD=127
 
   prod-3:
     image: ghcr.io/fmbot-discord/fmbot:main
@@ -42,15 +42,15 @@ services:
     volumes:
       - /fmbot/prod/:/app/configs/
       - /fmbot/cache/:/app/cache/
-    command: "--memory=30g"
+    command: "--memory=22g"
     depends_on:
       prod-2:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-3
-      - SHARDS_TOTAL_SHARDS=336
-      - SHARDS_FIRST_SHARD=135
-      - SHARDS_LAST_SHARD=201
+      - SHARDS_TOTAL_SHARDS=384
+      - SHARDS_FIRST_SHARD=128
+      - SHARDS_LAST_SHARD=191
 
   prod-4:
     image: ghcr.io/fmbot-discord/fmbot:main
@@ -59,15 +59,15 @@ services:
     volumes:
       - /fmbot/prod/:/app/configs/
       - /fmbot/cache/:/app/cache/
-    command: "--memory=25g"
+    command: "--memory=22g"
     depends_on:
       prod-3:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-4
-      - SHARDS_TOTAL_SHARDS=336
-      - SHARDS_FIRST_SHARD=202
-      - SHARDS_LAST_SHARD=268
+      - SHARDS_TOTAL_SHARDS=384
+      - SHARDS_FIRST_SHARD=192
+      - SHARDS_LAST_SHARD=255
 
   prod-5:
     image: ghcr.io/fmbot-discord/fmbot:main
@@ -76,12 +76,29 @@ services:
     volumes:
       - /fmbot/prod/:/app/configs/
       - /fmbot/cache/:/app/cache/
-    command: "--memory=25g"
+    command: "--memory=22g"
     depends_on:
       prod-4:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-5
-      - SHARDS_TOTAL_SHARDS=336
-      - SHARDS_FIRST_SHARD=269
-      - SHARDS_LAST_SHARD=335
+      - SHARDS_TOTAL_SHARDS=384
+      - SHARDS_FIRST_SHARD=256
+      - SHARDS_LAST_SHARD=319
+
+  prod-6:
+    image: ghcr.io/fmbot-discord/fmbot:main
+    restart: always
+    network_mode: host
+    volumes:
+      - /fmbot/prod/:/app/configs/
+      - /fmbot/cache/:/app/cache/
+    command: "--memory=22g"
+    depends_on:
+      prod-5:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod-6
+      - SHARDS_TOTAL_SHARDS=384
+      - SHARDS_FIRST_SHARD=320
+      - SHARDS_LAST_SHARD=383
