@@ -494,6 +494,7 @@ public class PlayService
         existingStreak.AlbumPlaycount = currentStreak.AlbumPlaycount;
         existingStreak.TrackName = currentStreak.TrackName;
         existingStreak.TrackPlaycount = currentStreak.TrackPlaycount;
+        existingStreak.StreakEnded = currentStreak.StreakEnded;
 
         db.Entry(existingStreak).State = EntityState.Modified;
         await db.SaveChangesAsync();
