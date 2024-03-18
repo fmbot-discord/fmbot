@@ -241,9 +241,9 @@ public class AlbumBuilders
         else
         {
             var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
-            if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+            if (randomHintNumber == 1 && this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
-                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
                 description.AppendLine($"*[Supporters]({Constants.GetSupporterDiscordLink}) can see album discovery dates.*");
             }
         }

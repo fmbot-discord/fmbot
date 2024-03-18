@@ -91,7 +91,7 @@ public class SupporterService
             var rand = new Random();
             var randomSupporter = supporters[rand.Next(supporters.Count())];
 
-            SetGuildPromoCache(guild.Id);
+            SetGuildSupporterPromoCache(guild.Id);
 
             return randomSupporter.Name;
         }
@@ -104,7 +104,7 @@ public class SupporterService
         return userType != UserType.User;
     }
 
-    public bool ShowPromotionalMessage(UserType userType, ulong? guildId)
+    public bool ShowSupporterPromotionalMessage(UserType userType, ulong? guildId)
     {
         if (IsSupporter(userType))
         {
@@ -240,73 +240,124 @@ public class SupporterService
         await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons?.Build());
     }
 
-    public async Task<string> GetPromotionalUpdateMessage(User user, string prfx, IDiscordClient contextClient,
+    public async Task<(string message, bool showUpgradeButton)> GetPromotionalUpdateMessage(User user, string prfx, IDiscordClient contextClient,
         ulong? guildId = null)
     {
-        if (!ShowPromotionalMessage(user.UserType, guildId))
+        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 42);
+        string message = null;
+        var showUpgradeButton = false;
+
+        if (!IsSupporter(user.UserType))
         {
-            return null;
+            switch (randomHintNumber)
+            {
+                case 2:
+                    {
+                        SetGuildSupporterPromoCache(guildId);
+                        message =
+                            $"*⭐ [.fmbot supporters]({Constants.GetSupporterDiscordLink}) get extra stats and insights into their music history.*";
+                        showUpgradeButton = true;
+                        break;
+                    }
+                case 3:
+                    {
+                        message =
+                            $"*<:vinyl:1043644602969763861> Use Discogs for your vinyl collection? Link your account with `{prfx}discogs`*";
+                        break;
+                    }
+                case 4:
+                    {
+                        if (user.FmFooterOptions == FmFooterOption.TotalScrobbles)
+                        {
+                            message =
+                                $"*⚙️ Customize your `{prfx}fm` with the custom footer options. Get started by using `/fmmode`.*";
+                            break;
+                        }
+
+                        SetGuildSupporterPromoCache(guildId);
+                        message =
+                            $"*⚙️ Set up to 9 options in your {prfx}fm footer as [a supporter]({Constants.GetSupporterDiscordLink}).*";
+                        showUpgradeButton = true;
+                        break;
+                    }
+                case 5:
+                    {
+                        SetGuildSupporterPromoCache(guildId);
+                        message =
+                            $"*🔥 [Supporters]({Constants.GetSupporterDiscordLink}) get an improved GPT-4 powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others.*";
+                        showUpgradeButton = true;
+                        break;
+                    }
+                case 6:
+                case 7:
+                    {
+                        SetGuildSupporterPromoCache(guildId);
+                        message =
+                            $"*<:spotify:882221219334725662> [Supporters]({Constants.GetSupporterDiscordLink}) can import and use their full Spotify history in the bot.*";
+                        showUpgradeButton = true;
+                        break;
+                    }
+                case 8:
+                case 9:
+                    {
+                        SetGuildSupporterPromoCache(guildId);
+                        message =
+                            $"*<:apple_music:1218182727149420544> [Supporters]({Constants.GetSupporterDiscordLink}) can import and use their Apple Music history in the bot.*";
+                        showUpgradeButton = true;
+                        break;
+                    }
+                case 10:
+                    {
+                        SetGuildSupporterPromoCache(guildId);
+                        message =
+                            $"*<:fmbot_discoveries:1145740579284713512> View recent artist discoveries with [.fmbot supporter]({Constants.GetSupporterDiscordLink}).*";
+                        showUpgradeButton = true;
+                        break;
+                    }
+            }
+        }
+        else
+        {
+            switch (randomHintNumber)
+            {
+                case 3:
+                    {
+                        message =
+                            $"*<:vinyl:1043644602969763861> Use Discogs for your vinyl collection? Link your account with `{prfx}discogs`.*";
+                        break;
+                    }
+                case 4:
+                    {
+                        if (user.FmFooterOptions == FmFooterOption.TotalScrobbles)
+                        {
+                            message =
+                                $"*Customize your `{prfx}fm` with the custom footer options. Get started by using `/fmmode`.*";
+                        }
+
+                        break;
+                    }
+                case 5:
+                    {
+                        if (user.DataSource == DataSource.LastFm)
+                        {
+                            message =
+                                $"*<:spotify:882221219334725662> Import your full Spotify history with `/import spotify`*";
+                        }
+                        break;
+                    }
+                case 6:
+                    {
+                        if (user.DataSource == DataSource.LastFm)
+                        {
+                            message =
+                                $"*<:apple_music:1218182727149420544> Import your full Apple Music history with `/import applemusic`*";
+                        }
+                        break;
+                    }
+            }
         }
 
-        var randomHintNumber = new Random().Next(0, 40);
-
-        switch (randomHintNumber)
-        {
-            case 1:
-                SetGuildPromoCache(guildId);
-                return
-                    $"*.fmbot stores all artists/albums/tracks instead of just the top 4/5/6k for supporters. " +
-                    $"[See all the benefits of becoming a supporter here.]({Constants.GetSupporterDiscordLink})*";
-            case 2:
-                SetGuildPromoCache(guildId);
-                return
-                    $"*Supporters get extra statistics like discovery dates, full history in `stats`, artist discoveries in `year`, extra options in their `fm` footer and more. " +
-                    $"[See all the perks of getting supporter here.]({Constants.GetSupporterDiscordLink})*";
-            case 3:
-                {
-                    await using var db = await this._contextFactory.CreateDbContextAsync();
-                    if (await db.UserDiscogs.AnyAsync(a => a.UserId == user.UserId))
-                    {
-                        SetGuildPromoCache(guildId);
-                        return
-                            $"*Supporters can fetch and view their entire Discogs collection (up from last 100). " +
-                            $"[Get .fmbot supporter here.]({Constants.GetSupporterOverviewLink})*";
-                    }
-
-                    return
-                        $"*Using Discogs to keep track of your vinyl collection? Connect your account with the `{prfx}discogs` command.*";
-                }
-            case 4:
-                {
-                    if (user.FmFooterOptions == FmFooterOption.TotalScrobbles)
-                    {
-                        return
-                            $"*Customize your `{prfx}fm` with the new custom footer options. Get started by using `/fmmode`.*";
-                    }
-
-                    SetGuildPromoCache(guildId);
-                    return
-                        $"*Want more custom options in your `{prfx}fm` footer? Supporters can set up to 8 + 1 options. " +
-                        $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*";
-                }
-            case 5:
-                {
-                    SetGuildPromoCache(guildId);
-                    return
-                        $"*Supporters get an improved GPT-4 powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others. " +
-                        $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*";
-                }
-            case 6:
-            case 7:
-                {
-                    SetGuildPromoCache(guildId);
-                    return
-                        $"*Supporters can now import and use their full Spotify history in the bot. " +
-                        $"[Get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*";
-                }
-            default:
-                return null;
-        }
+        return (message, showUpgradeButton);
     }
 
     private static string GetGuildPromoCacheKey(ulong? guildId = null)
@@ -314,7 +365,7 @@ public class SupporterService
         return $"guild-supporter-promo-{guildId}";
     }
 
-    public void SetGuildPromoCache(ulong? guildId = null)
+    public void SetGuildSupporterPromoCache(ulong? guildId = null)
     {
         if (guildId != null)
         {

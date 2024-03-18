@@ -204,9 +204,9 @@ public class TrackBuilders
         else
         {
             var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
-            if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+            if (randomHintNumber == 1 && this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
-                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
                 response.Embed.WithDescription($"*[Supporters]({Constants.GetSupporterDiscordLink}) can see track discovery dates.*");
             }
         }
@@ -1204,7 +1204,7 @@ public class TrackBuilders
         }
 
         var commandExecutedCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId, "scrobble", DateTime.UtcNow.AddMinutes(-30));
-        var maxCount = SupporterService.IsSupporter(context.ContextUser.UserType) ? 25 : 10;
+        var maxCount = SupporterService.IsSupporter(context.ContextUser.UserType) ? 25 : 12;
 
         if (commandExecutedCount > maxCount)
         {

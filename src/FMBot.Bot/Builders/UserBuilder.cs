@@ -856,17 +856,17 @@ public class UserBuilder
             }
         }
 
-        if (this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+        if (this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
         {
             var random = new Random().Next(0, Constants.SupporterPromoChance);
             switch (random)
             {
                 case 1:
-                    this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                    this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
                     description.AppendLine($"*Want to see an overview of all your years? [View all perks and get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
                     break;
                 case 2:
-                    this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                    this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
                     description.AppendLine($"*Want to import and use your Spotify history in .fmbot? [View all perks and get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
                     break;
             }
@@ -934,9 +934,9 @@ public class UserBuilder
         else
         {
             var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
-            if (randomHintNumber == 1 && this._supporterService.ShowPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+            if (randomHintNumber == 1 && this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
-                this._supporterService.SetGuildPromoCache(context.DiscordGuild?.Id);
+                this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
                 if (user.UserDiscogs == null)
                 {
                     response.Embed.AddField("Years", $"*Want to see an overview of your scrobbles throughout the years? " +
