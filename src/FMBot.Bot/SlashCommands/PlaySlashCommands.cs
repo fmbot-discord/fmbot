@@ -85,35 +85,44 @@ public class PlaySlashCommands : InteractionModuleBase
 
         _ = DeferAsync();
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
-
-        var response = await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, contextUser), userSettings);
-
-        await this.Context.SendFollowUpResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
-
-        var message = await this.Context.Interaction.GetOriginalResponseAsync();
-
         try
         {
-            if (message != null && response.CommandResponse == CommandResponse.Ok)
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings =
+                await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+            var response =
+                await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, contextUser), userSettings);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+
+            var message = await this.Context.Interaction.GetOriginalResponseAsync();
+
+            try
             {
-                if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
+                if (message != null && response.CommandResponse == CommandResponse.Ok)
                 {
-                    await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
+                    if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
+                    {
+                        await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
+                    }
+                    else if (this.Context.Guild != null)
+                    {
+                        await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild);
+                    }
                 }
-                else if (this.Context.Guild != null)
-                {
-                    await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild);
-                }
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
+                await ReplyAsync(
+                    $"Could not add automatic emoji reactions to `/fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.");
             }
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
-            await ReplyAsync(
-                $"Could not add automatic emoji reactions to `/fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -153,7 +162,7 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
         _ = DeferAsync();
-        
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         var userWithStreak = await this._userService.GetUserAsync(userSettings.DiscordUserId);
