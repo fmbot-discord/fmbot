@@ -46,6 +46,8 @@ public class SpotifySlashCommands : InteractionModuleBase
 
     [SlashCommand("spotify", "Search through Spotify.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task SpotifyAsync(
         [Summary("Search", "Search value")] string searchValue = null,
         [Summary("Type", "What you want to search for on Spotify (defaults to track)")] SpotifySearch type = SpotifySearch.Track,

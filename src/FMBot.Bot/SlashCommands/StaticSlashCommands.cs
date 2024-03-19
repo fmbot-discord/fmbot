@@ -27,6 +27,8 @@ public class StaticSlashCommands : InteractionModuleBase
     }
 
     [SlashCommand("outofsync", "Shows info if your Last.fm isn't up to date with Spotify")]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task OutOfSyncAsync([Summary("private", "Show info privately?")]bool privateResponse = true)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -37,6 +39,8 @@ public class StaticSlashCommands : InteractionModuleBase
     }
 
     [SlashCommand("getsupporter", "Information about getting supporter or your current subscription")]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task GetSupporterAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

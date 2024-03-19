@@ -48,6 +48,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
     [SlashCommand("artist", "Shows info for current artist or the one you're searching for.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ArtistAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
@@ -102,6 +104,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
     [SlashCommand("artistoverview", "Shows overview for current artist or the one you're searching for.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ArtistOverviewAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
@@ -158,6 +162,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
     [SlashCommand("artistplays", "Shows playcount for current artist or the one you're searching for.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ArtistPlaysAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
@@ -184,6 +190,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
     [SlashCommand("artisttracks", "Shows your top tracks for an artist")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ArtistTracksAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))]string name = null,
@@ -228,6 +236,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
     [SlashCommand("artistalbums", "Shows your top albums for an artist")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ArtistAlbumsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))]string name = null,
@@ -268,6 +278,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
     [SlashCommand("artistpace", "Shows estimated date you reach a certain amount of plays on an artist")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ArtistPaceAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))]string name = null,
@@ -396,6 +408,8 @@ public class ArtistSlashCommands : InteractionModuleBase
     [SlashCommand("friendswhoknow", "Shows who of your friends listen to an artist")]
     [UsernameSetRequired]
     [RequiresIndex]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FriendsWhoKnowAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
@@ -462,6 +476,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
     [SlashCommand("discoveries", "Shows artists you've recently discovered")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ArtistDiscoveriesAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,

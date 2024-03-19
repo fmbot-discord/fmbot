@@ -33,6 +33,8 @@ public class FriendSlashCommands : InteractionModuleBase
 
     [SlashCommand("friends", "Displays your friends and what they're listening to.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FriendsAsync()
     {
         _ = DeferAsync();

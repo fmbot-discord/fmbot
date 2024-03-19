@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -34,6 +35,8 @@ public class AlbumSlashCommands : InteractionModuleBase
 
     [SlashCommand("album", "Shows album info for the album you're currently listening to or searching for")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AlbumAsync(
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null)
@@ -147,6 +150,8 @@ public class AlbumSlashCommands : InteractionModuleBase
 
     [SlashCommand("fwkalbum", "Shows who of your friends listen to an album")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FriendsWhoKnowAlbumAsync(
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))]
@@ -210,6 +215,8 @@ public class AlbumSlashCommands : InteractionModuleBase
 
     [SlashCommand("cover", "Cover for current album or the one you're searching for.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AlbumCoverAsync(
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null)
@@ -264,6 +271,8 @@ public class AlbumSlashCommands : InteractionModuleBase
 
     [SlashCommand("albumtracks", "Shows album info for the album you're currently listening to or searching for")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AlbumTracksAsync(
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
@@ -320,6 +329,8 @@ public class AlbumSlashCommands : InteractionModuleBase
 
     [SlashCommand("albumplays", "Shows playcount for current album or the one you're searching for.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AlbumPlaysAsync(
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null,

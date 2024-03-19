@@ -1041,8 +1041,13 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task<int?> GetChannelCooldown(ulong discordChannelId)
+    public async Task<int?> GetChannelCooldown(ulong? discordChannelId)
     {
+        if (!discordChannelId.HasValue)
+        {
+            return null;
+        }
+        
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
             .AsQueryable()

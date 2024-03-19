@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -49,9 +50,11 @@ public class PlaySlashCommands : InteractionModuleBase
 
     [SlashCommand("fm", "Now Playing - Shows you or someone else their current track")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task NowPlayingAsync([Summary("user", "The user to show (defaults to self)")] string user = null)
     {
-        var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel.Id);
+        var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel?.Id);
         if (existingFmCooldown.HasValue)
         {
             if (StackCooldownTarget.Contains(this.Context.User.Id))
@@ -116,6 +119,8 @@ public class PlaySlashCommands : InteractionModuleBase
 
     [SlashCommand("recent", "Shows you or someone else their recent tracks")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task RecentAsync(
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Artist", "Artist you want to filter on (Supporter only)")]
@@ -142,9 +147,13 @@ public class PlaySlashCommands : InteractionModuleBase
 
     [SlashCommand("streak", "Shows you or someone else their streak")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task StreakAsync(
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
+        _ = DeferAsync();
+        
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         var userWithStreak = await this._userService.GetUserAsync(userSettings.DiscordUserId);
@@ -154,7 +163,7 @@ public class PlaySlashCommands : InteractionModuleBase
             var response = await this._playBuilder.StreakAsync(new ContextModel(this.Context, contextUser),
                 userSettings, userWithStreak);
 
-            await this.Context.SendResponse(this.Interactivity, response);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -165,6 +174,8 @@ public class PlaySlashCommands : InteractionModuleBase
 
     [SlashCommand("streakhistory", "Shows you or someone else their streak history")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task StreakHistory(
         [Summary("Editmode", "Enable or disable editor mode")] bool editMode = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
@@ -210,6 +221,8 @@ public class PlaySlashCommands : InteractionModuleBase
 
     [SlashCommand("overview", "Shows a daily overview")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task OverviewAsync(
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Amount", "Amount of days to show")] int amount = 4)
@@ -240,6 +253,8 @@ public class PlaySlashCommands : InteractionModuleBase
 
     [SlashCommand("pace", "Shows estimated date you reach a scrobble goal based on average scrobbles per day")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task PaceAsync(
         [Summary("Amount", "Goal scrobble amount")] int amount = 1,
         [Summary("Time-period", "Time period to base average playcount on")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
@@ -270,6 +285,8 @@ public class PlaySlashCommands : InteractionModuleBase
 
     [SlashCommand("milestone", "Shows a milestone scrobble")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task MileStoneAsync(
         [Summary("Amount", "Milestone scrobble amount")] int amount = 99999999,
         [Summary("User", "The user to show (defaults to self)")] string user = null)

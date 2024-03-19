@@ -57,6 +57,8 @@ public class ImportSlashCommands : InteractionModuleBase
 
     [SlashCommand("spotify", "Import your Spotify history into .fmbot")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task SpotifyAsync(
         [Summary("file-1", SpotifyFileDescription)] IAttachment attachment1 = null,
         [Summary("file-2", SpotifyFileDescription)] IAttachment attachment2 = null,
@@ -260,6 +262,8 @@ public class ImportSlashCommands : InteractionModuleBase
 
     [SlashCommand("applemusic", "Import your Apple Music history into .fmbot")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AppleMusicAsync([Summary("file", "'Apple Media Services information.zip' or 'Apple Music Play Activity.csv' file")] IAttachment attachment = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -427,6 +431,8 @@ public class ImportSlashCommands : InteractionModuleBase
 
     [SlashCommand("manage", "Manage your imports and configure how they are used")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ManageImportAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

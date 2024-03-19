@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -14,6 +15,8 @@ using FMBot.Domain.Models;
 namespace FMBot.Bot.SlashCommands;
 
 [Group("top", "Top lists - Artist/Albums/Tracks/Genres/Countries")]
+[CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+[IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
 public class TopSlashCommands : InteractionModuleBase
 {
     private readonly UserService _userService;

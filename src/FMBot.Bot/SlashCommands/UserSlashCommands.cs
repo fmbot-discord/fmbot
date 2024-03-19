@@ -86,6 +86,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("settings", "Shows user settings for .fmbot")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task UserSettingsAsync()
     {
         try
@@ -205,6 +207,8 @@ public class UserSlashCommands : InteractionModuleBase
     }
 
     [SlashCommand("login", "Gives you a link to connect your Last.fm account to .fmbot")]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task LoginAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -312,6 +316,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("privacy", "Changes your visibility to other .fmbot users in Global WhoKnows")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task PrivacyAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -411,6 +417,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("fmmode", "Changes your '/fm' layout")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FmModeSlashAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -603,6 +611,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("localization", "Configure your timezone in .fmbot")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task SetLocalization([Summary("Timezone", "Timezone you want to set")][Autocomplete(typeof(TimeZoneAutoComplete))] string timezone)
     {
         try
@@ -642,6 +652,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("remove", "Deletes your .fmbot account")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task RemoveAsync()
     {
         var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
@@ -746,6 +758,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("judge", "Judges your music taste using AI")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task JudgeAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to judge (Supporter-only option)")] string user = null)
@@ -837,6 +851,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FeaturedAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -865,6 +881,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("botscrobbling", "Shows info about music bot scrobbling and allows you to change your settings")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.GuildInstall)]
     public async Task BotScrobblingAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -979,6 +997,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("profile", "Shows you or someone else their profile")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ProfileAsync(
         [Summary("User", "The user of which you want to view their profile")] string user = null)
     {

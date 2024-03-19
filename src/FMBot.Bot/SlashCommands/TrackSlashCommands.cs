@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -40,6 +41,8 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("track", "Shows track info for the track you're currently listening to or searching for")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task TrackAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null)
@@ -123,6 +126,8 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("fwktrack", "Shows who of your friends listen to a track")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FriendsWhoKnowAlbumAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null,
@@ -185,6 +190,8 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("trackplays", "Shows playcount for current track or the one you're searching for.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task TrackPlaysAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null,
@@ -210,6 +217,8 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("trackdetails", "Shows metadata details for current track or the one you're searching for.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task TrackDetailsAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null)
@@ -233,6 +242,8 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("love", "Loves track you're currently listening to or searching for on Last.fm")]
     [UserSessionRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task LoveTrackAsync(
         [Summary("Track", "The track your want to love (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null,
@@ -255,6 +266,8 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("unlove", "Removes track you're currently listening to or searching from your loved tracks")]
     [UserSessionRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task UnloveTrackAsync(
         [Summary("Track", "The track your want to remove (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null,
@@ -277,6 +290,8 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("receipt", "Shows your track receipt. Based on Receiptify.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ReceiptAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,

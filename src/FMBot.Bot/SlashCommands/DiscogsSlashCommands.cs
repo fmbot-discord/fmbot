@@ -34,6 +34,8 @@ public class DiscogsSlashCommands : InteractionModuleBase
 
     [SlashCommand("discogs", "Connects your Discogs account by sending a link to your DMs")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task DiscogsAsync()
     {
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
@@ -169,6 +171,8 @@ public class DiscogsSlashCommands : InteractionModuleBase
 
     [SlashCommand("collection", "Shows your or someone else their Discogs collection")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AlbumAsync(
         [Summary("Search", "Search query to filter on")] string search = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,

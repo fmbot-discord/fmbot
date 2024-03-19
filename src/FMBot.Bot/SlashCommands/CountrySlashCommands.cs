@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using Fergun.Interactive;
+using Discord;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -32,6 +33,8 @@ public class CountrySlashCommands : InteractionModuleBase
 
     [SlashCommand("country", "Shows country for artist or top artists for country")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task GenreAsync(
         [Summary("search", "The country or artist you want to view")]
         [Autocomplete(typeof(CountryArtistAutoComplete))]

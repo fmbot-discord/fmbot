@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -13,6 +14,8 @@ using FMBot.Domain.Models;
 namespace FMBot.Bot.SlashCommands;
 
 [Group("chart", "Generate charts with album covers or artist images")]
+[CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+[IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
 public class ChartSlashCommands : InteractionModuleBase
 {
     private readonly UserService _userService;
