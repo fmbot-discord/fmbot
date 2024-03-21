@@ -310,7 +310,9 @@ public class ImportSlashCommands : InteractionModuleBase
             if (imports.status == ImportStatus.UnknownFailure)
             {
                 embed.WithColor(DiscordConstants.WarningColorOrange);
-                await UpdateImportEmbed(message, embed, description, $"❌ Invalid Apple Music import file, or something went wrong. Please open a help thread on [our server](https://discord.gg/fmbot).", true);
+                await UpdateImportEmbed(message, embed, description, $"❌ Invalid Apple Music import file, or something went wrong.\n\n" +
+                                                                     $"If you've uploaded a `.zip` file you can also try to find the `Apple Music Play Activity.csv` inside the .zip and attach that instead.\n\n" +
+                                                                     $"You can also open a help thread on [our server](https://discord.gg/fmbot).", true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }

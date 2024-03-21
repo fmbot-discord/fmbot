@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using AngleSharp.Css.Values;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Discord;
@@ -60,7 +61,18 @@ public class ImportService
             var innerZipEntry = zip.GetEntry("Apple Media Services information/Apple_Media_Services.zip");
             if (innerZipEntry == null)
             {
-                return (ImportStatus.UnknownFailure, null);
+                var partEntry = zip.GetEntry("Apple Media Services Information Part 1 of 2/Apple_Media_Services.zip");
+                if (partEntry != null)
+                {
+                    innerZipEntry = partEntry;
+                }
+                else
+                {
+                    Log.Information("Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Could not find 'Apple_Media_Services.zip' inside first zip - {zipName}",
+                        user.UserId, user.DiscordUserId, attachment.Filename);
+
+                    return (ImportStatus.UnknownFailure, null);
+                }
             }
 
             await using var innerZipStream = innerZipEntry.Open();
@@ -69,6 +81,9 @@ public class ImportService
             var csvEntry = innerZip.GetEntry("Apple_Media_Services/Apple Music Activity/Apple Music Play Activity.csv");
             if (csvEntry == null)
             {
+                Log.Information("Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Could not find 'Apple Music Play Activity.csv' inside second zip",
+                    user.UserId, user.DiscordUserId);
+
                 return (ImportStatus.UnknownFailure, null);
             }
 
