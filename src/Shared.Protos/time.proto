@@ -19,6 +19,7 @@ service TimeEnrichment {
 
 message UserPlayList {
   repeated SimpleUserPlay userPlays = 1;
+  bool adjustForBans = 2;
 }
 
 message SimpleUserPlay {
