@@ -58,46 +58,33 @@ public class ImportService
             await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
             using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
 
-            var innerZipEntry = zip.GetEntry("Apple Media Services information/Apple_Media_Services.zip");
-            if (innerZipEntry == null)
+            if (!zip.Entries.Any(a => a.FullName.EndsWith("Apple Music Play Activity.csv", StringComparison.OrdinalIgnoreCase)))
             {
-                var partEntry = zip.GetEntry("Apple Media Services Information Part 1 of 2/Apple_Media_Services.zip");
-                if (partEntry != null)
-                {
-                    innerZipEntry = partEntry;
-                }
-                else
+                var innerZipEntry = zip.Entries.FirstOrDefault(f => f.FullName.EndsWith("Apple_Media_Services.zip", StringComparison.OrdinalIgnoreCase));
+                if (innerZipEntry == null)
                 {
                     Log.Information("Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Could not find 'Apple_Media_Services.zip' inside first zip - {zipName}",
                         user.UserId, user.DiscordUserId, attachment.Filename);
 
                     return (ImportStatus.UnknownFailure, null);
                 }
+
+                await using var innerZipStream = innerZipEntry.Open();
+                using var innerZip = new ZipArchive(innerZipStream, ZipArchiveMode.Read);
+
+                var csvEntry = innerZip.Entries.FirstOrDefault(f => f.FullName.EndsWith("Apple Music Play Activity.csv", StringComparison.OrdinalIgnoreCase));
+                if (csvEntry != null)
+                {
+                    await ExtractPlaysFromCsv(csvEntry);
+                }
             }
-
-            await using var innerZipStream = innerZipEntry.Open();
-            using var innerZip = new ZipArchive(innerZipStream, ZipArchiveMode.Read);
-
-            var csvEntry = innerZip.GetEntry("Apple_Media_Services/Apple Music Activity/Apple Music Play Activity.csv");
-            if (csvEntry == null)
+            else
             {
-                Log.Information("Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Could not find 'Apple Music Play Activity.csv' inside second zip",
-                    user.UserId, user.DiscordUserId);
-
-                return (ImportStatus.UnknownFailure, null);
-            }
-
-            await using var innerCsvStream = csvEntry.Open();
-            using var innerCsvStreamReader = new StreamReader(innerCsvStream);
-
-            using var csv = new CsvReader(innerCsvStreamReader, csvConfig);
-
-            var records = csv.GetRecords<AppleMusicCsvImportModel>();
-            if (records.Any())
-            {
-                appleMusicPlays.AddRange(records.Where(w => w.PlayDurationMs > 0 &&
-                                                            !string.IsNullOrWhiteSpace(w.AlbumName) &&
-                                                            !string.IsNullOrWhiteSpace(w.SongName)).ToList());
+                var csvEntry = zip.Entries.FirstOrDefault(f => f.FullName.EndsWith("Apple Music Play Activity.csv", StringComparison.OrdinalIgnoreCase));
+                if (csvEntry != null)
+                {
+                    await ExtractPlaysFromCsv(csvEntry);
+                }
             }
         }
         if (attachment.Filename.EndsWith(".csv"))
@@ -122,6 +109,22 @@ public class ImportService
         }
 
         return (ImportStatus.UnknownFailure, null);
+
+        async Task ExtractPlaysFromCsv(ZipArchiveEntry csvEntry)
+        {
+            await using var innerCsvStream = csvEntry.Open();
+            using var innerCsvStreamReader = new StreamReader(innerCsvStream);
+
+            var csv = new CsvReader(innerCsvStreamReader, csvConfig);
+
+            var records = csv.GetRecords<AppleMusicCsvImportModel>();
+            if (records.Any())
+            {
+                appleMusicPlays.AddRange(records.Where(w => w.PlayDurationMs > 0 &&
+                                                            !string.IsNullOrWhiteSpace(w.AlbumName) &&
+                                                            !string.IsNullOrWhiteSpace(w.SongName)).ToList());
+            }
+        }
     }
 
     public async Task<(RepeatedField<PlayWithoutArtist> userPlays, string matchFoundPercentage)> AppleMusicImportAddArtists(User user, List<AppleMusicCsvImportModel> appleMusicPlays)
