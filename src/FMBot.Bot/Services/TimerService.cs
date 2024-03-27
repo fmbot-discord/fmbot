@@ -202,6 +202,12 @@ public class TimerService
 
         try
         {
+            if (this.CurrentFeatured.Status != null)
+            {
+                await this._client.SetCustomStatusAsync(this.CurrentFeatured.Status);
+                return;
+            }
+            
             if (this._client?.Guilds?.Count == null)
             {
                 Log.Information($"Client guild count is null, cancelling {nameof(UpdateStatus)}");

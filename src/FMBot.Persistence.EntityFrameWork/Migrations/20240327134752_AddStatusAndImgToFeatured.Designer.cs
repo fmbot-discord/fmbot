@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240327134752_AddStatusAndImgToFeatured")]
+    partial class AddStatusAndImgToFeatured
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -815,10 +818,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<bool?>("NoUpdate")
                         .HasColumnType("boolean")
                         .HasColumnName("no_update");
-
-                    b.Property<string[]>("Reactions")
-                        .HasColumnType("text[]")
-                        .HasColumnName("reactions");
 
                     b.Property<string>("Status")
                         .HasColumnType("text")

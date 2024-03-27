@@ -82,7 +82,7 @@ public class WebhookService
         }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        
+
         await db.Webhooks.AddAsync(webhook);
         await db.SaveChangesAsync();
 
@@ -174,7 +174,15 @@ public class WebhookService
     public async Task PostFeatured(FeaturedLog featuredLog, DiscordShardedClient client)
     {
         var builder = new EmbedBuilder();
-        builder.WithThumbnailUrl(featuredLog.ImageUrl);
+        if (featuredLog.FullSizeImage == null)
+        {
+            builder.WithThumbnailUrl(featuredLog.ImageUrl);
+        }
+        else
+        {
+            builder.WithImageUrl(featuredLog.FullSizeImage);
+        }
+
         builder.AddField("Featured:", featuredLog.Description);
 
         if (this._botSettings.Bot.BaseServerId != 0 && this._botSettings.Bot.FeaturedChannelId != 0)
@@ -218,7 +226,14 @@ public class WebhookService
 
                 if (message != null)
                 {
-                    await this._guildService.AddGuildReactionsAsync(message, guild);
+                    if (featuredLog.Reactions != null && featuredLog.Reactions.Any())
+                    {
+                        await GuildService.AddReactionsAsync(message, featuredLog.Reactions);
+                    }
+                    else
+                    {
+                        await this._guildService.AddGuildReactionsAsync(message, guild);
+                    }
                 }
             }
         }

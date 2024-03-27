@@ -25,7 +25,7 @@ public static class GenericEmbedService
                               $"Please use the {loginCommand} command. The bot will then send you a link so you can connect your Last.fm account.");
 
         embed.WithUrl($"{Constants.DocsUrl}/commands/");
-
+        
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 

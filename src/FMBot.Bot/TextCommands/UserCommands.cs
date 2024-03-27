@@ -37,7 +37,7 @@ public class UserCommands : BaseCommandModule
     private readonly UserBuilder _userBuilder;
     private readonly ArtistsService _artistsService;
     private readonly OpenAiService _openAiService;
-
+    private readonly TimerService _timerService;
 
     private InteractiveService Interactivity { get; }
 
@@ -55,7 +55,8 @@ public class UserCommands : BaseCommandModule
         UserBuilder userBuilder,
         InteractiveService interactivity,
         ArtistsService artistsService,
-        OpenAiService openAiService) : base(botSettings)
+        OpenAiService openAiService,
+        TimerService timerService) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -67,6 +68,7 @@ public class UserCommands : BaseCommandModule
         this.Interactivity = interactivity;
         this._artistsService = artistsService;
         this._openAiService = openAiService;
+        this._timerService = timerService;
     }
 
     [Command("settings", RunMode = RunMode.Async)]
@@ -381,13 +383,20 @@ public class UserCommands : BaseCommandModule
                 PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Message.Id, message.Id);
                 PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Message.Id);
 
-                if (contextUser?.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
+                if (this._timerService.CurrentFeatured?.Reactions != null && this._timerService.CurrentFeatured.Reactions.Any())
                 {
-                    await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
+                    await GuildService.AddReactionsAsync(message, this._timerService.CurrentFeatured.Reactions);
                 }
-                else if (this.Context.Guild != null)
+                else
                 {
-                    await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+                    if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
+                    {
+                        await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
+                    }
+                    else if (this.Context.Guild != null)
+                    {
+                        await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+                    }
                 }
             }
 

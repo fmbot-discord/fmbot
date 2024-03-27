@@ -30,5 +30,11 @@ public class FeaturedLog
 
     public bool SupporterDay { get; set; }
 
+    public string FullSizeImage { get; set; }
+    
+    public string Status { get; set; }
+    
+    public string[] Reactions { get; set; }
+
     public User User { get; set; }
 }

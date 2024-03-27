@@ -152,9 +152,10 @@ public class ImportBuilders
         description.AppendLine("2. Sign in to your account");
         description.AppendLine("3. Click on **Request a copy of your data**");
         description.AppendLine("4. Select **Apple Media Services Information**");
-        description.AppendLine("5. Press **Continue**");
-        description.AppendLine("5. Press **Complete request**");
-        description.AppendLine("7. Wait up to 7 days for Apple to deliver your files");
+        description.AppendLine("5. De-select the other options");
+        description.AppendLine("6. Press **Continue**");
+        description.AppendLine("7. Press **Complete request**");
+        description.AppendLine("8. Wait up to 7 days for Apple to deliver your files");
 
         description.AppendLine("### Importing your data into .fmbot");
         description.AppendLine("1. Download the file Apple provided");

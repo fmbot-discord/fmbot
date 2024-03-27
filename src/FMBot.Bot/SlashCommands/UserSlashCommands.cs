@@ -46,6 +46,7 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly IPrefixService _prefixService;
     private readonly AdminService _adminService;
     private readonly ImportBuilders _importBuilders;
+    private readonly TimerService _timerService;
 
     private readonly BotSettings _botSettings;
 
@@ -65,7 +66,8 @@ public class UserSlashCommands : InteractionModuleBase
         ImportService importService,
         IPrefixService prefixService,
         AdminService adminService,
-        ImportBuilders importBuilders)
+        ImportBuilders importBuilders,
+        TimerService timerService)
     {
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
@@ -81,6 +83,7 @@ public class UserSlashCommands : InteractionModuleBase
         this._prefixService = prefixService;
         this._adminService = adminService;
         this._importBuilders = importBuilders;
+        this._timerService = timerService;
         this._botSettings = botSettings.Value;
     }
 
@@ -868,13 +871,20 @@ public class UserSlashCommands : InteractionModuleBase
             PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Interaction.Id, message.Id);
             PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Interaction.Id);
 
-            if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
+            if (this._timerService.CurrentFeatured?.Reactions != null && this._timerService.CurrentFeatured.Reactions.Any())
             {
-                await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
+                await GuildService.AddReactionsAsync(message, this._timerService.CurrentFeatured.Reactions);
             }
-            else if (this.Context.Guild != null)
+            else
             {
-                await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+                if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
+                {
+                    await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
+                }
+                else if (this.Context.Guild != null)
+                {
+                    await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+                }
             }
         }
     }
@@ -1128,7 +1138,7 @@ public class UserSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         await DeferAsync(true);
-        
+
         try
         {
             var response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);

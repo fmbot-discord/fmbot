@@ -129,7 +129,15 @@ public class UserBuilder
             return response;
         }
 
-        response.Embed.WithThumbnailUrl(this._timer.CurrentFeatured.ImageUrl);
+        if (this._timer.CurrentFeatured.FullSizeImage == null)
+        {
+            response.Embed.WithThumbnailUrl(this._timer.CurrentFeatured.ImageUrl);
+        }
+        else
+        {
+            response.Embed.WithImageUrl(this._timer.CurrentFeatured.FullSizeImage);
+        }
+
         response.Embed.AddField("Featured:", this._timer.CurrentFeatured.Description);
 
         if (context.DiscordGuild != null && guildUsers.Any() && this._timer.CurrentFeatured.UserId.HasValue && this._timer.CurrentFeatured.UserId.Value != 0)

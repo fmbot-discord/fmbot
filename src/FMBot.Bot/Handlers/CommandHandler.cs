@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -322,6 +323,26 @@ public class CommandHandler
                 await context.Channel.SendMessageAsync("", false, embed.Build());
                 context.LogCommandUsed(CommandResponse.Help);
                 return;
+            }
+
+            var aprilFirst = new DateTime(2024, 4, 1);
+            var randomNumber = RandomNumberGenerator.GetInt32(1, 30);
+            if (DateTime.Today == aprilFirst && randomNumber == 1)
+            {
+                var randomResponse = RandomNumberGenerator.GetInt32(1, 6);
+                var response = randomResponse switch
+                {
+                    1 => "😴 Zzz... Scrobble? Oh, right, music stats! I was dreaming of vinyl records in the cloud.",
+                    2 => "😴 Oh sorry, I was sleeping.. I guess I'll get to work.",
+                    3 => "😴 Oh hey, good morning, just woke up. I wasn't sleep scrobbling, was I? Let's get to work.",
+                    4 => "😴 Sorry, I dozed off while listening to #3 from Aphex Twin. I'll get to work now.",
+                    5 => "😴 Help! Oh sorry, I was having a nightmare where someone stole my Daft Punk crown. I'll get to work now.."
+                };
+
+                await context.Channel.SendMessageAsync(response);
+                await Task.Delay(RandomNumberGenerator.GetInt32(1000, 1400));
+                await context.Channel.TriggerTypingAsync();
+                await Task.Delay(RandomNumberGenerator.GetInt32(1000, 1400));
             }
 
             var result = await this._commands.ExecuteAsync(context, argPos, this._provider);
