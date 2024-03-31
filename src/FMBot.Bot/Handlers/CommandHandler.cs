@@ -327,22 +327,23 @@ public class CommandHandler
 
             var aprilFirst = new DateTime(2024, 4, 1);
             var randomNumber = RandomNumberGenerator.GetInt32(1, 30);
-            if (DateTime.Today == aprilFirst && randomNumber == 1)
+            if (DateTime.Today <= aprilFirst && randomNumber == 2)
             {
-                var randomResponse = RandomNumberGenerator.GetInt32(1, 6);
+                var randomResponse = RandomNumberGenerator.GetInt32(1, 7);
                 var response = randomResponse switch
                 {
-                    1 => "😴 Zzz... Scrobble? Oh, right, music stats! I was dreaming of vinyl records in the cloud.",
-                    2 => "😴 Oh sorry, I was sleeping.. I guess I'll get to work.",
-                    3 => "😴 Oh hey, good morning, just woke up. I wasn't sleep scrobbling, was I? Let's get to work.",
-                    4 => "😴 Sorry, I dozed off while listening to #3 from Aphex Twin. I'll get to work now.",
-                    5 => "😴 Help! Oh sorry, I was having a nightmare where someone stole my Daft Punk crown. I'll get to work now.."
+                    1 => "<:sleeping:1224093069779931216> Zzz... Scrobble? Oh, right, music stats! I was dreaming of vinyl records in the cloud.",
+                    2 => "<:sleeping:1224093069779931216> Oh sorry, I was sleeping.. I guess I'll get to work.",
+                    3 => "<:sleeping:1224093069779931216> Oh hey, good morning, just woke up. I wasn't sleep scrobbling, was I? Let's get to work.",
+                    4 => "<:sleeping:1224093069779931216> Sorry, I dozed off while listening to #3 from Aphex Twin. I'll get to work now.",
+                    5 => "<:sleeping:1224093069779931216> Help! Oh sorry, I was having a nightmare where someone stole my Daft Punk crown. I'll get to work now..",
+                    6 => "<:sleeping:1224093069779931216> Zzz... Oh hi, did you run a command?",
                 };
 
                 await context.Channel.SendMessageAsync(response);
-                await Task.Delay(RandomNumberGenerator.GetInt32(1000, 1400));
+                await Task.Delay(RandomNumberGenerator.GetInt32(1200, 1600));
                 await context.Channel.TriggerTypingAsync();
-                await Task.Delay(RandomNumberGenerator.GetInt32(1000, 1400));
+                await Task.Delay(RandomNumberGenerator.GetInt32(1400, 1600));
             }
 
             var result = await this._commands.ExecuteAsync(context, argPos, this._provider);

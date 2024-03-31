@@ -182,6 +182,7 @@ public class Startup
             .AddSingleton<GeniusService>()
             .AddSingleton<GenreBuilders>()
             .AddSingleton<GenreService>()
+            .AddSingleton<GameBuilders>()
             .AddSingleton<GuildBuilders>()
             .AddSingleton<GuildService>()
             .AddSingleton<GuildSettingBuilder>()
