@@ -21,7 +21,7 @@ public class TopTrack
 
     public string TrackName { get; set; }
     public string TrackUrl { get; set; }
-
+    
     public string ArtistName { get; set; }
     public string ArtistUrl { get; set; }
 

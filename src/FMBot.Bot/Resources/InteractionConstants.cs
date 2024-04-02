@@ -148,4 +148,10 @@ public static class InteractionConstants
 
     public const string GuildMembers = "guild-members";
     public const string FeaturedLog = "featured-log";
+
+    public static class Game
+    {
+        public const string StartJumbleFirstWins = "jumble-firstwins";
+        public const string StartJumbleGroup = "jumble-group";
+    }
 }

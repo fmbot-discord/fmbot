@@ -4,7 +4,7 @@
     "Projects": [
       {
         "Name": "..\\..\\fmbot-web-backend\\src\\Web.InternalApi\\Web.InternalApi.csproj",
-        "Action": "Start",
+        "Action": "StartWithoutDebugging",
         "DebugTarget": "http"
       },
       {
