@@ -14,10 +14,10 @@
   with the embed in #rules-info channel.
 
 ## How to Report a Vulnerability
-To report a vulnerability, please [join our server](https://discord.gg/fmbot) and send 
-a DM to one of the developers. 
 
-Developers are identified with the role 'Developer'.
+There are two ways to report a vulnerability:
+- Join [our Discord server](https://discord.gg/fmbot) and DM one of the developers
+- Send an email to `security@fm.bot`
 
 It is appreciated if you can include the following:
 - A description of the vulnerability.
