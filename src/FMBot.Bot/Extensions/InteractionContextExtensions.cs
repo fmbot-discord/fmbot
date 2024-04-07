@@ -244,7 +244,7 @@ public static class InteractionContextExtensions
             m.Embed = response.Embed?.Build();
             m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
             {
-                new(response.Stream, "image.png")
+                new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}.png" : $"{response.FileName}.png")
             }) : null;
         });
 
