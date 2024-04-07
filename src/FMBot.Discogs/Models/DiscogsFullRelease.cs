@@ -87,7 +87,7 @@ public class DiscogsFullRelease
 {
     [JsonPropertyName("id")]
     public int Id { get; set; }
-
+    
     [JsonPropertyName("status")]
     public string Status { get; set; }
 
@@ -134,7 +134,7 @@ public class DiscogsFullRelease
     public int NumForSale { get; set; }
 
     [JsonPropertyName("lowest_price")]
-    public double LowestPrice { get; set; }
+    public double? LowestPrice { get; set; }
 
     [JsonPropertyName("master_id")]
     public int MasterId { get; set; }
