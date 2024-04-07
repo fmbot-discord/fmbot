@@ -269,6 +269,39 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
     }
 
+    [ComponentInteraction($"{InteractionConstants.Album.RandomCover}-*-*")]
+    [UsernameSetRequired]
+    public async Task RandomAlbumCoverAsync(string discordUser, string requesterDiscordUser)
+    {
+        var discordUserId = ulong.Parse(discordUser);
+        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+
+        if (this.Context.User.Id != requesterDiscordUserId)
+        {
+            await RespondAsync("🎲 Sorry, only the user that requested the random cover can reroll.", ephemeral: true);
+            return;
+        }
+
+        _ = DeferAsync();
+        await this.Context.DisableInteractionButtons();
+
+        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+        try
+        {
+            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, "random");
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [SlashCommand("albumtracks", "Shows album info for the album you're currently listening to or searching for")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]

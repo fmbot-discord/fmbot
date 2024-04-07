@@ -99,7 +99,7 @@ public class MusicBotService
         embed.WithFooter($"Use '{prfx}botscrobbling' for more information.");
 
         _ = this.Interactivity.DelayedDeleteMessageAsync(
-            await context.Channel.SendMessageAsync(embed: embed.Build()),
+            await context.Channel.SendMessageAsync(embed: embed.Build(), flags: MessageFlags.SuppressNotification),
             TimeSpan.FromSeconds(120));
 
         Log.Debug("BotScrobbling: Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild.Name, context.Guild.Id);

@@ -1030,12 +1030,13 @@ public class SettingService
         return goalAmount;
     }
 
-    public static int GetMilestoneAmount(
+    public static (int amount, bool isRandom) GetMilestoneAmount(
         string extraOptions,
         long currentPlaycount)
     {
         var goalAmount = 100;
         var ownGoalSet = false;
+        var isRandom = false;
 
         if (extraOptions != null)
         {
@@ -1072,6 +1073,7 @@ public class SettingService
                 {
                     goalAmount = RandomNumberGenerator.GetInt32(1, (int)currentPlaycount);
                     ownGoalSet = true;
+                    isRandom = true;
                     break;
                 }
             }
@@ -1094,7 +1096,7 @@ public class SettingService
             goalAmount = 1;
         }
 
-        return goalAmount;
+        return (goalAmount, isRandom);
     }
 
     public static GuildRankingSettings SetGuildRankingSettings(GuildRankingSettings guildRankingSettings, string extraOptions)

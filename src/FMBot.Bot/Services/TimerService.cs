@@ -202,7 +202,7 @@ public class TimerService
 
         try
         {
-            if (this.CurrentFeatured.Status != null)
+            if (this.CurrentFeatured?.Status != null)
             {
                 await this._client.SetCustomStatusAsync(this.CurrentFeatured.Status);
                 return;

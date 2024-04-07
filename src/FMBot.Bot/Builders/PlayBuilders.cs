@@ -840,7 +840,8 @@ public class PlayBuilder
         ContextModel context,
         UserSettingsModel userSettings,
         int mileStoneAmount,
-        long userTotalPlaycount)
+        long userTotalPlaycount,
+        bool isRandom = false)
     {
         var response = new ResponseModel
         {
@@ -887,6 +888,13 @@ public class PlayBuilder
             {
                 PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, mileStonePlay.Content.AlbumName);
             }
+        }
+
+        if (isRandom)
+        {
+            response.Components = new ComponentBuilder().WithButton("Reroll",
+                $"{InteractionConstants.RandomMilestone}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                style: ButtonStyle.Secondary, emote: new Emoji("🎲"));
         }
 
         response.Embed.WithDescription(reply.ToString());

@@ -30,10 +30,10 @@ public class GameCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("jumble", RunMode = RunMode.Async)]
-    [Summary("Play the Jumble game.")]
-    [UsernameSetRequired]
-    [CommandCategories(CommandCategory.Friends)]
+    //[Command("jumble", RunMode = RunMode.Async)]
+    //[Summary("Play the Jumble game.")]
+    //[UsernameSetRequired]
+    //[CommandCategories(CommandCategory.Friends)]
     public async Task JumbleAsync()
     {
         _ = this.Context.Channel.TriggerTypingAsync();

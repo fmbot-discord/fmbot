@@ -16,6 +16,8 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using FMBot.Subscriptions.Models;
+using MetaBrainz.MusicBrainz.Interfaces;
 using SummaryAttribute = Discord.Interactions.SummaryAttribute;
 
 namespace FMBot.Bot.SlashCommands;
@@ -101,7 +103,7 @@ public class PlaySlashCommands : InteractionModuleBase
 
             try
             {
-                if (message != null && response.CommandResponse == CommandResponse.Ok)
+                if (message != null && this.Context.Channel != null && response.CommandResponse == CommandResponse.Ok)
                 {
                     if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
                     {
@@ -311,9 +313,45 @@ public class PlaySlashCommands : InteractionModuleBase
             var mileStoneAmount = SettingService.GetMilestoneAmount(amount.ToString(), userInfo.Playcount);
 
             var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, contextUser),
-                userSettings, mileStoneAmount, userInfo.Playcount);
+                userSettings, mileStoneAmount.amount, userInfo.Playcount);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.RandomMilestone}-*-*")]
+    [UsernameSetRequired]
+    public async Task RandomMilestoneAsync(string discordUser, string requesterDiscordUser)
+    {
+        var discordUserId = ulong.Parse(discordUser);
+        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+
+        if (this.Context.User.Id != requesterDiscordUserId)
+        {
+            await RespondAsync("🎲 Sorry, only the user that requested the random milestone can reroll.", ephemeral: true);
+            return;
+        }
+
+        _ = DeferAsync();
+        await this.Context.DisableInteractionButtons();
+
+        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var targetUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+
+        try
+        {
+            var mileStoneAmount = SettingService.GetMilestoneAmount("random", targetUser.TotalPlaycount.GetValueOrDefault());
+
+            var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, contextUser),
+                userSettings, mileStoneAmount.amount, targetUser.TotalPlaycount.GetValueOrDefault(), mileStoneAmount.isRandom);
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
