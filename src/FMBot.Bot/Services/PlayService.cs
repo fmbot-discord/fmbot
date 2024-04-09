@@ -786,7 +786,7 @@ public class PlayService
                   "FROM user_plays AS up " +
                   "INNER JOIN users AS u ON up.user_id = u.user_id  " +
                   "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                  $"WHERE gu.guild_id = @guildId  AND gu.bot != true AND time_played > current_date - interval '{amountOfDays}' day " +
+                  $"WHERE gu.guild_id = @guildId  AND gu.bot != true AND time_played > current_date - interval '{amountOfDays}' day AND artist_name IS NOT NULL " +
                   "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                   "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
 
@@ -811,7 +811,7 @@ public class PlayService
                            "INNER JOIN users AS u ON up.user_id = u.user_id " +
                            "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                            "WHERE gu.guild_id = @guildId " +
-                           "AND time_played > current_date - interval '9' day  AND time_played < current_date - interval '2' day  " +
+                           "AND time_played > current_date - interval '9' day  AND time_played < current_date - interval '2' day AND artist_name IS NOT NULL " +
                            "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                            "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
 
