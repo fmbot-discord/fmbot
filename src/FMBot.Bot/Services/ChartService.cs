@@ -503,7 +503,7 @@ public class ChartService
     }
 
     public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions,
-        UserSettingsModel userSettings, bool aoty = false)
+        UserSettingsModel userSettings, bool aoty = false, bool aotd = false)
     {
         var chartSettings = currentChartSettings;
         chartSettings.CustomOptionsEnabled = false;
@@ -574,6 +574,42 @@ public class ChartService
             chartSettings.CustomOptionsEnabled = true;
         }
 
+        if (aotd)
+        {
+            var aotdFound = false;
+            foreach (var option in extraOptions)
+            {
+                var cleaned = option
+                    .Replace("d:", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("decade:", "", StringComparison.OrdinalIgnoreCase)
+                    .TrimEnd('s')
+                    .TrimEnd('S');
+
+                if (int.TryParse(cleaned, out var year))
+                {
+                    if (year < 100)
+                    {
+                        year += year < 30 ? 2000 : 1900;
+                    }
+
+                    year = (year / 10) * 10;
+
+                    if (year <= DateTime.UtcNow.Year && year >= 1900)
+                    {
+                        chartSettings.CustomOptionsEnabled = true;
+                        chartSettings.ReleaseDecadeFilter = year;
+                        aotdFound = true;
+                    }
+                }
+            }
+            if (!aotdFound)
+            {
+                chartSettings.ReleaseDecadeFilter = (DateTime.UtcNow.Year / 10) * 10;
+            }
+
+            chartSettings.CustomOptionsEnabled = true;
+        }
+
         foreach (var option in extraOptions)
         {
             if (option.StartsWith("r:", StringComparison.OrdinalIgnoreCase) ||
@@ -583,16 +619,43 @@ public class ChartService
                     .Replace("r:", "", StringComparison.OrdinalIgnoreCase)
                     .Replace("released:", "", StringComparison.OrdinalIgnoreCase);
 
-                if (int.TryParse(yearString, out var year) && year <= DateTime.UtcNow.Year && year >= 1900)
+                var year = SettingService.GetYear(yearString);
+                if (year != null)
                 {
                     chartSettings.CustomOptionsEnabled = true;
                     chartSettings.ReleaseYearFilter = year;
                     aoty = true;
                 }
             }
+            if (option.StartsWith("d:", StringComparison.OrdinalIgnoreCase) ||
+                option.StartsWith("decade:", StringComparison.OrdinalIgnoreCase))
+            {
+                var yearString = option
+                    .Replace("d:", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("decade:", "", StringComparison.OrdinalIgnoreCase)
+                    .TrimEnd('s')
+                    .TrimEnd('S');
+
+                if (int.TryParse(yearString, out var year))
+                {
+                    if (year < 100)
+                    {
+                        year += year < 30 ? 2000 : 1900;
+                    }
+
+                    year = (year / 10) * 10;
+
+                    if (year <= DateTime.UtcNow.Year && year >= 1900)
+                    {
+                        chartSettings.CustomOptionsEnabled = true;
+                        chartSettings.ReleaseDecadeFilter = year;
+                        aotd = true;
+                    }
+                }
+            }
         }
 
-        var timeSettings = SettingService.GetTimePeriod(optionsAsString, aoty ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(optionsAsString, aoty || aotd ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
         chartSettings.TimeSettings = timeSettings;
         chartSettings.TimespanString = timeSettings.Description;
@@ -631,6 +694,10 @@ public class ChartService
         if (chartSettings.ReleaseYearFilter.HasValue)
         {
             embedDescription += $"- Filtering to albums released in {chartSettings.ReleaseYearFilter.Value}\n";
+        }
+        if (chartSettings.ReleaseDecadeFilter.HasValue)
+        {
+            embedDescription += $"- Filtering to albums released in the {chartSettings.ReleaseDecadeFilter.Value}s\n";
         }
         if (chartSettings.SkipWithoutImage)
         {

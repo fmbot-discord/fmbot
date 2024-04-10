@@ -37,6 +37,7 @@ public class ChartSlashCommands : InteractionModuleBase
     public async Task AlbumChartAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Released", "Filter to albums released in year")][Autocomplete(typeof(YearAutoComplete))] string year = null,
+        [Summary("Decade", "Filter to albums released in decade")][Autocomplete(typeof(DecadeAutoComplete))] string decade = null,
         [Summary("Size", "Chart size")][Autocomplete(typeof(ChartSizeAutoComplete))] string size = "3x3",
         [Summary("Titles", "Title display setting")] TitleSetting titleSetting = TitleSetting.Titles,
         [Summary("Skip", "Skip albums without an image")] bool skip = false,
@@ -49,7 +50,7 @@ public class ChartSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) ? TimePeriod.AllTime : TimePeriod.Weekly,  timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade) ? TimePeriod.AllTime : TimePeriod.Weekly,  timeZone: userSettings.TimeZone);
 
         var chartSettings = new ChartSettings(this.Context.User)
         {
@@ -62,6 +63,7 @@ public class ChartSlashCommands : InteractionModuleBase
             TimespanString = timeSettings.Description,
             TimespanUrlString = timeSettings.UrlParameter,
             ReleaseYearFilter = !string.IsNullOrWhiteSpace(year) ? int.Parse(year) : null,
+            ReleaseDecadeFilter = !string.IsNullOrWhiteSpace(decade) ? int.Parse(decade) : null,
             CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || sfwOnly || rainbow
         };
 

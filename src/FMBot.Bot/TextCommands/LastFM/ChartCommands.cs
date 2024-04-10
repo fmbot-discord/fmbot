@@ -55,13 +55,14 @@ public class ChartCommands : BaseCommandModule
     [Options(
         Constants.CompactTimePeriodList,
         "Albums released in year: `r:2023`, `released:2023`",
+        "Albums released in decade: `d:80s`, `decade:1990`",
         "Disable titles: `notitles` / `nt`",
         "Skip albums with no image: `skipemptyimages` / `s`",
         "Skip NSFW albums: `sfw`",
         "Size: `WidthxHeight` - `2x2`, `3x3`, `4x5`, `20x4` up to 100 total images",
         Constants.UserMentionExample)]
     [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly", "aoty 2023")]
-    [Alias("c", "aoty", "albumsoftheyear", "albumoftheyear")]
+    [Alias("c", "aoty", "albumsoftheyear", "albumoftheyear", "aotd", "albumsofthedecade", "albumofthedecade")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Albums)]
     public async Task ChartAsync(params string[] otherSettings)
@@ -69,7 +70,7 @@ public class ChartCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var user = await this._userService.GetUserSettingsAsync(this.Context.User);
         var chartCount = await this._userService.GetCommandExecutedAmount(user.UserId, "chart", DateTime.UtcNow.AddSeconds(-45));
-        if (chartCount >= 3)
+        if (chartCount >= 4)
         {
             await ReplyAsync($"Please wait a minute before generating charts again.");
             this.Context.LogCommandUsed(CommandResponse.Cooldown);
@@ -105,8 +106,9 @@ public class ChartCommands : BaseCommandModule
 
             var messageContent = this.Context.Message.Content.ToLower();
             var aoty = messageContent.Contains("aoty") || messageContent.Contains("albumsoftheyear") || messageContent.Contains("albumoftheyear");
+            var aotd = messageContent.Contains("aotd") || messageContent.Contains("albumsofthedecade") || messageContent.Contains("albumofthedecade");
                 
-            chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, userSettings, aoty);
+            chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, userSettings, aoty, aotd);
 
             var response = await this._chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);

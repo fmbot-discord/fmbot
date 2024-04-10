@@ -84,6 +84,7 @@ public class TopSlashCommands : InteractionModuleBase
     public async Task TopAlbumsAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Released", "Filter to albums released in year")][Autocomplete(typeof(YearAutoComplete))] string year = null,
+        [Summary("Decade", "Filter to albums released in decade")][Autocomplete(typeof(DecadeAutoComplete))] string decade = null,
         [Summary("Billboard", "Show top albums billboard-style")] bool billboard = false,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
@@ -94,9 +95,9 @@ public class TopSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade) ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
-        var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard, year: year != null ? int.Parse(year) : null);
+        var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard, year: year != null ? int.Parse(year) : null, decade: decade != null ? int.Parse(decade) : null);
 
         var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, contextUser),
             topListSettings, timeSettings, userSettings, mode.Value);

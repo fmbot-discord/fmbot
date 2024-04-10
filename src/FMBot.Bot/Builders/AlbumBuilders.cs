@@ -1125,7 +1125,7 @@ public class AlbumBuilders
             return response;
         }
 
-        if (topListSettings.ReleaseYearFilter.HasValue && timeSettings.TimePeriod == TimePeriod.AllTime)
+        if ((topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue) && timeSettings.TimePeriod == TimePeriod.AllTime)
         {
             var topAllTimeDb = await this._albumService.GetUserAllTimeTopAlbums(userSettings.UserId);
             if (topAllTimeDb.Count > 1000)
@@ -1136,7 +1136,11 @@ public class AlbumBuilders
 
         if (topListSettings.ReleaseYearFilter.HasValue)
         {
-            albums.Content.TopAlbums = await this._albumService.FilterAlbumToReleaseDate(albums.Content?.TopAlbums, topListSettings.ReleaseYearFilter.Value);
+            albums.Content.TopAlbums = await this._albumService.FilterAlbumToReleaseYear(albums.Content?.TopAlbums, topListSettings.ReleaseYearFilter.Value);
+        }
+        else if (topListSettings.ReleaseDecadeFilter.HasValue)
+        {
+            albums.Content.TopAlbums = await this._albumService.FilterAlbumToReleaseDecade(albums.Content?.TopAlbums, topListSettings.ReleaseDecadeFilter.Value);
         }
 
         if (mode == ResponseMode.Image)
@@ -1227,6 +1231,12 @@ public class AlbumBuilders
             {
                 footer.AppendLine();
                 footer.Append($"Filtering to albums released in {topListSettings.ReleaseYearFilter.Value}");
+            }
+
+            if (topListSettings.ReleaseDecadeFilter.HasValue)
+            {
+                footer.AppendLine();
+                footer.Append($"Filtering to albums released in the {topListSettings.ReleaseDecadeFilter.Value}s");
             }
 
             if (rnd == 1 && !topListSettings.Billboard)

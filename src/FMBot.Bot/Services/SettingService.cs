@@ -486,6 +486,32 @@ public class SettingService
                     topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, [$"r:{year}", $"released:{year}"]);
                 }
             }
+            if (option.StartsWith("d:", StringComparison.OrdinalIgnoreCase) ||
+                option.StartsWith("decade:", StringComparison.OrdinalIgnoreCase))
+            {
+                var yearString = option
+                    .Replace("d:", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("decade:", "", StringComparison.OrdinalIgnoreCase)
+                    .TrimEnd('s')
+                    .TrimEnd('S');
+
+                if (int.TryParse(yearString, out var year))
+                {
+                    if (year < 100)
+                    {
+                        year += year < 30 ? 2000 : 1900;
+                    }
+
+                    year = (year / 10) * 10;
+
+                    if (year <= DateTime.UtcNow.Year && year >= 1900)
+                    {
+                        topListSettings.ReleaseDecadeFilter = year;
+                        topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue,
+                            [$"d:{year}", $"decade:{year}", $"d:{year}s", $"decade:{year}s"]);
+                    }
+                }
+            }
         }
 
         return topListSettings;
@@ -912,7 +938,12 @@ public class SettingService
         var options = extraOptions.Split(' ');
         foreach (var option in options)
         {
-            if (option.Length == 4 && int.TryParse(option, out var result))
+            var cleaned = option
+                .Replace("r:", "", StringComparison.OrdinalIgnoreCase)
+                .Replace("released:", "", StringComparison.OrdinalIgnoreCase);
+
+
+            if (cleaned.Length == 4 && int.TryParse(cleaned, out var result))
             {
                 if (result >= 1900 && result <= DateTime.Today.AddDays(1).Year)
                 {

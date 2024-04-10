@@ -309,29 +309,63 @@ public class AlbumService
 
         var albums = await this._albumEnrichment.AddMissingAlbumCoversAsync(request);
 
-        foreach (var topAlbum in topAlbums.Where(w => w.AlbumCoverUrl == null))
-        {
-            var album = albums.Albums.FirstOrDefault(f => !string.IsNullOrWhiteSpace(f.AlbumCoverUrl) &&
-                                                        f.AlbumName == topAlbum.AlbumName &&
-                                                        f.ArtistName == topAlbum.ArtistName);
+        var albumDict = albums.Albums
+            .Where(a => !string.IsNullOrWhiteSpace(a.AlbumCoverUrl))
+            .GroupBy(a => (a.AlbumName.ToLower(), a.ArtistName.ToLower()))
+            .ToDictionary(
+                g => g.Key,
+                g => g.First(f => f.AlbumCoverUrl != null)
+            );
 
-            if (album != null)
+        foreach (var topAlbum in topAlbums)
+        {
+            if (topAlbum.AlbumCoverUrl == null)
             {
-                topAlbum.AlbumCoverUrl = album.AlbumCoverUrl;
-            } 
+                var key = (topAlbum.AlbumName.ToLower(), topAlbum.ArtistName.ToLower());
+                if (albumDict.TryGetValue(key, out var coverUrl))
+                {
+                    topAlbum.AlbumCoverUrl = coverUrl.AlbumCoverUrl;
+                }
+            }
         }
 
         return topAlbums;
     }
 
-    public async Task<List<TopAlbum>> FilterAlbumToReleaseDate(List<TopAlbum> topAlbums, int year)
+    public async Task<List<TopAlbum>> FilterAlbumToReleaseYear(List<TopAlbum> topAlbums, int year)
+    {
+        await EnrichTopAlbums(topAlbums);
+
+        var yearStart = new DateTime(year, 1, 1);
+        var yearEnd = yearStart.AddYears(1).AddSeconds(-1);
+        return topAlbums
+            .Where(w => w.ReleaseDate.HasValue &&
+                        w.ReleaseDate.Value >= yearStart &&
+                        w.ReleaseDate.Value <= yearEnd)
+            .ToList();
+    }
+
+    public async Task<List<TopAlbum>> FilterAlbumToReleaseDecade(List<TopAlbum> topAlbums, int decade)
+    {
+        await EnrichTopAlbums(topAlbums);
+
+        var decadeStart = new DateTime(decade, 1, 1);
+        var decadeEnd = decadeStart.AddYears(10).AddSeconds(-1);
+        return topAlbums
+            .Where(w => w.ReleaseDate.HasValue &&
+                        w.ReleaseDate.Value >= decadeStart &&
+                        w.ReleaseDate.Value <= decadeEnd)
+            .ToList();
+    }
+
+    private async Task EnrichTopAlbums(IReadOnlyCollection<TopAlbum> list)
     {
         var minTimestamp = Timestamp.FromDateTime(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
         var request = new AlbumReleaseDateRequest
         {
             Albums =
             {
-                topAlbums.Select(s => new AlbumWithDate
+                list.Select(s => new AlbumWithDate
                 {
                     ArtistName = s.ArtistName,
                     AlbumName = s.AlbumName,
@@ -348,7 +382,7 @@ public class AlbumService
             .GroupBy(a => (a.AlbumName.ToLower(), a.ArtistName.ToLower()))
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        foreach (var topAlbum in topAlbums.Where(w => w.ReleaseDate == null))
+        foreach (var topAlbum in list.Where(w => w.ReleaseDate == null))
         {
             var key = (topAlbum.AlbumName.ToLower(), topAlbum.ArtistName.ToLower());
 
@@ -362,15 +396,6 @@ public class AlbumService
                 }
             }
         }
-
-
-        var yearStart = new DateTime(year, 1, 1);
-        var yearEnd = yearStart.AddYears(1).AddSeconds(-1);
-        return topAlbums
-            .Where(w => w.ReleaseDate.HasValue &&
-                        w.ReleaseDate.Value >= yearStart &&
-                        w.ReleaseDate.Value <= yearEnd)
-            .ToList();
     }
 
     public async Task<Album> GetAlbumForId(int albumId)
