@@ -2,7 +2,7 @@
    <img src="https://raw.githubusercontent.com/fmbot-discord/fmbot/main/fmbotlogo.png" width="350" alt=".fmbot logo">
 </p>
 <h3 align="center">
-   <a href="https://fmbot.xyz/">An open sourced Last.fm Discord bot.</a>
+   <a href="https://fmbot.xyz/">A source-available Last.fm Discord bot.</a>
 </h3>
 <p align="center">
   <a href="https://www.codacy.com/gh/fmbot-discord/fmbot/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=fmbot-discord/fmbot&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/e793453ce7d048f696357408b3abbb8c" alt="Codacy code quality"/></a>
