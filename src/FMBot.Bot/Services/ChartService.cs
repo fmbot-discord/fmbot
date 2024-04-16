@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -100,7 +101,7 @@ public class ChartService
                     SKBitmap chartImage;
                     var validImage = true;
 
-                    var localPath = AlbumUrlToCacheFilePath(album.AlbumUrl);
+                    var localPath = AlbumUrlToCacheFilePath(album.AlbumCoverUrl);
 
                     if (File.Exists(localPath) && cacheEnabled)
                     {
@@ -324,18 +325,22 @@ public class ChartService
 
     public static string AlbumUrlToCacheFilePath(string albumUrl)
     {
-        var encodedId = EncodeValidFileName(albumUrl.Replace("https://www.last.fm/music/", ""));
-        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 120);
+        var encodedId = EncodeToBase64(albumUrl
+            .Replace("https://lastfm.freetls.fastly.net/", "")
+            .Replace("https://i.scdn.co/image/", ""));
+        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 80);
 
         var fileName = localAlbumId + ".png";
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
         return localPath;
     }
 
-    public static string EncodeValidFileName(string filename)
+    private static string EncodeToBase64(string input)
     {
-        filename = WebUtility.UrlEncode(filename);
-        return StringExtensions.ReplaceInvalidChars(filename);
+        var bytes = Encoding.UTF8.GetBytes(input);
+        var value = Convert.ToBase64String(bytes);
+
+        return StringExtensions.ReplaceInvalidChars(value);
     }
 
     private static async Task SaveImageToCache(SKBitmap chartImage, string localPath)

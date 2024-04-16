@@ -1064,7 +1064,7 @@ public class AlbumBuilders
         response.Spoiler = safeForChannel == CensorService.CensorResult.Nsfw;
 
 
-        var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumUrl);
+        var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(albumCoverUrl);
         await ChartService.OverwriteCache(cacheStream, cacheFilePath);
 
         await cacheStream.DisposeAsync();
