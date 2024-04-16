@@ -525,7 +525,8 @@ public class PlayBuilder
     public async Task<ResponseModel> StreakHistoryAsync(
         ContextModel context,
         UserSettingsModel userSettings,
-        bool editMode = false)
+        bool editMode = false,
+        string artist = null)
     {
         var response = new ResponseModel
         {
@@ -541,9 +542,16 @@ public class PlayBuilder
 
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library");
 
+        if (!string.IsNullOrWhiteSpace(artist))
+        {
+            var artistFilter = artist.Trim().ToLower();
+            streaks = streaks.Where(w => w.ArtistName == null || w.ArtistName.Trim().Contains(artistFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
         if (!streaks.Any())
         {
             response.Embed.WithDescription("No saved streaks found for this user.");
+            response.Embed.WithFooter($"Filtering to artist '{artist}'");
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
             return response;
@@ -589,6 +597,11 @@ public class PlayBuilder
 
             var pageFooter = new StringBuilder();
             pageFooter.Append($"Page {pageCounter}/{streakPages.Count}");
+
+            if (!string.IsNullOrWhiteSpace(artist))
+            {
+                pageFooter.Append($" - Filtering to artist '{artist}'");
+            }
 
             if (editMode)
             {

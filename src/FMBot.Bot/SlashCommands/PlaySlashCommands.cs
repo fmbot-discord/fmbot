@@ -189,14 +189,16 @@ public class PlaySlashCommands : InteractionModuleBase
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task StreakHistory(
         [Summary("Editmode", "Enable or disable editor mode")] bool editMode = false,
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Artist", "The artist you want to filter your results to")]
+        [Autocomplete(typeof(ArtistAutoComplete))] string name = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         try
         {
-            var response = await this._playBuilder.StreakHistoryAsync(new ContextModel(this.Context, contextUser), userSettings, editMode);
+            var response = await this._playBuilder.StreakHistoryAsync(new ContextModel(this.Context, contextUser), userSettings, editMode, name);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

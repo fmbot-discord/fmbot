@@ -452,7 +452,7 @@ public class PlayCommands : BaseCommandModule
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var response = await this._playBuilder.StreakHistoryAsync(new ContextModel(this.Context, prfx, contextUser),
-                userSettings);
+                userSettings, artist: userSettings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
