@@ -23,6 +23,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
+using Microsoft.Extensions.Primitives;
 using SkiaSharp;
 
 namespace FMBot.Bot.Builders;
@@ -838,7 +839,17 @@ public class AlbumBuilders
 
         var footer = new StringBuilder();
 
-        footer.AppendLine($"{albumTracks.Count} total tracks");
+        footer.Append($"{albumTracks.Count} total tracks");
+        
+        if (albumTracks.All(a => a.DurationSeconds.HasValue))
+        {
+            var totalLength = TimeSpan.FromSeconds(albumTracks.Sum(s => s.DurationSeconds ?? 0));
+            var formattedTrackLength =
+                $"{(totalLength.Hours == 0 ? "" : $"{totalLength.Hours}:")}{totalLength.Minutes}:{totalLength.Seconds:D2}";
+            footer.Append($" — {formattedTrackLength}");
+        }
+        
+        footer.AppendLine();
         footer.Append(spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ");
         footer.Append($"{userSettings.DisplayName} has {albumSearch.Album.UserPlaycount} total scrobbles on this album");
 
@@ -850,6 +861,7 @@ public class AlbumBuilders
         var i = 0;
         var tracksDisplayed = 0;
         var pageNumber = 1;
+
         for (var disc = 1; disc < amountOfDiscs + 1; disc++)
         {
             if (amountOfDiscs > 1)
@@ -889,7 +901,7 @@ public class AlbumBuilders
 
                 description.AppendLine();
 
-                var pageNumberDesc = $"Page {pageNumber}/{albumTracks.ChunkBy(12).Count} - ";
+                var pageNumberDesc = $"Page {pageNumber}/{albumTracks.ChunkBy(12).Count} — ";
 
                 tracksDisplayed++;
                 if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
