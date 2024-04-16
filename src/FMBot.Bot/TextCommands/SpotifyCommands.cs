@@ -3,14 +3,18 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
+using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using SpotifyAPI.Web;
 
@@ -26,16 +30,21 @@ public class SpotifyCommands : BaseCommandModule
 
     private readonly IPrefixService _prefixService;
 
+    private InteractiveService Interactivity { get; }
+
+
     public SpotifyCommands(
         IPrefixService prefixService,
         IDataSourceFactory dataSourceFactory,
         UserService userService,
         SpotifyService spotifyService,
-        IOptions<BotSettings> botSettings) : base(botSettings)
+        IOptions<BotSettings> botSettings,
+        InteractiveService interactivity) : base(botSettings)
     {
         this._prefixService = prefixService;
         this._userService = userService;
         this._spotifyService = spotifyService;
+        this.Interactivity = interactivity;
         this._dataSourceFactory = dataSourceFactory;
     }
 
@@ -56,6 +65,18 @@ public class SpotifyCommands : BaseCommandModule
             if (searchValue != null && searchValue.StartsWith("play ", StringComparison.OrdinalIgnoreCase))
             {
                 searchValue = searchValue.Replace("play ", "", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
+            {
+                var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
+                                     ??
+                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+
+                if (internalLookup?.Track != null)
+                {
+                    searchValue = $"{internalLookup.Artist} | {internalLookup.Track}";
+                }
             }
 
             string querystring;
@@ -87,6 +108,11 @@ public class SpotifyCommands : BaseCommandModule
 
             var item = await this._spotifyService.GetSearchResultAsync(querystring);
 
+            var response = new ResponseModel
+            {
+                ResponseType = ResponseType.Text
+            };
+
             if (item.Tracks?.Items?.Any() == true)
             {
                 var track = item.Tracks.Items.FirstOrDefault();
@@ -100,22 +126,26 @@ public class SpotifyCommands : BaseCommandModule
                     }
                 }
 
-                var reply = $"https://open.spotify.com/track/{track.Id}";
+                response.Text = $"https://open.spotify.com/track/{track.Id}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 10) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 15) == 1 && string.IsNullOrWhiteSpace(searchValue))
                 {
-                    reply += $"\n*Tip: Search for other songs by simply adding the searchvalue behind {prfx}spotify.*";
+                    response.Text += $"\n*Tip: Search for other songs by simply adding the searchvalue behind {prfx}spotify.*";
                 }
 
-                await ReplyAsync(reply, allowedMentions: AllowedMentions.None);
-                this.Context.LogCommandUsed();
+                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, track.Artists.First().Name);
+                PublicProperties.UsedCommandsTracks.TryAdd(this.Context.Message.Id, track.Name);
             }
             else
             {
-                await ReplyAsync($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+
+                response.Text = $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
+                response.CommandResponse = CommandResponse.NotFound;
             }
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -136,6 +166,18 @@ public class SpotifyCommands : BaseCommandModule
         try
         {
             _ = this.Context.Channel.TriggerTypingAsync();
+
+            if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
+            {
+                var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
+                                     ??
+                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+
+                if (internalLookup?.Album != null)
+                {
+                    searchValue = $"{internalLookup.Artist} | {internalLookup.Album}";
+                }
+            }
 
             string querystring;
             if (!string.IsNullOrWhiteSpace(searchValue))
@@ -164,25 +206,33 @@ public class SpotifyCommands : BaseCommandModule
 
             var item = await this._spotifyService.GetSearchResultAsync(querystring, SearchRequest.Types.Album);
 
+            var response = new ResponseModel
+            {
+                ResponseType = ResponseType.Text
+            };
+
             if (item.Albums?.Items?.Any() == true)
             {
                 var album = item.Albums.Items.FirstOrDefault();
-                var reply = $"https://open.spotify.com/album/{album.Id}";
+                response.Text = $"https://open.spotify.com/album/{album.Id}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 15) == 1 && string.IsNullOrWhiteSpace(searchValue))
                 {
-                    reply += $"\n*Tip: Search for other albums by simply adding the searchvalue behind `{prfx}spotifyalbum` (or `.fmspab`).*";
+                    response.Text += $"\n*Tip: Search for other albums by simply adding the searchvalue behind `{prfx}spotifyalbum` (or `.fmspab`).*";
                 }
 
-                await ReplyAsync(reply);
-                this.Context.LogCommandUsed();
+                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, album.Artists.First().Name);
+                PublicProperties.UsedCommandsAlbums.TryAdd(this.Context.Message.Id, album.Name);
             }
             else
             {
-                await ReplyAsync($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                response.Text = $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
+                response.CommandResponse = CommandResponse.NotFound;
             }
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -203,6 +253,18 @@ public class SpotifyCommands : BaseCommandModule
         try
         {
             _ = this.Context.Channel.TriggerTypingAsync();
+
+            if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
+            {
+                var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
+                                     ??
+                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+
+                if (internalLookup?.Artist != null)
+                {
+                    searchValue = $"{internalLookup.Artist}";
+                }
+            }
 
             string querystring;
             if (!string.IsNullOrWhiteSpace(searchValue))
@@ -232,27 +294,34 @@ public class SpotifyCommands : BaseCommandModule
 
             var item = await this._spotifyService.GetSearchResultAsync(querystring, SearchRequest.Types.Artist);
 
+            var response = new ResponseModel
+            {
+                ResponseType = ResponseType.Text
+            };
+
             if (item.Artists.Items?.Any() == true)
             {
                 var artist = item.Artists.Items.OrderByDescending(o => o.Popularity).FirstOrDefault(f => f.Name.ToLower() == querystring.ToLower()) ??
                              item.Artists.Items.OrderByDescending(o => o.Popularity).FirstOrDefault();
 
-                var reply = $"https://open.spotify.com/artist/{artist.Id}";
+                response.Text = $"https://open.spotify.com/artist/{artist.Id}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 15) == 1 && string.IsNullOrWhiteSpace(searchValue))
                 {
-                    reply += $"\n*Tip: Search for other artists by simply adding the searchvalue behind `{prfx}spotifyartist` (or `{prfx}spa`).*";
+                    response.Text += $"\n*Tip: Search for other artists by simply adding the searchvalue behind `{prfx}spotifyartist` (or `{prfx}spa`).*";
                 }
 
-                await ReplyAsync(reply);
-                this.Context.LogCommandUsed();
+                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, artist.Name);
             }
             else
             {
-                await ReplyAsync($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None);
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                response.Text = $"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.";
+                response.CommandResponse = CommandResponse.NotFound;
             }
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
