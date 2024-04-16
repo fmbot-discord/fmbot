@@ -1681,7 +1681,6 @@ public class ArtistBuilders
             return response;
         }
 
-
         var artistSearch = await this._artistsService.SearchArtist(response, context.DiscordUser, artistValues,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm, useCachedArtists: true,
             userId: context.ContextUser.UserId, redirectsEnabled: redirectsEnabled, interactionId: context.InteractionId,

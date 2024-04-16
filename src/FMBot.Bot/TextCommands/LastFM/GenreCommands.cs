@@ -203,4 +203,41 @@ public class GenreCommands : BaseCommandModule
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [Command("friendwhoknowgenre", RunMode = RunMode.Async)]
+    [Summary("Shows who of your friends listen to a genre in .fmbot")]
+    [Examples("fwg", "fwg pop", "friendwhoknowgenre", "friendwhoknowgenre pov: indie")]
+    [Alias("fwg", "fwkg", "friendwhoknows genre", "friendwhoknowsgenre", "friend whoknowsgenre", "friends whoknow genre", "friend whoknows genre", "friends whoknows genre")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
+    public async Task FriendWhoKnowsAsync([Remainder] string genreValues = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._genreBuilders
+                .FriendsWhoKnowsGenreAsync(new ContextModel(this.Context, prfx, contextUser), genreValues);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+            {
+                await this.Context.HandleCommandException(e, sendReply: false);
+                await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
+                                 "Make sure it has permission to 'Embed links' and 'Attach Images'");
+            }
+            else
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+    }
 }

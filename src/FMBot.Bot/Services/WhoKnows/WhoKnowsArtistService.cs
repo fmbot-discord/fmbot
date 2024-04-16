@@ -183,7 +183,8 @@ public class WhoKnowsArtistService
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
                            "ua.user_id, " +
                            "ua.playcount, " +
-                           "u.user_name_last_fm " +
+                           "u.user_name_last_fm, " +
+                           "gu.user_name AS discord_name " +
                            "FROM user_artists AS ua " +
                            "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
                            "INNER JOIN friends AS fr ON fr.friend_user_id = ua.user_id " +

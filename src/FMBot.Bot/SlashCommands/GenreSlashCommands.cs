@@ -12,6 +12,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain.Models;
 
 
 namespace FMBot.Bot.SlashCommands;
@@ -38,8 +39,7 @@ public class GenreSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task GenreAsync(
         [Summary("search", "The genre or artist you want to view")]
-        [Autocomplete(typeof(GenreArtistAutoComplete))]
-        string search = null,
+        [Autocomplete(typeof(GenreArtistAutoComplete))] string search = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
         _ = DeferAsync();
@@ -124,6 +124,33 @@ public class GenreSlashCommands : InteractionModuleBase
             var response = await this._genreBuilders.GenreAsync(context, genre, userSettings, guild);
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("fwkgenre", "Shows who of your friends listen to a genre")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task FriendsWhoKnowGenreAsync(
+        [Summary("search", "The genre or artist you want to view")]
+        [Autocomplete(typeof(GenreArtistAutoComplete))] string search = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        _ = DeferAsync(privateResponse);
+
+        var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._genreBuilders.FriendsWhoKnowsGenreAsync(new ContextModel(this.Context, contextUser), search);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

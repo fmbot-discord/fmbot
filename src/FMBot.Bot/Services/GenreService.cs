@@ -88,6 +88,33 @@ public class GenreService
         return userArtists;
     }
 
+    public async Task<IEnumerable<UserArtist>> GetTopUserArtistsForUserFriendsAsync(int userId, string genreName)
+    {
+        const string sql = "SELECT " +
+                           "ua.user_id, " +
+                           "LOWER(ua.name) AS name, " +
+                           "ua.playcount " +
+                           "FROM user_artists AS ua " +
+                           "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                           "INNER JOIN friends AS fr ON fr.friend_user_id = ua.user_id " +
+                           "WHERE fr.user_id = @userId " +
+                           "AND LOWER(ua.name) = ANY(SELECT LOWER(artists.name) AS artist_name " +
+                           "FROM public.artist_genres AS ag " +
+                           "INNER JOIN artists ON artists.id = ag.artist_id WHERE LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT))) ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var userArtists = await connection.QueryAsync<UserArtist>(sql, new
+        {
+            userId,
+            genreName
+        });
+
+        return userArtists;
+    }
+
     private static string CacheKeyForArtistGenres(string artistName)
     {
         return $"artist-genres-{artistName}";
@@ -289,7 +316,8 @@ public class GenreService
 
     public async Task<ICollection<WhoKnowsObjectWithUser>> GetUsersWithGenreForUserArtists(
         IEnumerable<UserArtist> userArtists,
-        IDictionary<int, FullGuildUser> guildUsers)
+        IDictionary<int, FullGuildUser> guildUsers,
+        ICollection<Friend> contextUserFriends = null)
     {
         await CacheAllArtistGenres();
 
@@ -304,22 +332,35 @@ public class GenreService
             }
             else
             {
-                if (!guildUsers.TryGetValue(user.UserId, out var guildUser))
+                if (guildUsers.TryGetValue(user.UserId, out var guildUser))
                 {
-                    continue;
-                }
+                    list.Add(new WhoKnowsObjectWithUser
+                    {
+                        UserId = user.UserId,
+                        Playcount = user.Playcount,
+                        DiscordName = guildUser.UserName,
+                        LastFMUsername = guildUser.UserNameLastFM,
+                        Name = guildUser.UserName,
+                        LastUsed = guildUser.LastUsed,
+                        LastMessage = guildUser.LastMessage,
+                        Roles = guildUser.Roles
+                    });
 
-                list.Add(new WhoKnowsObjectWithUser
+                }
+                else if (contextUserFriends != null &&
+                         contextUserFriends.Any(a => a.FriendUserId == user.UserId))
                 {
-                    UserId = user.UserId,
-                    Playcount = user.Playcount,
-                    DiscordName = guildUser.UserName,
-                    LastFMUsername = guildUser.UserNameLastFM,
-                    Name = guildUser.UserName,
-                    LastUsed = guildUser.LastUsed,
-                    LastMessage = guildUser.LastMessage,
-                    Roles = guildUser.Roles
-            });
+                    var friend = contextUserFriends.First(f => f.FriendUserId == user.UserId);
+                    list.Add(new WhoKnowsObjectWithUser
+                    {
+                        UserId = user.UserId,
+                        Playcount = user.Playcount,
+                        DiscordName = friend.FriendUser.UserNameLastFM,
+                        LastFMUsername = friend.FriendUser.UserNameLastFM,
+                        Name = friend.FriendUser.UserNameLastFM,
+                        LastUsed = friend.FriendUser.LastUsed,
+                    });
+                }
             }
         }
 
