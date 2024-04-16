@@ -317,13 +317,12 @@ public static class StringExtensions
 
     public static string GetRymUrl(string albumName, string artistName)
     {
-        var albumQueryName = albumName.Replace(" - Single", "");
-        albumQueryName = albumQueryName.Replace(" - EP", "");
+        var albumRymUrl = new StringBuilder();
+        albumRymUrl.Append(@"https://rateyourmusic.com/search?searchterm=");
+        albumRymUrl.Append(HttpUtility.UrlEncode($"{artistName} {albumName.Replace("- Single", "").Replace("- EP", "").TrimEnd()}"));
+        albumRymUrl.Append($"&searchtype=l");
 
-        var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
-        albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{artistName}\"");
-
-        return albumRymUrl;
+        return albumRymUrl.ToString();
     }
 
     public static string GetAmountEnd(long amount)

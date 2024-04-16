@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Web;
 using Discord;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
@@ -36,13 +35,8 @@ public static class StringService
         {
             if (rymEnabled == true)
             {
-                var albumQueryName = track.AlbumName.Replace(" - Single", "");
-                albumQueryName = albumQueryName.Replace(" - EP", "");
-
-                var albumRymUrl = @"https://rateyourmusic.com/search?searchterm=";
-                albumRymUrl += HttpUtility.UrlEncode($"{track.ArtistName} {albumQueryName}");
-                albumRymUrl += "&searchtype=l";
-
+                var albumRymUrl = StringExtensions.GetRymUrl(track.AlbumName, track.ArtistName);
+                
                 description.Append($" • *[{StringExtensions.Sanitize(track.AlbumName)}]({albumRymUrl})*");
             }
             else
