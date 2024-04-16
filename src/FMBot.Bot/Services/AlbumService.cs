@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
@@ -332,30 +333,38 @@ public class AlbumService
         return topAlbums;
     }
 
-    public async Task<List<TopAlbum>> FilterAlbumToReleaseYear(List<TopAlbum> topAlbums, int year)
+    public async Task<Response<TopAlbumList>> FilterAlbumToReleaseYear(Response<TopAlbumList> albums, int year)
     {
-        await EnrichTopAlbums(topAlbums);
+        await EnrichTopAlbums(albums.Content.TopAlbums);
 
         var yearStart = new DateTime(year, 1, 1);
         var yearEnd = yearStart.AddYears(1).AddSeconds(-1);
-        return topAlbums
+        albums.Content.TopAlbums = albums.Content.TopAlbums
             .Where(w => w.ReleaseDate.HasValue &&
                         w.ReleaseDate.Value >= yearStart &&
                         w.ReleaseDate.Value <= yearEnd)
             .ToList();
+
+        DataSourceFactory.AddAlbumTopList(albums, null);
+
+        return albums;
     }
 
-    public async Task<List<TopAlbum>> FilterAlbumToReleaseDecade(List<TopAlbum> topAlbums, int decade)
+    public async Task<Response<TopAlbumList>> FilterAlbumToReleaseDecade(Response<TopAlbumList> albums, int decade)
     {
-        await EnrichTopAlbums(topAlbums);
+        await EnrichTopAlbums(albums.Content.TopAlbums);
 
         var decadeStart = new DateTime(decade, 1, 1);
         var decadeEnd = decadeStart.AddYears(10).AddSeconds(-1);
-        return topAlbums
+        albums.Content.TopAlbums = albums.Content.TopAlbums
             .Where(w => w.ReleaseDate.HasValue &&
                         w.ReleaseDate.Value >= decadeStart &&
                         w.ReleaseDate.Value <= decadeEnd)
             .ToList();
+
+        DataSourceFactory.AddAlbumTopList(albums, null);
+
+        return albums;
     }
 
     private async Task EnrichTopAlbums(IReadOnlyCollection<TopAlbum> list)

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -1136,11 +1137,11 @@ public class AlbumBuilders
 
         if (topListSettings.ReleaseYearFilter.HasValue)
         {
-            albums.Content.TopAlbums = await this._albumService.FilterAlbumToReleaseYear(albums.Content?.TopAlbums, topListSettings.ReleaseYearFilter.Value);
+            albums = await this._albumService.FilterAlbumToReleaseYear(albums, topListSettings.ReleaseYearFilter.Value);
         }
         else if (topListSettings.ReleaseDecadeFilter.HasValue)
         {
-            albums.Content.TopAlbums = await this._albumService.FilterAlbumToReleaseDecade(albums.Content?.TopAlbums, topListSettings.ReleaseDecadeFilter.Value);
+            albums = await this._albumService.FilterAlbumToReleaseDecade(albums, topListSettings.ReleaseDecadeFilter.Value);
         }
 
         if (mode == ResponseMode.Image)
@@ -1152,7 +1153,17 @@ public class AlbumBuilders
             var firstAlbumImage =
                 albums.Content.TopAlbums.FirstOrDefault(f => f.AlbumCoverUrl != null)?.AlbumCoverUrl;
 
-            var image = await this._puppeteerService.GetTopList(userTitle, "Top Albums", "albums", timeSettings.Description,
+            var title = "Top Albums";
+            if (topListSettings.ReleaseYearFilter.HasValue)
+            {
+                title = $"Top Albums from {topListSettings.ReleaseYearFilter}";
+            }
+            else if (topListSettings.ReleaseDecadeFilter.HasValue)
+            {
+                title = $"Top Albums from the {topListSettings.ReleaseDecadeFilter}s";
+            }
+
+            var image = await this._puppeteerService.GetTopList(userTitle, title, "albums", timeSettings.Description,
                 albums.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), firstAlbumImage, albums.TopList);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);

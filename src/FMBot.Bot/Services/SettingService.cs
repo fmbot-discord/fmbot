@@ -457,7 +457,6 @@ public class SettingService
             topListSettings.EmbedSize = EmbedSize.Small;
         }
 
-
         var discogs = new[] { "dc", "discogs" };
         if (Contains(extraOptions, discogs))
         {
@@ -483,7 +482,7 @@ public class SettingService
                 if (int.TryParse(yearString, out var year) && year <= DateTime.UtcNow.Year && year >= 1900)
                 {
                     topListSettings.ReleaseYearFilter = year;
-                    topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, [$"r:{year}", $"released:{year}"]);
+                    topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, [$"r:{year}", $"released:{year}", option]);
                 }
             }
             if (option.StartsWith("d:", StringComparison.OrdinalIgnoreCase) ||
@@ -508,7 +507,7 @@ public class SettingService
                     {
                         topListSettings.ReleaseDecadeFilter = year;
                         topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue,
-                            [$"d:{year}", $"decade:{year}", $"d:{year}s", $"decade:{year}s"]);
+                            [$"d:{year}", $"decade:{year}", $"d:{year}s", $"decade:{year}s", option]);
                     }
                 }
             }
@@ -1255,10 +1254,10 @@ public class SettingService
 
         foreach (var value in values)
         {
-            if (extraOptions.Contains(value.ToLower()))
+            if (extraOptions.Contains(value.ToLower(), StringComparison.OrdinalIgnoreCase))
             {
                 extraOptions = $" {extraOptions} ";
-                extraOptions = extraOptions.Replace($" {value.ToLower()} ", "");
+                extraOptions = extraOptions.Replace($" {value.ToLower()} ", "", StringComparison.OrdinalIgnoreCase);
                 extraOptions = extraOptions.Trim();
                 somethingFound = true;
             }

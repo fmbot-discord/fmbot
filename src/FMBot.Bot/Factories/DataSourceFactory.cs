@@ -256,7 +256,7 @@ public class DataSourceFactory : IDataSourceFactory
         return topAlbums;
     }
 
-    private void AddAlbumTopList(Response<TopAlbumList> topAlbums, string lastFmUserName)
+    public static void AddAlbumTopList(Response<TopAlbumList> topAlbums, string lastFmUserName)
     {
         topAlbums.TopList = topAlbums.Content?.TopAlbums?.Select(s => new TopListObject
         {

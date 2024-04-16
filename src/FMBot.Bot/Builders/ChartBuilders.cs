@@ -102,16 +102,15 @@ public class ChartBuilders
             }
         }
 
-        var topAlbums = albums.Content.TopAlbums;
-
-        topAlbums = await this._albumService.FillMissingAlbumCovers(topAlbums);
+        albums.Content.TopAlbums = await this._albumService.FillMissingAlbumCovers(albums.Content.TopAlbums);
+        
         if (chartSettings.ReleaseYearFilter.HasValue)
         {
-            topAlbums = await this._albumService.FilterAlbumToReleaseYear(topAlbums, chartSettings.ReleaseYearFilter.Value);
+            albums = await this._albumService.FilterAlbumToReleaseYear(albums, chartSettings.ReleaseYearFilter.Value);
 
-            if (topAlbums.Count < chartSettings.ImagesNeeded)
+            if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Text = $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({topAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
+                response.Text = $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
                                 $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
                 response.ResponseType = ResponseType.Text;
                 response.CommandResponse = CommandResponse.WrongInput;
@@ -120,18 +119,20 @@ public class ChartBuilders
         }
         else if (chartSettings.ReleaseDecadeFilter.HasValue)
         {
-            topAlbums = await this._albumService.FilterAlbumToReleaseDecade(topAlbums, chartSettings.ReleaseDecadeFilter.Value);
+            albums = await this._albumService.FilterAlbumToReleaseDecade(albums, chartSettings.ReleaseDecadeFilter.Value);
 
-            if (topAlbums.Count < chartSettings.ImagesNeeded)
+            if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Text = $"Sorry, you haven't listened to enough albums released in the {chartSettings.ReleaseDecadeFilter}s ({topAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
+                response.Text = $"Sorry, you haven't listened to enough albums released in the {chartSettings.ReleaseDecadeFilter}s ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
                                 $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
                 response.ResponseType = ResponseType.Text;
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
             }
         }
-
+        
+        var topAlbums = albums.Content.TopAlbums;
+        
         var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
         topAlbums = topAlbums.Take(imagesToRequest).ToList();
 

@@ -204,12 +204,13 @@ public class AlbumCommands : BaseCommandModule
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions,
+            
+            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue,
                 topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue ? TimePeriod.AllTime : TimePeriod.Weekly,
                 registeredLastFm: userSettings.RegisteredLastFm,
                 timeZone: userSettings.TimeZone);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
+            var mode = SettingService.SetMode(timeSettings.NewSearchValue, contextUser.Mode);
 
             var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
                 topListSettings, timeSettings, userSettings, mode.mode);
