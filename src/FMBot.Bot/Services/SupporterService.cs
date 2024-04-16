@@ -122,7 +122,7 @@ public class SupporterService
         return true;
     }
 
-    public static async Task SendSupporterWelcomeMessage(IUser discordUser, bool hasDiscogs, Supporter supporter)
+    public static async Task SendSupporterWelcomeMessage(IUser discordUser, bool hasDiscogs, Supporter supporter, bool reactivation = false)
     {
         var thankYouEmbed = new EmbedBuilder();
         thankYouEmbed.WithColor(DiscordConstants.InformationColorBlue);
@@ -196,7 +196,20 @@ public class SupporterService
         }
 
         thankYouEmbed.WithDescription(thankYouMessage.ToString());
-        await discordUser.SendMessageAsync(embed: thankYouEmbed.Build());
+
+        if (reactivation)
+        {
+            var reactivateEmbed = new EmbedBuilder();
+            reactivateEmbed.WithDescription(
+                "Welcome back. Please use the `/import manage` command to re-activate the import feature if you've used it previously.");
+            reactivateEmbed.WithColor(DiscordConstants.InformationColorBlue);
+            await discordUser.SendMessageAsync(embeds: [thankYouEmbed.Build(), reactivateEmbed.Build()]);
+        }
+        else
+        {
+            await discordUser.SendMessageAsync(embed: thankYouEmbed.Build());
+        }
+
     }
 
     public static async Task SendSupporterGoodbyeMessage(IUser discordUser, bool openCollective = true, bool hadImported = false)
@@ -860,7 +873,7 @@ public class SupporterService
                     var user = await this._client.Rest.GetUserAsync(discordSupporter.DiscordUserId);
                     if (user != null)
                     {
-                        await SendSupporterWelcomeMessage(user, false, reActivatedSupporter);
+                        await SendSupporterWelcomeMessage(user, false, reActivatedSupporter, true);
                     }
 
                     var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
