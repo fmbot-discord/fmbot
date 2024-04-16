@@ -244,7 +244,10 @@ public class AlbumService
             if (interactionId.HasValue)
             {
                 PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, albumInfo.Content.ArtistName);
-                PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, albumInfo.Content.AlbumName);
+                if (albumInfo.Content.AlbumName != null)
+                {
+                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, albumInfo.Content.AlbumName);
+                }
             }
 
             return new AlbumSearch(albumInfo.Content, response);
