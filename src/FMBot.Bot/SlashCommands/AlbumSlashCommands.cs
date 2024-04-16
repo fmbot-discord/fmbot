@@ -213,7 +213,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("cover", "Cover for current album or the one you're searching for.")]
+    [SlashCommand("cover", "Cover for current album or the one you're searching for")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -360,7 +360,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("albumplays", "Shows playcount for current album or the one you're searching for.")]
+    [SlashCommand("albumplays", "Shows playcount for current album or the one you're searching for")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]

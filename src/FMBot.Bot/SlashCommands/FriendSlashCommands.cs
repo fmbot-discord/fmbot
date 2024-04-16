@@ -31,7 +31,7 @@ public class FriendSlashCommands : InteractionModuleBase
         this._friendBuilders = friendBuilders;
     }
 
-    [SlashCommand("friends", "Displays your friends and what they're listening to.")]
+    [SlashCommand("friends", "Displays your friends and what they're listening to")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -53,16 +53,58 @@ public class FriendSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
-
-    [UserCommand("Add as friend")]
+    
+    [SlashCommand("addfriend", "Add a friend to your .fmbot friends")]
     [UsernameSetRequired]
-    public async Task AddFriendAsync(IUser user)
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task AddFriendAsync([Summary("User", "The user to add")] IUser user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var response = await this._friendBuilders.AddFriendsAsync(new ContextModel(this.Context, contextUser), new []{ user.Id.ToString() });
+            var response = await this._friendBuilders.AddFriendsAsync(new ContextModel(this.Context, contextUser), [user.Id.ToString()]);
+
+            await this.Context.SendResponse(this.Interactivity, response, true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, deferFirst: true);
+        }
+    }
+
+    [UserCommand("Add as friend")]
+    [UsernameSetRequired]
+    public async Task AddFriendUserCommandAsync(IUser user)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._friendBuilders.AddFriendsAsync(new ContextModel(this.Context, contextUser), [user.Id.ToString()]);
+
+            await this.Context.SendResponse(this.Interactivity, response, true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, deferFirst: true);
+        }
+    }
+
+    [SlashCommand("removefriend", "Remove a friend from your .fmbot friends")]
+    [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task RemoveFriendAsync([Summary("User", "The user to remove")] IUser user)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._friendBuilders.RemoveFriendsAsync(new ContextModel(this.Context, contextUser), [user.Id.ToString()]);
 
             await this.Context.SendResponse(this.Interactivity, response, true);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -75,7 +117,7 @@ public class FriendSlashCommands : InteractionModuleBase
 
     [UserCommand("Remove friend")]
     [UsernameSetRequired]
-    public async Task RemoveFriendAsync(IUser user)
+    public async Task RemoveFriendUserCommandAsync(IUser user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         

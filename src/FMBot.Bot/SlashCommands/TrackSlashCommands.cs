@@ -188,7 +188,7 @@ public class TrackSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("trackplays", "Shows playcount for current track or the one you're searching for.")]
+    [SlashCommand("trackplays", "Shows playcount for current track or the one you're searching for")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -215,7 +215,7 @@ public class TrackSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("trackdetails", "Shows metadata details for current track or the one you're searching for.")]
+    [SlashCommand("trackdetails", "Shows metadata details for current track or the one you're searching for")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]

@@ -46,7 +46,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         this._artistsService = artistsService;
     }
 
-    [SlashCommand("artist", "Shows info for current artist or the one you're searching for.")]
+    [SlashCommand("artist", "Shows info for current artist or the one you're searching for")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -102,7 +102,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("artistoverview", "Shows overview for current artist or the one you're searching for.")]
+    [SlashCommand("artistoverview", "Shows overview for current artist or the one you're searching for")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -160,7 +160,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("artistplays", "Shows playcount for current artist or the one you're searching for.")]
+    [SlashCommand("artistplays", "Shows playcount for current artist or the one you're searching for")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
