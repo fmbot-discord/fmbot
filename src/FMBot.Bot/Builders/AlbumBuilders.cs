@@ -840,7 +840,7 @@ public class AlbumBuilders
         var footer = new StringBuilder();
 
         footer.Append($"{albumTracks.Count} total tracks");
-        
+
         if (albumTracks.All(a => a.DurationSeconds.HasValue))
         {
             var totalLength = TimeSpan.FromSeconds(albumTracks.Sum(s => s.DurationSeconds ?? 0));
@@ -848,7 +848,7 @@ public class AlbumBuilders
                 $"{(totalLength.Hours == 0 ? "" : $"{totalLength.Hours}:")}{totalLength.Minutes}:{totalLength.Seconds:D2}";
             footer.Append($" — {formattedTrackLength}");
         }
-        
+
         footer.AppendLine();
         footer.Append(spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ");
         footer.Append($"{userSettings.DisplayName} has {albumSearch.Album.UserPlaycount} total scrobbles on this album");
@@ -1076,7 +1076,7 @@ public class AlbumBuilders
         response.Spoiler = safeForChannel == CensorService.CensorResult.Nsfw;
 
 
-        var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(albumCoverUrl);
+        var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
         await ChartService.OverwriteCache(cacheStream, cacheFilePath);
 
         await cacheStream.DisposeAsync();

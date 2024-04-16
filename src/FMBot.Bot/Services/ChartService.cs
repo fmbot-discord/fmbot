@@ -101,9 +101,9 @@ public class ChartService
                     SKBitmap chartImage;
                     var validImage = true;
 
-                    var localPath = AlbumUrlToCacheFilePath(album.AlbumCoverUrl);
+                    var localPath = AlbumUrlToCacheFilePath(album.AlbumName, album.ArtistName);
 
-                    if (File.Exists(localPath) && cacheEnabled)
+                    if (localPath != null && File.Exists(localPath) && cacheEnabled)
                     {
                         chartImage = SKBitmap.Decode(localPath);
                         Statistics.LastfmCachedImageCalls.Inc();
@@ -323,12 +323,10 @@ public class ChartService
         }
     }
 
-    public static string AlbumUrlToCacheFilePath(string albumUrl)
+    public static string AlbumUrlToCacheFilePath(string albumName, string artistName)
     {
-        var encodedId = EncodeToBase64(albumUrl
-            .Replace("https://lastfm.freetls.fastly.net/", "")
-            .Replace("https://i.scdn.co/image/", ""));
-        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 80);
+        var encodedId = EncodeToBase64($"{StringExtensions.TruncateLongString(albumName, 40)}--{StringExtensions.TruncateLongString(artistName, 40)}");
+        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 100);
 
         var fileName = localAlbumId + ".png";
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
