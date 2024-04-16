@@ -62,6 +62,8 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
         [Summary("Discogs", "Show top artists in Discogs collection")] bool discogs = false)
     {
+        _ = DeferAsync(privateResponse);
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
@@ -75,7 +77,7 @@ public class TopSlashCommands : InteractionModuleBase
             : await this._artistBuilders.TopArtistsAsync(new ContextModel(this.Context, contextUser),
                 topListSettings, timeSettings, userSettings, mode.Value);
 
-        await this.Context.SendResponse(this.Interactivity, response, privateResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -91,6 +93,8 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Size", "Amount of albums to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
+        _ = DeferAsync(privateResponse);
+        
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
@@ -102,7 +106,7 @@ public class TopSlashCommands : InteractionModuleBase
         var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, contextUser),
             topListSettings, timeSettings, userSettings, mode.Value);
 
-        await this.Context.SendResponse(this.Interactivity, response, privateResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -116,6 +120,8 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Size", "Amount of tracks to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
+        _ = DeferAsync(privateResponse);
+        
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
@@ -127,7 +133,7 @@ public class TopSlashCommands : InteractionModuleBase
         var response = await this._trackBuilders.TopTracksAsync(new ContextModel(this.Context, contextUser),
             topListSettings, timeSettings, userSettings, mode.Value);
 
-        await this.Context.SendResponse(this.Interactivity, response, privateResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -141,6 +147,8 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Size", "Amount of genres to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
+        _ = DeferAsync(privateResponse);
+        
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
@@ -152,7 +160,7 @@ public class TopSlashCommands : InteractionModuleBase
         var response = await this._genreBuilders.GetTopGenres(new ContextModel(this.Context, contextUser),
             userSettings, timeSettings, topListSettings, mode.Value);
 
-        await this.Context.SendResponse(this.Interactivity, response, privateResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -166,6 +174,8 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Size", "Amount of countries to show")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
+        _ = DeferAsync(privateResponse);
+        
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
@@ -177,7 +187,7 @@ public class TopSlashCommands : InteractionModuleBase
         var response = await this._countryBuilders.GetTopCountries(new ContextModel(this.Context, contextUser),
             userSettings, timeSettings, topListSettings, mode.Value);
 
-        await this.Context.SendResponse(this.Interactivity, response, privateResponse);
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 }
