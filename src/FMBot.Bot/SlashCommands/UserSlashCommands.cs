@@ -761,8 +761,6 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("judge", "Judges your music taste using AI")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task JudgeAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to judge (Supporter-only option)")] string user = null)
