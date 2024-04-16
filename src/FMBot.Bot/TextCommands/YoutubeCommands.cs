@@ -2,11 +2,14 @@ using System;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -22,16 +25,20 @@ public class YoutubeCommands : BaseCommandModule
 
     private readonly IPrefixService _prefixService;
 
+    private InteractiveService Interactivity { get; }
+
+
     public YoutubeCommands(
         IPrefixService prefixService,
         IDataSourceFactory dataSourceFactory,
         UserService userService,
         YoutubeService youtubeService,
-        IOptions<BotSettings> botSettings) : base(botSettings)
+        IOptions<BotSettings> botSettings, InteractiveService interactivity) : base(botSettings)
     {
         this._prefixService = prefixService;
         this._userService = userService;
         this._youtubeService = youtubeService;
+        this.Interactivity = interactivity;
         this._dataSourceFactory = dataSourceFactory;
     }
 
@@ -48,6 +55,18 @@ public class YoutubeCommands : BaseCommandModule
         try
         {
             _ = this.Context.Channel.TriggerTypingAsync();
+
+            if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
+            {
+                var internalLookup = CommandContextExtensions.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id)
+                                     ??
+                                     await this._userService.GetReferencedMusic(this.Context.Message.ReferencedMessage.Id);
+
+                if (internalLookup?.Track != null)
+                {
+                    searchValue = $"{internalLookup.Artist} | {internalLookup.Track}";
+                }
+            }
 
             string querystring;
             if (!string.IsNullOrWhiteSpace(searchValue))
@@ -71,22 +90,37 @@ public class YoutubeCommands : BaseCommandModule
 
                 var currentTrack = recentScrobbles.Content.RecentTracks[0];
                 querystring = currentTrack.TrackName + " - " + currentTrack.ArtistName;
+
+                PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, currentTrack.ArtistName);
+                PublicProperties.UsedCommandsTracks.TryAdd(this.Context.Message.Id, currentTrack.TrackName);
+                if (!string.IsNullOrWhiteSpace(currentTrack.AlbumName))
+                {
+                    PublicProperties.UsedCommandsAlbums.TryAdd(this.Context.Message.Id, currentTrack.AlbumName);
+                }
             }
 
             try
             {
+                var response = new ResponseModel
+                {
+                    ResponseType = ResponseType.Text
+                };
+
                 var youtubeResult = await this._youtubeService.GetSearchResult(querystring);
 
                 if (youtubeResult == null)
                 {
-                    await ReplyAsync("No results have been found for this query.");
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    response.Text = "No results have been found for this query.";
+                    response.CommandResponse = CommandResponse.NotFound;
+
+                    await this.Context.SendResponse(this.Interactivity, response);
+                    this.Context.LogCommandUsed(response.CommandResponse);
                     return;
                 }
 
                 var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
 
-                var reply = $"{StringExtensions.Sanitize(name)} searched for: `{StringExtensions.Sanitize(querystring)}`";
+                response.Text = $"{StringExtensions.Sanitize(name)} searched for: `{StringExtensions.Sanitize(querystring)}`";
 
                 var video = await this._youtubeService.GetVideoResult(youtubeResult.VideoId);
 
@@ -95,35 +129,35 @@ public class YoutubeCommands : BaseCommandModule
                 {
                     if (video is { IsFamilyFriendly: true })
                     {
-                        reply += $"\nhttps://youtube.com/watch?v={youtubeResult.VideoId}";
+                        response.Text += $"\nhttps://youtube.com/watch?v={youtubeResult.VideoId}";
                     }
                     else
                     {
-                        reply += $"\n<https://youtube.com/watch?v={youtubeResult.VideoId}>" +
-                                 $"\n`{youtubeResult.Title}`" +
-                                 $"\n*Embed disabled because video might not be SFW.*";
+                        response.Text += $"\n<https://youtube.com/watch?v={youtubeResult.VideoId}>" +
+                                         $"\n`{youtubeResult.Title}`" +
+                                         $"\n*Embed disabled because video might not be SFW.*";
                     }
                 }
                 else
                 {
-                    reply += $"\n<https://youtube.com/watch?v={youtubeResult.VideoId}>" +
-                             $"\n`{youtubeResult.Title}`" +
-                             $"\n*Embed disabled because user that requested link is not allowed to embed links.*";
+                    response.Text += $"\n<https://youtube.com/watch?v={youtubeResult.VideoId}>" +
+                                     $"\n`{youtubeResult.Title}`" +
+                                     $"\n*Embed disabled because user that requested link is not allowed to embed links.*";
                 }
 
                 var rnd = new Random();
-                if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 10) == 1 && string.IsNullOrWhiteSpace(searchValue))
                 {
-                    reply += $"\n*Tip: Search for other songs or videos by simply adding the searchvalue behind {prfx}youtube.*";
+                    response.Text += $"\n*Tip: Search for other songs or videos by simply adding the searchvalue behind {prfx}youtube.*";
                 }
 
-                await ReplyAsync(reply, allowedMentions: AllowedMentions.None);
-                this.Context.LogCommandUsed();
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(response.CommandResponse);
             }
             catch (Exception e)
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
-                await ReplyAsync("No results have been found for this query.\n" +
+                await ReplyAsync("No YouTube results have been found for this query.\n" +
                                  "It could also be that we've currently exceeded the YouTube ratelimits.");
             }
         }
