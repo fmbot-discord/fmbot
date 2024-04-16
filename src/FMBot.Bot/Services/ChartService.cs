@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -323,12 +324,18 @@ public class ChartService
 
     public static string AlbumUrlToCacheFilePath(string albumUrl)
     {
-        var encodedId = StringExtensions.ReplaceInvalidChars(albumUrl.Replace("https://www.last.fm/music/", ""));
-        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 80);
+        var encodedId = EncodeValidFileName(albumUrl.Replace("https://www.last.fm/music/", ""));
+        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 120);
 
         var fileName = localAlbumId + ".png";
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
         return localPath;
+    }
+
+    public static string EncodeValidFileName(string filename)
+    {
+        filename = WebUtility.UrlEncode(filename);
+        return StringExtensions.ReplaceInvalidChars(filename);
     }
 
     private static async Task SaveImageToCache(SKBitmap chartImage, string localPath)
