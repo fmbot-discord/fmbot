@@ -90,17 +90,21 @@ public class GenreService
 
     public async Task<IEnumerable<UserArtist>> GetTopUserArtistsForUserFriendsAsync(int userId, string genreName)
     {
-        const string sql = "SELECT " +
-                           "ua.user_id, " +
-                           "LOWER(ua.name) AS name, " +
-                           "ua.playcount " +
+        const string sql = "SELECT ua.user_id, LOWER(ua.name) AS name, ua.playcount " +
                            "FROM user_artists AS ua " +
                            "INNER JOIN users AS u ON ua.user_id = u.user_id " +
                            "INNER JOIN friends AS fr ON fr.friend_user_id = ua.user_id " +
                            "WHERE fr.user_id = @userId " +
                            "AND LOWER(ua.name) = ANY(SELECT LOWER(artists.name) AS artist_name " +
                            "FROM public.artist_genres AS ag " +
-                           "INNER JOIN artists ON artists.id = ag.artist_id WHERE LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT))) ";
+                           "INNER JOIN artists ON artists.id = ag.artist_id WHERE LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT))) " +
+                           "UNION " +
+                           "SELECT ua.user_id, LOWER(ua.name) AS name, ua.playcount " +
+                           "FROM user_artists AS ua " +
+                           "WHERE ua.user_id = @userId " +
+                           "AND LOWER(ua.name) = ANY(SELECT LOWER(artists.name) AS artist_name " +
+                           "FROM public.artist_genres AS ag " +
+                           "INNER JOIN artists ON artists.id = ag.artist_id WHERE LOWER(ag.name) = LOWER(CAST(@genreName AS CITEXT)))  ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
