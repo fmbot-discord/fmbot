@@ -22,6 +22,8 @@ public class DataSourceUser
 
     public long RegisteredUnix { get; set; }
     public DateTime Registered { get; set; }
+    
+    public long LfmRegisteredUnix { get; set; }
 
     public string Type { get; set; }
 }

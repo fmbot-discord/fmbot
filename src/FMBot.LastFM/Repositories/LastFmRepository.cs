@@ -376,6 +376,7 @@ public class LastFmRepository : ILastfmRepository
             Url = userCall.Content.User.Url.ToString(),
             Registered = DateTime.UnixEpoch.AddSeconds(userCall.Content.User.Registered.Unixtime).ToUniversalTime(),
             RegisteredUnix = userCall.Content.User.Registered.Unixtime,
+            LfmRegisteredUnix = userCall.Content.User.Registered.Unixtime,
             Image = userCall.Content.User.Image.FirstOrDefault(a => a.Size == "extralarge") != null &&
                     !string.IsNullOrWhiteSpace(userCall.Content.User.Image.First(a => a.Size == "extralarge").Text)
                 ? userCall.Content.User.Image?.First(a => a.Size == "extralarge").Text.Replace("/u/300x300/", "/u/")

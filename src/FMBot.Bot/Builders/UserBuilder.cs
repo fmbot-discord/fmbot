@@ -689,7 +689,7 @@ public class UserBuilder
 
         lastFmStats.AppendLine($"**[{userSettings.UserNameLastFm}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})**");
         lastFmStats.AppendLine($"**{userInfo.Country}**");
-        lastFmStats.AppendLine($"Since **<t:{userInfo.RegisteredUnix}:D>**");
+        lastFmStats.AppendLine($"Since **<t:{userInfo.LfmRegisteredUnix}:D>**");
 
         if (userInfo.Type != "user")
         {
