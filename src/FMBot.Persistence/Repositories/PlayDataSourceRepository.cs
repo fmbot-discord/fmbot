@@ -124,6 +124,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         if (plays.Any())
         {
             dataSourceUser.Registered = plays.MinBy(o => o.TimePlayed).TimePlayed;
+            dataSourceUser.RegisteredUnix = ((DateTimeOffset)dataSourceUser.Registered).ToUnixTimeSeconds();
         }
 
         return dataSourceUser;
