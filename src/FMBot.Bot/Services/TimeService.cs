@@ -52,7 +52,7 @@ public class TimeService
         var userPlayList = new UserPlayList
         {
             UserPlays = { repeatedField },
-            AdjustForBans = true
+            AdjustForBans = adjustForBans
         };
 
         var reply = await this._timeEnrichment.ProcessUserPlaysAsync(userPlayList);

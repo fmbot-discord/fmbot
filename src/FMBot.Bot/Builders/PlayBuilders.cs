@@ -1175,9 +1175,12 @@ public class PlayBuilder
             {
                 var newArtist = topNewArtists.OrderBy(o => o.FirstPlay).ToList()[i];
 
-                newArtistDescription.AppendLine($"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
-                                                $"— *{newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
-                                                $"— on **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
+                if (newArtistDescription.Length < 850)
+                {
+                    newArtistDescription.AppendLine($"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
+                                                    $"— *{newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
+                                                    $"— on **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
+                }
             }
 
             fields.Add(new EmbedFieldBuilder().WithName("Artist discoveries")
