@@ -121,7 +121,10 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
             TrackName = g.TrackName.ToLower()
         }).Count();
 
-        dataSourceUser.Registered = plays.MinBy(o => o.TimePlayed).TimePlayed;
+        if (plays.Any())
+        {
+            dataSourceUser.Registered = plays.MinBy(o => o.TimePlayed).TimePlayed;
+        }
 
         return dataSourceUser;
     }
@@ -404,7 +407,7 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         {
             return [PlaySource.LastFm];
         }
-        
+
         var playSources = new List<PlaySource>();
 
         if (plays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
