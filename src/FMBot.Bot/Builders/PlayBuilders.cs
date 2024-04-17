@@ -1175,7 +1175,7 @@ public class PlayBuilder
             {
                 var newArtist = topNewArtists.OrderBy(o => o.FirstPlay).ToList()[i];
 
-                if (newArtistDescription.Length < 850)
+                if (newArtistDescription.Length < 800)
                 {
                     newArtistDescription.AppendLine($"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
                                                     $"— *{newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
