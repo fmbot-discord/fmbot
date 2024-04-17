@@ -545,7 +545,9 @@ public class PlayBuilder
         if (!string.IsNullOrWhiteSpace(artist))
         {
             var artistFilter = artist.Trim().ToLower();
-            streaks = streaks.Where(w => w.ArtistName == null || w.ArtistName.Trim().Contains(artistFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+            streaks = streaks.Where(w => w.ArtistPlaycount.HasValue &&
+                                         w.ArtistName != null &&
+                                         w.ArtistName.Trim().Contains(artistFilter, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         if (!streaks.Any())
