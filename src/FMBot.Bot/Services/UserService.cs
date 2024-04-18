@@ -847,6 +847,13 @@ public class UserService
             }
         }
 
+        var eurovision = EurovisionService.GetEurovisionEntry(artistName, trackName);
+        if (eurovision != null)
+        {
+            var description = EurovisionService.GetEurovisionDescription(eurovision);
+            options.Add(description.oneline);
+        }
+
         return CreateFooter(options, genres);
     }
 
@@ -1165,7 +1172,7 @@ public class UserService
         var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
 
         userToUpdate.DataSource = dataSource;
-        
+
         user.DataSource = dataSource;
         db.Entry(user).State = EntityState.Modified;
 

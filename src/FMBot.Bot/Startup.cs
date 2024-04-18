@@ -176,6 +176,7 @@ public class Startup
             .AddSingleton<CommandHandler>()
             .AddSingleton<DiscogsBuilder>()
             .AddSingleton<DiscogsService>()
+            .AddSingleton<EurovisionBuilders>()
             .AddSingleton<FeaturedService>()
             .AddSingleton<FriendsService>()
             .AddSingleton<FriendBuilders>()
@@ -247,6 +248,7 @@ public class Startup
         services.AddHttpClient<DiscordSkuService>();
         services.AddHttpClient<OpenCollectiveService>();
         services.AddHttpClient<OpenAiService>();
+        services.AddHttpClient<EurovisionService>();
 
         services.AddHttpClient<SpotifyService>(client =>
         {

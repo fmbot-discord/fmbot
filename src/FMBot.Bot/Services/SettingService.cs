@@ -941,7 +941,6 @@ public class SettingService
                 .Replace("r:", "", StringComparison.OrdinalIgnoreCase)
                 .Replace("released:", "", StringComparison.OrdinalIgnoreCase);
 
-
             if (cleaned.Length == 4 && int.TryParse(cleaned, out var result))
             {
                 if (result >= 1900 && result <= DateTime.Today.AddDays(1).Year)

@@ -47,6 +47,7 @@ public class TrackBuilders
     private readonly DiscogsService _discogsService;
     private readonly ArtistsService _artistsService;
     private readonly FeaturedService _featuredService;
+    private readonly EurovisionService _eurovisionService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -66,7 +67,8 @@ public class TrackBuilders
         WhoKnowsPlayService whoKnowsPlayService,
         DiscogsService discogsService,
         ArtistsService artistsService,
-        FeaturedService featuredService)
+        FeaturedService featuredService,
+        EurovisionService eurovisionService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -87,6 +89,7 @@ public class TrackBuilders
         this._discogsService = discogsService;
         this._artistsService = artistsService;
         this._featuredService = featuredService;
+        this._eurovisionService = eurovisionService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -153,7 +156,6 @@ public class TrackBuilders
         }
 
         var audioFeatures = new StringBuilder();
-
 
         if (spotifyTrack != null && !string.IsNullOrEmpty(spotifyTrack.SpotifyId))
         {
@@ -237,6 +239,20 @@ public class TrackBuilders
         if (info.Length > 0)
         {
             response.Embed.AddField("Info", info.ToString(), true);
+        }
+
+        var eurovisionEntry =
+            EurovisionService.GetEurovisionEntry(trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+
+        if (eurovisionEntry != null)
+        {
+            var eurovisionDescription = EurovisionService.GetEurovisionDescription(eurovisionEntry);
+            response.Embed.AddField($"Eurovision <:eurovision:1084971471610323035> ", eurovisionDescription.full);
+            if (eurovisionEntry.YoutubeUrl != null)
+            {
+                response.Components = new ComponentBuilder().WithButton(style: ButtonStyle.Link,
+                    emote: Emote.Parse(DiscordConstants.YouTube), url: eurovisionEntry.YoutubeUrl);
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(trackSearch.Track.Description))
