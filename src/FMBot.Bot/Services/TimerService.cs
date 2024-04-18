@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -49,6 +46,7 @@ public class TimerService
     private readonly WhoKnowsFilterService _whoKnowsFilterService;
     private readonly StatusHandler.StatusHandlerClient _statusHandler;
     private readonly BotListService _botListService;
+    private readonly EurovisionService _eurovisionService;
 
     public FeaturedLog CurrentFeatured;
 
@@ -65,7 +63,9 @@ public class TimerService
         DiscogsService discogsService,
         WhoKnowsFilterService whoKnowsFilterService,
         StatusHandler.StatusHandlerClient statusHandler,
-        HttpClient httpClient, BotListService botListService)
+        HttpClient httpClient,
+        BotListService botListService,
+        EurovisionService eurovisionService)
     {
         this._client = client;
         this._userService = userService;
@@ -80,6 +80,7 @@ public class TimerService
         this._statusHandler = statusHandler;
         this._httpClient = httpClient;
         this._botListService = botListService;
+        this._eurovisionService = eurovisionService;
         this._updateService = updateService;
         this._botSettings = botSettings.Value;
 
@@ -150,6 +151,14 @@ public class TimerService
             Log.Warning("Main guild not connected, not queuing master jobs");
             BackgroundJob.Schedule(() => MakeSureMasterJobsAreQueued(), TimeSpan.FromMinutes(2));
         }
+
+        BackgroundJob.Schedule(() => UpdateEurovisionData(), TimeSpan.FromSeconds(1));
+
+        if (DateTime.Today.Month == 5 || DateTime.Today.Month == 4)
+        {
+            Log.Information($"RecurringJob: Adding {nameof(UpdateEurovisionData)}");
+            RecurringJob.AddOrUpdate(nameof(UpdateEurovisionData), () => UpdateEurovisionData(), "30 */2 * * *");
+        }
     }
 
     public void MakeSureMasterJobsAreQueued()
@@ -207,7 +216,7 @@ public class TimerService
                 await this._client.SetCustomStatusAsync(this.CurrentFeatured.Status);
                 return;
             }
-            
+
             if (this._client?.Guilds?.Count == null)
             {
                 Log.Information($"Client guild count is null, cancelling {nameof(UpdateStatus)}");
@@ -547,6 +556,11 @@ public class TimerService
     {
         var filteredUsers = await this._whoKnowsFilterService.GetNewGlobalFilteredUsers();
         await this._whoKnowsFilterService.AddFilteredUsersToDatabase(filteredUsers);
+    }
+
+    public async Task UpdateEurovisionData()
+    {
+        await this._eurovisionService.UpdateEurovisionData();
     }
 
     public void ClearUserCache()
