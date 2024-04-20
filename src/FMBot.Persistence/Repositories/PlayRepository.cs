@@ -235,7 +235,7 @@ public static class PlayRepository
         end ??= DateTime.UtcNow;
 
         const string sql = "SELECT * FROM public.user_plays WHERE user_id = @userId " +
-                           "AND time_played >= @start AND time_played <= @end  " +
+                           "AND time_played >= @start AND time_played <= @end AND artist_name IS NOT NULL " +
                            "ORDER BY time_played DESC ";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return (await connection.QueryAsync<UserPlay>(sql, new
