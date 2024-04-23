@@ -75,6 +75,7 @@
     <Protobuf Include="..\Shared.Protos\status.proto" GrpcServices="Client" Link="Protos\status.proto" />
     <Protobuf Include="..\Shared.Protos\album.proto" GrpcServices="Client" Link="Protos\album.proto" />
     <Protobuf Include="..\Shared.Protos\artist.proto" GrpcServices="Client" Link="Protos\artist.proto" />
+    <Protobuf Include="..\Shared.Protos\supporter.proto" GrpcServices="Client" Link="Protos\supporter.proto" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FMBot.Discogs\FMBot.Discogs.csproj" />

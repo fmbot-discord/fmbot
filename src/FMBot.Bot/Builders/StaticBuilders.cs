@@ -214,8 +214,7 @@ public class StaticBuilders
         return response;
     }
 
-    public async Task<ResponseModel> OpenCollectiveSupportersAsync(
-        ContextModel context)
+    public async Task<ResponseModel> OpenCollectiveSupportersAsync(ContextModel context, bool expiredOnly)
     {
         var response = new ResponseModel
         {
@@ -225,6 +224,19 @@ public class StaticBuilders
         var existingSupporters = await this._supporterService.GetAllSupporters();
 
         var supporters = await this._supporterService.GetOpenCollectiveSupporters();
+
+        if (expiredOnly)
+        {
+            var ocIds = existingSupporters
+                .Where(w => w.SubscriptionType == SubscriptionType.MonthlyOpenCollective && w.OpenCollectiveId != null)
+                .OrderByDescending(o => o.LastPayment)
+                .GroupBy(g => g.OpenCollectiveId)
+                .ToDictionary(d => d.Key, d => d.First());
+            supporters.Users = supporters.Users.Where(w => ocIds.ContainsKey(w.Id) &&
+                                                           ocIds[w.Id].Expired != true &&
+                                                           ocIds[w.Id].SubscriptionType == SubscriptionType.MonthlyOpenCollective &&
+                                                           ocIds[w.Id].LastPayment <= DateTime.UtcNow.AddDays(-61)).ToList();
+        }
 
         var supporterLists = supporters.Users.OrderByDescending(o => o.FirstPayment).Chunk(10);
 

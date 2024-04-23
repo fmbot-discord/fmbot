@@ -431,7 +431,7 @@ public class AdminCommands : BaseCommandModule
     [Command("opencollectivesupporters", RunMode = RunMode.Async)]
     [Summary("Displays all .fmbot supporters.")]
     [Alias("ocsupporters")]
-    public async Task OpenCollectiveSupportersAsync()
+    public async Task OpenCollectiveSupportersAsync([Remainder] string extraOptions = null)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -445,10 +445,18 @@ public class AdminCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var response = await this._staticBuilders.OpenCollectiveSupportersAsync(new ContextModel(this.Context, prfx, userSettings));
+        try
+        {
+            var response = await this._staticBuilders.OpenCollectiveSupportersAsync(new ContextModel(this.Context, prfx, userSettings), extraOptions == "expired");
 
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [Command("discordsupporters", RunMode = RunMode.Async)]
@@ -1748,11 +1756,10 @@ public class AdminCommands : BaseCommandModule
             try
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
-                var supporters = await this._supporterService.GetAllVisibleSupporters();
+                var activeSupporters = await this._supporterService.GetAllVisibleSupporters();
+                var guildMembers = await this.Context.Guild.GetUsersAsync();
 
-                var members = await this.Context.Guild.GetUsersAsync();
-
-                var discordUserIds = supporters
+                var discordUserIds = activeSupporters
                     .Where(w => w.DiscordUserId.HasValue)
                     .Select(s => s.DiscordUserId.Value)
                     .ToHashSet();
@@ -1762,7 +1769,7 @@ public class AdminCommands : BaseCommandModule
 
                 var reply = new StringBuilder();
 
-                foreach (var member in members.Where(w => discordUserIds.Contains(w.Id)))
+                foreach (var member in guildMembers.Where(w => discordUserIds.Contains(w.Id)))
                 {
                     if (member.RoleIds.All(a => a != role.Id))
                     {
@@ -1776,6 +1783,24 @@ public class AdminCommands : BaseCommandModule
                 reply.AppendLine();
                 reply.AppendLine($"Updated all Discord supporters.");
                 reply.AppendLine($"{count} users didn't have the supporter role when they should have had it.");
+
+                var allSupporters = await this._supporterService.GetAllSupporters();
+                var expiredOnly = allSupporters
+                    .Where(w => w.DiscordUserId.HasValue)
+                    .GroupBy(g => g.DiscordUserId)
+                    .Where(w => w.All(a => a.Expired == true))
+                    .Select(s => s.Key).ToHashSet();
+
+                reply.AppendLine();
+                reply.AppendLine("check if these should have it:");
+                foreach (var member in guildMembers.Where(w => expiredOnly.Contains(w.Id)))
+                {
+                    if (member.RoleIds.Any(a => a == role.Id))
+                    {
+                        reply.AppendLine($"{member.Id} - <@{member.Id}> - {member.DisplayName}");
+                    }
+                }
+
 
                 await ReplyAsync(reply.ToString());
             }
@@ -2114,6 +2139,31 @@ public class AdminCommands : BaseCommandModule
                 this.Context.LogCommandUsed();
 
                 await this._indexService.RecalculateTopLists(userToUpdate);
+            }
+            else
+            {
+                await ReplyAsync("You are not authorized to use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("supporterlink")]
+    [Summary("Runs a toplist update for someone else")]
+    public async Task GetSupporterTestLink([Remainder] string user = null)
+    {
+        try
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                var components = new ComponentBuilder().WithButton("Generate link", customId:InteractionConstants.SupporterLinks.GetPurchaseLink);
+
+                await ReplyAsync($"Use the button below to get your unique purchase link", allowedMentions: AllowedMentions.None, components: components.Build());
+                this.Context.LogCommandUsed();
             }
             else
             {

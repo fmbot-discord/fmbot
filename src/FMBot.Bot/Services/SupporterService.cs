@@ -21,6 +21,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Web.InternalApi;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -35,13 +36,16 @@ public class SupporterService
     private readonly IMemoryCache _cache;
     private readonly IIndexService _indexService;
     private readonly DiscordShardedClient _client;
+    private readonly SupporterLinkService.SupporterLinkServiceClient _supporterLinkService;
 
     public SupporterService(IDbContextFactory<FMBotDbContext> contextFactory,
         OpenCollectiveService openCollectiveService,
         IOptions<BotSettings> botSettings,
         IMemoryCache cache,
         IIndexService indexService,
-        DiscordSkuService discordSkuService, DiscordShardedClient client)
+        DiscordSkuService discordSkuService,
+        DiscordShardedClient client,
+        SupporterLinkService.SupporterLinkServiceClient supporterLinkService)
     {
         this._contextFactory = contextFactory;
         this._openCollectiveService = openCollectiveService;
@@ -49,6 +53,7 @@ public class SupporterService
         this._indexService = indexService;
         this._discordSkuService = discordSkuService;
         this._client = client;
+        this._supporterLinkService = supporterLinkService;
         this._botSettings = botSettings.Value;
     }
 
@@ -1343,5 +1348,15 @@ public class SupporterService
             .AsQueryable()
             .OrderByDescending(o => o.Created)
             .ToListAsync();
+    }
+
+    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId)
+    {
+        var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
+        {
+            DiscordUserId = (long)discordUserId
+        });
+        
+        return url?.CheckoutLink;
     }
 }

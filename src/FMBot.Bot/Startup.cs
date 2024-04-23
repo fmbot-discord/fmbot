@@ -35,13 +35,10 @@ using RunMode = Discord.Commands.RunMode;
 using Hangfire;
 using FMBot.Domain.Interfaces;
 using FMBot.Bot.Factories;
-using FMBot.Domain.Enums;
 using FMBot.Persistence.Interfaces;
 using System.Linq;
 using FMBot.Bot.Extensions;
 using Web.InternalApi;
-using Grpc.Core.Interceptors;
-using Grpc.Core;
 
 namespace FMBot.Bot;
 
@@ -265,6 +262,7 @@ public class Startup
         services.AddConfiguredGrpcClient<StatusHandler.StatusHandlerClient>(this.Configuration);
         services.AddConfiguredGrpcClient<AlbumEnrichment.AlbumEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<ArtistEnrichment.ArtistEnrichmentClient>(this.Configuration);
+        services.AddConfiguredGrpcClient<SupporterLinkService.SupporterLinkServiceClient>(this.Configuration);
 
         services.AddHealthChecks();
 

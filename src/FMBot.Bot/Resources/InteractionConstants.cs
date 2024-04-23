@@ -98,6 +98,12 @@ public static class InteractionConstants
         public const string ReportAlbumModal = "report-album-modal";
     }
 
+    public static class SupporterLinks
+    {
+        public const string GetPurchaseLink = "supporter-purchase-link";
+        public const string GetManageLink = "supporter-manage-link";
+    }
+
     public const string BotScrobblingEnable = "user-setting-botscrobbling-enable";
     public const string BotScrobblingDisable = "user-setting-botscrobbling-disable";
 

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+service SupporterLinkService {
+  rpc GetCheckoutLink (CreateLinkOptions) returns (CreateLinkReply);
+}
+
+
+message CreateLinkOptions {
+  int64 discordUserId = 1;
+}
+
+message CreateLinkReply {
+  string checkoutLink = 1;
+}
