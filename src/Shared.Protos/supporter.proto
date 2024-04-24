@@ -2,8 +2,14 @@ syntax = "proto3";
 
 option csharp_namespace = "Web.InternalApi";
 
+import "google/protobuf/timestamp.proto";
+
+package supporter;
+
 service SupporterLinkService {
   rpc GetCheckoutLink (CreateLinkOptions) returns (CreateLinkReply);
+
+  rpc AddStripeSupporter (AddStripeSupporterRequest) returns (AddStripeSupporterReply);
 }
 
 
@@ -13,4 +19,15 @@ message CreateLinkOptions {
 
 message CreateLinkReply {
   string checkoutLink = 1;
+}
+
+message AddStripeSupporterRequest {
+  int64 discordUserId = 1;
+  string stripeCustomerId = 2;
+  string stripeSubscriptionId = 3;
+  google.protobuf.Timestamp endsAt = 4;
+}
+
+message AddStripeSupporterReply {
+  bool success = 1;
 }

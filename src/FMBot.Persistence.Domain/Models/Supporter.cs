@@ -30,4 +30,11 @@ public class Supporter
 
     public DateTime Created { get; set; }
 
+    public DateTime? EndDate { get; set; }
+
+    public string StripeSubscriptionId { get; set; }
+
+    public string StripeCustomerId { get; set; }
+
+
 }
