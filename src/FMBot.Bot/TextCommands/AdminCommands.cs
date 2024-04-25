@@ -2453,4 +2453,61 @@ public class AdminCommands : BaseCommandModule
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [Command("deleteuser")]
+    [Summary("Remove a user")]
+    public async Task DeleteUser(string userToDelete = null)
+    {
+        try
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner) && this.Context.Guild.Id == 821660544581763093)
+            {
+                if (userToDelete == null)
+                {
+                    await ReplyAsync("Enter the user to delete. For example, `.deleteuser 125740103539621888`");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var user = await this._settingService.GetDifferentUser(userToDelete);
+
+                if (user == null)
+                {
+                    await ReplyAsync("User could not be found. Are you sure they are registered in .fmbot?");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                var embed = new EmbedBuilder();
+
+                var userDescription = new StringBuilder();
+                userDescription.AppendLine($"`{user.DiscordUserId}` - <@{user.DiscordUserId}>");
+                userDescription.AppendLine($"Last.fm: `{user.UserNameLastFM}`");
+                if (user.LastUsed.HasValue)
+                {
+                    var specifiedDateTime = DateTime.SpecifyKind(user.LastUsed.Value, DateTimeKind.Utc);
+                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                    userDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
+                }
+
+                embed.AddField($"User to delete - {user.UserId} {user.UserType.UserTypeToIcon()}", userDescription.ToString());
+                embed.WithFooter("⚠️ You cant revert this ⚠️ watch out whee oooo");
+
+                var components = new ComponentBuilder().WithButton("Delete user", customId: $"admin-delete-user-{user.UserId}", ButtonStyle.Danger);
+
+                await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None, components: components.Build());
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("You are not authorized to use this command, or you're in the wrong server.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }

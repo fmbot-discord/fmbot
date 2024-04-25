@@ -27,8 +27,10 @@ public class AdminSlashCommands : InteractionModuleBase
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly AliasService _aliasService;
     private readonly PlayService _playService;
+    private readonly FriendsService _friendsService;
+    private readonly UserService _userService;
 
-    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService, PlayService playService)
+    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService, PlayService playService, FriendsService friendsService, UserService userService)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -37,6 +39,8 @@ public class AdminSlashCommands : InteractionModuleBase
         this._dataSourceFactory = dataSourceFactory;
         this._aliasService = aliasService;
         this._playService = playService;
+        this._friendsService = friendsService;
+        this._userService = userService;
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.CensorTypes)]
@@ -552,7 +556,7 @@ public class AdminSlashCommands : InteractionModuleBase
     }
     
     [ComponentInteraction(InteractionConstants.ModerationCommands.MoveUserData)]
-    public async Task MarkReportDenied(string oldUserId, string newUserId)
+    public async Task MoveUserData(string oldUserId, string newUserId)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -575,6 +579,36 @@ public class AdminSlashCommands : InteractionModuleBase
 
         var components =
             new ComponentBuilder().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
+        await message.ModifyAsync(m => m.Components = components.Build());
+    }
+    
+    [ComponentInteraction($"admin-delete-user-*")]
+    public async Task DeleteUser(string userId)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            return;
+        }
+
+        await RespondAsync("Deleting user...", ephemeral: true);
+        await this.Context.DisableInteractionButtons();
+
+        await this._friendsService.RemoveAllFriendsAsync(int.Parse(userId));
+        await this._friendsService.RemoveUserFromOtherFriendsAsync(int.Parse(userId));
+
+        await this._userService.DeleteUser(int.Parse(userId));
+
+        await FollowupAsync("Deleting user completed.", ephemeral: true);
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var components =
+            new ComponentBuilder().WithButton($"Deleted by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
 }
