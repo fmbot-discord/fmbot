@@ -40,6 +40,7 @@ public class UserService
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
     private readonly FriendsService _friendsService;
+    private readonly AdminService _adminService;
 
     public UserService(IMemoryCache cache,
         IDbContextFactory<FMBotDbContext> contextFactory,
@@ -50,7 +51,8 @@ public class UserService
         WhoKnowsArtistService whoKnowsArtistService,
         WhoKnowsAlbumService whoKnowsAlbumService,
         WhoKnowsTrackService whoKnowsTrackService,
-        FriendsService friendsService)
+        FriendsService friendsService,
+        AdminService adminService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
@@ -61,6 +63,7 @@ public class UserService
         this._whoKnowsAlbumService = whoKnowsAlbumService;
         this._whoKnowsTrackService = whoKnowsTrackService;
         this._friendsService = friendsService;
+        this._adminService = adminService;
         this._botSettings = botSettings.Value;
     }
 
@@ -1229,6 +1232,11 @@ public class UserService
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.UserId == userId);
 
+            if (user == null)
+            {
+                return;
+            }
+
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
@@ -1332,35 +1340,50 @@ public class UserService
         var deletedInactiveUsers = 0;
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var inactiveUsers = await db.InactiveUsers
+        var inactiveUsers = await db.InactiveUserLog
             .AsQueryable()
-            .Where(w => w.MissingParametersErrorCount >= 1 && w.Updated > DateTime.UtcNow.AddDays(-7))
+            .Include(i => i.User)
+            .Where(w => w.ResponseStatus == ResponseStatus.MissingParameters)
+            .GroupBy(g => g.UserId)
             .ToListAsync();
 
         foreach (var inactiveUser in inactiveUsers)
         {
-            var user = await db.Users
-                .AsQueryable()
-                .FirstOrDefaultAsync(f => f.UserId == inactiveUser.UserId &&
-                                          (f.LastUsed == null || f.LastUsed < DateTime.UtcNow.AddDays(-30)));
-
-            if (user != null)
+            if (inactiveUser.First().User != null && (inactiveUser.First().User.LastUsed == null || inactiveUser.First().User.LastUsed < DateTime.UtcNow.AddDays(-30)))
             {
-                if (!await this._dataSourceFactory.LastFmUserExistsAsync(user.UserNameLastFM))
-                {
-                    await this._friendsService.RemoveAllFriendsAsync(user.UserId);
-                    await this._friendsService.RemoveUserFromOtherFriendsAsync(user.UserId);
+                var userExists =
+                    await this._dataSourceFactory.LastFmUserExistsAsync(inactiveUser.First().UserNameLastFM);
+                var profile =
+                    await this._dataSourceFactory.GetLfmUserInfoAsync(inactiveUser.First().UserNameLastFM);
 
-                    await DeleteUser(user.UserId);
-                    Log.Information("DeleteInactiveUsers: User {userNameLastFm} | {userId} | {discordUserId} deleted", user.UserNameLastFM, user.UserId, user.DiscordUserId);
+                if (!userExists && profile == null)
+                {
+                    await this._friendsService.RemoveAllFriendsAsync(inactiveUser.Key);
+                    await this._friendsService.RemoveUserFromOtherFriendsAsync(inactiveUser.Key);
+
+                    await DeleteUser(inactiveUser.Key);
+
+                    Log.Information("DeleteInactiveUsers: User {userNameLastFm} | {userId} | {discordUserId} deleted", inactiveUser.First().User.UserNameLastFM, inactiveUser.Key, inactiveUser.First().User.DiscordUserId);
                     deletedInactiveUsers++;
+
+                    var otherUsers = await this._adminService.GetUsersWithLfmUsernameAsync(inactiveUser.First().User.UserNameLastFM);
+                    foreach (var otherUser in otherUsers.Where(w => w.UserId != inactiveUser.Key && (w.LastUsed == null || w.LastUsed < DateTime.UtcNow.AddDays(-30))))
+                    {
+                        await this._friendsService.RemoveAllFriendsAsync(otherUser.UserId);
+                        await this._friendsService.RemoveUserFromOtherFriendsAsync(otherUser.UserId);
+
+                        await DeleteUser(otherUser.UserId);
+
+                        Log.Information("DeleteInactiveUsers: OtherUser {userNameLastFm} | {userId} | {discordUserId} deleted", otherUser.UserNameLastFM, otherUser.UserId, otherUser.DiscordUserId);
+                        deletedInactiveUsers++;
+                    }
                 }
                 else
                 {
-                    Log.Information("DeleteInactiveUsers: User {userNameLastFm} exists, so deletion cancelled", user.UserNameLastFM);
+                    Log.Information("DeleteInactiveUsers: User {userNameLastFm} exists, so deletion cancelled", inactiveUser.First().User.UserNameLastFM);
                 }
 
-                Thread.Sleep(250);
+                Thread.Sleep(800);
             }
         }
 

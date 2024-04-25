@@ -2434,8 +2434,8 @@ public class AdminCommands : BaseCommandModule
                 embed.WithDescription(
                     "This will move over all imported plays and saved streaks from one user to another.\n\n" +
                     "Note about imports:\n" +
-                    "- If the new user already has imports enabled they need a full update\n" +
-                    "- If not enabled, they need to enable it themselves with `/import manage`");
+                    "- The new user should have no imports! Otherwise they might be duplicated" +
+                    "- After moving they can enable the imports with `/import manage`");
 
                 var components = new ComponentBuilder().WithButton("Move data", customId: $"move-user-data-{oldUser.UserId}-{newUser.UserId}", ButtonStyle.Danger);
 
@@ -2456,6 +2456,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("deleteuser")]
     [Summary("Remove a user")]
+    [Alias("removeuser")]
     public async Task DeleteUser(string userToDelete = null)
     {
         try
