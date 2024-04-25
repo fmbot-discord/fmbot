@@ -902,4 +902,13 @@ public class PlayService
             PlaySource = userPlay.PlaySource
         };
     }
+    
+    public async Task MoveData(int oldUserId, int newUserId)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.MoveImports(oldUserId, newUserId, connection);
+        await PlayRepository.MoveStreaks(oldUserId, newUserId, connection);
+    }
 }

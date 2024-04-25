@@ -553,7 +553,10 @@ public class PlayBuilder
         if (!streaks.Any())
         {
             response.Embed.WithDescription("No saved streaks found for this user.");
-            response.Embed.WithFooter($"Filtering to artist '{artist}'");
+            if (artist != null)
+            {
+                response.Embed.WithFooter($"Filtering to artist '{artist}'");
+            }
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
             return response;

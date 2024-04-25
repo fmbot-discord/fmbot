@@ -96,6 +96,8 @@ public static class InteractionConstants
 
         public const string ReportAlbum = "report-album";
         public const string ReportAlbumModal = "report-album-modal";
+        
+        public const string MoveUserData = "move-user-data-*-*";
     }
 
     public static class SupporterLinks

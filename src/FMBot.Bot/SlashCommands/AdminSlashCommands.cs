@@ -26,8 +26,9 @@ public class AdminSlashCommands : InteractionModuleBase
     private readonly ArtistsService _artistService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly AliasService _aliasService;
+    private readonly PlayService _playService;
 
-    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService)
+    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService, PlayService playService)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -35,6 +36,7 @@ public class AdminSlashCommands : InteractionModuleBase
         this._artistService = artistService;
         this._dataSourceFactory = dataSourceFactory;
         this._aliasService = aliasService;
+        this._playService = playService;
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.CensorTypes)]
@@ -546,6 +548,33 @@ public class AdminSlashCommands : InteractionModuleBase
 
         var components =
             new ComponentBuilder().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
+        await message.ModifyAsync(m => m.Components = components.Build());
+    }
+    
+    [ComponentInteraction(InteractionConstants.ModerationCommands.MoveUserData)]
+    public async Task MarkReportDenied(string oldUserId, string newUserId)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        await RespondAsync("Moving data...", ephemeral: true);
+        await this.Context.DisableInteractionButtons();
+
+        await this._playService.MoveData(int.Parse(oldUserId), int.Parse(newUserId));
+
+        await FollowupAsync("Moving data completed.", ephemeral: true);
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var components =
+            new ComponentBuilder().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
 }

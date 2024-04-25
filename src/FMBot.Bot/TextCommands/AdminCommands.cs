@@ -2160,7 +2160,7 @@ public class AdminCommands : BaseCommandModule
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                var components = new ComponentBuilder().WithButton("Generate link", customId:InteractionConstants.SupporterLinks.GetPurchaseLink);
+                var components = new ComponentBuilder().WithButton("Generate link", customId: InteractionConstants.SupporterLinks.GetPurchaseLink);
 
                 await ReplyAsync($"Use the button below to get your unique purchase link", allowedMentions: AllowedMentions.None, components: components.Build());
                 this.Context.LogCommandUsed();
@@ -2366,6 +2366,87 @@ public class AdminCommands : BaseCommandModule
             await ReplyAsync(embed: this._embed.Build());
 
             this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("movedata")]
+    [Summary("Move imports and streaks from one user to another")]
+    public async Task MoveData(string oldUserId = null, string newUserId = null)
+    {
+        try
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (oldUserId == null || newUserId == null)
+                {
+                    await ReplyAsync("Enter the old and new id. For example, `.moveimports 125740103539621888 356268235697553409`");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var oldUser = await this._settingService.GetDifferentUser(oldUserId);
+                var newUser = await this._settingService.GetDifferentUser(newUserId);
+
+                if (oldUser == null || newUser == null)
+                {
+                    await ReplyAsync("One or both users could not be found. Are you sure they are registered in .fmbot?");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                var embed = new EmbedBuilder();
+
+                var oldUserDescription = new StringBuilder();
+                oldUserDescription.AppendLine($"`{oldUser.DiscordUserId}` - <@{oldUser.DiscordUserId}>");
+                oldUserDescription.AppendLine($"Last.fm: `{oldUser.UserNameLastFM}`");
+                if (oldUser.LastUsed.HasValue)
+                {
+                    var specifiedDateTime = DateTime.SpecifyKind(oldUser.LastUsed.Value, DateTimeKind.Utc);
+                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                    oldUserDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
+                }
+
+                embed.AddField($"Old user - {oldUser.UserId} {oldUser.UserType.UserTypeToIcon()}", oldUserDescription.ToString());
+
+                var newUserDescription = new StringBuilder();
+                newUserDescription.AppendLine($"`{newUser.DiscordUserId}` - <@{newUser.DiscordUserId}>");
+                newUserDescription.AppendLine($"Last.fm: `{newUser.UserNameLastFM}`");
+                if (newUser.LastUsed.HasValue)
+                {
+                    var specifiedDateTime = DateTime.SpecifyKind(newUser.LastUsed.Value, DateTimeKind.Utc);
+                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                    newUserDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
+                }
+
+                embed.AddField($"New user - {newUser.UserId} {newUser.UserType.UserTypeToIcon()}", newUserDescription.ToString());
+
+                if (!string.Equals(oldUser.UserNameLastFM, newUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
+                {
+                    embed.AddField("⚠️ Warning ⚠️", "Last.fm usernames are different, are you sure?");
+                }
+
+                embed.WithDescription(
+                    "This will move over all imported plays and saved streaks from one user to another.\n\n" +
+                    "Note about imports:\n" +
+                    "- If the new user already has imports enabled they need a full update\n" +
+                    "- If not enabled, they need to enable it themselves with `/import manage`");
+
+                var components = new ComponentBuilder().WithButton("Move data", customId: $"move-user-data-{oldUser.UserId}-{newUser.UserId}", ButtonStyle.Danger);
+
+                await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None, components: components.Build());
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("You are not authorized to use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
         }
         catch (Exception e)
         {

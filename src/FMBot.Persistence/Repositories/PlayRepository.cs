@@ -270,4 +270,30 @@ public static class PlayRepository
 
         return play != null;
     }
+    
+    public static async Task MoveImports(int oldUserId, int newUserId, NpgsqlConnection connection)
+    {
+        const string sql = "UPDATE public.user_plays SET user_id = @newUserId " +
+                           "WHERE user_id = @oldUserId AND play_source != 0;";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await connection.QueryFirstOrDefaultAsync(sql, new
+        {
+            oldUserId,
+            newUserId
+        });
+    }
+    
+    public static async Task MoveStreaks(int oldUserId, int newUserId, NpgsqlConnection connection)
+    {
+        const string sql = "UPDATE public.user_streaks SET user_id = @newUserId " +
+                           "WHERE user_id = @oldUserId";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await connection.QueryFirstOrDefaultAsync(sql, new
+        {
+            oldUserId,
+            newUserId
+        });
+    }
 }
