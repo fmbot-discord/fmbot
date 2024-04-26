@@ -475,11 +475,17 @@ public class AdminCommands : BaseCommandModule
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        try
+        {
+            var response = await this._staticBuilders.DiscordSupportersAsync(new ContextModel(this.Context, prfx, userSettings));
 
-        var response = await this._staticBuilders.DiscordSupportersAsync(new ContextModel(this.Context, prfx, userSettings));
-
-        await this.Context.SendResponse(this.Interactivity, response);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [Command("addalbum")]
