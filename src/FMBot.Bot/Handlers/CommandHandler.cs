@@ -398,9 +398,9 @@ public class CommandHandler
             if (channelDisabled)
             {
                 if (searchResult.Commands == null || !searchResult.Commands.Any())
-                    {
-                        return false;
-                    }
+                {
+                    return false;
+                }
                 _ = this._interactiveService.DelayedDeleteMessageAsync(
                     await context.Channel.SendMessageAsync("The bot has been disabled in this channel."),
                     TimeSpan.FromSeconds(8));
