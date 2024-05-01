@@ -1141,6 +1141,11 @@ public class UserService
 
         var user = await db.Users.FirstAsync(f => f.UserId == userId);
 
+        if (timeZone == "null")
+        {
+            timeZone = null;
+        }
+
         user.TimeZone = timeZone;
         db.Entry(user).State = EntityState.Modified;
 
