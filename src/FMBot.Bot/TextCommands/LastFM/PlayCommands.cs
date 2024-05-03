@@ -66,7 +66,7 @@ public class PlayCommands : BaseCommandModule
     [Command("fm", RunMode = RunMode.Async)]
     [Summary("Shows you or someone else their current track")]
     [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "am", "hm", "jm", "km",
-        "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm", "nowplaying")]
+        "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "nowplaying")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task NowPlayingAsync([Remainder] string options = null)
@@ -206,7 +206,7 @@ public class PlayCommands : BaseCommandModule
 
     [Command("recent", RunMode = RunMode.Async)]
     [Summary("Shows you or someone else their recent tracks")]
-    [Options("Amount of recent tracks to show", Constants.UserMentionExample)]
+    [Options(Constants.UserMentionExample)]
     [Examples("recent", "r", "recent @user", "recent lfm:fm-bot")]
     [Alias("recenttracks", "recents", "r", "rc")]
     [UsernameSetRequired]
