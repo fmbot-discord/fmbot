@@ -204,7 +204,7 @@ public class ImportSlashCommands : InteractionModuleBase
             if (contextUser.DataSource != DataSource.LastFm)
             {
                 await this._indexService.RecalculateTopLists(contextUser);
-                await UpdateImportEmbed(message, embed, description, $"- Recalculated top lists");
+                await UpdateImportEmbed(message, embed, description, $"- Refreshed top list cache");
             }
 
             await this._importService.UpdateExistingPlays(contextUser);
@@ -212,7 +212,7 @@ public class ImportSlashCommands : InteractionModuleBase
             var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.SpotifyImport);
             if (years.Length > 0)
             {
-                embed.AddField("Total imported Spotify plays", years);
+                embed.AddField("📝 Total imported Spotify plays", years);
             }
 
             var examples = new StringBuilder();
@@ -220,30 +220,43 @@ public class ImportSlashCommands : InteractionModuleBase
             examples.AppendLine($"- View all your combined plays with `recent`");
             examples.AppendLine($"- Or use the `top artists` command for top lists");
 
-            embed.AddField("Start exploring your full streaming history", examples);
+            embed.AddField("🔎 Start exploring your full streaming history", examples);
 
             contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var importSetting = new StringBuilder();
+            var importActivatedTitle = new StringBuilder();
             switch (contextUser.DataSource)
             {
                 case DataSource.LastFm:
+                    importActivatedTitle.Append("⚙️ Current import setting");
                     importSetting.AppendLine(
-                        "Your play data source is currently still set to just Last.fm. You can change this manually with the button below.");
+                        "Your import setting is currently still set to just Last.fm, so imports will not be used. You can change this manually with the button below.");
                     break;
                 case DataSource.FullImportThenLastFm:
+                    importActivatedTitle.Append("✅ Importing service activated");
                     importSetting.AppendLine(
-                        "Your data source has been set to `Full imports, then Last.fm`. This uses your full Spotify history and adds your Last.fm scrobbles afterwards.");
+                        "With this service all playcounts and history in the bot will consist of your imports combined with your Last.fm history. The bot re-calculates this every time you run a command, all while still responding quickly.");
+                    importSetting.AppendLine();
+                    importSetting.AppendLine(
+                        "Your import setting has been set to `Full imports, then Last.fm`. This uses your full Spotify history and adds your Last.fm scrobbles afterwards.");
                     break;
                 case DataSource.ImportThenFullLastFm:
+                    importActivatedTitle.Append("✅ Importing service activated");
                     importSetting.AppendLine(
-                        "Your data source has been set to `Imports, then full Last.fm`. This uses your Spotify history up until you started using Last.fm.");
+                        "With this service all playcounts and history in the bot will consist of your imports combined with your Last.fm history. The bot re-calculates this every time you run a command, all while still responding quickly.");
+                    importSetting.AppendLine();
+                    importSetting.AppendLine(
+                        "Your import setting has been set to `Imports, then full Last.fm`. This uses your Spotify history up until you started using Last.fm.");
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
-            embed.AddField("Current import setting", importSetting);
-            embed.WithFooter($"{imports.processedFiles.Count} processed import files");
+            embed.AddField(importActivatedTitle.ToString(), importSetting);
+            if (imports.processedFiles != null)
+            {
+                embed.WithFooter($"{imports.processedFiles.Count} processed import files");
+            }
 
             var components = new ComponentBuilder()
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
