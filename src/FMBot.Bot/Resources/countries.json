@@ -1345,12 +1345,12 @@
     "Image": "https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/PR.svg"
   },
   {
-    "Name": "Palestinian Territories",
+    "Name": "Palestine",
     "Code": "PS",
     "Emoji": "🇵🇸",
     "Unicode": "U+1F1F5 U+1F1F8",
     "Image": "https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/PS.svg",
-    "Aliases": [ "Palestine" ]
+    "Aliases": [ "Palestinian Territories", "State of Palestine" ]
   },
   {
     "Name": "Portugal",
