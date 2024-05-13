@@ -906,6 +906,13 @@ public class PlayBuilder
             {
                 PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, mileStonePlay.Content.AlbumName);
             }
+
+            response.ReferencedMusic = new ReferencedMusic
+            {
+                Artist = mileStonePlay.Content.ArtistName,
+                Album = mileStonePlay.Content.AlbumName,
+                Track = mileStonePlay.Content.TrackName,
+            };
         }
 
         if (isRandom)

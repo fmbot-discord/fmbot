@@ -124,6 +124,10 @@ public class ArtistsService
             if (interactionId.HasValue)
             {
                 PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, artistValues);
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = artistValues
+                };
             }
 
             if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
@@ -181,6 +185,10 @@ public class ArtistsService
             if (interactionId.HasValue)
             {
                 PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = lastPlayedTrack.ArtistName
+                };
             }
 
             if (artistCall.Content == null || !artistCall.Success)

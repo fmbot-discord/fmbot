@@ -347,6 +347,39 @@ public class UserService
         }
     }
 
+    public async Task UpdateInteractionContext(ulong interactionId, ReferencedMusic responseContext)
+    {
+        if (PublicProperties.UsedCommandsTracks.TryRemove(interactionId, out _))
+        {
+            PublicProperties.UsedCommandsTracks.TryAdd(interactionId, responseContext.Track);
+        }
+        if (PublicProperties.UsedCommandsAlbums.TryRemove(interactionId, out _))
+        {
+            if (responseContext.Album != null)
+            {
+                PublicProperties.UsedCommandsAlbums.TryAdd(interactionId, responseContext.Album);
+            }
+        }
+        if (PublicProperties.UsedCommandsArtists.TryRemove(interactionId, out _))
+        {
+            PublicProperties.UsedCommandsArtists.TryAdd(interactionId, responseContext.Artist);
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingInteraction =
+            await db.UserInteractions.FirstOrDefaultAsync(f => f.DiscordId == interactionId);
+
+        if (existingInteraction != null)
+        {
+            existingInteraction.Track = responseContext.Track;
+            existingInteraction.Album = responseContext.Album;
+            existingInteraction.Artist = responseContext.Artist;
+
+            db.UserInteractions.Update(existingInteraction);
+            await db.SaveChangesAsync();
+        }
+    }
+
     public async Task<ReferencedMusic> GetReferencedMusic(ulong lookupId)
     {
         const string sql = "SELECT * FROM public.user_interactions WHERE discord_id = @lookupId OR discord_response_id = @lookupId ";

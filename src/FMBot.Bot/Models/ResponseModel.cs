@@ -16,6 +16,7 @@ public class ResponseModel
         this.EmbedAuthor = new EmbedAuthorBuilder();
         this.EmbedFooter = new EmbedFooterBuilder();
         this.Spoiler = false;
+        this.ReferencedMusic = null;
     }
 
     public EmbedAuthorBuilder EmbedAuthor { get; set; }
@@ -34,5 +35,6 @@ public class ResponseModel
     public StaticPaginator StaticPaginator { get; set; }
 
     public CommandResponse CommandResponse { get; set; }
-}
 
+    public ReferencedMusic ReferencedMusic { get; set; }
+}

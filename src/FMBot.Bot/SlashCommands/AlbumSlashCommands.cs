@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
@@ -11,6 +12,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
@@ -295,6 +297,12 @@ public class AlbumSlashCommands : InteractionModuleBase
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
+
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            if (message != null && response.ReferencedMusic != null && PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
+            {
+                await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
+            }
         }
         catch (Exception e)
         {

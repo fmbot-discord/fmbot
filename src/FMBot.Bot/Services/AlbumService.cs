@@ -133,6 +133,11 @@ public class AlbumService
                 {
                     PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, searchArtistName);
                     PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, searchAlbumName);
+                    response.ReferencedMusic = new ReferencedMusic
+                    {
+                        Artist = searchArtistName,
+                        Album = searchAlbumName
+                    };
                 }
 
                 if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
@@ -204,6 +209,11 @@ public class AlbumService
             {
                 PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);
                 PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, lastPlayedTrack.AlbumName);
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = lastPlayedTrack.ArtistName,
+                    Album = lastPlayedTrack.AlbumName
+                };
             }
 
             if (albumInfo?.Content == null || !albumInfo.Success)

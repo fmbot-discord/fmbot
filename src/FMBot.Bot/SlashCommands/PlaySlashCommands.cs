@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
@@ -14,10 +15,9 @@ using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.Subscriptions.Models;
-using MetaBrainz.MusicBrainz.Interfaces;
 using SummaryAttribute = Discord.Interactions.SummaryAttribute;
 
 namespace FMBot.Bot.SlashCommands;
@@ -355,6 +355,12 @@ public class PlaySlashCommands : InteractionModuleBase
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
+
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            if (message != null && response.ReferencedMusic != null && PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
+            {
+                await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
+            }
         }
         catch (Exception e)
         {
