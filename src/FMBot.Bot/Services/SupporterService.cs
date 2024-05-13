@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Webhook;
 using Discord.WebSocket;
-using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
@@ -145,17 +144,17 @@ public class SupporterService
 
         if (supporter != null && supporter.SubscriptionType == SubscriptionType.LifetimeOpenCollective)
         {
-            thankYouMessage.AppendLine("Thanks to your purchase we can continue to improve and keep the bot running while you get some nice perks in return. Here's an overview of the new features that are now available to you:");
+            thankYouMessage.AppendLine("Thanks to your purchase we can continue to improve and keep the bot running while you get some nice perks in return. Here's an overview of some of the exclusive features that are now available to you:");
         }
         else
         {
-            thankYouMessage.AppendLine("Thanks to your subscription we can continue to improve and keep the bot running while you get some nice perks in return. Here's an overview of the new features that are now available to you:");
+            thankYouMessage.AppendLine("Thanks to your subscription we can continue to improve and keep the bot running while you get some nice perks in return. Here's an overview of some of the exclusive features that are now available to you:");
         }
 
         thankYouMessage.AppendLine();
-        thankYouMessage.AppendLine("<:history:1131511469096312914> **Import your Spotify**");
-        thankYouMessage.AppendLine("- Import and use your full Spotify history");
-        thankYouMessage.AppendLine("- Use `/import Spotify` to get started");
+        thankYouMessage.AppendLine("<:history:1131511469096312914> **Import your Spotify or Apple Music**");
+        thankYouMessage.AppendLine("- Import and use your full Spotify or Apple Music history");
+        thankYouMessage.AppendLine("- Use `/import Spotify` or `/import applemusic` to get started");
         thankYouMessage.AppendLine("- Use `/import manage` to configure how your data is combined with Last.fm");
         thankYouMessage.AppendLine();
         thankYouMessage.AppendLine("📈 **More stats and expanded commands**");
@@ -206,7 +205,7 @@ public class SupporterService
         {
             var reactivateEmbed = new EmbedBuilder();
             reactivateEmbed.WithDescription(
-                "Welcome back. Please use the `/import manage` command to re-activate the import feature if you've used it previously.");
+                "Welcome back. Please use the `/import manage` command to re-activate the import service if you've used it previously.");
             reactivateEmbed.WithColor(DiscordConstants.InformationColorBlue);
             await discordUser.SendMessageAsync(embeds: [thankYouEmbed.Build(), reactivateEmbed.Build()]);
         }
@@ -235,7 +234,7 @@ public class SupporterService
 
         if (hadImported)
         {
-            goodbyeMessage.AppendLine("You have been moved back to using Last.fm without imports as your data source. Your imports are however saved and will be available again if you resubscribe in the future.");
+            goodbyeMessage.AppendLine("The import service is no longer active, so the bot will now only use your Last.fm stats. Your imports are however saved and will be available again if you resubscribe in the future.");
             goodbyeMessage.AppendLine();
         }
 

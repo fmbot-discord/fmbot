@@ -209,7 +209,7 @@ public class ImportBuilders
 
         var yearGroups = allPlays
             .Where(w => w.PlaySource == playSource)
-            .OrderByDescending(o => o.TimePlayed)
+            .OrderBy(o => o.TimePlayed)
             .GroupBy(g => g.TimePlayed.Year);
 
         foreach (var year in yearGroups)
