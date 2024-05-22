@@ -103,6 +103,7 @@ public class ServerSlashCommands : InteractionModuleBase
         if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+            guildListSettings.NewSearchValue = artist;
         }
 
         var response = await this._albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context), guild, guildListSettings);
@@ -139,6 +140,7 @@ public class ServerSlashCommands : InteractionModuleBase
         if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+            guildListSettings.NewSearchValue = artist;
         }
 
         var response = await this._trackBuilders.GuildTracksAsync(new ContextModel(this.Context), guild, guildListSettings);
