@@ -194,19 +194,12 @@ public class UserBuilder
 
         response.Embed.WithDescription("Bot scrobbling allows you to automatically scrobble music from Discord music bots to your Last.fm account. " +
                                     "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
-                                    "Only tracks that already exist on Last.fm will be scrobbled. The bot reads the 'Now Playing' message a bot sends and tries to retrieve the artist and track name from there.\n\n" +
-                                    "Currently supported bots:\n" +
-                                    "- Jockie Music\n" +
-                                    "- SoundCloud\n" +
-                                    "- Tempo Bot\n" +
-                                    "- Green-Bot\n" +
-                                    "- Cakey Bot\n" +
-                                    "- Betty\n" +
-                                    "- Bleed");
+                                    "Only tracks that already exist on Last.fm will be scrobbled. The bot reads the 'Now Playing' message a bot sends and tries to retrieve the artist and track name from there.");
 
         response.Components = new ComponentBuilder()
             .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Success, new Emoji("✅"))
-            .WithButton("Disable", InteractionConstants.BotScrobblingDisable, style: ButtonStyle.Danger, new Emoji("✖️"));
+            .WithButton("Disable", InteractionConstants.BotScrobblingDisable, style: ButtonStyle.Danger, new Emoji("✖️"))
+            .WithButton("Supported music bots", style: ButtonStyle.Link, url: "https://fmbot.xyz/botscrobbling/");
 
         return response;
     }
