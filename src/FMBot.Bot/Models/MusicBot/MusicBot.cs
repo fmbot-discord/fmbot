@@ -22,7 +22,8 @@ public abstract class MusicBot
         new GreenBotMusicBot(),
         new BettyMusicBot(),
         new TempoMusicBot(),
-        new BleedMusicBot()
+        new BleedMusicBot(),
+        new UzoxMusicBot()
     };
 
     protected MusicBot(string name, bool possiblyIncludesLinks = true, bool skipUploaderName = false, bool trackNameFirst = false)
