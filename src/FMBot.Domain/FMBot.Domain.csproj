@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="31.0.4" />
+    <PackageReference Include="CsvHelper" Version="32.0.3" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.2.0" />
     <PackageReference Include="prometheus-net" Version="8.2.1" />
     <PackageReference Include="SpotifyAPI.Web" Version="7.1.1" />

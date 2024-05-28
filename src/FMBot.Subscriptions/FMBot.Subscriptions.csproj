@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="GraphQL.Client" Version="6.0.5" />
-    <PackageReference Include="GraphQL.Client.Serializer.SystemTextJson" Version="6.0.5" />
-    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="8.0.4" />
+    <PackageReference Include="GraphQL.Client" Version="6.1.0" />
+    <PackageReference Include="GraphQL.Client.Serializer.SystemTextJson" Version="6.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="8.0.5" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
     <PackageReference Include="Serilog" Version="3.1.1" />
     <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />

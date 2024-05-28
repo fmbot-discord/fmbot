@@ -39,6 +39,7 @@ using FMBot.Persistence.Interfaces;
 using System.Linq;
 using FMBot.Bot.Extensions;
 using Web.InternalApi;
+using Discord.Rest;
 
 namespace FMBot.Bot;
 
@@ -93,6 +94,9 @@ public class Startup
 
         var services = new ServiceCollection(); // Create a new instance of a service collection
         this.ConfigureServices(services);
+
+        // temp fix https://github.com/discord-net/Discord.Net/releases/tag/3.15.0
+        services.AddSingleton<IRestClientProvider>(x => x.GetRequiredService<DiscordShardedClient>());
 
         var provider = services.BuildServiceProvider(); // Build the service provider
         //provider.GetRequiredService<LoggingService>();      // Start the logging service
