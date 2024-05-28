@@ -42,10 +42,10 @@ public static class GrpcExtensions
     {
         var secretKey = configuration["ApiConfig:InternalSecretKey"];
         var endpoint = configuration["ApiConfig:InternalEndpoint"];
-
+        
         services.AddGrpcClient<TClient>(o =>
         {
-            o.Address = new Uri(endpoint);
+            o.Address = new Uri(endpoint ?? "http://localhost:5285/");
         }).ConfigureChannel(o =>
         {
             o.MaxReceiveMessageSize = null;
