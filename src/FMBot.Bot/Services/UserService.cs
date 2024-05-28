@@ -23,7 +23,6 @@ using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
-using Microsoft.VisualBasic;
 using Npgsql;
 using Serilog;
 
