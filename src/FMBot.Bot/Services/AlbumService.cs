@@ -67,7 +67,7 @@ public class AlbumService
     }
 
     public async Task<AlbumSearch> SearchAlbum(ResponseModel response, IUser discordUser, string albumValues, string lastFmUserName, string sessionKey = null,
-            string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null, IUserMessage referencedMessage = null)
+            string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null, IUserMessage referencedMessage = null, bool redirectsEnabled = true)
     {
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(albumValues))
@@ -121,7 +121,7 @@ public class AlbumService
                 Response<AlbumInfo> albumInfo;
                 if (useCachedAlbums)
                 {
-                    albumInfo = await GetCachedAlbum(searchArtistName, searchAlbumName, lastFmUserName, userId);
+                    albumInfo = await GetCachedAlbum(searchArtistName, searchAlbumName, lastFmUserName, userId, redirectsEnabled);
                 }
                 else
                 {
@@ -278,10 +278,11 @@ public class AlbumService
         return new AlbumSearch(null, response);
     }
 
-    private async Task<Response<AlbumInfo>> GetCachedAlbum(string artistName, string albumName, string lastFmUserName, int? userId = null)
+    private async Task<Response<AlbumInfo>> GetCachedAlbum(string artistName, string albumName, string lastFmUserName, int? userId = null,
+        bool redirectsEnabled = true)
     {
         Response<AlbumInfo> albumInfo;
-        var cachedAlbum = await GetAlbumFromDatabase(artistName, albumName);
+        var cachedAlbum = await GetAlbumFromDatabase(artistName, albumName, redirectsEnabled);
         if (cachedAlbum != null)
         {
             albumInfo = new Response<AlbumInfo>
@@ -300,7 +301,7 @@ public class AlbumService
         else
         {
             albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(artistName, albumName,
-                lastFmUserName);
+                lastFmUserName, redirectsEnabled);
         }
 
         return albumInfo;
@@ -427,7 +428,7 @@ public class AlbumService
         return await db.Albums.FindAsync(albumId);
     }
 
-    public async Task<Album> GetAlbumFromDatabase(string artistName, string albumName)
+    public async Task<Album> GetAlbumFromDatabase(string artistName, string albumName, bool redirectsEnabled = true)
     {
         if (string.IsNullOrWhiteSpace(artistName) || string.IsNullOrWhiteSpace(albumName))
         {
@@ -437,7 +438,7 @@ public class AlbumService
         var alias = await this._aliasService.GetAlias(artistName);
 
         var correctedArtistName = artistName;
-        if (alias != null && !alias.Options.HasFlag(AliasOption.NoRedirectInLastfmCalls))
+        if (alias != null && !alias.Options.HasFlag(AliasOption.NoRedirectInLastfmCalls) && redirectsEnabled)
         {
             correctedArtistName = alias.ArtistName;
         }
