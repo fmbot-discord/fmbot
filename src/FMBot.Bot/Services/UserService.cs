@@ -23,6 +23,7 @@ using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Microsoft.VisualBasic;
 using Npgsql;
 using Serilog;
 
@@ -378,6 +379,21 @@ public class UserService
             db.UserInteractions.Update(existingInteraction);
             await db.SaveChangesAsync();
         }
+    }
+
+    public async Task<bool> InteractionExists(ulong contextMessageId, bool withResponseIdOnly = false)
+    {
+        if (PublicProperties.UsedCommandsResponseContextId.ContainsKey(contextMessageId) &&
+            (!withResponseIdOnly || PublicProperties.UsedCommandsResponseMessageId.ContainsKey(contextMessageId)))
+        {
+            return true;
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingInteraction =
+            await db.UserInteractions.FirstOrDefaultAsync(f => f.DiscordId == contextMessageId && (!withResponseIdOnly || f.DiscordResponseId.HasValue));
+
+        return existingInteraction != null;
     }
 
     public async Task<ReferencedMusic> GetReferencedMusic(ulong lookupId)

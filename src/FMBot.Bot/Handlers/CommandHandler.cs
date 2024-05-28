@@ -171,7 +171,49 @@ public class CommandHandler
             _ = Task.Run(() => TryScrobbling(msg, context));
         }
 
+        // Work on command update support
+        return;
 
+        var argPos = 0;
+        var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
+
+        // New prefix '.' but user still uses the '.fm' prefix anyway
+        if (prfx == this._botSettings.Bot.Prefix &&
+            msg.HasStringPrefix(prfx + "fm", ref argPos, StringComparison.OrdinalIgnoreCase) &&
+            msg.Content.Length > $"{prfx}fm".Length)
+        {
+            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx, true));
+            return;
+        }
+
+        // Prefix is set to '.fm' and the user uses '.fm'
+        const string fm = ".fm";
+        if (prfx == fm && msg.HasStringPrefix(".", ref argPos, StringComparison.OrdinalIgnoreCase))
+        {
+            var searchResult = this._commands.Search(context, argPos);
+            if (searchResult.IsSuccess &&
+                searchResult.Commands != null &&
+                searchResult.Commands.Any() &&
+                searchResult.Commands.FirstOrDefault().Command.Name == "fm")
+            {
+                _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx, true));
+                return;
+            }
+        }
+
+        // Normal or custom prefix
+        if (msg.HasStringPrefix(prfx, ref argPos, StringComparison.OrdinalIgnoreCase))
+        {
+            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx, true));
+            return;
+        }
+
+        // Mention
+        if (this._discord != null && msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
+        {
+            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx, true));
+            return;
+        }
     }
 
     private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos, string prfx, bool update = false)
@@ -182,6 +224,15 @@ public class CommandHandler
         if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && !msg.Content.StartsWith(prfx, StringComparison.OrdinalIgnoreCase))
         {
             return;
+        }
+
+        if (update)
+        {
+            var exists = await this._userService.InteractionExists(context.Message.Id, true);
+            if (!exists)
+            {
+                return;
+            }
         }
 
         using (Statistics.TextCommandHandlerDuration.NewTimer())
@@ -364,7 +415,7 @@ public class CommandHandler
         return true;
     }
 
-    private async Task<bool> CommandEnabled(SocketCommandContext context, SearchResult searchResult)
+    private async Task<bool> CommandEnabled(SocketCommandContext context, SearchResult searchResult, bool update = false)
     {
         if (context.Guild != null)
         {
@@ -382,9 +433,13 @@ public class CommandHandler
                 {
                     return false;
                 }
-                _ = this._interactiveService.DelayedDeleteMessageAsync(
-                    await context.Channel.SendMessageAsync("The bot has been disabled in this channel."),
-                    TimeSpan.FromSeconds(8));
+
+                if (!update)
+                {
+                    _ = this._interactiveService.DelayedDeleteMessageAsync(
+                        await context.Channel.SendMessageAsync("The bot has been disabled in this channel."),
+                        TimeSpan.FromSeconds(8));
+                }
                 return false;
             }
 
@@ -393,9 +448,14 @@ public class CommandHandler
                 disabledGuildCommands != null &&
                 disabledGuildCommands.Any(searchResult.Commands[0].Command.Name.Equals))
             {
-                _ = this._interactiveService.DelayedDeleteMessageAsync(
-                    await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server."),
-                    TimeSpan.FromSeconds(8));
+                if (!update)
+                {
+                    _ = this._interactiveService.DelayedDeleteMessageAsync(
+                        await context.Channel.SendMessageAsync(
+                            "The command you're trying to execute has been disabled in this server."),
+                        TimeSpan.FromSeconds(8));
+                }
+
                 return false;
             }
 
@@ -406,9 +466,14 @@ public class CommandHandler
                 disabledChannelCommands.Any(searchResult.Commands[0].Command.Name.Equals) &&
                 context.Channel != null)
             {
-                _ = this._interactiveService.DelayedDeleteMessageAsync(
-                    await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this channel."),
-                    TimeSpan.FromSeconds(8));
+                if (!update)
+                {
+                    _ = this._interactiveService.DelayedDeleteMessageAsync(
+                        await context.Channel.SendMessageAsync(
+                            "The command you're trying to execute has been disabled in this channel."),
+                        TimeSpan.FromSeconds(8));
+                }
+
                 return false;
             }
         }
