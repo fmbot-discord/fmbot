@@ -37,12 +37,15 @@ public class WhoKnowsArtistService
     public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(IGuild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName)
     {
-        const string sql = "SELECT ua.user_id, " +
+        const string sql = "BEGIN; " +
+                           "SET LOCAL enable_nestloop = OFF; " +
+                           "SELECT ua.user_id, " +
                            "ua.playcount " +
                            "FROM user_artists AS ua " +
                            "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "AND ua.user_id = ANY(SELECT user_id FROM guild_users WHERE guild_id = @guildId) " +
-                           "ORDER BY ua.playcount DESC ";
+                           "ORDER BY ua.playcount DESC; " +
+                           "COMMIT; ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
