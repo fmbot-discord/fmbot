@@ -1,5 +1,3 @@
-version: '3.8'
-
 name: 'fmbot-prod'
 services:
   prod-1:
