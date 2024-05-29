@@ -53,6 +53,7 @@ public class AdminCommands : BaseCommandModule
     private readonly AliasService _aliasService;
     private readonly WhoKnowsFilterService _whoKnowsFilterService;
     private readonly PlayService _playService;
+    private readonly DiscordShardedClient _client;
 
     private InteractiveService Interactivity { get; }
 
@@ -75,7 +76,7 @@ public class AdminCommands : BaseCommandModule
         ArtistsService artistsService,
         AliasService aliasService,
         WhoKnowsFilterService whoKnowsFilterService,
-        PlayService playService) : base(botSettings)
+        PlayService playService, DiscordShardedClient client) : base(botSettings)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -95,6 +96,7 @@ public class AdminCommands : BaseCommandModule
         this._aliasService = aliasService;
         this._whoKnowsFilterService = whoKnowsFilterService;
         this._playService = playService;
+        this._client = client;
     }
 
     //[Command("debug")]
@@ -210,6 +212,35 @@ public class AdminCommands : BaseCommandModule
                 await ReplyAsync("Disabled issue mode");
             }
 
+            this.Context.LogCommandUsed();
+        }
+        else
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("leaveserver")]
+    [Summary("Makes the bot leave a server")]
+    [Alias("leaveguild")]
+    public async Task LeaveGuild([Remainder] string reason = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            if (!ulong.TryParse(reason, out var id))
+            {
+                await ReplyAsync("Invalid guild ID");
+                this.Context.LogCommandUsed();
+                return;
+            }
+
+            var guildToLeave = await this._client.Rest.GetGuildAsync(id);
+            await guildToLeave.LeaveAsync();
+
+            await ReplyAsync("Left guild (if the bot was in there)");
             this.Context.LogCommandUsed();
         }
         else
