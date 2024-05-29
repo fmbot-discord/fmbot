@@ -716,17 +716,23 @@ public class PlayService
         var plays = await this.GetAllUserPlays(userId);
         return plays
             .OrderBy(o => o.TimePlayed)
-            .FirstOrDefault(f => f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))?
+            .FirstOrDefault(f =>
+                f.ArtistName != null &&
+                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))?
             .TimePlayed;
     }
 
     public async Task<DateTime?> GetAlbumFirstPlayDate(int userId, string artistName, string albumName)
     {
+        
         var plays = await this.GetAllUserPlays(userId);
         return plays
             .OrderBy(o => o.TimePlayed)
-            .FirstOrDefault(f => f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
-                                 f.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))?
+            .FirstOrDefault(f =>
+                f.ArtistName != null &&
+                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
+                f.AlbumName != null &&
+                f.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))?
             .TimePlayed;
     }
 
@@ -735,8 +741,10 @@ public class PlayService
         var plays = await this.GetAllUserPlays(userId);
         return plays
             .OrderBy(o => o.TimePlayed)
-            .FirstOrDefault(f => f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
-                                 f.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))?
+            .FirstOrDefault(f =>
+                f.ArtistName != null &&
+                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
+                f.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))?
             .TimePlayed;
     }
 
