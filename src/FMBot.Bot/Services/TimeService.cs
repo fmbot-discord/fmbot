@@ -92,7 +92,7 @@ public class TimeService
         return TimeSpan.FromMilliseconds(timeListened);
     }
 
-    public async Task<long> GetTrackLengthForTrack(string artistName, string trackName, bool adjustForBans = false)
+    public async Task<TimeSpan> GetTrackLengthForTrack(string artistName, string trackName, bool adjustForBans = false)
     {
         var length = await this._timeEnrichment.GetTrackLengthAsync(new TrackLengthRequest
         {
@@ -102,7 +102,7 @@ public class TimeService
             AdjustForBans = adjustForBans
         });
 
-        return length.TrackLength.ToTimeSpan().Milliseconds;
+        return length.TrackLength.ToTimeSpan();
     }
 
     public async Task<TimeSpan> GetAllTimePlayTimeForAlbum(List<AlbumTrack> albumTracks, List<UserTrack> userTracks, long totalPlaycount, TopTimeListened topTimeListened = null)
@@ -137,7 +137,7 @@ public class TimeService
 
                 if (trackPlaycount > 0)
                 {
-                    var trackLength = track.DurationSeconds ?? (await GetTrackLengthForTrack(track.ArtistName, track.ArtistName) / 1000);
+                    var trackLength = track.DurationSeconds ?? (int)(await GetTrackLengthForTrack(track.ArtistName, track.ArtistName)).TotalSeconds;
 
                     timeListenedSeconds += (trackLength * trackPlaycount);
                     playsLeft -= trackPlaycount;

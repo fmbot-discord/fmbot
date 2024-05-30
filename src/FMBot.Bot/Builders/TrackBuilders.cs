@@ -1292,9 +1292,9 @@ public class TrackBuilders
                 else
                 {
                     var length = await this._timeService.GetTrackLengthForTrack(artistName, track.Title);
-                    if (length != 210000 && length != 0)
+                    if (length.TotalSeconds != 0)
                     {
-                        trackLength = TimeSpan.FromMilliseconds(length);
+                        trackLength = length;
                     }
                 }
 
