@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using SpotifyAPI.Web;
 
@@ -23,6 +24,7 @@ public static class PublicProperties
     public static ConcurrentDictionary<ulong, string> UsedCommandsArtists = new();
     public static ConcurrentDictionary<ulong, string> UsedCommandsAlbums = new();
     public static ConcurrentDictionary<ulong, string> UsedCommandsTracks = new();
+    public static ConcurrentDictionary<ulong, ReferencedMusic> UsedCommandsReferencedMusic = new();
 
     public static ConcurrentDictionary<int, List<EurovisionContestantModel>> EurovisionYears = new();
     public static ConcurrentDictionary<string, EurovisionContestantModel> EurovisionContestants = new();

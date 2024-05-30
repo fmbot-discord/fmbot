@@ -99,46 +99,7 @@ public class CommandHandler
             _ = Task.Run(() => UpdateUserLastMessageDate(context));
         }
 
-        var argPos = 0;
-        var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
-
-        // New prefix '.' but user still uses the '.fm' prefix anyway
-        if (prfx == this._botSettings.Bot.Prefix &&
-            msg.HasStringPrefix(prfx + "fm", ref argPos, StringComparison.OrdinalIgnoreCase) &&
-            msg.Content.Length > $"{prfx}fm".Length)
-        {
-            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx));
-            return;
-        }
-
-        // Prefix is set to '.fm' and the user uses '.fm'
-        const string fm = ".fm";
-        if (prfx == fm && msg.HasStringPrefix(".", ref argPos, StringComparison.OrdinalIgnoreCase))
-        {
-            var searchResult = this._commands.Search(context, argPos);
-            if (searchResult.IsSuccess &&
-                searchResult.Commands != null &&
-                searchResult.Commands.Any() &&
-                searchResult.Commands.FirstOrDefault().Command.Name == "fm")
-            {
-                _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx));
-                return;
-            }
-        }
-
-        // Normal or custom prefix
-        if (msg.HasStringPrefix(prfx, ref argPos, StringComparison.OrdinalIgnoreCase))
-        {
-            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx));
-            return;
-        }
-
-        // Mention
-        if (this._discord != null && msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
-        {
-            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx));
-            return;
-        }
+        TryForCommand(context, msg, false);
     }
 
     private async Task TryScrobbling(SocketUserMessage msg, ICommandContext context)
@@ -159,59 +120,61 @@ public class CommandHandler
 
         var msg = updatedMessage as SocketUserMessage;
 
-        if (msg == null || msg.Author == null || msg.Interaction == null)
+        if (msg == null || msg.Author == null)
         {
             return;
         }
 
         var context = new ShardedCommandContext(this._discord, msg);
 
-        if (msg.Author.IsBot && msg.Flags != MessageFlags.Loading)
+        if (msg.Author.IsBot && msg.Flags != MessageFlags.Loading && msg.Interaction != null)
         {
             _ = Task.Run(() => TryScrobbling(msg, context));
         }
 
-        // Work on command update support
-        return;
+        TryForCommand(context, msg, true);
+    }
 
+    private void TryForCommand(ShardedCommandContext shardedCommandContext, SocketUserMessage socketUserMessage, bool update)
+    {
         var argPos = 0;
-        var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
+        var prfx = this._prefixService.GetPrefix(shardedCommandContext.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
         // New prefix '.' but user still uses the '.fm' prefix anyway
         if (prfx == this._botSettings.Bot.Prefix &&
-            msg.HasStringPrefix(prfx + "fm", ref argPos, StringComparison.OrdinalIgnoreCase) &&
-            msg.Content.Length > $"{prfx}fm".Length)
+            socketUserMessage.HasStringPrefix(prfx + "fm", ref argPos, StringComparison.OrdinalIgnoreCase) &&
+            socketUserMessage.Content.Length > $"{prfx}fm".Length)
         {
-            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx, true));
+            _ = Task.Run(() => ExecuteCommand(socketUserMessage, shardedCommandContext, argPos, prfx, update));
             return;
         }
 
         // Prefix is set to '.fm' and the user uses '.fm'
         const string fm = ".fm";
-        if (prfx == fm && msg.HasStringPrefix(".", ref argPos, StringComparison.OrdinalIgnoreCase))
+        if (prfx == fm && socketUserMessage.HasStringPrefix(".", ref argPos, StringComparison.OrdinalIgnoreCase))
         {
-            var searchResult = this._commands.Search(context, argPos);
+            var searchResult = this._commands.Search(shardedCommandContext, argPos);
             if (searchResult.IsSuccess &&
                 searchResult.Commands != null &&
                 searchResult.Commands.Any() &&
                 searchResult.Commands.FirstOrDefault().Command.Name == "fm")
             {
-                _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx, true));
+                _ = Task.Run(() => ExecuteCommand(socketUserMessage, shardedCommandContext, argPos, prfx, update));
                 return;
             }
         }
 
         // Normal or custom prefix
-        if (msg.HasStringPrefix(prfx, ref argPos, StringComparison.OrdinalIgnoreCase))
+        if (socketUserMessage.HasStringPrefix(prfx, ref argPos, StringComparison.OrdinalIgnoreCase))
         {
-            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx, true));
+            _ = Task.Run(() => ExecuteCommand(socketUserMessage, shardedCommandContext, argPos, prfx, update));
             return;
         }
 
         // Mention
-        if (this._discord != null && msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
+        if (this._discord != null && socketUserMessage.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
         {
-            _ = Task.Run(() => ExecuteCommand(msg, context, argPos, prfx, true));
+            _ = Task.Run(() => ExecuteCommand(socketUserMessage, shardedCommandContext, argPos, prfx, update));
             return;
         }
     }
@@ -228,7 +191,7 @@ public class CommandHandler
 
         if (update)
         {
-            var exists = await this._userService.InteractionExists(context.Message.Id, true);
+            var exists = await this._userService.InteractionExists(context.Message.Id);
             if (!exists)
             {
                 return;
@@ -385,7 +348,15 @@ public class CommandHandler
                 Statistics.CommandsExecuted.WithLabels(commandName).Inc();
 
                 _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
-                _ = Task.Run(() => this._userService.AddUserTextCommandInteraction(context, commandName));
+
+                if (!update)
+                {
+                    _ = Task.Run(() => this._userService.AddUserTextCommandInteraction(context, commandName));
+                }
+                else
+                {
+                    _ = Task.Run(() => this._userService.UpdateInteractionContextThroughReference(context.Message.Id, true, false));
+                }
             }
             else
             {

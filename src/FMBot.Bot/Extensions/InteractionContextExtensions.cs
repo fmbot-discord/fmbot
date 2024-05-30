@@ -114,7 +114,7 @@ public static class InteractionContextExtensions
     public static async Task SendFollowUpResponse(this IInteractionContext context, InteractiveService interactiveService, ResponseModel response, bool ephemeral = false)
     {
         ulong? responseId = null;
-
+        
         switch (response.ResponseType)
         {
             case ResponseType.Text:

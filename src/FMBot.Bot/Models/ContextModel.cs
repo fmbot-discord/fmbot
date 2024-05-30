@@ -43,10 +43,3 @@ public class ContextModel
 
     public User ContextUser { get; set; }
 }
-
-public class ReferencedMusic
-{
-    public string Artist { get; set; }
-    public string Album { get; set; }
-    public string Track { get; set; }
-}

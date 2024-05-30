@@ -583,6 +583,7 @@ public class TimerService
         PublicProperties.UsedCommandsArtists = new ConcurrentDictionary<ulong, string>();
         PublicProperties.UsedCommandsAlbums = new ConcurrentDictionary<ulong, string>();
         PublicProperties.UsedCommandsTracks = new ConcurrentDictionary<ulong, string>();
+        PublicProperties.UsedCommandsReferencedMusic = new ConcurrentDictionary<ulong, ReferencedMusic>();
 
         Log.Information("Cleared internal logs");
     }

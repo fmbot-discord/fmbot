@@ -347,22 +347,40 @@ public class UserService
         }
     }
 
-    public async Task UpdateInteractionContext(ulong interactionId, ReferencedMusic responseContext)
+    public async Task UpdateInteractionContextThroughReference(ulong interactionId, bool updateDelay = false, bool updateInternal = true)
     {
-        if (PublicProperties.UsedCommandsTracks.TryRemove(interactionId, out _))
+        if (updateDelay)
         {
-            PublicProperties.UsedCommandsTracks.TryAdd(interactionId, responseContext.Track);
+            await Task.Delay(12000);
         }
-        if (PublicProperties.UsedCommandsAlbums.TryRemove(interactionId, out _))
+
+        if (!PublicProperties.UsedCommandsReferencedMusic.TryGetValue(interactionId, out var value))
         {
-            if (responseContext.Album != null)
+            return;
+        }
+
+        await UpdateInteractionContext(interactionId, value, updateInternal);
+    }
+
+    public async Task UpdateInteractionContext(ulong interactionId, ReferencedMusic responseContext, bool updateInternal = true)
+    {
+        if (updateInternal)
+        {
+            if (PublicProperties.UsedCommandsTracks.TryRemove(interactionId, out _))
             {
-                PublicProperties.UsedCommandsAlbums.TryAdd(interactionId, responseContext.Album);
+                PublicProperties.UsedCommandsTracks.TryAdd(interactionId, responseContext.Track);
             }
-        }
-        if (PublicProperties.UsedCommandsArtists.TryRemove(interactionId, out _))
-        {
-            PublicProperties.UsedCommandsArtists.TryAdd(interactionId, responseContext.Artist);
+            if (PublicProperties.UsedCommandsAlbums.TryRemove(interactionId, out _))
+            {
+                if (responseContext.Album != null)
+                {
+                    PublicProperties.UsedCommandsAlbums.TryAdd(interactionId, responseContext.Album);
+                }
+            }
+            if (PublicProperties.UsedCommandsArtists.TryRemove(interactionId, out _))
+            {
+                PublicProperties.UsedCommandsArtists.TryAdd(interactionId, responseContext.Artist);
+            }
         }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -380,19 +398,31 @@ public class UserService
         }
     }
 
-    public async Task<bool> InteractionExists(ulong contextMessageId, bool withResponseIdOnly = false)
+    public async Task<bool> InteractionExists(ulong contextMessageId)
     {
-        if (PublicProperties.UsedCommandsResponseContextId.ContainsKey(contextMessageId) &&
-            (!withResponseIdOnly || PublicProperties.UsedCommandsResponseMessageId.ContainsKey(contextMessageId)))
+        if (PublicProperties.UsedCommandsResponseMessageId.ContainsKey(contextMessageId))
         {
             return true;
         }
 
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var existingInteraction =
-            await db.UserInteractions.FirstOrDefaultAsync(f => f.DiscordId == contextMessageId && (!withResponseIdOnly || f.DiscordResponseId.HasValue));
+        const string sql = "SELECT * FROM public.user_interactions WHERE discord_id = @lookupId AND discord_response_id IS NOT NULL";
 
-        return existingInteraction != null;
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var interaction = await connection.QueryFirstOrDefaultAsync<UserInteraction>(sql, new
+        {
+            lookupId = (decimal)contextMessageId
+        });
+
+        if (interaction == null || !interaction.DiscordResponseId.HasValue)
+        {
+            return false;
+        }
+
+        PublicProperties.UsedCommandsResponseMessageId.TryAdd(contextMessageId, interaction.DiscordResponseId.Value);
+        return true;
     }
 
     public async Task<ReferencedMusic> GetReferencedMusic(ulong lookupId)

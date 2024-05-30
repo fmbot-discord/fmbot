@@ -258,6 +258,12 @@ public class AlbumService
                 {
                     PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, albumInfo.Content.AlbumName);
                 }
+
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = albumInfo.Content.ArtistName,
+                    Album = albumInfo.Content.AlbumName
+                };
             }
 
             return new AlbumSearch(albumInfo.Content, response);

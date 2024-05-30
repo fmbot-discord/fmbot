@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -60,6 +61,68 @@ public static class CommandContextExtensions
     public static async Task SendResponse(this ICommandContext context, InteractiveService interactiveService, ResponseModel response)
     {
         ulong? responseId = null;
+
+        if (PublicProperties.UsedCommandsResponseMessageId.ContainsKey(context.Message.Id))
+        {
+            switch (response.ResponseType)
+            {
+                case ResponseType.Text:
+                case ResponseType.Embed:
+                case ResponseType.ImageWithEmbed:
+                case ResponseType.ImageOnly:
+                    await context.Channel.ModifyMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
+                    {
+                        msg.Content = response.Text;
+                        msg.Embed = response.Embed?.Build();
+                        msg.Components = response.Components?.Build();
+                        msg.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                        {
+                            new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}.png" : $"{response.FileName}.png")
+                        }) : null;
+                    });
+
+                    if (response.Stream != null)
+                    {
+                        await response.Stream.DisposeAsync();
+                    }
+
+                    break;
+                case ResponseType.Paginator:
+                    var existingMessage = await context.Channel.GetMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
+                    await interactiveService.SendPaginatorAsync(
+                                response.StaticPaginator,
+                                (IUserMessage)existingMessage,
+                                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            if (response.ReferencedMusic != null)
+            {
+                PublicProperties.UsedCommandsReferencedMusic.TryRemove(context.Message.Id, out _);
+                PublicProperties.UsedCommandsReferencedMusic.TryAdd(context.Message.Id, response.ReferencedMusic);
+
+                if (PublicProperties.UsedCommandsTracks.TryRemove(context.Message.Id, out _))
+                {
+                    PublicProperties.UsedCommandsTracks.TryAdd(context.Message.Id, response.ReferencedMusic.Track);
+                }
+                if (PublicProperties.UsedCommandsAlbums.TryRemove(context.Message.Id, out _))
+                {
+                    if (response.ReferencedMusic.Album != null)
+                    {
+                        PublicProperties.UsedCommandsAlbums.TryAdd(context.Message.Id, response.ReferencedMusic.Album);
+                    }
+                }
+                if (PublicProperties.UsedCommandsArtists.TryRemove(context.Message.Id, out _))
+                {
+                    PublicProperties.UsedCommandsArtists.TryAdd(context.Message.Id, response.ReferencedMusic.Artist);
+                }
+            }
+            
+            return;
+        }
+
         switch (response.ResponseType)
         {
             case ResponseType.Text:

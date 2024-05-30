@@ -264,6 +264,13 @@ public class TrackService
                 {
                     PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, trackInfo.Content.AlbumName);
                 }
+
+                response.ReferencedMusic = new ReferencedMusic
+                {
+                    Artist = result.Content.ArtistName,
+                    Album = trackInfo.Content?.AlbumName,
+                    Track = result.Content.TrackName
+                };
             }
 
             return new TrackSearch(trackInfo.Content, response);
