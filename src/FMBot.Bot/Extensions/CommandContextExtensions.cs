@@ -67,6 +67,13 @@ public static class CommandContextExtensions
             switch (response.ResponseType)
             {
                 case ResponseType.Text:
+                    await context.Channel.ModifyMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
+                    {
+                        msg.Content = response.Text;
+                        msg.Embed = null;
+                        msg.Components = response.Components?.Build();
+                    });
+                    break;
                 case ResponseType.Embed:
                 case ResponseType.ImageWithEmbed:
                 case ResponseType.ImageOnly:
@@ -119,7 +126,7 @@ public static class CommandContextExtensions
                     PublicProperties.UsedCommandsArtists.TryAdd(context.Message.Id, response.ReferencedMusic.Artist);
                 }
             }
-            
+
             return;
         }
 
