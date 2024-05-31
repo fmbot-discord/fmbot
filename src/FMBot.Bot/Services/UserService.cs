@@ -531,6 +531,15 @@ public class UserService
             .AsNoTracking()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
     }
+    public async Task<User> GetUserWithFriendsAsync(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Users
+            .Include(i => i.Friends)
+            .ThenInclude(i => i.FriendUser)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+    }
 
     public async Task<List<User>> GetAllDiscordUserIds()
     {

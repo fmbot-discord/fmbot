@@ -154,8 +154,13 @@ public static class InteractionConstants
     public const string WhoKnowsAlbumRolePicker = "whoknows-album-role-picker";
     public const string WhoKnowsTrackRolePicker = "whoknows-track-role-picker";
 
-    public const string GenreGuild = "genre-guild";
-    public const string GenreUser = "genre-user";
+    public static class Genre
+    {
+        public const string GenreGuild = "genre-guild";
+        public const string GenreUser = "genre-user";
+        
+        public const string GenreSelectMenu = "genre-picker";
+    }
 
     public const string GuildMembers = "guild-members";
     public const string FeaturedLog = "featured-log";

@@ -253,8 +253,7 @@ public class GuildBuilders
                 throw new ArgumentOutOfRangeException(nameof(guildViewType), guildViewType, null);
         }
 
-
-        var fmType = new SelectMenuBuilder()
+        var viewType = new SelectMenuBuilder()
             .WithPlaceholder("Select member view")
             .WithCustomId(InteractionConstants.GuildMembers)
             .WithMinValues(1)
@@ -267,7 +266,7 @@ public class GuildBuilders
 
             var active = option == guildViewType;
 
-            fmType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
         }
 
         if (!pages.Any())
@@ -278,7 +277,7 @@ public class GuildBuilders
             return response;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, fmType);
+        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
 
         return response;
     }

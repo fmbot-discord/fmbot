@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,7 +14,6 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
-using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -329,9 +327,13 @@ public class GenreBuilders
         return response;
     }
 
-    private async Task<List<string>> GetGenreOrRespond(string genreOptions, ContextModel context, ResponseModel response, User userSettings)
+    private async Task<(List<string> genres, SelectMenuBuilder selectMenu)> GetGenreOrRespond(string genreOptions,
+        ContextModel context, ResponseModel response, User userSettings, string commandDescription, string selectedValue = null,
+        string selectCommandId = null, string selectCommandDescription = null)
     {
         var genres = new List<string>();
+        SelectMenuBuilder selectMenu = null;
+
         if (string.IsNullOrWhiteSpace(genreOptions))
         {
             var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, true, userSettings.SessionKeyLastFm);
@@ -339,7 +341,7 @@ public class GenreBuilders
             if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
             {
                 response = GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFM);
-                return null;
+                return (null, selectMenu);
             }
 
             var artistName = recentTracks.Content.RecentTracks.First().ArtistName;
@@ -372,61 +374,87 @@ public class GenreBuilders
 
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
-                return null;
+                return (null, selectMenu);
             }
 
-            response.Embed.WithTitle($"Genre info for '{artistName}'");
+            response.Embed.WithTitle($"Genres for '{artistName}'");
 
             var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, artist.Name);
             if (artist.SpotifyImageUrl != null && safeForChannel == CensorService.CensorResult.Safe)
             {
                 response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
             }
-            
+
             PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
 
             if (genres.Any() && genres.Count > 0)
             {
                 var genreDescription = new StringBuilder();
+                selectMenu = new SelectMenuBuilder()
+                    .WithPlaceholder(selectCommandDescription)
+                    .WithCustomId(InteractionConstants.Genre.GenreSelectMenu)
+                    .WithMinValues(1)
+                    .WithMaxValues(1);
+
                 foreach (var artistGenre in artist.ArtistGenres)
                 {
                     genreDescription.AppendLine($"- **{artistGenre.Name.Transform(To.TitleCase)}**");
+
+                    var selected = selectedValue != null && artistGenre.Name.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
+
+                    var optionId = $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{artistGenre.Name}~{artist.Name}";
+                    selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId, isDefault: selected);
                 }
 
                 response.Embed.WithFooter($"Genre source: Spotify\n" +
-                                          $"Add a genre to this command to see top artists");
+                                          $"Add a genre to this command to see {commandDescription}");
+
+                response.Components = new ComponentBuilder().WithSelectMenu(selectMenu);
 
                 response.Embed.WithDescription(genreDescription.ToString());
 
                 response.ResponseType = ResponseType.Embed;
-                return null;
+                return (null, selectMenu);
             }
 
             response.Embed.WithDescription("*No provided genres for this artist.*");
             response.ResponseType = ResponseType.Embed;
-            return null;
+            return (null, selectMenu);
         }
 
-        var foundGenre = await this._genreService.GetValidGenre(genreOptions);
+        var genreResults = await this._genreService.GetValidGenres(genreOptions);
 
-        if (foundGenre == null)
+        if (!genreResults.Any())
         {
             var artist = await this._artistsService.GetArtistFromDatabase(genreOptions);
 
             if (artist != null)
             {
-                response.Embed.WithTitle($"Genre info for '{artist.Name}'");
+                response.Embed.WithTitle($"Genres for '{artist.Name}'");
 
                 var genreDescription = new StringBuilder();
                 if (artist.ArtistGenres != null && artist.ArtistGenres.Any())
                 {
+                    selectMenu = new SelectMenuBuilder()
+                        .WithPlaceholder(selectCommandDescription)
+                        .WithCustomId(InteractionConstants.Genre.GenreSelectMenu)
+                        .WithMinValues(1)
+                        .WithMaxValues(1);
+
                     foreach (var artistGenre in artist.ArtistGenres)
                     {
                         genreDescription.AppendLine($"- **{artistGenre.Name.Transform(To.TitleCase)}**");
+
+                        var selected = selectedValue != null && artistGenre.Name.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
+
+                        var optionId = $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{artistGenre.Name}~{genreOptions}";
+                        selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId, isDefault: selected);
                     }
 
                     response.Embed.WithFooter($"Genre source: Spotify\n" +
-                                              $"Add a genre to this command to see top artists");
+                                              $"Add a genre to this command to see {commandDescription}");
+
+                    response.Components = new ComponentBuilder().WithSelectMenu(selectMenu);
                 }
                 else
                 {
@@ -440,20 +468,20 @@ public class GenreBuilders
                 }
 
                 PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
-                
+
                 response.Embed.WithDescription(genreDescription.ToString());
                 response.ResponseType = ResponseType.Embed;
-                return null;
+                return (null, selectMenu);
             }
 
             response.Embed.WithDescription(
                 "Sorry, there are no provided genres for the artist you're searching for.");
             response.CommandResponse = CommandResponse.NotFound;
             response.ResponseType = ResponseType.Embed;
-            return null;
+            return (null, selectMenu);
         }
 
-        genres = new List<string> { foundGenre };
+        genres = genreResults;
 
         if (!genres.Any())
         {
@@ -462,10 +490,55 @@ public class GenreBuilders
                 $"Please try again later or manually enter a genre (example: `{context.Prefix}genre hip hop`)");
             response.CommandResponse = CommandResponse.NotFound;
             response.ResponseType = ResponseType.Embed;
+            return (null, null);
+        }
+
+        if (genreResults.Count > 1)
+        {
+            selectMenu = await GetGenreSearchOptions(context, userSettings, genreOptions, genreResults, selectCommandId,
+                selectedValue);
+        }
+
+        return (genres, selectMenu);
+    }
+
+    private async Task<SelectMenuBuilder> GetGenreSearchOptions(ContextModel context, User userSettings, string genreOptions, List<string> genreResults, string selectCommandId, string selectedValue)
+    {
+        SelectMenuBuilder selectMenu = null;
+
+        var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true);
+        var topGenres = await this._genreService.GetTopGenresForTopArtists(topArtists);
+
+        if (genreResults.Count > 1)
+        {
+            selectMenu = new SelectMenuBuilder()
+                .WithPlaceholder("Select similar genres")
+                .WithCustomId(InteractionConstants.Genre.GenreSelectMenu)
+                .WithMinValues(1)
+                .WithMaxValues(1);
+
+            var topGenresList = topGenres.OrderByDescending(o => o.UserPlaycount).ToList();
+            var resultSet = genreResults.ToHashSet();
+
+            var firstResult = topGenresList.First(f => f.GenreName.Equals(genreResults.First(), StringComparison.OrdinalIgnoreCase));
+            selectMenu.AddOption(genreResults.First().Transform(To.TitleCase), $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{genreResults.First()}~{genreOptions}",
+                description: $"{firstResult.UserPlaycount} {StringExtensions.GetPlaysString(firstResult.UserPlaycount)}");
+
+            foreach (var genre in topGenresList.Where(w => resultSet.Contains(w.GenreName) && !w.GenreName.Equals(genreResults.First(), StringComparison.OrdinalIgnoreCase)).Take(24))
+            {
+                var selected = selectedValue != null && genre.GenreName.Equals(selectedValue, StringComparison.OrdinalIgnoreCase);
+
+                var optionId = $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{genre.GenreName}~{genreOptions}";
+                selectMenu.AddOption(genre.GenreName.Transform(To.TitleCase), optionId, description: $"{genre.UserPlaycount} {StringExtensions.GetPlaysString(genre.UserPlaycount)}", isDefault: selected);
+            }
+        }
+
+        if (selectMenu == null || selectMenu.Options.Count == 1)
+        {
             return null;
         }
 
-        return genres;
+        return selectMenu;
     }
 
     public async Task<ResponseModel> GenreAsync(
@@ -473,7 +546,8 @@ public class GenreBuilders
         string genreOptions,
         UserSettingsModel userSettings,
         Guild guild,
-        bool userView = true)
+        bool userView = true,
+        string originalSearch = null)
     {
         var response = new ResponseModel
         {
@@ -493,11 +567,17 @@ public class GenreBuilders
         }
 
         var user = await this._userService.GetUserForIdAsync(userSettings.UserId);
-        var genres = await GetGenreOrRespond(genreOptions, context, response, user);
+        var genres = await GetGenreOrRespond(genreOptions, context, response, user, "top artists", null, userView ? "genre" : "guild-genre", "Select genre to view top artists");
 
-        if (genres == null)
+        if (genres.genres == null)
         {
             return response;
+        }
+
+        if (originalSearch != null)
+        {
+            var originalSearchResponse = await GetGenreOrRespond(originalSearch, context, response, user, "top artists", genres.genres.First(), userView ? "genre" : "guild-genre", "Select genre to view top artists");
+            genres.selectMenu = originalSearchResponse.selectMenu;
         }
 
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true);
@@ -519,7 +599,7 @@ public class GenreBuilders
             return response;
         }
 
-        var userArtistsWithGenres = await this._genreService.GetArtistsForGenres(genres, topArtists);
+        var userArtistsWithGenres = await this._genreService.GetArtistsForGenres(genres.genres, topArtists);
         var userGenre = userArtistsWithGenres.FirstOrDefault();
 
         List<PageBuilder> pages;
@@ -554,7 +634,7 @@ public class GenreBuilders
         {
             var topGuildArtists = await this._whoKnowsArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, OrderType.Playcount, limit: null);
 
-            var guildArtistsWithGenres = await this._genreService.GetArtistsForGenres(genres, topGuildArtists.Select(s => new TopArtist
+            var guildArtistsWithGenres = await this._genreService.GetArtistsForGenres(genres.genres, topGuildArtists.Select(s => new TopArtist
             {
                 ArtistName = s.ArtistName,
                 UserPlaycount = s.TotalPlaycount
@@ -574,7 +654,7 @@ public class GenreBuilders
             var guildGenreArtistPages = guildGenre.Artists.ChunkBy(10);
             pages = CreateGenrePageBuilder(guildGenreArtistPages, response.EmbedAuthor, guildGenre, "Server view", userSettings.DisplayName, userGenre?.Artists);
 
-            response.EmbedAuthor.WithName($"Top '{genres.First().Transform(To.TitleCase)}' artists for {context.DiscordGuild.Name}");
+            response.EmbedAuthor.WithName($"Top '{genres.genres.First().Transform(To.TitleCase)}' artists for {context.DiscordGuild.Name}");
         }
 
         if (!context.SlashCommand && !userSettings.DifferentUser)
@@ -582,19 +662,28 @@ public class GenreBuilders
             response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
         }
 
-        var interaction = userView ? InteractionConstants.GenreGuild : InteractionConstants.GenreUser;
+        var interaction = userView ? InteractionConstants.Genre.GenreGuild : InteractionConstants.Genre.GenreUser;
         var optionEmote = userView ? Emote.Parse("<:server:961685224041902140>") : Emote.Parse("<:user:961687127249260634>");
         var optionDescription = userView ? "View server overview" : "View user overview";
-        var optionId = $"{interaction}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{userGenre.GenreName}";
+        var originalSearchValue = !string.IsNullOrWhiteSpace(originalSearch) ? originalSearch : "0";
+        var optionId = $"{interaction}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{userGenre.GenreName}-{originalSearchValue}";
 
         if (pages.Count == 1)
         {
             response.ResponseType = ResponseType.Embed;
-            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, optionDescription);
+            response.SinglePageToEmbedResponseWithButton(pages.First(), optionId, optionEmote, optionDescription, genres.selectMenu);
         }
         else
         {
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+            if (genres.selectMenu != null)
+            {
+                response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, genres.selectMenu, optionId, optionEmote);
+            }
+            else
+            {
+                response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
+            }
+
             response.ResponseType = ResponseType.Paginator;
         }
 
@@ -679,24 +768,31 @@ public class GenreBuilders
 
     public async Task<ResponseModel> WhoKnowsGenreAsync(
         ContextModel context,
-        string genreValues)
+        string genreValues,
+        string originalSearch = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed
         };
 
-        var genres = await GetGenreOrRespond(genreValues, context, response, context.ContextUser);
+        var genres = await GetGenreOrRespond(genreValues, context, response, context.ContextUser, "WhoKnows genre", null, "whoknows", "Select genre to view WhoKnows");
 
-        if (genres == null)
+        if (genres.genres == null)
         {
             return response;
+        }
+
+        if (originalSearch != null)
+        {
+            var originalSearchResponse = await GetGenreOrRespond(originalSearch, context, response, context.ContextUser, "WhoKnows genre", genres.genres.First(), "whoknows", "Select genre to view WhoKnows");
+            genres.selectMenu = originalSearchResponse.selectMenu;
         }
 
         var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        var guildTopUserArtists = await this._genreService.GetTopUserArtistsForGuildAsync(guild.GuildId, genres.First());
+        var guildTopUserArtists = await this._genreService.GetTopUserArtistsForGuildAsync(guild.GuildId, genres.genres.First());
         var usersWithGenre = await this._genreService.GetUsersWithGenreForUserArtists(guildTopUserArtists, guildUsers);
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
@@ -740,7 +836,12 @@ public class GenreBuilders
             footer.AppendLine(filterStats.FullDescription);
         }
 
-        response.Embed.WithTitle($"{genres.First().Transform(To.TitleCase)} in {context.DiscordGuild.Name}");
+        if (genres.selectMenu != null)
+        {
+            response.Components = new ComponentBuilder().WithSelectMenu(genres.selectMenu);
+        }
+
+        response.Embed.WithTitle($"{genres.genres.First().Transform(To.TitleCase)} in {context.DiscordGuild.Name}");
         response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
@@ -749,7 +850,8 @@ public class GenreBuilders
 
     public async Task<ResponseModel> FriendsWhoKnowsGenreAsync(
         ContextModel context,
-        string genreValues)
+        string genreValues,
+        string originalSearch = null)
     {
         var response = new ResponseModel
         {
@@ -765,17 +867,23 @@ public class GenreBuilders
             return response;
         }
 
-        var genres = await GetGenreOrRespond(genreValues, context, response, context.ContextUser);
+        var genres = await GetGenreOrRespond(genreValues, context, response, context.ContextUser, "Friends WhoKnow genre", null, "friendwhoknows", "Select genre to view Friends WhoKnow");
 
-        if (genres == null)
+        if (genres.genres == null)
         {
             return response;
+        }
+
+        if (originalSearch != null)
+        {
+            var originalSearchResponse = await GetGenreOrRespond(originalSearch, context, response, context.ContextUser, "Friends WhoKnow genre", genres.genres.First(), "friendwhoknows", "Select genre to view Friends WhoKnow");
+            genres.selectMenu = originalSearchResponse.selectMenu;
         }
 
         var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        var guildTopUserArtists = await this._genreService.GetTopUserArtistsForUserFriendsAsync(context.ContextUser.UserId, genres.First());
+        var guildTopUserArtists = await this._genreService.GetTopUserArtistsForUserFriendsAsync(context.ContextUser.UserId, genres.genres.First());
         var usersWithGenre = await this._genreService.GetUsersWithGenreForUserArtists(guildTopUserArtists, guildUsers, context.ContextUser.Friends);
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId);
@@ -821,7 +929,12 @@ public class GenreBuilders
             footer.AppendLine();
         }
 
-        response.Embed.WithTitle($"{genres.First().Transform(To.TitleCase)} with friends");
+        if (genres.selectMenu != null)
+        {
+            response.Components = new ComponentBuilder().WithSelectMenu(genres.selectMenu);
+        }
+
+        response.Embed.WithTitle($"{genres.genres.First().Transform(To.TitleCase)} with friends");
         response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 

@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -13,6 +15,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
+using static FMBot.Bot.Resources.InteractionConstants;
 
 
 namespace FMBot.Bot.SlashCommands;
@@ -62,8 +65,8 @@ public class GenreSlashCommands : InteractionModuleBase
     }
 
     [UsernameSetRequired]
-    [ComponentInteraction($"{InteractionConstants.GenreGuild}-*-*-*")]
-    public async Task GuildGenresAsync(string discordUserId, string requesterDiscordUserId, string genre)
+    [ComponentInteraction($"{InteractionConstants.Genre.GenreGuild}-*-*-*-*")]
+    public async Task GuildGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
         _ = DeferAsync();
 
@@ -77,13 +80,18 @@ public class GenreSlashCommands : InteractionModuleBase
             new ComponentBuilder().WithButton($"Loading server view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
         await message.ModifyAsync(m => m.Components = components.Build());
 
-        var contextUser = await this._userService.GetUserAsync(ulong.Parse(requesterDiscordUserId));
+        var discordUserId = ulong.Parse(discordUser);
+        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+        var originalSearchValue = originalSearch == "0" ? null : originalSearch;
+
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User);
+        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
         try
         {
-            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, contextUser), genre, userSettings, guild, false);
+            var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, contextUser, discordContextUser), genre, userSettings, guild, false, originalSearchValue);
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -95,8 +103,8 @@ public class GenreSlashCommands : InteractionModuleBase
     }
 
     [UsernameSetRequired]
-    [ComponentInteraction($"{InteractionConstants.GenreUser}-*-*-*")]
-    public async Task UserGenresAsync(string discordUserId, string requesterDiscordUserId, string genre)
+    [ComponentInteraction($"{InteractionConstants.Genre.GenreUser}-*-*-*-*")]
+    public async Task UserGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
         _ = DeferAsync();
 
@@ -110,18 +118,80 @@ public class GenreSlashCommands : InteractionModuleBase
             new ComponentBuilder().WithButton($"Loading user view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
         await message.ModifyAsync(m => m.Components = components.Build());
 
-        var contextUser = await this._userService.GetUserAsync(ulong.Parse(requesterDiscordUserId));
+        var discordUserId = ulong.Parse(discordUser);
+        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+        var originalSearchValue = originalSearch == "0" ? null : originalSearch;
+
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-        var userSettings = await this._settingService.GetUser(discordUserId == requesterDiscordUserId ? null : discordUserId, contextUser, this.Context.Guild, this.Context.User);
+        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
         try
         {
-            var context = new ContextModel(this.Context, contextUser)
-            {
-                DiscordUser = await this.Context.Guild.GetUserAsync(ulong.Parse(requesterDiscordUserId))
-            };
+            var context = new ContextModel(this.Context, contextUser, discordContextUser);
+            var response = await this._genreBuilders.GenreAsync(context, genre, userSettings, guild, originalSearch: originalSearchValue);
 
-            var response = await this._genreBuilders.GenreAsync(context, genre, userSettings, guild);
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Genre.GenreSelectMenu)]
+    [UsernameSetRequired]
+    public async Task SetResponseModeAsync(string[] inputs)
+    {
+        try
+        {
+            var options = inputs.First().Split("~");
+
+            _ = DeferAsync();
+
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            if (message == null)
+            {
+                return;
+            }
+
+            var discordUserId = ulong.Parse(options[0]);
+            var requesterDiscordUserId = ulong.Parse(options[1]);
+            var view = options[2];
+            var selectedOption = options[3];
+            var originalSearch = string.IsNullOrWhiteSpace(options[4]) ? null : options[4];
+
+            var components =
+                new ComponentBuilder().WithButton($"Loading {selectedOption}...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+            await message.ModifyAsync(m => m.Components = components.Build());
+
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var contextUser = await this._userService.GetUserWithFriendsAsync(requesterDiscordUserId);
+            var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+            var context = new ContextModel(this.Context, contextUser, discordContextUser);
+
+            ResponseModel response;
+
+            switch (view)
+            {
+                default:
+                    response = await this._genreBuilders.GenreAsync(context, selectedOption, userSettings, guild, originalSearch: originalSearch);
+                    break;
+                case "guild-genre":
+                    response = await this._genreBuilders.GenreAsync(context, selectedOption, userSettings, guild, false, originalSearch: originalSearch);
+                    break;
+                case "whoknows":
+                    response = await this._genreBuilders.WhoKnowsGenreAsync(context, selectedOption, originalSearch: originalSearch);
+                    break;
+                case "friendwhoknows":
+                    response = await this._genreBuilders.FriendsWhoKnowsGenreAsync(context, selectedOption, originalSearch: originalSearch);
+                    break;
+
+            }
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -128,7 +129,7 @@ public class GenreService
         return $"genre-artists-{genreName}";
     }
 
-    public async Task<string> GetValidGenre(string genreValues)
+    public async Task<List<string>> GetValidGenres(string genreValues)
     {
         if (string.IsNullOrWhiteSpace(genreValues))
         {
@@ -146,10 +147,21 @@ public class GenreService
 
         var searchQuery = genreValues.ToLower().Replace(" ", "").Replace("-", "");
 
-        var foundGenre = artistGenres
-            .FirstOrDefault(f => f.Genre.Replace(" ", "").Replace("-", "") == searchQuery);
+        var normalizedArtistGenres = artistGenres
+            .Select(s => s.Genre)
+            .ToList();
 
-        return foundGenre?.Genre;
+        var foundGenres = new List<string>();
+        var firstResult = normalizedArtistGenres.FirstOrDefault(f => f.Replace(" ", "").Replace("-", "").Equals(searchQuery, StringComparison.OrdinalIgnoreCase));
+
+        if (firstResult != null)
+        {
+            foundGenres.Add(firstResult);
+
+            foundGenres.ReplaceOrAddToList(normalizedArtistGenres.Where(f => f.Replace(" ", "").Replace("-", "").Contains(searchQuery, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        return foundGenres.Take(25).ToList();
     }
 
     public async Task<List<string>> SearchThroughGenres(string searchValue, bool cacheEnabled = true)

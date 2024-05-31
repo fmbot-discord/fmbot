@@ -10,6 +10,7 @@ using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using Google.Protobuf.Reflection;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace FMBot.Bot.Services;
@@ -218,8 +219,7 @@ public static class StringService
     }
 
     public static void SinglePageToEmbedResponseWithButton(this ResponseModel response, PageBuilder page,
-        string customOptionId = null,
-        IEmote optionEmote = null, string optionDescription = null)
+        string customOptionId = null, IEmote optionEmote = null, string optionDescription = null, SelectMenuBuilder selectMenu = null)
     {
         response.Embed.WithTitle(page.Title);
         response.Embed.WithAuthor(page.Author);
@@ -228,10 +228,17 @@ public static class StringService
         response.Embed.WithFooter(page.Footer);
         response.Embed.Color = null;
 
+        if (customOptionId != null || selectMenu != null)
+        {
+            response.Components = new ComponentBuilder();
+        }
         if (customOptionId != null)
         {
-            response.Components = new ComponentBuilder()
-                .WithButton(customId: customOptionId, emote: optionEmote, label: optionDescription, style: ButtonStyle.Secondary);
+            response.Components.WithButton(customId: customOptionId, emote: optionEmote, label: optionDescription, style: ButtonStyle.Secondary);
+        }
+        if (selectMenu != null)
+        {
+            response.Components.WithSelectMenu(selectMenu);
         }
     }
 
@@ -265,7 +272,7 @@ public static class StringService
     }
 
     public static StaticPaginator BuildStaticPaginatorWithSelectMenu(IList<PageBuilder> pages,
-        SelectMenuBuilder selectMenuBuilder)
+        SelectMenuBuilder selectMenuBuilder, string customOptionId = null, IEmote optionEmote = null)
     {
         var builder = new StaticPaginatorBuilder()
             .WithPages(pages)
@@ -281,7 +288,12 @@ public static class StringService
             builder.WithOptions(DiscordConstants.PaginationEmotes);
         }
 
-        if (pages.Count >= 10)
+        if (customOptionId != null && optionEmote != null)
+        {
+            builder.AddOption(customOptionId, optionEmote, null, ButtonStyle.Primary);
+        }
+
+        if (pages.Count >= 10 && customOptionId == null)
         {
             builder.AddOption(new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"), PaginatorAction.Jump));
         }
