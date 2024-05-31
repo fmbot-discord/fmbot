@@ -65,7 +65,7 @@ public class CrownCommands : BaseCommandModule
 
     [Command("crowns", RunMode = RunMode.Async)]
     [Summary("Shows you your crowns for this server.")]
-    [Alias("cws")]
+    [Alias("cws", "topcrowns", "topcws", "tcws")]
     [UsernameSetRequired]
     [GuildOnly]
     [SupportsPagination]

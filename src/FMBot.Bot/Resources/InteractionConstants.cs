@@ -70,6 +70,7 @@ public static class InteractionConstants
     {
         public const string Profile = "user-profile";
         public const string History = "user-history";
+        public const string CrownSelectMenu = "user-crownpicker";
     }
 
     public static class Album

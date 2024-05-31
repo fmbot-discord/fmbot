@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord.Interactions;
 using Fergun.Interactive;
@@ -104,12 +105,46 @@ public class CrownSlashCommands : InteractionModuleBase
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-
         try
         {
             var response = await this._crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser), guild, userSettings, viewType);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.User.CrownSelectMenu)]
+    [UsernameSetRequired]
+    public async Task CrownSelectMenu(string[] inputs)
+    {
+        _ = DeferAsync();
+
+        var options = inputs.First().Split("-");
+
+        var discordUserId = ulong.Parse(options[0]);
+        var requesterDiscordUserId = ulong.Parse(options[1]);
+
+        if (!Enum.TryParse(options[2], out CrownViewType viewType))
+        {
+            return;
+        }
+
+        var contextUser = await this._userService.GetUserWithFriendsAsync(requesterDiscordUserId);
+        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+        try
+        {
+            var response = await this._crownBuilders.CrownOverviewAsync(new ContextModel(this.Context, contextUser, discordContextUser), guild, userSettings, viewType);
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
