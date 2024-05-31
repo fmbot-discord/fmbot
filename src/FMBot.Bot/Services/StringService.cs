@@ -225,6 +225,7 @@ public static class StringService
         response.Embed.WithAuthor(page.Author);
         response.Embed.WithDescription(page.Description);
         response.Embed.WithUrl(page.Url);
+        response.Embed.WithThumbnailUrl(page.ThumbnailUrl);
         response.Embed.WithFooter(page.Footer);
         response.Embed.Color = null;
 
