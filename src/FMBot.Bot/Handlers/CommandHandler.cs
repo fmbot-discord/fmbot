@@ -200,7 +200,7 @@ public class CommandHandler
 
         using (Statistics.TextCommandHandlerDuration.NewTimer())
         {
-            if (!await CommandEnabled(context, searchResult))
+            if (!await CommandEnabled(context, searchResult, update))
             {
                 return;
             }
@@ -222,7 +222,7 @@ public class CommandHandler
                     return;
                 }
 
-                if (!await CommandEnabled(context, fmSearchResult))
+                if (!await CommandEnabled(context, fmSearchResult, update))
                 {
                     return;
                 }
