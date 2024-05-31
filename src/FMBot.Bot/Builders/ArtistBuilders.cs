@@ -1202,6 +1202,13 @@ public class ArtistBuilders
             pageCounter++;
         }
 
+        if (artistPages.Count == 0)
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription($"No discovered artists in {timeSettings.Description}.")
+                .WithAuthor(response.EmbedAuthor));
+        }
+
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
         return response;
