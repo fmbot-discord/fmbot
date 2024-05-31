@@ -80,7 +80,7 @@ public static class CommandContextExtensions
                     await context.Channel.ModifyMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
                     {
                         msg.Content = response.Text;
-                        msg.Embed = response.Embed?.Build();
+                        msg.Embed = response.ResponseType == ResponseType.ImageOnly ? null : response.Embed?.Build();
                         msg.Components = response.Components?.Build();
                         msg.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
                         {
