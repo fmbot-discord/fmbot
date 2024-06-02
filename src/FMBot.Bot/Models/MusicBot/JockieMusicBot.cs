@@ -18,17 +18,48 @@ internal class JockieMusicBot : MusicBot
         {
             return true;
         }
+
         var description = msg.Embeds.First().Description;
-        return string.IsNullOrEmpty(description) || !description.Contains(StartedPlaying);
+        if (!string.IsNullOrEmpty(description))
+        {
+            return !description.Contains(StartedPlaying, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var title = msg.Embeds.First().Author?.Name;
+        if (!string.IsNullOrEmpty(title))
+        {
+            return !title.Contains("Started playing", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return true;
     }
 
     /**
      * Example: :spotify: ​ Started playing Giants by Lights
+     * Or extended (m!set text announce extended on/off)
      */
     public override string GetTrackQuery(IUserMessage msg)
     {
         var description = msg.Embeds.First().Description;
-        var songByArtist = description[description.IndexOf(StartedPlaying, StringComparison.Ordinal)..];
-        return songByArtist.Replace("\\","");
+        if (description != null &&
+            description.Contains(StartedPlaying, StringComparison.OrdinalIgnoreCase))
+        {
+            var songByArtist = description[description.IndexOf(StartedPlaying, StringComparison.OrdinalIgnoreCase)..];
+            return songByArtist.Replace("\\", "");
+        }
+
+        if (msg.Embeds.First().Author.HasValue &&
+            msg.Embeds.First().Author?.Name != null &&
+            msg.Embeds.First().Author.Value.Name.Contains("Started playing", StringComparison.OrdinalIgnoreCase))
+        {
+            var field = msg.Embeds.First().Fields
+                .FirstOrDefault(f => f.Name.Contains("Playing", StringComparison.OrdinalIgnoreCase));
+            if (field != null)
+            {
+                return field.Value.Replace("\\", "");
+            }
+        }
+
+        return string.Empty;
     }
 }

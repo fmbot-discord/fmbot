@@ -341,16 +341,29 @@ public class TrackService
 
                 if (matches.Count > 0 && matches[0].Groups.Count > 1)
                 {
-                    var id = matches[0].Groups[2].ToString();
-                    var spotifyResult = await this._spotifyService.GetTrackById(id);
+                    var spotifyId = matches[0].Groups[2].ToString();
 
+                    var internalSpotifyResult = await GetTrackForSpotifyId(spotifyId);
+                    if (internalSpotifyResult != null)
+                    {
+                        return new TrackSearchResult
+                        {
+                            AlbumName = internalSpotifyResult.AlbumName,
+                            ArtistName = internalSpotifyResult.ArtistName,
+                            TrackName = internalSpotifyResult.Name,
+                            DurationMs = internalSpotifyResult.DurationMs
+                        };
+                    }
+
+                    var spotifyResult = await this._spotifyService.GetTrackById(spotifyId);
                     if (spotifyResult != null)
                     {
                         return new TrackSearchResult
                         {
                             AlbumName = spotifyResult.Album.Name,
                             ArtistName = spotifyResult.Artists.First().Name,
-                            TrackName = spotifyResult.Name
+                            TrackName = spotifyResult.Name,
+                            DurationMs = spotifyResult.DurationMs
                         };
                     }
                 }
@@ -372,7 +385,8 @@ public class TrackService
                     {
                         AlbumName = track.AlbumName,
                         ArtistName = track.ArtistName,
-                        TrackName = track.Name
+                        TrackName = track.Name,
+                        DurationMs = track.DurationMs
                     };
                 }
 
@@ -401,7 +415,8 @@ public class TrackService
                     {
                         AlbumName = lastFmResult.Content.AlbumName,
                         ArtistName = lastFmResult.Content.ArtistName,
-                        TrackName = lastFmResult.Content.TrackName
+                        TrackName = lastFmResult.Content.TrackName,
+                        DurationMs = lastFmResult.Content.Duration
                     };
                 }
             }
@@ -465,6 +480,19 @@ public class TrackService
                     }
                 }
 
+                var track = await GetTrackFromDatabase(artistName, trackName);
+
+                if (track != null)
+                {
+                    return new TrackSearchResult
+                    {
+                        AlbumName = track.AlbumName,
+                        ArtistName = track.ArtistName,
+                        TrackName = track.Name,
+                        DurationMs = track.DurationMs
+                    };
+                }
+
                 var trackLfm = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName);
 
                 if (trackLfm.Success)
@@ -473,7 +501,8 @@ public class TrackService
                     {
                         TrackName = trackLfm.Content.TrackName,
                         AlbumName = trackLfm.Content.AlbumName,
-                        ArtistName = trackLfm.Content.ArtistName
+                        ArtistName = trackLfm.Content.ArtistName,
+                        DurationMs = trackLfm.Content.Duration
                     };
                 }
             }
@@ -705,6 +734,13 @@ public class TrackService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.Tracks.FindAsync(trackId);
+    }
+
+    public async Task<Track> GetTrackForSpotifyId(string spotifyId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.Tracks.FirstOrDefaultAsync(f => f.SpotifyId == spotifyId);
     }
 
     public async Task<Track> GetTrackFromDatabase(string artistName, string trackName)

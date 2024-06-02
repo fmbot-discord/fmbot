@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -14,7 +14,7 @@ using FMBot.Bot.Models.MusicBot;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
-using FMBot.LastFM.Repositories;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -78,34 +78,54 @@ public class MusicBotService
             }
 
             _ = RegisterTrack(usersInChannel, trackResult, musicBot);
-            _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
+            _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count, msg.Id);
         }
         catch (Exception e)
         {
             Log.Error($"BotScrobbling: Error in music bot scrobbler ({musicBot.Name})", e);
             this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, "Skipped scrobble because error"));
         }
-
     }
 
     private async Task SendScrobbleMessage(ICommandContext context, TrackSearchResult trackResult,
-        int listenerCount)
+        int listenerCount, ulong botMessageId)
     {
         var embed = new EmbedBuilder().WithColor(DiscordConstants.LastFmColorRed);
         var prfx = this._prefixService.GetPrefix(context.Guild?.Id);
 
-        embed.WithDescription(
-            $"Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");
-        embed.WithFooter($"Use '{prfx}botscrobbling' for more information.");
+        var description = new StringBuilder();
+        description.Append($"Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");
+        embed.WithDescription(description.ToString());
 
-        _ = this.Interactivity.DelayedDeleteMessageAsync(
-            await context.Channel.SendMessageAsync(embed: embed.Build(), flags: MessageFlags.SuppressNotification),
-            TimeSpan.FromSeconds(120));
+        var footer = new StringBuilder();
+        if (trackResult.DurationMs.HasValue)
+        {
+            footer.Append($"Length {StringExtensions.GetTrackLength(trackResult.DurationMs.GetValueOrDefault())} - ");
+        }
+        footer.Append($"Manage with '{prfx}botscrobbling'");
+        embed.WithFooter(footer.ToString());
 
-        Log.Debug("BotScrobbling: Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild.Name, context.Guild.Id);
+        var scrobbleMessage =
+            await context.Channel.SendMessageAsync(embed: embed.Build(), flags: MessageFlags.SuppressNotification);
+
+        var referencedMusic = new ReferencedMusic
+        {
+            Artist = trackResult.ArtistName,
+            Album = trackResult.AlbumName,
+            Track = trackResult.TrackName
+        };
+        
+        PublicProperties.UsedCommandsReferencedMusic.TryAdd(scrobbleMessage.Id, referencedMusic);
+        PublicProperties.UsedCommandsReferencedMusic.TryAdd(botMessageId, referencedMusic);
+
+        Log.Information("BotScrobbling: Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild?.Name, context.Guild?.Id);
         this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Scrobbled `{trackResult.TrackName}` by `{trackResult.ArtistName}`"));
-    }
 
+        var messageDelayMs = (int)(trackResult.DurationMs - 5000 ?? 120000);
+        await Task.Delay(messageDelayMs);
+
+        await scrobbleMessage.DeleteAsync();
+    }
 
     private Task RegisterTrack(IEnumerable<User> users, TrackSearchResult result, MusicBot musicBot)
     {
@@ -131,9 +151,18 @@ public class MusicBotService
 
         Statistics.LastfmNowPlayingUpdates.WithLabels(musicBot.Name).Inc();
 
-        this._cache.Set($"now-playing-{user.UserId}", true, TimeSpan.FromSeconds(59));
-        await Task.Delay(TimeSpan.FromSeconds(60));
+        var trackScrobbleDelayMs = 60000;
+        if (result.DurationMs.HasValue)
+        {
+            trackScrobbleDelayMs = (int)(result.DurationMs.Value / 2);
 
+            trackScrobbleDelayMs = Math.Clamp(trackScrobbleDelayMs, 30000, 240000);
+        }
+
+        this._cache.Set($"now-playing-{user.UserId}", true, TimeSpan.FromMilliseconds(trackScrobbleDelayMs - 1000));
+        
+        await Task.Delay(TimeSpan.FromMilliseconds(trackScrobbleDelayMs));
+        
         if (!this._cache.TryGetValue($"now-playing-{user.UserId}", out bool _))
         {
             await this._dataSourceFactory.ScrobbleAsync(user.SessionKeyLastFm, result.ArtistName, result.TrackName, result.AlbumName);

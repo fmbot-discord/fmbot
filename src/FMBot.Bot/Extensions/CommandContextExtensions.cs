@@ -214,6 +214,11 @@ public static class CommandContextExtensions
             PublicProperties.UsedCommandsResponseContextId.TryGetValue(lookupId, out lookupId);
         }
 
+        if (PublicProperties.UsedCommandsReferencedMusic.TryGetValue(lookupId, out var value))
+        {
+            return value;
+        }
+
         if (PublicProperties.UsedCommandsArtists.ContainsKey(lookupId) ||
             PublicProperties.UsedCommandsAlbums.ContainsKey(lookupId) ||
             PublicProperties.UsedCommandsTracks.ContainsKey(lookupId))

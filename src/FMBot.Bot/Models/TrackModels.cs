@@ -38,15 +38,6 @@ public class WhoKnowsGlobalTrackDto
     public PrivacyLevel PrivacyLevel { get; set; }
 }
 
-public class AlbumTrackDto
-{
-    public string TrackName { get; set; }
-
-    public string ArtistName { get; set; }
-
-    public long DurationMs { get; set; }
-}
-
 public class TrackAutoCompleteSearchModel
 {
     public TrackAutoCompleteSearchModel(
@@ -73,20 +64,12 @@ public class TrackAutoCompleteSearchModel
     public int? Popularity { get; }
 }
 
-
-public class TrackLengthDto
-{
-    public string ArtistName { get; set; }
-    public string TrackName { get; set; }
-
-    public long DurationMs { get; set; }
-}
-
 public class TrackSearchResult
 {
     public string TrackName { get; set; }
     public string ArtistName { get; set; }
     public string AlbumName { get; set; }
+    public long? DurationMs { get; set; }
 }
 
 

@@ -729,9 +729,7 @@ public class TrackBuilders
 
         var duration = spotifyTrack?.DurationMs ?? trackSearch.Track.Duration;
 
-        var trackLength = TimeSpan.FromMilliseconds(duration.GetValueOrDefault());
-        var formattedTrackLength =
-            $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
+        var formattedTrackLength = StringExtensions.GetTrackLength(duration.GetValueOrDefault());
 
         if (spotifyTrack is { Tempo: not null } && duration.HasValue)
         {

@@ -236,6 +236,17 @@ public static class StringExtensions
         return oldValue > newValue ? "Down from" : "From";
     }
 
+    public static string GetTrackLength(long trackLength)
+    {
+        return GetTrackLength(TimeSpan.FromMilliseconds(trackLength));
+    }
+
+    public static string GetTrackLength(TimeSpan trackLength)
+    {
+        return
+            $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
+    }
+
     public static string GetListeningTimeString(TimeSpan timeSpan, bool includeSeconds = false)
     {
         var time = new StringBuilder();
