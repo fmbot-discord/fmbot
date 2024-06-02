@@ -621,19 +621,8 @@ public class SupporterService
                         Log.Information("Re-activating supporter status for {supporterName} - {openCollectiveId}", existingSupporter.Name, existingSupporter.Name);
                         if (existingSupporter.DiscordUserId.HasValue)
                         {
-                            var user = await db.Users
-                                .AsQueryable()
-                                .FirstOrDefaultAsync(f => f.DiscordUserId == existingSupporter.DiscordUserId);
-
-                            if (user != null)
-                            {
-                                user.UserType = UserType.Supporter;
-                                db.Update(user);
-
-                                Log.Information("Re-activated supporter status from Discord account {discordUserId} - {lastFmUsername}", user.DiscordUserId, user.UserNameLastFM);
-
-                                _ = this._indexService.IndexUser(user);
-                            }
+                            await ModifyGuildRole(existingSupporter.DiscordUserId.Value);
+                            await RunFullUpdate(existingSupporter.DiscordUserId.Value);
                         }
 
                         existingSupporter.Expired = false;

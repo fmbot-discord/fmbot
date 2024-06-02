@@ -3,18 +3,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using Serilog;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -29,8 +33,10 @@ public class AdminSlashCommands : InteractionModuleBase
     private readonly PlayService _playService;
     private readonly FriendsService _friendsService;
     private readonly UserService _userService;
+    private readonly SupporterService _supporterService;
+    private readonly IIndexService _indexService;
 
-    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService, PlayService playService, FriendsService friendsService, UserService userService)
+    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService, PlayService playService, FriendsService friendsService, UserService userService, SupporterService supporterService, IIndexService indexService)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -41,6 +47,8 @@ public class AdminSlashCommands : InteractionModuleBase
         this._playService = playService;
         this._friendsService = friendsService;
         this._userService = userService;
+        this._supporterService = supporterService;
+        this._indexService = indexService;
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.CensorTypes)]
@@ -554,7 +562,7 @@ public class AdminSlashCommands : InteractionModuleBase
             new ComponentBuilder().WithButton($"Denied by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
-    
+
     [ComponentInteraction(InteractionConstants.ModerationCommands.MoveUserData)]
     public async Task MoveUserData(string oldUserId, string newUserId)
     {
@@ -581,7 +589,7 @@ public class AdminSlashCommands : InteractionModuleBase
             new ComponentBuilder().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
         await message.ModifyAsync(m => m.Components = components.Build());
     }
-    
+
     [ComponentInteraction($"admin-delete-user-*")]
     public async Task DeleteUser(string userId)
     {
@@ -601,7 +609,6 @@ public class AdminSlashCommands : InteractionModuleBase
         await FollowupAsync("Deleting user completed.", ephemeral: true);
 
         var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
-
         if (message == null)
         {
             return;
@@ -610,5 +617,105 @@ public class AdminSlashCommands : InteractionModuleBase
         var components =
             new ComponentBuilder().WithButton($"Deleted by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
         await message.ModifyAsync(m => m.Components = components.Build());
+    }
+
+    [ComponentInteraction($"admin-add-oc-supporter-*-*")]
+    public async Task AddSupporterAsync(string user = null, string openCollectiveId = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await RespondAsync("Adding supporter...", ephemeral: true);
+
+            if (!ulong.TryParse(user, out var discordUserId))
+            {
+                await RespondAsync("Invalid Discord ID", ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+            var userSettings = await this._userService.GetUserWithDiscogs(discordUserId);
+
+            if (userSettings == null)
+            {
+                await RespondAsync("Couldn't find the Discord user, maybe they don't have an fmbot account", ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+            if (userSettings.UserType != UserType.User && !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            {
+                await RespondAsync("Can only add this to users who have the `user` usertype, so no existing supporters. Maybe ask frik for help.", ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            var openCollectiveSupporter = await this._supporterService.GetOpenCollectiveSupporter(openCollectiveId);
+            if (openCollectiveSupporter == null)
+            {
+                await RespondAsync("OpenCollective user not found (this is not supposed to happen)", ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var existingSupporters = await this._supporterService.GetAllSupporters();
+            if (existingSupporters
+                    .Where(w => w.OpenCollectiveId != null)
+                    .FirstOrDefault(f => f.OpenCollectiveId.ToLower() == openCollectiveId.ToLower()) != null)
+            {
+                await RespondAsync("OpenCollective user already connected to a different user", ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var supporter = await this._supporterService.AddOpenCollectiveSupporter(userSettings.DiscordUserId, openCollectiveSupporter);
+
+            await this._supporterService.ModifyGuildRole(userSettings.DiscordUserId);
+
+            var embed = new EmbedBuilder();
+            embed.WithTitle("Added new supporter");
+            var description = new StringBuilder();
+            description.AppendLine($"User id: {user} | <@{user}>\n" +
+                                   $"Name: **{supporter.Name}**\n" +
+                                   $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
+
+            description.AppendLine();
+            description.AppendLine("✅ Full update started");
+
+            embed.WithFooter("Name changes go through OpenCollective and apply within 24h");
+
+            var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
+            if (discordUser != null)
+            {
+                await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null, supporter);
+
+                description.AppendLine("✅ Thank you dm sent");
+            }
+            else
+            {
+                description.AppendLine("❌ Did not send thank you dm");
+            }
+
+            embed.WithDescription(description.ToString());
+
+            await RespondAsync(embed: embed.Build());
+            this.Context.LogCommandUsed();
+
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            if (message == null)
+            {
+                return;
+            }
+
+            var components =
+                new ComponentBuilder().WithButton($"Added by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
+            await message.ModifyAsync(m => m.Components = components.Build());
+
+            _ = await this._indexService.IndexUser(userSettings);
+        }
+        else
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
     }
 }

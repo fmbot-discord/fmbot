@@ -777,17 +777,6 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("migratecensored")]
-    public async Task MigrateCensoredAsync()
-    {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
-        {
-            await this._censorService.Migrate();
-            await ReplyAsync("Done! Check logs 🤠");
-            this.Context.LogCommandUsed();
-        }
-    }
-
     [Command("checkbotted")]
     [Alias("checkbotteduser")]
     [Summary("Checks some stats for a user and if they're banned from global whoknows")]
@@ -1140,24 +1129,7 @@ public class AdminCommands : BaseCommandModule
 
             var supporter = await this._supporterService.AddOpenCollectiveSupporter(userSettings.DiscordUserId, openCollectiveSupporter);
 
-            var addedRole = false;
-            if (this.Context.Guild.Id == this._botSettings.Bot.BaseServerId)
-            {
-                try
-                {
-                    var guildUser = await this.Context.Guild.GetUserAsync(discordUserId);
-                    if (guildUser != null)
-                    {
-                        var role = this.Context.Guild.Roles.FirstOrDefault(x => x.Name == "Supporter");
-                        await guildUser.AddRoleAsync(role);
-                        addedRole = true;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Log.Error("Adding supporter role failed for {id}", discordUserId, e);
-                }
-            }
+            await this._supporterService.ModifyGuildRole(userSettings.DiscordUserId);
 
             this._embed.WithTitle("Added new supporter");
             var description = new StringBuilder();
@@ -1166,7 +1138,6 @@ public class AdminCommands : BaseCommandModule
                                    $"Subscription type: `{Enum.GetName(supporter.SubscriptionType.GetValueOrDefault())}`");
 
             description.AppendLine();
-            description.AppendLine(addedRole ? "✅ Supporter role added" : "❌ Unable to add supporter role");
             description.AppendLine("✅ Full update started");
 
             this._embed.WithFooter("Name changes go through OpenCollective and apply within 24h");
@@ -1721,8 +1692,9 @@ public class AdminCommands : BaseCommandModule
         {
             try
             {
-                await this._timer.PickNewFeatureds();
                 await ReplyAsync("Started pick new featured job");
+                await this._timer.PickNewFeatureds();
+                await ReplyAsync("Finished pick new featured job");
             }
             catch (Exception e)
             {
@@ -1731,7 +1703,30 @@ public class AdminCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("checknewsupporters")]
+    [Summary("Runs the job that checks for new OpenCollective supporters.")]
+    public async Task CheckNewSupporters()
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                await this._timer.CheckForNewOcSupporters();
+                await ReplyAsync("Checked for new oc supporters");
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
@@ -1829,7 +1824,7 @@ public class AdminCommands : BaseCommandModule
                     .Select(s => s.Key).ToHashSet();
 
                 reply.AppendLine();
-                reply.AppendLine("check if these should have it:");
+                reply.AppendLine("Check if these should have it (nvm, just ignore this):");
                 foreach (var member in guildMembers.Where(w => expiredOnly.Contains(w.Id)))
                 {
                     if (member.RoleIds.Any(a => a == role.Id))

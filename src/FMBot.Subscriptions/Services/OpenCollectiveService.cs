@@ -33,7 +33,9 @@ public class OpenCollectiveService
             return null;
         }
 
-        var users = data.Account.Members.Nodes.Select(s => new OpenCollectiveUser
+        var users = data.Account.Members.Nodes
+            .Where(w => w.Account.Transactions != null)
+            .Select(s => new OpenCollectiveUser
         {
             Id = s.Account.Id,
             Name = s.Account.Name,
@@ -41,7 +43,15 @@ public class OpenCollectiveService
             CreatedAt = s.Account.CreatedAt,
             SubscriptionType = GetSubscriptionType(s.Account.Transactions.Nodes),
             FirstPayment = s.Account.Transactions.Nodes.OrderBy(o => o.CreatedAt).First().CreatedAt,
-            LastPayment = s.Account.Transactions.Nodes.OrderByDescending(o => o.CreatedAt).First().CreatedAt
+            LastPayment = s.Account.Transactions.Nodes.OrderByDescending(o => o.CreatedAt).First().CreatedAt,
+            Transactions = s.Account.Transactions.Nodes.Select(s => new OpenCollectiveTransaction
+            {
+                Amount = s.Amount.Value,
+                CreatedAt = s.CreatedAt,
+                Description = s.Description,
+                Kind = s.Kind,
+                Type = s.Type
+            }).ToList()
         });
 
         return new OpenCollectiveOverview

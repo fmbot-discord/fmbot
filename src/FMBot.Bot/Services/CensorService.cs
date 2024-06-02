@@ -279,62 +279,6 @@ public class CensorService
         await db.SaveChangesAsync();
     }
 
-    public async Task Migrate()
-    {
-        ClearCensoredCache();
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-
-        var all = await db.CensoredMusic.Where(w => w.CensorType == CensorType.None).ToListAsync();
-        Log.Information($"Found {all.Count} censored things");
-
-        var nsfwArtists = 0;
-        var censoredArtists = 0;
-
-        var nsfwAlbums = 0;
-        var censoredAlbums = 0;
-        foreach (var item in all)
-        {
-            if (item.Artist && item.FeaturedBanOnly != true)
-            {
-                if (item.SafeForCommands)
-                {
-                    item.CensorType |= CensorType.ArtistAlbumsNsfw;
-                    nsfwArtists++;
-                }
-                if (!item.SafeForCommands)
-                {
-                    item.CensorType |= CensorType.ArtistAlbumsCensored;
-                    censoredArtists++;
-                }
-            }
-            if (!item.Artist && item.FeaturedBanOnly != true)
-            {
-                if (item.SafeForCommands)
-                {
-                    item.CensorType |= CensorType.AlbumCoverNsfw;
-                    nsfwAlbums++;
-                }
-                if (!item.SafeForCommands)
-                {
-                    item.CensorType |= CensorType.AlbumCoverCensored;
-                    censoredAlbums++;
-                }
-            }
-            if (item.FeaturedBanOnly == true && item.Artist)
-            {
-                item.CensorType |= CensorType.ArtistFeaturedBan;
-            }
-        }
-
-        Log.Information($"Marked {nsfwArtists} artists as NSFW");
-        Log.Information($"Marked {censoredArtists} artists as censored");
-
-        Log.Information($"Marked {nsfwAlbums} albums as NSFW");
-        Log.Information($"Marked {censoredAlbums} albums as censored");
-
-        await db.SaveChangesAsync();
-    }
-
     public async Task<CensoredMusicReport> CreateArtistReport(ulong discordUserId, string artistName, string note, Artist artist)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
