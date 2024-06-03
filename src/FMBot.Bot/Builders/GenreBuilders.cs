@@ -666,7 +666,7 @@ public class GenreBuilders
         var optionEmote = userView ? Emote.Parse("<:server:961685224041902140>") : Emote.Parse("<:user:961687127249260634>");
         var optionDescription = userView ? "View server overview" : "View user overview";
         var originalSearchValue = !string.IsNullOrWhiteSpace(originalSearch) ? originalSearch : "0";
-        var optionId = $"{interaction}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{userGenre.GenreName}-{originalSearchValue}";
+        var optionId = $"{interaction}~{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{userGenre.GenreName}~{originalSearchValue}";
 
         if (pages.Count == 1)
         {

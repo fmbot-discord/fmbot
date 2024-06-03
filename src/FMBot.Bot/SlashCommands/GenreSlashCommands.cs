@@ -65,7 +65,7 @@ public class GenreSlashCommands : InteractionModuleBase
     }
 
     [UsernameSetRequired]
-    [ComponentInteraction($"{InteractionConstants.Genre.GenreGuild}-*-*-*-*")]
+    [ComponentInteraction($"{InteractionConstants.Genre.GenreGuild}~*~*~*~*")]
     public async Task GuildGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
         _ = DeferAsync();
@@ -103,7 +103,7 @@ public class GenreSlashCommands : InteractionModuleBase
     }
 
     [UsernameSetRequired]
-    [ComponentInteraction($"{InteractionConstants.Genre.GenreUser}-*-*-*-*")]
+    [ComponentInteraction($"{InteractionConstants.Genre.GenreUser}~*~*~*~*")]
     public async Task UserGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
         _ = DeferAsync();
