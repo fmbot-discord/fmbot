@@ -684,7 +684,7 @@ public class SupporterService
                     var cacheKey = $"supporter-monthly-expired-{existingSupporter.OpenCollectiveId}";
                     if (this._cache.TryGetValue(cacheKey, out _))
                     {
-                        return;
+                        continue;
                     }
 
                     var supporterUpdateChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
@@ -711,7 +711,7 @@ public class SupporterService
                     var cacheKey = $"supporter-yearly-expired-{existingSupporter.OpenCollectiveId}";
                     if (this._cache.TryGetValue(cacheKey, out _))
                     {
-                        return;
+                        continue;
                     }
 
                     var supporterUpdateChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
@@ -736,6 +736,7 @@ public class SupporterService
         return $"Name: `{supporter.Name}`\n" +
                $"OC ID: `{supporter.OpenCollectiveId}`\n" +
                $"Discord ID: `{supporter.DiscordUserId}`\n" +
+               $"Type: `{supporter.SubscriptionType}`\n" +
                $"Notes: `{supporter.Notes}`";
     }
 
