@@ -71,8 +71,9 @@ public class GameBuilders
         var databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
         if (databaseArtist == null)
         {
-            // Pick someone else
+            // Pick someone else and hope for the best
             artist = await this._gameService.PickArtistForJumble(topArtists);
+            databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
         }
 
         var game = await this._gameService.StartJumbleGame(userId, context, GameType.JumbleFirstWins, artist.artist);

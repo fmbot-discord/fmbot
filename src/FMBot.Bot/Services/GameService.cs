@@ -169,14 +169,14 @@ public class GameService
             hints.Add(new GameHintModel(JumbleHintType.Popularity, $"- They have a popularity value of **{artist.Popularity}**"));
         }
 
-        if (artist.ArtistGenres!= null && artist.ArtistGenres.Any())
+        if (artist?.ArtistGenres!= null && artist.ArtistGenres.Any())
         {
             var random = RandomNumberGenerator.GetInt32(artist.ArtistGenres.Count);
             var genre = artist.ArtistGenres.ToList()[random];
             hints.Add(new GameHintModel(JumbleHintType.Genre, $"- One of their genres is **{genre.Name}**"));
         }
 
-        if (artist.StartDate != null)
+        if (artist?.StartDate != null)
         {
             var specifiedDateTime = DateTime.SpecifyKind(artist.StartDate.Value, DateTimeKind.Utc);
             var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
@@ -191,7 +191,7 @@ public class GameService
             }
         }
 
-        if (artist.EndDate != null)
+        if (artist?.EndDate != null)
         {
             var specifiedDateTime = DateTime.SpecifyKind(artist.EndDate.Value, DateTimeKind.Utc);
             var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
@@ -206,17 +206,17 @@ public class GameService
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(artist.Disambiguation))
+        if (!string.IsNullOrWhiteSpace(artist?.Disambiguation))
         {
             hints.Add(new GameHintModel(JumbleHintType.Disambiguation, $"- They might be described as **{artist.Disambiguation}**"));
         }
 
-        if (!string.IsNullOrWhiteSpace(artist.Type))
+        if (!string.IsNullOrWhiteSpace(artist?.Type))
         {
             hints.Add(new GameHintModel(JumbleHintType.Type, $"- They are a **{artist.Type.ToLower()}**"));
         }
 
-        if (artist.CountryCode != null && country != null)
+        if (artist?.CountryCode != null && country != null)
         {
             hints.Add(new GameHintModel(JumbleHintType.Country, $"- Their country has this flag: :flag_{country.Code.ToLower()}:"));
         }
