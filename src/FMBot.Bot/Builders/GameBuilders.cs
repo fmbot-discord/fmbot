@@ -79,8 +79,6 @@ public class GameBuilders
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints);
         response.Components = BuildJumbleComponents(game.GameId);
 
-        response.Embed.AddField("Debug answer", game.CorrectAnswer);
-
         return response;
     }
 
