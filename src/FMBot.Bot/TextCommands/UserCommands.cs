@@ -413,7 +413,7 @@ public class UserCommands : BaseCommandModule
 
     [Command("featuredlog", RunMode = RunMode.Async)]
     [Summary("Shows featured history")]
-    [Alias("featuredhistory", "recentfeatured", "rf", "recentlyfeatured", "fl")]
+    [Alias("featuredhistory", "recentfeatured", "rf", "recentlyfeatured", "fl", "flog")]
     [Options("global/server/friends/self")]
     [CommandCategories(CommandCategory.Other)]
     [UsernameSetRequired]

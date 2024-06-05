@@ -23,16 +23,18 @@ public class GameCommands : BaseCommandModule
     private readonly GameBuilders _gameBuilders;
     private readonly IPrefixService _prefixService;
     private readonly GameService _gameService;
+    private readonly AdminService _adminService;
 
     private InteractiveService Interactivity { get; }
 
-    public GameCommands(IOptions<BotSettings> botSettings, UserService userService, GameBuilders gameBuilders, IPrefixService prefixService, InteractiveService interactivity, GameService gameService) : base(botSettings)
+    public GameCommands(IOptions<BotSettings> botSettings, UserService userService, GameBuilders gameBuilders, IPrefixService prefixService, InteractiveService interactivity, GameService gameService, AdminService adminService) : base(botSettings)
     {
         this._userService = userService;
         this._gameBuilders = gameBuilders;
         this._prefixService = prefixService;
         this.Interactivity = interactivity;
         this._gameService = gameService;
+        this._adminService = adminService;
     }
 
     [Command("jumble", RunMode = RunMode.Async)]
@@ -43,6 +45,13 @@ public class GameCommands : BaseCommandModule
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await ReplyAsync("Sorry, still fixing some bugs, this isn't quite ready yet. Try again later..");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
 
         try
         {
