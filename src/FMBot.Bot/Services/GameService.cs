@@ -169,7 +169,7 @@ public class GameService
             hints.Add(new GameHintModel(JumbleHintType.Popularity, $"- They have a popularity value of **{artist.Popularity}**"));
         }
 
-        if (artist.ArtistGenres.Any())
+        if (artist.ArtistGenres!= null && artist.ArtistGenres.Any())
         {
             var random = RandomNumberGenerator.GetInt32(artist.ArtistGenres.Count);
             var genre = artist.ArtistGenres.ToList()[random];
