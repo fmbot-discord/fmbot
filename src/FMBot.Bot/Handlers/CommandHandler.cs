@@ -35,6 +35,7 @@ public class CommandHandler
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
     private readonly IIndexService _indexService;
+    private readonly GameService _gameService;
 
     // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
     public CommandHandler(
@@ -48,7 +49,8 @@ public class CommandHandler
         GuildService guildService,
         InteractiveService interactiveService,
         IMemoryCache cache,
-        IIndexService indexService)
+        IIndexService indexService,
+        GameService gameService)
     {
         this._discord = discord;
         this._commands = commands;
@@ -60,6 +62,7 @@ public class CommandHandler
         this._interactiveService = interactiveService;
         this._cache = cache;
         this._indexService = indexService;
+        this._gameService = gameService;
         this._botSettings = botSettings.Value;
         this._discord.MessageReceived += MessageReceived;
         this._discord.MessageUpdated += MessageUpdated;
@@ -99,7 +102,16 @@ public class CommandHandler
             _ = Task.Run(() => UpdateUserLastMessageDate(context));
         }
 
-        TryForCommand(context, msg, false);
+        var possibleCommandExecuted = TryForCommand(context, msg, false);
+
+        if (!possibleCommandExecuted &&
+            context.Channel?.Id != null &&
+            PublicProperties.GameChannel.Contains(context.Channel.Id) &&
+            !string.IsNullOrWhiteSpace(context.Message.Content) &&
+            this._cache.TryGetValue(GameService.CacheKeyForJumbleGame(context.Channel.Id), out _))
+        {
+            _ = Task.Run(() => this._gameService.ProcessPossibleAnswer(context));
+        }
     }
 
     private async Task TryScrobbling(SocketUserMessage msg, ICommandContext context)
@@ -135,7 +147,7 @@ public class CommandHandler
         TryForCommand(context, msg, true);
     }
 
-    private void TryForCommand(ShardedCommandContext shardedCommandContext, SocketUserMessage socketUserMessage, bool update)
+    private bool TryForCommand(ShardedCommandContext shardedCommandContext, SocketUserMessage socketUserMessage, bool update)
     {
         var argPos = 0;
         var prfx = this._prefixService.GetPrefix(shardedCommandContext.Guild?.Id) ?? this._botSettings.Bot.Prefix;
@@ -146,7 +158,7 @@ public class CommandHandler
             socketUserMessage.Content.Length > $"{prfx}fm".Length)
         {
             _ = Task.Run(() => ExecuteCommand(socketUserMessage, shardedCommandContext, argPos, prfx, update));
-            return;
+            return true;
         }
 
         // Prefix is set to '.fm' and the user uses '.fm'
@@ -160,7 +172,7 @@ public class CommandHandler
                 searchResult.Commands.FirstOrDefault().Command.Name == "fm")
             {
                 _ = Task.Run(() => ExecuteCommand(socketUserMessage, shardedCommandContext, argPos, prfx, update));
-                return;
+                return true;
             }
         }
 
@@ -168,15 +180,17 @@ public class CommandHandler
         if (socketUserMessage.HasStringPrefix(prfx, ref argPos, StringComparison.OrdinalIgnoreCase))
         {
             _ = Task.Run(() => ExecuteCommand(socketUserMessage, shardedCommandContext, argPos, prfx, update));
-            return;
+            return true;
         }
 
         // Mention
         if (this._discord != null && socketUserMessage.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
         {
             _ = Task.Run(() => ExecuteCommand(socketUserMessage, shardedCommandContext, argPos, prfx, update));
-            return;
+            return true;
         }
+
+        return false;
     }
 
     private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos, string prfx, bool update = false)

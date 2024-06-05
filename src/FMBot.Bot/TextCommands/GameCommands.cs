@@ -30,10 +30,10 @@ public class GameCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    //[Command("jumble", RunMode = RunMode.Async)]
-    //[Summary("Play the Jumble game.")]
-    //[UsernameSetRequired]
-    //[CommandCategories(CommandCategory.Friends)]
+    [Command("jumble", RunMode = RunMode.Async)]
+    [Summary("Play the Jumble game.")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Friends)]
     public async Task JumbleAsync()
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -43,7 +43,7 @@ public class GameCommands : BaseCommandModule
 
         try
         {
-            var response = GameBuilders.GameModePick(new ContextModel(this.Context, prfx, contextUser));
+            var response = await this._gameBuilders.StartJumbleFirstWins(new ContextModel(this.Context, prfx, contextUser), contextUser.UserId);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

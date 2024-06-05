@@ -170,5 +170,8 @@ public static class InteractionConstants
     {
         public const string StartJumbleFirstWins = "jumble-firstwins";
         public const string StartJumbleGroup = "jumble-group";
+        public const string AddJumbleHint = "jumble-addhint";
+        public const string JumbleGiveUp = "jumble-giveup";
+        public const string JumbleReshuffle = "jumble-reshuffle";
     }
 }

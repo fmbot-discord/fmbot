@@ -227,6 +227,11 @@ public static class StringExtensions
         return times == 1 ? "time" : "times";
     }
 
+    public static string GetHintsString(long? hints)
+    {
+        return hints == 1 ? "hint" : "hints";
+    }
+
     public static string GetChangeString(decimal oldValue, decimal newValue)
     {
         if (oldValue < newValue)
