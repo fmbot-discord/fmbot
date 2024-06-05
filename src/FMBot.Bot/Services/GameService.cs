@@ -32,7 +32,7 @@ public class GameService
 
     public async Task<(string artist, long userPlaycount)> PickArtistForJumble(List<TopArtist> topArtists)
     {
-        var total = topArtists.Count(w => w.UserPlaycount >= 2);
+        var total = topArtists.Count(w => w.UserPlaycount >= 5);
         var random = RandomNumberGenerator.GetInt32(total);
 
         return (topArtists[random].ArtistName, topArtists[random].UserPlaycount);

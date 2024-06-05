@@ -267,7 +267,7 @@ public class GameBuilders
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
-        if (currentGame.Answers.Count >= 1)
+        if (currentGame.Answers != null && currentGame.Answers.Count >= 1)
         {
             var separateResponse = new EmbedBuilder();
             separateResponse.WithDescription($"Nobody guessed it right. The answer was `{currentGame.CorrectAnswer}`");
