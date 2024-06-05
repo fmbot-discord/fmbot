@@ -20,16 +20,6 @@ public class GameSlashCommands : InteractionModuleBase
         this._userService = userService;
     }
 
-    [ComponentInteraction(InteractionConstants.Game.StartJumbleFirstWins)]
-    public async Task StartJumbleFirstAnswerWins()
-    {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        var response = await this._gameBuilders.StartJumbleFirstWins(new ContextModel(this.Context), contextUser.UserId);
-
-        await this.Context.UpdateInteractionEmbed(response);
-    }
-
     [ComponentInteraction($"{InteractionConstants.Game.AddJumbleHint}-*")]
     public async Task JumbleAddHint(string gameId)
     {

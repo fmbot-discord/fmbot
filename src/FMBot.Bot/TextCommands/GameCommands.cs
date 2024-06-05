@@ -11,6 +11,8 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using Fergun.Interactive;
 using Discord;
+using FMBot.Domain;
+using System.Threading;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -39,15 +41,14 @@ public class GameCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Friends)]
     public async Task JumbleAsync()
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
-
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            var response = await this._gameBuilders.StartJumbleFirstWins(context, contextUser.UserId);
+            var cancellationTokenSource = new CancellationTokenSource();
+            var response = await this._gameBuilders.StartJumbleFirstWins(context, contextUser.UserId, cancellationTokenSource);
 
             var responseId = await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -55,8 +56,11 @@ public class GameCommands : BaseCommandModule
             if (responseId.HasValue)
             {
                 await this._gameService.JumbleAddResponseId(this.Context.Channel.Id, responseId.Value);
-                await JumbleTimeExpired(context, responseId.Value);
+                await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token);
             }
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch (Exception e)
         {
@@ -64,16 +68,22 @@ public class GameCommands : BaseCommandModule
         }
     }
 
-    private async Task JumbleTimeExpired(ContextModel context, ulong responseId)
+    private async Task JumbleTimeExpired(ContextModel context, ulong responseId, CancellationToken cancellationToken)
     {
-        await Task.Delay(GameService.SecondsToGuess * 1000);
+        await Task.Delay(GameService.SecondsToGuess * 1000, cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
         var response = await this._gameBuilders.JumbleTimeExpired(context, responseId);
 
         if (response == null)
         {
             return;
         }
-        
+
         var msg = await this.Context.Channel.GetMessageAsync(responseId);
         if (msg is not IUserMessage message)
         {

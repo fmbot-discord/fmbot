@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -38,11 +39,11 @@ public class GameService
         return (topArtists[random].ArtistName, topArtists[random].UserPlaycount);
     }
 
-    public async Task<GameModel> StartJumbleGame(int userId, ContextModel context, GameType gameType, string artist)
+    public async Task<GameModel> StartJumbleGame(int userId, ContextModel context, GameType gameType, string artist, CancellationTokenSource cancellationToken)
     {
         var game = new GameModel
         {
-            DateStarted = DateTime.UtcNow,
+            DateStarted = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
             StarterUserId = userId,
             DiscordGuildId = context.DiscordGuild?.Id,
             DiscordChannelId = context.DiscordChannel.Id,
@@ -54,11 +55,11 @@ public class GameService
             JumbledArtist = JumbleWords(artist).ToUpper()
         };
 
-
         // add to database
-
-        this._cache.Set(
-            CacheKeyForJumbleGame(context.DiscordChannel.Id), game, TimeSpan.FromSeconds(SecondsToGuess + 1));
+        
+        var cacheTime = TimeSpan.FromSeconds(SecondsToGuess * 2);
+        this._cache.Set(CacheKeyForJumbleGame(context.DiscordChannel.Id), game, cacheTime);
+        this._cache.Set(CacheKeyForJumbleGameCancellationToken(context.DiscordChannel.Id), cancellationToken, cacheTime);
         PublicProperties.GameChannel.Add(context.DiscordChannel.Id);
 
         return game;
@@ -69,6 +70,11 @@ public class GameService
         return $"jumble-game-{channelId}";
     }
 
+    public static string CacheKeyForJumbleGameCancellationToken(ulong channelId)
+    {
+        return $"jumble-game-token-{channelId}";
+    }
+
     public async Task<GameModel> GetGame(ulong channelId, int? gameId = null)
     {
         if (!this._cache.TryGetValue(CacheKeyForJumbleGame(channelId), out GameModel game))
@@ -77,6 +83,16 @@ public class GameService
         }
 
         return game;
+    }
+
+    public async Task CancelToken(ulong channelId)
+    {
+        if (!this._cache.TryGetValue(CacheKeyForJumbleGameCancellationToken(channelId), out CancellationTokenSource token))
+        {
+            return;
+        }
+
+        await token.CancelAsync();
     }
 
     public List<GameHintModel> GetJumbleHints(Artist artist, long userPlaycount, CountryInfo country = null)

@@ -5,6 +5,7 @@ using Discord;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using System.Text;
+using System.Threading;
 using FMBot.Domain.Models;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
@@ -49,7 +50,8 @@ public class GameBuilders
         return response;
     }
 
-    public async Task<ResponseModel> StartJumbleFirstWins(ContextModel context, int userId)
+    public async Task<ResponseModel> StartJumbleFirstWins(ContextModel context, int userId,
+        CancellationTokenSource cancellationTokenSource)
     {
         var response = new ResponseModel
         {
@@ -76,7 +78,7 @@ public class GameBuilders
             databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
         }
 
-        var game = await this._gameService.StartJumbleGame(userId, context, GameType.JumbleFirstWins, artist.artist);
+        var game = await this._gameService.StartJumbleGame(userId, context, GameType.JumbleFirstWins, artist.artist, cancellationTokenSource);
 
         CountryInfo artistCountry = null;
         if (databaseArtist?.CountryCode != null)
@@ -87,7 +89,7 @@ public class GameBuilders
         game.Hints = this._gameService.GetJumbleHints(databaseArtist, artist.userPlaycount, artistCountry);
 
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints);
-        response.Components = BuildJumbleComponents(game.GameId);
+        response.Components = BuildJumbleComponents(game.GameId, game.Hints);
 
         return response;
     }
@@ -116,10 +118,12 @@ public class GameBuilders
         }
     }
 
-    private static ComponentBuilder BuildJumbleComponents(int gameId)
+    private static ComponentBuilder BuildJumbleComponents(int gameId, List<GameHintModel> hints)
     {
+        var addHintDisabled = hints.Count(c => c.HintShown) == hints.Count;
+        
         return new ComponentBuilder()
-            .WithButton("Add hint", $"{InteractionConstants.Game.AddJumbleHint}-{gameId}", ButtonStyle.Secondary)
+            .WithButton("Add hint", $"{InteractionConstants.Game.AddJumbleHint}-{gameId}", ButtonStyle.Secondary, disabled: addHintDisabled)
             .WithButton("Reshuffle", $"{InteractionConstants.Game.JumbleReshuffle}-{gameId}", ButtonStyle.Secondary)
             .WithButton("Give up", $"{InteractionConstants.Game.JumbleGiveUp}-{gameId}", ButtonStyle.Secondary);
     }
@@ -141,7 +145,7 @@ public class GameBuilders
         await this._gameService.JumbleStoreShowedHints(currentGame, currentGame.Hints);
 
         BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints);
-        response.Components = BuildJumbleComponents(currentGame.GameId);
+        response.Components = BuildJumbleComponents(currentGame.GameId, currentGame.Hints);
 
         return response;
     }
@@ -161,10 +165,8 @@ public class GameBuilders
 
         await this._gameService.JumbleReshuffleArtist(currentGame);
 
-
-
         BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints);
-        response.Components = BuildJumbleComponents(currentGame.GameId);
+        response.Components = BuildJumbleComponents(currentGame.GameId, currentGame.Hints);
 
         return response;
     }
@@ -183,6 +185,7 @@ public class GameBuilders
         }
 
         await this._gameService.JumbleEndGame(currentGame, context.DiscordChannel.Id);
+        await this._gameService.CancelToken(context.DiscordChannel.Id);
 
         BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false);
 
@@ -245,7 +248,7 @@ public class GameBuilders
 
                 await this._gameService.JumbleEndGame(currentGame, context.DiscordChannel.Id);
             }
-            else if (messageLength >= answerLength - 2 && messageLength <= answerLength + 2)
+            else if (messageLength >= answerLength - 5 && messageLength <= answerLength + 2)
             {
                 await commandContext.Message.AddReactionAsync(new Emoji("❌"));
 
@@ -291,5 +294,27 @@ public class GameBuilders
         }
 
         return response;
+    }
+
+    public async Task JumbleTimeExpiredJob(ContextModel context, ulong responseId, IMessageChannel discordChannel)
+    {
+        var response = await JumbleTimeExpired(context, responseId);
+
+        if (response == null)
+        {
+            return;
+        }
+
+        var msg = await discordChannel.GetMessageAsync(responseId);
+        if (msg is not IUserMessage message)
+        {
+            return;
+        }
+
+        await message.ModifyAsync(m =>
+        {
+            m.Components = null;
+            m.Embed = response.Embed.Build();
+        });
     }
 }
