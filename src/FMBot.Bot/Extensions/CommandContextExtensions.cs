@@ -58,7 +58,7 @@ public static class CommandContextExtensions
         PublicProperties.UsedCommandsResponses.TryAdd(context.Message.Id, CommandResponse.LastFmError);
     }
 
-    public static async Task SendResponse(this ICommandContext context, InteractiveService interactiveService, ResponseModel response)
+    public static async Task<ulong?> SendResponse(this ICommandContext context, InteractiveService interactiveService, ResponseModel response)
     {
         ulong? responseId = null;
 
@@ -127,7 +127,7 @@ public static class CommandContextExtensions
                 }
             }
 
-            return;
+            return null;
         }
 
         switch (response.ResponseType)
@@ -183,6 +183,8 @@ public static class CommandContextExtensions
             PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Message.Id, responseId.Value);
             PublicProperties.UsedCommandsResponseContextId.TryAdd(responseId.Value, context.Message.Id);
         }
+
+        return responseId;
     }
 
     public static string GenerateRandomCode()

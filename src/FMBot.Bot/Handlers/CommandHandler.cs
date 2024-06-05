@@ -7,8 +7,10 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Models.MusicBot;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -35,7 +37,7 @@ public class CommandHandler
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
     private readonly IIndexService _indexService;
-    private readonly GameService _gameService;
+    private readonly GameBuilders _gameBuilders;
 
     // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
     public CommandHandler(
@@ -50,7 +52,7 @@ public class CommandHandler
         InteractiveService interactiveService,
         IMemoryCache cache,
         IIndexService indexService,
-        GameService gameService)
+        GameBuilders gameBuilders)
     {
         this._discord = discord;
         this._commands = commands;
@@ -62,7 +64,7 @@ public class CommandHandler
         this._interactiveService = interactiveService;
         this._cache = cache;
         this._indexService = indexService;
-        this._gameService = gameService;
+        this._gameBuilders = gameBuilders;
         this._botSettings = botSettings.Value;
         this._discord.MessageReceived += MessageReceived;
         this._discord.MessageUpdated += MessageUpdated;
@@ -107,10 +109,9 @@ public class CommandHandler
         if (!possibleCommandExecuted &&
             context.Channel?.Id != null &&
             PublicProperties.GameChannel.Contains(context.Channel.Id) &&
-            !string.IsNullOrWhiteSpace(context.Message.Content) &&
-            this._cache.TryGetValue(GameService.CacheKeyForJumbleGame(context.Channel.Id), out _))
+            !string.IsNullOrWhiteSpace(context.Message.Content))
         {
-            _ = Task.Run(() => this._gameService.ProcessPossibleAnswer(context));
+            _ = Task.Run(() => this._gameBuilders.JumbleProcessAnswer(new ContextModel(context, "."), context));
         }
     }
 

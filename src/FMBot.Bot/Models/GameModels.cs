@@ -32,7 +32,8 @@ public class GameAnswerModel
 {
     public int GameAnswerId { get; set; }
     public int GameId { get; set; }
-    public int UserId { get; set; }
+    
+    public ulong DiscordUserId { get; set; }
 
     public bool Correct { get; set; }
 

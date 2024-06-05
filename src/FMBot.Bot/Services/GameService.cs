@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -22,16 +22,17 @@ public class GameService
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
+    public const int SecondsToGuess = 25;
+
     public GameService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
     }
 
-
     public async Task<(string artist, long userPlaycount)> PickArtistForJumble(List<TopArtist> topArtists)
     {
-        var total = topArtists.Count(w => w.UserPlaycount >= 250);
+        var total = topArtists.Count(w => w.UserPlaycount >= 2);
         var random = RandomNumberGenerator.GetInt32(total);
 
         return (topArtists[random].ArtistName, topArtists[random].UserPlaycount);
@@ -57,7 +58,7 @@ public class GameService
         // add to database
 
         this._cache.Set(
-            CacheKeyForJumbleGame(context.DiscordChannel.Id), game, TimeSpan.FromSeconds(30));
+            CacheKeyForJumbleGame(context.DiscordChannel.Id), game, TimeSpan.FromSeconds(SecondsToGuess + 1));
         PublicProperties.GameChannel.Add(context.DiscordChannel.Id);
 
         return game;
@@ -68,7 +69,7 @@ public class GameService
         return $"jumble-game-{channelId}";
     }
 
-    public async Task<GameModel> GetGame(ulong channelId)
+    public async Task<GameModel> GetGame(ulong channelId, int? gameId = null)
     {
         if (!this._cache.TryGetValue(CacheKeyForJumbleGame(channelId), out GameModel game))
         {
@@ -81,9 +82,15 @@ public class GameService
     public List<GameHintModel> GetJumbleHints(Artist artist, long userPlaycount, CountryInfo country = null)
     {
         var hints = GetRandomHints(artist, country);
-        hints.Add(new GameHintModel(JumbleHintType.Playcount, $"- You have **{userPlaycount}** plays on this artist"));
+        hints.Add(new GameHintModel(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
+
+        for (int i = 0; i < Math.Min(hints.Count, 3); i++)
+        {
+            hints[i].HintShown = true;
+            hints[i].Order = i;
+        }
 
         return hints;
     }
@@ -106,17 +113,51 @@ public class GameService
     public async Task JumbleStoreShowedHints(GameModel game, List<GameHintModel> hints)
     {
         game.Hints = hints;
+
+        // save to db
     }
 
     public async Task JumbleReshuffleArtist(GameModel game)
     {
         game.JumbledArtist = JumbleWords(game.CorrectAnswer).ToUpper();
         game.Reshuffles++;
+
+        // save to db
     }
 
-    public async Task JumbleGiveUp(GameModel game)
+    public async Task JumbleEndGame(GameModel game, ulong discordChannelId)
     {
         game.DateEnded = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+        // save to db
+
+        this._cache.Remove(CacheKeyForJumbleGame(discordChannelId));
+    }
+
+    public async Task JumbleAddResponseId(ulong discordChannelId, ulong responseId)
+    {
+        var game = await GetGame(discordChannelId);
+        
+        game.DiscordResponseId = responseId;
+
+        // save to db
+    }
+
+    public async Task JumbleAddAnswer(GameModel game, ulong discordUserId, string content, bool correct)
+    {
+        var answer = new GameAnswerModel
+        {
+            Answer = content,
+            Correct = correct,
+            DiscordUserId = discordUserId,
+            GameId = game.GameId
+        };
+
+        game.Answers ??= new List<GameAnswerModel>();
+        
+        game.Answers.Add(answer);
+        
+        // add to db
     }
 
     private List<GameHintModel> GetRandomHints(Artist artist, CountryInfo country = null)
@@ -205,23 +246,36 @@ public class GameService
         return new string(letters);
     }
 
-    public async Task ProcessPossibleAnswer(ShardedCommandContext context)
+    public static bool AnswerIsRight(GameModel game, string messageContent)
     {
-        if (!this._cache.TryGetValue(CacheKeyForJumbleGame(context.Channel.Id), out GameModel game))
+        var cleanedAnswer = CleanString(messageContent);
+        var cleanedArtist = CleanString(game.CorrectAnswer);
+        
+        return cleanedArtist.Contains(cleanedAnswer, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string CleanString(string input)
+    {
+        var normalizedString = input.Trim().Replace("-", "").Replace(" ", "").Normalize(NormalizationForm.FormD);
+
+        normalizedString = normalizedString
+            .Replace("Ø", "O")
+            .Replace("ß", "ss")
+            .Replace("æ", "ae")
+            .Replace("Æ", "Ae")
+            .Replace("ø", "o")
+            .Replace("å", "a")
+            .Replace("Å", "A");
+
+        var stringBuilder = new StringBuilder();
+        foreach (var c in normalizedString)
         {
-            return;
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+            {
+                stringBuilder.Append(c);
+            }
         }
 
-        // get game from db
-
-        if (context.Message.Content.Trim().Equals(game.CorrectAnswer.Trim(), StringComparison.OrdinalIgnoreCase))
-        {
-            await context.Channel.SendMessageAsync("You got it right!");
-            this._cache.Remove(CacheKeyForJumbleGame(context.Channel.Id));
-        }
-        else
-        {
-            await context.Channel.SendMessageAsync("You got it wrong :(");
-        }
+        return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
     }
 }
