@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Discord;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using Discord.Commands;
+using Serilog;
 
 namespace FMBot.Bot.Builders;
 
@@ -74,7 +76,7 @@ public class GameBuilders
         }
 
         var game = await this._gameService.StartJumbleGame(userId, context, GameType.JumbleFirstWins, artist.artist);
-        
+
         CountryInfo artistCountry = null;
         if (databaseArtist?.CountryCode != null)
         {
@@ -197,53 +199,62 @@ public class GameBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var currentGame = await this._gameService.GetGame(context.DiscordChannel.Id);
-        if (currentGame == null || currentGame.DateEnded.HasValue)
+        try
         {
-            return;
-        }
-
-        var answerIsRight = GameService.AnswerIsRight(currentGame, commandContext.Message.Content);
-
-        if (answerIsRight)
-        {
-            await commandContext.Message.AddReactionAsync(new Emoji("✅"));
-
-            var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-            response.Embed.WithDescription($"**{userTitle}** got it right! The answer was `{currentGame.CorrectAnswer}`");
-            response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
-            await commandContext.Channel.SendMessageAsync(embed: response.Embed.Build());
-
-            if (currentGame.DiscordResponseId.HasValue)
+            var currentGame = await this._gameService.GetGame(context.DiscordChannel.Id);
+            if (currentGame == null || currentGame.DateEnded.HasValue)
             {
-                BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false);
-                response.Components = null;
-                response.Embed.WithColor(DiscordConstants.SpotifyColorGreen);
-
-                var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
-                if (msg is not IUserMessage message)
-                {
-                    return;
-                }
-
-                await message.ModifyAsync(m =>
-                {
-                    m.Components = null;
-                    m.Embed = response.Embed.Build();
-                });
+                return;
             }
 
-            await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, commandContext.Message.Content,
-                true);
+            var answerIsRight = GameService.AnswerIsRight(currentGame, commandContext.Message.Content);
+            var messageLength = commandContext.Message.Content.Length;
+            var answerLength = currentGame.CorrectAnswer.Length;
 
-            await this._gameService.JumbleEndGame(currentGame, context.DiscordChannel.Id);
+            if (answerIsRight)
+            {
+                await commandContext.Message.AddReactionAsync(new Emoji("✅"));
+
+                var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+                response.Embed.WithDescription($"**{userTitle}** got it right! The answer was `{currentGame.CorrectAnswer}`");
+                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
+                await commandContext.Channel.SendMessageAsync(embed: response.Embed.Build());
+
+                if (currentGame.DiscordResponseId.HasValue)
+                {
+                    BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false);
+                    response.Components = null;
+                    response.Embed.WithColor(DiscordConstants.SpotifyColorGreen);
+
+                    var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
+                    if (msg is not IUserMessage message)
+                    {
+                        return;
+                    }
+
+                    await message.ModifyAsync(m =>
+                    {
+                        m.Components = null;
+                        m.Embed = response.Embed.Build();
+                    });
+                }
+
+                await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, commandContext.Message.Content,
+                    true);
+
+                await this._gameService.JumbleEndGame(currentGame, context.DiscordChannel.Id);
+            }
+            else if (messageLength >= answerLength - 2 && messageLength <= answerLength + 2)
+            {
+                await commandContext.Message.AddReactionAsync(new Emoji("❌"));
+
+                await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, commandContext.Message.Content,
+                    false);
+            }
         }
-        else
+        catch (Exception e)
         {
-            await commandContext.Message.AddReactionAsync(new Emoji("❌"));
-
-            await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, commandContext.Message.Content,
-                false);
+            Log.Error("Error in JumbleProcessAnswer: {exception}", e.Message, e);
         }
     }
 
