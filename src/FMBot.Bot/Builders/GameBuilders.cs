@@ -66,10 +66,17 @@ public class GameBuilders
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userId, true);
         var artist = await this._gameService.PickArtistForJumble(topArtists);
 
-        var game = await this._gameService.StartJumbleGame(userId, context, GameType.JumbleFirstWins, artist.artist);
         var databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
+        if (databaseArtist == null)
+        {
+            // Pick someone else
+            artist = await this._gameService.PickArtistForJumble(topArtists);
+        }
+
+        var game = await this._gameService.StartJumbleGame(userId, context, GameType.JumbleFirstWins, artist.artist);
+        
         CountryInfo artistCountry = null;
-        if (databaseArtist.CountryCode != null)
+        if (databaseArtist?.CountryCode != null)
         {
             artistCountry = this._countryService.GetValidCountry(databaseArtist.CountryCode);
         }

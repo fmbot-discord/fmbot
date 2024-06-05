@@ -251,7 +251,7 @@ public class GameService
         var cleanedAnswer = CleanString(messageContent);
         var cleanedArtist = CleanString(game.CorrectAnswer);
         
-        return cleanedArtist.Contains(cleanedAnswer, StringComparison.OrdinalIgnoreCase);
+        return cleanedArtist.Equals(cleanedAnswer, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string CleanString(string input)
