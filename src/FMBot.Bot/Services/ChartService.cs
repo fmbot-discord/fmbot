@@ -325,7 +325,7 @@ public class ChartService
 
     public static string AlbumUrlToCacheFilePath(string albumName, string artistName)
     {
-        var encodedId = EncodeToBase64($"{StringExtensions.TruncateLongString(albumName, 40)}--{StringExtensions.TruncateLongString(artistName, 40)}");
+        var encodedId = EncodeToBase64($"{StringExtensions.TruncateLongString(albumName, 80)}--{StringExtensions.TruncateLongString(artistName, 40)}");
         var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 100);
 
         var fileName = localAlbumId + ".png";
