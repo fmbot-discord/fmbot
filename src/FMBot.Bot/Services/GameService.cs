@@ -40,7 +40,7 @@ public class GameService
         int sessionCount = 0)
     {
         var minPlaycount = sessionCount <= 5 ? 50 : 5;
-        
+
         var total = topArtists.Count(w => w.UserPlaycount >= minPlaycount);
         var random = RandomNumberGenerator.GetInt32(total);
 
@@ -49,6 +49,13 @@ public class GameService
 
     public async Task<JumbleSession> StartJumbleGame(int userId, ContextModel context, JumbleType jumbleType, string artist, CancellationTokenSource cancellationToken)
     {
+        var jumbled = JumbleWords(artist).ToUpper();
+
+        if (jumbled.Equals(artist, StringComparison.OrdinalIgnoreCase))
+        {
+            jumbled = JumbleWords(artist).ToUpper();
+        }
+
         var jumbleSession = new JumbleSession
         {
             DateStarted = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
@@ -59,7 +66,7 @@ public class GameService
             JumbleType = jumbleType,
             CorrectAnswer = artist,
             Reshuffles = 0,
-            JumbledArtist = JumbleWords(artist).ToUpper()
+            JumbledArtist = jumbled
         };
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -261,7 +268,7 @@ public class GameService
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(artist?.Disambiguation))
+        if (!string.IsNullOrWhiteSpace(artist?.Disambiguation) && !artist.Disambiguation.Contains(artist.Name, StringComparison.OrdinalIgnoreCase))
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation, $"- They might be described as **{artist.Disambiguation}**"));
         }
