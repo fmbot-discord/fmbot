@@ -1,4 +1,5 @@
 using System;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -44,6 +45,9 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<CensoredMusic> CensoredMusic { get; set; }
         public virtual DbSet<FeaturedLog> FeaturedLogs { get; set; }
         public virtual DbSet<AiPrompt> AiPrompts { get; set; }
+        
+        public virtual DbSet<JumbleSession> JumbleSessions { get; set; }
+        public virtual DbSet<JumbleSessionAnswer> JumbleSessionAnswers { get; set; }
 
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
@@ -309,6 +313,32 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Streaks)
                     .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<JumbleSession>(entity =>
+            {
+                entity.HasKey(e => e.JumbleSessionId);
+            });
+
+            modelBuilder.Entity<JumbleSessionAnswer>(entity =>
+            {
+                entity.HasKey(e => e.JumbleSessionAnswerId);
+
+                entity.HasOne(u => u.JumbleSession)
+                    .WithMany(a => a.Answers)
+                    .HasForeignKey(f => f.JumbleSessionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+
+            modelBuilder.Entity<JumbleSessionHint>(entity =>
+            {
+                entity.HasKey(e => e.JumbleSessionHintId);
+
+                entity.HasOne(u => u.JumbleSession)
+                    .WithMany(a => a.Hints)
+                    .HasForeignKey(f => f.JumbleSessionId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

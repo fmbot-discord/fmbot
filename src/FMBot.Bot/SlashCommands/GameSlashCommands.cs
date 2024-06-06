@@ -24,7 +24,6 @@ public class GameSlashCommands : InteractionModuleBase
     public async Task JumbleAddHint(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
-
         var response = await this._gameBuilders.JumbleAddHint(new ContextModel(this.Context), parsedGameId);
 
         await this.Context.UpdateInteractionEmbed(response);
@@ -34,7 +33,6 @@ public class GameSlashCommands : InteractionModuleBase
     public async Task JumbleReshuffle(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
-
         var response = await this._gameBuilders.JumbleReshuffle(new ContextModel(this.Context), parsedGameId);
 
         await this.Context.UpdateInteractionEmbed(response);
@@ -44,7 +42,6 @@ public class GameSlashCommands : InteractionModuleBase
     public async Task JumbleGiveUp(string gameId)
     {
         var parsedGameId = int.Parse(gameId);
-
         var response = await this._gameBuilders.JumbleGiveUp(new ContextModel(this.Context), parsedGameId);
 
         await this.Context.UpdateInteractionEmbed(response);

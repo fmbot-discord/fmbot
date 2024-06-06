@@ -568,7 +568,7 @@ public class UserService
             return user.GlobalName ?? user.Username;
         }
 
-        var guildUser = await guild.GetUserAsync(user.Id);
+        var guildUser = await guild.GetUserAsync(user.Id, CacheMode.CacheOnly);
 
         return guildUser?.DisplayName ?? user.GlobalName ?? user.Username;
     }

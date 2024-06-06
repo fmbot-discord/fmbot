@@ -62,10 +62,10 @@ public class GameCommands : BaseCommandModule
             var responseId = await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
 
-            if (responseId.HasValue)
+            if (responseId.HasValue && response.GameSessionId.HasValue)
             {
-                await this._gameService.JumbleAddResponseId(this.Context.Channel.Id, responseId.Value);
-                await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token);
+                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Value);
+                await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token, response.GameSessionId.Value);
             }
         }
         catch (OperationCanceledException)
@@ -77,7 +77,8 @@ public class GameCommands : BaseCommandModule
         }
     }
 
-    private async Task JumbleTimeExpired(ContextModel context, ulong responseId, CancellationToken cancellationToken)
+    private async Task JumbleTimeExpired(ContextModel context, ulong responseId, CancellationToken cancellationToken,
+        int gameSessionId)
     {
         await Task.Delay(GameService.SecondsToGuess * 1000, cancellationToken);
 
@@ -86,7 +87,7 @@ public class GameCommands : BaseCommandModule
             return;
         }
 
-        var response = await this._gameBuilders.JumbleTimeExpired(context, responseId);
+        var response = await this._gameBuilders.JumbleTimeExpired(context, gameSessionId);
 
         if (response == null)
         {

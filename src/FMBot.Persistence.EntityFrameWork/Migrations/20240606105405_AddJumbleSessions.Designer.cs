@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,13 +13,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240606105405_AddJumbleSessions")]
+    partial class AddJumbleSessions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.6")
+                .HasAnnotation("ProductVersion", "8.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
@@ -1305,44 +1308,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.ToTable("jumble_session_answers", (string)null);
                 });
 
-            modelBuilder.Entity("FMBot.Persistence.Domain.Models.JumbleSessionHint", b =>
-                {
-                    b.Property<int>("JumbleSessionHintId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("jumble_session_hint_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("JumbleSessionHintId"));
-
-                    b.Property<string>("Content")
-                        .HasColumnType("text")
-                        .HasColumnName("content");
-
-                    b.Property<bool>("HintShown")
-                        .HasColumnType("boolean")
-                        .HasColumnName("hint_shown");
-
-                    b.Property<int>("JumbleSessionId")
-                        .HasColumnType("integer")
-                        .HasColumnName("jumble_session_id");
-
-                    b.Property<int?>("Order")
-                        .HasColumnType("integer")
-                        .HasColumnName("order");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer")
-                        .HasColumnName("type");
-
-                    b.HasKey("JumbleSessionHintId")
-                        .HasName("pk_jumble_session_hint");
-
-                    b.HasIndex("JumbleSessionId")
-                        .HasDatabaseName("ix_jumble_session_hint_jumble_session_id");
-
-                    b.ToTable("jumble_session_hint", (string)null);
-                });
-
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Supporter", b =>
                 {
                     b.Property<int>("SupporterId")
@@ -2327,6 +2292,43 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.JumbleSession", b =>
+                {
+                    b.OwnsMany("FMBot.Domain.Models.JumbleHint", "Hints", b1 =>
+                        {
+                            b1.Property<int>("JumbleSessionId")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            b1.Property<string>("Content")
+                                .HasColumnType("text");
+
+                            b1.Property<bool>("HintShown")
+                                .HasColumnType("boolean");
+
+                            b1.Property<int?>("Order")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("Type")
+                                .HasColumnType("integer");
+
+                            b1.HasKey("JumbleSessionId", "Id");
+
+                            b1.ToTable("jumble_sessions");
+
+                            b1.ToJson("hints");
+
+                            b1.WithOwner()
+                                .HasForeignKey("JumbleSessionId")
+                                .HasConstraintName("fk_jumble_sessions_jumble_sessions_jumble_session_id");
+                        });
+
+                    b.Navigation("Hints");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.JumbleSessionAnswer", b =>
                 {
                     b.HasOne("FMBot.Persistence.Domain.Models.JumbleSession", "JumbleSession")
@@ -2335,18 +2337,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_jumble_session_answers_jumble_sessions_jumble_session_id");
-
-                    b.Navigation("JumbleSession");
-                });
-
-            modelBuilder.Entity("FMBot.Persistence.Domain.Models.JumbleSessionHint", b =>
-                {
-                    b.HasOne("FMBot.Persistence.Domain.Models.JumbleSession", "JumbleSession")
-                        .WithMany("Hints")
-                        .HasForeignKey("JumbleSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_jumble_session_hint_jumble_sessions_jumble_session_id");
 
                     b.Navigation("JumbleSession");
                 });
@@ -2551,8 +2541,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.JumbleSession", b =>
                 {
                     b.Navigation("Answers");
-
-                    b.Navigation("Hints");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.User", b =>

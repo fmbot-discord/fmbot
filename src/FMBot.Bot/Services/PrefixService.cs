@@ -70,7 +70,7 @@ public class PrefixService : IPrefixService
 
     public async Task LoadAllPrefixes()
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var servers = await db.Guilds.Where(w => w.Prefix != null).ToListAsync();
         foreach (var server in servers)
         {
@@ -80,7 +80,7 @@ public class PrefixService : IPrefixService
 
     public async Task ReloadPrefix(ulong discordGuildId)
     {
-        await using var db = this._contextFactory.CreateDbContext();
+        await using var db = await this._contextFactory.CreateDbContextAsync();
         var server = await db.Guilds
             .Where(w => w.DiscordGuildId == discordGuildId)
             .FirstOrDefaultAsync();

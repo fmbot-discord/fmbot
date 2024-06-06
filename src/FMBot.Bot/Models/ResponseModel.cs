@@ -31,6 +31,8 @@ public class ResponseModel
     public bool Spoiler { get; set; }
 
     public string Text { get; set; }
+    
+    public int? GameSessionId { get; set; }
 
     public StaticPaginator StaticPaginator { get; set; }
 

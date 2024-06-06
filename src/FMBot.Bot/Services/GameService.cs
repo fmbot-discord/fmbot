@@ -39,55 +39,61 @@ public class GameService
         return (topArtists[random].ArtistName, topArtists[random].UserPlaycount);
     }
 
-    public async Task<GameModel> StartJumbleGame(int userId, ContextModel context, GameType gameType, string artist, CancellationTokenSource cancellationToken)
+    public async Task<JumbleSession> StartJumbleGame(int userId, ContextModel context, JumbleType jumbleType, string artist, CancellationTokenSource cancellationToken)
     {
-        var game = new GameModel
+        var jumbleSession = new JumbleSession
         {
             DateStarted = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
             StarterUserId = userId,
             DiscordGuildId = context.DiscordGuild?.Id,
             DiscordChannelId = context.DiscordChannel.Id,
             DiscordId = context.InteractionId,
-            GameType = gameType,
+            JumbleType = jumbleType,
             CorrectAnswer = artist,
-            GameId = 1,
             Reshuffles = 0,
             JumbledArtist = JumbleWords(artist).ToUpper()
         };
 
-        // add to database
-        
-        var cacheTime = TimeSpan.FromSeconds(SecondsToGuess * 2);
-        this._cache.Set(CacheKeyForJumbleGame(context.DiscordChannel.Id), game, cacheTime);
-        this._cache.Set(CacheKeyForJumbleGameCancellationToken(context.DiscordChannel.Id), cancellationToken, cacheTime);
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        await db.JumbleSessions.AddAsync(jumbleSession);
+
+        await db.SaveChangesAsync();
+
+        this._cache.Set(CacheKeyForJumbleSessionCancellationToken(context.DiscordChannel.Id), cancellationToken, TimeSpan.FromSeconds(SecondsToGuess * 2));
         PublicProperties.GameChannel.Add(context.DiscordChannel.Id);
 
-        return game;
+        return jumbleSession;
     }
 
-    public static string CacheKeyForJumbleGame(ulong channelId)
+    private static string CacheKeyForJumbleSessionCancellationToken(ulong channelId)
     {
-        return $"jumble-game-{channelId}";
+        return $"jumble-session-token-{channelId}";
     }
 
-    public static string CacheKeyForJumbleGameCancellationToken(ulong channelId)
+    public async Task<JumbleSession> GetJumbleSessionForSessionId(int jumbleSessionId)
     {
-        return $"jumble-game-token-{channelId}";
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.JumbleSessions
+            .OrderByDescending(o => o.DateStarted)
+            .Include(i => i.Hints)
+            .Include(i => i.Answers)
+            .FirstOrDefaultAsync(f => f.JumbleSessionId == jumbleSessionId);
+
     }
 
-    public async Task<GameModel> GetGame(ulong channelId, int? gameId = null)
+    public async Task<JumbleSession> GetJumbleSessionForChannelId(ulong discordChannelId)
     {
-        if (!this._cache.TryGetValue(CacheKeyForJumbleGame(channelId), out GameModel game))
-        {
-            return null;
-        }
-
-        return game;
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.JumbleSessions
+            .OrderByDescending(o => o.DateStarted)
+            .Include(i => i.Hints)
+            .Include(i => i.Answers)
+            .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
     }
 
     public async Task CancelToken(ulong channelId)
     {
-        if (!this._cache.TryGetValue(CacheKeyForJumbleGameCancellationToken(channelId), out CancellationTokenSource token))
+        if (!this._cache.TryGetValue(CacheKeyForJumbleSessionCancellationToken(channelId), out CancellationTokenSource token))
         {
             return;
         }
@@ -95,10 +101,10 @@ public class GameService
         await token.CancelAsync();
     }
 
-    public List<GameHintModel> GetJumbleHints(Artist artist, long userPlaycount, CountryInfo country = null)
+    public List<JumbleSessionHint> GetJumbleHints(Artist artist, long userPlaycount, CountryInfo country = null)
     {
         var hints = GetRandomHints(artist, country);
-        hints.Add(new GameHintModel(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
+        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 
@@ -111,7 +117,7 @@ public class GameService
         return hints;
     }
 
-    public static string HintsToString(List<GameHintModel> hints, int count = 3)
+    public static string HintsToString(List<JumbleSessionHint> hints, int count = 3)
     {
         var hintDescription = new StringBuilder();
 
@@ -126,70 +132,84 @@ public class GameService
         return hintDescription.ToString();
     }
 
-    public async Task JumbleStoreShowedHints(GameModel game, List<GameHintModel> hints)
+    public async Task JumbleStoreShowedHints(JumbleSession game, List<JumbleSessionHint> hints)
     {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
         game.Hints = hints;
 
-        // save to db
+        db.Update(game);
+        await db.SaveChangesAsync();
     }
 
-    public async Task JumbleReshuffleArtist(GameModel game)
+    public async Task JumbleReshuffleArtist(JumbleSession game)
     {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
         game.JumbledArtist = JumbleWords(game.CorrectAnswer).ToUpper();
         game.Reshuffles++;
 
-        // save to db
+        db.Update(game);
+        await db.SaveChangesAsync();
     }
 
-    public async Task JumbleEndGame(GameModel game, ulong discordChannelId)
+    public async Task JumbleEndSession(JumbleSession game)
     {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
         game.DateEnded = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
-        // save to db
-
-        this._cache.Remove(CacheKeyForJumbleGame(discordChannelId));
+        db.Update(game);
+        await db.SaveChangesAsync();
     }
 
-    public async Task JumbleAddResponseId(ulong discordChannelId, ulong responseId)
+    public async Task JumbleAddResponseId(int gameSessionId, ulong responseId)
     {
-        var game = await GetGame(discordChannelId);
-        
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var game = await GetJumbleSessionForSessionId(gameSessionId);
+
         game.DiscordResponseId = responseId;
 
-        // save to db
+        db.Update(game);
+        await db.SaveChangesAsync();
     }
 
-    public async Task JumbleAddAnswer(GameModel game, ulong discordUserId, string content, bool correct)
+    public async Task JumbleAddAnswer(JumbleSession game, ulong discordUserId, string content, bool correct)
     {
-        var answer = new GameAnswerModel
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var answer = new JumbleSessionAnswer
         {
             Answer = content,
             Correct = correct,
             DiscordUserId = discordUserId,
-            GameId = game.GameId
+            JumbleSessionId = game.JumbleSessionId,
+            DateAnswered = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
         };
 
-        game.Answers ??= new List<GameAnswerModel>();
-        
+        game.Answers ??= new List<JumbleSessionAnswer>();
+
         game.Answers.Add(answer);
-        
-        // add to db
+
+        db.Update(game);
+        await db.SaveChangesAsync();
     }
 
-    private List<GameHintModel> GetRandomHints(Artist artist, CountryInfo country = null)
+    private static List<JumbleSessionHint> GetRandomHints(Artist artist, CountryInfo country = null)
     {
-        var hints = new List<GameHintModel>();
+        var hints = new List<JumbleSessionHint>();
 
         if (artist is { Popularity: not null })
         {
-            hints.Add(new GameHintModel(JumbleHintType.Popularity, $"- They have a popularity value of **{artist.Popularity}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- They have a popularity value of **{artist.Popularity}**"));
         }
 
-        if (artist?.ArtistGenres!= null && artist.ArtistGenres.Any())
+        if (artist?.ArtistGenres != null && artist.ArtistGenres.Any())
         {
             var random = RandomNumberGenerator.GetInt32(artist.ArtistGenres.Count);
             var genre = artist.ArtistGenres.ToList()[random];
-            hints.Add(new GameHintModel(JumbleHintType.Genre, $"- One of their genres is **{genre.Name}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Genre, $"- One of their genres is **{genre.Name}**"));
         }
 
         if (artist?.StartDate != null)
@@ -199,11 +219,11 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new GameHintModel(JumbleHintType.StartDate, $"- They were born <t:{dateValue}:D> {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They were born <t:{dateValue}:D> {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
             }
             else
             {
-                hints.Add(new GameHintModel(JumbleHintType.StartDate, $"- They started on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They started on <t:{dateValue}:D>"));
             }
         }
 
@@ -214,27 +234,27 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new GameHintModel(JumbleHintType.EndDate, $"- They passed away on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They passed away on <t:{dateValue}:D>"));
             }
             else
             {
-                hints.Add(new GameHintModel(JumbleHintType.EndDate, $"- They stopped on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They stopped on <t:{dateValue}:D>"));
             }
         }
 
         if (!string.IsNullOrWhiteSpace(artist?.Disambiguation))
         {
-            hints.Add(new GameHintModel(JumbleHintType.Disambiguation, $"- They might be described as **{artist.Disambiguation}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation, $"- They might be described as **{artist.Disambiguation}**"));
         }
 
         if (!string.IsNullOrWhiteSpace(artist?.Type))
         {
-            hints.Add(new GameHintModel(JumbleHintType.Type, $"- They are a **{artist.Type.ToLower()}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- They are a **{artist.Type.ToLower()}**"));
         }
 
         if (artist?.CountryCode != null && country != null)
         {
-            hints.Add(new GameHintModel(JumbleHintType.Country, $"- Their country has this flag: :flag_{country.Code.ToLower()}:"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Country, $"- Their country has this flag: :flag_{country.Code.ToLower()}:"));
         }
 
         return hints;
@@ -262,11 +282,11 @@ public class GameService
         return new string(letters);
     }
 
-    public static bool AnswerIsRight(GameModel game, string messageContent)
+    public static bool AnswerIsRight(JumbleSession game, string messageContent)
     {
         var cleanedAnswer = CleanString(messageContent);
         var cleanedArtist = CleanString(game.CorrectAnswer);
-        
+
         return cleanedArtist.Equals(cleanedAnswer, StringComparison.OrdinalIgnoreCase);
     }
 
