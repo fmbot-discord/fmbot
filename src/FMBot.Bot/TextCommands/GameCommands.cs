@@ -40,7 +40,7 @@ public class GameCommands : BaseCommandModule
     [Summary("Play the Jumble game.")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
-    [Alias("j", "jmbl", "jum", "gen", "jumbmle")]
+    [Alias("j", "jmbl", "jum", "jumbmle")]
     public async Task JumbleAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
