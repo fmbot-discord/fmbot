@@ -210,11 +210,8 @@ public class GameService
             DateAnswered = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
         };
 
-        game.Answers ??= new List<JumbleSessionAnswer>();
+        await db.JumbleSessionAnswers.AddAsync(answer);
 
-        game.Answers.Add(answer);
-
-        db.Update(game);
         await db.SaveChangesAsync();
     }
 
