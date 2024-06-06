@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using Discord.Commands;
+using FMBot.Domain;
 using Serilog;
 using FMBot.Persistence.Domain.Models;
 
@@ -68,8 +69,20 @@ public class GameBuilders
             return response;
         }
 
+        var sessionCount = await this._gameService.GetJumbleSessionsCountToday(context.ContextUser.UserId);
+        const int jumbleLimit = 30;
+        if (!SupporterService.IsSupporter(context.ContextUser.UserType) && sessionCount > jumbleLimit)
+        {
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.Embed.WithDescription($"You've used up all your {jumbleLimit} jumbles of today. [Get supporter]({Constants.GetSupporterDiscordLink}) to play unlimited jumble games and much more.");
+            response.Components = new ComponentBuilder()
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+            response.CommandResponse = CommandResponse.SupporterRequired;
+            return response;
+        }
+
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userId, true);
-        var artist = await this._gameService.PickArtistForJumble(topArtists);
+        var artist = await this._gameService.PickArtistForJumble(topArtists, sessionCount);
 
         var databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
         if (databaseArtist == null)

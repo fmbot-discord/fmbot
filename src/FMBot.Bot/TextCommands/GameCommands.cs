@@ -40,18 +40,11 @@ public class GameCommands : BaseCommandModule
     [Command("jumble", RunMode = RunMode.Async)]
     [Summary("Play the Jumble game.")]
     [UsernameSetRequired]
-    [CommandCategories(CommandCategory.Friends)]
+    [CommandCategories(CommandCategory.Other)]
     public async Task JumbleAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            await ReplyAsync("Sorry, still fixing some bugs, this isn't quite ready yet. Try again later..");
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            return;
-        }
 
         try
         {

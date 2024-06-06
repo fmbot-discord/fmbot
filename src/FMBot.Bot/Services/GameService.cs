@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
@@ -15,6 +16,8 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace FMBot.Bot.Services;
 
@@ -22,18 +25,23 @@ public class GameService
 {
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+    private readonly BotSettings _botSettings;
 
     public const int SecondsToGuess = 25;
 
-    public GameService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
+    public GameService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
+        this._botSettings = botSettings.Value;
     }
 
-    public async Task<(string artist, long userPlaycount)> PickArtistForJumble(List<TopArtist> topArtists)
+    public async Task<(string artist, long userPlaycount)> PickArtistForJumble(List<TopArtist> topArtists,
+        int sessionCount = 0)
     {
-        var total = topArtists.Count(w => w.UserPlaycount >= 5);
+        var minPlaycount = sessionCount <= 5 ? 50 : 5;
+        
+        var total = topArtists.Count(w => w.UserPlaycount >= minPlaycount);
         var random = RandomNumberGenerator.GetInt32(total);
 
         return (topArtists[random].ArtistName, topArtists[random].UserPlaycount);
@@ -89,6 +97,20 @@ public class GameService
             .Include(i => i.Hints)
             .Include(i => i.Answers)
             .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
+    }
+
+    public async Task<int> GetJumbleSessionsCountToday(int userId)
+    {
+        var sql = "SELECT count(*) FROM public.jumble_sessions WHERE starter_user_id = @userId AND date_started >= date_trunc('day', current_date); ";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await connection.QueryFirstOrDefaultAsync<int>(sql, new
+        {
+            userId
+        });
     }
 
     public async Task CancelToken(ulong channelId)
@@ -202,7 +224,7 @@ public class GameService
 
         if (artist is { Popularity: not null })
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- They have a popularity value of **{artist.Popularity}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- They have a popularity of **{artist.Popularity}** out of 100"));
         }
 
         if (artist?.ArtistGenres != null && artist.ArtistGenres.Any())
