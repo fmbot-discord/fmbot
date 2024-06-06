@@ -74,10 +74,16 @@ public class GameService
 
         await db.SaveChangesAsync();
 
-        this._cache.Set(CacheKeyForJumbleSessionCancellationToken(context.DiscordChannel.Id), cancellationToken, TimeSpan.FromSeconds(SecondsToGuess * 2));
-        PublicProperties.GameChannel.Add(context.DiscordChannel.Id);
+        var cacheTime = TimeSpan.FromMinutes(1);
+        this._cache.Set(CacheKeyForJumbleSession(context.DiscordChannel.Id), cancellationToken, cacheTime);
+        this._cache.Set(CacheKeyForJumbleSessionCancellationToken(context.DiscordChannel.Id), cancellationToken, cacheTime);
 
         return jumbleSession;
+    }
+
+    public static string CacheKeyForJumbleSession(ulong channelId)
+    {
+        return $"jumble-session-active-{channelId}";
     }
 
     private static string CacheKeyForJumbleSessionCancellationToken(ulong channelId)

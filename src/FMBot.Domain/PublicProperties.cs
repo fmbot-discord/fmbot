@@ -29,7 +29,5 @@ public static class PublicProperties
     public static ConcurrentDictionary<int, List<EurovisionContestantModel>> EurovisionYears = new();
     public static ConcurrentDictionary<string, EurovisionContestantModel> EurovisionContestants = new();
 
-    public static readonly ConcurrentBag<ulong> GameChannel = new();
-
     public static SpotifyClientConfig SpotifyConfig = null;
 }

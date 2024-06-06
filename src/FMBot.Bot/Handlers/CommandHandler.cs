@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -108,7 +107,7 @@ public class CommandHandler
 
         if (!possibleCommandExecuted &&
             context.Channel?.Id != null &&
-            PublicProperties.GameChannel.Contains(context.Channel.Id) &&
+            this._cache.TryGetValue(GameService.CacheKeyForJumbleSession(context.Channel.Id), out _) &&
             !string.IsNullOrWhiteSpace(context.Message.Content))
         {
             _ = Task.Run(() => this._gameBuilders.JumbleProcessAnswer(new ContextModel(context, "."), context));
