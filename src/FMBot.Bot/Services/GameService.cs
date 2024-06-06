@@ -327,7 +327,8 @@ public class GameService
             .Replace("Æ", "Ae")
             .Replace("ø", "o")
             .Replace("å", "a")
-            .Replace("Å", "A");
+            .Replace("Å", "A")
+            .Replace("?", "");
 
         var stringBuilder = new StringBuilder();
         foreach (var c in normalizedString)

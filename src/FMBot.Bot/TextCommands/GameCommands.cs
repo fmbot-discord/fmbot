@@ -55,8 +55,8 @@ public class GameCommands : BaseCommandModule
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
                 _ = Task.Run(() => this.Context.Message.AddReactionAsync(new Emoji("❌")));
-            this.Context.LogCommandUsed(response.CommandResponse);
-            return;
+                this.Context.LogCommandUsed(response.CommandResponse);
+                return;
             }
 
             var responseId = await this.Context.SendResponse(this.Interactivity, response);
