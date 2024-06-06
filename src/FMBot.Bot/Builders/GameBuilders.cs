@@ -95,7 +95,7 @@ public class GameBuilders
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
-        
+
         var artist = await this._gameService.PickArtistForJumble(topArtists, sessionCount);
 
         var databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
@@ -151,7 +151,7 @@ public class GameBuilders
     private static ComponentBuilder BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints)
     {
         var addHintDisabled = hints.Count(c => c.HintShown) == hints.Count;
-        
+
         return new ComponentBuilder()
             .WithButton("Add hint", $"{InteractionConstants.Game.AddJumbleHint}-{gameId}", ButtonStyle.Secondary, disabled: addHintDisabled)
             .WithButton("Reshuffle", $"{InteractionConstants.Game.JumbleReshuffle}-{gameId}", ButtonStyle.Secondary)
@@ -219,7 +219,9 @@ public class GameBuilders
 
         BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false);
 
-        response.Embed.AddField("You gave up!", $"The correct answer was **{currentGame.CorrectAnswer}**");
+        var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
+
+        response.Embed.AddField($"{userTitle} gave up!", $"The correct answer was **{currentGame.CorrectAnswer}**");
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
