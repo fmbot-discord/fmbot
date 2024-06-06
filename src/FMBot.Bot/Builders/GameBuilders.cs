@@ -87,6 +87,15 @@ public class GameBuilders
         }
 
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userId, true);
+
+        if (topArtists.Count(c => c.UserPlaycount > 50) <= 3)
+        {
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.Embed.WithDescription($"Sorry, you haven't listened to enough artists yet to use this command. Please try again later.");
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+        
         var artist = await this._gameService.PickArtistForJumble(topArtists, sessionCount);
 
         var databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
