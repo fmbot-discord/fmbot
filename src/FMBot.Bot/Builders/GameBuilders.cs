@@ -63,10 +63,15 @@ public class GameBuilders
         var existingGame = await this._gameService.GetJumbleSessionForChannelId(context.DiscordChannel.Id);
         if (existingGame != null && !existingGame.DateEnded.HasValue)
         {
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.Embed.WithDescription($"There is already a game in progress. Finish it or give up before starting a new one.");
-            response.CommandResponse = CommandResponse.Cooldown;
-            return response;
+            if (existingGame.DateStarted <= DateTime.UtcNow.AddSeconds(-(GameService.SecondsToGuess + 10)))
+            {
+                await this._gameService.JumbleEndSession(existingGame);
+            }
+            else
+            {
+                response.CommandResponse = CommandResponse.Cooldown;
+                return response;
+            }
         }
 
         var sessionCount = await this._gameService.GetJumbleSessionsCountToday(context.ContextUser.UserId);

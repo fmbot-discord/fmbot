@@ -11,7 +11,6 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using Fergun.Interactive;
 using Discord;
-using FMBot.Domain;
 using System.Threading;
 
 namespace FMBot.Bot.TextCommands;
@@ -52,6 +51,13 @@ public class GameCommands : BaseCommandModule
             var context = new ContextModel(this.Context, prfx, contextUser);
             var cancellationTokenSource = new CancellationTokenSource();
             var response = await this._gameBuilders.StartJumbleFirstWins(context, contextUser.UserId, cancellationTokenSource);
+
+            if (response.CommandResponse == CommandResponse.Cooldown)
+            {
+                _ = Task.Run(() => this.Context.Message.AddReactionAsync(new Emoji("❌")));
+            this.Context.LogCommandUsed(response.CommandResponse);
+            return;
+            }
 
             var responseId = await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
