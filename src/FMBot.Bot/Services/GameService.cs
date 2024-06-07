@@ -56,11 +56,13 @@ public class GameService
 
         var minPlaycount = jumblesPlayedToday.Count switch
         {
-            >= 100 => 1,
-            >= 25 => 2,
+            >= 120 => 1,
+            >= 75 => 2,
+            >= 40 => 3,
+            >= 25 => 4,
             >= 12 => 5,
             >= 5 => 25,
-            _ => 50
+            _ => 40
         };
 
         var finalMinPlaycount = minPlaycount * multiplier;
