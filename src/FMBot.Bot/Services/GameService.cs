@@ -42,7 +42,10 @@ public class GameService
     {
         jumblesPlayedToday ??= [];
 
-        topArtists = topArtists.Where(w => !jumblesPlayedToday.Contains(w.ArtistName)).ToList();
+        topArtists = topArtists
+            .Where(w => !jumblesPlayedToday.Contains(w.ArtistName))
+            .OrderByDescending(o => o.UserPlaycount)
+            .ToList();
 
         var multiplier = topArtists.Count switch
         {
