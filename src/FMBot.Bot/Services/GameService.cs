@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using Serilog;
 
 namespace FMBot.Bot.Services;
 
@@ -62,13 +63,16 @@ public class GameService
             _ => 50
         };
 
-        minPlaycount *= multiplier;
+        var finalMinPlaycount = minPlaycount * multiplier;
         if (jumblesPlayedToday.Count > 500)
         {
-            minPlaycount = 1;
+            finalMinPlaycount = 1;
         }
 
-        var total = topArtists.Count(w => w.UserPlaycount >= minPlaycount);
+        var total = topArtists.Count(w => w.UserPlaycount >= finalMinPlaycount);
+        Log.Information("PickArtistForJumble: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
+                        "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
+            topArtists.Count, jumblesPlayedToday.Count,  multiplier, minPlaycount, finalMinPlaycount);
 
         if (total == 0)
         {
