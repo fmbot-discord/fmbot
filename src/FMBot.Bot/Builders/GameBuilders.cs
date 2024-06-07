@@ -74,9 +74,9 @@ public class GameBuilders
             }
         }
 
-        var sessionCount = await this._gameService.GetJumbleSessionsCountToday(context.ContextUser.UserId);
+        var jumblesPlayedToday = await this._gameService.GetJumbleSessionsCountToday(context.ContextUser.UserId);
         const int jumbleLimit = 30;
-        if (!SupporterService.IsSupporter(context.ContextUser.UserType) && sessionCount > jumbleLimit)
+        if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday.Count > jumbleLimit)
         {
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.Embed.WithDescription($"You've used up all your {jumbleLimit} jumbles of today. [Get supporter]({Constants.GetSupporterDiscordLink}) to play unlimited jumble games and much more.");
@@ -88,21 +88,28 @@ public class GameBuilders
 
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userId, true);
 
-        if (topArtists.Count(c => c.UserPlaycount > 50) <= 3)
+        if (topArtists.Count(c => c.UserPlaycount > 50) <= 5)
         {
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.Embed.WithDescription($"Sorry, you haven't listened to enough artists yet to use this command. Please try again later.");
+            response.Embed.WithDescription($"Sorry, you haven't listened to enough artists yet to use this command. Please scrobble more music and try again later.");
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
 
-        var artist = await this._gameService.PickArtistForJumble(topArtists, sessionCount);
+        var artist = GameService.PickArtistForJumble(topArtists, jumblesPlayedToday);
+
+        if (artist.artist == null)
+        {
+            response.Embed.WithDescription($"You've played all jumbles that are available for you today. Come back tomorrow or scrobble more music to play again.");
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
 
         var databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
         if (databaseArtist == null)
         {
             // Pick someone else and hope for the best
-            artist = await this._gameService.PickArtistForJumble(topArtists);
+            artist = GameService.PickArtistForJumble(topArtists);
             databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
         }
 

@@ -36,18 +36,52 @@ public class GameService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<(string artist, long userPlaycount)> PickArtistForJumble(List<TopArtist> topArtists,
-        int sessionCount = 0)
+    public static (string artist, long userPlaycount) PickArtistForJumble(List<TopArtist> topArtists,
+        HashSet<string> jumblesPlayedToday = null)
     {
-        var minPlaycount = sessionCount <= 5 ? 50 : 5;
+        jumblesPlayedToday ??= [];
+
+        topArtists = topArtists.Where(w => !jumblesPlayedToday.Contains(w.ArtistName)).ToList();
+
+        var multiplier = topArtists.Count switch
+        {
+            > 7000 => 8,
+            > 5000 => 6,
+            > 3000 => 4,
+            > 2000 => 3,
+            > 750 => 2,
+            _ => 1
+        };
+
+        var minPlaycount = jumblesPlayedToday.Count switch
+        {
+            >= 100 => 1,
+            >= 25 => 2,
+            >= 12 => 5,
+            >= 5 => 25,
+            _ => 50
+        };
+
+        minPlaycount *= multiplier;
+        if (jumblesPlayedToday.Count > 500)
+        {
+            minPlaycount = 1;
+        }
 
         var total = topArtists.Count(w => w.UserPlaycount >= minPlaycount);
+
+        if (total == 0)
+        {
+            return (null, 0);
+        }
+
         var random = RandomNumberGenerator.GetInt32(total);
 
         return (topArtists[random].ArtistName, topArtists[random].UserPlaycount);
     }
 
-    public async Task<JumbleSession> StartJumbleGame(int userId, ContextModel context, JumbleType jumbleType, string artist, CancellationTokenSource cancellationToken)
+    public async Task<JumbleSession> StartJumbleGame(int userId, ContextModel context, JumbleType jumbleType,
+                                                     string artist, CancellationTokenSource cancellationToken)
     {
         var jumbled = JumbleWords(artist).ToUpper();
 
@@ -99,7 +133,6 @@ public class GameService
             .Include(i => i.Hints)
             .Include(i => i.Answers)
             .FirstOrDefaultAsync(f => f.JumbleSessionId == jumbleSessionId);
-
     }
 
     public async Task<JumbleSession> GetJumbleSessionForChannelId(ulong discordChannelId)
@@ -112,18 +145,24 @@ public class GameService
             .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
     }
 
-    public async Task<int> GetJumbleSessionsCountToday(int userId)
+    public async Task<HashSet<string>> GetJumbleSessionsCountToday(int userId)
     {
-        var sql = "SELECT count(*) FROM public.jumble_sessions WHERE starter_user_id = @userId AND date_started >= date_trunc('day', current_date); ";
+        const string sql = "SELECT correct_answer FROM public.jumble_sessions " +
+                           "WHERE starter_user_id = @userId AND date_started >= date_trunc('day', current_date); ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        return await connection.QueryFirstOrDefaultAsync<int>(sql, new
+        var jumblesPlayedToday = await connection.QueryAsync<string>(sql, new
         {
             userId
         });
+
+        return jumblesPlayedToday
+            .GroupBy(g => g)
+            .Select(s => s.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     public async Task CancelToken(ulong channelId)
