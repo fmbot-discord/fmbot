@@ -265,6 +265,10 @@ public class GameBuilders
 
                 var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
                 response.Embed.WithDescription($"**{userTitle}** got it right! The answer was `{currentGame.CorrectAnswer}`");
+
+                var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
+                response.Embed.WithFooter($"{timeTaken.TotalSeconds:F1}s");
+
                 response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
                 await commandContext.Channel.SendMessageAsync(embed: response.Embed.Build());
 

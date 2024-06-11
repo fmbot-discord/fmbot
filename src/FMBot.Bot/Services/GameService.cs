@@ -62,14 +62,13 @@ public class GameService
             >= 120 => 1,
             >= 75 => 2,
             >= 40 => 3,
-            >= 25 => 4,
-            >= 12 => 5,
-            >= 5 => 25,
+            >= 12 => 6,
+            >= 5 => 20,
             _ => 40
         };
 
         var finalMinPlaycount = minPlaycount * multiplier;
-        if (jumblesPlayedToday.Count > 500)
+        if (jumblesPlayedToday.Count > 250)
         {
             finalMinPlaycount = 1;
         }
@@ -77,7 +76,7 @@ public class GameService
         var total = topArtists.Count(w => w.UserPlaycount >= finalMinPlaycount);
         Log.Information("PickArtistForJumble: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
                         "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
-            topArtists.Count, jumblesPlayedToday.Count,  multiplier, minPlaycount, finalMinPlaycount);
+            topArtists.Count, jumblesPlayedToday.Count, multiplier, minPlaycount, finalMinPlaycount);
 
         if (total == 0)
         {
