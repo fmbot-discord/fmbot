@@ -304,6 +304,15 @@ public class GameBuilders
             }
             else if (messageLength >= answerLength - 5 && messageLength <= answerLength + 2)
             {
+
+                var levenshteinDistance =
+                    GameService.GetLevenshteinDistance(currentGame.CorrectAnswer.ToLower(), commandContext.Message.Content.ToLower());
+
+                if (levenshteinDistance == 1)
+                {
+                    _ = Task.Run(() => commandContext.Message.AddReactionAsync(new Emoji("🧐")));
+                }
+
                 _ = Task.Run(() => commandContext.Message.AddReactionAsync(new Emoji("❌")));
 
                 await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, commandContext.Message.Content, false);
