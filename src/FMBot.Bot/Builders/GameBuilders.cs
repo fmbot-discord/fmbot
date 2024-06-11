@@ -232,6 +232,17 @@ public class GameBuilders
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
+        if (currentGame.Answers is { Count: >= 1 })
+        {
+            var separateResponse = new EmbedBuilder();
+            separateResponse.WithDescription($"{userTitle} gave up! The correct answer was `{currentGame.CorrectAnswer}`");
+            separateResponse.WithColor(DiscordConstants.AppleMusicRed);
+            if (context.DiscordChannel is IMessageChannel msgChannel)
+            {
+                _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build()));
+            }
+        }
+
         return response;
     }
 
@@ -267,7 +278,7 @@ public class GameBuilders
                 response.Embed.WithDescription($"**{userTitle}** got it right! The answer was `{currentGame.CorrectAnswer}`");
 
                 var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
-                response.Embed.WithFooter($"{timeTaken.TotalSeconds:F1}s");
+                response.Embed.WithFooter($"Answered in {timeTaken.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}s");
 
                 response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
                 await commandContext.Channel.SendMessageAsync(embed: response.Embed.Build());
@@ -331,7 +342,7 @@ public class GameBuilders
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
             if (context.DiscordChannel is IMessageChannel msgChannel)
             {
-                await msgChannel.SendMessageAsync(embed: separateResponse.Build());
+                _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build()));
             }
         }
 
