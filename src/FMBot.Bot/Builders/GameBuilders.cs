@@ -277,7 +277,7 @@ public class GameBuilders
                 var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
 
                 var separateResponse = new EmbedBuilder();
-                separateResponse.WithDescription($"**{userTitle}** got it right! The answer was **`{currentGame.CorrectAnswer}`**");
+                separateResponse.WithDescription($"**{userTitle}** got it right! The answer was `{currentGame.CorrectAnswer}`");
                 var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
                 separateResponse.WithFooter($"Answered in {timeTaken.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}s");
                 separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
