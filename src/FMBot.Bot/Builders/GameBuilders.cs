@@ -293,8 +293,6 @@ public class GameBuilders
                     response.Components = null;
                     response.Embed.WithColor(DiscordConstants.SpotifyColorGreen);
 
-                    response.Embed.AddField($"{userTitle} got it right!", $"The answer was `{currentGame.CorrectAnswer}`");
-                    
                     var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
                     if (msg is not IUserMessage message)
                     {
