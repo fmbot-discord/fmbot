@@ -235,7 +235,7 @@ public class GameBuilders
         if (currentGame.Answers is { Count: >= 1 })
         {
             var separateResponse = new EmbedBuilder();
-            separateResponse.WithDescription($"{userTitle} gave up! The correct answer was `{currentGame.CorrectAnswer}`");
+            separateResponse.WithDescription($"**{userTitle}** gave up! The correct answer was `{currentGame.CorrectAnswer}`");
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
             if (context.DiscordChannel is IMessageChannel msgChannel)
             {
@@ -270,18 +270,22 @@ public class GameBuilders
 
                 _ = Task.Run(() => commandContext.Message.AddReactionAsync(new Emoji("✅")));
 
-                _ = Task.Run(() => this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, commandContext.Message.Content, true));
+                _ = Task.Run(() => this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, true));
 
                 _ = Task.Run(() => this._gameService.JumbleEndSession(currentGame));
 
-                var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-                response.Embed.WithDescription($"**{userTitle}** got it right! The answer was `{currentGame.CorrectAnswer}`");
+                var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
 
+                var separateResponse = new EmbedBuilder();
+                separateResponse.WithDescription($"**{userTitle}** got it right! The answer was **`{currentGame.CorrectAnswer}`**");
                 var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
-                response.Embed.WithFooter($"Answered in {timeTaken.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}s");
-
-                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
-                await commandContext.Channel.SendMessageAsync(embed: response.Embed.Build());
+                separateResponse.WithFooter($"Answered in {timeTaken.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}s");
+                separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
+                
+                if (context.DiscordChannel is IMessageChannel msgChannel)
+                {
+                    _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build()));
+                }
 
                 if (currentGame.DiscordResponseId.HasValue)
                 {
@@ -289,6 +293,8 @@ public class GameBuilders
                     response.Components = null;
                     response.Embed.WithColor(DiscordConstants.SpotifyColorGreen);
 
+                    response.Embed.AddField($"{userTitle} got it right!", $"The answer was `{currentGame.CorrectAnswer}`");
+                    
                     var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
                     if (msg is not IUserMessage message)
                     {
@@ -304,18 +310,17 @@ public class GameBuilders
             }
             else if (messageLength >= answerLength - 5 && messageLength <= answerLength + 2)
             {
+                await commandContext.Message.AddReactionAsync(new Emoji("❌"));
 
                 var levenshteinDistance =
                     GameService.GetLevenshteinDistance(currentGame.CorrectAnswer.ToLower(), commandContext.Message.Content.ToLower());
 
                 if (levenshteinDistance == 1)
                 {
-                    _ = Task.Run(() => commandContext.Message.AddReactionAsync(new Emoji("🧐")));
+                    await commandContext.Message.AddReactionAsync(new Emoji("🤏"));
                 }
 
-                _ = Task.Run(() => commandContext.Message.AddReactionAsync(new Emoji("❌")));
-
-                await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, commandContext.Message.Content, false);
+                await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, false);
             }
         }
         catch (Exception e)

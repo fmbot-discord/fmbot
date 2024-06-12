@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -257,13 +256,12 @@ public class GameService
         await db.SaveChangesAsync();
     }
 
-    public async Task JumbleAddAnswer(JumbleSession game, ulong discordUserId, string content, bool correct)
+    public async Task JumbleAddAnswer(JumbleSession game, ulong discordUserId, bool correct)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var answer = new JumbleSessionAnswer
         {
-            Answer = content,
             Correct = correct,
             DiscordUserId = discordUserId,
             JumbleSessionId = game.JumbleSessionId,
