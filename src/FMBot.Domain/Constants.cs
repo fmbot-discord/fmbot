@@ -36,7 +36,7 @@ public static class Constants
 
     public const string GetSupporterOverviewButton = "View all supporter perks here.";
     public const string GetSupporterOverviewLink = "https://fmbot.xyz/supporter/";
-    public const string GetSupporterDiscordLink = "https://discord.com/application-directory/356268235697553409/premium";
+    public const string GetSupporterDiscordLink = "https://discord.com/application-directory/356268235697553409/store";
 
     public const int SupporterMessageChance = 12;
     public const int SupporterPromoChance = 10;
