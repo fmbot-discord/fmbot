@@ -74,9 +74,10 @@ public class GameBuilders
             }
         }
 
-        var jumblesPlayedToday = await this._gameService.GetJumbleSessionsCountToday(context.ContextUser.UserId);
+        var recentJumbles = await this._gameService.GetJumbleSessionsCountToday(context.ContextUser.UserId);
+        var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
         const int jumbleLimit = 30;
-        if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday.Count > jumbleLimit)
+        if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday > jumbleLimit)
         {
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.Embed.WithDescription($"You've used up all your {jumbleLimit} jumbles of today. [Get supporter]({Constants.GetSupporterDiscordLink}) to play unlimited jumble games and much more.");
@@ -96,7 +97,7 @@ public class GameBuilders
             return response;
         }
 
-        var artist = GameService.PickArtistForJumble(topArtists, jumblesPlayedToday);
+        var artist = GameService.PickArtistForJumble(topArtists, recentJumbles);
 
         if (artist.artist == null)
         {
@@ -281,7 +282,7 @@ public class GameBuilders
                 var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
                 separateResponse.WithFooter($"Answered in {timeTaken.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}s");
                 separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
-                
+
                 if (context.DiscordChannel is IMessageChannel msgChannel)
                 {
                     _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build()));
@@ -308,14 +309,16 @@ public class GameBuilders
             }
             else if (messageLength >= answerLength - 5 && messageLength <= answerLength + 2)
             {
-                await commandContext.Message.AddReactionAsync(new Emoji("❌"));
-
                 var levenshteinDistance =
                     GameService.GetLevenshteinDistance(currentGame.CorrectAnswer.ToLower(), commandContext.Message.Content.ToLower());
 
                 if (levenshteinDistance == 1)
                 {
                     await commandContext.Message.AddReactionAsync(new Emoji("🤏"));
+                }
+                else
+                {
+                    await commandContext.Message.AddReactionAsync(new Emoji("❌"));
                 }
 
                 await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, false);

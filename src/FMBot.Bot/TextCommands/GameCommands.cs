@@ -107,4 +107,45 @@ public class GameCommands : BaseCommandModule
         });
     }
 
+    //[Command("pixelate", RunMode = RunMode.Async)]
+    //[Summary("Play the album Jumble game.")]
+    //[UsernameSetRequired]
+    //[CommandCategories(CommandCategory.Other)]
+    //[Alias("px")]
+    public async Task PixelateAsync()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        try
+        {
+            var context = new ContextModel(this.Context, prfx, contextUser);
+            var cancellationTokenSource = new CancellationTokenSource();
+            var response = await this._gameBuilders.StartJumbleFirstWins(context, contextUser.UserId, cancellationTokenSource);
+
+            if (response.CommandResponse == CommandResponse.Cooldown)
+            {
+                _ = Task.Run(() => this.Context.Message.AddReactionAsync(new Emoji("❌")));
+                this.Context.LogCommandUsed(response.CommandResponse);
+                return;
+            }
+
+            var responseId = await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+
+            if (responseId.HasValue && response.GameSessionId.HasValue)
+            {
+                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Value);
+                await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token, response.GameSessionId.Value);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
 }
