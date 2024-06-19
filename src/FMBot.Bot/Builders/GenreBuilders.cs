@@ -668,6 +668,13 @@ public class GenreBuilders
         var originalSearchValue = !string.IsNullOrWhiteSpace(originalSearch) ? originalSearch : "0";
         var optionId = $"{interaction}~{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{userGenre.GenreName}~{originalSearchValue}";
 
+        if (userView && context.DiscordGuild == null)
+        {
+            optionId = null;
+            optionEmote = null;
+            optionDescription = null;
+        }
+
         if (pages.Count == 1)
         {
             response.ResponseType = ResponseType.Embed;

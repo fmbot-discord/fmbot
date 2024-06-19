@@ -14,8 +14,6 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain.Models;
-using static FMBot.Bot.Resources.InteractionConstants;
 
 
 namespace FMBot.Bot.SlashCommands;
@@ -40,6 +38,8 @@ public class GenreSlashCommands : InteractionModuleBase
 
     [SlashCommand("genre", "Shows genre info for artist or top artists for genre")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task GenreAsync(
         [Summary("search", "The genre or artist you want to view")]
         [Autocomplete(typeof(GenreArtistAutoComplete))] string search = null,
@@ -48,7 +48,7 @@ public class GenreSlashCommands : InteractionModuleBase
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         try
@@ -167,7 +167,7 @@ public class GenreSlashCommands : InteractionModuleBase
                 new ComponentBuilder().WithButton($"Loading {selectedOption}...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
             await message.ModifyAsync(m => m.Components = components.Build());
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
             var contextUser = await this._userService.GetUserWithFriendsAsync(requesterDiscordUserId);
             var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
             var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
