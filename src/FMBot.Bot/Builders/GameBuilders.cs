@@ -23,33 +23,15 @@ public class GameBuilders
     private readonly GameService _gameService;
     private readonly ArtistsService _artistsService;
     private readonly CountryService _countryService;
+    private readonly AlbumService _albumService;
 
-    public GameBuilders(UserService userService, GameService gameService, ArtistsService artistsService, CountryService countryService)
+    public GameBuilders(UserService userService, GameService gameService, ArtistsService artistsService, CountryService countryService, AlbumService albumService)
     {
         this._userService = userService;
         this._gameService = gameService;
         this._artistsService = artistsService;
         this._countryService = countryService;
-    }
-
-    public static ResponseModel GameModePick(ContextModel context)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed,
-            Components = new ComponentBuilder()
-                .WithButton("First correct answer wins", InteractionConstants.Game.StartJumbleFirstWins)
-                .WithButton("Play as group", InteractionConstants.Game.StartJumbleGroup)
-        };
-
-        var description = new StringBuilder();
-
-        description.AppendLine("Start jumble game");
-
-        response.Embed.WithDescription(description.ToString());
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-
-        return response;
+        this._albumService = albumService;
     }
 
     public async Task<ResponseModel> StartJumbleFirstWins(ContextModel context, int userId,
@@ -122,7 +104,7 @@ public class GameBuilders
             artistCountry = this._countryService.GetValidCountry(databaseArtist.CountryCode);
         }
 
-        var hints = this._gameService.GetJumbleHints(databaseArtist, artist.userPlaycount, artistCountry);
+        var hints = this._gameService.GetJumbleArtistHints(databaseArtist, artist.userPlaycount, artistCountry);
         await this._gameService.JumbleStoreShowedHints(game, hints);
 
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints);
@@ -360,6 +342,89 @@ public class GameBuilders
                 _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build()));
             }
         }
+
+        return response;
+    }
+
+    public async Task<ResponseModel> StartPixelation(ContextModel context, int userId,
+    CancellationTokenSource cancellationTokenSource)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        //var existingGame = await this._gameService.GetJumbleSessionForChannelId(context.DiscordChannel.Id);
+        //if (existingGame != null && !existingGame.DateEnded.HasValue)
+        //{
+        //    if (existingGame.DateStarted <= DateTime.UtcNow.AddSeconds(-(GameService.SecondsToGuess + 10)))
+        //    {
+        //        await this._gameService.JumbleEndSession(existingGame);
+        //    }
+        //    else
+        //    {
+        //        response.CommandResponse = CommandResponse.Cooldown;
+        //        return response;
+        //    }
+        //}
+
+        //var recentJumbles = await this._gameService.GetJumbleSessionsCountToday(context.ContextUser.UserId);
+        //var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
+        //const int jumbleLimit = 30;
+        //if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday > jumbleLimit)
+        //{
+        //    response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        //    response.Embed.WithDescription($"You've used up all your {jumbleLimit} jumbles of today. [Get supporter]({Constants.GetSupporterDiscordLink}) to play unlimited jumble games and much more.");
+        //    response.Components = new ComponentBuilder()
+        //        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+        //    response.CommandResponse = CommandResponse.SupporterRequired;
+        //    return response;
+        //}
+
+        var topAlbums = await this._albumService.GetUserAllTimeTopAlbums(userId, true);
+
+        if (topAlbums.Count(c => c.UserPlaycount > 50) <= 5)
+        {
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.Embed.WithDescription($"Sorry, you haven't listened to enough artists yet to use this command. Please scrobble more music and try again later.");
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        await this._albumService.FillMissingAlbumCovers(topAlbums);
+        var album = GameService.PickAlbumForPixelation(topAlbums, null);
+
+        if (album == null)
+        {
+            response.Embed.WithDescription($"You've played all jumbles that are available for you today. Come back tomorrow or scrobble more music to play again.");
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var databaseAlbum = await this._albumService.GetAlbumFromDatabase(album.ArtistName, album.AlbumName);
+        if (databaseAlbum == null)
+        {
+            // Pick someone else and hope for the best
+            album = GameService.PickAlbumForPixelation(topAlbums, null);
+            databaseAlbum = await this._albumService.GetAlbumFromDatabase(album.ArtistName, album.AlbumName);
+        }
+
+
+        var game = await this._gameService.StartJumbleGame(userId, context, JumbleType.JumbleFirstWins, album.AlbumName, cancellationTokenSource);
+
+        var databaseArtist = await this._artistsService.GetArtistFromDatabase(album.ArtistName);
+        CountryInfo artistCountry = null;
+        if (databaseArtist?.CountryCode != null)
+        {
+            artistCountry = this._countryService.GetValidCountry(databaseArtist.CountryCode);
+        }
+
+        var hints = this._gameService.GetJumbleAlbumHints(databaseAlbum, databaseArtist, album.UserPlaycount.GetValueOrDefault(), artistCountry);
+        await this._gameService.JumbleStoreShowedHints(game, hints);
+
+        BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints);
+        response.Components = BuildJumbleComponents(game.JumbleSessionId, game.Hints);
+        response.GameSessionId = game.JumbleSessionId;
 
         return response;
     }

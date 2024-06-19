@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -29,9 +27,6 @@ public class ChartCommands : BaseCommandModule
     private readonly ChartBuilders _chartBuilders;
 
     private InteractiveService Interactivity { get; }
-
-    private static readonly List<DateTimeOffset> StackCooldownTimer = new();
-    private static readonly List<SocketUser> StackCooldownTarget = new();
 
     public ChartCommands(
         GuildService guildService,

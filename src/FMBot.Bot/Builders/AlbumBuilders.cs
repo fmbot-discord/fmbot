@@ -1075,7 +1075,6 @@ public class AlbumBuilders
             $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}")}";
         response.Spoiler = safeForChannel == CensorService.CensorResult.Nsfw;
 
-
         var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
         await ChartService.OverwriteCache(cacheStream, cacheFilePath);
 

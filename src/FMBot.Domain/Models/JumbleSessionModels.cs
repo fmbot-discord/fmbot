@@ -5,7 +5,7 @@ namespace FMBot.Domain.Models;
 public enum JumbleType
 {
     JumbleFirstWins = 1,
-    JumbleGroup = 2
+    Pixelation = 2
 }
 
 public enum JumbleHintType

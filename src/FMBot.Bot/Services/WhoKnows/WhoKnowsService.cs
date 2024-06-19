@@ -6,13 +6,11 @@ using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
-using FMBot.Domain;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
-using static SpotifyAPI.Web.PlaylistRemoveItemsRequest;
 
 namespace FMBot.Bot.Services.WhoKnows;
 

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,6 +12,7 @@ using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -18,6 +21,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using SkiaSharp;
 
 namespace FMBot.Bot.Services;
 
@@ -26,13 +30,15 @@ public class GameService
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
+    private readonly HttpClient _client;
 
     public const int SecondsToGuess = 25;
 
-    public GameService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
+    public GameService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, HttpClient client)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
+        this._client = client;
         this._botSettings = botSettings.Value;
     }
 
@@ -205,10 +211,26 @@ public class GameService
         await token.CancelAsync();
     }
 
-    public List<JumbleSessionHint> GetJumbleHints(Artist artist, long userPlaycount, CountryInfo country = null)
+    public List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount, CountryInfo country = null)
     {
-        var hints = GetRandomHints(artist, country);
+        var hints = GetRandomArtistHints(artist, country);
         hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
+
+        RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
+
+        for (int i = 0; i < Math.Min(hints.Count, 3); i++)
+        {
+            hints[i].HintShown = true;
+            hints[i].Order = i;
+        }
+
+        return hints;
+    }
+
+    public List<JumbleSessionHint> GetJumbleAlbumHints(Album album,Artist artist, long userPlaycount, CountryInfo country = null)
+    {
+        var hints = GetRandomArtistHints(artist, country);
+        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this album"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 
@@ -296,7 +318,7 @@ public class GameService
         await db.SaveChangesAsync();
     }
 
-    private static List<JumbleSessionHint> GetRandomHints(Artist artist, CountryInfo country = null)
+    private static List<JumbleSessionHint> GetRandomArtistHints(Artist artist, CountryInfo country = null)
     {
         var hints = new List<JumbleSessionHint>();
 
@@ -360,7 +382,7 @@ public class GameService
         return hints;
     }
 
-    public static string JumbleWords(string input)
+    private static string JumbleWords(string input)
     {
         var words = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -450,5 +472,120 @@ public class GameService
         return matrix[source1Length, source2Length];
     }
 
+    public static TopAlbum PickAlbumForPixelation(List<TopAlbum> topAlbums, List<JumbleSession> recentJumbles = null)
+    {
+        recentJumbles ??= [];
 
+        var today = DateTime.Today;
+        var recentJumblesHashset = recentJumbles
+            .Where(w => w.DateStarted.Date == today)
+            .GroupBy(g => g.CorrectAnswer)
+            .Select(s => s.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (topAlbums.Count > 250 && recentJumbles.Count > 50)
+        {
+            var recentJumbleAnswers = recentJumbles
+                .GroupBy(g => g.CorrectAnswer)
+                .Select(s => s.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            recentJumblesHashset.UnionWith(recentJumbleAnswers);
+        }
+
+        topAlbums = topAlbums
+            .Where(w => w.AlbumCoverUrl != null &&
+                        !recentJumblesHashset.Contains(w.ArtistName))
+            .OrderByDescending(o => o.UserPlaycount)
+            .ToList();
+
+        var multiplier = topAlbums.Count switch
+        {
+            > 5000 => 6,
+            > 2500 => 4,
+            > 1200 => 3,
+            > 500 => 2,
+            _ => 1
+        };
+
+        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-2)) switch
+        {
+            >= 75 => 1,
+            >= 40 => 2,
+            >= 12 => 5,
+            >= 4 => 15,
+            _ => 30
+        };
+
+        var finalMinPlaycount = minPlaycount * multiplier;
+        if (recentJumbles.Count(w => w.DateStarted.Date == today) >= 250)
+        {
+            finalMinPlaycount = 1;
+        }
+
+        var eligibleAlbums = topAlbums
+            .Where(w => w.UserPlaycount >= finalMinPlaycount)
+            .ToList();
+
+        Log.Information("PickAlbumForPixelation: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
+                        "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
+            topAlbums.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount);
+
+        if (eligibleAlbums.Count == 0)
+        {
+            TopAlbum fallbackAlbum = null;
+            if (topAlbums.Count > 0)
+            {
+                var fallBackIndex = RandomNumberGenerator.GetInt32(topAlbums.Count);
+                fallbackAlbum = topAlbums
+                    .Where(w => !recentJumblesHashset.Contains(w.ArtistName))
+                    .OrderByDescending(o => o.UserPlaycount)
+                    .ElementAtOrDefault(fallBackIndex);
+            }
+
+            return fallbackAlbum;
+        }
+
+        var randomIndex = RandomNumberGenerator.GetInt32(eligibleAlbums.Count);
+        return eligibleAlbums[randomIndex];
+    }
+
+    public async Task<SKBitmap> GetSkImage(string url, string albumName, string artistName)
+    {
+        SKBitmap coverImage;
+        var localPath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
+
+        if (localPath != null && File.Exists(localPath))
+        {
+            coverImage = SKBitmap.Decode(localPath);
+            Statistics.LastfmCachedImageCalls.Inc();
+        }
+        else
+        {
+            var bytes = await this._client.GetByteArrayAsync(url);
+            
+            Statistics.LastfmImageCalls.Inc();
+
+            await using var stream = new MemoryStream(bytes);
+            coverImage = SKBitmap.Decode(stream);
+        }
+
+        return coverImage;
+    }
+
+    public async Task<SKBitmap> BlurCoverImage(SKBitmap coverImage, int blurLevel)
+    {
+        using var image = SKImage.FromBitmap(coverImage);
+        
+        using var paint = new SKPaint();
+        paint.ImageFilter = SKImageFilter.CreateBlur(blurLevel, blurLevel);
+        
+        var info = new SKImageInfo(coverImage.Width, coverImage.Height);
+        var blurredBitmap = new SKBitmap(info);
+        using var canvas = new SKCanvas(blurredBitmap);
+        canvas.Clear();
+        canvas.DrawImage(image, 0, 0, paint);
+        
+        return blurredBitmap;
+    }
 }
