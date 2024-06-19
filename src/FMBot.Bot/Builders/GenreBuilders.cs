@@ -520,9 +520,9 @@ public class GenreBuilders
             var topGenresList = topGenres.OrderByDescending(o => o.UserPlaycount).ToList();
             var resultSet = genreResults.ToHashSet();
 
-            var firstResult = topGenresList.First(f => f.GenreName.Equals(genreResults.First(), StringComparison.OrdinalIgnoreCase));
+            var firstResult = topGenresList.FirstOrDefault(f => f.GenreName.Equals(genreResults.First(), StringComparison.OrdinalIgnoreCase));
             selectMenu.AddOption(genreResults.First().Transform(To.TitleCase), $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{genreResults.First()}~{genreOptions}",
-                description: $"{firstResult.UserPlaycount} {StringExtensions.GetPlaysString(firstResult.UserPlaycount)}");
+                description: firstResult == null ? null : $"{firstResult.UserPlaycount} {StringExtensions.GetPlaysString(firstResult.UserPlaycount)}");
 
             foreach (var genre in topGenresList.Where(w => resultSet.Contains(w.GenreName) && !w.GenreName.Equals(genreResults.First(), StringComparison.OrdinalIgnoreCase)).Take(24))
             {
