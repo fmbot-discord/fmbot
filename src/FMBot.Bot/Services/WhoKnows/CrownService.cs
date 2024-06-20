@@ -78,7 +78,6 @@ public class CrownService
             return null;
         }
 
-
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 

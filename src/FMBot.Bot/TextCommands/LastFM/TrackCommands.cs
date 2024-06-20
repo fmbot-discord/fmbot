@@ -320,7 +320,7 @@ public class TrackCommands : BaseCommandModule
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
         Constants.BillboardExample, Constants.EmbedSizeExample)]
     [Examples("tt", "toptracks", "tt y", "toptracks weekly @user", "tt bb xl")]
-    [Alias("tt", "tl", "tracklist", "tracks", "trackslist", "top tracks", "top track")]
+    [Alias("tt", "tl", "tracklist", "tracks", "trackslist", "top tracks", "top track", "ttracks")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]

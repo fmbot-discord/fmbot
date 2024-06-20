@@ -189,7 +189,7 @@ public class AlbumCommands : BaseCommandModule
         "Albums released in decade: `d:80s`, `decade:1990`",
         Constants.UserMentionExample, Constants.BillboardExample, Constants.EmbedSizeExample)]
     [Examples("tab", "topalbums", "tab a lfm:fm-bot", "topalbums weekly @user", "tab bb xl")]
-    [Alias("abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist")]
+    [Alias("abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist", "talbum")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Albums)]
