@@ -71,7 +71,7 @@ public class GameBuilders
 
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userId, true);
 
-        if (topArtists.Count(c => c.UserPlaycount > 50) <= 5)
+        if (topArtists.Count(c => c.UserPlaycount > 30) <= 6)
         {
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.Embed.WithDescription($"Sorry, you haven't listened to enough artists yet to use this command. Please scrobble more music and try again later.");
@@ -201,6 +201,14 @@ public class GameBuilders
         var currentGame = await this._gameService.GetJumbleSessionForSessionId(parsedGameId);
         if (currentGame == null || currentGame.DateEnded.HasValue)
         {
+            return response;
+        }
+
+        if (currentGame.StarterUserId != context.ContextUser.UserId)
+        {
+            response.Embed.WithDescription("You can't give up on someone else their game.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.NoPermission;
             return response;
         }
 
@@ -386,7 +394,7 @@ public class GameBuilders
         if (topAlbums.Count(c => c.UserPlaycount > 50) <= 5)
         {
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.Embed.WithDescription($"Sorry, you haven't listened to enough artists yet to use this command. Please scrobble more music and try again later.");
+            response.Embed.WithDescription($"Sorry, you haven't listened to enough albums yet to use this command. Please scrobble more music and try again later.");
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
