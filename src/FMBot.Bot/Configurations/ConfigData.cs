@@ -65,6 +65,12 @@ public static class ConfigData
                     Key = string.Empty,
                     Secret = string.Empty
                 },
+                AppleMusic = new AppleMusicConfig
+                {
+                    Secret = string.Empty,
+                    KeyId = string.Empty,
+                    TeamId = string.Empty
+                },
                 Discogs = new DiscogsConfig
                 {
                     Key = string.Empty,

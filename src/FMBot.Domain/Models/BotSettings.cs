@@ -19,6 +19,7 @@ public class BotSettings
     public LastFmConfig LastFm { get; set; }
 
     public SpotifyConfig Spotify { get; set; }
+    public AppleMusicConfig AppleMusic { get; set; }
 
     public GeniusConfig Genius { get; set; }
 
@@ -108,6 +109,13 @@ public class SpotifyConfig
     public string Key { get; set; }
 
     public string Secret { get; set; }
+}
+
+public class AppleMusicConfig
+{
+    public string Secret { get; set; }
+    public string KeyId { get; set; }
+    public string TeamId { get; set; }
 }
 
 public class DiscogsConfig

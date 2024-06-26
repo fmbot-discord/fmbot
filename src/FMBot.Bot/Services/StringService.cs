@@ -117,20 +117,11 @@ public static class StringService
 
     public static string TrackToString(RecentTrack track)
     {
-        return $"{StringExtensions.Sanitize(track.TrackName)}\n" +
-               $"By **{StringExtensions.Sanitize(track.ArtistName)}**" +
+        return $"{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 320))}\n" +
+               $"By **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.ArtistName, 320))}**" +
                (string.IsNullOrWhiteSpace(track.AlbumName)
                    ? "\n"
-                   : $" | *{StringExtensions.Sanitize(track.AlbumName)}*\n");
-    }
-
-    public static string TrackToOneLinedString(RecentTrack track)
-    {
-        return $"{StringExtensions.Sanitize(track.TrackName)}\n" +
-               $"By **{StringExtensions.Sanitize(track.ArtistName)}**" +
-               (string.IsNullOrWhiteSpace(track.AlbumName)
-                   ? "\n"
-                   : $" | *{StringExtensions.Sanitize(track.AlbumName)}*\n");
+                   : $" | *{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 320))}*\n");
     }
 
     public record BillboardLine(string Text, string Name, int PositionsMoved, int NewPosition, int? OldPosition);

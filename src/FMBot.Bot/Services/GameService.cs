@@ -32,7 +32,8 @@ public class GameService
     private readonly BotSettings _botSettings;
     private readonly HttpClient _client;
 
-    public const int SecondsToGuess = 25;
+    public const int JumbleSecondsToGuess = 25;
+    public const int PixelationSecondsToGuess = 40;
 
     public GameService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, HttpClient client)
     {
@@ -227,7 +228,7 @@ public class GameService
         return hints;
     }
 
-    public List<JumbleSessionHint> GetJumbleAlbumHints(Album album,Artist artist, long userPlaycount, CountryInfo country = null)
+    public List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount, CountryInfo country = null)
     {
         var hints = GetRandomArtistHints(artist, country);
         hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this album"));
@@ -332,6 +333,80 @@ public class GameService
             var random = RandomNumberGenerator.GetInt32(artist.ArtistGenres.Count);
             var genre = artist.ArtistGenres.ToList()[random];
             hints.Add(new JumbleSessionHint(JumbleHintType.Genre, $"- One of their genres is **{genre.Name}**"));
+        }
+
+        if (artist?.StartDate != null)
+        {
+            var specifiedDateTime = DateTime.SpecifyKind(artist.StartDate.Value, DateTimeKind.Utc);
+            var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+            if (artist.Type?.ToLower() == "person")
+            {
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They were born <t:{dateValue}:D> {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
+            }
+            else
+            {
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They started on <t:{dateValue}:D>"));
+            }
+        }
+
+        if (artist?.EndDate != null)
+        {
+            var specifiedDateTime = DateTime.SpecifyKind(artist.EndDate.Value, DateTimeKind.Utc);
+            var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+            if (artist.Type?.ToLower() == "person")
+            {
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They passed away on <t:{dateValue}:D>"));
+            }
+            else
+            {
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They stopped on <t:{dateValue}:D>"));
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(artist?.Disambiguation) && !artist.Disambiguation.Contains(artist.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation, $"- They might be described as **{artist.Disambiguation}**"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(artist?.Type))
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- They are a **{artist.Type.ToLower()}**"));
+        }
+
+        if (artist?.CountryCode != null && country != null)
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.Country, $"- Their country has this flag: :flag_{country.Code.ToLower()}:"));
+        }
+
+        return hints;
+    }
+    
+    private static List<JumbleSessionHint> GetRandomAlbumHints(Album album, Artist artist, CountryInfo country = null)
+    {
+        var hints = new List<JumbleSessionHint>();
+
+        if (album is { Popularity: not null })
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- Album has a popularity of **{album.Popularity}** out of 100"));
+        }
+
+        if (album is { Label: not null })
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- Album is released under label **{album.Label}**"));
+        }
+
+        if (album is { ReleaseDate: not null })
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- Album has been released in **{album.ReleaseDate}**"));
+        }
+
+        if (artist?.ArtistGenres != null && artist.ArtistGenres.Any())
+        {
+            var random = RandomNumberGenerator.GetInt32(artist.ArtistGenres.Count);
+            var genre = artist.ArtistGenres.ToList()[random];
+            hints.Add(new JumbleSessionHint(JumbleHintType.Genre, $"- One of the artist their genres is **{genre.Name}**"));
         }
 
         if (artist?.StartDate != null)
@@ -558,34 +633,43 @@ public class GameService
         if (localPath != null && File.Exists(localPath))
         {
             coverImage = SKBitmap.Decode(localPath);
-            Statistics.LastfmCachedImageCalls.Inc();
         }
         else
         {
             var bytes = await this._client.GetByteArrayAsync(url);
-            
-            Statistics.LastfmImageCalls.Inc();
-
             await using var stream = new MemoryStream(bytes);
             coverImage = SKBitmap.Decode(stream);
+
+            await ChartService.OverwriteCache(stream, localPath);
         }
 
         return coverImage;
     }
 
-    public async Task<SKBitmap> BlurCoverImage(SKBitmap coverImage, int blurLevel)
+    public static SKBitmap BlurCoverImage(SKBitmap coverImage, float pixelPercentage)
     {
-        using var image = SKImage.FromBitmap(coverImage);
-        
-        using var paint = new SKPaint();
-        paint.ImageFilter = SKImageFilter.CreateBlur(blurLevel, blurLevel);
-        
-        var info = new SKImageInfo(coverImage.Width, coverImage.Height);
-        var blurredBitmap = new SKBitmap(info);
-        using var canvas = new SKCanvas(blurredBitmap);
-        canvas.Clear();
-        canvas.DrawImage(image, 0, 0, paint);
-        
-        return blurredBitmap;
+        var width = coverImage.Width;
+        var height = coverImage.Height;
+        var pixelatedBitmap = new SKBitmap(width, height);
+
+        var pixelSize = (int)(Math.Min(width, height) * pixelPercentage);
+
+        using var canvas = new SKCanvas(pixelatedBitmap);
+        for (var y = 0; y < height; y += pixelSize)
+        {
+            for (var x = 0; x < width; x += pixelSize)
+            {
+                var offsetX = Math.Min(pixelSize, width - x);
+                var offsetY = Math.Min(pixelSize, height - y);
+                var rect = new SKRect(x, y, x + offsetX, y + offsetY);
+                var color = coverImage.GetPixel(x, y);
+
+                using var paint = new SKPaint();
+                paint.Color = color;
+                canvas.DrawRect(rect, paint);
+            }
+        }
+
+        return pixelatedBitmap;
     }
 }

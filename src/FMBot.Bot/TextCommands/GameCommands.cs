@@ -80,7 +80,7 @@ public class GameCommands : BaseCommandModule
     private async Task JumbleTimeExpired(ContextModel context, ulong responseId, CancellationToken cancellationToken,
         int gameSessionId)
     {
-        await Task.Delay(GameService.SecondsToGuess * 1000, cancellationToken);
+        await Task.Delay(GameService.JumbleSecondsToGuess * 1000, cancellationToken);
 
         if (cancellationToken.IsCancellationRequested)
         {
@@ -107,11 +107,11 @@ public class GameCommands : BaseCommandModule
         });
     }
 
-    //[Command("pixelate", RunMode = RunMode.Async)]
-    //[Summary("Play the album Jumble game.")]
-    //[UsernameSetRequired]
-    //[CommandCategories(CommandCategory.Other)]
-    //[Alias("px")]
+    [Command("pixelate", RunMode = RunMode.Async)]
+    [Summary("Play the album Jumble game.")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Other)]
+    [Alias("px")]
     public async Task PixelateAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -121,7 +121,7 @@ public class GameCommands : BaseCommandModule
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
             var cancellationTokenSource = new CancellationTokenSource();
-            var response = await this._gameBuilders.StartJumbleFirstWins(context, contextUser.UserId, cancellationTokenSource);
+            var response = await this._gameBuilders.StartPixelation(context, contextUser.UserId, cancellationTokenSource);
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
