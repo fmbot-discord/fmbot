@@ -40,6 +40,8 @@ using System.Linq;
 using FMBot.Bot.Extensions;
 using Web.InternalApi;
 using Discord.Rest;
+using FMBot.AppleMusic;
+using Microsoft.Identity.Abstractions;
 
 namespace FMBot.Bot;
 
@@ -260,6 +262,20 @@ public class Startup
         {
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("fmbot-discord", "1.0"));
             client.Timeout = TimeSpan.FromSeconds(10);
+        });
+
+        services.AddSingleton<IAuthorizationHeaderProvider>(provider =>
+            new AppleMusicJwtAuthProvider(
+                ConfigData.Data.AppleMusic.Secret,
+                ConfigData.Data.AppleMusic.KeyId,
+                ConfigData.Data.AppleMusic.TeamId));
+
+        services.AddHttpClient<AppleMusicApi>((provider, client) =>
+        {
+            var authProvider = provider.GetRequiredService<IAuthorizationHeaderProvider>();
+            var authHeader = authProvider.CreateAuthorizationHeaderForAppAsync(string.Empty).Result;
+            client.DefaultRequestHeaders.Add("Authorization", authHeader);
+            client.BaseAddress = new Uri("https://api.music.apple.com/v1/catalog/us/");
         });
 
         services.AddConfiguredGrpcClient<TimeEnrichment.TimeEnrichmentClient>(this.Configuration);

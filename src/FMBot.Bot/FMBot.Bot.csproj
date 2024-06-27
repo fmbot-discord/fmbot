@@ -52,6 +52,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.6" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="2.19.1" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.20.1" />
     <PackageReference Include="Npgsql" Version="8.0.3" />
     <PackageReference Include="PostgreSQLCopyHelper" Version="2.8.0" />
@@ -78,6 +79,7 @@
     <Protobuf Include="..\Shared.Protos\supporter.proto" GrpcServices="Client" Link="Protos\supporter.proto" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FMBot.AppleMusic\FMBot.AppleMusic.csproj" />
     <ProjectReference Include="..\FMBot.Discogs\FMBot.Discogs.csproj" />
     <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Images\FMBot.Images.csproj" />
