@@ -9,7 +9,7 @@ public class AmData<T>
     public string Id { get; set; }
 
     [JsonPropertyName("type")]
-    public AmType Type { get; set; }
+    public AmType? Type { get; set; }
 
     [JsonPropertyName("href")]
     public string Href { get; set; }
@@ -19,4 +19,16 @@ public class AmData<T>
 
     [JsonPropertyName("relationships")]
     public AmRelationships Relationships { get; set; }
+}
+
+public class AmSubData
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
+
+    [JsonPropertyName("type")]
+    public AmType Type { get; set; }
+
+    [JsonPropertyName("href")]
+    public string Href { get; set; }
 }

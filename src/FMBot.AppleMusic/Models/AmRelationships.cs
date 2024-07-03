@@ -9,6 +9,9 @@ public class AmRelationships
 
     [JsonPropertyName("artists")]
     public AmRelationshipList Artists { get; set; }
+
+    [JsonPropertyName("songs")]
+    public AmRelationshipList Songs { get; set; }
 }
 
 public class AmRelationshipList
@@ -20,5 +23,5 @@ public class AmRelationshipList
     public string Next { get; set; }
 
     [JsonPropertyName("data")]
-    public List<AmData<AmRelationships>> Data { get; set; }
+    public List<AmSubData> Data { get; set; }
 }

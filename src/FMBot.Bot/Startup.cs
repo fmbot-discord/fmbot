@@ -166,6 +166,7 @@ public class Startup
             .AddSingleton<AliasService>()
             .AddSingleton<ArtistBuilders>()
             .AddSingleton<AlbumRepository>()
+            .AddSingleton<AppleMusicService>()
             .AddSingleton<AdminService>()
             .AddSingleton<ArtistsService>()
             .AddSingleton<ArtistRepository>()
