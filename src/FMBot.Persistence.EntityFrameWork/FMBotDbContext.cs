@@ -41,6 +41,9 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Artist> Artists { get; set; }
         public virtual DbSet<Album> Albums { get; set; }
         public virtual DbSet<Track> Tracks { get; set; }
+        
+        public virtual DbSet<ArtistImage> ArtistImages { get; set; }
+        public virtual DbSet<AlbumImage> AlbumImages { get; set; }
 
         public virtual DbSet<CensoredMusic> CensoredMusic { get; set; }
         public virtual DbSet<FeaturedLog> FeaturedLogs { get; set; }
@@ -390,6 +393,10 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.Property(e => e.Name)
                     .HasColumnType("citext");
+
+                entity.HasMany(h => h.Images)
+                    .WithOne(o => o.Artist)
+                    .HasForeignKey(k => k.ArtistId);
             });
 
             modelBuilder.Entity<Album>(entity =>
@@ -405,6 +412,10 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Albums)
                     .HasForeignKey(d => d.ArtistId);
+
+                entity.HasMany(h => h.Images)
+                    .WithOne(o => o.Album)
+                    .HasForeignKey(k => k.AlbumId);
             });
 
             modelBuilder.Entity<Track>(entity =>

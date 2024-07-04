@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using FMBot.AppleMusic.Converters;
 using FMBot.AppleMusic.Models;
 
 namespace FMBot.AppleMusic;
@@ -18,7 +19,11 @@ public class AppleMusicApi
         return new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
-            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+            Converters =
+            {
+                new JsonStringEnumConverter(JsonNamingPolicy.CamelCase),
+                new StringToIntConverter()
+            }
         };
     }
     
@@ -38,6 +43,17 @@ public class AppleMusicApi
 
         var requestBody = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<AmSong>(requestBody, GetJsonSerializerOptions());
+    }
+
+    public async Task<List<AmData<AmArtistAttributes>>> SearchArtistAsync(string searchQuery)
+    {
+        var response = await this._client.GetAsync($"search?types=artists&term={searchQuery}");
+        response.EnsureSuccessStatusCode();
+
+        var requestBody = await response.Content.ReadAsStringAsync();
+        var results = JsonSerializer.Deserialize<AmSearchResult>(requestBody, GetJsonSerializerOptions());
+
+        return results.Results.Artists?.Data;
     }
 
     public async Task<List<AmData<AmSongAttributes>>> SearchSongAsync(string searchQuery)

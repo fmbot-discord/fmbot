@@ -16,26 +16,31 @@ public class Album
     public DateTime? LastfmDate { get; set; }
 
     public Guid? Mbid { get; set; }
+    public string Upc { get; set; }
 
     public string SpotifyImageUrl { get; set; }
+    public DateTime? SpotifyImageDate { get; set; }
 
     public string LastfmImageUrl { get; set; }
 
-    public DateTime? SpotifyImageDate { get; set; }
-
     public string SpotifyId { get; set; }
+    public int? AppleMusicId { get; set; }
 
     public int? Popularity { get; set; }
-
     public string Label { get; set; }
 
-    public string ReleaseDate { get; set; }
+    public string AppleMusicUrl { get; set; }
+    public string AppleMusicTagline { get; set; }
+    public string AppleMusicDescription { get; set; }
+    public string AppleMusicShortDescription { get; set; }
+    public DateTime? AppleMusicDate { get; set; }
 
+    public string ReleaseDate { get; set; }
     public string ReleaseDatePrecision { get; set; }
 
     public int? ArtistId { get; set; }
-
     public Artist Artist { get; set; }
 
     public ICollection<Track> Tracks { get; set; }
+    public ICollection<AlbumImage> Images { get; set; }
 }

@@ -21,20 +21,18 @@ public class MusicBrainzService
         this._httpClient = httpClient;
     }
 
-    public async Task<ArtistUpdated> AddMusicBrainzDataToArtistAsync(Artist artist, bool bypassUpdatedFilter = false)
+    public async Task<ArtistUpdated> AddMusicBrainzDataToArtistAsync(Artist artist)
     {
         try
         {
             var updated = false;
 
-            if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-120) && !bypassUpdatedFilter)
+            if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-120))
             {
                 return new ArtistUpdated(artist);
             }
 
             var api = new Query(this._httpClient);
-
-
             var musicBrainzResults = await api.FindArtistsAsync(artist.Name, simple: true);
             Statistics.MusicBrainzApiCalls.Inc();
 

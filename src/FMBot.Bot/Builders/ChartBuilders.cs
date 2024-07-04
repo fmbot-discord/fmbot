@@ -24,6 +24,7 @@ public class ChartBuilders
     private readonly SupporterService _supporterService;
     private readonly SpotifyService _spotifyService;
     private readonly ArtistsService _artistService;
+    private readonly MusicDataService _musicDataService;
 
     public ChartBuilders(ChartService chartService,
         IDataSourceFactory dataSourceFactory,
@@ -31,7 +32,8 @@ public class ChartBuilders
         UserService userService,
         SupporterService supporterService,
         SpotifyService spotifyService,
-        ArtistsService artistService)
+        ArtistsService artistService,
+        MusicDataService musicDataService)
     {
         this._chartService = chartService;
         this._dataSourceFactory = dataSourceFactory;
@@ -40,6 +42,7 @@ public class ChartBuilders
         this._supporterService = supporterService;
         this._spotifyService = spotifyService;
         this._artistService = artistService;
+        this._musicDataService = musicDataService;
     }
 
     public async Task<ResponseModel> AlbumChartAsync(
@@ -280,7 +283,7 @@ public class ChartBuilders
             var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm);
             if (artistCall.Success && artistCall.Content?.ArtistUrl != null)
             {
-                var spotifyArtistImage = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
+                var spotifyArtistImage = await this._musicDataService.GetOrStoreArtistAsync(artistCall.Content);
                 if (spotifyArtistImage != null)
                 {
                     var index = topArtists.FindIndex(f => f.ArtistName == artistWithoutImage.ArtistName);

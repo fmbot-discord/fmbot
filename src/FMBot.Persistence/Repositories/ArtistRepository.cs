@@ -37,7 +37,7 @@ public class ArtistRepository
         return await copyHelper.SaveAllAsync(connection, artists);
     }
 
-    public static async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection, bool includeGenres = false, bool includeLinks = false)
+    public static async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection, bool includeGenres = false, bool includeLinks = false, bool includeImages = false)
     {
         const string getArtistQuery = "SELECT * FROM public.artists " +
                                       "WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))";
@@ -56,6 +56,11 @@ public class ArtistRepository
         if (includeLinks && artist != null)
         {
             artist.ArtistLinks = await GetArtistLinks(artist.Id, connection);
+        }
+
+        if (includeImages && artist != null)
+        {
+            artist.Images = await GetArtistImages(artist.Id, connection);
         }
 
         return artist;
@@ -80,6 +85,18 @@ public class ArtistRepository
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return (await connection.QueryAsync<ArtistLink>(getArtistLinkQuery, new
+        {
+            artistId
+        })).ToList();
+    }
+
+    public static async Task<ICollection<ArtistImage>> GetArtistImages(int artistId, NpgsqlConnection connection)
+    {
+        const string getArtistLinkQuery = "SELECT * FROM public.artist_images " +
+                                           "WHERE artist_id = @artistId";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<ArtistImage>(getArtistLinkQuery, new
         {
             artistId
         })).ToList();

@@ -11,7 +11,6 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
@@ -35,10 +34,10 @@ public class GenreBuilders
     private readonly PlayService _playService;
     private readonly ArtistsService _artistsService;
     private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly SpotifyService _spotifyService;
     private readonly IIndexService _indexService;
     private readonly PuppeteerService _puppeteerService;
     private readonly CensorService _censorService;
+    private readonly MusicDataService _musicDataService;
 
     public GenreBuilders(UserService userService,
         GuildService guildService,
@@ -47,10 +46,10 @@ public class GenreBuilders
         PlayService playService,
         ArtistsService artistsService,
         IDataSourceFactory dataSourceFactory,
-        SpotifyService spotifyService,
         IIndexService indexService,
         PuppeteerService puppeteerService,
-        CensorService censorService)
+        CensorService censorService,
+        MusicDataService musicDataService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -59,10 +58,10 @@ public class GenreBuilders
         this._playService = playService;
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
-        this._spotifyService = spotifyService;
         this._indexService = indexService;
         this._puppeteerService = puppeteerService;
         this._censorService = censorService;
+        this._musicDataService = musicDataService;
     }
 
     public async Task<ResponseModel> GetGuildGenres(ContextModel context, Guild guild, GuildRankingSettings guildListSettings)
@@ -353,7 +352,7 @@ public class GenreBuilders
                 var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistName, userSettings.UserNameLastFM);
                 if (artistCall.Success)
                 {
-                    var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
+                    var cachedArtist = await this._musicDataService.GetOrStoreArtistAsync(artistCall.Content);
 
                     if (cachedArtist.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
                     {

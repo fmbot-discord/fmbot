@@ -12,12 +12,10 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using Fergun.Interactive;
-using FMBot.Domain.Enums;
 using System.Collections.Generic;
 using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
-using FMBot.Bot.Services.ThirdParty;
 using Discord.Interactions;
 
 namespace FMBot.Bot.Builders;
@@ -29,16 +27,21 @@ public class CrownBuilders
     private readonly ArtistsService _artistsService;
     private readonly GuildService _guildService;
     private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly SpotifyService _spotifyService;
-
-    public CrownBuilders(CrownService crownService, ArtistsService artistsService, IDataSourceFactory dataSourceFactory, UserService userService, GuildService guildService, SpotifyService spotifyService)
+    private readonly MusicDataService _musicDataService;
+    
+    public CrownBuilders(CrownService crownService,
+        ArtistsService artistsService,
+        IDataSourceFactory dataSourceFactory,
+        UserService userService,
+        GuildService guildService,
+        MusicDataService musicDataService)
     {
         this._crownService = crownService;
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
         this._userService = userService;
         this._guildService = guildService;
-        this._spotifyService = spotifyService;
+        this._musicDataService = musicDataService;
     }
 
     public async Task<ResponseModel> CrownAsync(
@@ -82,7 +85,7 @@ public class CrownBuilders
             return artistSearch.Response;
         }
 
-        var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+        var cachedArtist = await this._musicDataService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
 
         var artistCrowns = await this._crownService.GetCrownsForArtist(guild.GuildId, artistSearch.Artist.ArtistName);
 

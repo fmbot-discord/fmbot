@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Folder Include="Enums\" />
+    <Folder Include="Converters\" />
   </ItemGroup>
 
 </Project>

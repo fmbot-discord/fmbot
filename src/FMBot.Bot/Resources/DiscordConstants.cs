@@ -47,6 +47,7 @@ public static class DiscordConstants
     public const string Spotify = "<:spotify:882221219334725662>";
     public const string RateYourMusic = "<:rym:1183851241151930399>";
     public const string YouTube = "<:youtube:1230496939355934730>";
+    public const string AppleMusic = "<:apple_music:1218182727149420544>";
     
     public const string Loading = "<a:loading:821676038102056991>";
 }

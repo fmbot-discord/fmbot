@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Discord;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
-using Genius.Models.Song;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -67,193 +65,7 @@ public class SpotifyService
         return await spotify.Search.Item(searchRequest);
     }
 
-    public async Task<Artist> GetOrStoreArtistAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null, bool redirectsEnabled = true, bool bypassMbUpdatedFilter = false)
-    {
-        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-        await connection.OpenAsync();
-
-        try
-        {
-            var dbArtist = await ArtistRepository.GetArtistForName(artistInfo.ArtistName, connection, true, true);
-
-            if (dbArtist == null)
-            {
-                await using var db = await this._contextFactory.CreateDbContextAsync();
-                var spotifyArtist = await GetArtistFromSpotify(artistInfo.ArtistName);
-
-                var artistToAdd = new Artist
-                {
-                    Name = artistInfo.ArtistName,
-                    LastFmUrl = artistInfo.ArtistUrl,
-                    Mbid = artistInfo.Mbid,
-                    LastFmDescription = artistInfo.Description,
-                    LastfmDate = DateTime.UtcNow
-                };
-
-                var musicBrainzUpdated = await this._musicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
-
-                if (musicBrainzUpdated.Updated)
-                {
-                    artistToAdd = musicBrainzUpdated.Artist;
-                }
-
-                if (spotifyArtist != null)
-                {
-                    artistToAdd.SpotifyId = spotifyArtist.Id;
-                    artistToAdd.Popularity = spotifyArtist.Popularity;
-
-                    if (spotifyArtist.Images.Any())
-                    {
-                        artistToAdd.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
-                        artistToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-
-                        if (artistInfo.ArtistUrl != null)
-                        {
-                            await this._artistEnrichment.AddArtistImageToCacheAsync(new AddedArtistImage
-                            {
-                                ArtistName = artistInfo.ArtistName,
-                                ArtistImageUrl = artistToAdd.SpotifyImageUrl
-                            });
-                        }
-                    }
-
-                    await db.Artists.AddAsync(artistToAdd);
-                    await db.SaveChangesAsync();
-
-                    if (artistToAdd.Id == 0)
-                    {
-                        throw new Exception("Artist id is 0!");
-                    }
-                    if (spotifyArtist.Genres.Any())
-                    {
-                        await ArtistRepository.AddOrUpdateArtistGenres(artistToAdd.Id, spotifyArtist.Genres.Select(s => s), connection);
-                    }
-                }
-                else
-                {
-                    await db.Artists.AddAsync(artistToAdd);
-                    await db.SaveChangesAsync();
-
-                    if (artistToAdd.Id == 0)
-                    {
-                        throw new Exception("Artist id is 0!");
-                    }
-                }
-
-                if (musicBrainzUpdated.Updated && artistToAdd.ArtistLinks != null && artistToAdd.ArtistLinks.Count != 0 && artistToAdd.Id != 0)
-                {
-                    await ArtistRepository.AddOrUpdateArtistLinks(artistToAdd.Id, artistToAdd.ArtistLinks, connection);
-                }
-
-                if (spotifyArtist != null && spotifyArtist.Genres.Any())
-                {
-                    artistToAdd.ArtistGenres = spotifyArtist.Genres.Select(s => new ArtistGenre
-                    {
-                        Name = s
-                    }).ToList();
-                }
-
-                if (redirectsEnabled &&
-                    artistNameBeforeCorrect != null &&
-                    !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.OrdinalIgnoreCase))
-                {
-                    await ArtistRepository.AddOrUpdateArtistAlias(artistToAdd.Id, artistNameBeforeCorrect, connection);
-                }
-
-                return artistToAdd;
-            }
-
-            if (redirectsEnabled &&
-                artistNameBeforeCorrect != null &&
-                !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.OrdinalIgnoreCase))
-            {
-                await ArtistRepository.AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
-            }
-
-            if (artistInfo.Description != null && dbArtist.LastFmDescription != artistInfo.Description)
-            {
-                await using var db = await this._contextFactory.CreateDbContextAsync();
-
-                dbArtist.LastFmDescription = artistInfo.Description;
-                dbArtist.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-                db.Entry(dbArtist).State = EntityState.Modified;
-
-                await db.SaveChangesAsync();
-            }
-
-            var musicBrainzUpdate = await this._musicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist, bypassMbUpdatedFilter);
-
-            if (musicBrainzUpdate.Updated)
-            {
-                dbArtist = musicBrainzUpdate.Artist;
-
-                if (dbArtist.ArtistLinks != null && dbArtist.ArtistLinks.Any())
-                {
-                    await ArtistRepository.AddOrUpdateArtistLinks(dbArtist.Id, dbArtist.ArtistLinks, connection);
-                }
-
-                await using var db = await this._contextFactory.CreateDbContextAsync();
-                db.Entry(dbArtist).State = EntityState.Modified;
-                await db.SaveChangesAsync();
-            }
-
-            if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-15))
-            {
-                await using var db = await this._contextFactory.CreateDbContextAsync();
-
-                var spotifyArtist = await GetArtistFromSpotify(artistInfo.ArtistName);
-
-                if (spotifyArtist != null && spotifyArtist.Images.Any())
-                {
-                    dbArtist.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
-
-                    dbArtist.SpotifyId = spotifyArtist.Id;
-                    dbArtist.Popularity = spotifyArtist.Popularity;
-
-                    if (artistInfo.ArtistUrl != null)
-                    {
-                        await this._artistEnrichment.AddArtistImageToCacheAsync(new AddedArtistImage
-                        {
-                            ArtistName = artistInfo.ArtistName,
-                            ArtistImageUrl = dbArtist.SpotifyImageUrl
-                        });
-                    }
-                }
-
-                if (spotifyArtist != null && spotifyArtist.Genres.Any())
-                {
-                    await ArtistRepository.AddOrUpdateArtistGenres(dbArtist.Id, spotifyArtist.Genres.Select(s => s), connection);
-                }
-
-                dbArtist.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-                db.Entry(dbArtist).State = EntityState.Modified;
-                await db.SaveChangesAsync();
-
-                if (spotifyArtist != null && spotifyArtist.Genres.Any())
-                {
-                    dbArtist.ArtistGenres = spotifyArtist.Genres.Select(s => new ArtistGenre
-                    {
-                        Name = s
-                    }).ToList();
-                }
-            }
-
-            await connection.CloseAsync();
-            return dbArtist;
-
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Something went wrong while retrieving artist image");
-            return new Artist
-            {
-                Name = artistInfo.ArtistName,
-                LastFmUrl = artistInfo.ArtistUrl
-            };
-        }
-    }
-
-    private async Task<FullArtist> GetArtistFromSpotify(string artistName)
+    public async Task<FullArtist> GetArtistFromSpotify(string artistName)
     {
         var spotify = GetSpotifyWebApi();
 
@@ -421,7 +233,7 @@ public class SpotifyService
         }
     }
 
-    private async Task<FullTrack> GetTrackFromSpotify(string trackName, string artistName)
+    public async Task<FullTrack> GetTrackFromSpotify(string trackName, string artistName)
     {
         //Create the auth object
         var spotify = GetSpotifyWebApi();

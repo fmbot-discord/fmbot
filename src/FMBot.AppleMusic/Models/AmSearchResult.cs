@@ -11,11 +11,20 @@ public class AmSearchResult
 public class Results
 {
     [JsonPropertyName("songs")]
-    public ResultItem Songs { get; set; }
+    public SongResult Songs { get; set; }
+    
+    [JsonPropertyName("artists")]
+    public ArtistResult Artists { get; set; }
 }
 
-public class ResultItem
+public class SongResult
 {
     [JsonPropertyName("data")]
     public List<AmData<AmSongAttributes>> Data { get; set; }
+}
+
+public class ArtistResult
+{
+    [JsonPropertyName("data")]
+    public List<AmData<AmArtistAttributes>> Data { get; set; }
 }
