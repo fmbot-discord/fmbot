@@ -151,7 +151,7 @@ public class ArtistsService
         {
             Response<RecentTrackList> recentScrobbles;
 
-            if (false)
+            if (userId.HasValue && otherUserUsername == null)
             {
                 recentScrobbles = await this._updateService.UpdateUser(new UpdateUserQueueItem(userId.Value, getAccurateTotalPlaycount: false));
             }
