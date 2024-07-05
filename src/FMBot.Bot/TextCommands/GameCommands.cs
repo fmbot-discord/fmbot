@@ -107,11 +107,11 @@ public class GameCommands : BaseCommandModule
         });
     }
 
-    [Command("pixelate", RunMode = RunMode.Async)]
-    [Summary("Play the album Jumble game.")]
-    [UsernameSetRequired]
-    [CommandCategories(CommandCategory.Other)]
-    [Alias("px")]
+    //[Command("pixelate", RunMode = RunMode.Async)]
+    //[Summary("Play the album Jumble game.")]
+    //[UsernameSetRequired]
+    //[CommandCategories(CommandCategory.Other)]
+    //[Alias("px")]
     public async Task PixelateAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
