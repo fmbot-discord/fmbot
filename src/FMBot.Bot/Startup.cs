@@ -41,7 +41,6 @@ using FMBot.Bot.Extensions;
 using Web.InternalApi;
 using Discord.Rest;
 using FMBot.AppleMusic;
-using Microsoft.Identity.Abstractions;
 
 namespace FMBot.Bot;
 
@@ -266,7 +265,7 @@ public class Startup
             client.Timeout = TimeSpan.FromSeconds(10);
         });
 
-        services.AddSingleton<IAuthorizationHeaderProvider>(provider =>
+        services.AddSingleton<AppleMusicJwtAuthProvider>(provider =>
             new AppleMusicJwtAuthProvider(
                 ConfigData.Data.AppleMusic.Secret,
                 ConfigData.Data.AppleMusic.KeyId,
@@ -274,8 +273,8 @@ public class Startup
 
         services.AddHttpClient<AppleMusicApi>((provider, client) =>
         {
-            var authProvider = provider.GetRequiredService<IAuthorizationHeaderProvider>();
-            var authHeader = authProvider.CreateAuthorizationHeaderForAppAsync(string.Empty).Result;
+            var authProvider = provider.GetRequiredService<AppleMusicJwtAuthProvider>();
+            var authHeader = authProvider.CreateAuthorizationHeaderAsync().Result;
             client.DefaultRequestHeaders.Add("Authorization", authHeader);
             client.BaseAddress = new Uri("https://api.music.apple.com/v1/catalog/us/");
         });

@@ -1,12 +1,10 @@
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.Identity.Abstractions;
-using System.Security.Claims;
 using System.Security.Cryptography;
 
 namespace FMBot.AppleMusic;
 
-public class AppleMusicJwtAuthProvider : IAuthorizationHeaderProvider
+public class AppleMusicJwtAuthProvider
 {
     private readonly string _secret;
     private readonly string _keyId;
@@ -19,22 +17,7 @@ public class AppleMusicJwtAuthProvider : IAuthorizationHeaderProvider
         this._teamId = teamId;
     }
 
-    public Task<string> CreateAuthorizationHeaderForUserAsync(
-        IEnumerable<string> scopes,
-        AuthorizationHeaderProviderOptions options = null,
-        ClaimsPrincipal user = null,
-        CancellationToken cancellationToken = default)
-    {
-        return CreateAuthorizationHeaderAsync();
-    }
 
-    public Task<string> CreateAuthorizationHeaderForAppAsync(
-        string scopes,
-        AuthorizationHeaderProviderOptions downstreamApiOptions = null,
-        CancellationToken cancellationToken = default)
-    {
-        return CreateAuthorizationHeaderAsync();
-    }
 
     public Task<string> CreateAuthorizationHeaderAsync()
     {
