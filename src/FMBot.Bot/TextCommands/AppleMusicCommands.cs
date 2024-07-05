@@ -92,7 +92,7 @@ public class AppleMusicCommands : BaseCommandModule
                 querystring = $"{currentTrack.TrackName} {currentTrack.ArtistName} {currentTrack.AlbumName}";
             }
 
-            var item = await this._appleMusicService.GetAppleMusicSong(querystring);
+            var item = await this._appleMusicService.SearchAppleMusicSong(querystring);
 
             var response = new ResponseModel
             {

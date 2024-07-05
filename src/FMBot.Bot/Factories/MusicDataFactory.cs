@@ -367,7 +367,7 @@ public class MusicDataFactory
             }
 
             var spotifyAlbumTask = this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
-            var amAlbumTask = this._appleMusicService.GetAppleMusicAlbum($"{albumInfo.ArtistName.ToLower()} - {albumInfo.AlbumName}");
+            var amAlbumTask = this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName);
 
             var spotifyAlbum = await spotifyAlbumTask;
             var amAlbum = await amAlbumTask;
@@ -475,7 +475,7 @@ public class MusicDataFactory
         if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-120))
         {
             updateAppleMusic =
-                this._appleMusicService.GetAppleMusicAlbum($"{albumInfo.ArtistName.ToLower()} - {albumInfo.AlbumName}");
+                this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName);
         }
 
         if (updateSpotify != null)
@@ -666,7 +666,7 @@ public class MusicDataFactory
 
                 var spotifyTrackTask = this._spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
                 var amSongTask =
-                    this._appleMusicService.GetAppleMusicSong($"{trackInfo.ArtistName.ToLower()} - {trackInfo.TrackName}");
+                    this._appleMusicService.GetAppleMusicSong(trackInfo.ArtistName, trackInfo.TrackName);
 
                 var spotifyTrack = await spotifyTrackTask;
                 var amSong = await amSongTask;
@@ -758,7 +758,7 @@ public class MusicDataFactory
             if (dbTrack.AppleMusicDate == null || dbTrack.AppleMusicDate < DateTime.UtcNow.AddDays(-120))
             {
                 updateAppleMusic =
-                    this._appleMusicService.GetAppleMusicSong($"{trackInfo.ArtistName.ToLower()} - {trackInfo.TrackName}");
+                    this._appleMusicService.GetAppleMusicSong(trackInfo.ArtistName, trackInfo.TrackName);
             }
 
             if (updateSpotify != null)

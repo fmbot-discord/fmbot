@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.AppleMusic;
@@ -16,23 +17,36 @@ public class AppleMusicService
         this._appleMusicApi = appleMusicApi;
     }
 
-    public async Task<AmData<AmArtistAttributes>> GetAppleMusicArtist(string searchQuery)
+    public async Task<AmData<AmArtistAttributes>> GetAppleMusicArtist(string artist)
     {
-        var results = await this._appleMusicApi.SearchArtistAsync(searchQuery);
+        var results = await this._appleMusicApi.SearchArtistAsync(artist);
         Statistics.AppleMusicApiCalls.Inc();
 
-        return results?.FirstOrDefault();
+        return results?.FirstOrDefault(f => f?.Attributes?.Name != null &&
+                                            f.Attributes.Name.Contains(artist, StringComparison.OrdinalIgnoreCase));
     }
 
-    public async Task<AmData<AmAlbumAttributes>> GetAppleMusicAlbum(string searchQuery)
+    public async Task<AmData<AmAlbumAttributes>> GetAppleMusicAlbum(string artist, string albumName)
     {
-        var results = await this._appleMusicApi.SearchAlbumAsync(searchQuery);
+        var results = await this._appleMusicApi.SearchAlbumAsync($"{artist} - {albumName}");
         Statistics.AppleMusicApiCalls.Inc();
 
-        return results?.FirstOrDefault();
+        return results?.FirstOrDefault(f => f?.Attributes?.Name != null &&
+                                            f.Attributes.Name.Contains(albumName, StringComparison.OrdinalIgnoreCase) &&
+                                            f.Attributes.ArtistName.Contains(artist, StringComparison.OrdinalIgnoreCase));
     }
 
-    public async Task<AmData<AmSongAttributes>> GetAppleMusicSong(string searchQuery)
+    public async Task<AmData<AmSongAttributes>> GetAppleMusicSong(string artist, string songName)
+    {
+        var results = await this._appleMusicApi.SearchSongAsync($"{artist} - {songName}");
+        Statistics.AppleMusicApiCalls.Inc();
+
+        return results?.FirstOrDefault(f => f?.Attributes?.Name != null &&
+                                            f.Attributes.Name.Contains(songName, StringComparison.OrdinalIgnoreCase) &&
+                                            f.Attributes.ArtistName.Contains(artist, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<AmData<AmSongAttributes>> SearchAppleMusicSong(string searchQuery)
     {
         var results = await this._appleMusicApi.SearchSongAsync(searchQuery);
         Statistics.AppleMusicApiCalls.Inc();
