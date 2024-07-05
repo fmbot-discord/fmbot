@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -27,7 +28,7 @@ public class CountryBuilders
     private readonly ArtistsService _artistsService;
     private readonly PlayService _playService;
     private readonly PuppeteerService _puppeteerService;
-    private readonly MusicDataService _musicDataService;
+    private readonly MusicDataFactory _musicDataFactory;
 
     public CountryBuilders(CountryService countryService,
         UserService userService,
@@ -35,7 +36,7 @@ public class CountryBuilders
         ArtistsService artistsService,
         PlayService playService,
         PuppeteerService puppeteerService,
-        MusicDataService musicDataService)
+        MusicDataFactory musicDataFactory)
     {
         this._countryService = countryService;
         this._userService = userService;
@@ -43,7 +44,7 @@ public class CountryBuilders
         this._artistsService = artistsService;
         this._playService = playService;
         this._puppeteerService = puppeteerService;
-        this._musicDataService = musicDataService;
+        this._musicDataFactory = musicDataFactory;
     }
 
     public async Task<ResponseModel> CountryAsync(
@@ -86,7 +87,7 @@ public class CountryBuilders
                 var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistName, context.ContextUser.UserNameLastFM);
                 if (artistCall.Success)
                 {
-                    var cachedArtist = await this._musicDataService.GetOrStoreArtistAsync(artistCall.Content);
+                    var cachedArtist = await this._musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
 
                     if (cachedArtist.CountryCode != null)
                     {
@@ -159,7 +160,7 @@ public class CountryBuilders
                     var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artist.Name, context.ContextUser.UserNameLastFM);
                     if (artistCall.Success)
                     {
-                        artist = await this._musicDataService.GetOrStoreArtistAsync(artistCall.Content);
+                        artist = await this._musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
                     }
                 }
 

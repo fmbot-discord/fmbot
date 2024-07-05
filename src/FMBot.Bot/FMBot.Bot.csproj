@@ -92,7 +92,6 @@
     <ProjectReference Include="..\FMBot.Youtube\FMBot.Youtube.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Factories\" />
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>

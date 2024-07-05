@@ -56,6 +56,17 @@ public class AppleMusicApi
         return results.Results.Artists?.Data;
     }
 
+    public async Task<List<AmData<AmAlbumAttributes>>> SearchAlbumAsync(string searchQuery)
+    {
+        var response = await this._client.GetAsync($"search?types=albums&term={searchQuery}");
+        response.EnsureSuccessStatusCode();
+
+        var requestBody = await response.Content.ReadAsStringAsync();
+        var results = JsonSerializer.Deserialize<AmSearchResult>(requestBody, GetJsonSerializerOptions());
+
+        return results.Results.Albums?.Data;
+    }
+
     public async Task<List<AmData<AmSongAttributes>>> SearchSongAsync(string searchQuery)
     {
         var response = await this._client.GetAsync($"search?types=songs&term={searchQuery}");

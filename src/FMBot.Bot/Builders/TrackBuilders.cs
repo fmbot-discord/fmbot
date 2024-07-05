@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -47,7 +48,7 @@ public class TrackBuilders
     private readonly DiscogsService _discogsService;
     private readonly ArtistsService _artistsService;
     private readonly FeaturedService _featuredService;
-    private readonly EurovisionService _eurovisionService;
+    private readonly MusicDataFactory _musicDataFactory;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -68,7 +69,7 @@ public class TrackBuilders
         DiscogsService discogsService,
         ArtistsService artistsService,
         FeaturedService featuredService,
-        EurovisionService eurovisionService)
+        MusicDataFactory musicDataFactory)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -89,7 +90,7 @@ public class TrackBuilders
         this._discogsService = discogsService;
         this._artistsService = artistsService;
         this._featuredService = featuredService;
-        this._eurovisionService = eurovisionService;
+        this._musicDataFactory = musicDataFactory;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -121,7 +122,7 @@ public class TrackBuilders
 
         response.Embed.WithAuthor(response.EmbedAuthor);
 
-        var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(trackSearch.Track);
+        var spotifyTrack = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
         var stats = new StringBuilder();
         var info = new StringBuilder();
         var footer = new StringBuilder();
@@ -291,7 +292,7 @@ public class TrackBuilders
             return track.Response;
         }
 
-        var cachedTrack = await this._spotifyService.GetOrStoreTrackAsync(track.Track);
+        var cachedTrack = await this._musicDataFactory.GetOrStoreTrackAsync(track.Track);
 
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
@@ -520,7 +521,7 @@ public class TrackBuilders
             return track.Response;
         }
 
-        var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(track.Track);
+        var spotifyTrack = await this._musicDataFactory.GetOrStoreTrackAsync(track.Track);
 
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
@@ -720,7 +721,7 @@ public class TrackBuilders
             return trackSearch.Response;
         }
 
-        var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(trackSearch.Track);
+        var spotifyTrack = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
 
         var reply = new StringBuilder();
 

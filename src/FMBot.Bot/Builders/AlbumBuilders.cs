@@ -47,6 +47,7 @@ public class AlbumBuilders
     private readonly PuppeteerService _puppeteerService;
     private readonly WhoKnowsService _whoKnowsService;
     private readonly FeaturedService _featuredService;
+    private readonly MusicDataFactory _musicDataFactory;
 
     public AlbumBuilders(UserService userService,
         GuildService guildService,
@@ -64,7 +65,8 @@ public class AlbumBuilders
         WhoKnowsPlayService whoKnowsPlayService,
         PuppeteerService puppeteerService,
         WhoKnowsService whoKnowsService,
-        FeaturedService featuredService)
+        FeaturedService featuredService,
+        MusicDataFactory musicDataFactory)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -83,6 +85,7 @@ public class AlbumBuilders
         this._puppeteerService = puppeteerService;
         this._whoKnowsService = whoKnowsService;
         this._featuredService = featuredService;
+        this._musicDataFactory = musicDataFactory;
     }
 
     public async Task<ResponseModel> AlbumAsync(ContextModel context,
@@ -102,8 +105,8 @@ public class AlbumBuilders
             return albumSearch.Response;
         }
 
-        var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
-        var cachedAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
+        var databaseAlbum = await this._musicDataFactory.GetOrStoreAlbumAsync(albumSearch.Album);
+        var cachedAlbum = await this._musicDataFactory.GetOrStoreAlbumAsync(albumSearch.Album);
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         response.EmbedAuthor.WithName(
@@ -317,7 +320,7 @@ public class AlbumBuilders
             return album.Response;
         }
 
-        var cachedAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album.Album);
+        var cachedAlbum = await this._musicDataFactory.GetOrStoreAlbumAsync(album.Album);
         var fullAlbumName = $"{album.Album.AlbumName} by {album.Album.ArtistName}";
 
         var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
@@ -471,7 +474,7 @@ public class AlbumBuilders
             return album.Response;
         }
 
-        var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album.Album);
+        var databaseAlbum = await this._musicDataFactory.GetOrStoreAlbumAsync(album.Album);
         var albumName = $"{album.Album.AlbumName} by {album.Album.ArtistName}";
 
         var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild?.Id);
@@ -576,7 +579,7 @@ public class AlbumBuilders
             return album.Response;
         }
 
-        var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album.Album);
+        var databaseAlbum = await this._musicDataFactory.GetOrStoreAlbumAsync(album.Album);
 
         var albumName = $"{album.Album.AlbumName} by {album.Album.ArtistName}";
 
@@ -801,7 +804,7 @@ public class AlbumBuilders
         var spotifySource = false;
 
         List<AlbumTrack> albumTracks;
-        var dbAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
+        var dbAlbum = await this._musicDataFactory.GetOrStoreAlbumAsync(albumSearch.Album);
 
         if (albumSearch.Album.AlbumTracks != null && albumSearch.Album.AlbumTracks.Any())
         {
@@ -1005,7 +1008,7 @@ public class AlbumBuilders
             return albumSearch.Response;
         }
 
-        var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album, true);
+        var databaseAlbum = await this._musicDataFactory.GetOrStoreAlbumAsync(albumSearch.Album);
 
         var albumCoverUrl = albumSearch.Album.AlbumCoverUrl;
         if (databaseAlbum.SpotifyImageUrl != null)

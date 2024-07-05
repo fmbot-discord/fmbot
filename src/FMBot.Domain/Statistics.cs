@@ -74,6 +74,9 @@ public static class Statistics
     public static readonly Counter OpenAiCalls = Metrics
         .CreateCounter("openai_api_calls", "Amount of OpenAI API calls");
 
+    public static readonly Counter AppleMusicApiCalls = Metrics
+        .CreateCounter("applemusic_api_calls", "Amount of Apple Music API calls");
+
 
     public static readonly Counter CommandsExecuted = Metrics
         .CreateCounter("bot_commands_executed", "Amount of commands executed",

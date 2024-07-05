@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -49,7 +50,7 @@ public class ArtistBuilders
     private readonly DiscogsService _discogsService;
     private readonly CensorService _censorService;
     private readonly FeaturedService _featuredService;
-    private readonly MusicDataService _musicDataService;
+    private readonly MusicDataFactory _musicDataFactory;
 
     public ArtistBuilders(ArtistsService artistsService,
         IDataSourceFactory dataSourceFactory,
@@ -70,7 +71,7 @@ public class ArtistBuilders
         DiscogsService discogsService,
         CensorService censorService,
         FeaturedService featuredService,
-        MusicDataService musicDataService)
+        MusicDataFactory musicDataFactory)
     {
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
@@ -91,7 +92,7 @@ public class ArtistBuilders
         this._discogsService = discogsService;
         this._censorService = censorService;
         this._featuredService = featuredService;
-        this._musicDataService = musicDataService;
+        this._musicDataFactory = musicDataFactory;
     }
 
     public async Task<ResponseModel> ArtistInfoAsync(ContextModel context,
@@ -113,7 +114,7 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
-        var fullArtist = await this._musicDataService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled);
+        var fullArtist = await this._musicDataFactory.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled);
 
         var footer = new StringBuilder();
 
@@ -406,7 +407,7 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
-        var fullArtist = await this._musicDataService.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled);
+        var fullArtist = await this._musicDataFactory.GetOrStoreArtistAsync(artistSearch.Artist, searchValue, redirectsEnabled);
 
         var footer = new StringBuilder();
 
@@ -579,7 +580,7 @@ public class ArtistBuilders
         }
 
         var dbArtist =
-            await this._musicDataService.GetOrStoreArtistAsync(artistSearch.Artist, redirectsEnabled: redirectsEnabled);
+            await this._musicDataFactory.GetOrStoreArtistAsync(artistSearch.Artist, redirectsEnabled: redirectsEnabled);
 
         if (artistSearch.Artist.UserPlaycount.HasValue && !userSettings.DifferentUser)
         {
@@ -713,7 +714,7 @@ public class ArtistBuilders
         }
 
         var dbArtist =
-            await this._musicDataService.GetOrStoreArtistAsync(artistSearch.Artist, redirectsEnabled: redirectsEnabled);
+            await this._musicDataFactory.GetOrStoreArtistAsync(artistSearch.Artist, redirectsEnabled: redirectsEnabled);
 
         if (artistSearch.Artist.UserPlaycount.HasValue && !userSettings.DifferentUser)
         {
@@ -1378,7 +1379,7 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
-        var cachedArtist = await this._musicDataService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, redirectsEnabled);
+        var cachedArtist = await this._musicDataFactory.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, redirectsEnabled);
 
         var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;
@@ -1565,7 +1566,7 @@ public class ArtistBuilders
             return artistSearch.Response;
         }
 
-        var cachedArtist = await this._musicDataService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, settings.RedirectsEnabled);
+        var cachedArtist = await this._musicDataFactory.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, settings.RedirectsEnabled);
 
         var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;
@@ -1702,7 +1703,7 @@ public class ArtistBuilders
         }
 
         var cachedArtist =
-            await this._musicDataService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, redirectsEnabled);
+            await this._musicDataFactory.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName, redirectsEnabled);
 
         var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, cachedArtist.Name);
         var imgUrl = cachedArtist.SpotifyImageUrl;

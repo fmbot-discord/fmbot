@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
@@ -24,7 +25,7 @@ public class ChartBuilders
     private readonly SupporterService _supporterService;
     private readonly SpotifyService _spotifyService;
     private readonly ArtistsService _artistService;
-    private readonly MusicDataService _musicDataService;
+    private readonly MusicDataFactory _musicDataFactory;
 
     public ChartBuilders(ChartService chartService,
         IDataSourceFactory dataSourceFactory,
@@ -33,7 +34,7 @@ public class ChartBuilders
         SupporterService supporterService,
         SpotifyService spotifyService,
         ArtistsService artistService,
-        MusicDataService musicDataService)
+        MusicDataFactory musicDataFactory)
     {
         this._chartService = chartService;
         this._dataSourceFactory = dataSourceFactory;
@@ -42,7 +43,7 @@ public class ChartBuilders
         this._supporterService = supporterService;
         this._spotifyService = spotifyService;
         this._artistService = artistService;
-        this._musicDataService = musicDataService;
+        this._musicDataFactory = musicDataFactory;
     }
 
     public async Task<ResponseModel> AlbumChartAsync(
@@ -148,7 +149,7 @@ public class ChartBuilders
             var albumCall = await this._dataSourceFactory.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
             if (albumCall.Success && albumCall.Content?.AlbumUrl != null)
             {
-                var spotifyArtistImage = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumCall.Content);
+                var spotifyArtistImage = await this._musicDataFactory.GetOrStoreAlbumAsync(albumCall.Content);
                 if (spotifyArtistImage?.SpotifyImageUrl != null)
                 {
                     var index = topAlbums.FindIndex(f => f.ArtistName == albumWithoutImage.ArtistName &&
@@ -283,7 +284,7 @@ public class ChartBuilders
             var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm);
             if (artistCall.Success && artistCall.Content?.ArtistUrl != null)
             {
-                var spotifyArtistImage = await this._musicDataService.GetOrStoreArtistAsync(artistCall.Content);
+                var spotifyArtistImage = await this._musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
                 if (spotifyArtistImage != null)
                 {
                     var index = topArtists.FindIndex(f => f.ArtistName == artistWithoutImage.ArtistName);

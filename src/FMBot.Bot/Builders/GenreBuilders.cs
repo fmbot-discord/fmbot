@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Factories;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -37,7 +38,7 @@ public class GenreBuilders
     private readonly IIndexService _indexService;
     private readonly PuppeteerService _puppeteerService;
     private readonly CensorService _censorService;
-    private readonly MusicDataService _musicDataService;
+    private readonly MusicDataFactory _musicDataFactory;
 
     public GenreBuilders(UserService userService,
         GuildService guildService,
@@ -49,7 +50,7 @@ public class GenreBuilders
         IIndexService indexService,
         PuppeteerService puppeteerService,
         CensorService censorService,
-        MusicDataService musicDataService)
+        MusicDataFactory musicDataFactory)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -61,7 +62,7 @@ public class GenreBuilders
         this._indexService = indexService;
         this._puppeteerService = puppeteerService;
         this._censorService = censorService;
-        this._musicDataService = musicDataService;
+        this._musicDataFactory = musicDataFactory;
     }
 
     public async Task<ResponseModel> GetGuildGenres(ContextModel context, Guild guild, GuildRankingSettings guildListSettings)
@@ -352,7 +353,7 @@ public class GenreBuilders
                 var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistName, userSettings.UserNameLastFM);
                 if (artistCall.Success)
                 {
-                    var cachedArtist = await this._musicDataService.GetOrStoreArtistAsync(artistCall.Content);
+                    var cachedArtist = await this._musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
 
                     if (cachedArtist.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
                     {

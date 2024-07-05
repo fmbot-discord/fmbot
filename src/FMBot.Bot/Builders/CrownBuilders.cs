@@ -17,6 +17,7 @@ using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using Discord.Interactions;
+using FMBot.Bot.Factories;
 
 namespace FMBot.Bot.Builders;
 
@@ -27,21 +28,21 @@ public class CrownBuilders
     private readonly ArtistsService _artistsService;
     private readonly GuildService _guildService;
     private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly MusicDataService _musicDataService;
+    private readonly MusicDataFactory _musicDataFactory;
     
     public CrownBuilders(CrownService crownService,
         ArtistsService artistsService,
         IDataSourceFactory dataSourceFactory,
         UserService userService,
         GuildService guildService,
-        MusicDataService musicDataService)
+        MusicDataFactory musicDataFactory)
     {
         this._crownService = crownService;
         this._artistsService = artistsService;
         this._dataSourceFactory = dataSourceFactory;
         this._userService = userService;
         this._guildService = guildService;
-        this._musicDataService = musicDataService;
+        this._musicDataFactory = musicDataFactory;
     }
 
     public async Task<ResponseModel> CrownAsync(
@@ -85,7 +86,7 @@ public class CrownBuilders
             return artistSearch.Response;
         }
 
-        var cachedArtist = await this._musicDataService.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
+        var cachedArtist = await this._musicDataFactory.GetOrStoreArtistAsync(artistSearch.Artist, artistSearch.Artist.ArtistName);
 
         var artistCrowns = await this._crownService.GetCrownsForArtist(guild.GuildId, artistSearch.Artist.ArtistName);
 
