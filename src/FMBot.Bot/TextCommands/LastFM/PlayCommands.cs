@@ -65,7 +65,7 @@ public class PlayCommands : BaseCommandModule
 
     [Command("fm", RunMode = RunMode.Async)]
     [Summary("Shows you or someone else their current track")]
-    [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "am", "hm", "jm", "km",
+    [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "hm", "jm", "km",
         "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "nowplaying")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]

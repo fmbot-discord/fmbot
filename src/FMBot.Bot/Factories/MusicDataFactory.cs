@@ -280,7 +280,7 @@ public class MusicDataFactory
         }
         catch (Exception e)
         {
-            Log.Error(e, "Something went wrong while retrieving artist data");
+            Log.Error(e, $"{nameof(MusicDataFactory)}: Something went wrong while retrieving artist data");
             return new Artist
             {
                 Name = artistInfo.ArtistName,
@@ -393,6 +393,12 @@ public class MusicDataFactory
                 albumToAdd.AppleMusicDescription = amAlbum.Attributes.EditorialNotes?.Standard;
                 albumToAdd.AppleMusicShortDescription = amAlbum.Attributes.EditorialNotes?.Short;
                 albumToAdd.Upc = amAlbum.Attributes.Upc;
+
+                if (albumToAdd.ReleaseDate == null && amAlbum.Attributes.ReleaseDate != null)
+                {
+                    albumToAdd.ReleaseDate = amAlbum.Attributes.ReleaseDate;
+                    albumToAdd.ReleaseDatePrecision = amAlbum.Attributes.ReleaseDate.Length == 4 ? "year" : "day";
+                }
             }
 
             var coverUrl = albumInfo.AlbumCoverUrl ?? albumToAdd.SpotifyImageUrl;
@@ -526,6 +532,12 @@ public class MusicDataFactory
                 {
                     await AddOrUpdateAlbumImage(db, dbAlbum.Id, ImageSource.AppleMusic, amAlbum.Attributes.Artwork.Url,
                         amAlbum.Attributes.Artwork.Height, amAlbum.Attributes.Artwork.Width, amAlbum.Attributes.Artwork);
+                }
+
+                if (dbAlbum.ReleaseDate == null && amAlbum.Attributes.ReleaseDate != null)
+                {
+                    dbAlbum.ReleaseDate = amAlbum.Attributes.ReleaseDate;
+                    dbAlbum.ReleaseDatePrecision = amAlbum.Attributes.ReleaseDate.Length == 4 ? "year" : "day";
                 }
             }
 
@@ -813,7 +825,7 @@ public class MusicDataFactory
         }
         catch (Exception e)
         {
-            Log.Error(e, "Something went wrong while retrieving track info");
+            Log.Error(e, $"{nameof(MusicDataFactory)}: Something went wrong while retrieving track info");
             return null;
         }
     }
