@@ -1329,6 +1329,14 @@ public class SupporterService
             .CountAsync(c => c.Expired != true);
     }
 
+    public async Task<int> GetActiveDiscordSupporterCountAsync()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Supporters
+            .AsQueryable()
+            .CountAsync(c => c.Expired != true && c.SubscriptionType == SubscriptionType.Discord);
+    }
+
     public async Task<IReadOnlyList<Supporter>> GetAllSupporters()
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

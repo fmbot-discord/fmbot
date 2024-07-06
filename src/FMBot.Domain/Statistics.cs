@@ -137,7 +137,10 @@ public static class Statistics
         .CreateGauge("bot_registered_guilds_count", "Total count of all guilds in the database");
 
     public static readonly Gauge ActiveSupporterCount = Metrics
-        .CreateGauge("bot_active_supporter_count", "Total count of all guilds in the database");
+        .CreateGauge("bot_active_supporter_count", "Total count of all active supporters in the database");
+
+    public static readonly Gauge ActiveDiscordSupporterCount = Metrics
+        .CreateGauge("bot_active_discord_supporter_count", "Total count of all active Discord supporters in the database");
 
 
     public static readonly Gauge OneDayActiveUserCount = Metrics
