@@ -23,7 +23,7 @@ public class AppleMusicService
         Statistics.AppleMusicApiCalls.Inc();
 
         return results?.FirstOrDefault(f => f?.Attributes?.Name != null &&
-                                            f.Attributes.Name.Contains(artist, StringComparison.OrdinalIgnoreCase));
+                                            f.Attributes.Name.Equals(artist, StringComparison.OrdinalIgnoreCase));
     }
 
     public async Task<AmData<AmAlbumAttributes>> GetAppleMusicAlbum(string artist, string albumName)
