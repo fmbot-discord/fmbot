@@ -159,7 +159,7 @@ public class MusicDataFactory
             Task<ArtistUpdated> updateMusicBrainz = null;
             Task<AmData<AmArtistAttributes>> updateAppleMusic = null;
 
-            if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-25))
+            if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-60))
             {
                 updateSpotify = this._spotifyService.GetArtistFromSpotify(artistInfo.ArtistName);
             }
@@ -751,7 +751,7 @@ public class MusicDataFactory
             Task<FullTrack> updateSpotify = null;
             Task<AmData<AmSongAttributes>> updateAppleMusic = null;
 
-            if (dbTrack.SpotifyLastUpdated == null || dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddDays(-60))
+            if (dbTrack.SpotifyLastUpdated == null || dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddDays(-120))
             {
                 updateSpotify = this._spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
             }
