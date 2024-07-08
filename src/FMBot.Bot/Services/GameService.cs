@@ -78,7 +78,7 @@ public class GameService
             _ => 1
         };
 
-        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-2)) switch
+        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-4)) switch
         {
             >= 75 => 1,
             >= 40 => 2,
@@ -88,7 +88,7 @@ public class GameService
         };
 
         var finalMinPlaycount = minPlaycount * multiplier;
-        if (recentJumbles.Count(w => w.DateStarted.Date == today) >= 250)
+        if (recentJumbles.Count(w => w.DateStarted.Date == today) >= 200)
         {
             finalMinPlaycount = 1;
         }
@@ -382,7 +382,7 @@ public class GameService
 
         return hints;
     }
-    
+
     private static List<JumbleSessionHint> GetRandomAlbumHints(Album album, Artist artist, CountryInfo country = null)
     {
         var hints = new List<JumbleSessionHint>();
@@ -671,5 +671,57 @@ public class GameService
         }
 
         return pixelatedBitmap;
+    }
+
+    public async Task<JumbleUserStats> GetJumbleUserStats(int userId, ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var jumbleSessions = await (
+                db.JumbleSessions
+                    .Where(w => w.StarterUserId == userId)
+                    .Union(
+                        db.JumbleSessions
+                            .Where(w => w.Answers.Any(a => a.DiscordUserId == discordUserId))
+                    )
+            )
+            .Include(i => i.Answers)
+            .Include(i => i.Hints)
+            .ToListAsync();
+
+        if (!jumbleSessions.Any())
+        {
+            return null;
+        }
+
+        var gamesAnswered = jumbleSessions.Count(w => w.Answers.Any(a => a.DiscordUserId == discordUserId));
+        var gamesWon = jumbleSessions.Count(w => w.Answers.Any(a => a.Correct && a.DiscordUserId == discordUserId));
+
+        var userAnswers = jumbleSessions
+            .SelectMany(s => s.Answers.Where(a => a.DiscordUserId == discordUserId))
+            .ToList();
+
+        var correctAnswers = userAnswers.Where(a => a.Correct).ToList();
+
+        return new JumbleUserStats
+        {
+            TotalGamesPlayed = jumbleSessions.Count,
+            GamesStarted = jumbleSessions.Count(c => c.StarterUserId == userId),
+            GamesAnswered = gamesAnswered,
+            TotalAnswers = userAnswers.Count,
+            GamesWon = gamesWon,
+            Winrate = gamesAnswered > 0 ? (decimal)gamesWon / gamesAnswered * 100 : 0,
+            AvgHintsShown = (decimal)jumbleSessions.Average(s => s.Hints.Count(h => h.HintShown)),
+            AvgAnsweringTime = userAnswers.Any()
+                ? (decimal)userAnswers.Average(a => (a.DateAnswered - a.JumbleSession.DateStarted).TotalSeconds)
+                : 0,
+            AvgCorrectAnsweringTime = correctAnswers.Any()
+                ? (decimal)correctAnswers.Average(a => (a.DateAnswered - a.JumbleSession.DateStarted).TotalSeconds)
+                : 0,
+            AvgAttemptsUntilCorrect = (decimal)jumbleSessions
+                .Where(s => s.Answers.Any(a => a.DiscordUserId == discordUserId && a.Correct))
+                .Average(s => s.Answers.Count(a => a.DiscordUserId == discordUserId &&
+                                                   a.DateAnswered <= s.Answers.First(ca => ca.DiscordUserId == discordUserId && ca.Correct).DateAnswered))
+        };
     }
 }

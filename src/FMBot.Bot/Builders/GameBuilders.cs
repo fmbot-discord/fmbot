@@ -152,6 +152,37 @@ public class GameBuilders
         }
     }
 
+    public async Task<ResponseModel> GetJumbleUserStats(ContextModel context, UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var userStats =
+            await this._gameService.GetJumbleUserStats(userSettings.UserId, userSettings.DiscordUserId);
+
+        response.Embed.WithAuthor($"Jumble stats - {userSettings.DisplayName}");
+
+        var gameStats = new StringBuilder();
+        gameStats.AppendLine($"- **{userStats.TotalGamesPlayed}** total games played");
+        gameStats.AppendLine($"- **{userStats.GamesStarted}** games started");
+        gameStats.AppendLine($"- **{userStats.GamesAnswered}** games answered");
+        gameStats.AppendLine($"- **{userStats.GamesWon}** games won");
+        gameStats.AppendLine($"- **{decimal.Round(userStats.AvgHintsShown, 1)}** average hints shown");
+        response.Embed.AddField("Games", gameStats.ToString());
+
+        var answerStats = new StringBuilder();
+        answerStats.AppendLine($"- **{userStats.TotalAnswers}** total answers");
+        answerStats.AppendLine($"- **{decimal.Round(userStats.AvgAnsweringTime, 1)}s** average answer time");
+        answerStats.AppendLine($"- **{decimal.Round(userStats.AvgCorrectAnsweringTime, 1)}s** average correct answer time");
+        answerStats.AppendLine($"- **{decimal.Round(userStats.AvgAttemptsUntilCorrect, 1)}** average attempts until correct");
+        answerStats.AppendLine($"- **{decimal.Round(userStats.Winrate, 1)}%** winrate");
+        response.Embed.AddField("Answers", answerStats.ToString());
+
+        return response;
+    }
+
     private static ComponentBuilder BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints)
     {
         var addHintDisabled = hints.Count(c => c.HintShown) == hints.Count;

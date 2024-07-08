@@ -23,10 +23,11 @@ public class GameCommands : BaseCommandModule
     private readonly IPrefixService _prefixService;
     private readonly GameService _gameService;
     private readonly AdminService _adminService;
+    private readonly SettingService _settingService;
 
     private InteractiveService Interactivity { get; }
 
-    public GameCommands(IOptions<BotSettings> botSettings, UserService userService, GameBuilders gameBuilders, IPrefixService prefixService, InteractiveService interactivity, GameService gameService, AdminService adminService) : base(botSettings)
+    public GameCommands(IOptions<BotSettings> botSettings, UserService userService, GameBuilders gameBuilders, IPrefixService prefixService, InteractiveService interactivity, GameService gameService, AdminService adminService, SettingService settingService) : base(botSettings)
     {
         this._userService = userService;
         this._gameBuilders = gameBuilders;
@@ -34,6 +35,7 @@ public class GameCommands : BaseCommandModule
         this.Interactivity = interactivity;
         this._gameService = gameService;
         this._adminService = adminService;
+        this._settingService = settingService;
     }
 
     [Command("jumble", RunMode = RunMode.Async)]
@@ -41,7 +43,7 @@ public class GameCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
     [Alias("j", "jmbl", "jum", "jumbmle")]
-    public async Task JumbleAsync()
+    public async Task JumbleAsync([Remainder] string options = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -49,6 +51,18 @@ public class GameCommands : BaseCommandModule
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
+            if (options != null && options.Contains("stats", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+                
+                var statResponse = await this._gameBuilders.GetJumbleUserStats(context, userSettings);
+                await this.Context.SendResponse(this.Interactivity, statResponse);
+                this.Context.LogCommandUsed(statResponse.CommandResponse);
+                return;
+            }
+
             var cancellationTokenSource = new CancellationTokenSource();
             var response = await this._gameBuilders.StartJumbleFirstWins(context, contextUser.UserId, cancellationTokenSource);
 
