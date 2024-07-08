@@ -1481,4 +1481,49 @@ public class UserService
 
         return deletedInactiveUsers;
     }
+
+    public async Task<int> DeleteOldDuplicateUsers()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var counter = 0;
+
+        var groupedUsers = await db.Users
+            .GroupBy(g => g.UserNameLastFM)
+            .ToListAsync();
+
+        var usersWithTooManyAccounts = groupedUsers
+            .Where(w => w.Count() > 1 && w.Any(a => a.LastUsed > DateTime.UtcNow.AddMonths(-12)));
+
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        foreach (var groupedUser in usersWithTooManyAccounts)
+        {
+            var lastUsedAccount = groupedUser.OrderByDescending(o => o.LastUsed).First();
+
+            var anyDeleted = false;
+            foreach (var oldUnusedAccount in groupedUser
+                         .Where(w => w.LastUsed == null || w.LastUsed < DateTime.UtcNow.AddMonths(-24)))
+            {
+                //await PlayRepository.MoveFeaturedLogs(oldUnusedAccount.UserId, lastUsedAccount.UserId, connection);
+                //await PlayRepository.MoveFriends(oldUnusedAccount.UserId, lastUsedAccount.UserId, connection);
+
+                //await this._friendsService.RemoveAllFriendsAsync(oldUnusedAccount.UserId);
+                //await DeleteUser(oldUnusedAccount.UserId);
+
+                Log.Information("DeleteOldDuplicateUsers: User {userNameLastFm} | {userId} | {discordUserId} - Last used {lastUsed}", oldUnusedAccount.UserNameLastFM, oldUnusedAccount.UserId, oldUnusedAccount.DiscordUserId, oldUnusedAccount.LastUsed);
+                counter++;
+                anyDeleted = true;
+            }
+
+            if (anyDeleted)
+            {
+                Log.Information("DeleteOldDuplicateUsers: Main {userNameLastFm} | {userId} | {discordUserId} - Last used {lastUsed}", lastUsedAccount.UserNameLastFM, lastUsedAccount.UserId, lastUsedAccount.DiscordUserId, lastUsedAccount.LastUsed);
+            }
+        }
+
+        await connection.CloseAsync();
+
+        return counter;
+    }
 }

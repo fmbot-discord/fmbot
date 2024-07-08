@@ -2406,7 +2406,7 @@ public class AdminCommands : BaseCommandModule
     }
 
     [Command("movedata")]
-    [Summary("Move imports and streaks from one user to another")]
+    [Summary("Move imports, streaks, featured logs and users that have them as friends from one user to another")]
     public async Task MoveData(string oldUserId = null, string newUserId = null)
     {
         try
@@ -2464,7 +2464,7 @@ public class AdminCommands : BaseCommandModule
                 }
 
                 embed.WithDescription(
-                    "This will move over all imported plays and saved streaks from one user to another.\n\n" +
+                    "This will move over all imported plays, saved streaks, featured logs and users that added them as friend from one user to another.\n\n" +
                     "Note about imports:\n" +
                     "- The new user should have no imports! Otherwise they might be duplicated" +
                     "- After moving they can enable the imports with `/import manage`");

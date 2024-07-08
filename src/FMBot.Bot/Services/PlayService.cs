@@ -918,5 +918,7 @@ public class PlayService
 
         await PlayRepository.MoveImports(oldUserId, newUserId, connection);
         await PlayRepository.MoveStreaks(oldUserId, newUserId, connection);
+        await PlayRepository.MoveFeaturedLogs(oldUserId, newUserId, connection);
+        await PlayRepository.MoveFriends(oldUserId, newUserId, connection);
     }
 }

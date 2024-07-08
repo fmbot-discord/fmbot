@@ -296,4 +296,30 @@ public static class PlayRepository
             newUserId
         });
     }
+    
+    public static async Task MoveFeaturedLogs(int oldUserId, int newUserId, NpgsqlConnection connection)
+    {
+        const string sql = "UPDATE public.user_featured_logs SET user_id = @newUserId " +
+                           "WHERE user_id = @oldUserId";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await connection.QueryFirstOrDefaultAsync(sql, new
+        {
+            oldUserId,
+            newUserId
+        });
+    }
+    
+    public static async Task MoveFriends(int oldUserId, int newUserId, NpgsqlConnection connection)
+    {
+        const string sql = "UPDATE public.friends SET friend_user_id = @newUserId " +
+                           "WHERE friend_user_id = @oldUserId";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await connection.QueryFirstOrDefaultAsync(sql, new
+        {
+            oldUserId,
+            newUserId
+        });
+    }
 }
