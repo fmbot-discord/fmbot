@@ -159,10 +159,11 @@ public class GameBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        response.Embed.WithAuthor($"Jumble stats - {userSettings.DisplayName}");
+        response.Embed.WithAuthor($"Jumble stats - {userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}");
 
         var userStats =
             await this._gameService.GetJumbleUserStats(userSettings.UserId, userSettings.DiscordUserId);
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         if (userStats == null)
         {
