@@ -192,7 +192,7 @@ public class MusicDataFactory
 
             if (updateMusicBrainz != null)
             {
-                var musicBrainzUpdate = await this._musicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
+                var musicBrainzUpdate = await updateMusicBrainz;
 
                 if (musicBrainzUpdate.Updated)
                 {
