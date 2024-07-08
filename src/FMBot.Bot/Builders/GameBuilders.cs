@@ -569,7 +569,7 @@ public class GameBuilders
         }
 
         await this._albumService.FillMissingAlbumCovers(topAlbums);
-        var album = GameService.PickAlbumForPixelation(topAlbums, null);
+        var album = GameService.PickAlbumForPixelation(topAlbums, recentJumbles);
 
         if (album == null)
         {
