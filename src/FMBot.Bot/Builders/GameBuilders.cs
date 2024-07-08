@@ -159,10 +159,19 @@ public class GameBuilders
             ResponseType = ResponseType.Embed,
         };
 
+        response.Embed.WithAuthor($"Jumble stats - {userSettings.DisplayName}");
+
         var userStats =
             await this._gameService.GetJumbleUserStats(userSettings.UserId, userSettings.DiscordUserId);
 
-        response.Embed.WithAuthor($"Jumble stats - {userSettings.DisplayName}");
+        if (userStats == null)
+        {
+            response.Embed.WithDescription(userSettings.DifferentUser
+                ? "No stats available for this user."
+                : "No stats available for you yet.");
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
 
         var gameStats = new StringBuilder();
         gameStats.AppendLine($"- **{userStats.TotalGamesPlayed}** total games played");

@@ -51,12 +51,12 @@ public class GameCommands : BaseCommandModule
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
-            if (options != null && options.Contains("stats", StringComparison.OrdinalIgnoreCase))
+            if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) || options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
-                
+
                 var statResponse = await this._gameBuilders.GetJumbleUserStats(context, userSettings);
                 await this.Context.SendResponse(this.Interactivity, statResponse);
                 this.Context.LogCommandUsed(statResponse.CommandResponse);
