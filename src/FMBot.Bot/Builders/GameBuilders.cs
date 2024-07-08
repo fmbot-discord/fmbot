@@ -17,6 +17,8 @@ using FMBot.Domain.Interfaces;
 using Serilog;
 using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
+using Fergun.Interactive;
+using static FMBot.Bot.Resources.InteractionConstants;
 
 namespace FMBot.Bot.Builders;
 
@@ -61,7 +63,7 @@ public class GameBuilders
             }
         }
 
-        var recentJumbles = await this._gameService.GetJumbleSessionsCountToday(context.ContextUser.UserId);
+        var recentJumbles = await this._gameService.GetRecentJumbles(context.ContextUser.UserId, JumbleType.Artist);
         var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
         const int jumbleLimit = 30;
         if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday > jumbleLimit)
@@ -101,7 +103,7 @@ public class GameBuilders
             databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
         }
 
-        var game = await this._gameService.StartJumbleGame(userId, context, JumbleType.JumbleFirstWins, artist.artist, cancellationTokenSource);
+        var game = await this._gameService.StartJumbleGame(userId, context, JumbleType.Artist, artist.artist, cancellationTokenSource);
 
         CountryInfo artistCountry = null;
         if (databaseArtist?.CountryCode != null)
@@ -119,34 +121,27 @@ public class GameBuilders
         return response;
     }
 
-    private static void BuildJumbleEmbed(EmbedBuilder embed, string jumbledArtist, List<JumbleSessionHint> hints, bool canBeAnswered = true, JumbleType jumbleType = JumbleType.JumbleFirstWins)
+    private static void BuildJumbleEmbed(EmbedBuilder embed, string jumbledArtist, List<JumbleSessionHint> hints, bool canBeAnswered = true, JumbleType jumbleType = JumbleType.Artist)
     {
         var hintsShown = hints.Count(w => w.HintShown);
         var hintString = GameService.HintsToString(hints, hintsShown);
 
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        if (jumbleType == JumbleType.JumbleFirstWins)
-        {
-            embed.WithAuthor("Guess the artist - Jumble");
-            embed.WithDescription($"### `{jumbledArtist}`");
-        }
-        else
-        {
-            embed.WithAuthor("Guess the album - Pixelation");
-        }
+        var hintTitle = jumbleType == JumbleType.Artist ? "Guess the artist" : "Guess the album";
 
-        var hintTitle = "Hints";
+        embed.WithDescription($"### `{jumbledArtist}`");
+
         if (hintsShown > 3)
         {
-            hintTitle = $"Hints + {hintsShown - 3} extra {StringExtensions.GetHintsString(hintsShown - 3)}";
+            hintTitle += $" ({hintsShown - 3} extra {StringExtensions.GetHintsString(hintsShown - 3)})";
         }
         embed.AddField(hintTitle, hintString);
 
         if (canBeAnswered)
         {
-            embed.AddField("Add answer",
-                jumbleType == JumbleType.JumbleFirstWins
+            embed.AddField("Add jumble answer",
+                jumbleType == JumbleType.Artist
                     ? $"Type your answer within {GameService.JumbleSecondsToGuess} seconds to make a guess"
                     : $"Type your answer within {GameService.PixelationSecondsToGuess} seconds to make a guess");
         }
@@ -156,39 +151,91 @@ public class GameBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.Paginator,
         };
 
-        response.Embed.WithAuthor($"Jumble stats - {userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}");
+
+        var pages = new List<PageBuilder>();
+
+        var userPage = new PageBuilder();
+        userPage.WithColor(DiscordConstants.InformationColorBlue);
+        userPage.WithAuthor($"Jumble user stats - {userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}");
 
         var userStats =
             await this._gameService.GetJumbleUserStats(userSettings.UserId, userSettings.DiscordUserId);
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         if (userStats == null)
         {
-            response.Embed.WithDescription(userSettings.DifferentUser
+            userPage.WithDescription(userSettings.DifferentUser
                 ? "No stats available for this user."
                 : "No stats available for you yet.");
-            response.CommandResponse = CommandResponse.NoScrobbles;
-            return response;
+        }
+        else
+        {
+            var gameStats = new StringBuilder();
+            gameStats.AppendLine($"- **{userStats.TotalGamesPlayed}** total games played");
+            gameStats.AppendLine($"- **{userStats.GamesStarted}** games started");
+            gameStats.AppendLine($"- **{userStats.GamesAnswered}** games answered");
+            gameStats.AppendLine($"- **{userStats.GamesWon}** games won");
+            gameStats.AppendLine($"- **{decimal.Round(userStats.AvgHintsShown, 1)}** average hints shown");
+            userPage.AddField("Games", gameStats.ToString());
+
+            var answerStats = new StringBuilder();
+            answerStats.AppendLine($"- **{userStats.TotalAnswers}** total answers");
+            answerStats.AppendLine($"- **{decimal.Round(userStats.AvgAnsweringTime, 1)}s** average answer time");
+            answerStats.AppendLine($"- **{decimal.Round(userStats.AvgCorrectAnsweringTime, 1)}s** average correct answer time");
+            answerStats.AppendLine($"- **{decimal.Round(userStats.AvgAttemptsUntilCorrect, 1)}** average attempts before win");
+            answerStats.AppendLine($"- **{decimal.Round(userStats.WinRate, 1)}%** winrate");
+            userPage.AddField("Answers", answerStats.ToString());
         }
 
-        var gameStats = new StringBuilder();
-        gameStats.AppendLine($"- **{userStats.TotalGamesPlayed}** total games played");
-        gameStats.AppendLine($"- **{userStats.GamesStarted}** games started");
-        gameStats.AppendLine($"- **{userStats.GamesAnswered}** games answered");
-        gameStats.AppendLine($"- **{userStats.GamesWon}** games won");
-        gameStats.AppendLine($"- **{decimal.Round(userStats.AvgHintsShown, 1)}** average hints shown");
-        response.Embed.AddField("Games", gameStats.ToString());
+        userPage.WithFooter("➡️ Server stats");
 
-        var answerStats = new StringBuilder();
-        answerStats.AppendLine($"- **{userStats.TotalAnswers}** total answers");
-        answerStats.AppendLine($"- **{decimal.Round(userStats.AvgAnsweringTime, 1)}s** average answer time");
-        answerStats.AppendLine($"- **{decimal.Round(userStats.AvgCorrectAnsweringTime, 1)}s** average correct answer time");
-        answerStats.AppendLine($"- **{decimal.Round(userStats.AvgAttemptsUntilCorrect, 1)}** average attempts until correct");
-        answerStats.AppendLine($"- **{decimal.Round(userStats.Winrate, 1)}%** winrate");
-        response.Embed.AddField("Answers", answerStats.ToString());
+        pages.Add(userPage);
+
+        var guildPage = new PageBuilder();
+        guildPage.WithAuthor($"Jumble server stats - {context.DiscordGuild.Name}");
+        guildPage.WithColor(DiscordConstants.InformationColorBlue);
+
+        var guildStats =
+            await this._gameService.GetJumbleGuildStats(context.DiscordGuild.Id);
+
+        if (guildStats == null)
+        {
+            guildPage.WithDescription("No stats available for this server.");
+        }
+        else
+        {
+            var gameStats = new StringBuilder();
+            gameStats.AppendLine($"- **{guildStats.TotalGamesPlayed}** total games played");
+            gameStats.AppendLine($"- **{guildStats.GamesSolved}** games solved");
+            gameStats.AppendLine($"- **{guildStats.TotalReshuffles}** total reshuffles");
+            gameStats.AppendLine($"- **{decimal.Round(guildStats.AvgHintsShown, 1)}** average hints shown");
+            guildPage.AddField("Games", gameStats.ToString());
+
+            var answerStats = new StringBuilder();
+            answerStats.AppendLine($"- **{guildStats.TotalAnswers}** total answers");
+            answerStats.AppendLine($"- **{decimal.Round(guildStats.AvgAnsweringTime, 1)}s** average answer time");
+            answerStats.AppendLine($"- **{decimal.Round(guildStats.AvgCorrectAnsweringTime, 1)}s** average correct answer time");
+            answerStats.AppendLine($"- **{decimal.Round(guildStats.AvgAttemptsUntilCorrect, 1)}** average attempts before win");
+            guildPage.AddField("Answers", answerStats.ToString());
+
+            var channels = new StringBuilder();
+            var counter = 1;
+            foreach (var channel in guildStats.Channels.Take(5))
+            {
+                channels.AppendLine($"{counter}. <#{channel.Id}> - {channel.Count} {StringExtensions.GetGamesString(channel.Count)}");
+                counter++;
+            }
+            guildPage.AddField("Top channels", channels.ToString());
+
+        }
+
+        guildPage.WithFooter($"⬅️ {userSettings.DisplayName}'s stats");
+
+        pages.Add(guildPage);
+
+        response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
 
         return response;
     }
@@ -219,8 +266,27 @@ public class GameBuilders
         GameService.HintsToString(currentGame.Hints, currentGame.Hints.Count(w => w.HintShown) + 1);
         await this._gameService.JumbleStoreShowedHints(currentGame, currentGame.Hints);
 
-        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints);
+        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, true, currentGame.JumbleType);
         response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints);
+
+        if (currentGame.JumbleType == JumbleType.Pixelation)
+        {
+            var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
+            if (image == null)
+            {
+                response.Embed.WithDescription("Sorry, something went wrong while getting album cover for your album.");
+                response.CommandResponse = CommandResponse.Error;
+                response.ResponseType = ResponseType.Embed;
+                return response;
+            }
+
+            var blurLevel = GameService.GetBlurLevel(currentGame);
+            image = GameService.BlurCoverImage(image, blurLevel);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+            response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{blurLevel}.png";
+        }
 
         return response;
     }
@@ -242,6 +308,20 @@ public class GameBuilders
 
         BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints);
         response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints);
+
+        if (currentGame.JumbleType == JumbleType.Pixelation)
+        {
+            var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
+            if (image != null)
+            {
+                var blurLevel = GameService.GetBlurLevel(currentGame);
+                image = GameService.BlurCoverImage(image, blurLevel);
+
+                var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+                response.Stream = encoded.AsStream();
+                response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{blurLevel}.png";
+            }
+        }
 
         return response;
     }
@@ -270,22 +350,33 @@ public class GameBuilders
         await this._gameService.JumbleEndSession(currentGame);
         await this._gameService.CancelToken(context.DiscordChannel.Id);
 
-        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false);
+        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false, currentGame.JumbleType);
 
         var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
 
-        response.Embed.AddField($"{userTitle} gave up!", $"The correct answer was **{currentGame.CorrectAnswer}**");
+        response.Embed.AddField($"{userTitle} gave up!", $"Jumble answer was **{currentGame.CorrectAnswer}**");
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
         if (currentGame.Answers is { Count: >= 1 })
         {
             var separateResponse = new EmbedBuilder();
-            separateResponse.WithDescription($"**{userTitle}** gave up! The correct answer was `{currentGame.CorrectAnswer}`");
+            separateResponse.WithDescription($"**{userTitle}** gave up! Jumble answer was `{currentGame.CorrectAnswer}`");
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
             if (context.DiscordChannel is IMessageChannel msgChannel)
             {
                 _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build()));
+            }
+        }
+
+        if (currentGame.JumbleType == JumbleType.Pixelation)
+        {
+            var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
+            if (image != null)
+            {
+                var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+                response.Stream = encoded.AsStream();
+                response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
             }
         }
 
@@ -323,7 +414,7 @@ public class GameBuilders
                 var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
 
                 var separateResponse = new EmbedBuilder();
-                separateResponse.WithDescription($"**{userTitle}** got it right! The answer was `{currentGame.CorrectAnswer}`");
+                separateResponse.WithDescription($"**{userTitle}** got it right! Jumble answer was `{currentGame.CorrectAnswer}`");
                 var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
                 separateResponse.WithFooter($"Answered in {timeTaken.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}s");
                 separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
@@ -335,9 +426,17 @@ public class GameBuilders
 
                 if (currentGame.DiscordResponseId.HasValue)
                 {
-                    BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false);
+                    BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false, currentGame.JumbleType);
                     response.Components = null;
                     response.Embed.WithColor(DiscordConstants.SpotifyColorGreen);
+
+                    var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
+                    if (image != null)
+                    {
+                        var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+                        response.Stream = encoded.AsStream();
+                        response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
+                    }
 
                     var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
                     if (msg is not IUserMessage message)
@@ -349,6 +448,10 @@ public class GameBuilders
                     {
                         m.Components = null;
                         m.Embed = response.Embed.Build();
+                        m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                        {
+                            new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}.png" : $"{response.FileName}.png")
+                        }) : null;
                     });
                 }
             }
@@ -389,20 +492,31 @@ public class GameBuilders
         }
 
         await this._gameService.JumbleEndSession(currentGame);
-        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false);
+        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false, currentGame.JumbleType);
 
-        response.Embed.AddField("Time is up!", $"The correct answer was **{currentGame.CorrectAnswer}**");
+        response.Embed.AddField("Time is up!", $"Jumble answer was **{currentGame.CorrectAnswer}**");
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
         if (currentGame.Answers is { Count: >= 1 })
         {
             var separateResponse = new EmbedBuilder();
-            separateResponse.WithDescription($"Nobody guessed it right. The answer was `{currentGame.CorrectAnswer}`");
+            separateResponse.WithDescription($"Nobody guessed it right. Jumble answer was `{currentGame.CorrectAnswer}`");
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
             if (context.DiscordChannel is IMessageChannel msgChannel)
             {
                 _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build()));
+            }
+        }
+
+        if (currentGame.JumbleType == JumbleType.Pixelation)
+        {
+            var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
+            if (image != null)
+            {
+                var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+                response.Stream = encoded.AsStream();
+                response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
             }
         }
 
@@ -417,36 +531,36 @@ public class GameBuilders
             ResponseType = ResponseType.ImageWithEmbed
         };
 
-        //var existingGame = await this._gameService.GetJumbleSessionForChannelId(context.DiscordChannel.Id);
-        //if (existingGame != null && !existingGame.DateEnded.HasValue)
-        //{
-        //    if (existingGame.DateStarted <= DateTime.UtcNow.AddSeconds(-(GameService.SecondsToGuess + 10)))
-        //    {
-        //        await this._gameService.JumbleEndSession(existingGame);
-        //    }
-        //    else
-        //    {
-        //        response.CommandResponse = CommandResponse.Cooldown;
-        //        return response;
-        //    }
-        //}
+        var existingGame = await this._gameService.GetJumbleSessionForChannelId(context.DiscordChannel.Id);
+        if (existingGame != null && !existingGame.DateEnded.HasValue)
+        {
+            if (existingGame.DateStarted <= DateTime.UtcNow.AddSeconds(-(GameService.PixelationSecondsToGuess + 10)))
+            {
+                await this._gameService.JumbleEndSession(existingGame);
+            }
+            else
+            {
+                response.CommandResponse = CommandResponse.Cooldown;
+                return response;
+            }
+        }
 
-        //var recentJumbles = await this._gameService.GetJumbleSessionsCountToday(context.ContextUser.UserId);
-        //var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
-        //const int jumbleLimit = 30;
-        //if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday > jumbleLimit)
-        //{
-        //    response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-        //    response.Embed.WithDescription($"You've used up all your {jumbleLimit} jumbles of today. [Get supporter]({Constants.GetSupporterDiscordLink}) to play unlimited jumble games and much more.");
-        //    response.Components = new ComponentBuilder()
-        //        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
-        //    response.CommandResponse = CommandResponse.SupporterRequired;
-        //    return response;
-        //}
+        var recentJumbles = await this._gameService.GetRecentJumbles(context.ContextUser.UserId, JumbleType.Pixelation);
+        var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
+        const int jumbleLimit = 30;
+        if (!SupporterService.IsSupporter(context.ContextUser.UserType) && jumblesPlayedToday > jumbleLimit)
+        {
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.Embed.WithDescription($"You've used up all your {jumbleLimit} jumbles of today. [Get supporter]({Constants.GetSupporterDiscordLink}) to play unlimited jumble games and much more.");
+            response.Components = new ComponentBuilder()
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+            response.CommandResponse = CommandResponse.SupporterRequired;
+            return response;
+        }
 
         var topAlbums = await this._albumService.GetUserAllTimeTopAlbums(userId, true);
 
-        if (topAlbums.Count(c => c.UserPlaycount > 50) <= 5)
+        if (topAlbums.Count(c => c.UserPlaycount > 30) <= 7)
         {
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.Embed.WithDescription($"Sorry, you haven't listened to enough albums yet to use this command. Please scrobble more music and try again later.");
@@ -472,8 +586,7 @@ public class GameBuilders
             databaseAlbum = await this._albumService.GetAlbumFromDatabase(album.ArtistName, album.AlbumName);
         }
 
-
-        var game = await this._gameService.StartJumbleGame(userId, context, JumbleType.JumbleFirstWins, album.AlbumName, cancellationTokenSource);
+        var game = await this._gameService.StartJumbleGame(userId, context, JumbleType.Pixelation, album.AlbumName, cancellationTokenSource);
 
         var databaseArtist = await this._artistsService.GetArtistFromDatabase(album.ArtistName);
         CountryInfo artistCountry = null;
@@ -487,21 +600,22 @@ public class GameBuilders
 
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints, jumbleType: JumbleType.Pixelation);
 
-        var image = await this._gameService.GetSkImage(album.AlbumCoverUrl, album.AlbumName, album.ArtistName);
+        var image = await this._gameService.GetSkImage(album.AlbumCoverUrl, album.AlbumName, album.ArtistName, game.JumbleSessionId);
         if (image == null)
         {
             response.Embed.WithDescription("Sorry, something went wrong while getting album cover for your album.");
             response.CommandResponse = CommandResponse.Error;
             response.ResponseType = ResponseType.Embed;
+            await this._gameService.JumbleEndSession(game);
             return response;
         }
 
-        var pixelPercentage = 0.1f;
-        image = GameService.BlurCoverImage(image, pixelPercentage);
+        var blurLevel = GameService.GetBlurLevel(game);
+        image = GameService.BlurCoverImage(image, blurLevel);
 
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream();
-        response.FileName = $"pixelation-{game.JumbleSessionId}-{pixelPercentage}.png";
+        response.FileName = $"pixelation-{game.JumbleSessionId}-{blurLevel}.png";
 
         response.Components = BuildJumbleComponents(game.JumbleSessionId, game.Hints);
         response.GameSessionId = game.JumbleSessionId;

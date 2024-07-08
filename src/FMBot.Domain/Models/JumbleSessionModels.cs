@@ -4,7 +4,7 @@ namespace FMBot.Domain.Models;
 
 public enum JumbleType
 {
-    JumbleFirstWins = 1,
+    Artist = 1,
     Pixelation = 2
 }
 
@@ -17,5 +17,7 @@ public enum JumbleHintType
     EndDate = 5,
     Disambiguation = 6,
     Type = 7,
-    Country = 8
+    Country = 8,
+    AppleMusicDescription = 9,
+    Label = 10
 }

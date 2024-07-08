@@ -502,7 +502,7 @@ public class PlayService
         return "Saved streak has been updated!";
     }
 
-    private static string GetEmojiForStreakCount(int count)
+    public static string GetEmojiForStreakCount(int count)
     {
         return count switch
         {

@@ -338,7 +338,7 @@ public class ChartService
         return StringExtensions.ReplaceInvalidChars(value);
     }
 
-    private static async Task SaveImageToCache(SKBitmap chartImage, string localPath)
+    public static async Task SaveImageToCache(SKBitmap chartImage, string localPath)
     {
         using var image = SKImage.FromBitmap(chartImage);
         using var data = image.Encode(SKEncodedImageFormat.Png, 100);

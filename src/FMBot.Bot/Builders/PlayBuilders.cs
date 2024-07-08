@@ -470,6 +470,7 @@ public class PlayBuilder
 
         response.EmbedAuthor.WithName($"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
 
+        string emoji = null;
         if (PlayService.StreakExists(streak))
         {
             var streakText = PlayService.StreakToText(streak);
@@ -503,6 +504,8 @@ public class PlayBuilder
             {
                 PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, streak.TrackName);
             }
+
+            emoji = PlayService.GetEmojiForStreakCount(streak.ArtistPlaycount.GetValueOrDefault()).Trim();
         }
         else
         {
@@ -518,6 +521,7 @@ public class PlayBuilder
 
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library");
         response.Embed.WithAuthor(response.EmbedAuthor);
+        response.FileName = emoji;
 
         return response;
     }

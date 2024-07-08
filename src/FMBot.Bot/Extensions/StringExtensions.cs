@@ -231,6 +231,11 @@ public static class StringExtensions
     {
         return hints == 1 ? "hint" : "hints";
     }
+    
+    public static string GetGamesString(long? games)
+    {
+        return games == 1 ? "game" : "games";
+    }
 
     public static string GetChangeString(decimal oldValue, decimal newValue)
     {

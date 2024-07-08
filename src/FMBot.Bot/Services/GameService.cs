@@ -165,6 +165,11 @@ public class GameService
         return $"jumble-session-token-{channelId}";
     }
 
+    private static string CacheKeyForJumbleSessionImage(int sessionId)
+    {
+        return $"jumble-session-image-{sessionId}";
+    }
+
     public async Task<JumbleSession> GetJumbleSessionForSessionId(int jumbleSessionId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -185,10 +190,10 @@ public class GameService
             .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
     }
 
-    public async Task<List<JumbleSession>> GetJumbleSessionsCountToday(int userId)
+    public async Task<List<JumbleSession>> GetRecentJumbles(int userId, JumbleType jumbleType)
     {
         const string sql = "SELECT correct_answer, date_started FROM public.jumble_sessions " +
-                           "WHERE starter_user_id = @userId LIMIT 200 ";
+                           "WHERE starter_user_id = @userId AND jumble_type = @jumbleType LIMIT 250 ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -196,7 +201,8 @@ public class GameService
 
         var jumblesPlayedToday = await connection.QueryAsync<JumbleSession>(sql, new
         {
-            userId
+            userId,
+            jumbleType
         });
 
         return jumblesPlayedToday.ToList();
@@ -230,7 +236,7 @@ public class GameService
 
     public List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount, CountryInfo country = null)
     {
-        var hints = GetRandomArtistHints(artist, country);
+        var hints = GetRandomAlbumHints(album, artist, country);
         hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this album"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
@@ -394,12 +400,22 @@ public class GameService
 
         if (album is { Label: not null })
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- Album is released under label **{album.Label}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Label, $"- Album label is **{album.Label}**"));
         }
 
         if (album is { ReleaseDate: not null })
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- Album has been released in **{album.ReleaseDate}**"));
+            hints.Add(album.ReleaseDatePrecision == "year"
+                ? new JumbleSessionHint(JumbleHintType.Popularity, $"- Album was released in **{album.ReleaseDate}**")
+                : new JumbleSessionHint(JumbleHintType.Popularity, $"- Album was released on **{album.ReleaseDate}**"));
+        }
+
+        if (album is { AppleMusicShortDescription: not null } &&
+            !album.AppleMusicShortDescription.Contains("spatial", StringComparison.OrdinalIgnoreCase) &&
+            !album.AppleMusicShortDescription.Contains("apple music", StringComparison.OrdinalIgnoreCase) &&
+            !album.AppleMusicShortDescription.Contains(album.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.AppleMusicDescription, $"- *{album.AppleMusicShortDescription}*"));
         }
 
         if (artist?.ArtistGenres != null && artist.ArtistGenres.Any())
@@ -416,11 +432,11 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They were born <t:{dateValue}:D> {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- Artist was born <t:{dateValue}:D> {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
             }
             else
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They started on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- Artist started on <t:{dateValue}:D>"));
             }
         }
 
@@ -431,27 +447,27 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They passed away on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- Artist passed away on <t:{dateValue}:D>"));
             }
             else
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They stopped on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- Artist stopped on <t:{dateValue}:D>"));
             }
         }
 
         if (!string.IsNullOrWhiteSpace(artist?.Disambiguation) && !artist.Disambiguation.Contains(artist.Name, StringComparison.OrdinalIgnoreCase))
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation, $"- They might be described as **{artist.Disambiguation}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation, $"- Artist might be described as **{artist.Disambiguation}**"));
         }
 
         if (!string.IsNullOrWhiteSpace(artist?.Type))
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- They are a **{artist.Type.ToLower()}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- Artist is a **{artist.Type.ToLower()}**"));
         }
 
         if (artist?.CountryCode != null && country != null)
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Country, $"- Their country has this flag: :flag_{country.Code.ToLower()}:"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Country, $"- Artist their country has this flag: :flag_{country.Code.ToLower()}:"));
         }
 
         return hints;
@@ -570,7 +586,7 @@ public class GameService
 
         topAlbums = topAlbums
             .Where(w => w.AlbumCoverUrl != null &&
-                        !recentJumblesHashset.Contains(w.ArtistName))
+                        !recentJumblesHashset.Contains(w.AlbumName))
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
 
@@ -583,7 +599,7 @@ public class GameService
             _ => 1
         };
 
-        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-2)) switch
+        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-4)) switch
         {
             >= 75 => 1,
             >= 40 => 2,
@@ -593,7 +609,7 @@ public class GameService
         };
 
         var finalMinPlaycount = minPlaycount * multiplier;
-        if (recentJumbles.Count(w => w.DateStarted.Date == today) >= 250)
+        if (recentJumbles.Count(w => w.DateStarted.Date == today) >= 200)
         {
             finalMinPlaycount = 1;
         }
@@ -613,7 +629,7 @@ public class GameService
             {
                 var fallBackIndex = RandomNumberGenerator.GetInt32(topAlbums.Count);
                 fallbackAlbum = topAlbums
-                    .Where(w => !recentJumblesHashset.Contains(w.ArtistName))
+                    .Where(w => !recentJumblesHashset.Contains(w.AlbumName))
                     .OrderByDescending(o => o.UserPlaycount)
                     .ElementAtOrDefault(fallBackIndex);
             }
@@ -625,7 +641,7 @@ public class GameService
         return eligibleAlbums[randomIndex];
     }
 
-    public async Task<SKBitmap> GetSkImage(string url, string albumName, string artistName)
+    public async Task<SKBitmap> GetSkImage(string url, string albumName, string artistName, int sessionId)
     {
         SKBitmap coverImage;
         var localPath = ChartService.AlbumUrlToCacheFilePath(albumName, artistName);
@@ -640,10 +656,39 @@ public class GameService
             await using var stream = new MemoryStream(bytes);
             coverImage = SKBitmap.Decode(stream);
 
-            await ChartService.OverwriteCache(stream, localPath);
+            await ChartService.SaveImageToCache(coverImage, localPath);
         }
 
+        this._cache.Set(CacheKeyForJumbleSessionImage(sessionId), coverImage, TimeSpan.FromMinutes(2));
+
         return coverImage;
+    }
+
+    public async Task<SKBitmap> GetImageFromCache(int sessionId)
+    {
+        if (this._cache.TryGetValue(CacheKeyForJumbleSessionImage(sessionId), out SKBitmap image))
+        {
+            return image;
+        }
+        
+        return null;
+    }
+
+    public static float GetBlurLevel(JumbleSession currentGame)
+    {
+        var amountOfHints = (currentGame.Hints.Count(c => c.HintShown) - 3);
+
+        float pixelPercentage;
+        if (amountOfHints > 4)
+        {
+            pixelPercentage = 0.01f;
+        }
+        else
+        {
+            pixelPercentage = 0.10f - 0.02f * amountOfHints;
+        }
+
+        return pixelPercentage;
     }
 
     public static SKBitmap BlurCoverImage(SKBitmap coverImage, float pixelPercentage)
@@ -710,7 +755,7 @@ public class GameService
             GamesAnswered = gamesAnswered,
             TotalAnswers = userAnswers.Count,
             GamesWon = gamesWon,
-            Winrate = gamesAnswered > 0 ? (decimal)gamesWon / gamesAnswered * 100 : 0,
+            WinRate = gamesAnswered > 0 ? (decimal)gamesWon / gamesAnswered * 100 : 0,
             AvgHintsShown = (decimal)jumbleSessions.Average(s => s.Hints.Count(h => h.HintShown)),
             AvgAnsweringTime = userAnswers.Any()
                 ? (decimal)userAnswers.Average(a => (a.DateAnswered - a.JumbleSession.DateStarted).TotalSeconds)
@@ -722,6 +767,57 @@ public class GameService
                 .Where(s => s.Answers.Any(a => a.DiscordUserId == discordUserId && a.Correct))
                 .Average(s => s.Answers.Count(a => a.DiscordUserId == discordUserId &&
                                                    a.DateAnswered <= s.Answers.First(ca => ca.DiscordUserId == discordUserId && ca.Correct).DateAnswered))
+        };
+    }
+
+    public async Task<JumbleGuildStats> GetJumbleGuildStats(ulong discordGuildId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var jumbleSessions = await db.JumbleSessions
+            .Where(w => w.DiscordGuildId == discordGuildId)
+            .Include(i => i.Answers)
+            .Include(i => i.Hints)
+            .ToListAsync();
+
+        if (!jumbleSessions.Any())
+        {
+            return null;
+        }
+
+        var allAnswers = jumbleSessions
+            .SelectMany(s => s.Answers)
+            .ToList();
+
+        var correctAnswers = allAnswers
+            .Where(a => a.Correct)
+            .ToList();
+
+        var channels = jumbleSessions
+            .GroupBy(g => g.DiscordChannelId)
+            .OrderByDescending(o => o.Count());
+
+        return new JumbleGuildStats
+        {
+            TotalGamesPlayed = jumbleSessions.Count,
+            GamesSolved = jumbleSessions.Count(w => w.Answers.Any(a => a.Correct)),
+            TotalAnswers = allAnswers.Count,
+            AvgHintsShown = (decimal)jumbleSessions.Average(s => s.Hints.Count(h => h.HintShown)),
+            TotalReshuffles = jumbleSessions.Sum(s => s.Reshuffles),
+            AvgAnsweringTime = allAnswers.Any()
+                ? (decimal)allAnswers.Average(a => (a.DateAnswered - a.JumbleSession.DateStarted).TotalSeconds)
+                : 0,
+            AvgCorrectAnsweringTime = correctAnswers.Any()
+                ? (decimal)correctAnswers.Average(a => (a.DateAnswered - a.JumbleSession.DateStarted).TotalSeconds)
+                : 0,
+            AvgAttemptsUntilCorrect = (decimal)jumbleSessions
+                .Where(s => s.Answers.Any(a => a.Correct))
+                .Average(s => s.Answers.Count(a => a.DateAnswered <= s.Answers.First(ca => ca.Correct).DateAnswered)),
+            Channels = channels.Select(s => new JumbleGuildStatChannel
+            {
+                Id = s.Key.GetValueOrDefault(),
+                Count = s.Count()
+            }).ToList()
         };
     }
 }
