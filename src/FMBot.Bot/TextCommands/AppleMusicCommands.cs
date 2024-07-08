@@ -104,9 +104,10 @@ public class AppleMusicCommands : BaseCommandModule
                 response.Text = $"{item.Attributes.Url}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 15) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "applemusic"))
                 {
                     response.Text += $"\n*Tip: Search for other songs by simply adding the searchvalue behind {prfx}applemusic.*";
+                    response.HintShown = true;
                 }
 
                 PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, item.Attributes.ArtistName);

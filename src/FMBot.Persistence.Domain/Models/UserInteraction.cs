@@ -33,5 +33,7 @@ public class UserInteraction
     public string Album { get; set; }
     public string Track { get; set; }
 
+    public bool? HintShown { get; set; }
+
     public User User { get; set; }
 }

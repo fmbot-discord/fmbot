@@ -146,9 +146,10 @@ public class YoutubeCommands : BaseCommandModule
                 }
 
                 var rnd = new Random();
-                if (rnd.Next(0, 10) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "youtube"))
                 {
                     response.Text += $"\n*Tip: Search for other songs or videos by simply adding the searchvalue behind {prfx}youtube.*";
+                    response.HintShown = true;
                 }
 
                 await this.Context.SendResponse(this.Interactivity, response);

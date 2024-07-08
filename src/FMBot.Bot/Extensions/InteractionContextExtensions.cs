@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -109,6 +110,11 @@ public static class InteractionContextExtensions
             default:
                 throw new ArgumentOutOfRangeException();
         }
+
+        if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
+        {
+            PublicProperties.UsedCommandsHintShown.Add(context.Interaction.Id);
+        }
     }
 
     public static async Task SendFollowUpResponse(this IInteractionContext context, InteractiveService interactiveService, ResponseModel response, bool ephemeral = false)
@@ -171,6 +177,11 @@ public static class InteractionContextExtensions
         {
             PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Interaction.Id, responseId.Value);
             PublicProperties.UsedCommandsResponseContextId.TryAdd(responseId.Value, context.Interaction.Id);
+        }
+
+        if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
+        {
+            PublicProperties.UsedCommandsHintShown.Add(context.Interaction.Id);
         }
     }
 

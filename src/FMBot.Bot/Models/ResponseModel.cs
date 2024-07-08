@@ -32,6 +32,8 @@ public class ResponseModel
 
     public string Text { get; set; }
     
+    public bool? HintShown { get; set; }
+    
     public int? GameSessionId { get; set; }
 
     public StaticPaginator StaticPaginator { get; set; }

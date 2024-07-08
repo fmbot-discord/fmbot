@@ -129,9 +129,10 @@ public class SpotifyCommands : BaseCommandModule
                 response.Text = $"https://open.spotify.com/track/{track.Id}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 15) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 2) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "spotify"))
                 {
                     response.Text += $"\n*Tip: Search for other songs by simply adding the searchvalue behind {prfx}spotify.*";
+                    response.HintShown = true;
                 }
 
                 PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, track.Artists.First().Name);
@@ -217,9 +218,10 @@ public class SpotifyCommands : BaseCommandModule
                 response.Text = $"https://open.spotify.com/album/{album.Id}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 15) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "spotifyalbum"))
                 {
                     response.Text += $"\n*Tip: Search for other albums by simply adding the searchvalue behind `{prfx}spotifyalbum` (or `.fmspab`).*";
+                    response.HintShown = true;
                 }
 
                 PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, album.Artists.First().Name);
@@ -307,9 +309,10 @@ public class SpotifyCommands : BaseCommandModule
                 response.Text = $"https://open.spotify.com/artist/{artist.Id}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 15) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "spotifyartist"))
                 {
                     response.Text += $"\n*Tip: Search for other artists by simply adding the searchvalue behind `{prfx}spotifyartist` (or `{prfx}spa`).*";
+                    response.HintShown = true;
                 }
 
                 PublicProperties.UsedCommandsArtists.TryAdd(this.Context.Message.Id, artist.Name);

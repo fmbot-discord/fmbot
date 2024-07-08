@@ -10,7 +10,6 @@ using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
@@ -233,6 +232,12 @@ public class UserService
                     responseId = fetchedResponseId;
                 }
 
+                bool? hintShown = null;
+                if (PublicProperties.UsedCommandsHintShown.Contains(context.Message.Id))
+                {
+                    hintShown = true;
+                }
+
                 var interaction = new UserInteraction
                 {
                     Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
@@ -248,7 +253,8 @@ public class UserService
                     ErrorReferenceId = errorReference,
                     Artist = artist,
                     Album = album,
-                    Track = track
+                    Track = track,
+                    HintShown = hintShown
                 };
 
                 await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -309,6 +315,12 @@ public class UserService
                     responseId = fetchedResponseId;
                 }
 
+                bool? hintShown = null;
+                if (PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
+                {
+                    hintShown = true;
+                }
+
                 var options = new Dictionary<string, string>();
                 if (context.Interaction is SocketSlashCommand command)
                 {
@@ -333,7 +345,8 @@ public class UserService
                     ErrorReferenceId = errorReference,
                     Artist = artist,
                     Album = album,
-                    Track = track
+                    Track = track,
+                    HintShown = hintShown
                 };
 
                 await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -504,6 +517,16 @@ public class UserService
                              c.Timestamp >= filterDateTime &&
                              c.Response == CommandResponse.Ok &&
                              c.CommandName == command);
+    }
+
+    public async Task<bool> HintShownBefore(int userId, string command)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.UserInteractions
+            .AnyAsync(c => c.UserId == userId &&
+                             c.Response == CommandResponse.Ok &&
+                             c.CommandName == command &&
+                             c.HintShown == true);
     }
 
     public async Task SetUserReactionsAsync(int userId, string[] reactions)

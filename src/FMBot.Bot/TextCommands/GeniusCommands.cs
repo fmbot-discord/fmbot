@@ -116,9 +116,10 @@ public class GeniusCommands : BaseCommandModule
             if (geniusResults != null && geniusResults.Any())
             {
                 var rnd = new Random();
-                if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "genius"))
                 {
                     response.EmbedFooter.WithText($"Tip: Search for other songs by simply adding the searchvalue behind '{prfx}genius'.");
+                    response.HintShown = true;
                     response.Embed.WithFooter(response.EmbedFooter);
                 }
 

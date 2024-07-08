@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -182,6 +183,11 @@ public static class CommandContextExtensions
         {
             PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Message.Id, responseId.Value);
             PublicProperties.UsedCommandsResponseContextId.TryAdd(responseId.Value, context.Message.Id);
+        }
+
+        if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Message.Id))
+        {
+            PublicProperties.UsedCommandsHintShown.Add(context.Message.Id);
         }
 
         return responseId;
