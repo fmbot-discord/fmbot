@@ -1,12 +1,13 @@
 using System.Threading.Tasks;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Fergun.Interactive;
-using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
@@ -66,6 +67,12 @@ public class GameSlashCommands : InteractionModuleBase
         else
         {
             await this.Context.UpdateInteractionEmbed(response);
+        }
+
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        if (message != null && PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
+        {
+            await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
         }
     }
 }

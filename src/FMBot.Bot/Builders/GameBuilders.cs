@@ -18,7 +18,6 @@ using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
 using Fergun.Interactive;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
-using static FMBot.Bot.Resources.InteractionConstants;
 
 namespace FMBot.Bot.Builders;
 
@@ -464,6 +463,12 @@ public class GameBuilders
             }
         }
 
+        response.ReferencedMusic = new ReferencedMusic
+        {
+            Artist = currentGame.ArtistName,
+            Album = currentGame.AlbumName
+        };
+
         return response;
     }
 
@@ -529,6 +534,15 @@ public class GameBuilders
                     if (msg is not IUserMessage message)
                     {
                         return;
+                    }
+
+                    if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
+                    {
+                        await this._userService.UpdateInteractionContext(contextId, new ReferencedMusic
+                        {
+                            Artist = currentGame.ArtistName,
+                            Album = currentGame.AlbumName
+                        });
                     }
 
                     await message.ModifyAsync(m =>
@@ -609,6 +623,12 @@ public class GameBuilders
                 response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
             }
         }
+
+        response.ReferencedMusic = new ReferencedMusic
+        {
+            Artist = currentGame.ArtistName,
+            Album = currentGame.AlbumName
+        };
 
         return response;
     }

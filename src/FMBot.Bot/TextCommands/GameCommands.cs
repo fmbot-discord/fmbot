@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using Fergun.Interactive;
 using Discord;
 using System.Threading;
+using FMBot.Domain;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -112,6 +113,11 @@ public class GameCommands : BaseCommandModule
         if (msg is not IUserMessage message)
         {
             return;
+        }
+
+        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
+        {
+            await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
         }
 
         await message.ModifyAsync(m =>
