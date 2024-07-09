@@ -64,6 +64,12 @@ public class GameBuilders
             }
         }
 
+        if (this._gameService.GameStartingAlready(context.DiscordChannel.Id))
+        {
+            response.CommandResponse = CommandResponse.Cooldown;
+            return response;
+        }
+
         var recentJumbles = await this._gameService.GetRecentJumbles(context.ContextUser.UserId, JumbleType.Artist);
         var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
         const int jumbleLimit = 30;
@@ -95,6 +101,8 @@ public class GameBuilders
             response.CommandResponse = CommandResponse.NotFound;
             return response;
         }
+
+        this._gameService.GameStartInProgress(context.DiscordChannel.Id);
 
         var databaseArtist = await this._artistsService.GetArtistFromDatabase(artist.artist);
         if (databaseArtist == null)
@@ -616,6 +624,12 @@ public class GameBuilders
             }
         }
 
+        if (this._gameService.GameStartingAlready(context.DiscordChannel.Id))
+        {
+            response.CommandResponse = CommandResponse.Cooldown;
+            return response;
+        }
+
         var recentJumbles = await this._gameService.GetRecentJumbles(context.ContextUser.UserId, JumbleType.Pixelation);
         var jumblesPlayedToday = recentJumbles.Count(c => c.DateStarted.Date == DateTime.Today);
         const int jumbleLimit = 30;
@@ -640,6 +654,8 @@ public class GameBuilders
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
+
+        this._gameService.GameStartInProgress(context.DiscordChannel.Id);
 
         await this._albumService.FillMissingAlbumCovers(topAlbums);
         topAlbums = await this._censorService.RemoveNsfwAlbums(topAlbums);

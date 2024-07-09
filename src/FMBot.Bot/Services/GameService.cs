@@ -174,6 +174,11 @@ public class GameService
         return $"jumble-session-active-{channelId}";
     }
 
+    public static string CacheKeyForJumbleStarting(ulong channelId)
+    {
+        return $"jumble-session-starting-{channelId}";
+    }
+
     private static string CacheKeyForJumbleSessionCancellationToken(ulong channelId)
     {
         return $"jumble-session-token-{channelId}";
@@ -202,6 +207,16 @@ public class GameService
             .Include(i => i.Hints)
             .Include(i => i.Answers)
             .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
+    }
+
+    public void GameStartInProgress(ulong discordChannelId)
+    {
+        this._cache.Set(CacheKeyForJumbleStarting(discordChannelId), true, TimeSpan.FromSeconds(3));
+    }
+
+    public bool GameStartingAlready(ulong discordChannelId)
+    {
+        return this._cache.TryGetValue(CacheKeyForJumbleStarting(discordChannelId), out _);
     }
 
     public async Task<List<JumbleSession>> GetRecentJumbles(int userId, JumbleType jumbleType)
