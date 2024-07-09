@@ -263,7 +263,7 @@ public class GameBuilders
                 addHintDisabled && offerUnblur ? $"{InteractionConstants.Game.JumbleUnblur}-{gameId}" : $"{InteractionConstants.Game.AddJumbleHint}-{gameId}",
                 ButtonStyle.Secondary,
                 disabled: addHintDisabled && !offerUnblur)
-            .WithButton(shuffledHidden ? "View name" : "Reshuffle", $"{InteractionConstants.Game.JumbleReshuffle}-{gameId}", ButtonStyle.Secondary)
+            .WithButton(shuffledHidden ? "Jumbled name" : "Reshuffle", $"{InteractionConstants.Game.JumbleReshuffle}-{gameId}", ButtonStyle.Secondary)
             .WithButton("Give up", $"{InteractionConstants.Game.JumbleGiveUp}-{gameId}", ButtonStyle.Secondary);
     }
 
