@@ -34,6 +34,15 @@ public class GameSlashCommands : InteractionModuleBase
         await this.Context.UpdateInteractionEmbed(response);
     }
 
+    [ComponentInteraction($"{InteractionConstants.Game.JumbleUnblur}-*")]
+    public async Task JumbleUnblur(string gameId)
+    {
+        var parsedGameId = int.Parse(gameId);
+        var response = await this._gameBuilders.JumbleUnblur(new ContextModel(this.Context), parsedGameId);
+
+        await this.Context.UpdateInteractionEmbed(response);
+    }
+
     [ComponentInteraction($"{InteractionConstants.Game.JumbleReshuffle}-*")]
     public async Task JumbleReshuffle(string gameId)
     {

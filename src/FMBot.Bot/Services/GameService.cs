@@ -65,7 +65,8 @@ public class GameService
         }
 
         topArtists = topArtists
-            .Where(w => !recentJumblesHashset.Contains(w.ArtistName))
+            .Where(w => !recentJumblesHashset.Contains(w.ArtistName) &&
+                        w.ArtistName.Length is > 2 and < 40)
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
 
@@ -121,13 +122,19 @@ public class GameService
     }
 
     public async Task<JumbleSession> StartJumbleGame(int userId, ContextModel context, JumbleType jumbleType,
-                                                     string artist, CancellationTokenSource cancellationToken)
+                                                     string answer, CancellationTokenSource cancellationToken,
+                                                     string artist, string album = null)
     {
-        var jumbled = JumbleWords(artist).ToUpper();
-
-        if (jumbled.Equals(artist, StringComparison.OrdinalIgnoreCase))
+        if (jumbleType == JumbleType.Pixelation)
         {
-            jumbled = JumbleWords(artist).ToUpper();
+            answer = StringExtensions.RemoveEditionSuffix(answer);
+        }
+        
+        var jumbled = JumbleWords(answer).ToUpper();
+
+        if (jumbled.Equals(answer, StringComparison.OrdinalIgnoreCase))
+        {
+            jumbled = JumbleWords(answer).ToUpper();
         }
 
         var jumbleSession = new JumbleSession
@@ -138,10 +145,17 @@ public class GameService
             DiscordChannelId = context.DiscordChannel.Id,
             DiscordId = context.InteractionId,
             JumbleType = jumbleType,
-            CorrectAnswer = artist,
+            CorrectAnswer = answer,
             Reshuffles = 0,
-            JumbledArtist = jumbled
+            JumbledArtist = jumbled,
+            ArtistName = artist,
+            AlbumName = album
         };
+
+        if (jumbleType == JumbleType.Pixelation)
+        {
+            jumbleSession.BlurLevel = 0.10f;
+        }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         await db.JumbleSessions.AddAsync(jumbleSession);
@@ -270,6 +284,16 @@ public class GameService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         game.Hints = hints;
+
+        db.Update(game);
+        await db.SaveChangesAsync();
+    }
+    
+    public async Task JumbleStoreBlurLevel(JumbleSession game, float blurLevel)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        game.BlurLevel = blurLevel;
 
         db.Update(game);
         await db.SaveChangesAsync();
@@ -586,7 +610,8 @@ public class GameService
 
         topAlbums = topAlbums
             .Where(w => w.AlbumCoverUrl != null &&
-                        !recentJumblesHashset.Contains(w.AlbumName))
+                        !recentJumblesHashset.Contains(w.AlbumName) &&
+                        w.AlbumName.Length is > 2 and < 50)
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
 
@@ -674,23 +699,6 @@ public class GameService
         return null;
     }
 
-    public static float GetBlurLevel(JumbleSession currentGame)
-    {
-        var amountOfHints = (currentGame.Hints.Count(c => c.HintShown) - 3);
-
-        float pixelPercentage;
-        if (amountOfHints > 4)
-        {
-            pixelPercentage = 0.01f;
-        }
-        else
-        {
-            pixelPercentage = 0.10f - 0.02f * amountOfHints;
-        }
-
-        return pixelPercentage;
-    }
-
     public static SKBitmap BlurCoverImage(SKBitmap coverImage, float pixelPercentage)
     {
         var width = coverImage.Width;
@@ -718,13 +726,13 @@ public class GameService
         return pixelatedBitmap;
     }
 
-    public async Task<JumbleUserStats> GetJumbleUserStats(int userId, ulong discordUserId)
+    public async Task<JumbleUserStats> GetJumbleUserStats(int userId, ulong discordUserId, JumbleType jumbleType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var jumbleSessions = await (
                 db.JumbleSessions
-                    .Where(w => w.StarterUserId == userId)
+                    .Where(w => w.StarterUserId == userId && w.JumbleType == jumbleType)
                     .Union(
                         db.JumbleSessions
                             .Where(w => w.Answers.Any(a => a.DiscordUserId == discordUserId))
@@ -770,12 +778,12 @@ public class GameService
         };
     }
 
-    public async Task<JumbleGuildStats> GetJumbleGuildStats(ulong discordGuildId)
+    public async Task<JumbleGuildStats> GetJumbleGuildStats(ulong discordGuildId, JumbleType jumbleType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var jumbleSessions = await db.JumbleSessions
-            .Where(w => w.DiscordGuildId == discordGuildId)
+            .Where(w => w.DiscordGuildId == discordGuildId && w.JumbleType == jumbleType)
             .Include(i => i.Answers)
             .Include(i => i.Hints)
             .ToListAsync();

@@ -433,4 +433,28 @@ public class CensorService
 
         await db.SaveChangesAsync();
     }
+
+    public async Task<List<TopAlbum>> RemoveNsfwAlbums(List<TopAlbum> topAlbums)
+    {
+        var censoredMusic = await GetCachedCensoredMusic();
+
+        var censoredArtists = censoredMusic
+            .Where(w => w.Artist &&
+                        (w.CensorType.HasFlag(CensorType.ArtistAlbumsNsfw) || w.CensorType.HasFlag(CensorType.ArtistAlbumsCensored)))
+            .GroupBy(g => g.ArtistName)
+            .Select(s => s.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var censoredAlbums = censoredMusic
+            .Where(w => !w.Artist && w.AlbumName != null &&
+                        (w.CensorType.HasFlag(CensorType.AlbumCoverNsfw) || w.CensorType.HasFlag(CensorType.AlbumCoverCensored)))
+            .GroupBy(g => new { g.ArtistName, g.AlbumName })
+            .Select(s => $"{s.Key.ArtistName}-{s.Key.AlbumName}")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return topAlbums
+            .Where(w => !censoredArtists.Contains(w.ArtistName) &&
+                        !censoredAlbums.Contains($"{w.ArtistName}-{w.AlbumName}"))
+            .ToList();
+    }
 }

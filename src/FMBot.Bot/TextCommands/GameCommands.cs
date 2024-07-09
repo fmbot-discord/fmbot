@@ -57,7 +57,7 @@ public class GameCommands : BaseCommandModule
 
                 var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
 
-                var statResponse = await this._gameBuilders.GetJumbleUserStats(context, userSettings);
+                var statResponse = await this._gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Artist);
                 await this.Context.SendResponse(this.Interactivity, statResponse);
                 this.Context.LogCommandUsed(statResponse.CommandResponse);
                 return;
@@ -79,7 +79,7 @@ public class GameCommands : BaseCommandModule
             if (responseId.HasValue && response.GameSessionId.HasValue)
             {
                 await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Value);
-                await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token, response.GameSessionId.Value);
+                await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.JumbleSecondsToGuess);
             }
         }
         catch (OperationCanceledException)
@@ -92,9 +92,9 @@ public class GameCommands : BaseCommandModule
     }
 
     private async Task JumbleTimeExpired(ContextModel context, ulong responseId, CancellationToken cancellationToken,
-        int gameSessionId)
+        int gameSessionId, int secondsToGuess)
     {
-        await Task.Delay(GameService.JumbleSecondsToGuess * 1000, cancellationToken);
+        await Task.Delay(secondsToGuess * 1000, cancellationToken);
 
         if (cancellationToken.IsCancellationRequested)
         {
@@ -121,19 +121,33 @@ public class GameCommands : BaseCommandModule
         });
     }
 
-    [Command("pixelate", RunMode = RunMode.Async)]
-    [Summary("Play the album Jumble game.")]
+    [Command("pixel", RunMode = RunMode.Async)]
+    [Summary("Play the pixel jumble game with albums.")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
-    [Alias("px")]
-    public async Task PixelateAsync()
+    [Alias("px", "pixelation", "aj", "abj", "popidle", "pixeljumble", "pxj")]
+    public async Task PixelAsync([Remainder] string options = null)
     {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
             var context = new ContextModel(this.Context, prfx, contextUser);
+            if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) || options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+
+                var statResponse = await this._gameBuilders.GetJumbleUserStats(context, userSettings, JumbleType.Pixelation);
+                await this.Context.SendResponse(this.Interactivity, statResponse);
+                this.Context.LogCommandUsed(statResponse.CommandResponse);
+                return;
+            }
+            
             var cancellationTokenSource = new CancellationTokenSource();
             var response = await this._gameBuilders.StartPixelation(context, contextUser.UserId, cancellationTokenSource);
 
@@ -150,7 +164,7 @@ public class GameCommands : BaseCommandModule
             if (responseId.HasValue && response.GameSessionId.HasValue)
             {
                 await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Value);
-                await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token, response.GameSessionId.Value);
+                await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.PixelationSecondsToGuess);
             }
         }
         catch (OperationCanceledException)

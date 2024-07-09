@@ -477,4 +477,13 @@ public static class StringExtensions
             }
         }
     }
+
+    public static string RemoveEditionSuffix(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return input;
+
+        const string pattern = @"\s*\(([^)]+\s+edition)\)\s*$";
+        return Regex.Replace(input, pattern, "", RegexOptions.IgnoreCase).TrimEnd();
+    }
 }

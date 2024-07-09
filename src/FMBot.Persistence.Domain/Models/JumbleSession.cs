@@ -27,4 +27,10 @@ public class JumbleSession
     public string JumbledArtist { get; set; }
 
     public string CorrectAnswer { get; set; }
+
+    public string ArtistName { get; set; }
+
+    public string AlbumName { get; set; }
+
+    public float? BlurLevel { get; set; }
 }
