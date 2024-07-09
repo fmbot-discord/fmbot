@@ -377,7 +377,7 @@ public class GameBuilders
 
         await this._gameService.JumbleReshuffleArtist(currentGame);
 
-        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints);
+        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, true, currentGame.JumbleType);
         response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, currentGame.BlurLevel);
 
         if (currentGame.JumbleType == JumbleType.Pixelation && currentGame.BlurLevel.HasValue)
