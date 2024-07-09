@@ -129,13 +129,6 @@ public class GameService
         {
             answer = StringExtensions.RemoveEditionSuffix(answer);
         }
-        
-        var jumbled = JumbleWords(answer).ToUpper();
-
-        if (jumbled.Equals(answer, StringComparison.OrdinalIgnoreCase))
-        {
-            jumbled = JumbleWords(answer).ToUpper();
-        }
 
         var jumbleSession = new JumbleSession
         {
@@ -147,10 +140,19 @@ public class GameService
             JumbleType = jumbleType,
             CorrectAnswer = answer,
             Reshuffles = 0,
-            JumbledArtist = jumbled,
             ArtistName = artist,
             AlbumName = album
         };
+
+        if (jumbleType == JumbleType.Artist)
+        {
+            jumbleSession.JumbledArtist = JumbleWords(answer).ToUpper();
+
+            if (jumbleSession.JumbledArtist.Equals(answer, StringComparison.OrdinalIgnoreCase))
+            {
+                jumbleSession.JumbledArtist = JumbleWords(answer).ToUpper();
+            }
+        }
 
         if (jumbleType == JumbleType.Pixelation)
         {

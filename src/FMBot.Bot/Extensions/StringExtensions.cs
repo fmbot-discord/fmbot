@@ -483,7 +483,7 @@ public static class StringExtensions
         if (string.IsNullOrWhiteSpace(input))
             return input;
 
-        const string pattern = @"\s*\(([^)]+\s+edition)\)\s*$";
+        const string pattern = @"\s*\(([^)]+\s+(edition|version))\)\s*$";
         return Regex.Replace(input, pattern, "", RegexOptions.IgnoreCase).TrimEnd();
     }
 }

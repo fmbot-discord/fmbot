@@ -18,6 +18,7 @@ using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
 using Fergun.Interactive;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
+using static FMBot.Bot.Resources.InteractionConstants;
 
 namespace FMBot.Bot.Builders;
 
@@ -124,7 +125,7 @@ public class GameBuilders
         await this._gameService.JumbleStoreShowedHints(game, hints);
 
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints);
-        response.Components = BuildJumbleComponents(game.JumbleSessionId, game.Hints);
+        response.Components = BuildJumbleComponents(game.JumbleSessionId, game.Hints, shuffledHidden: game.JumbledArtist == null);
         response.GameSessionId = game.JumbleSessionId;
 
         return response;
@@ -139,7 +140,10 @@ public class GameBuilders
 
         var hintTitle = jumbleType == JumbleType.Artist ? "Jumble - Guess the artist" : "Pixel Jumble - Guess the album";
 
-        embed.WithDescription($"### `{jumbledArtist}`");
+        if (jumbledArtist != null)
+        {
+            embed.WithDescription($"### `{jumbledArtist}`");
+        }
 
         if (hintsShown > 3)
         {
@@ -249,7 +253,7 @@ public class GameBuilders
         return response;
     }
 
-    private static ComponentBuilder BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints, float? blur = null)
+    private static ComponentBuilder BuildJumbleComponents(int gameId, List<JumbleSessionHint> hints, float? blur = null, bool shuffledHidden = false)
     {
         var addHintDisabled = hints.Count(c => c.HintShown) == hints.Count;
         var offerUnblur = blur is > 0.01f;
@@ -259,7 +263,7 @@ public class GameBuilders
                 addHintDisabled && offerUnblur ? $"{InteractionConstants.Game.JumbleUnblur}-{gameId}" : $"{InteractionConstants.Game.AddJumbleHint}-{gameId}",
                 ButtonStyle.Secondary,
                 disabled: addHintDisabled && !offerUnblur)
-            .WithButton("Reshuffle", $"{InteractionConstants.Game.JumbleReshuffle}-{gameId}", ButtonStyle.Secondary)
+            .WithButton(shuffledHidden ? "View name" : "Reshuffle", $"{InteractionConstants.Game.JumbleReshuffle}-{gameId}", ButtonStyle.Secondary)
             .WithButton("Give up", $"{InteractionConstants.Game.JumbleGiveUp}-{gameId}", ButtonStyle.Secondary);
     }
 
@@ -290,15 +294,16 @@ public class GameBuilders
                 return response;
             }
 
-            float blurLevel;
-            if (currentGame.BlurLevel.Value <= 0.02f)
+            var blurLevel = currentGame.BlurLevel.Value switch
             {
-                blurLevel = 0.01f;
-            }
-            else
-            {
-                blurLevel = currentGame.BlurLevel.GetValueOrDefault() - 0.02f;
-            }
+                0.10f => 0.06f,
+                0.06f => 0.04f,
+                0.04f => 0.03f,
+                0.03f => 0.02f,
+                0.02f => 0.015f,
+                0.015f => 0.01f,
+                _ => currentGame.BlurLevel.Value
+            };
 
             await this._gameService.JumbleStoreBlurLevel(currentGame, blurLevel);
             image = GameService.BlurCoverImage(image, blurLevel);
@@ -309,7 +314,7 @@ public class GameBuilders
         }
 
         BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, true, currentGame.JumbleType);
-        response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, currentGame.BlurLevel);
+        response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, currentGame.BlurLevel, currentGame.JumbledArtist == null);
 
         return response;
     }
@@ -338,15 +343,16 @@ public class GameBuilders
                 return response;
             }
 
-            float blurLevel;
-            if (currentGame.BlurLevel.Value <= 0.02f)
+            var blurLevel = currentGame.BlurLevel.Value switch
             {
-                blurLevel = 0.01f;
-            }
-            else
-            {
-                blurLevel = currentGame.BlurLevel.GetValueOrDefault() - 0.02f;
-            }
+                0.10f => 0.06f,
+                0.06f => 0.04f,
+                0.04f => 0.03f,
+                0.03f => 0.02f,
+                0.02f => 0.015f,
+                0.015f => 0.01f,
+                _ => currentGame.BlurLevel.Value
+            };
 
             await this._gameService.JumbleStoreBlurLevel(currentGame, blurLevel);
             image = GameService.BlurCoverImage(image, blurLevel);
@@ -357,7 +363,7 @@ public class GameBuilders
         }
 
         BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints);
-        response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, currentGame.BlurLevel);
+        response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, currentGame.BlurLevel, currentGame.JumbledArtist == null);
 
         return response;
     }
@@ -375,10 +381,15 @@ public class GameBuilders
             return response;
         }
 
+        if (currentGame.JumbledArtist == null && currentGame.JumbleType == JumbleType.Pixelation)
+        {
+            currentGame.JumbledArtist = currentGame.CorrectAnswer;
+        }
+
         await this._gameService.JumbleReshuffleArtist(currentGame);
 
         BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, true, currentGame.JumbleType);
-        response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, currentGame.BlurLevel);
+        response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, currentGame.BlurLevel, currentGame.JumbledArtist == null);
 
         if (currentGame.JumbleType == JumbleType.Pixelation && currentGame.BlurLevel.HasValue)
         {
@@ -709,7 +720,7 @@ public class GameBuilders
         response.Stream = encoded.AsStream();
         response.FileName = $"pixelation-{game.JumbleSessionId}-{game.BlurLevel.GetValueOrDefault()}.png";
 
-        response.Components = BuildJumbleComponents(game.JumbleSessionId, game.Hints, game.BlurLevel);
+        response.Components = BuildJumbleComponents(game.JumbleSessionId, game.Hints, game.BlurLevel, game.JumbledArtist == null);
         response.GameSessionId = game.JumbleSessionId;
 
         return response;
