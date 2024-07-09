@@ -1,8 +1,6 @@
-using System;
+namespace FMBot.LastFM.Models;
 
-namespace FMBot.LastFM.Domain.Models;
-
-public class ChildAlbumLfm
+internal class ChildAlbumLfm
 {
     public string Artist { get; set; }
     public string Title { get; set; }

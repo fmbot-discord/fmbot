@@ -1,9 +1,9 @@
 using System.Text.Json.Serialization;
 using FMBot.Domain.Enums;
 
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.LastFM.Models;
 
-public class ErrorResponseLfm
+internal class ErrorResponseLfm
 {
     [JsonIgnore]
     public bool Success { get; set; }

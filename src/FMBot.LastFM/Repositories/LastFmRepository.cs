@@ -12,14 +12,16 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Api;
-using FMBot.LastFM.Domain.Models;
-using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Models;
+using FMBot.LastFM.Types;
+using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 using Tag = FMBot.Domain.Models.Tag;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
@@ -58,6 +60,7 @@ public class LastFmRepository : ILastfmRepository
             queryParams.Add("sk", sessionKey);
             authorizedCall = true;
         }
+
         if (fromUnixTimestamp != null)
         {
             queryParams.Add("from", fromUnixTimestamp.ToString());
@@ -155,7 +158,7 @@ public class LastFmRepository : ILastfmRepository
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Log.Error("LastFmRepository: Error in GetRecentTracksAsync for {lastFmUserName}", lastFmUserName, e);
             throw;
         }
     }
@@ -672,13 +675,26 @@ public class LastFmRepository : ILastfmRepository
     public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
         TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
     {
-        if (!timeSettings.UseCustomTimePeriod || !timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
+        try
         {
-            return await GetTopAlbumsAsync(lastFmUserName, timeSettings.TimePeriod, count, amountOfPages);
-        }
+            if (!timeSettings.UseCustomTimePeriod || !timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
+            {
+                return await GetTopAlbumsAsync(lastFmUserName, timeSettings.TimePeriod, count, amountOfPages);
+            }
 
-        return await GetTopAlbumsForCustomTimePeriodAsyncAsync(lastFmUserName, timeSettings.StartDateTime.Value,
-            timeSettings.EndDateTime.Value, (int)count);
+            return await GetTopAlbumsForCustomTimePeriodAsyncAsync(lastFmUserName, timeSettings.StartDateTime.Value,
+                timeSettings.EndDateTime.Value, (int)count);
+        }
+        catch (Exception e)
+        {
+            Log.Error("LastFmRepository: Error in GetTopAlbumsAsync for {lastFmUserName}", lastFmUserName, e);
+            return new Response<TopAlbumList>
+            {
+                Success = false,
+                Error = ResponseStatus.Unknown,
+                Message = ".fmbot error while deserializing Last.fm response"
+            };
+        }
     }
 
     // Top albums
@@ -705,7 +721,7 @@ public class LastFmRepository : ILastfmRepository
             topAlbums = await this._lastFmClient.User.GetTopAlbums(lastFmUserName, lastStatsTimeSpan, 1, count);
             Statistics.LastfmApiCalls.Inc();
 
-            if (topAlbums.Success)
+            if (topAlbums.Success && topAlbums.Content != null)
             {
                 albums.AddRange(topAlbums.Content);
 
@@ -825,13 +841,26 @@ public class LastFmRepository : ILastfmRepository
     public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
         TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1)
     {
-        if (!timeSettings.UseCustomTimePeriod || !timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
+        try
         {
-            return await GetTopArtistsAsync(lastFmUserName, timeSettings.TimePeriod, count, amountOfPages);
-        }
+            if (!timeSettings.UseCustomTimePeriod || !timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
+            {
+                return await GetTopArtistsAsync(lastFmUserName, timeSettings.TimePeriod, count, amountOfPages);
+            }
 
-        return await GetTopArtistsForCustomTimePeriodAsync(lastFmUserName, timeSettings.StartDateTime.Value,
-            timeSettings.EndDateTime.Value, (int)count);
+            return await GetTopArtistsForCustomTimePeriodAsync(lastFmUserName, timeSettings.StartDateTime.Value,
+                timeSettings.EndDateTime.Value, (int)count);
+        }
+        catch (Exception e)
+        {
+            Log.Error("LastFmRepository: Error in GetTopArtistsAsync for {lastFmUserName}", lastFmUserName, e);
+            return new Response<TopArtistList>
+            {
+                Success = false,
+                Error = ResponseStatus.Unknown,
+                Message = ".fmbot error while deserializing Last.fm response"
+            };
+        }
     }
 
     // Top artists
@@ -973,13 +1002,26 @@ public class LastFmRepository : ILastfmRepository
     public async Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
         TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
     {
-        if (!timeSettings.UseCustomTimePeriod || !timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
+        try
         {
-            return await GetTopTracksAsync(lastFmUserName, timeSettings.ApiParameter, count, amountOfPages);
-        }
+            if (!timeSettings.UseCustomTimePeriod || !timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
+            {
+                return await GetTopTracksAsync(lastFmUserName, timeSettings.ApiParameter, count, amountOfPages);
+            }
 
-        return await GetTopTracksForCustomTimePeriodAsyncAsync(lastFmUserName, timeSettings.StartDateTime.Value,
-            timeSettings.EndDateTime.Value, count);
+            return await GetTopTracksForCustomTimePeriodAsyncAsync(lastFmUserName, timeSettings.StartDateTime.Value,
+                timeSettings.EndDateTime.Value, count);
+        }
+        catch (Exception e)
+        {
+            Log.Error("LastFmRepository: Error in GetTopTracksAsync for {lastFmUserName}", lastFmUserName, e);
+            return new Response<TopTrackList>
+            {
+                Success = false,
+                Error = ResponseStatus.Unknown,
+                Message = ".fmbot error while deserializing Last.fm response"
+            };
+        }
     }
 
     // Top tracks

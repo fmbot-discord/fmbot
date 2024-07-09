@@ -11,8 +11,7 @@ using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Converters;
-using FMBot.LastFM.Domain.Models;
-using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -103,12 +102,15 @@ public class LastfmApi : ILastfmApi
         var jsonSerializerOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
-            Converters = { new TagsConverter(), new TrackConverter() }
+            Converters =
+            {
+                new TagsConverter(),
+                new TrackConverter(),
+                new LongToStringConverter(),
+                new GuidConverter(),
+                new BooleanConverter()
+            }
         };
-
-        jsonSerializerOptions.Converters.Add(new LongToStringConverter());
-        jsonSerializerOptions.Converters.Add(new GuidConverter());
-        jsonSerializerOptions.Converters.Add(new BooleanConverter());
 
         var stream = await httpResponse.Content.ReadAsStreamAsync();
         using var streamReader = new StreamReader(stream);
@@ -146,7 +148,7 @@ public class LastfmApi : ILastfmApi
         {
             response.Success = false;
             response.Message = "Something went wrong while deserializing the object Last.fm returned. It could be that there are no results, or that they're having issues.";
-            Log.Error("Something went wrong while deserializing the object Last.fm returned - {request} - {ex}", call, ex);
+            Log.Error("Something went wrong while deserializing the object Last.fm returned - {request} - {requestBody}", call, requestBody, ex);
 
             var errorParameters = "";
             foreach (var parameter in parameters)
@@ -166,6 +168,14 @@ public class LastfmApi : ILastfmApi
     {
         try
         {
+            if (requestBody.Contains("<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                response.Error = ResponseStatus.TemporaryError;
+                response.Message = "Last.fm said: The server encountered a temporary error and could not complete your request. Please try again in 30 seconds.";
+                return response;
+            }
+            
             var errorResponse = JsonSerializer.Deserialize<ErrorResponseLfm>(requestBody, jsonSerializerOptions);
 
             if (errorResponse != null)
@@ -176,7 +186,7 @@ public class LastfmApi : ILastfmApi
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
+            Log.Error("LastfmApi: Error while trying to check for error", ex);
         }
 
         return response;

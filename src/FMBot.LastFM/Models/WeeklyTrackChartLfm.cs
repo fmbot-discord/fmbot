@@ -1,19 +1,19 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.LastFM.Models;
 
-public class WeeklyTrackChartsResponse
+internal class WeeklyTrackChartsResponse
 {
     public WeeklyTrackChartsLfm WeeklyTrackChart { get; set; }
 }
 
-public class WeeklyTrackChartsLfm
+internal class WeeklyTrackChartsLfm
 {
     public List<WeeklyTrackChart> Track { get; set; }
 }
 
-public class WeeklyTrackChart
+internal class WeeklyTrackChart
 {
     public string Mbid { get; set; }
     public string Name { get; set; }
@@ -22,7 +22,7 @@ public class WeeklyTrackChart
     public WeeklyTrackChartArtist Artist { get; set; }
 }
 
-public class WeeklyTrackChartArtist
+internal class WeeklyTrackChartArtist
 {
     public string Mbid { get; set; }
     [JsonPropertyName("#text")]

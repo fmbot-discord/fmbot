@@ -17,7 +17,6 @@ using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Models;
 using Microsoft.Extensions.Options;
 using Serilog;
 

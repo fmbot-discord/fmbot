@@ -1,18 +1,18 @@
 using System.Collections.Generic;
 
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.LastFM.Models;
 
-public class WeeklyArtistChartsResponse
+internal class WeeklyArtistChartsResponse
 {
     public WeeklyArtistChartsLfm WeeklyArtistChart { get; set; }
 }
 
-public class WeeklyArtistChartsLfm
+internal class WeeklyArtistChartsLfm
 {
     public List<WeeklyArtistChart> Artist { get; set; }
 }
 
-public class WeeklyArtistChart
+internal class WeeklyArtistChart
 {
     public string Mbid { get; set; }
     public string Name { get; set; }

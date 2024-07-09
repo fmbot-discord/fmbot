@@ -1,11 +1,11 @@
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.LastFM.Models;
 
-public class ArtistInfoLfmResponse
+internal class ArtistInfoLfmResponse
 {
     public ArtistInfoLfm Artist { get; set; }
 }
 
-public class ArtistInfoLfm
+internal class ArtistInfoLfm
 {
     public string Name { get; set; }
     public string Mbid { get; set; }
@@ -17,14 +17,14 @@ public class ArtistInfoLfm
     public Bio Bio { get; set; }
 }
 
-public class Bio
+internal class Bio
 {
     public string Published { get; set; }
     public string Summary { get; set; }
     public string Content { get; set; }
 }
 
-public class Stats
+internal class Stats
 {
     public long? Listeners { get; set; }
     public long? Playcount { get; set; }

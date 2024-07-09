@@ -246,7 +246,7 @@ public class SmallIndexRepository
     {
         var albumResult = await this._lastFmRepository.GetTopArtistsAsync(user.UserNameLastFM, TimePeriod.AllTime, count: 1000);
 
-        if (!albumResult.Success || albumResult.Content.TopArtists.Count == 0)
+        if (!albumResult.Success || albumResult.Content?.TopArtists == null || albumResult.Content.TopArtists.Count == 0)
         {
             return new List<UserArtist>();
         }
@@ -263,7 +263,7 @@ public class SmallIndexRepository
     {
         var albumResult = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, TimePeriod.AllTime, count: 1000);
 
-        if (!albumResult.Success || albumResult.Content.TopAlbums.Count == 0)
+        if (!albumResult.Success || albumResult.Content?.TopAlbums == null || albumResult.Content.TopAlbums.Count == 0)
         {
             return new List<UserAlbum>();
         }
@@ -281,7 +281,7 @@ public class SmallIndexRepository
     {
         var trackResult = await this._lastFmRepository.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000);
 
-        if (!trackResult.Success || trackResult.Content.TopTracks.Count == 0)
+        if (!trackResult.Success || trackResult.Content?.TopTracks == null || trackResult.Content.TopTracks.Count == 0)
         {
             return new List<UserTrack>();
         }

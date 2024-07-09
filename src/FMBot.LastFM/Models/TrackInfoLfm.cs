@@ -1,11 +1,11 @@
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.LastFM.Models;
 
-public class TrackInfoLfmResponse
+internal class TrackInfoLfmResponse
 {
     public TrackInfoLfm Track { get; set; }
 }
 
-public class TrackInfoLfm
+internal class TrackInfoLfm
 {
     public string Name { get; set; }
     public string Mbid { get; set; }

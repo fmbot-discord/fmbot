@@ -1,15 +1,15 @@
 using System;
 using System.Text.Json.Serialization;
 
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.LastFM.Models;
 
-public class UserResponseLfm
+internal class UserResponseLfm
 {
     [JsonPropertyName("user")]
     public UserLfm User { get; set; }
 }
 
-public class UserLfm
+internal class UserLfm
 {
     public long Playlists { get; set; }
 
@@ -44,7 +44,7 @@ public class UserLfm
     public string Realname { get; set; }
 }
 
-public class Registered
+internal class Registered
 {
     public long Unixtime { get; set; }
 

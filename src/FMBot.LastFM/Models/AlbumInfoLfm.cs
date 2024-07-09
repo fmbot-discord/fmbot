@@ -1,13 +1,11 @@
-using System;
+namespace FMBot.LastFM.Models;
 
-namespace FMBot.LastFM.Domain.Models;
-
-public class AlbumInfoLfmResponse
+internal class AlbumInfoLfmResponse
 {
     public AlbumInfoLfm Album { get; set; }
 }
 
-public class AlbumInfoLfm
+internal class AlbumInfoLfm
 {
     public string Name { get; set; }
     public string Artist { get; set; }
@@ -22,12 +20,12 @@ public class AlbumInfoLfm
     public WikiLfm Wiki { get; set; }
 }
 
-public class TagsLfm
+internal class TagsLfm
 {
     public TagLfm[] Tag { get; set; }
 }
 
-public class TracksLfm
+internal class TracksLfm
 {
     public ChildTrack[] Track { get; set; }
 }

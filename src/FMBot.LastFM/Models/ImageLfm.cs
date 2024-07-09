@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.LastFM.Models;
 
-public class ImageLfm
+internal class ImageLfm
 {
     [JsonPropertyName("#text")]
     public string Text { get; set; }

@@ -1,15 +1,15 @@
 using System.Text.Json.Serialization;
 
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.LastFM.Models;
 
 
-public class NowPlayingLfmResponse
+internal class NowPlayingLfmResponse
 {
     [JsonPropertyName("nowplaying")]
     public NowPlayingLfm Nowplaying { get; set; }
 }
 
-public class NowPlayingLfm
+internal class NowPlayingLfm
 {
     [JsonPropertyName("artist")]
     public Artist Artist { get; set; }
@@ -28,7 +28,7 @@ public class NowPlayingLfm
 }
 
 
-public class NowPlayedAlbum
+internal class NowPlayedAlbum
 {
     [JsonPropertyName("corrected")]
     public string Corrected { get; set; }
@@ -37,7 +37,7 @@ public class NowPlayedAlbum
     public string Text { get; set; }
 }
 
-public class NowPlayedAlbumArtist
+internal class NowPlayedAlbumArtist
 {
     [JsonPropertyName("corrected")]
     public string Corrected { get; set; }
@@ -46,7 +46,7 @@ public class NowPlayedAlbumArtist
     public string Text { get; set; }
 }
 
-public class NowPlayedArtist
+internal class NowPlayedArtist
 {
     [JsonPropertyName("corrected")]
     public string Corrected { get; set; }
@@ -56,7 +56,7 @@ public class NowPlayedArtist
 }
 
 
-public class NowPlayedTrack
+internal class NowPlayedTrack
 {
     [JsonPropertyName("corrected")]
     public string Corrected { get; set; }

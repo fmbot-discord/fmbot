@@ -1,13 +1,13 @@
 using System.Text.Json.Serialization;
 
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.LastFM.Models;
 
-public class ScrobbledTrack
+internal class ScrobbledTrack
 {
     public Scrobbles Scrobbles { get; set; }
 }
 
-public class Scrobbles
+internal class Scrobbles
 {
     [JsonPropertyName("@attr")]
 
@@ -16,14 +16,14 @@ public class Scrobbles
     public Scrobble Scrobble { get; set; }
 }
 
-public class ScrobbledTrackAttr
+internal class ScrobbledTrackAttr
 {
     public long Accepted { get; set; }
 
     public long Ignored { get; set; }
 }
 
-public class Scrobble
+internal class Scrobble
 {
     public ScrobbledItem Artist { get; set; }
 
@@ -38,7 +38,7 @@ public class Scrobble
     public ScrobbledItem Track { get; set; }
 }
 
-public class ScrobbledItem
+internal class ScrobbledItem
 {
     public long Corrected { get; set; }
 
@@ -46,7 +46,7 @@ public class ScrobbledItem
     public string Text { get; set; }
 }
 
-public class IgnoredMessage
+internal class IgnoredMessage
 {
     public long Code { get; set; }
 

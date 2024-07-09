@@ -1,11 +1,11 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Models;
 
 namespace FMBot.LastFM.Converters;
 
-public class TagsConverter : JsonConverter<TagsLfm>
+internal class TagsConverter : JsonConverter<TagsLfm>
 {
     public override TagsLfm Read(ref Utf8JsonReader reader, Type typeToConvert,
         JsonSerializerOptions options)

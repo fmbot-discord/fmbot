@@ -1,11 +1,11 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Models;
 
 namespace FMBot.LastFM.Converters;
 
-public class TrackConverter : JsonConverter<TracksLfm>
+internal class TrackConverter : JsonConverter<TracksLfm>
 {
     public override TracksLfm Read(ref Utf8JsonReader reader, Type typeToConvert,
         JsonSerializerOptions options)

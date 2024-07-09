@@ -1,5 +1,4 @@
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Types;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
 

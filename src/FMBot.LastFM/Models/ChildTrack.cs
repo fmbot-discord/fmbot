@@ -1,9 +1,8 @@
-using System;
 using System.Text.Json.Serialization;
 
-namespace FMBot.LastFM.Domain.Models;
+namespace FMBot.LastFM.Models;
 
-public partial class ChildTrack
+internal class ChildTrack
 {
     public string Name { get; set; }
 
@@ -18,7 +17,7 @@ public partial class ChildTrack
 }
 
 
-public partial class ChildTrackAttr
+internal class ChildTrackAttr
 {
     public long? Rank { get; set; }
 }

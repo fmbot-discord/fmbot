@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Fergun.Interactive;
@@ -15,9 +14,6 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Repositories;
-using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using Constants = FMBot.Domain.Constants;
 

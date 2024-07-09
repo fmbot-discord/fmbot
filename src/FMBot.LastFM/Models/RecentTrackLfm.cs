@@ -1,29 +1,32 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using FMBot.LastFM.Converters;
 
+namespace FMBot.LastFM.Models;
 
-namespace FMBot.LastFM.Domain.Models;
-
-public class RecentTracksListLfmResponseModel
+internal class RecentTracksListLfmResponseModel
 {
     public RecentTracksLfmList RecentTracks { get; set; }
 }
 
-public class LovedTracksListLfmResponseModel
+internal class LovedTracksListLfmResponseModel
 {
     public RecentTracksLfmList LovedTracks { get; set; }
 }
 
-public class RecentTracksLfmList
+internal class RecentTracksLfmList
 {
     [JsonPropertyName("@attr")]
     public AttributesLfm AttributesLfm { get; set; }
 
+    [JsonPropertyName("track")]
+    [JsonConverter(typeof(TrackListConverter))]
     public List<RecentTrackLfm> Track { get; set; }
 }
 
-public class AttributesLfm
+internal class AttributesLfm
 {
     public long Page { get; set; }
 
@@ -36,7 +39,7 @@ public class AttributesLfm
     public long TotalPages { get; set; }
 }
 
-public class RecentTrackLfm
+internal class RecentTrackLfm
 {
     [JsonPropertyName("@attr")]
     public TrackAttributesLfm AttributesLfm { get; set; }
@@ -56,13 +59,13 @@ public class RecentTrackLfm
     public SmallAlbum Album { get; set; }
 }
 
-public class TrackAttributesLfm
+internal class TrackAttributesLfm
 {
     public bool Nowplaying { get; set; }
 }
 
 
-public class Date
+internal class Date
 {
     public long Uts { get; set; }
 
@@ -70,7 +73,7 @@ public class Date
     public string Text { get; set; }
 }
 
-public partial class SmallAlbum
+internal class SmallAlbum
 {
     public Guid? Mbid { get; set; }
 
@@ -78,7 +81,7 @@ public partial class SmallAlbum
     public string Text { get; set; }
 }
 
-public partial class SmallArtist
+internal class SmallArtist
 {
     public string Url { get; set; }
     public Guid? Mbid { get; set; }

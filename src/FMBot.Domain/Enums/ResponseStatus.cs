@@ -101,5 +101,10 @@ public enum ResponseStatus
     /// This API key has been rate-limited because too many requests have been made in a short period. Retry later (29)
     /// For more information on rate limits, please contact Last.FM at the partners@last.fm email address.
     /// </summary>
-    RateLimited = 29
+    RateLimited = 29,
+
+    /// <summary>
+    /// The server encountered a temporary error and could not complete your request.Please try again in 30 seconds.
+    /// </summary>
+    TemporaryError = 30
 }

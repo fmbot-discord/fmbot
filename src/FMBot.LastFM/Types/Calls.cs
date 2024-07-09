@@ -1,4 +1,4 @@
-namespace FMBot.LastFM.Domain.Types;
+namespace FMBot.LastFM.Types;
 
 public class Call
 {

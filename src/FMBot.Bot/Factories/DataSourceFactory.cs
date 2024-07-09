@@ -204,7 +204,7 @@ public class DataSourceFactory : IDataSourceFactory
 
         if (importUser != null && artist.Success && artist.Content != null)
         {
-            artist.Content.UserPlaycount = await this._playDataSourceRepository.GetArtistPlaycount(importUser, artistName);
+            artist.Content.UserPlaycount = await this._playDataSourceRepository.GetArtistPlaycount(importUser, artist.Content.ArtistName);
         }
 
         return artist;
