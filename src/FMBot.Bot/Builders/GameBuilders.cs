@@ -84,15 +84,6 @@ public class GameBuilders
         }
 
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userId, true);
-
-        if (topArtists.Count(c => c.UserPlaycount > 30) <= 6)
-        {
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.Embed.WithDescription($"Sorry, you haven't listened to enough artists yet to use this command. Please scrobble more music and try again later.");
-            response.CommandResponse = CommandResponse.NoScrobbles;
-            return response;
-        }
-
         var artist = GameService.PickArtistForJumble(topArtists, recentJumbles);
 
         if (artist.artist == null)
@@ -668,25 +659,15 @@ public class GameBuilders
         {
             response.ResponseType = ResponseType.Embed;
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-            response.Embed.WithDescription($"You've used up all your {jumbleLimit} jumbles of today. [Get supporter]({Constants.GetSupporterDiscordLink}) to play unlimited jumble games and much more.");
+            response.Embed.WithDescription($"You've used up all your {jumbleLimit} pixel jumbles of today. [Get supporter]({Constants.GetSupporterDiscordLink}) to play unlimited jumble games and much more.");
             response.Components = new ComponentBuilder()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
             response.CommandResponse = CommandResponse.SupporterRequired;
             return response;
         }
 
-        var topAlbums = await this._albumService.GetUserAllTimeTopAlbums(userId, true);
-
-        if (topAlbums.Count(c => c.UserPlaycount > 30) <= 7)
-        {
-            response.ResponseType = ResponseType.Embed;
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.Embed.WithDescription($"Sorry, you haven't listened to enough albums yet to use this command. Please scrobble more music and try again later.");
-            response.CommandResponse = CommandResponse.NoScrobbles;
-            return response;
-        }
-
         this._gameService.GameStartInProgress(context.DiscordChannel.Id);
+        var topAlbums = await this._albumService.GetUserAllTimeTopAlbums(userId, true);
         
         await this._albumService.FillMissingAlbumCovers(topAlbums);
         topAlbums = await this._censorService.RemoveNsfwAlbums(topAlbums);
