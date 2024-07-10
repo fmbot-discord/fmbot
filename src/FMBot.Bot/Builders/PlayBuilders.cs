@@ -505,7 +505,7 @@ public class PlayBuilder
                 PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, streak.TrackName);
             }
 
-            emoji = PlayService.GetEmojiForStreakCount(streak.ArtistPlaycount.GetValueOrDefault()).Trim();
+            emoji = PlayService.GetEmojiForStreakCount(streak.ArtistPlaycount.GetValueOrDefault());
         }
         else
         {

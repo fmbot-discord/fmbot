@@ -793,10 +793,11 @@ public class GameService
             AvgCorrectAnsweringTime = correctAnswers.Any()
                 ? (decimal)correctAnswers.Average(a => (a.DateAnswered - a.JumbleSession.DateStarted).TotalSeconds)
                 : 0,
-            AvgAttemptsUntilCorrect = (decimal)jumbleSessions
-                .Where(s => s.Answers.Any(a => a.DiscordUserId == discordUserId && a.Correct))
-                .Average(s => s.Answers.Count(a => a.DiscordUserId == discordUserId &&
-                                                   a.DateAnswered <= s.Answers.First(ca => ca.DiscordUserId == discordUserId && ca.Correct).DateAnswered))
+            AvgAttemptsUntilCorrect = jumbleSessions.Any(s => s.Answers.Any(a => a.DiscordUserId == discordUserId && a.Correct)) ?
+                (decimal)jumbleSessions
+                    .Where(s => s.Answers.Any(a => a.DiscordUserId == discordUserId && a.Correct))
+                    .Average(s => s.Answers.Count(a => a.DiscordUserId == discordUserId &&
+                                                       a.DateAnswered <= s.Answers.FirstOrDefault(ca => ca.DiscordUserId == discordUserId && ca.Correct)?.DateAnswered)) : 0
         };
     }
 
