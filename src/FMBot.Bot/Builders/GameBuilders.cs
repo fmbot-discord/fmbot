@@ -547,7 +547,7 @@ public class GameBuilders
                     });
                 }
             }
-            else if (messageLength >= answerLength - 5 && messageLength <= answerLength + 2)
+            else if (messageLength >= answerLength / 2 && messageLength <= answerLength + answerLength / 2)
             {
                 var levenshteinDistance =
                     GameService.GetLevenshteinDistance(currentGame.CorrectAnswer.ToLower(), commandContext.Message.Content.ToLower());
