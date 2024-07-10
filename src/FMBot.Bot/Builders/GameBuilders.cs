@@ -687,7 +687,7 @@ public class GameBuilders
         }
 
         this._gameService.GameStartInProgress(context.DiscordChannel.Id);
-
+        
         await this._albumService.FillMissingAlbumCovers(topAlbums);
         topAlbums = await this._censorService.RemoveNsfwAlbums(topAlbums);
         var album = GameService.PickAlbumForPixelation(topAlbums, recentJumbles);

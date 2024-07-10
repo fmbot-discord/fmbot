@@ -260,7 +260,7 @@ public class SupporterService
     public async Task<(string message, bool showUpgradeButton)> GetPromotionalUpdateMessage(User user, string prfx, IDiscordClient contextClient,
         ulong? guildId = null)
     {
-        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 42);
+        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 48);
         string message = null;
         var showUpgradeButton = false;
 
@@ -328,6 +328,20 @@ public class SupporterService
                         SetGuildSupporterPromoCache(guildId);
                         message =
                             $"*<:fmbot_discoveries:1145740579284713512> View recent artist discoveries with [.fmbot supporter]({Constants.GetSupporterDiscordLink}).*";
+                        showUpgradeButton = true;
+                        break;
+                    }
+                case 11:
+                    {
+                        message =
+                            $"*🎮 Play the new `.jumble` game and guess the artist together with your friends.*";
+                        showUpgradeButton = true;
+                        break;
+                    }
+                case 12:
+                    {
+                        message =
+                            $"*🎮 Play the new `.pixel` game and guess the album together with your friends.*";
                         showUpgradeButton = true;
                         break;
                     }

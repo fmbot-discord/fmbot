@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
@@ -66,7 +67,8 @@ public class GameService
 
         topArtists = topArtists
             .Where(w => !recentJumblesHashset.Contains(w.ArtistName) &&
-                        w.ArtistName.Length is > 2 and < 40)
+                        w.ArtistName.Length is > 2 and < 40 &&
+                        !w.ArtistName.StartsWith(ConfigData.Data.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
 
@@ -556,7 +558,8 @@ public class GameService
             .Replace("ø", "o")
             .Replace("å", "a")
             .Replace("Å", "A")
-            .Replace("?", "");
+            .Replace("?", "")
+            .Replace("’", "'");
 
         var stringBuilder = new StringBuilder();
         foreach (var c in normalizedString)
@@ -628,7 +631,8 @@ public class GameService
         topAlbums = topAlbums
             .Where(w => w.AlbumCoverUrl != null &&
                         !recentJumblesHashset.Contains(w.AlbumName) &&
-                        w.AlbumName.Length is > 2 and < 50)
+                        w.AlbumName.Length is > 2 and < 50 &&
+                        !w.AlbumName.StartsWith(ConfigData.Data.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
 
@@ -755,6 +759,7 @@ public class GameService
                             .Where(w => w.Answers.Any(a => a.DiscordUserId == discordUserId))
                     )
             )
+            .Where(w => w.JumbleType == jumbleType)
             .Include(i => i.Answers)
             .Include(i => i.Hints)
             .ToListAsync();
