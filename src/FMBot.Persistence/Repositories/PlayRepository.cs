@@ -299,7 +299,7 @@ public static class PlayRepository
     
     public static async Task MoveFeaturedLogs(int oldUserId, int newUserId, NpgsqlConnection connection)
     {
-        const string sql = "UPDATE public.user_featured_logs SET user_id = @newUserId " +
+        const string sql = "UPDATE public.featured_logs SET user_id = @newUserId " +
                            "WHERE user_id = @oldUserId";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
