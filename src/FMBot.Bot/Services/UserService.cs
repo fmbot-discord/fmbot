@@ -635,7 +635,8 @@ public class UserService
         bool loved,
         long totalScrobbles,
         Persistence.Domain.Models.Guild guild = null,
-        IDictionary<int, FullGuildUser> guildUsers = null)
+        IDictionary<int, FullGuildUser> guildUsers = null,
+        bool useSmallMarkdown = false)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -967,7 +968,7 @@ public class UserService
             options.Add(description.oneline);
         }
 
-        return CreateFooter(options, genres);
+        return CreateFooter(options, genres, useSmallMarkdown);
     }
 
     private static int GetAgeInYears(DateTime birthDate)
@@ -983,7 +984,7 @@ public class UserService
         return age;
     }
 
-    private static StringBuilder CreateFooter(IReadOnlyList<string> options, string genres)
+    private static StringBuilder CreateFooter(IReadOnlyList<string> options, string genres, bool useSmallMarkdown)
     {
         var footer = new StringBuilder();
 
@@ -1003,6 +1004,10 @@ public class UserService
             if ((lineLength > 38 || (lineLength > 28 && option.Length > 18)) && nextOption != null)
             {
                 footer.AppendLine();
+                if (useSmallMarkdown)
+                {
+                    footer.Append("-# ");
+                }
                 lineLength = option.Length;
                 footer.Append(option);
             }
@@ -1025,6 +1030,10 @@ public class UserService
 
         if (!genresAdded && genres != null)
         {
+            if (useSmallMarkdown)
+            {
+                footer.Append("-# ");
+            }
             footer.AppendLine(genres);
         }
 

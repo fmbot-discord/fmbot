@@ -160,14 +160,15 @@ public class PlayBuilder
             PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, currentTrack.AlbumName);
         }
 
-        var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var requesterUserTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"
             : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
         var fmText = "";
         var footerText = await this._userService.GetFooterAsync(context.ContextUser.FmFooterOptions, userSettings,
-            currentTrack.ArtistName, currentTrack.AlbumName, currentTrack.TrackName, currentTrack.Loved, totalPlaycount, guild, guildUsers);
+            currentTrack.ArtistName, currentTrack.AlbumName, currentTrack.TrackName, currentTrack.Loved, totalPlaycount, guild, guildUsers,
+            embedType == FmEmbedType.TextFull || embedType == FmEmbedType.TextMini);
 
         if (!userSettings.DifferentUser &&
             !currentTrack.NowPlaying &&
@@ -193,17 +194,24 @@ public class PlayBuilder
                 }
                 else if (previousTrack != null)
                 {
-                    fmText += $"**Current track**:\n";
+                    if (currentTrack.NowPlaying)
+                    {
+                        fmText += $"-# *{embedTitle}'s now playing*\n";
+                    }
+                    else
+                    {
+                        fmText += $"-# *{embedTitle}'s last played track*\n";
+                    }
 
                     fmText += StringService.TrackToString(currentTrack).FilterOutMentions();
 
                     fmText += $"\n" +
-                              $"**Previous track**:\n";
+                              $"-# *Previous*\n";
 
                     fmText += StringService.TrackToString(previousTrack).FilterOutMentions();
                 }
 
-                var formattedFooter = footerText.Length == 0 ? "" : $"`{footerText}`";
+                var formattedFooter = footerText.Length == 0 ? "" : $"-# {footerText}";
                 fmText += formattedFooter;
 
                 response.ResponseType = ResponseType.Text;
@@ -214,28 +222,43 @@ public class PlayBuilder
                 {
                     fmText += StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, embedType == FmEmbedType.EmbedMini);
                     response.Embed.WithDescription(fmText);
+                    
+                    string headerText;
+                    if (currentTrack.NowPlaying)
+                    {
+                        headerText = "Now playing - ";
+                    }
+                    else
+                    {
+                        headerText = embedType == FmEmbedType.EmbedMini
+                            ? "Last track for "
+                            : "Last tracks for ";
+                    }
+
+                    headerText += embedTitle;
+                    
+                    response.EmbedAuthor.WithName(headerText);
+                    response.EmbedAuthor.WithUrl(recentTracks.Content.UserUrl);
                 }
                 else if (previousTrack != null)
                 {
-                    response.Embed.AddField("Current:",
-                        StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, false));
-                    response.Embed.AddField("Previous:",
-                        StringService.TrackToLinkedString(previousTrack, context.ContextUser.RymEnabled, false));
+                    var embedFull = new StringBuilder();
+                    if (currentTrack.NowPlaying)
+                    {
+                        embedFull.AppendLine($"-# *{embedTitle}'s now playing*");
+                    }
+                    else
+                    {
+                        embedFull.AppendLine($"-# *{embedTitle}'s last played track*");
+                    }
+
+                    embedFull.AppendLine(StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, false));
+                    embedFull.AppendLine("-# *Previous*");
+                    embedFull.Append(StringService.TrackToLinkedString(previousTrack, context.ContextUser.RymEnabled, false));
+                    response.Embed.WithDescription(embedFull.ToString());
                 }
 
-                string headerText;
-                if (currentTrack.NowPlaying)
-                {
-                    headerText = "Now playing - ";
-                }
-                else
-                {
-                    headerText = embedType == FmEmbedType.EmbedMini
-                        ? "Last track for "
-                        : "Last tracks for ";
-                }
-
-                headerText += embedTitle;
+                
 
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
                 {
@@ -243,8 +266,7 @@ public class PlayBuilder
                     response.Embed.WithTimestamp(currentTrack.TimePlayed.Value);
                 }
 
-                response.EmbedAuthor.WithName(headerText);
-                response.EmbedAuthor.WithUrl(recentTracks.Content.UserUrl);
+                
 
                 if (guild != null && !userSettings.DifferentUser)
                 {
