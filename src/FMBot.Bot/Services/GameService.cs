@@ -123,6 +123,86 @@ public class GameService
         return (eligibleArtists[randomIndex].ArtistName, eligibleArtists[randomIndex].UserPlaycount);
     }
 
+    public static TopAlbum PickAlbumForPixelation(List<TopAlbum> topAlbums, List<JumbleSession> recentJumbles = null)
+    {
+        recentJumbles ??= [];
+
+        var today = DateTime.Today;
+        var recentJumblesHashset = recentJumbles
+            .Where(w => w.DateStarted.Date == today)
+            .GroupBy(g => g.CorrectAnswer)
+            .Select(s => s.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (topAlbums.Count > 250 && recentJumbles.Count > 50)
+        {
+            var recentJumbleAnswers = recentJumbles
+                .GroupBy(g => g.CorrectAnswer)
+                .Select(s => s.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            recentJumblesHashset.UnionWith(recentJumbleAnswers);
+        }
+
+        topAlbums = topAlbums
+            .Where(w => w.AlbumCoverUrl != null &&
+                        !recentJumblesHashset.Contains(w.AlbumName) &&
+                        w.AlbumName.Length is > 2 and < 50 &&
+                        !w.AlbumName.StartsWith(ConfigData.Data.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(o => o.UserPlaycount)
+            .ToList();
+
+        var multiplier = topAlbums.Count switch
+        {
+            > 5000 => 6,
+            > 2500 => 4,
+            > 1200 => 3,
+            > 500 => 2,
+            _ => 1
+        };
+
+        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-4)) switch
+        {
+            >= 75 => 1,
+            >= 40 => 2,
+            >= 12 => 5,
+            >= 4 => 15,
+            _ => 30
+        };
+
+        var finalMinPlaycount = minPlaycount * multiplier;
+        if (recentJumbles.Count(w => w.DateStarted.Date == today) >= 200)
+        {
+            finalMinPlaycount = 1;
+        }
+
+        var eligibleAlbums = topAlbums
+            .Where(w => w.UserPlaycount >= finalMinPlaycount)
+            .ToList();
+
+        Log.Information("PickAlbumForPixelation: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
+                        "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
+            topAlbums.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount);
+
+        if (eligibleAlbums.Count == 0)
+        {
+            TopAlbum fallbackAlbum = null;
+            if (topAlbums.Count > 0)
+            {
+                var fallBackIndex = RandomNumberGenerator.GetInt32(topAlbums.Count);
+                fallbackAlbum = topAlbums
+                    .Where(w => !recentJumblesHashset.Contains(w.AlbumName))
+                    .OrderByDescending(o => o.UserPlaycount)
+                    .ElementAtOrDefault(fallBackIndex);
+            }
+
+            return fallbackAlbum;
+        }
+
+        var randomIndex = RandomNumberGenerator.GetInt32(eligibleAlbums.Count);
+        return eligibleAlbums[randomIndex];
+    }
+
     public async Task<JumbleSession> StartJumbleGame(int userId, ContextModel context, JumbleType jumbleType,
                                                      string answer, CancellationTokenSource cancellationToken,
                                                      string artist, string album = null)
@@ -251,7 +331,7 @@ public class GameService
         await token.CancelAsync();
     }
 
-    public List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount, CountryInfo country = null)
+    public static List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount, CountryInfo country = null)
     {
         var hints = GetRandomArtistHints(artist, country);
         hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
@@ -267,7 +347,7 @@ public class GameService
         return hints;
     }
 
-    public List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount, CountryInfo country = null)
+    public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount, CountryInfo country = null)
     {
         var hints = GetRandomAlbumHints(album, artist, country);
         hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this album"));
@@ -605,86 +685,6 @@ public class GameService
         }
 
         return matrix[source1Length, source2Length];
-    }
-
-    public static TopAlbum PickAlbumForPixelation(List<TopAlbum> topAlbums, List<JumbleSession> recentJumbles = null)
-    {
-        recentJumbles ??= [];
-
-        var today = DateTime.Today;
-        var recentJumblesHashset = recentJumbles
-            .Where(w => w.DateStarted.Date == today)
-            .GroupBy(g => g.CorrectAnswer)
-            .Select(s => s.Key)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        if (topAlbums.Count > 250 && recentJumbles.Count > 50)
-        {
-            var recentJumbleAnswers = recentJumbles
-                .GroupBy(g => g.CorrectAnswer)
-                .Select(s => s.Key)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            recentJumblesHashset.UnionWith(recentJumbleAnswers);
-        }
-
-        topAlbums = topAlbums
-            .Where(w => w.AlbumCoverUrl != null &&
-                        !recentJumblesHashset.Contains(w.AlbumName) &&
-                        w.AlbumName.Length is > 2 and < 50 &&
-                        !w.AlbumName.StartsWith(ConfigData.Data.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(o => o.UserPlaycount)
-            .ToList();
-
-        var multiplier = topAlbums.Count switch
-        {
-            > 5000 => 6,
-            > 2500 => 4,
-            > 1200 => 3,
-            > 500 => 2,
-            _ => 1
-        };
-
-        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-4)) switch
-        {
-            >= 75 => 1,
-            >= 40 => 2,
-            >= 12 => 5,
-            >= 4 => 15,
-            _ => 30
-        };
-
-        var finalMinPlaycount = minPlaycount * multiplier;
-        if (recentJumbles.Count(w => w.DateStarted.Date == today) >= 200)
-        {
-            finalMinPlaycount = 1;
-        }
-
-        var eligibleAlbums = topAlbums
-            .Where(w => w.UserPlaycount >= finalMinPlaycount)
-            .ToList();
-
-        Log.Information("PickAlbumForPixelation: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
-                        "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
-            topAlbums.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount);
-
-        if (eligibleAlbums.Count == 0)
-        {
-            TopAlbum fallbackAlbum = null;
-            if (topAlbums.Count > 0)
-            {
-                var fallBackIndex = RandomNumberGenerator.GetInt32(topAlbums.Count);
-                fallbackAlbum = topAlbums
-                    .Where(w => !recentJumblesHashset.Contains(w.AlbumName))
-                    .OrderByDescending(o => o.UserPlaycount)
-                    .ElementAtOrDefault(fallBackIndex);
-            }
-
-            return fallbackAlbum;
-        }
-
-        var randomIndex = RandomNumberGenerator.GetInt32(eligibleAlbums.Count);
-        return eligibleAlbums[randomIndex];
     }
 
     public async Task<SKBitmap> GetSkImage(string url, string albumName, string artistName, int sessionId)

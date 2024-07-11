@@ -481,9 +481,16 @@ public static class StringExtensions
     public static string RemoveEditionSuffix(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
+        {
             return input;
+        }
 
         const string pattern = @"\s*\(((?:[^)]+\s+)?(edition|version|remastered|remaster|remix|mix))\)\s*$";
-        return Regex.Replace(input, pattern, "", RegexOptions.IgnoreCase).TrimEnd();
+        input = Regex.Replace(input, pattern, "", RegexOptions.IgnoreCase).TrimEnd();
+
+        const string kpopPattern = @"\s*-\s*(The \d+(st|nd|rd|th) (Mini )?Album( Repackage)?)\s*$";
+        input = Regex.Replace(input, kpopPattern, "", RegexOptions.IgnoreCase);
+
+        return input.Trim();
     }
 }

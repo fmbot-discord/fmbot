@@ -111,7 +111,7 @@ public class GameBuilders
             artistCountry = this._countryService.GetValidCountry(databaseArtist.CountryCode);
         }
 
-        var hints = this._gameService.GetJumbleArtistHints(databaseArtist, artist.userPlaycount, artistCountry);
+        var hints = GameService.GetJumbleArtistHints(databaseArtist, artist.userPlaycount, artistCountry);
         await this._gameService.JumbleStoreShowedHints(game, hints);
 
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints);
@@ -369,11 +369,6 @@ public class GameBuilders
         if (currentGame == null || currentGame.DateEnded.HasValue)
         {
             return response;
-        }
-
-        if (currentGame.JumbledArtist == null && currentGame.JumbleType == JumbleType.Pixelation)
-        {
-            currentGame.JumbledArtist = currentGame.CorrectAnswer;
         }
 
         await this._gameService.JumbleReshuffleArtist(currentGame);
@@ -699,7 +694,7 @@ public class GameBuilders
             artistCountry = this._countryService.GetValidCountry(databaseArtist.CountryCode);
         }
 
-        var hints = this._gameService.GetJumbleAlbumHints(databaseAlbum, databaseArtist, album.UserPlaycount.GetValueOrDefault(), artistCountry);
+        var hints = GameService.GetJumbleAlbumHints(databaseAlbum, databaseArtist, album.UserPlaycount.GetValueOrDefault(), artistCountry);
         await this._gameService.JumbleStoreShowedHints(game, hints);
 
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints, jumbleType: JumbleType.Pixelation);
