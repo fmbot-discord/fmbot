@@ -403,6 +403,12 @@ public class GameService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         game.JumbledArtist = JumbleWords(game.CorrectAnswer).ToUpper();
+
+        if (game.JumbledArtist.Equals(game.CorrectAnswer, StringComparison.OrdinalIgnoreCase))
+        {
+            game.JumbledArtist = JumbleWords(game.JumbledArtist).ToUpper();
+        }
+
         game.Reshuffles++;
 
         db.Update(game);

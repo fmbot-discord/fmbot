@@ -724,7 +724,7 @@ public class PlayService
 
     public async Task<DateTime?> GetAlbumFirstPlayDate(int userId, string artistName, string albumName)
     {
-        
+
         var plays = await this.GetAllUserPlays(userId);
         return plays
             .OrderBy(o => o.TimePlayed)
@@ -855,7 +855,7 @@ public class PlayService
 
         return plays;
     }
-    
+
     public async Task<ICollection<UserPlay>> GetPlaysWithDataSource(int userId, DataSource dataSource)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -910,7 +910,7 @@ public class PlayService
             PlaySource = userPlay.PlaySource
         };
     }
-    
+
     public async Task MoveData(int oldUserId, int newUserId)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

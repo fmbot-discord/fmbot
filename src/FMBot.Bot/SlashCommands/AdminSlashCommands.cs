@@ -574,20 +574,27 @@ public class AdminSlashCommands : InteractionModuleBase
         await RespondAsync("Moving data...", ephemeral: true);
         await this.Context.DisableInteractionButtons();
 
-        await this._playService.MoveData(int.Parse(oldUserId), int.Parse(newUserId));
-
-        await FollowupAsync("Moving data completed.", ephemeral: true);
-
-        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
-
-        if (message == null)
+        try
         {
-            return;
-        }
+            await this._playService.MoveData(int.Parse(oldUserId), int.Parse(newUserId));
 
-        var components =
-            new ComponentBuilder().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
-        await message.ModifyAsync(m => m.Components = components.Build());
+            await FollowupAsync("Moving data completed.", ephemeral: true);
+
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+            if (message == null)
+            {
+                return;
+            }
+
+            var components =
+                new ComponentBuilder().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1", url: null, disabled: true, style: ButtonStyle.Danger);
+            await message.ModifyAsync(m => m.Components = components.Build());
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [ComponentInteraction($"admin-delete-user-*")]
