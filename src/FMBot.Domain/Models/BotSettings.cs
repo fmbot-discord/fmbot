@@ -140,6 +140,8 @@ public class GoogleConfig
     public string ApiKey { get; set; }
 
     public string InvidiousUrl { get; set; }
+    
+    public string InvidiousBackupUrl { get; set; }
 }
 
 public class BotListConfig
