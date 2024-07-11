@@ -966,7 +966,7 @@ public class AlbumBuilders
         }
 
         var reply =
-            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has `{albumSearch.Album.UserPlaycount}` {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} " +
+            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has **{albumSearch.Album.UserPlaycount}** {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} " +
             $"for **{StringExtensions.Sanitize(albumSearch.Album.AlbumName)}** by **{StringExtensions.Sanitize(albumSearch.Album.ArtistName)}**";
 
         if (albumSearch.Album.UserPlaycount.HasValue && !userSettings.DifferentUser)
@@ -981,7 +981,7 @@ public class AlbumBuilders
                 await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
             if (playsLastWeek != 0)
             {
-                reply += $" (`{playsLastWeek}` last week)";
+                reply += $"\n-# *{playsLastWeek} {StringExtensions.GetPlaysString(playsLastWeek)} last week*";
             }
         }
 

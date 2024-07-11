@@ -131,7 +131,7 @@ public class SpotifyCommands : BaseCommandModule
                 var rnd = new Random();
                 if (rnd.Next(0, 2) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "spotify"))
                 {
-                    response.Text += $"\n*Tip: Search for other songs by simply adding the searchvalue behind {prfx}spotify.*";
+                    response.Text += $"\n-# *Tip: Search for other songs by simply adding the searchvalue behind {prfx}spotify.*";
                     response.HintShown = true;
                 }
 
@@ -220,7 +220,7 @@ public class SpotifyCommands : BaseCommandModule
                 var rnd = new Random();
                 if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "spotifyalbum"))
                 {
-                    response.Text += $"\n*Tip: Search for other albums by simply adding the searchvalue behind `{prfx}spotifyalbum` (or `.fmspab`).*";
+                    response.Text += $"\n-# *Tip: Search for other albums by simply adding the searchvalue behind `{prfx}spotifyalbum` (or `.fmspab`).*";
                     response.HintShown = true;
                 }
 
@@ -311,7 +311,7 @@ public class SpotifyCommands : BaseCommandModule
                 var rnd = new Random();
                 if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "spotifyartist"))
                 {
-                    response.Text += $"\n*Tip: Search for other artists by simply adding the searchvalue behind `{prfx}spotifyartist` (or `{prfx}spa`).*";
+                    response.Text += $"\n-# *Tip: Search for other artists by simply adding the searchvalue behind `{prfx}spotifyartist` (or `{prfx}spa`).*";
                     response.HintShown = true;
                 }
 

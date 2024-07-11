@@ -679,7 +679,7 @@ public class TrackBuilders
         }
 
         var reply =
-            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has `{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} " +
+            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has **{trackSearch.Track.UserPlaycount}** {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} " +
             $"for **{StringExtensions.Sanitize(trackSearch.Track.TrackName)}** by **{StringExtensions.Sanitize(trackSearch.Track.ArtistName)}**";
 
         if (trackSearch.Track.UserPlaycount.HasValue && !userSettings.DifferentUser)
@@ -694,7 +694,7 @@ public class TrackBuilders
                 await this._playService.GetWeekTrackPlaycountAsync(userSettings.UserId, trackSearch.Track.TrackName, trackSearch.Track.ArtistName);
             if (playsLastWeek != 0)
             {
-                reply += $" (`{playsLastWeek}` last week)";
+                reply += $"\n-# *{playsLastWeek} {StringExtensions.GetPlaysString(playsLastWeek)} last week*";
             }
         }
 

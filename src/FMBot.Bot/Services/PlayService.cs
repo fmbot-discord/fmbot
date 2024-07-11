@@ -272,8 +272,8 @@ public class PlayService
     {
         var plays = await GetWeekPlays(userId);
 
-        return plays.Count(t => t.TrackName.ToLower() == trackName.ToLower() &&
-                                t.ArtistName.ToLower() == artistName.ToLower());
+        return plays.Count(t => t.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase) &&
+                                t.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase));
     }
 
     public async Task<int> GetWeekAlbumPlaycountAsync(int userId, string albumName, string artistName)

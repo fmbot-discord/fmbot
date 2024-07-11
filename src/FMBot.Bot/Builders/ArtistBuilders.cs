@@ -437,6 +437,7 @@ public class ArtistBuilders
         }
 
         var description = new StringBuilder();
+        description.Append("-# *");
         if (user.UserType != UserType.User && artistSearch.Artist.UserPlaycount > 0)
         {
             var firstPlay = await this._playService.GetArtistFirstPlayDate(user.UserId, artistSearch.Artist.ArtistName);
@@ -444,7 +445,7 @@ public class ArtistBuilders
             {
                 var firstListenValue = ((DateTimeOffset)firstPlay).ToUnixTimeSeconds();
 
-                description.AppendLine($"Discovered on: <t:{firstListenValue}:D>");
+                description.Append($"Discovered on: <t:{firstListenValue}:D> — ");
             }
         }
         else
@@ -453,27 +454,28 @@ public class ArtistBuilders
             if (randomHintNumber == 1 && this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
-                description.AppendLine($"*[Supporters]({Constants.GetSupporterDiscordLink}) can see artist discovery dates.*");
+                description.Append($"*[Supporters]({Constants.GetSupporterDiscordLink}) can see artist discovery dates.*");
             }
         }
 
         if (artistSearch.Artist.UserPlaycount > 0)
         {
             description.Append(
-                $"`{artistSearch.Artist.UserPlaycount}` {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} on this artist");
+                $"{artistSearch.Artist.UserPlaycount} {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} on this artist");
 
             var playsLastWeek =
                 await this._playService.GetArtistPlaycountForTimePeriodAsync(userSettings.UserId, artistSearch.Artist.ArtistName);
             if (playsLastWeek != 0)
             {
-                description.Append(
-                    $" - `{playsLastWeek}` last week");
+                description.Append($" — {playsLastWeek} {StringExtensions.GetPlaysString(playsLastWeek)} last week");
             }
         }
         else
         {
-            description.Append("No plays on this artist yet.");
+            description.Append("No plays on this artist yet");
         }
+
+        description.Append("*");
 
         response.Embed.WithDescription(description.ToString());
 
@@ -1240,7 +1242,7 @@ public class ArtistBuilders
 
         var reply =
             $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has " +
-            $"`{artistSearch.Artist.UserPlaycount}` {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} for " +
+            $"**{artistSearch.Artist.UserPlaycount}** {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} for " +
             $"**{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}**";
 
         if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
@@ -1249,7 +1251,7 @@ public class ArtistBuilders
                 await this._playService.GetArtistPlaycountForTimePeriodAsync(userSettings.UserId, artistSearch.Artist.ArtistName);
             if (playsLastWeek != 0)
             {
-                reply += $" (`{playsLastWeek}` last week)";
+                reply += $"\n-# *{playsLastWeek} {StringExtensions.GetPlaysString(playsLastWeek)} last week*";
             }
         }
 

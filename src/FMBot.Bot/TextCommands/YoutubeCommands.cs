@@ -135,20 +135,21 @@ public class YoutubeCommands : BaseCommandModule
                     {
                         response.Text += $"\n<https://youtube.com/watch?v={youtubeResult.VideoId}>" +
                                          $"\n`{youtubeResult.Title}`" +
-                                         $"\n*Embed disabled because video might not be SFW.*";
+                                         $"\n" +
+                                         $"-# *Embed disabled because video might not be SFW.*";
                     }
                 }
                 else
                 {
                     response.Text += $"\n<https://youtube.com/watch?v={youtubeResult.VideoId}>" +
                                      $"\n`{youtubeResult.Title}`" +
-                                     $"\n*Embed disabled because user that requested link is not allowed to embed links.*";
+                                     $"\n-# *Embed disabled because user that requested link is not allowed to embed links.*";
                 }
 
                 var rnd = new Random();
                 if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "youtube"))
                 {
-                    response.Text += $"\n*Tip: Search for other songs or videos by simply adding the searchvalue behind {prfx}youtube.*";
+                    response.Text += $"\n-# *Tip: Search for other songs or videos by simply adding the searchvalue behind {prfx}youtube.*";
                     response.HintShown = true;
                 }
 

@@ -106,7 +106,7 @@ public class AppleMusicCommands : BaseCommandModule
                 var rnd = new Random();
                 if (rnd.Next(0, 8) == 1 && string.IsNullOrWhiteSpace(searchValue) && !await this._userService.HintShownBefore(userSettings.UserId, "applemusic"))
                 {
-                    response.Text += $"\n*Tip: Search for other songs by simply adding the searchvalue behind {prfx}applemusic.*";
+                    response.Text += $"\n-# *Tip: Search for other songs by simply adding the searchvalue behind {prfx}applemusic.*";
                     response.HintShown = true;
                 }
 

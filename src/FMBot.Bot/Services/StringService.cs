@@ -55,6 +55,8 @@ public static class StringService
         var description = new StringBuilder();
 
         description.AppendLine($"**[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 200))}]({track.TrackUrl})** by **{StringExtensions.Sanitize(track.ArtistName)}**");
+        
+        description.Append("-# ");
 
         if (!track.TimePlayed.HasValue || track.NowPlaying)
         {
@@ -82,6 +84,8 @@ public static class StringService
 
         if (!string.IsNullOrWhiteSpace(track.AlbumName))
         {
+            description.Append("*");
+
             if (rymEnabled == true)
             {
                 var searchTerm = track.AlbumName.Replace(" - Single", "");
@@ -97,17 +101,19 @@ public static class StringService
 
                 if (url.Length < 180)
                 {
-                    description.Append($"*[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 160))}]({url})*");
+                    description.Append($"[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 160))}]({url})");
                 }
                 else
                 {
-                    description.Append($"*{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}*");
+                    description.Append($"{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}");
                 }
             }
             else
             {
-                description.Append($"*{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}*");
+                description.Append($"{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}");
             }
+
+            description.Append("*");
         }
 
         description.AppendLine();

@@ -764,7 +764,7 @@ public class PlayBuilder
                     $"<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D> - " +
                     $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} - " +
                     $"{day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)}",
-                    $"{genreString}\n" +
+                    $"-# *{genreString}*\n" +
                     $"{day.TopArtist}\n" +
                     $"{day.TopAlbum}\n" +
                     $"{day.TopTrack}\n"
