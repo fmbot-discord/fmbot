@@ -84,42 +84,49 @@ public class GameSlashCommands : InteractionModuleBase
     [ComponentInteraction($"{InteractionConstants.Game.JumblePlayAgain}-*")]
     public async Task JumblePlayAgain(string jumbleType)
     {
-        await this.Context.DisableInteractionButtons();
-        var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
-
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var context = new ContextModel(this.Context, contextUser);
-
-        var cancellationTokenSource = new CancellationTokenSource();
-
-        ResponseModel response;
-        if (jumbleTypeEnum == JumbleType.Artist)
+        try
         {
-            response = await this._gameBuilders.StartArtistJumble(context, contextUser.UserId, cancellationTokenSource);
-        }
-        else
-        {
-            response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
-        }
+            await this.Context.DisableInteractionButtons();
+            var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
 
-        await this.Context.SendResponse(this.Interactivity, response, ephemeral: response.CommandResponse != CommandResponse.Ok);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var context = new ContextModel(this.Context, contextUser);
 
-        if (response.CommandResponse == CommandResponse.Ok)
-        {
-            var followUpResponse = await this.Context.Interaction.GetOriginalResponseAsync();
+            var cancellationTokenSource = new CancellationTokenSource();
 
-            if (followUpResponse?.Id != null && response.GameSessionId.HasValue)
+            ResponseModel response;
+            if (jumbleTypeEnum == JumbleType.Artist)
             {
-                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, followUpResponse.Id);
-                await JumbleTimeExpired(context, followUpResponse.Id, cancellationTokenSource.Token,
-                    response.GameSessionId.Value, GameService.JumbleSecondsToGuess);
+                response = await this._gameBuilders.StartArtistJumble(context, contextUser.UserId, cancellationTokenSource);
+            }
+            else
+            {
+                response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
+            }
+
+            await this.Context.SendResponse(this.Interactivity, response, ephemeral: response.CommandResponse != CommandResponse.Ok);
+            this.Context.LogCommandUsed(response.CommandResponse);
+
+            if (response.CommandResponse == CommandResponse.Ok)
+            {
+                var followUpResponse = await this.Context.Interaction.GetOriginalResponseAsync();
+
+                if (followUpResponse?.Id != null && response.GameSessionId.HasValue)
+                {
+                    await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, followUpResponse.Id);
+                    await JumbleTimeExpired(context, followUpResponse.Id, cancellationTokenSource.Token,
+                        response.GameSessionId.Value, GameService.JumbleSecondsToGuess);
+                }
+            }
+            else if (response.CommandResponse == CommandResponse.SupporterRequired ||
+                     response.CommandResponse == CommandResponse.NotFound)
+            {
+                await this.Context.EnableInteractionButtons();
             }
         }
-        else if (response.CommandResponse == CommandResponse.SupporterRequired ||
-                 response.CommandResponse == CommandResponse.NotFound)
+        catch (Exception e)
         {
-            await this.Context.EnableInteractionButtons();
+            await this.Context.HandleCommandException(e);
         }
     }
 

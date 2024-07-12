@@ -95,7 +95,21 @@ public static class InteractionContextExtensions
                 await context.Interaction.RespondAsync(response.Text, allowedMentions: AllowedMentions.None, ephemeral: ephemeral, components: response.Components?.Build());
                 break;
             case ResponseType.Embed:
-                await context.Interaction.RespondAsync(null, new[] { response.Embed.Build() }, ephemeral: ephemeral, components: response.Components?.Build());
+                await context.Interaction.RespondAsync(null, new[] { response.Embed.Build() },
+                    ephemeral: ephemeral, components: response.Components?.Build());
+                break;
+            case ResponseType.ImageWithEmbed:
+                var imageEmbedFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
+                await context.Interaction.RespondWithFileAsync(response.Stream,
+                    (response.Spoiler
+                        ? "SPOILER_"
+                        : "") +
+                    imageEmbedFilename +
+                    ".png",
+                    null,
+                    new[] { response.Embed?.Build() },
+                    ephemeral: ephemeral,
+                    components: response.Components?.Build());
                 break;
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
@@ -148,7 +162,7 @@ public static class InteractionContextExtensions
                     imageEmbedFilename +
                     ".png",
                     null,
-                    new[] { response.Embed.Build() },
+                    new[] { response.Embed?.Build() },
                     ephemeral: ephemeral,
                     components: response.Components?.Build());
 
