@@ -626,10 +626,11 @@ public class GameService
 
     public static bool AnswerIsRight(JumbleSession game, string messageContent)
     {
-        var cleanedAnswer = CleanString(messageContent);
-        var cleanedArtist = CleanString(game.CorrectAnswer);
+        var userAnswer = CleanString(messageContent);
+        var correctAnswer = CleanString(game.CorrectAnswer);
 
-        return cleanedArtist.Equals(cleanedAnswer, StringComparison.OrdinalIgnoreCase);
+        return userAnswer.Contains(correctAnswer, StringComparison.OrdinalIgnoreCase) ||
+               correctAnswer.Equals(userAnswer, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string CleanString(string input)

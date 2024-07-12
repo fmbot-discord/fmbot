@@ -586,93 +586,98 @@ public class GameBuilders
             {
                 return;
             }
-
-            var answerIsRight = GameService.AnswerIsRight(currentGame, commandContext.Message.Content);
+            
             var messageLength = commandContext.Message.Content.Length;
             var answerLength = currentGame.CorrectAnswer.Length;
-
-            if (answerIsRight)
+            
+            if (messageLength >= answerLength / 2 &&
+                messageLength <= Math.Min(answerLength + answerLength / 2, answerLength + 15))
             {
+                var answerIsRight = GameService.AnswerIsRight(currentGame, commandContext.Message.Content);
 
-                _ = Task.Run(() => commandContext.Message.AddReactionAsync(new Emoji("✅")));
-
-                _ = Task.Run(() => this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, true));
-
-                _ = Task.Run(() => this._gameService.JumbleEndSession(currentGame));
-
-                var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
-
-                var separateResponse = new EmbedBuilder();
-                separateResponse.WithDescription(
-                    currentGame.JumbleType == JumbleType.Artist ?
-                    $"**{userTitle}** got it! It was `{currentGame.CorrectAnswer}`" :
-                    $"**{userTitle}** got it! It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
-                var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
-                separateResponse.WithFooter($"Answered in {timeTaken.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}s");
-                separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
-                var components = new ComponentBuilder().WithButton("Play again",
-                    $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
-                    ButtonStyle.Secondary);
-                if (context.DiscordChannel is IMessageChannel msgChannel)
+                if (answerIsRight)
                 {
-                    _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build(), components: components.Build()));
-                }
 
-                if (currentGame.DiscordResponseId.HasValue)
-                {
-                    BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false, currentGame.JumbleType);
-                    response.Components = null;
-                    response.Embed.WithColor(DiscordConstants.SpotifyColorGreen);
+                    _ = Task.Run(() => commandContext.Message.AddReactionAsync(new Emoji("✅")));
 
-                    var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
-                    if (image != null)
+                    _ = Task.Run(() => this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, true));
+
+                    _ = Task.Run(() => this._gameService.JumbleEndSession(currentGame));
+
+                    var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
+
+                    var separateResponse = new EmbedBuilder();
+                    separateResponse.WithDescription(
+                        currentGame.JumbleType == JumbleType.Artist ?
+                        $"**{userTitle}** got it! It was `{currentGame.CorrectAnswer}`" :
+                        $"**{userTitle}** got it! It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
+                    var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
+                    separateResponse.WithFooter($"Answered in {timeTaken.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}s");
+                    separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
+                    var components = new ComponentBuilder().WithButton("Play again",
+                        $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
+                        ButtonStyle.Secondary);
+                    if (context.DiscordChannel is IMessageChannel msgChannel)
                     {
-                        var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
-                        response.Stream = encoded.AsStream();
-                        response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
+                        _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build(), components: components.Build()));
                     }
 
-                    var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
-                    if (msg is not IUserMessage message)
+                    if (currentGame.DiscordResponseId.HasValue)
                     {
-                        return;
-                    }
+                        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, false, currentGame.JumbleType);
+                        response.Components = null;
+                        response.Embed.WithColor(DiscordConstants.SpotifyColorGreen);
 
-                    if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
-                    {
-                        await this._userService.UpdateInteractionContext(contextId, new ReferencedMusic
+                        var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
+                        if (image != null)
                         {
-                            Artist = currentGame.ArtistName,
-                            Album = currentGame.AlbumName
+                            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+                            response.Stream = encoded.AsStream();
+                            response.FileName = $"pixelation-{currentGame.JumbleSessionId}.png";
+                        }
+
+                        var msg = await commandContext.Channel.GetMessageAsync(currentGame.DiscordResponseId.Value);
+                        if (msg is not IUserMessage message)
+                        {
+                            return;
+                        }
+
+                        if (PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
+                        {
+                            await this._userService.UpdateInteractionContext(contextId, new ReferencedMusic
+                            {
+                                Artist = currentGame.ArtistName,
+                                Album = currentGame.AlbumName
+                            });
+                        }
+
+                        await message.ModifyAsync(m =>
+                        {
+                            m.Components = null;
+                            m.Embed = response.Embed.Build();
+                            m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                            {
+                            new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}.png" : $"{response.FileName}.png")
+                            }) : null;
                         });
                     }
-
-                    await message.ModifyAsync(m =>
-                    {
-                        m.Components = null;
-                        m.Embed = response.Embed.Build();
-                        m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
-                        {
-                            new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}.png" : $"{response.FileName}.png")
-                        }) : null;
-                    });
-                }
-            }
-            else if (messageLength >= answerLength / 2 && messageLength <= answerLength + answerLength / 2)
-            {
-                var levenshteinDistance =
-                    GameService.GetLevenshteinDistance(currentGame.CorrectAnswer.ToLower(), commandContext.Message.Content.ToLower());
-
-                if (levenshteinDistance == 1)
-                {
-                    await commandContext.Message.AddReactionAsync(new Emoji("🤏"));
                 }
                 else
                 {
-                    await commandContext.Message.AddReactionAsync(new Emoji("❌"));
-                }
+                    var levenshteinDistance =
+                        GameService.GetLevenshteinDistance(currentGame.CorrectAnswer.ToLower(), commandContext.Message.Content.ToLower());
 
-                await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, false);
+                    if (levenshteinDistance == 1)
+                    {
+                        await commandContext.Message.AddReactionAsync(new Emoji("🤏"));
+                    }
+                    else
+                    {
+                        await commandContext.Message.AddReactionAsync(new Emoji("❌"));
+                    }
+
+                    await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, false);
+                }
             }
         }
         catch (Exception e)

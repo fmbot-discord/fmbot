@@ -86,7 +86,16 @@ public class GameSlashCommands : InteractionModuleBase
     {
         try
         {
-            await this.Context.DisableInteractionButtons();
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            if (message == null)
+            {
+                return;
+            }
+
+            var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
+            var components = new ComponentBuilder().WithButton($"{name} is playing again!", customId: "1", url: null, disabled: true, style: ButtonStyle.Secondary);
+            await message.ModifyAsync(m => m.Components = components.Build());
+
             var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -121,8 +130,13 @@ public class GameSlashCommands : InteractionModuleBase
             else if (response.CommandResponse == CommandResponse.SupporterRequired ||
                      response.CommandResponse == CommandResponse.NotFound)
             {
-                await this.Context.EnableInteractionButtons();
+                components =
+                    new ComponentBuilder().WithButton($"Play again", customId: $"{InteractionConstants.Game.JumblePlayAgain}-{jumbleType}", style: ButtonStyle.Secondary);
+                await message.ModifyAsync(m => m.Components = components.Build());
             }
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch (Exception e)
         {
