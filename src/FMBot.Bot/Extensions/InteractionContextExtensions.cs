@@ -232,6 +232,31 @@ public static class InteractionContextExtensions
 
         await message.ModifyAsync(m => m.Components = newComponents.Build());
     }
+    
+    public static async Task EnableInteractionButtons(this IInteractionContext context)
+    {
+        var message = (context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var newComponents = new ComponentBuilder();
+        foreach (var actionRowComponent in message.Components)
+        {
+            foreach (var component in actionRowComponent.Components)
+            {
+                if (component is ButtonComponent buttonComponent)
+                {
+                    newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                        buttonComponent.Emote, buttonComponent.Url);
+                }
+            }
+        }
+
+        await message.ModifyAsync(m => m.Components = newComponents.Build());
+    }
 
     public static async Task UpdateMessageEmbed(this IInteractionContext context, ResponseModel response, string messageId)
     {

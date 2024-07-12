@@ -65,7 +65,7 @@ public class GameCommands : BaseCommandModule
             }
 
             var cancellationTokenSource = new CancellationTokenSource();
-            var response = await this._gameBuilders.StartJumbleFirstWins(context, contextUser.UserId, cancellationTokenSource);
+            var response = await this._gameBuilders.StartArtistJumble(context, contextUser.UserId, cancellationTokenSource);
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
@@ -155,7 +155,7 @@ public class GameCommands : BaseCommandModule
             }
             
             var cancellationTokenSource = new CancellationTokenSource();
-            var response = await this._gameBuilders.StartPixelation(context, contextUser.UserId, cancellationTokenSource);
+            var response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {

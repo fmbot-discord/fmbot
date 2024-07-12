@@ -168,11 +168,10 @@ public static class InteractionConstants
 
     public static class Game
     {
-        public const string StartJumbleFirstWins = "jumble-firstwins";
-        public const string StartJumbleGroup = "jumble-group";
         public const string AddJumbleHint = "jumble-addhint";
         public const string JumbleUnblur = "jumble-unblur";
         public const string JumbleGiveUp = "jumble-giveup";
         public const string JumbleReshuffle = "jumble-reshuffle";
+        public const string JumblePlayAgain = "jumble-playagain";
     }
 }
