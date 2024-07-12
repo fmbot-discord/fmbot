@@ -5,6 +5,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -82,6 +83,7 @@ public class GameSlashCommands : InteractionModuleBase
     }
 
     [ComponentInteraction($"{InteractionConstants.Game.JumblePlayAgain}-*")]
+    [UsernameSetRequired]
     public async Task JumblePlayAgain(string jumbleType)
     {
         try
