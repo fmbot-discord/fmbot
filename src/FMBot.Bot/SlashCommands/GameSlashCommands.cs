@@ -88,16 +88,8 @@ public class GameSlashCommands : InteractionModuleBase
     {
         try
         {
-            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
-            if (message == null)
-            {
-                return;
-            }
-
-            var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
-            var components = new ComponentBuilder().WithButton($"{name} is playing again!", customId: "1", url: null, disabled: true, style: ButtonStyle.Secondary);
-            await message.ModifyAsync(m => m.Components = components.Build());
-
+            await this.Context.DisableInteractionButtons();
+            
             var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -120,6 +112,16 @@ public class GameSlashCommands : InteractionModuleBase
 
             if (response.CommandResponse == CommandResponse.Ok)
             {
+                var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+                if (message == null)
+                {
+                    return;
+                }
+
+                var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
+                var components = new ComponentBuilder().WithButton($"{name} is playing again!", customId: "1", url: null, disabled: true, style: ButtonStyle.Secondary);
+                _ = Task.Run(() => message.ModifyAsync(m => m.Components = components.Build()));
+
                 var followUpResponse = await this.Context.Interaction.GetOriginalResponseAsync();
 
                 if (followUpResponse?.Id != null && response.GameSessionId.HasValue)
@@ -129,12 +131,9 @@ public class GameSlashCommands : InteractionModuleBase
                         response.GameSessionId.Value, GameService.JumbleSecondsToGuess);
                 }
             }
-            else if (response.CommandResponse == CommandResponse.SupporterRequired ||
-                     response.CommandResponse == CommandResponse.NotFound)
+            else if (response.CommandResponse != CommandResponse.Cooldown)
             {
-                components =
-                    new ComponentBuilder().WithButton($"Play again", customId: $"{InteractionConstants.Game.JumblePlayAgain}-{jumbleType}", style: ButtonStyle.Secondary);
-                await message.ModifyAsync(m => m.Components = components.Build());
+                await this.Context.EnableInteractionButtons();
             }
         }
         catch (OperationCanceledException)
