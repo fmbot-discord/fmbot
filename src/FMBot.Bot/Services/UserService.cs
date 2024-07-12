@@ -991,7 +991,15 @@ public class UserService
         var genresAdded = false;
         if (genres != null && genres.Length <= 48 && options.Count > 2)
         {
+            if (useSmallMarkdown)
+            {
+                footer.Append("-# ");
+            }
             footer.AppendLine(genres);
+            if (useSmallMarkdown)
+            {
+                footer.Append("-# ");
+            }
             genresAdded = true;
         }
 

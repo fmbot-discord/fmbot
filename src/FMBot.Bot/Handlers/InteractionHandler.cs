@@ -139,6 +139,8 @@ public class InteractionHandler
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
         Statistics.UserCommandsExecuted.Inc();
+
+        _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
     }
 
     private async Task MessageCommandExecuted(SocketInteraction socketInteraction)
@@ -168,6 +170,8 @@ public class InteractionHandler
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
         Statistics.MessageCommandsExecuted.Inc();
+
+        _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
     }
 
     private async Task AutoCompleteExecuted(SocketInteraction socketInteraction)
@@ -223,6 +227,8 @@ public class InteractionHandler
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
         Statistics.ButtonExecuted.Inc();
+
+        _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
     }
 
     private async Task<bool> CheckAttributes(ShardedInteractionContext context, IReadOnlyCollection<Attribute> attributes)

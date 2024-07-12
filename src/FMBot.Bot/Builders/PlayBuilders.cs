@@ -160,7 +160,7 @@ public class PlayBuilder
             PublicProperties.UsedCommandsAlbums.TryAdd(context.InteractionId, currentTrack.AlbumName);
         }
 
-        var requesterUserTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
+        var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"
             : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
@@ -196,22 +196,22 @@ public class PlayBuilder
                 {
                     if (currentTrack.NowPlaying)
                     {
-                        fmText += $"-# *{embedTitle}'s now playing*\n";
+                        fmText += $"*{embedTitle}'s now playing:*\n";
                     }
                     else
                     {
-                        fmText += $"-# *{embedTitle}'s last played track*\n";
+                        fmText += $"*{embedTitle}'s last played track:*\n";
                     }
 
                     fmText += StringService.TrackToString(currentTrack).FilterOutMentions();
 
                     fmText += $"\n" +
-                              $"-# *Previous*\n";
+                              $"*Previous:*\n";
 
                     fmText += StringService.TrackToString(previousTrack).FilterOutMentions();
                 }
 
-                var formattedFooter = footerText.Length == 0 ? "" : $"-# {footerText}";
+                var formattedFooter = footerText.Length == 0 ? "" : $"{footerText}";
                 fmText += formattedFooter;
 
                 response.ResponseType = ResponseType.Text;
@@ -222,43 +222,33 @@ public class PlayBuilder
                 {
                     fmText += StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, embedType == FmEmbedType.EmbedMini);
                     response.Embed.WithDescription(fmText);
-                    
-                    string headerText;
-                    if (currentTrack.NowPlaying)
-                    {
-                        headerText = "Now playing - ";
-                    }
-                    else
-                    {
-                        headerText = embedType == FmEmbedType.EmbedMini
-                            ? "Last track for "
-                            : "Last tracks for ";
-                    }
-
-                    headerText += embedTitle;
-                    
-                    response.EmbedAuthor.WithName(headerText);
-                    response.EmbedAuthor.WithUrl(recentTracks.Content.UserUrl);
                 }
                 else if (previousTrack != null)
                 {
                     var embedFull = new StringBuilder();
-                    if (currentTrack.NowPlaying)
-                    {
-                        embedFull.AppendLine($"-# *{embedTitle}'s now playing*");
-                    }
-                    else
-                    {
-                        embedFull.AppendLine($"-# *{embedTitle}'s last played track*");
-                    }
-
+                    embedFull.AppendLine(currentTrack.NowPlaying ? $"-# *Current:*" : $"-# *Last:*");
                     embedFull.AppendLine(StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled, false));
-                    embedFull.AppendLine("-# *Previous*");
+                    embedFull.AppendLine("-# *Previous:*");
                     embedFull.Append(StringService.TrackToLinkedString(previousTrack, context.ContextUser.RymEnabled, false));
                     response.Embed.WithDescription(embedFull.ToString());
                 }
 
-                
+                string headerText;
+                if (currentTrack.NowPlaying)
+                {
+                    headerText = "Now playing - ";
+                }
+                else
+                {
+                    headerText = embedType == FmEmbedType.EmbedMini
+                        ? "Last track for "
+                        : "Last tracks for ";
+                }
+
+                headerText += embedTitle;
+
+                response.EmbedAuthor.WithName(headerText);
+                response.EmbedAuthor.WithUrl(recentTracks.Content.UserUrl);
 
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
                 {
@@ -266,7 +256,6 @@ public class PlayBuilder
                     response.Embed.WithTimestamp(currentTrack.TimePlayed.Value);
                 }
 
-                
 
                 if (guild != null && !userSettings.DifferentUser)
                 {

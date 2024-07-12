@@ -301,7 +301,7 @@ public class SupporterService
                     {
                         SetGuildSupporterPromoCache(guildId);
                         message =
-                            $"*🔥 [Supporters]({Constants.GetSupporterDiscordLink}) get an improved GPT-4 powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others.*";
+                            $"*🔥 [Supporters]({Constants.GetSupporterDiscordLink}) get an improved GPT-4o powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others.*";
                         showUpgradeButton = true;
                         break;
                     }
@@ -335,14 +335,12 @@ public class SupporterService
                     {
                         message =
                             $"*🎮 Play the new `.jumble` game and guess the artist together with your friends.*";
-                        showUpgradeButton = true;
                         break;
                     }
                 case 12:
                     {
                         message =
                             $"*🎮 Play the new `.pixel` game and guess the album together with your friends.*";
-                        showUpgradeButton = true;
                         break;
                     }
             }

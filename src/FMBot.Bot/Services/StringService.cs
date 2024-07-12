@@ -123,7 +123,7 @@ public static class StringService
 
     public static string TrackToString(RecentTrack track)
     {
-        return $"{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 320))}\n" +
+        return $"**{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 320))}**\n" +
                $"By **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.ArtistName, 320))}**" +
                (string.IsNullOrWhiteSpace(track.AlbumName)
                    ? "\n"
