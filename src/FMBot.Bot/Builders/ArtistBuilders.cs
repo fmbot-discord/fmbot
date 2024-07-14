@@ -1353,7 +1353,7 @@ public class ArtistBuilders
         reply.AppendLine($" will reach **{goalAmount}** plays on **{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}** {goalDateString}");
 
         reply.AppendLine(
-            $"This is based on {determiner} avg of {Math.Round(avgPerDay, 2)} per day in the last {Math.Round(totalDays, 0)} days ({artistPlayCount} total - {artistSearch.Artist.UserPlaycount} alltime)");
+            $"-# *Based on {determiner} average of {Math.Round(avgPerDay, 2)} plays per day in the last {Math.Round(totalDays, 0)} days — {artistPlayCount} plays in this time period — {artistSearch.Artist.UserPlaycount} alltime*");
 
         response.Text = reply.ToString();
         return response;

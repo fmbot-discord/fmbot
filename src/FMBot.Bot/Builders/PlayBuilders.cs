@@ -857,12 +857,12 @@ public class PlayBuilder
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {
             reply.AppendLine(
-                $"This is based on {determiner} alltime avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day. ({count} in {Math.Round(totalDays, 0)} days)");
+                $"-# *Based on {determiner} alltime average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} plays per day — {count} total in {Math.Round(totalDays, 0)} days*");
         }
         else
         {
             reply.AppendLine(
-                $"This is based on {determiner} avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day in the last {Math.Round(totalDays, 0)} days ({count} total)");
+                $"-# *Based on {determiner} average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} plays per day in the last {Math.Round(totalDays, 0)} days — {count} total*");
         }
 
         response.Text = reply.ToString();
