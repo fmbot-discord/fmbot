@@ -377,7 +377,7 @@ public class MusicDataFactory
                 albumToAdd.SpotifyId = spotifyAlbum.Id;
                 albumToAdd.Label = spotifyAlbum.Label;
                 albumToAdd.Popularity = spotifyAlbum.Popularity;
-                albumToAdd.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+                albumToAdd.SpotifyImageUrl = spotifyAlbum.Images.MaxBy(o => o.Height)?.Url;
                 albumToAdd.ReleaseDate = spotifyAlbum.ReleaseDate;
                 albumToAdd.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision;
 
@@ -422,8 +422,11 @@ public class MusicDataFactory
             {
                 await GetOrStoreAlbumTracks(spotifyAlbum.Tracks.Items, albumInfo, albumToAdd.Id, connection);
 
-                var img = spotifyAlbum.Images.OrderByDescending(o => o.Height).First();
-                await AddOrUpdateAlbumImage(db, albumToAdd.Id, ImageSource.Spotify, img.Url, img.Height, img.Width);
+                var img = spotifyAlbum.Images.MaxBy(o => o.Height);
+                if (img != null)
+                {
+                    await AddOrUpdateAlbumImage(db, albumToAdd.Id, ImageSource.Spotify, img.Url, img.Height, img.Width);
+                }
             }
 
             if (amAlbum?.Attributes.Artwork?.Url != null)
@@ -485,16 +488,24 @@ public class MusicDataFactory
 
             if (spotifyAlbum != null)
             {
-                var img = spotifyAlbum.Images.OrderByDescending(o => o.Height).First();
+                var img = spotifyAlbum.Images.MaxBy(o => o.Height);
+
+                if (img == null)
+                {
+
+                }
 
                 dbAlbum.SpotifyId = spotifyAlbum.Id;
                 dbAlbum.Label = spotifyAlbum.Label;
                 dbAlbum.Popularity = spotifyAlbum.Popularity;
-                dbAlbum.SpotifyImageUrl = img.Url;
+                dbAlbum.SpotifyImageUrl = img?.Url;
                 dbAlbum.ReleaseDate = spotifyAlbum.ReleaseDate;
                 dbAlbum.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision;
 
-                await AddOrUpdateAlbumImage(db, dbAlbum.Id, ImageSource.Spotify, img.Url, img.Height, img.Width);
+                if (img != null)
+                {
+                    await AddOrUpdateAlbumImage(db, dbAlbum.Id, ImageSource.Spotify, img.Url, img.Height, img.Width);
+                }
 
                 await GetOrStoreAlbumTracks(spotifyAlbum.Tracks.Items, albumInfo, dbAlbum.Id, connection);
             }
@@ -713,7 +724,7 @@ public class MusicDataFactory
                 trackToAdd.SpotifyLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 trackToAdd.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
-            await db.Tracks.AddAsync(trackToAdd);
+                await db.Tracks.AddAsync(trackToAdd);
                 await db.SaveChangesAsync();
 
                 return trackToAdd;
