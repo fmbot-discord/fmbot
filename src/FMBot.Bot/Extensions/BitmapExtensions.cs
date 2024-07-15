@@ -18,38 +18,39 @@ public static class BitmapExtensions
         var b = MostDifferent(original.B);
         return Color.FromArgb(r, g, b);
     }
-
-    public static Color GetAverageRgbColor(this SKBitmap skbmp)
+    
+    public static Color GetAverageRgbColor(this SKBitmap skBitmap)
     {
-        var r = 0;
-        var g = 0;
-        var b = 0;
+        long totalR = 0;
+        long totalG = 0;
+        long totalB = 0;
+        long totalA = 0;
+        var totalPixels = 0;
 
-        var total = 0;
-
-        for (var x = 0; x < skbmp.Width; x++)
+        for (var x = 0; x < skBitmap.Width; x++)
         {
-            for (var y = 0; y < skbmp.Height; y++)
+            for (var y = 0; y < skBitmap.Height; y++)
             {
-                var clr = skbmp.GetPixel(x, y);
-
-                r += clr.Red;
-                g += clr.Green;
-                b += clr.Blue;
-
-                total++;
+                var clr = skBitmap.GetPixel(x, y);
+                totalR += clr.Red;
+                totalG += clr.Green;
+                totalB += clr.Blue;
+                totalA += clr.Alpha;
+                totalPixels++;
             }
         }
 
-        total = total == 0 ? 1 : total;
+        if (totalPixels == 0)
+        {
+            return Color.Transparent;
+        }
 
-        r /= total;
-        g /= total;
-        b /= total;
+        var avgR = (int)(totalR / totalPixels);
+        var avgG = (int)(totalG / totalPixels);
+        var avgB = (int)(totalB / totalPixels);
+        var avgA = (int)(totalA / totalPixels);
 
-        var color = Color.FromArgb(r, g, b);
-
-        return color;
+        return Color.FromArgb(avgA, avgR, avgG, avgB);
     }
 
     private static int PerceivedBrightness(Color c)

@@ -218,7 +218,7 @@ public class GameBuilders
             return response;
         }
 
-        image = GameService.BlurCoverImage(image, game.BlurLevel.GetValueOrDefault());
+        image = GameService.PixelateCoverImage(image, game.BlurLevel.GetValueOrDefault());
 
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream();
@@ -393,19 +393,10 @@ public class GameBuilders
                 return response;
             }
 
-            var blurLevel = currentGame.BlurLevel.Value switch
-            {
-                0.10f => 0.06f,
-                0.06f => 0.04f,
-                0.04f => 0.03f,
-                0.03f => 0.02f,
-                0.02f => 0.015f,
-                0.015f => 0.01f,
-                _ => currentGame.BlurLevel.Value
-            };
+            var blurLevel = GetNextBlurLevel(currentGame.BlurLevel.Value);
 
             await this._gameService.JumbleStoreBlurLevel(currentGame, blurLevel);
-            image = GameService.BlurCoverImage(image, blurLevel);
+            image = GameService.PixelateCoverImage(image, blurLevel);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -442,19 +433,10 @@ public class GameBuilders
                 return response;
             }
 
-            var blurLevel = currentGame.BlurLevel.Value switch
-            {
-                0.10f => 0.06f,
-                0.06f => 0.04f,
-                0.04f => 0.03f,
-                0.03f => 0.02f,
-                0.02f => 0.015f,
-                0.015f => 0.01f,
-                _ => currentGame.BlurLevel.Value
-            };
+            var blurLevel = GetNextBlurLevel(currentGame.BlurLevel.Value);
 
             await this._gameService.JumbleStoreBlurLevel(currentGame, blurLevel);
-            image = GameService.BlurCoverImage(image, blurLevel);
+            image = GameService.PixelateCoverImage(image, blurLevel);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -465,6 +447,20 @@ public class GameBuilders
         response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, currentGame.BlurLevel, currentGame.JumbledArtist == null);
 
         return response;
+    }
+
+    private static float GetNextBlurLevel(float currentBlurLevel)
+    {
+        return currentBlurLevel switch
+        {
+            0.125f => 0.06f,
+            0.06f => 0.04f,
+            0.04f => 0.03f,
+            0.03f => 0.02f,
+            0.02f => 0.015f,
+            0.015f => 0.01f,
+            _ => currentBlurLevel
+        };
     }
 
     public async Task<ResponseModel> JumbleReshuffle(ContextModel context, int parsedGameId)
@@ -490,7 +486,7 @@ public class GameBuilders
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image != null)
             {
-                image = GameService.BlurCoverImage(image, currentGame.BlurLevel.Value);
+                image = GameService.PixelateCoverImage(image, currentGame.BlurLevel.Value);
 
                 var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
                 response.Stream = encoded.AsStream();

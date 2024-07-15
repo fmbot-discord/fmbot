@@ -237,7 +237,7 @@ public class GameService
 
         if (jumbleType == JumbleType.Pixelation)
         {
-            jumbleSession.BlurLevel = 0.10f;
+            jumbleSession.BlurLevel = 0.125f;
         }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -729,15 +729,14 @@ public class GameService
         return null;
     }
 
-    public static SKBitmap BlurCoverImage(SKBitmap coverImage, float pixelPercentage)
+    public static SKBitmap PixelateCoverImage(SKBitmap coverImage, float pixelPercentage)
     {
         var width = coverImage.Width;
         var height = coverImage.Height;
         var pixelatedBitmap = new SKBitmap(width, height);
-
         var pixelSize = (int)(Math.Min(width, height) * pixelPercentage);
-
         using var canvas = new SKCanvas(pixelatedBitmap);
+
         for (var y = 0; y < height; y += pixelSize)
         {
             for (var x = 0; x < width; x += pixelSize)
@@ -745,17 +744,38 @@ public class GameService
                 var offsetX = Math.Min(pixelSize, width - x);
                 var offsetY = Math.Min(pixelSize, height - y);
                 var rect = new SKRect(x, y, x + offsetX, y + offsetY);
-                var color = coverImage.GetPixel(x, y);
+
+                int totalR = 0, totalG = 0, totalB = 0, totalA = 0;
+                var pixelCount = 0;
+
+                for (var blockY = y; blockY < y + offsetY; blockY++)
+                {
+                    for (var blockX = x; blockX < x + offsetX; blockX++)
+                    {
+                        var pixelColor = coverImage.GetPixel(blockX, blockY);
+                        totalR += pixelColor.Red;
+                        totalG += pixelColor.Green;
+                        totalB += pixelColor.Blue;
+                        totalA += pixelColor.Alpha;
+                        pixelCount++;
+                    }
+                }
+
+                var avgColor = new SKColor(
+                    (byte)(totalR / pixelCount),
+                    (byte)(totalG / pixelCount),
+                    (byte)(totalB / pixelCount),
+                    (byte)(totalA / pixelCount)
+                );
 
                 using var paint = new SKPaint();
-                paint.Color = color;
+                paint.Color = avgColor;
                 canvas.DrawRect(rect, paint);
             }
         }
-
         return pixelatedBitmap;
     }
-
+    
     public async Task<JumbleUserStats> GetJumbleUserStats(int userId, ulong discordUserId, JumbleType jumbleType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
