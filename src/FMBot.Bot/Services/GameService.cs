@@ -13,7 +13,6 @@ using Dapper;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -648,7 +647,8 @@ public class GameService
             .Replace("Å", "A")
             .Replace("?", "")
             .Replace("’", "'")
-            .Replace("‘", "'");
+            .Replace("‘", "'")
+            .Replace("…", "");
 
         var stringBuilder = new StringBuilder();
         foreach (var c in normalizedString)

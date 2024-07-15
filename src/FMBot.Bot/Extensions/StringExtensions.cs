@@ -485,7 +485,7 @@ public static class StringExtensions
             return input;
         }
 
-        const string pattern = @"\s*\(((?:[^)]+\s+)?(edition|version|remastered|remaster|remix|mix))\)\s*$";
+        const string pattern = @"\s*\(((?:[^)]+\s+)?(edition|version|remastered|remaster|remix|mix|soundtrack))\)\s*$";
         input = Regex.Replace(input, pattern, "", RegexOptions.IgnoreCase).TrimEnd();
 
         const string kpopPattern = @"\s*-\s*(The \d+(st|nd|rd|th) (Mini )?Album( Repackage)?)\s*$";
