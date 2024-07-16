@@ -316,7 +316,7 @@ public class AdminCommands : BaseCommandModule
 
                     foreach (var log in logPage)
                     {
-                        if (log.Type == UserInteractionType.SlashCommandGuild)
+                        if (log.Type is UserInteractionType.SlashCommandGuild or UserInteractionType.SlashCommandUser)
                         {
                             description.Append($"/");
                         }

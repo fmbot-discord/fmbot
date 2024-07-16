@@ -453,9 +453,9 @@ public class GameBuilders
     {
         return currentBlurLevel switch
         {
-            0.125f => 0.06f,
-            0.06f => 0.04f,
-            0.04f => 0.03f,
+            0.125f => 0.085f,
+            0.085f => 0.05f,
+            0.05f => 0.03f,
             0.03f => 0.02f,
             0.02f => 0.015f,
             0.015f => 0.01f,
