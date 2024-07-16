@@ -88,6 +88,7 @@ public class GameSlashCommands : InteractionModuleBase
     {
         try
         {
+            _ = DeferAsync();
             await this.Context.DisableInteractionButtons();
             
             var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
@@ -107,7 +108,7 @@ public class GameSlashCommands : InteractionModuleBase
                 response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
             }
 
-            await this.Context.SendResponse(this.Interactivity, response, ephemeral: response.CommandResponse != CommandResponse.Ok);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: response.CommandResponse != CommandResponse.Ok);
             this.Context.LogCommandUsed(response.CommandResponse);
 
             if (response.CommandResponse == CommandResponse.Ok)
