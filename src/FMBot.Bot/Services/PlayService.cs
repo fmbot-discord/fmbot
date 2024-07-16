@@ -268,20 +268,38 @@ public class PlayService
         return await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
     }
 
-    public async Task<int> GetWeekTrackPlaycountAsync(int userId, string trackName, string artistName)
+    public async Task<(int week, int month)> GetRecentTrackPlaycounts(int userId, string trackName, string artistName)
     {
-        var plays = await GetWeekPlays(userId);
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
 
-        return plays.Count(t => t.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase) &&
-                                t.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase));
+        var weekAgo = DateTime.UtcNow.AddDays(-7);
+        var monthAgo = DateTime.UtcNow.AddMonths(-1);
+        var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, monthAgo);
+
+        return (plays.Count(c => c.TimePlayed >= weekAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) && string.Equals(c.TrackName, trackName, StringComparison.OrdinalIgnoreCase)),
+                plays.Count(c => c.TimePlayed >= monthAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) && string.Equals(c.TrackName, trackName, StringComparison.OrdinalIgnoreCase)));
     }
 
     public async Task<int> GetWeekAlbumPlaycountAsync(int userId, string albumName, string artistName)
     {
         var plays = await GetWeekPlays(userId);
         return plays.Count(ab => ab.AlbumName != null &&
-                                 ab.AlbumName.ToLower() == albumName.ToLower() &&
-                                 ab.ArtistName.ToLower() == artistName.ToLower());
+                                 string.Equals(ab.AlbumName, albumName, StringComparison.OrdinalIgnoreCase) &&
+                                 string.Equals(ab.ArtistName, artistName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<(int week, int month)> GetRecentAlbumPlaycounts(int userId, string albumName, string artistName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var weekAgo = DateTime.UtcNow.AddDays(-7);
+        var monthAgo = DateTime.UtcNow.AddMonths(-1);
+        var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, monthAgo);
+
+        return (plays.Count(c => c.TimePlayed >= weekAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) && string.Equals(c.AlbumName, albumName, StringComparison.OrdinalIgnoreCase)),
+                plays.Count(c => c.TimePlayed >= monthAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) && string.Equals(c.AlbumName, albumName, StringComparison.OrdinalIgnoreCase)));
     }
 
     public async Task<int> GetArtistPlaycountForTimePeriodAsync(int userId, string artistName, int daysToGoBack = 7)
@@ -292,7 +310,20 @@ public class PlayService
         var start = DateTime.UtcNow.AddDays(-daysToGoBack);
         var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, start);
 
-        return plays.Count(a => a.ArtistName.ToLower() == artistName.ToLower());
+        return plays.Count(a => string.Equals(a.ArtistName, artistName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<(int week, int month)> GetRecentArtistPlaycounts(int userId, string artistName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var weekAgo = DateTime.UtcNow.AddDays(-7);
+        var monthAgo = DateTime.UtcNow.AddMonths(-1);
+        var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, monthAgo);
+
+        return (plays.Count(c => c.TimePlayed >= weekAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase)),
+                plays.Count(c => c.TimePlayed >= monthAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase)));
     }
 
     public async Task<List<UserStreak>> GetStreaks(int userId)

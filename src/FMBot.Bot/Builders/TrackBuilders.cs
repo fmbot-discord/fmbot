@@ -690,11 +690,12 @@ public class TrackBuilders
 
         if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
         {
-            var playsLastWeek =
-                await this._playService.GetWeekTrackPlaycountAsync(userSettings.UserId, trackSearch.Track.TrackName, trackSearch.Track.ArtistName);
-            if (playsLastWeek != 0)
+            var recentTrackPlaycounts =
+                await this._playService.GetRecentTrackPlaycounts(userSettings.UserId, trackSearch.Track.TrackName, trackSearch.Track.ArtistName);
+            if (recentTrackPlaycounts.month != 0)
             {
-                reply += $"\n-# *{playsLastWeek} {StringExtensions.GetPlaysString(playsLastWeek)} last week*";
+                reply += $"\n-# *{recentTrackPlaycounts.week} {StringExtensions.GetPlaysString(recentTrackPlaycounts.week)} last week — " +
+                         $"{recentTrackPlaycounts.month} {StringExtensions.GetPlaysString(recentTrackPlaycounts.month)} last month*";
             }
         }
 

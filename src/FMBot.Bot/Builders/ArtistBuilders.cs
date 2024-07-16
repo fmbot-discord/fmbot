@@ -1247,11 +1247,12 @@ public class ArtistBuilders
 
         if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
         {
-            var playsLastWeek =
-                await this._playService.GetArtistPlaycountForTimePeriodAsync(userSettings.UserId, artistSearch.Artist.ArtistName);
-            if (playsLastWeek != 0)
+            var recentArtistPlaycounts =
+                await this._playService.GetRecentArtistPlaycounts(userSettings.UserId, artistSearch.Artist.ArtistName);
+            if (recentArtistPlaycounts.month != 0)
             {
-                reply += $"\n-# *{playsLastWeek} {StringExtensions.GetPlaysString(playsLastWeek)} last week*";
+                reply += $"\n-# *{recentArtistPlaycounts.week} {StringExtensions.GetPlaysString(recentArtistPlaycounts.week)} last week — " +
+                         $"{recentArtistPlaycounts.month} {StringExtensions.GetPlaysString(recentArtistPlaycounts.month)} last month*";
             }
         }
 

@@ -977,11 +977,12 @@ public class AlbumBuilders
 
         if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
         {
-            var playsLastWeek =
-                await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
-            if (playsLastWeek != 0)
+            var recentAlbumPlaycounts =
+                await this._playService.GetRecentAlbumPlaycounts(userSettings.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+            if (recentAlbumPlaycounts.month != 0)
             {
-                reply += $"\n-# *{playsLastWeek} {StringExtensions.GetPlaysString(playsLastWeek)} last week*";
+                reply += $"\n-# *{recentAlbumPlaycounts.week} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.week)} last week — " +
+                         $"{recentAlbumPlaycounts.month} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.month)} last month*";
             }
         }
 
