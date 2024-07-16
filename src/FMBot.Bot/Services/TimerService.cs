@@ -255,7 +255,10 @@ public class TimerService
 
         Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
         Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
+        Statistics.UniqueUserCount.Set(await this._userService.GetTotalGroupedLastfmUserCountAsync());
+        
         Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
+
         Statistics.ActiveSupporterCount.Set(await this._supporterService.GetActiveSupporterCountAsync());
         Statistics.ActiveDiscordSupporterCount.Set(await this._supporterService.GetActiveDiscordSupporterCountAsync());
 

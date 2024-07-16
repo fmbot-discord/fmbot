@@ -133,6 +133,9 @@ public static class Statistics
     public static readonly Gauge AuthorizedUserCount = Metrics
         .CreateGauge("bot_authorized_users_count", "Total count of all users that authorized Last.fm");
 
+    public static readonly Gauge UniqueUserCount = Metrics
+        .CreateGauge("bot_unique_users_count", "Total count of all users grouped by Last.fm username");
+
     public static readonly Gauge RegisteredGuildCount = Metrics
         .CreateGauge("bot_registered_guilds_count", "Total count of all guilds in the database");
 

@@ -1469,6 +1469,15 @@ public class UserService
             .CountAsync();
     }
 
+    public async Task<int> GetTotalGroupedLastfmUserCountAsync()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Users
+            .AsQueryable()
+            .GroupBy(g => g.UserNameLastFM)
+            .CountAsync();
+    }
+
     public async Task<int> DeleteInactiveUsers()
     {
         var deletedInactiveUsers = 0;
