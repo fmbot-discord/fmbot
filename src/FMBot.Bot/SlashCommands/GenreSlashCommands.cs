@@ -164,7 +164,7 @@ public class GenreSlashCommands : InteractionModuleBase
             var originalSearch = string.IsNullOrWhiteSpace(options[4]) ? null : options[4];
 
             var components =
-                new ComponentBuilder().WithButton($"Loading {selectedOption}...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+                new ComponentBuilder().WithButton($"Loading {selectedOption}...", customId: "1", emote: Emote.Parse(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
             await message.ModifyAsync(m => m.Components = components.Build());
 
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);

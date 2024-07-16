@@ -105,7 +105,13 @@ public class InteractionHandler
 
             await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
-            Statistics.SlashCommandsExecuted.WithLabels(command.Name).Inc();
+            var integrationType =
+                context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
+                    ? "user_app"
+                    : "guild_app";
+            
+            Statistics.SlashCommandsExecuted.WithLabels(command.Name, integrationType).Inc();
 
             _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
             _ = Task.Run(() => this._userService.AddUserSlashCommandInteraction(context, command.Name));

@@ -38,8 +38,17 @@ public static class InteractionContextExtensions
             }
         }
 
-        Log.Information("SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
-            context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse, commandName);
+        if (context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+            !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+        {
+            Log.Information("SlashCommandUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {messageContent}",
+                context.User?.Username, context.User?.Id, commandResponse, commandName);
+        }
+        else
+        {
+            Log.Information("SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
+                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse, commandName);
+        }
 
         PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
     }

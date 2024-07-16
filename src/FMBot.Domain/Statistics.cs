@@ -89,7 +89,7 @@ public static class Statistics
         .CreateCounter("bot_slash_commands_executed", "Amount of slash commands executed",
             new CounterConfiguration
             {
-                LabelNames = new[] { "name" }
+                LabelNames = new[] { "name", "integration_type" }
             });
 
 

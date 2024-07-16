@@ -341,7 +341,9 @@ public class UserService
                     DiscordId = context.Interaction.Id,
                     DiscordResponseId = responseId,
                     Response = commandResponse,
-                    Type = UserInteractionType.SlashCommand,
+                    Type = context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                           !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall) ?
+                            UserInteractionType.SlashCommandUser : UserInteractionType.SlashCommandGuild,
                     ErrorReferenceId = errorReference,
                     Artist = artist,
                     Album = album,

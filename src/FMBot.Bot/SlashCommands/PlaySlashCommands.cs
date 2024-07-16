@@ -103,7 +103,10 @@ public class PlaySlashCommands : InteractionModuleBase
 
             try
             {
-                if (message != null && this.Context.Channel != null && response.CommandResponse == CommandResponse.Ok)
+                if (message != null &&
+                    this.Context.Channel != null &&
+                    response.CommandResponse == CommandResponse.Ok &&
+                    this.Context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
                 {
                     if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
                     {
