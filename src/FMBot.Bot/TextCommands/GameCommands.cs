@@ -44,6 +44,7 @@ public class GameCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
     [Alias("j", "jmbl", "jum", "jumbmle")]
+    [Options("stats")]
     public async Task JumbleAsync([Remainder] string options = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -132,6 +133,7 @@ public class GameCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
     [Alias("px", "pixelation", "aj", "abj", "popidle", "pixeljumble", "pxj")]
+    [Options("stats")]
     public async Task PixelAsync([Remainder] string options = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
