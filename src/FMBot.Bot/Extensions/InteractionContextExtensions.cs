@@ -140,7 +140,7 @@ public static class InteractionContextExtensions
         }
     }
 
-    public static async Task SendFollowUpResponse(this IInteractionContext context, InteractiveService interactiveService, ResponseModel response, bool ephemeral = false)
+    public static async Task<ulong?> SendFollowUpResponse(this IInteractionContext context, InteractiveService interactiveService, ResponseModel response, bool ephemeral = false)
     {
         ulong? responseId = null;
         
@@ -206,6 +206,8 @@ public static class InteractionContextExtensions
         {
             PublicProperties.UsedCommandsHintShown.Add(context.Interaction.Id);
         }
+
+        return responseId;
     }
 
     public static async Task UpdateInteractionEmbed(this IInteractionContext context, ResponseModel response, InteractiveService interactiveService = null, bool defer = true)
@@ -294,7 +296,7 @@ public static class InteractionContextExtensions
         await context.ModifyMessage(message, response);
     }
 
-    private static async Task ModifyMessage(this IInteractionContext context, IUserMessage message,
+    public static async Task ModifyMessage(this IInteractionContext context, IUserMessage message,
         ResponseModel response, bool defer = true)
     {
         await message.ModifyAsync(m =>

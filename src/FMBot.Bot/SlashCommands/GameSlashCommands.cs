@@ -108,7 +108,7 @@ public class GameSlashCommands : InteractionModuleBase
                 response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
             }
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: response.CommandResponse != CommandResponse.Ok);
+            var responseId = await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: response.CommandResponse != CommandResponse.Ok);
             this.Context.LogCommandUsed(response.CommandResponse);
 
             if (response.CommandResponse == CommandResponse.Ok)
@@ -123,12 +123,10 @@ public class GameSlashCommands : InteractionModuleBase
                 var components = new ComponentBuilder().WithButton($"{name} is playing again!", customId: "1", url: null, disabled: true, style: ButtonStyle.Secondary);
                 _ = Task.Run(() => message.ModifyAsync(m => m.Components = components.Build()));
 
-                var followUpResponse = await this.Context.Interaction.GetOriginalResponseAsync();
-
-                if (followUpResponse?.Id != null && response.GameSessionId.HasValue)
+                if (responseId.HasValue && response.GameSessionId.HasValue)
                 {
-                    await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, followUpResponse.Id);
-                    await JumbleTimeExpired(context, followUpResponse.Id, cancellationTokenSource.Token,
+                    await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Value);
+                    await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token,
                         response.GameSessionId.Value, GameService.JumbleSecondsToGuess);
                 }
             }
@@ -174,10 +172,6 @@ public class GameSlashCommands : InteractionModuleBase
             await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
         }
 
-        await message.ModifyAsync(m =>
-        {
-            m.Components = null;
-            m.Embed = response.Embed.Build();
-        });
+        await this.Context.ModifyMessage(message, response, false);
     }
 }

@@ -544,7 +544,11 @@ public class GameBuilders
                 ButtonStyle.Secondary);
             if (context.DiscordChannel is IMessageChannel msgChannel)
             {
-                _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build(), components: components.Build()));
+                _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, components, new ReferencedMusic
+                {
+                    Artist = currentGame.ArtistName,
+                    Album = currentGame.AlbumName
+                }));
             }
         }
 
@@ -566,6 +570,13 @@ public class GameBuilders
         };
 
         return response;
+    }
+
+    private static async Task SendSeparateResponse(IMessageChannel msgChannel, EmbedBuilder separateResponse, ComponentBuilder components, ReferencedMusic referencedMusic)
+    {
+        var msg = await msgChannel.SendMessageAsync(embed: separateResponse.Build(), components: components.Build());
+
+        PublicProperties.UsedCommandsReferencedMusic.TryAdd(msg.Id, referencedMusic);
     }
 
     public async Task JumbleProcessAnswer(ContextModel context, ICommandContext commandContext)
@@ -615,7 +626,11 @@ public class GameBuilders
                         ButtonStyle.Secondary);
                     if (context.DiscordChannel is IMessageChannel msgChannel)
                     {
-                        _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build(), components: components.Build()));
+                        _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, components, new ReferencedMusic
+                        {
+                            Artist = currentGame.ArtistName,
+                            Album = currentGame.AlbumName
+                        }));
                     }
 
                     if (currentGame.DiscordResponseId.HasValue)
@@ -717,7 +732,11 @@ public class GameBuilders
                 ButtonStyle.Secondary);
             if (context.DiscordChannel is IMessageChannel msgChannel)
             {
-                _ = Task.Run(() => msgChannel.SendMessageAsync(embed: separateResponse.Build(), components: components.Build()));
+                _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, components, new ReferencedMusic
+                {
+                    Artist = currentGame.ArtistName,
+                    Album = currentGame.AlbumName
+                }));
             }
         }
 

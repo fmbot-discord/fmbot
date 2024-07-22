@@ -128,15 +128,16 @@ public class GameService
 
         var today = DateTime.Today;
         var recentJumblesHashset = recentJumbles
-            .Where(w => w.DateStarted.Date == today)
-            .GroupBy(g => g.CorrectAnswer)
+            .Where(w => w.DateStarted.Date == today && w.AlbumName != null)
+            .GroupBy(g => g.AlbumName)
             .Select(s => s.Key)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         if (topAlbums.Count > 250 && recentJumbles.Count > 50)
         {
             var recentJumbleAnswers = recentJumbles
-                .GroupBy(g => g.CorrectAnswer)
+                .Where(w => w.AlbumName != null)
+                .GroupBy(g => g.AlbumName)
                 .Select(s => s.Key)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -147,7 +148,8 @@ public class GameService
             .Where(w => w.AlbumCoverUrl != null &&
                         !recentJumblesHashset.Contains(w.AlbumName) &&
                         w.AlbumName.Length is > 2 and < 50 &&
-                        !w.AlbumName.StartsWith(ConfigData.Data.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
+                        !w.AlbumName.StartsWith(ConfigData.Data.Bot.Prefix, StringComparison.OrdinalIgnoreCase) &&
+                        !w.AlbumName.StartsWith("…"))
             .OrderByDescending(o => o.UserPlaycount)
             .ToList();
 
@@ -188,13 +190,21 @@ public class GameService
             TopAlbum fallbackAlbum = null;
             if (topAlbums.Count > 0)
             {
-                var fallBackIndex = RandomNumberGenerator.GetInt32(topAlbums.Count);
+                var fallBackIndex = RandomNumberGenerator.GetInt32(topAlbums.Count(w => !recentJumblesHashset.Contains(w.AlbumName)));
                 fallbackAlbum = topAlbums
                     .Where(w => !recentJumblesHashset.Contains(w.AlbumName))
                     .OrderByDescending(o => o.UserPlaycount)
                     .ElementAtOrDefault(fallBackIndex);
             }
 
+            if (fallbackAlbum == null)
+            {
+                var fallBackIndex = RandomNumberGenerator.GetInt32(topAlbums.Count);
+                fallbackAlbum = topAlbums
+                    .OrderByDescending(o => o.UserPlaycount)
+                    .ElementAtOrDefault(fallBackIndex);
+            }
+            
             return fallbackAlbum;
         }
 

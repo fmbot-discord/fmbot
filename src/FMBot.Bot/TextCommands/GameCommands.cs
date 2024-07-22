@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -125,6 +126,10 @@ public class GameCommands : BaseCommandModule
         {
             m.Components = null;
             m.Embed = response.Embed.Build();
+            m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+            {
+                new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}.png" : $"{response.FileName}.png")
+            }) : null;
         });
     }
 
