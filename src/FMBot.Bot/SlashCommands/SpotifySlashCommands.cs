@@ -51,8 +51,6 @@ public class SpotifySlashCommands : InteractionModuleBase
 
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
-
             string reply;
             string querystring;
 
