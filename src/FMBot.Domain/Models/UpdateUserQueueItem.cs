@@ -9,9 +9,13 @@ public class UpdateUserQueueItem
         this.GetAccurateTotalPlaycount = getAccurateTotalPlaycount;
     }
 
-    public int UserId { get; }
+    public UpdateUserQueueItem()
+    {
+    }
 
-    public bool UpdateQueue { get; }
+    public int UserId { get; set; }
 
-    public bool GetAccurateTotalPlaycount { get; }
+    public bool UpdateQueue { get; set;  }
+
+    public bool GetAccurateTotalPlaycount { get; set; }
 }

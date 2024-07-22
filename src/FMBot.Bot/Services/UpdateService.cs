@@ -4,7 +4,6 @@ using System.Data;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Extensions;
@@ -27,7 +26,7 @@ using Serilog;
 
 namespace FMBot.Bot.Services;
 
-public class UpdateService : IUpdateService
+public class UpdateService
 {
     private readonly IUserUpdateQueue _userUpdateQueue;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
@@ -107,10 +106,6 @@ public class UpdateService : IUpdateService
     public async Task<Response<RecentTrackList>> UpdateUser(UpdateUserQueueItem queueItem)
     {
         await this._aliasService.CacheArtistAliases();
-        if (queueItem.UpdateQueue)
-        {
-            Thread.Sleep(1200);
-        }
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users.FindAsync(queueItem.UserId);
@@ -128,7 +123,7 @@ public class UpdateService : IUpdateService
             }
         }
 
-        Log.Debug("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+        Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
         string sessionKey = null;
         if (!string.IsNullOrEmpty(user.SessionKeyLastFm))
@@ -140,7 +135,7 @@ public class UpdateService : IUpdateService
         var timeFrom = (long?)((DateTimeOffset)dateFromFilter).ToUnixTimeSeconds();
 
         var count = 1000;
-        var pages = 3;
+        var pages = 4;
         var totalPlaycountCorrect = false;
         var now = DateTime.UtcNow;
         if (dateFromFilter > now.AddHours(-22) && queueItem.GetAccurateTotalPlaycount)
@@ -187,7 +182,7 @@ public class UpdateService : IUpdateService
 
         if (!recentTracks.Content.RecentTracks.Any())
         {
-            Log.Debug("Update: No new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Information("Update: No new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
             await SetUserUpdateTime(user, DateTime.UtcNow, connection);
 
             await connection.CloseAsync();
@@ -261,7 +256,14 @@ public class UpdateService : IUpdateService
             Log.Error(e, "Update: Error in update process for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
         }
 
-        Statistics.UpdatedUsers.Inc();
+        if (queueItem.UpdateQueue)
+        {
+            Statistics.UpdatedUsers.WithLabels("queue").Inc();
+        }
+        else
+        {
+            Statistics.UpdatedUsers.WithLabels("user_init").Inc();
+        }
 
         await connection.CloseAsync();
 
@@ -547,12 +549,15 @@ public class UpdateService : IUpdateService
                     useCache: false,
                     user.SessionKeyLastFm);
 
-                await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
-                await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+                if (recentTracks?.Content?.TotalAmount != null)
+                {
+                    await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
+                    await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-                user.TotalPlaycount = recentTracks.Content.TotalAmount;
+                    user.TotalPlaycount = recentTracks.Content.TotalAmount;
+                }
 
-                return recentTracks.Content.TotalAmount;
+                return recentTracks?.Content?.TotalAmount ?? 0;
             }
 
             var updatedPlaycount = user.TotalPlaycount.Value + playcountToAdd;

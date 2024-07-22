@@ -35,7 +35,7 @@ public class CommandHandler
     private readonly IServiceProvider _provider;
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly GameBuilders _gameBuilders;
 
     // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
@@ -50,7 +50,7 @@ public class CommandHandler
         GuildService guildService,
         InteractiveService interactiveService,
         IMemoryCache cache,
-        IIndexService indexService,
+        IndexService indexService,
         GameBuilders gameBuilders)
     {
         this._discord = discord;

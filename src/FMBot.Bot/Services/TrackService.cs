@@ -43,7 +43,7 @@ public class TrackService
     private readonly TimerService _timer;
     private readonly AlbumService _albumService;
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
 
@@ -56,7 +56,7 @@ public class TrackService
         TimerService timer,
         AlbumService albumService,
         WhoKnowsTrackService whoKnowsTrackService,
-        IUpdateService updateService,
+        UpdateService updateService,
         AliasService aliasService,
         UserService userService)
     {

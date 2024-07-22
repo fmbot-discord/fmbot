@@ -26,7 +26,7 @@ public class ImportSlashCommands : InteractionModuleBase
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly ImportService _importService;
     private readonly PlayService _playService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly ImportBuilders _importBuilders;
     private readonly SupporterService _supporterService;
     private readonly UserBuilder _userBuilder;
@@ -36,7 +36,7 @@ public class ImportSlashCommands : InteractionModuleBase
         IDataSourceFactory dataSourceFactory,
         ImportService importService,
         PlayService playService,
-        IIndexService indexService,
+        IndexService indexService,
         InteractiveService interactivity,
         ImportBuilders importBuilders,
         SupporterService supporterService,

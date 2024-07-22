@@ -6,6 +6,7 @@ using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -23,14 +24,14 @@ public class ClientLogHandler
     private readonly DisabledChannelService _disabledChannelService;
     private readonly IPrefixService _prefixService;
     private readonly GuildService _guildService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
 
     public ClientLogHandler(DiscordShardedClient client,
         ChannelDisabledCommandService channelDisabledCommandService,
         GuildDisabledCommandService guildDisabledCommandService,
         GuildService guildService,
         IPrefixService prefixService,
-        IIndexService indexService,
+        IndexService indexService,
         IMemoryCache cache,
         DisabledChannelService disabledChannelService)
     {

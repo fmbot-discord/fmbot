@@ -8,7 +8,11 @@ public class IndexUserQueueItem
         this.IndexQueue = indexQueue;
     }
 
-    public int UserId { get; }
+    public IndexUserQueueItem()
+    {
+    }
 
-    public bool IndexQueue { get; }
+    public int UserId { get; set;  }
+
+    public bool IndexQueue { get; set; }
 }

@@ -24,9 +24,9 @@ public class CrownService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly BotSettings _botSettings;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
 
-    public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, IDataSourceFactory dataSourceFactory, IOptions<BotSettings> botSettings, IUpdateService updateService)
+    public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, IDataSourceFactory dataSourceFactory, IOptions<BotSettings> botSettings, UpdateService updateService)
     {
         this._contextFactory = contextFactory;
         this._dataSourceFactory = dataSourceFactory;

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
@@ -25,7 +24,7 @@ using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
 
-public class IndexService : IIndexService
+public class IndexService
 {
     private readonly IUserIndexQueue _userIndexQueue;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
@@ -77,11 +76,6 @@ public class IndexService : IIndexService
 
     public async Task<IndexedUserStats> IndexUser(IndexUserQueueItem queueItem)
     {
-        if (queueItem.IndexQueue)
-        {
-            Thread.Sleep(16000);
-        }
-
         this._cache.Set(IndexConcurrencyCacheKey(queueItem.UserId), true, TimeSpan.FromMinutes(3));
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -102,7 +96,7 @@ public class IndexService : IIndexService
 
         try
         {
-            return await this.ModularUpdate(user, UpdateType.Full);
+            return await this.ModularUpdate(user, UpdateType.Full, queueItem.IndexQueue);
         }
         catch (Exception e)
         {
@@ -127,7 +121,7 @@ public class IndexService : IIndexService
         return true;
     }
 
-    public async Task<IndexedUserStats> ModularUpdate(User user, UpdateType updateType)
+    public async Task<IndexedUserStats> ModularUpdate(User user, UpdateType updateType, bool queue = false)
     {
         Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Starting", user.UserId, user.DiscordUserId, user.UserNameLastFM);
 
@@ -245,7 +239,14 @@ public class IndexService : IIndexService
 
         await connection.CloseAsync();
 
-        Statistics.IndexedUsers.Inc();
+        if (queue)
+        {
+            Statistics.IndexedUsers.WithLabels("queue").Inc();
+        }
+        else
+        {
+            Statistics.IndexedUsers.WithLabels("user_init").Inc();
+        }
 
         this._cache.Remove(IndexConcurrencyCacheKey(user.UserId));
 
@@ -754,7 +755,8 @@ public class IndexService : IIndexService
                         f.LastUpdated != null &&
                         f.LastUsed >= recentlyUsed &&
                         f.LastIndexed <= timeLastIndexed)
-            .OrderBy(o => o.LastUsed)
+            .OrderBy(o => o.LastIndexed)
+            .ThenBy(o => o.LastUsed)
             .ToListAsync();
     }
 }

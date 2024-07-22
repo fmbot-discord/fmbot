@@ -45,7 +45,7 @@ public class AdminCommands : BaseCommandModule
     private readonly UserService _userService;
     private readonly SettingService _settingService;
     private readonly FeaturedService _featuredService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly IPrefixService _prefixService;
     private readonly StaticBuilders _staticBuilders;
     private readonly AlbumService _albumService;
@@ -68,7 +68,7 @@ public class AdminCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         SettingService settingService,
         FeaturedService featuredService,
-        IIndexService indexService,
+        IndexService indexService,
         IPrefixService prefixService,
         StaticBuilders staticBuilders,
         InteractiveService interactivity,

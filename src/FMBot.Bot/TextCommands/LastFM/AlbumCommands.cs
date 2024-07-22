@@ -24,9 +24,9 @@ public class AlbumCommands : BaseCommandModule
 {
     private readonly CensorService _censorService;
     private readonly GuildService _guildService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly IPrefixService _prefixService;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SpotifyService _spotifyService;
     private readonly PlayService _playService;
@@ -47,9 +47,9 @@ public class AlbumCommands : BaseCommandModule
     public AlbumCommands(
         CensorService censorService,
         GuildService guildService,
-        IIndexService indexService,
+        IndexService indexService,
         IPrefixService prefixService,
-        IUpdateService updateService,
+        UpdateService updateService,
         IDataSourceFactory dataSourceFactory,
         PlayService playService,
         SettingService settingService,

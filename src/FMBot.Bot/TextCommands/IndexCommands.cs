@@ -26,9 +26,9 @@ namespace FMBot.Bot.TextCommands;
 public class IndexCommands : BaseCommandModule
 {
     private readonly GuildService _guildService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly IPrefixService _prefixService;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
     private readonly UserService _userService;
     private readonly SupporterService _supporterService;
 
@@ -37,9 +37,9 @@ public class IndexCommands : BaseCommandModule
 
     public IndexCommands(
         GuildService guildService,
-        IIndexService indexService,
+        IndexService indexService,
         IPrefixService prefixService,
-        IUpdateService updateService,
+        UpdateService updateService,
         UserService userService,
         IOptions<BotSettings> botSettings,
         SupporterService supporterService) : base(botSettings)

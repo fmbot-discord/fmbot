@@ -29,7 +29,7 @@ namespace FMBot.Bot.TextCommands.LastFM;
 public class TrackCommands : BaseCommandModule
 {
     private readonly GuildService _guildService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly IPrefixService _prefixService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SettingService _settingService;
@@ -43,7 +43,7 @@ public class TrackCommands : BaseCommandModule
 
     public TrackCommands(
         GuildService guildService,
-        IIndexService indexService,
+        IndexService indexService,
         IPrefixService prefixService,
         IDataSourceFactory dataSourceFactory,
         SettingService settingService,

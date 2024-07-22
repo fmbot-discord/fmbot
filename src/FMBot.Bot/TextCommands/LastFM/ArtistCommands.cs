@@ -26,9 +26,9 @@ public class ArtistCommands : BaseCommandModule
     private readonly ArtistBuilders _artistBuilders;
     private readonly ArtistsService _artistsService;
     private readonly GuildService _guildService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly IPrefixService _prefixService;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PlayService _playService;
     private readonly SettingService _settingService;
@@ -40,9 +40,9 @@ public class ArtistCommands : BaseCommandModule
     public ArtistCommands(
         ArtistsService artistsService,
         GuildService guildService,
-        IIndexService indexService,
+        IndexService indexService,
         IPrefixService prefixService,
-        IUpdateService updateService,
+        UpdateService updateService,
         IDataSourceFactory dataSourceFactory,
         PlayService playService,
         SettingService settingService,

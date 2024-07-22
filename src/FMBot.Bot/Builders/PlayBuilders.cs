@@ -29,8 +29,8 @@ public class PlayBuilder
 {
     private readonly CensorService _censorService;
     private readonly GuildService _guildService;
-    private readonly IIndexService _indexService;
-    private readonly IUpdateService _updateService;
+    private readonly IndexService _indexService;
+    private readonly UpdateService _updateService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PlayService _playService;
     private readonly GenreService _genreService;
@@ -45,8 +45,8 @@ public class PlayBuilder
 
     public PlayBuilder(
         GuildService guildService,
-        IIndexService indexService,
-        IUpdateService updateService,
+        IndexService indexService,
+        UpdateService updateService,
         IDataSourceFactory dataSourceFactory,
         PlayService playService,
         UserService userService,

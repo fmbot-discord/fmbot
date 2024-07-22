@@ -38,8 +38,8 @@ public class ArtistBuilders
     private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly PlayService _playService;
-    private readonly IUpdateService _updateService;
-    private readonly IIndexService _indexService;
+    private readonly UpdateService _updateService;
+    private readonly IndexService _indexService;
     private readonly CrownService _crownService;
     private readonly WhoKnowsService _whoKnowsService;
     private readonly SmallIndexRepository _smallIndexRepository;
@@ -58,8 +58,8 @@ public class ArtistBuilders
         UserService userService,
         WhoKnowsArtistService whoKnowsArtistService,
         PlayService playService,
-        IUpdateService updateService,
-        IIndexService indexService,
+        UpdateService updateService,
+        IndexService indexService,
         WhoKnowsPlayService whoKnowsPlayService,
         CrownService crownService,
         WhoKnowsService whoKnowsService,

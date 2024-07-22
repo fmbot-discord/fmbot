@@ -10,6 +10,7 @@ using Serilog;
 using System.Text;
 using Discord;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -17,10 +18,10 @@ public class IndexSlashCommands : InteractionModuleBase
 {
     private InteractiveService Interactivity { get; }
     private readonly GuildService _guildService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly IPrefixService _prefixService;
 
-    public IndexSlashCommands(InteractiveService interactivity, GuildService guildService, IIndexService indexService, IPrefixService prefixService)
+    public IndexSlashCommands(InteractiveService interactivity, GuildService guildService, IndexService indexService, IPrefixService prefixService)
     {
         this.Interactivity = interactivity;
         this._guildService = guildService;

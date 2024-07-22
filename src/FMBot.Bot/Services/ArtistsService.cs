@@ -37,7 +37,7 @@ public class ArtistsService
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly TimerService _timer;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
     private readonly ArtistEnrichment.ArtistEnrichmentClient _artistEnrichment;
@@ -49,7 +49,7 @@ public class ArtistsService
         IDataSourceFactory dataSourceFactory,
         WhoKnowsArtistService whoKnowsArtistService,
         TimerService timer,
-        IUpdateService updateService,
+        UpdateService updateService,
         AliasService aliasService,
         UserService userService,
         ArtistEnrichment.ArtistEnrichmentClient artistEnrichment)

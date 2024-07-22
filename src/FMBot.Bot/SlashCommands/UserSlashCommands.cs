@@ -37,7 +37,7 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly GuildService _guildService;
     private readonly FriendsService _friendsService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly UserBuilder _userBuilder;
     private readonly SettingService _settingService;
     private readonly ArtistsService _artistsService;
@@ -56,7 +56,7 @@ public class UserSlashCommands : InteractionModuleBase
         IDataSourceFactory dataSourceFactory,
         IOptions<BotSettings> botSettings,
         GuildService guildService,
-        IIndexService indexService,
+        IndexService indexService,
         InteractiveService interactivity,
         FriendsService friendsService,
         UserBuilder userBuilder,

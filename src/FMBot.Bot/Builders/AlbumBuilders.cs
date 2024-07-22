@@ -39,10 +39,10 @@ public class AlbumBuilders
     private readonly TrackService _trackService;
     private readonly TimeService _timeService;
     private readonly CensorService _censorService;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SupporterService _supporterService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly PuppeteerService _puppeteerService;
     private readonly WhoKnowsService _whoKnowsService;
@@ -56,12 +56,12 @@ public class AlbumBuilders
         PlayService playService,
         SpotifyService spotifyService,
         TrackService trackService,
-        IUpdateService updateService,
+        UpdateService updateService,
         TimeService timeService,
         CensorService censorService,
         IDataSourceFactory dataSourceFactory,
         SupporterService supporterService,
-        IIndexService indexService,
+        IndexService indexService,
         WhoKnowsPlayService whoKnowsPlayService,
         PuppeteerService puppeteerService,
         WhoKnowsService whoKnowsService,

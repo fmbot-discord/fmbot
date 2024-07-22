@@ -26,7 +26,7 @@ public class GenreCommands : BaseCommandModule
     private readonly GenreService _genreService;
     private readonly ArtistsService _artistsService;
     private readonly GuildService _guildService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly GenreBuilders _genreBuilders;
 
     private InteractiveService Interactivity { get; }
@@ -41,7 +41,7 @@ public class GenreCommands : BaseCommandModule
         GenreService genreService,
         ArtistsService artistsService,
         GuildService guildService,
-        IIndexService indexService,
+        IndexService indexService,
         GenreBuilders genreBuilders) : base(botSettings)
     {
         this._prefixService = prefixService;

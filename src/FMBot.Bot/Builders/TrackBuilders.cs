@@ -38,9 +38,9 @@ public class TrackBuilders
     private readonly TimeService _timeService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PuppeteerService _puppeteerService;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
     private readonly SupporterService _supporterService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly CensorService _censorService;
     private readonly WhoKnowsService _whoKnowsService;
     private readonly AlbumService _albumService;
@@ -59,9 +59,9 @@ public class TrackBuilders
         TimeService timeService,
         IDataSourceFactory dataSourceFactory,
         PuppeteerService puppeteerService,
-        IUpdateService updateService,
+        UpdateService updateService,
         SupporterService supporterService,
-        IIndexService indexService,
+        IndexService indexService,
         CensorService censorService,
         WhoKnowsService whoKnowsService,
         AlbumService albumService,

@@ -35,7 +35,7 @@ public class GenreBuilders
     private readonly PlayService _playService;
     private readonly ArtistsService _artistsService;
     private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly PuppeteerService _puppeteerService;
     private readonly CensorService _censorService;
     private readonly MusicDataFactory _musicDataFactory;
@@ -47,7 +47,7 @@ public class GenreBuilders
         PlayService playService,
         ArtistsService artistsService,
         IDataSourceFactory dataSourceFactory,
-        IIndexService indexService,
+        IndexService indexService,
         PuppeteerService puppeteerService,
         CensorService censorService,
         MusicDataFactory musicDataFactory)

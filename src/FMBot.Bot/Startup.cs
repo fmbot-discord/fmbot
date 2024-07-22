@@ -194,7 +194,7 @@ public class Startup
             .AddSingleton<GuildDisabledCommandService>()
             .AddSingleton<ChannelDisabledCommandService>()
             .AddSingleton<DisabledChannelService>()
-            .AddSingleton<IIndexService, IndexService>()
+            .AddSingleton<IndexService, IndexService>()
             .AddSingleton<IPrefixService, PrefixService>()
             .AddSingleton<ImportBuilders>()
             .AddSingleton(new InteractiveConfig
@@ -231,7 +231,7 @@ public class Startup
             .AddSingleton<WhoKnowsFilterService>()
             .AddSingleton<WhoKnowsTrackService>()
             .AddSingleton<YoutubeService>()
-            .AddSingleton<IUpdateService, UpdateService>()
+            .AddSingleton<UpdateService, UpdateService>()
             .AddSingleton<IDataSourceFactory, DataSourceFactory>()
             .AddSingleton<IPlayDataSourceRepository, PlayDataSourceRepository>()
             .AddSingleton<IConfiguration>(this.Configuration);

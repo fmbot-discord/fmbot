@@ -38,7 +38,7 @@ public class AlbumService
     private readonly TimerService _timer;
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
     private readonly AliasService _aliasService;
     private readonly UserService _userService;
     private readonly AlbumEnrichment.AlbumEnrichmentClient _albumEnrichment;
@@ -49,7 +49,7 @@ public class AlbumService
         TimerService timer,
         WhoKnowsAlbumService whoKnowsAlbumService,
         IDbContextFactory<FMBotDbContext> contextFactory,
-        IUpdateService updateService,
+        UpdateService updateService,
         AliasService aliasService,
         UserService userService,
         AlbumEnrichment.AlbumEnrichmentClient albumEnrichment)

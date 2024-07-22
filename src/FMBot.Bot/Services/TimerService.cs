@@ -33,8 +33,8 @@ public class TimerService
 {
     private readonly HttpClient _httpClient;
     private readonly UserService _userService;
-    private readonly IUpdateService _updateService;
-    private readonly IIndexService _indexService;
+    private readonly UpdateService _updateService;
+    private readonly IndexService _indexService;
     private readonly GuildService _guildService;
     private readonly DiscordShardedClient _client;
     private readonly WebhookService _webhookService;
@@ -51,9 +51,9 @@ public class TimerService
     public FeaturedLog CurrentFeatured;
 
     public TimerService(DiscordShardedClient client,
-        IUpdateService updateService,
+        UpdateService updateService,
         UserService userService,
-        IIndexService indexService,
+        IndexService indexService,
         GuildService guildService,
         WebhookService webhookService,
         IOptions<BotSettings> botSettings,
@@ -256,7 +256,7 @@ public class TimerService
         Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
         Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
         Statistics.UniqueUserCount.Set(await this._userService.GetTotalGroupedLastfmUserCountAsync());
-        
+
         Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
 
         Statistics.ActiveSupporterCount.Set(await this._supporterService.GetActiveSupporterCountAsync());
@@ -341,13 +341,29 @@ public class TimerService
         Log.Information("Getting users to index");
         var timeToIndex = DateTime.UtcNow.AddDays(-120);
 
-        var usersToUpdate = (await this._indexService.GetOutdatedUsers(timeToIndex))
+        var usersToIndex = (await this._indexService.GetOutdatedUsers(timeToIndex))
             .Take(2000)
             .ToList();
 
-        Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to index queue");
+        Log.Information($"Found {usersToIndex.Count} outdated users, adding them to index queue");
 
-        this._indexService.AddUsersToIndexQueue(usersToUpdate);
+        var indexDelay = DateTime.UtcNow;
+        var indexCount = 1;
+
+        foreach (var userToUpdate in usersToIndex)
+        {
+            var updateUserQueueItem = new IndexUserQueueItem
+            {
+                UserId = userToUpdate.UserId,
+                IndexQueue = true
+            };
+
+            BackgroundJob.Schedule(() => this._indexService.IndexUser(updateUserQueueItem), indexDelay);
+            indexDelay = indexDelay.AddSeconds(20);
+            indexCount++;
+        }
+
+        Log.Information("Found {usersToIndexCount} outdated users, adding them to index queue - end time {endTime}", indexCount, indexDelay);
     }
 
     public async Task AddUsersToUpdateQueue()
@@ -357,9 +373,45 @@ public class TimerService
         var unauthorizedTimeToUpdate = DateTime.UtcNow.AddHours(-(this._botSettings.LastFm.UserUpdateFrequencyInHours.Value + 48));
 
         var usersToUpdate = await this._updateService.GetOutdatedUsers(authorizedTimeToUpdate, unauthorizedTimeToUpdate);
-        Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to update queue");
+        Log.Information("Found {usersToUpdateCount} outdated users - adding them to update queue", usersToUpdate.Count);
 
-        this._updateService.AddUsersToUpdateQueue(usersToUpdate);
+        var updateDelay = DateTime.UtcNow;
+        var indexDelay = DateTime.UtcNow;
+
+        var updateCount = 1;
+        var indexCount = 1;
+
+        foreach (var userToUpdate in usersToUpdate)
+        {
+            if (userToUpdate.LastUpdated < DateTime.UtcNow.AddMonths(-3))
+            {
+                var updateUserQueueItem = new IndexUserQueueItem
+                {
+                    UserId = userToUpdate.UserId,
+                    IndexQueue = true
+                };
+
+                BackgroundJob.Schedule(() => this._indexService.IndexUser(updateUserQueueItem), indexDelay);
+                indexDelay = indexDelay.AddSeconds(20);
+                indexCount++;
+            }
+            else
+            {
+                var updateUserQueueItem = new UpdateUserQueueItem
+                {
+                    UserId = userToUpdate.UserId,
+                    UpdateQueue = true,
+                    GetAccurateTotalPlaycount = false
+                };
+
+                BackgroundJob.Schedule(() => this._updateService.UpdateUser(updateUserQueueItem), updateDelay);
+                updateDelay = updateDelay.AddMilliseconds(1200);
+                updateCount++;
+            }
+        }
+
+        Log.Information("Found {usersToIndexCount} outdated users to index - added all to queue - end time {endTime}", indexCount, indexDelay);
+        Log.Information("Found {usersToUpdateCount} outdated users to update - added all to queue - end time {endTime}", updateCount, updateDelay);
     }
 
     public async Task CheckForNewFeatured()

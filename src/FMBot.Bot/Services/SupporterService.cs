@@ -33,7 +33,7 @@ public class SupporterService
     private readonly DiscordSkuService _discordSkuService;
     private readonly BotSettings _botSettings;
     private readonly IMemoryCache _cache;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly DiscordShardedClient _client;
     private readonly SupporterLinkService.SupporterLinkServiceClient _supporterLinkService;
 
@@ -41,7 +41,7 @@ public class SupporterService
         OpenCollectiveService openCollectiveService,
         IOptions<BotSettings> botSettings,
         IMemoryCache cache,
-        IIndexService indexService,
+        IndexService indexService,
         DiscordSkuService discordSkuService,
         DiscordShardedClient client,
         SupporterLinkService.SupporterLinkServiceClient supporterLinkService)

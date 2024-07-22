@@ -28,11 +28,11 @@ public class FriendBuilders
     private readonly UserService _userService;
     private readonly GuildService _guildService;
     private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
     private readonly SettingService _settingService;
 
     public FriendBuilders(FriendsService friendsService, UserService userService, GuildService guildService,
-        IDataSourceFactory dataSourceFactory, IUpdateService updateService, SettingService settingService)
+        IDataSourceFactory dataSourceFactory, UpdateService updateService, SettingService settingService)
     {
         this._friendsService = friendsService;
         this._userService = userService;

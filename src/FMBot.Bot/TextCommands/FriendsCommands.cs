@@ -26,7 +26,7 @@ public class FriendsCommands : BaseCommandModule
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly UserService _userService;
     private readonly SettingService _settingService;
-    private readonly IUpdateService _updateService;
+    private readonly UpdateService _updateService;
     private readonly FriendBuilders _friendBuilders;
 
     private InteractiveService Interactivity { get; }
@@ -39,7 +39,7 @@ public class FriendsCommands : BaseCommandModule
         UserService userService,
         IOptions<BotSettings> botSettings,
         SettingService settingService,
-        IUpdateService updateService,
+        UpdateService updateService,
         FriendBuilders friendBuilders,
         InteractiveService interactivity) : base(botSettings)
     {

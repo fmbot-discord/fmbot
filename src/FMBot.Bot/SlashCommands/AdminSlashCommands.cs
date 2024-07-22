@@ -34,9 +34,9 @@ public class AdminSlashCommands : InteractionModuleBase
     private readonly FriendsService _friendsService;
     private readonly UserService _userService;
     private readonly SupporterService _supporterService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
 
-    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService, PlayService playService, FriendsService friendsService, UserService userService, SupporterService supporterService, IIndexService indexService)
+    public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService, ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService, PlayService playService, FriendsService friendsService, UserService userService, SupporterService supporterService, IndexService indexService)
     {
         this._adminService = adminService;
         this._censorService = censorService;

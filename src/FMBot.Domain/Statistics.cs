@@ -157,10 +157,16 @@ public static class Statistics
 
 
     public static readonly Counter IndexedUsers = Metrics
-        .CreateCounter("bot_indexed_users", "Amount of indexed users");
+        .CreateCounter("bot_indexed_users", "Amount of indexed users", new CounterConfiguration
+        {
+            LabelNames = new[] { "reason" }
+        });
 
     public static readonly Counter UpdatedUsers = Metrics
-        .CreateCounter("bot_updated_users", "Amount of updated users");
+        .CreateCounter("bot_updated_users", "Amount of updated users", new CounterConfiguration
+        {
+            LabelNames = new[] { "reason" }
+        });
 
     public static readonly Counter SmallIndexedUsers = Metrics
         .CreateCounter("bot_smallindexed_users", "Amount of small indexed users");

@@ -18,14 +18,14 @@ namespace FMBot.Bot.TextCommands.LastFM;
 public class CountryCommands : BaseCommandModule
 {
     private readonly IPrefixService _prefixService;
-    private readonly IIndexService _indexService;
+    private readonly IndexService _indexService;
     private readonly UserService _userService;
     private readonly SettingService _settingService;
     private readonly CountryBuilders _countryBuilders;
     private InteractiveService Interactivity { get; }
 
     public CountryCommands(IPrefixService prefixService,
-        IIndexService indexService,
+        IndexService indexService,
         UserService userService,
         SettingService settingService,
         CountryBuilders countryBuilders,
