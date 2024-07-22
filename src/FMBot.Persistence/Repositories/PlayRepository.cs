@@ -120,6 +120,17 @@ public static class PlayRepository
         await deletePlays.ExecuteNonQueryAsync();
     }
 
+    public static async Task RemoveOldPlays(int userId, NpgsqlConnection connection)
+    {
+        await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND time_played <= CURRENT_DATE - INTERVAL '2 years' " +
+                                                        "AND (play_source = 0 OR play_source IS NULL)", connection);
+        
+        deletePlays.Parameters.AddWithValue("userId", userId);
+        await deletePlays.ExecuteNonQueryAsync();
+    }
+
     private static async Task RemoveSpecificPlays(IEnumerable<UserPlay> playsToRemove, NpgsqlConnection connection)
     {
         foreach (var playToRemove in playsToRemove)

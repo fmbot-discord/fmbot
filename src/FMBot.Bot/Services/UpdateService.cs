@@ -250,6 +250,11 @@ public class UpdateService
             await SetUserUpdateTime(user, DateTime.UtcNow, connection);
 
             this._cache.Remove($"user-{user.UserId}-topartists-alltime");
+
+            if (queueItem.UpdateQueue && !SupporterService.IsSupporter(user.UserType))
+            {
+                await PlayRepository.RemoveOldPlays(user.UserId, connection);
+            }
         }
         catch (Exception e)
         {
