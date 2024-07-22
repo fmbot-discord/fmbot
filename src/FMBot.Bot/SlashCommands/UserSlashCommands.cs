@@ -950,7 +950,7 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed();
     }
 
-    [SlashCommand("featuredlog", "Shows you or someone else their featured history")]
+    [SlashCommand("featuredlog", "Shows you or someone else's featured history")]
     [UsernameSetRequired]
     public async Task FeaturedLogAsync(
         [Summary("View", "Type of log you want to view")] FeaturedView view = FeaturedView.User,
@@ -1003,7 +1003,7 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("profile", "Shows you or someone else their profile")]
+    [SlashCommand("profile", "Shows you or someone else's profile")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]

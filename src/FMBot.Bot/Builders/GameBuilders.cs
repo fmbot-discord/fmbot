@@ -512,7 +512,7 @@ public class GameBuilders
 
         if (currentGame.StarterUserId != context.ContextUser.UserId)
         {
-            response.Embed.WithDescription("You can't give up on someone else their game.");
+            response.Embed.WithDescription("You can't give up on someone else's game.");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoPermission;
             return response;

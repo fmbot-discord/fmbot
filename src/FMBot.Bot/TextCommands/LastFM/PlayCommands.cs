@@ -64,7 +64,7 @@ public class PlayCommands : BaseCommandModule
     }
 
     [Command("fm", RunMode = RunMode.Async)]
-    [Summary("Shows you or someone else their current track")]
+    [Summary("Shows you or someone else's current track")]
     [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "hm", "jm", "km",
         "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "nowplaying")]
     [UsernameSetRequired]
@@ -205,7 +205,7 @@ public class PlayCommands : BaseCommandModule
     }
 
     [Command("recent", RunMode = RunMode.Async)]
-    [Summary("Shows you or someone else their recent tracks")]
+    [Summary("Shows you or someone else's recent tracks")]
     [Options(Constants.UserMentionExample)]
     [Examples("recent", "r", "recent @user", "recent lfm:fm-bot")]
     [Alias("recenttracks", "recents", "r", "rc")]
@@ -402,7 +402,7 @@ public class PlayCommands : BaseCommandModule
     }
 
     [Command("streak", RunMode = RunMode.Async)]
-    [Summary("Shows you or someone else their streak")]
+    [Summary("Shows you or someone else's streak")]
     [UsernameSetRequired]
     [Alias("str", "combo", "cb")]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]

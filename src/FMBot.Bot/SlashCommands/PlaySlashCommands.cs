@@ -50,7 +50,7 @@ public class PlaySlashCommands : InteractionModuleBase
         this.Interactivity = interactivity;
     }
 
-    [SlashCommand("fm", "Now Playing - Shows you or someone else their current track")]
+    [SlashCommand("fm", "Now Playing - Shows you or someone else's current track")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -131,7 +131,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("recent", "Shows you or someone else their recent tracks")]
+    [SlashCommand("recent", "Shows you or someone else's recent tracks")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -159,7 +159,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("streak", "Shows you or someone else their streak")]
+    [SlashCommand("streak", "Shows you or someone else's streak")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -186,7 +186,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("streakhistory", "Shows you or someone else their streak history")]
+    [SlashCommand("streakhistory", "Shows you or someone else's streak history")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
