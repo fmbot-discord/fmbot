@@ -49,10 +49,7 @@ public class TrackAutoComplete : AutocompleteHandler
             try
             {
                 var searchValue = autocompleteInteraction.Data.Current.Value.ToString();
-                results = new List<string>
-                {
-                    searchValue
-                };
+                results = [searchValue];
 
                 var trackResults =
                     await this._trackService.SearchThroughTracks(searchValue);

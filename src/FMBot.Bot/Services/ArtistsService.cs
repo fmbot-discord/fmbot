@@ -543,12 +543,11 @@ public class ArtistsService
                 return userArtists;
             }
 
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+            var user = await this._userService.GetUserAsync(discordUserId);
 
             if (user == null)
             {
-                return new List<string> { Constants.AutoCompleteLoginRequired };
+                return [Constants.AutoCompleteLoginRequired];
             }
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -585,12 +584,11 @@ public class ArtistsService
                 return userArtists;
             }
 
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+            var user = await this._userService.GetUserAsync(discordUserId);
 
             if (user == null)
             {
-                return new List<string> { Constants.AutoCompleteLoginRequired };
+                return [Constants.AutoCompleteLoginRequired];
             }
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

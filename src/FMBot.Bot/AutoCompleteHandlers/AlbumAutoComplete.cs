@@ -49,10 +49,7 @@ public class AlbumAutoComplete : AutocompleteHandler
             try
             {
                 var searchValue = autocompleteInteraction.Data.Current.Value.ToString();
-                results = new List<string>
-                {
-                    searchValue
-                };
+                results = [searchValue];
 
                 var albumResults =
                     await this._albumService.SearchThroughAlbums(searchValue);

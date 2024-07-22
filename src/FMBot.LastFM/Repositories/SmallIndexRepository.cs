@@ -97,14 +97,14 @@ public class SmallIndexRepository
         Statistics.SmallIndexedUsers.Inc();
     }
 
-    public async Task UpdateUserArtists(User indexUser, List<TopArtist> artists)
+    public async Task UpdateUserArtists(User indexUser, IEnumerable<TopArtist> artists)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users.FindAsync(indexUser.UserId);
 
-        if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
+        if (user == null || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
         {
-            Log.Information($"Cancelled user artist update for {user.UserNameLastFM}");
+            Log.Information($"Cancelled user artist update for {user?.UserNameLastFM}");
             return;
         }
 

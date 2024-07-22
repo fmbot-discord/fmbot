@@ -956,6 +956,11 @@ public class ArtistBuilders
             return response;
         }
 
+        if (timeSettings.TimePeriod == TimePeriod.AllTime && !userSettings.DifferentUser)
+        {
+            _ = Task.Run(() => this._smallIndexRepository.UpdateUserArtists(context.ContextUser, artists.Content.TopArtists));
+        }
+
         if (mode == ResponseMode.Image)
         {
             var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom,
@@ -2005,7 +2010,7 @@ public class ArtistBuilders
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {
-            await this._smallIndexRepository.UpdateUserArtists(context.ContextUser, ownArtists.Content.TopArtists);
+            _ = Task.Run(() => this._smallIndexRepository.UpdateUserArtists(context.ContextUser, ownArtists.Content.TopArtists));
         }
 
         response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);

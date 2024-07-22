@@ -47,10 +47,7 @@ public class ArtistAutoComplete : AutocompleteHandler
         else
         {
             var searchValue = autocompleteInteraction.Data.Current.Value.ToString();
-            results = new List<string>
-            {
-                searchValue
-            };
+            results = [searchValue];
 
             var artistResults =
                 await this._artistsService.SearchThroughArtists(searchValue);

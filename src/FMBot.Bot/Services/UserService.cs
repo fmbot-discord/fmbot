@@ -91,6 +91,11 @@ public class UserService
 
             this._cache.Set(lastFmCacheKey, user, TimeSpan.FromSeconds(5));
             this._cache.Set(discordUserIdCacheKey, user, TimeSpan.FromSeconds(5));
+
+            if (!PublicProperties.RegisteredUsers.ContainsKey(user.DiscordUserId))
+            {
+                PublicProperties.RegisteredUsers.TryAdd(user.DiscordUserId, user.UserId);
+            }
         }
 
         return user;
@@ -566,13 +571,19 @@ public class UserService
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
     }
 
-    public async Task<List<User>> GetAllDiscordUserIds()
+    public async Task<List<UserWithId>> GetAllDiscordUserIds()
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var twoYears = DateTime.UtcNow.AddYears(-2);
         return await db.Users
             .AsNoTracking()
+            .Where(w => w.LastUsed.HasValue && w.LastUsed >= twoYears)
+            .Select(s => new UserWithId(s.DiscordUserId, s.UserId))
             .ToListAsync();
     }
+
+    public record UserWithId(ulong DiscordUserId, int UserId);
 
     public async Task<User> GetFullUserAsync(ulong discordUserId)
     {

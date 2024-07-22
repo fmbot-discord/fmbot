@@ -515,12 +515,11 @@ public class AlbumService
                 return userArtists;
             }
 
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+            var user = await this._userService.GetUserAsync(discordUserId);
 
             if (user == null)
             {
-                return new List<AlbumAutoCompleteSearchModel> { new(Constants.AutoCompleteLoginRequired) };
+                return [new AlbumAutoCompleteSearchModel(Constants.AutoCompleteLoginRequired)];
             }
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -558,12 +557,11 @@ public class AlbumService
                 return userAlbums;
             }
 
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+            var user = await this._userService.GetUserAsync(discordUserId);
 
             if (user == null)
             {
-                return new List<AlbumAutoCompleteSearchModel> { new(Constants.AutoCompleteLoginRequired) };
+                return [new AlbumAutoCompleteSearchModel(Constants.AutoCompleteLoginRequired)];
             }
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
