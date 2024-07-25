@@ -108,8 +108,12 @@ public class Startup
 
         await provider.GetRequiredService<StartupService>().StartAsync(); // Start the startup service
 
-        // Start hangfire
-        using var server = new BackgroundJobServer();
+        var options = new BackgroundJobServerOptions
+        {
+            WorkerCount = 64
+        };
+
+        using var server = new BackgroundJobServer(options);
 
         await Task.Delay(-1); // Keep the program alive
     }
