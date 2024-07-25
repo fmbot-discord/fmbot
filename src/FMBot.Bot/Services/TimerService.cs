@@ -126,7 +126,7 @@ public class TimerService
              ConfigData.Data.Shards.MainInstance == true))
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToUpdateQueue)}");
-            RecurringJob.AddOrUpdate(nameof(AddUsersToUpdateQueue), () => AddUsersToUpdateQueue(), "0 * * * *");
+            RecurringJob.AddOrUpdate(nameof(AddUsersToUpdateQueue), () => AddUsersToUpdateQueue(), "0 */4 * * *");
         }
         else
         {
@@ -405,7 +405,7 @@ public class TimerService
                 };
 
                 BackgroundJob.Schedule(() => this._updateService.UpdateUser(updateUserQueueItem), updateDelay);
-                updateDelay = updateDelay.AddMilliseconds(1200);
+                updateDelay = updateDelay.AddMilliseconds(900);
                 updateCount++;
             }
         }
