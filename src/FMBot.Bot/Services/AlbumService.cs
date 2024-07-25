@@ -251,7 +251,7 @@ public class AlbumService
                     lastFmUserName);
             }
 
-            if (interactionId.HasValue)
+            if (interactionId is not null)
             {
                 PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, albumInfo.Content.ArtistName);
                 if (albumInfo.Content.AlbumName != null)
