@@ -188,11 +188,11 @@ public class GameService
         if (eligibleAlbums.Count == 0)
         {
             TopAlbum fallbackAlbum = null;
-            if (topAlbums.Count > 0)
+            var fallbackAlbumList = topAlbums.Where(w => !recentJumblesHashset.Contains(w.AlbumName)).ToList();
+            if (fallbackAlbumList.Count > 0)
             {
-                var fallBackIndex = RandomNumberGenerator.GetInt32(topAlbums.Count(w => !recentJumblesHashset.Contains(w.AlbumName)));
-                fallbackAlbum = topAlbums
-                    .Where(w => !recentJumblesHashset.Contains(w.AlbumName))
+                var fallBackIndex = RandomNumberGenerator.GetInt32(fallbackAlbumList.Count);
+                fallbackAlbum = fallbackAlbumList
                     .OrderByDescending(o => o.UserPlaycount)
                     .ElementAtOrDefault(fallBackIndex);
             }
