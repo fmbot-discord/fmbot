@@ -116,14 +116,18 @@ public class UpdateService
             {
                 return null;
             }
-            if (user.LastUpdated > DateTime.UtcNow.AddHours(-44))
+            if (user.LastUpdated > DateTime.UtcNow.AddHours(-48))
             {
                 Log.Debug("Update: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                 return null;
             }
-        }
 
-        Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Information("Update: Started on {userId} | {userNameLastFm} - Queue", user.UserId, user.UserNameLastFM);
+        }
+        else
+        {
+            Log.Information("Update: Started on {userId} | {userNameLastFm} - User initiated", user.UserId, user.UserNameLastFM);
+        }
 
         string sessionKey = null;
         if (!string.IsNullOrEmpty(user.SessionKeyLastFm))
@@ -268,11 +272,11 @@ public class UpdateService
         else
         {
             Statistics.UpdatedUsers.WithLabels("user_init").Inc();
+
+            _ = SmallIndex(user);
         }
 
         await connection.CloseAsync();
-
-        _ = SmallIndex(user);
 
         return recentTracks;
     }

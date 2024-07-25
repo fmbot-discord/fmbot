@@ -6,12 +6,13 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Interfaces;
+using FMBot.Bot.Handlers;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
@@ -47,8 +48,10 @@ public class TimerService
     private readonly StatusHandler.StatusHandlerClient _statusHandler;
     private readonly BotListService _botListService;
     private readonly EurovisionService _eurovisionService;
+    private readonly UpdateQueueHandler _updateQueueHandler;
 
     public FeaturedLog CurrentFeatured;
+    private CancellationTokenSource _updateQueueCancellationToken;
 
     public TimerService(DiscordShardedClient client,
         UpdateService updateService,
@@ -85,6 +88,7 @@ public class TimerService
         this._botSettings = botSettings.Value;
 
         this.CurrentFeatured = this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow).Result;
+        this._updateQueueHandler = new UpdateQueueHandler(this._updateService, TimeSpan.FromMilliseconds(100));
     }
 
     public void QueueJobs()
@@ -296,6 +300,8 @@ public class TimerService
 
         try
         {
+            Statistics.UpdateQueueSize.Set(this._updateQueueHandler.GetQueueSize());
+
             var allShardsConnected = this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnected) &&
                                 this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnecting) &&
                                 this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Connecting);
@@ -375,7 +381,8 @@ public class TimerService
         var usersToUpdate = await this._updateService.GetOutdatedUsers(authorizedTimeToUpdate, unauthorizedTimeToUpdate);
         Log.Information("Found {usersToUpdateCount} outdated users - adding them to update queue", usersToUpdate.Count);
 
-        var updateDelay = DateTime.UtcNow;
+        Statistics.UpdateOutdatedUsers.Set(usersToUpdate.Count);
+
         var indexDelay = DateTime.UtcNow;
 
         var updateCount = 1;
@@ -404,14 +411,27 @@ public class TimerService
                     GetAccurateTotalPlaycount = false
                 };
 
-                BackgroundJob.Schedule(() => this._updateService.UpdateUser(updateUserQueueItem), updateDelay);
-                updateDelay = updateDelay.AddMilliseconds(900);
+                this._updateQueueHandler.EnqueueUser(updateUserQueueItem);
                 updateCount++;
             }
         }
 
+        if (this._updateQueueCancellationToken != null)
+        {
+            await this._updateQueueCancellationToken.CancelAsync();
+            Log.Information("Cancelled previous update queue");
+        }
+
+        this._updateQueueCancellationToken = new CancellationTokenSource();
+        _ = StartProcessingUpdateQueue(this._updateQueueCancellationToken.Token);
+
         Log.Information("Found {usersToIndexCount} outdated users to index - added all to queue - end time {endTime}", indexCount, indexDelay);
-        Log.Information("Found {usersToUpdateCount} outdated users to update - added all to queue - end time {endTime}", updateCount, updateDelay);
+        Log.Information("Found {usersToUpdateCount} outdated users to update - added all to queue", updateCount);
+    }
+
+    public Task StartProcessingUpdateQueue(CancellationToken cancellationToken)
+    {
+        return _updateQueueHandler.ProcessQueueAsync(cancellationToken);
     }
 
     public async Task CheckForNewFeatured()

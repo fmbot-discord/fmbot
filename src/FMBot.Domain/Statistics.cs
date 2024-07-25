@@ -171,6 +171,12 @@ public static class Statistics
     public static readonly Counter SmallIndexedUsers = Metrics
         .CreateCounter("bot_smallindexed_users", "Amount of small indexed users");
 
+    public static readonly Gauge UpdateOutdatedUsers = Metrics
+        .CreateGauge("bot_update_outdated_users", "Amount of outdated users");
+
+    public static readonly Gauge UpdateQueueSize = Metrics
+        .CreateGauge("bot_update_queue_size", "Amount of users in update queue");
+
 
     public static readonly Counter ShardConnected = Metrics
         .CreateCounter("bot_shard_connected", "A shard has connected");
