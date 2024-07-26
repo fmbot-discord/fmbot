@@ -29,7 +29,7 @@ public class OpenAiService
         this._botSettings = botSettings.Value;
     }
 
-    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-3.5-turbo")
+    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-4o-mini")
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
         request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
