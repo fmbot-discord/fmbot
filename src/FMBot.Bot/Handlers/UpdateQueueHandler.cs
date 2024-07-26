@@ -11,8 +11,8 @@ namespace FMBot.Bot.Handlers;
 
 public class UpdateQueueHandler : IDisposable
 {
-    private const int MaxConcurrentTasks = 3;
-    private const int EmptyQueueDelayMs = 100;
+    private const int MaxConcurrentTasks = 2;
+    private const int EmptyQueueDelayMs = 200;
 
     private readonly ConcurrentQueue<UpdateUserQueueItem> _queue = new();
     private readonly SemaphoreSlim _semaphore = new(MaxConcurrentTasks, MaxConcurrentTasks);

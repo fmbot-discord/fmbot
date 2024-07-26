@@ -43,6 +43,7 @@ public class StartupService
     private readonly GuildService _guildService;
     private readonly UserService _userService;
     private readonly TimerService _timerService;
+    private readonly SupporterService _supporterService;
 
     public StartupService(
         IServiceProvider provider,
@@ -58,7 +59,8 @@ public class StartupService
         GuildService guildService,
         UserService userService,
         DisabledChannelService disabledChannelService,
-        TimerService timerService)
+        TimerService timerService,
+        SupporterService supporterService)
     {
         this._provider = provider;
         this._client = discord;
@@ -73,6 +75,7 @@ public class StartupService
         this._userService = userService;
         this._disabledChannelService = disabledChannelService;
         this._timerService = timerService;
+        this._supporterService = supporterService;
         this._botSettings = botSettings.Value;
     }
 
@@ -196,6 +199,7 @@ public class StartupService
         if (ConfigData.Data.Shards == null || ConfigData.Data.Shards.MainInstance == true)
         {
             BackgroundJob.Schedule(() => this.RegisterSlashCommands(), TimeSpan.FromSeconds(startDelay));
+            BackgroundJob.Schedule(() => this._supporterService.AddRoleToNewSupporters(), TimeSpan.FromSeconds(10));
         }
 
         BackgroundJob.Schedule(() => this.CacheSlashCommandIds(), TimeSpan.FromSeconds(startDelay));

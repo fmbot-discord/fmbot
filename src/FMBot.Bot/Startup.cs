@@ -37,10 +37,13 @@ using FMBot.Domain.Interfaces;
 using FMBot.Bot.Factories;
 using FMBot.Persistence.Interfaces;
 using System.Linq;
+using System.Net.Http;
 using FMBot.Bot.Extensions;
 using Web.InternalApi;
 using Discord.Rest;
 using FMBot.AppleMusic;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.SystemTextJson;
 
 namespace FMBot.Bot;
 
@@ -254,9 +257,24 @@ public class Startup
         services.AddHttpClient<ILastfmRepository, LastFmRepository>();
         services.AddHttpClient<TrackService>();
         services.AddHttpClient<DiscordSkuService>();
-        services.AddHttpClient<OpenCollectiveService>();
         services.AddHttpClient<OpenAiService>();
         services.AddHttpClient<EurovisionService>();
+
+        services.AddHttpClient("OpenCollective", client =>
+        {
+            client.BaseAddress = new Uri("https://api.opencollective.com/graphql/v2");
+        });
+        services.AddSingleton<GraphQLHttpClient>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var httpClient = httpClientFactory.CreateClient("OpenCollective");
+
+            return new GraphQLHttpClient(new GraphQLHttpClientOptions
+            {
+                EndPoint = new Uri("https://api.opencollective.com/graphql/v2")
+            }, new SystemTextJsonSerializer(options => options.PropertyNameCaseInsensitive = true), httpClient);
+        });
+        services.AddSingleton<OpenCollectiveService>();
 
         services.AddHttpClient<SpotifyService>(client =>
         {

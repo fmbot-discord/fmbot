@@ -743,18 +743,13 @@ public class SupporterService
         }
     }
 
-    private string OpenCollectiveSupporterToEmbedDescription(Supporter supporter)
+    private static string OpenCollectiveSupporterToEmbedDescription(Supporter supporter)
     {
         return $"Name: `{supporter.Name}`\n" +
                $"OC ID: `{supporter.OpenCollectiveId}`\n" +
                $"Discord ID: `{supporter.DiscordUserId}`\n" +
                $"Type: `{supporter.SubscriptionType}`\n" +
                $"Notes: `{supporter.Notes}`";
-    }
-
-    public async Task<List<DiscordEntitlement>> GetDiscordEntitlements()
-    {
-        return await this._discordSkuService.GetEntitlements();
     }
 
     public async Task UpdateSingleDiscordSupporter(ulong discordUserId)
@@ -769,40 +764,6 @@ public class SupporterService
         var discordSupporters = await this._discordSkuService.GetEntitlements(after: SnowflakeUtils.ToSnowflake(DateTime.UtcNow.AddDays(-1)));
 
         await UpdateDiscordSupporters(discordSupporters);
-    }
-
-    public async Task UpdateAllDiscordSupporters()
-    {
-        var discordSupporters = new List<DiscordEntitlementResponseModel>();
-
-        for (var i = 0; i < 60; i++)
-        {
-            discordSupporters.AddRange(await this._discordSkuService.GetEntitlementsFromDiscord(
-                before: SnowflakeUtils.ToSnowflake(DateTimeOffset.UtcNow.AddDays(-i)),
-                after: SnowflakeUtils.ToSnowflake(DateTimeOffset.UtcNow.AddDays(-(i + 1)))));
-
-            await Task.Delay(100);
-        }
-
-        var result = DiscordSkuService.DiscordEntitlementsToGrouped(discordSupporters);
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        var existingSupporters = db.Supporters
-            .Where(w =>
-                w.DiscordUserId != null &&
-                w.SubscriptionType == SubscriptionType.Discord)
-            .OrderByDescending(o => o.LastPayment)
-            .Select(s => s.DiscordUserId.Value)
-            .Distinct()
-            .ToHashSet();
-
-        var resultIds = result.Select(s => s.DiscordUserId).ToHashSet();
-        foreach (var existingSupporter in existingSupporters.Where(w => !resultIds.Contains(w)))
-        {
-            Log.Information("Found Discord supporter without entitlement - {discordUserId}", existingSupporter);
-        }
-
-        await UpdateDiscordSupporters(result);
     }
 
     public async Task UpdateDiscordSupporters(List<DiscordEntitlement> discordSupporters)
@@ -1155,11 +1116,9 @@ public class SupporterService
             }
             catch (Exception e)
             {
-                Log.Error("Modifying supporter role failed for {id}", discordUserId, e);
+                Log.Error("Modifying supporter role failed for {id} - {exceptionMessage}", discordUserId, e.Message, e);
             }
         }
-
-        Log.Error("Modifying supporter role failed for {id}", discordUserId);
     }
 
     private async Task<Supporter> AddDiscordSupporter(ulong id, DiscordEntitlement entitlement)

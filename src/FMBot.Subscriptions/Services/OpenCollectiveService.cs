@@ -4,7 +4,6 @@ using FMBot.Domain.Models;
 using FMBot.Subscriptions.Models;
 using GraphQL;
 using GraphQL.Client.Http;
-using GraphQL.Client.Serializer.SystemTextJson;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
@@ -13,15 +12,15 @@ namespace FMBot.Subscriptions.Services;
 public class OpenCollectiveService
 {
     private readonly HttpClient _client;
-
-    private const string ApiUrl = "https://api.opencollective.com/graphql/v2";
+    private readonly GraphQLHttpClient _graphQLClient;
 
     private readonly IMemoryCache _cache;
 
-    public OpenCollectiveService(HttpClient client, IMemoryCache cache)
+    public OpenCollectiveService(HttpClient client, IMemoryCache cache, GraphQLHttpClient graphQLClient)
     {
         this._client = client;
         this._cache = cache;
+        this._graphQLClient = graphQLClient;
     }
 
     public async Task<OpenCollectiveOverview> GetOpenCollectiveOverview()
@@ -119,12 +118,7 @@ public class OpenCollectiveService
             }"
         };
 
-        var graphQLClient = new GraphQLHttpClient(new GraphQLHttpClientOptions
-        {
-            EndPoint = new Uri(ApiUrl)
-        }, new SystemTextJsonSerializer(options => options.PropertyNameCaseInsensitive = true), this._client);
-
-        var response = await graphQLClient.SendQueryAsync<OpenCollectiveResponseModel>(query);
+        var response = await this._graphQLClient.SendQueryAsync<OpenCollectiveResponseModel>(query);
         Statistics.OpenCollectiveApiCalls.Inc();
 
         if (response.Errors != null && response.Errors.Any())
