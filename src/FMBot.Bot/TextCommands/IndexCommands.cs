@@ -150,7 +150,7 @@ public class IndexCommands : BaseCommandModule
                     var previousUpdate = DateTime.SpecifyKind(contextUser.LastUpdated.Value, DateTimeKind.Utc);
                     var previousUpdateValue = ((DateTimeOffset)previousUpdate).ToUnixTimeSeconds();
 
-                    updatedDescription.AppendLine($"Nothing new found on [your Last.fm profile]({LastfmUrlExtensions.GetUserUrl(contextUser.UserNameLastFM)}) since last update (<t:{previousUpdateValue}:R>)");
+                    updatedDescription.AppendLine($"Nothing new found on [your Last.fm profile]({LastfmUrlExtensions.GetUserUrl(contextUser.UserNameLastFM)}) since the last check <t:{previousUpdateValue}:R>.");
 
                     if (update.Content?.RecentTracks != null && update.Content.RecentTracks.Any())
                     {
@@ -163,7 +163,7 @@ public class IndexCommands : BaseCommandModule
                                 var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
 
                                 updatedDescription.AppendLine();
-                                updatedDescription.AppendLine($"Last scrobble: <t:{dateValue}:R>.");
+                                updatedDescription.AppendLine($"Your last scrobble was <t:{dateValue}:R>.");
                             }
 
                             updatedDescription.AppendLine();
