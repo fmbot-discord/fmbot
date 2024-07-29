@@ -49,6 +49,15 @@ public class MusicBrainzService
                 var startDate = musicBrainzArtist.LifeSpan?.Begin?.NearestDate;
                 var endDate = musicBrainzArtist.LifeSpan?.End?.NearestDate;
 
+                if (startDate <= new DateTime(1800, 1, 1))
+                {
+                    startDate = null;
+                }
+                if (endDate <= new DateTime(1900, 1, 1))
+                {
+                    endDate = null;
+                }
+
                 artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 artist.Location = musicBrainzArtist.Area?.Name;
                 artist.CountryCode = GetArtistCountryCode(musicBrainzArtist);
