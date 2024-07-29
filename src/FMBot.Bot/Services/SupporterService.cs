@@ -567,10 +567,10 @@ public class SupporterService
                 embed.WithDescription($"Name: `{newSupporter.Name}`\n" +
                                       $"OpenCollective ID: `{newSupporter.Id}`\n" +
                                       $"Subscription type: `{newSupporter.SubscriptionType}`\n\n" +
-                                      $"No action should be required. Check botlog channel or ask frik.");
+                                      $"No action should be required. Check <#821661156652875856> if it's reactivated in there.");
 
-                await supporterAuditLogChannel.SendMessageAsync($"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", false, new[] { embed.Build() });
-                await supporterUpdateChannel.SendMessageAsync($"`.addsupporter \"discordUserId\" \"{newSupporter.Id}\"`", false, new[] { embed.Build() });
+                await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+                await supporterUpdateChannel.SendMessageAsync(null, false, new[] { embed.Build() });
 
                 this._cache.Set(cacheKey, 1, TimeSpan.FromDays(1));
 
@@ -631,17 +631,24 @@ public class SupporterService
                     if (existingSupporter.Expired == true && openCollectiveSupporter.LastPayment >= DateTime.UtcNow.AddHours(-3))
                     {
                         Log.Information("Re-activating supporter status for {supporterName} - {openCollectiveId}", existingSupporter.Name, existingSupporter.Name);
+                        var reActivateDescription = new StringBuilder();
+
                         if (existingSupporter.DiscordUserId.HasValue)
                         {
                             await ModifyGuildRole(existingSupporter.DiscordUserId.Value);
                             await RunFullUpdate(existingSupporter.DiscordUserId.Value);
+                            await ReActivateSupporterUser(existingSupporter);
+                            reActivateDescription.AppendLine($"DiscordUserId: `{existingSupporter.DiscordUserId}`");
+                        }
+                        else
+                        {
+                            reActivateDescription.AppendLine($"DiscordUserId: ⚠️ No Discord user attached");
                         }
 
                         existingSupporter.Expired = false;
                         existingSupporter.SupporterMessagesEnabled = true;
                         existingSupporter.VisibleInOverview = true;
 
-                        var reActivateDescription = new StringBuilder();
                         reActivateDescription.AppendLine($"Name: `{existingSupporter.Name}`");
                         reActivateDescription.AppendLine($"LastPayment: `{existingSupporter.LastPayment}`");
                         if (currentSubscriptionType != newSubscriptionType)
@@ -1324,7 +1331,7 @@ public class SupporterService
         {
             DiscordUserId = (long)discordUserId
         });
-        
+
         return url?.CheckoutLink;
     }
 }
