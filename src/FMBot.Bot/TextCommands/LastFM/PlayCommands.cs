@@ -365,7 +365,7 @@ public class PlayCommands : BaseCommandModule
     }
 
     [Command("plays", RunMode = RunMode.Async)]
-    [Summary("Shows your total scrobblecount for a specific time period.")]
+    [Summary("Shows your total scrobble count for a specific time period")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("p", "plays", "plays @frikandel", "plays monthly")]
     [Alias("p", "scrobbles")]
