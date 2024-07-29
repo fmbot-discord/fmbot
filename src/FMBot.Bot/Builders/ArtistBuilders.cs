@@ -201,7 +201,7 @@ public class ArtistBuilders
             if (fullArtist.StartDate.HasValue && !fullArtist.EndDate.HasValue)
             {
                 var specifiedDateTime = DateTime.SpecifyKind(fullArtist.StartDate.Value, DateTimeKind.Utc);
-                var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+                var dateValue = ((DateTimeOffset)specifiedDateTime).AddHours(12).ToUnixTimeSeconds();
 
                 if (fullArtist.Type?.ToLower() == "person")
                 {
