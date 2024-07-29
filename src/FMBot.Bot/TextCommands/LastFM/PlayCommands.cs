@@ -17,6 +17,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using MetaBrainz.MusicBrainz.Interfaces;
 using Microsoft.Extensions.Options;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
@@ -372,33 +373,18 @@ public class PlayCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task PlaysAsync([Remainder] string extraOptions = null)
     {
-        var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context, true);
+        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context, true);
         var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
+        var response = await this._playBuilder.PlaysAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings);
 
-        if (count == null)
-        {
-            await this.Context.Channel.SendMessageAsync($"Could not find total count for Last.fm user `{StringExtensions.Sanitize(userSettings.UserNameLastFm)}`.", allowedMentions: AllowedMentions.None);
-            this.Context.LogCommandUsed(CommandResponse.NotFound);
-            return;
-        }
-
-        var userTitle = $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
-
-        if (timeSettings.TimePeriod == TimePeriod.AllTime)
-        {
-            await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` total scrobbles", allowedMentions: AllowedMentions.None);
-        }
-        else
-        {
-            await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` scrobbles in the {timeSettings.AltDescription}", allowedMentions: AllowedMentions.None);
-        }
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("streak", RunMode = RunMode.Async)]

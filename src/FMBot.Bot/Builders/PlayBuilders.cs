@@ -459,6 +459,34 @@ public class PlayBuilder
         return response;
     }
 
+    public async Task<ResponseModel> PlaysAsync(
+    ContextModel context,
+    UserSettingsModel userSettings,
+    TimeSettingsModel timeSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Text
+        };
+
+        var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
+
+        if (count == null)
+        {
+            response.Text = $"Could not find total count for Last.fm user `{StringExtensions.Sanitize(userSettings.UserNameLastFm)}`.";
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var userTitle = $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
+
+        response.Text = timeSettings.TimePeriod == TimePeriod.AllTime ?
+            $"**{userTitle}** has `{count}` total scrobbles" :
+            $"**{userTitle}** has `{count}` scrobbles in the {timeSettings.AltDescription}";
+
+        return response;
+    }
+
     public async Task<ResponseModel> StreakAsync(
         ContextModel context,
         UserSettingsModel userSettings,
