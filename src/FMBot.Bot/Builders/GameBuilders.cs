@@ -593,12 +593,16 @@ public class GameBuilders
             {
                 return;
             }
-            
+
             var messageLength = commandContext.Message.Content.Length;
             var answerLength = currentGame.CorrectAnswer.Length;
-            
+
+            var uncleanedAnswerLength = currentGame.JumbleType == JumbleType.Artist
+                ? currentGame.ArtistName.Length
+                : currentGame.AlbumName.Length;
+
             if (messageLength >= answerLength / 2 &&
-                messageLength <= Math.Min(answerLength + answerLength / 2, answerLength + 15))
+                messageLength <= Math.Max(Math.Min(answerLength + answerLength / 2, answerLength + 15), uncleanedAnswerLength + 2))
             {
                 var answerIsRight = GameService.AnswerIsRight(currentGame, commandContext.Message.Content);
 
