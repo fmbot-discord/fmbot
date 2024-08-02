@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AngleSharp.Css.Dom;
 using Discord;
 using Discord.WebSocket;
 using Fergun.Interactive;
@@ -75,8 +76,25 @@ public static class InteractionContextExtensions
                 await context.Interaction.DeferAsync(ephemeral: true);
             }
 
-            await context.Interaction.FollowupAsync($"Sorry, something went wrong while trying to process `{commandName}`. Please try again later.\n" +
-                                                    $"*Reference id: `{referenceId}`*", ephemeral: true);
+            if (exception?.Message != null && exception.Message.Contains("50013: Missing Permissions", StringComparison.OrdinalIgnoreCase))
+            {
+                if (context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) && !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+                {
+                    await context.Interaction.FollowupAsync("Error while replying: You are missing permissions, so the bot can't reply to your commands.\n" +
+                                                            "Make sure you have permission to 'Embed links' and 'Attach Images'", ephemeral: true);
+                }
+                else
+                {
+                    await context.Interaction.FollowupAsync("Error while replying: The bot is missing permissions.\n" +
+                                                            "Make sure it has permission to 'Embed links' and 'Attach Images'", ephemeral: true);
+                }
+            }
+            else
+            {
+                await context.Interaction.FollowupAsync($"Sorry, something went wrong while trying to process `{commandName}`. Please try again later.\n" +
+                                                        $"*Reference id: `{referenceId}`*", ephemeral: true);
+            }
+            
         }
 
         PublicProperties.UsedCommandsErrorReferences.TryAdd(context.Interaction.Id, referenceId);
