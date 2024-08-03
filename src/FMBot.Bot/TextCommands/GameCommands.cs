@@ -24,19 +24,23 @@ public class GameCommands : BaseCommandModule
     private readonly GameBuilders _gameBuilders;
     private readonly IPrefixService _prefixService;
     private readonly GameService _gameService;
-    private readonly AdminService _adminService;
     private readonly SettingService _settingService;
 
     private InteractiveService Interactivity { get; }
 
-    public GameCommands(IOptions<BotSettings> botSettings, UserService userService, GameBuilders gameBuilders, IPrefixService prefixService, InteractiveService interactivity, GameService gameService, AdminService adminService, SettingService settingService) : base(botSettings)
+    public GameCommands(IOptions<BotSettings> botSettings,
+        UserService userService,
+        GameBuilders gameBuilders,
+        IPrefixService prefixService,
+        InteractiveService interactivity,
+        GameService gameService,
+        SettingService settingService) : base(botSettings)
     {
         this._userService = userService;
         this._gameBuilders = gameBuilders;
         this._prefixService = prefixService;
         this.Interactivity = interactivity;
         this._gameService = gameService;
-        this._adminService = adminService;
         this._settingService = settingService;
     }
 
@@ -160,7 +164,7 @@ public class GameCommands : BaseCommandModule
                 this.Context.LogCommandUsed(statResponse.CommandResponse);
                 return;
             }
-            
+
             var cancellationTokenSource = new CancellationTokenSource();
             var response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
 
