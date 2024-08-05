@@ -89,7 +89,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("settings", "Shows user settings for .fmbot")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task UserSettingsAsync()
     {
@@ -123,86 +124,89 @@ public class UserSlashCommands : InteractionModuleBase
             switch (userSetting)
             {
                 case UserSetting.Privacy:
-                    {
-                        response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
+                {
+                    response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                        break;
-                    }
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    break;
+                }
                 case UserSetting.FmMode:
-                    {
-                        response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser));
+                {
+                    response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                        break;
-                    }
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    break;
+                }
                 case UserSetting.WkMode:
-                    {
-                        response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
+                {
+                    response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                        break;
-                    }
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    break;
+                }
                 case UserSetting.BotScrobbling:
-                    {
-                        response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
+                {
+                    response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                        break;
-                    }
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    break;
+                }
                 case UserSetting.SpotifyImport:
+                {
+                    var supporterRequired =
+                        ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+                    if (supporterRequired != null)
                     {
-                        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
-
-                        if (supporterRequired != null)
-                        {
-                            await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
-                            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
-                            return;
-                        }
-
-                        response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
-
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                        break;
+                        await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
+                        this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                        return;
                     }
+
+                    response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
+                        contextUser.UserId);
+
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    break;
+                }
                 case UserSetting.UserReactions:
+                {
+                    var supporterRequired =
+                        UserBuilder.UserReactionsSupporterRequired(new ContextModel(this.Context, contextUser), prfx);
+
+                    if (supporterRequired != null)
                     {
-                        var supporterRequired = UserBuilder.UserReactionsSupporterRequired(new ContextModel(this.Context, contextUser), prfx);
-
-                        if (supporterRequired != null)
-                        {
-                            await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
-                            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
-                            return;
-                        }
-
-                        response = UserBuilder.UserReactions(new ContextModel(this.Context, contextUser), prfx);
-
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                        break;
+                        await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
+                        this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                        return;
                     }
+
+                    response = UserBuilder.UserReactions(new ContextModel(this.Context, contextUser), prfx);
+
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    break;
+                }
                 case UserSetting.Localization:
-                    {
-                        response = UserBuilder.Localization(new ContextModel(this.Context, contextUser));
+                {
+                    response = UserBuilder.Localization(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                        break;
-                    }
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    break;
+                }
                 case UserSetting.OutOfSync:
-                    {
-                        response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
+                {
+                    response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                        break;
-                    }
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    break;
+                }
                 case UserSetting.DeleteAccount:
-                    {
-                        response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
+                {
+                    response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
 
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                        break;
-                    }
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    break;
+                }
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -210,7 +214,8 @@ public class UserSlashCommands : InteractionModuleBase
     }
 
     [SlashCommand("login", "Gives you a link to connect your Last.fm account to .fmbot")]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task LoginAsync()
     {
@@ -258,7 +263,9 @@ public class UserSlashCommands : InteractionModuleBase
             {
                 followUpEmbed.WithColor(DiscordConstants.SuccessColorGreen);
                 var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-                var settingCommand = PublicProperties.SlashCommands.ContainsKey("settings") ? $"</settings:{PublicProperties.SlashCommands["settings"]}>" : "`/settings`";
+                var settingCommand = PublicProperties.SlashCommands.ContainsKey("settings")
+                    ? $"</settings:{PublicProperties.SlashCommands["settings"]}>"
+                    : "`/settings`";
                 var description =
                     $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newUserSettings.UserNameLastFM)})!\n\n" +
                     $"Use {settingCommand} to change your settings and to customize your .fmbot experience.";
@@ -269,7 +276,8 @@ public class UserSlashCommands : InteractionModuleBase
 
                 this.Context.LogCommandUsed();
 
-                if (contextUser != null && !string.Equals(contextUser.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
+                if (contextUser != null && !string.Equals(contextUser.UserNameLastFM, newUserSettings.UserNameLastFM,
+                        StringComparison.CurrentCultureIgnoreCase))
                 {
                     await this._indexService.IndexUser(newUserSettings);
                 }
@@ -290,7 +298,8 @@ public class UserSlashCommands : InteractionModuleBase
 
                         if (guild.WhoKnowsWhitelistRoleId.HasValue && discordGuildUser != null)
                         {
-                            newGuildUser.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                            newGuildUser.WhoKnowsWhitelisted =
+                                discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
                         }
 
                         await this._indexService.AddGuildUserToDatabase(newGuildUser);
@@ -317,9 +326,121 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
+    [ComponentInteraction("login")]
+    public async Task LoginButtonAsync()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var token = await this._dataSourceFactory.GetAuthToken();
+
+        try
+        {
+            var reply = new StringBuilder();
+            var link =
+                $"http://www.last.fm/api/auth/?api_key={this._botSettings.LastFm.PublicKey}&token={token.Content.Token}";
+
+            if (contextUser == null)
+            {
+                reply.AppendLine($"**[Click here to add your Last.fm account to .fmbot]({link})**");
+                reply.AppendLine();
+                reply.AppendLine("Link will expire after 5 minutes, please wait a moment after allowing access...");
+                reply.AppendLine();
+                reply.AppendLine("Don't have a Last.fm account yet? " +
+                                 "[Sign up here](https://last.fm/join) and see [how to track your music here](https://last.fm/about/trackmymusic). +" +
+                                 $"After that you can [authorize .fmbot]({link}).");
+            }
+            else
+            {
+                reply.AppendLine(
+                    $"You have already logged in before. If you want to change or reconnect your connected Last.fm account, **[click here.]({link})** " +
+                    $"Note that this link will expire after 5 minutes. Also use this link if the bot says you have to re-login.");
+                reply.AppendLine();
+                reply.AppendLine(
+                    $"Using Spotify and having problems with your music not being tracked or it lagging behind? " +
+                    $"Re-logging in again will not fix this, please use `/outofsync` for help instead.");
+            }
+
+            var embed = new EmbedBuilder();
+            embed.WithColor(DiscordConstants.LastFmColorRed);
+            embed.WithDescription(reply.ToString());
+
+            await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+            this.Context.LogCommandUsed();
+
+            var loginSuccess = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
+
+            var followUpEmbed = new EmbedBuilder();
+            if (loginSuccess)
+            {
+                followUpEmbed.WithColor(DiscordConstants.SuccessColorGreen);
+                var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var settingCommand = PublicProperties.SlashCommands.ContainsKey("settings")
+                    ? $"</settings:{PublicProperties.SlashCommands["settings"]}>"
+                    : "`/settings`";
+                var description =
+                    $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newUserSettings.UserNameLastFM)})!\n\n" +
+                    $"Use {settingCommand} to change your settings and to customize your .fmbot experience.";
+
+                followUpEmbed.WithDescription(description);
+
+                await FollowupAsync(null, new[] { followUpEmbed.Build() }, ephemeral: true);
+
+                this.Context.LogCommandUsed();
+
+                if (contextUser != null && !string.Equals(contextUser.UserNameLastFM, newUserSettings.UserNameLastFM,
+                        StringComparison.CurrentCultureIgnoreCase))
+                {
+                    await this._indexService.IndexUser(newUserSettings);
+                }
+
+                if (this.Context.Guild != null)
+                {
+                    var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
+                    if (guild != null)
+                    {
+                        var discordGuildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
+                        var newGuildUser = new GuildUser
+                        {
+                            Bot = false,
+                            GuildId = guild.GuildId,
+                            UserId = newUserSettings.UserId,
+                            UserName = discordGuildUser?.DisplayName,
+                        };
+
+                        if (guild.WhoKnowsWhitelistRoleId.HasValue && discordGuildUser != null)
+                        {
+                            newGuildUser.WhoKnowsWhitelisted =
+                                discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                        }
+
+                        await this._indexService.AddGuildUserToDatabase(newGuildUser);
+                    }
+                }
+            }
+            else
+            {
+                followUpEmbed.WithColor(DiscordConstants.WarningColorOrange);
+                followUpEmbed.WithDescription(
+                    $"Login expired. Re-run the command to try again.\n\n" +
+                    $"Getting 'Invalid API key' error? This is a [known Last.fm issue](https://support.last.fm/t/invalid-api-key-error-when-connecting-to-discord-fmbot-on-iphone/65329) on iOS. " +
+                    $"Current workaround is to try connecting on a different device.\n\n" +
+                    $"Still having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.");
+
+                await FollowupAsync(null, new[] { followUpEmbed.Build() }, ephemeral: true);
+
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, deferFirst: true);
+        }
+    }
+
+
     [SlashCommand("privacy", "Changes your visibility to other .fmbot users in Global WhoKnows")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task PrivacyAsync()
     {
@@ -345,52 +466,59 @@ public class UserSlashCommands : InteractionModuleBase
             embed.AddField("Your new privacy level", $"Your privacy level has been set to **{newPrivacyLevel}**.");
             if (privacyLevel == PrivacyLevel.Global)
             {
-                var bottedUser = await this._adminService.GetBottedUserAsync(userSettings.UserNameLastFM, userSettings.RegisteredLastFm);
-                var filteredUser = await this._adminService.GetFilteredUserAsync(userSettings.UserNameLastFM, userSettings.RegisteredLastFm);
+                var bottedUser =
+                    await this._adminService.GetBottedUserAsync(userSettings.UserNameLastFM,
+                        userSettings.RegisteredLastFm);
+                var filteredUser =
+                    await this._adminService.GetFilteredUserAsync(userSettings.UserNameLastFM,
+                        userSettings.RegisteredLastFm);
 
                 var globalStatus = new StringBuilder();
                 var infractionDetails = new StringBuilder();
 
                 if (bottedUser is { BanActive: true })
                 {
-                    globalStatus.AppendLine("Sorry, you've been permanently removed from Global WhoKnows leaderboards. " +
-                                            "This is most likely because we think some of your playcounts have been falsely increased. " +
-                                            "This might for example be adding fake scrobbles through OpenScrobbler or listening to a short song a lot of times.");
+                    globalStatus.AppendLine(
+                        "Sorry, you've been permanently removed from Global WhoKnows leaderboards. " +
+                        "This is most likely because we think some of your playcounts have been falsely increased. " +
+                        "This might for example be adding fake scrobbles through OpenScrobbler or listening to a short song a lot of times.");
                     globalStatus.AppendLine();
-                    globalStatus.AppendLine("You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
-                                            "We moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
+                    globalStatus.AppendLine(
+                        "You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
+                        "We moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
                 }
-                else if (filteredUser != null && (filteredUser.OccurrenceEnd ?? filteredUser.Created) > DateTime.UtcNow.AddMonths(-3))
+                else if (filteredUser != null &&
+                         (filteredUser.OccurrenceEnd ?? filteredUser.Created) > DateTime.UtcNow.AddMonths(-3))
                 {
                     switch (filteredUser.Reason)
                     {
                         case GlobalFilterReason.PlayTimeInPeriod:
-                            {
-                                globalStatus.AppendLine(
-                                    "Sorry, you've been temporarily removed from Global WhoKnows leaderboards. " +
-                                    $"This is because you've scrobbled over 6 days of listening time within an {WhoKnowsFilterService.PeriodAmountOfDays} day period. " +
-                                    "For example, this can be caused by scrobbling overnight (sleep scrobbling) or because you've added scrobbles with external tools.");
-                                globalStatus.AppendLine();
-                                globalStatus.AppendLine(
-                                    ".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the listening time threshold again and wait 3 months for the filter to expire. " +
-                                    "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
+                        {
+                            globalStatus.AppendLine(
+                                "Sorry, you've been temporarily removed from Global WhoKnows leaderboards. " +
+                                $"This is because you've scrobbled over 6 days of listening time within an {WhoKnowsFilterService.PeriodAmountOfDays} day period. " +
+                                "For example, this can be caused by scrobbling overnight (sleep scrobbling) or because you've added scrobbles with external tools.");
+                            globalStatus.AppendLine();
+                            globalStatus.AppendLine(
+                                ".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the listening time threshold again and wait 3 months for the filter to expire. " +
+                                "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
 
-                                infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
-                            }
+                            infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
+                        }
                             break;
                         case GlobalFilterReason.AmountPerPeriod:
-                            {
-                                globalStatus.AppendLine(
-                                    "Sorry, you've been temporarily removed from Global WhoKnows leaderboards. " +
-                                    $"This is because you've scrobbled over {WhoKnowsFilterService.MaxAmountOfPlaysPerDay * WhoKnowsFilterService.PeriodAmountOfDays} plays within a {WhoKnowsFilterService.PeriodAmountOfDays} day period. " +
-                                    "For example, this can be caused by scrobbling very short songs repeatedly or because you've added scrobbles with external tools.");
-                                globalStatus.AppendLine();
-                                globalStatus.AppendLine(
-                                    ".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the scrobble count threshold again and wait 3 months for the filter to expire. " +
-                                    "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
+                        {
+                            globalStatus.AppendLine(
+                                "Sorry, you've been temporarily removed from Global WhoKnows leaderboards. " +
+                                $"This is because you've scrobbled over {WhoKnowsFilterService.MaxAmountOfPlaysPerDay * WhoKnowsFilterService.PeriodAmountOfDays} plays within a {WhoKnowsFilterService.PeriodAmountOfDays} day period. " +
+                                "For example, this can be caused by scrobbling very short songs repeatedly or because you've added scrobbles with external tools.");
+                            globalStatus.AppendLine();
+                            globalStatus.AppendLine(
+                                ".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the scrobble count threshold again and wait 3 months for the filter to expire. " +
+                                "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
 
-                                infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
-                            }
+                            infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
+                        }
                             break;
                         case GlobalFilterReason.ShortTrack:
                             break;
@@ -399,14 +527,16 @@ public class UserSlashCommands : InteractionModuleBase
                     }
 
                     globalStatus.AppendLine();
-                    globalStatus.AppendLine("You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
-                                            "We automatically moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
+                    globalStatus.AppendLine(
+                        "You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
+                        "We automatically moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
                 }
 
                 if (globalStatus.Length > 0)
                 {
                     embed.AddField("Global WhoKnows status", globalStatus.ToString());
                 }
+
                 if (infractionDetails.Length > 0)
                 {
                     embed.AddField("Infraction details", infractionDetails.ToString());
@@ -420,7 +550,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("fmmode", "Changes your '/fm' layout")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FmModeSlashAsync()
     {
@@ -474,7 +605,9 @@ public class UserSlashCommands : InteractionModuleBase
         var embed = new EmbedBuilder();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var maxOptions = userSettings.UserType == UserType.User ? Constants.MaxFooterOptions : Constants.MaxFooterOptionsSupporter;
+        var maxOptions = userSettings.UserType == UserType.User
+            ? Constants.MaxFooterOptions
+            : Constants.MaxFooterOptionsSupporter;
         var amountSelected = 0;
 
         foreach (var option in Enum.GetNames(typeof(FmFooterOption)))
@@ -614,9 +747,11 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("localization", "Configure your timezone in .fmbot")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task SetLocalization([Summary("Timezone", "Timezone you want to set")][Autocomplete(typeof(TimeZoneAutoComplete))] string timezone)
+    public async Task SetLocalization(
+        [Summary("Timezone", "Timezone you want to set")] [Autocomplete(typeof(TimeZoneAutoComplete))] string timezone)
     {
         try
         {
@@ -647,7 +782,9 @@ public class UserSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            await RespondAsync("Something went wrong while setting localization. Please check if you entered a valid timezone.", ephemeral: true);
+            await RespondAsync(
+                "Something went wrong while setting localization. Please check if you entered a valid timezone.",
+                ephemeral: true);
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             await this.Context.HandleCommandException(e, sendReply: false);
         }
@@ -655,7 +792,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("remove", "Deletes your .fmbot account")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task RemoveAsync()
     {
@@ -678,7 +816,8 @@ public class UserSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<RemoveAccountConfirmModal>($"{InteractionConstants.RemoveFmbotAccountModal}-{discordUserId}");
+        await this.Context.Interaction.RespondWithModalAsync<RemoveAccountConfirmModal>(
+            $"{InteractionConstants.RemoveFmbotAccountModal}-{discordUserId}");
     }
 
     [ModalInteraction($"{InteractionConstants.RemoveFmbotAccountModal}-*")]
@@ -715,7 +854,8 @@ public class UserSlashCommands : InteractionModuleBase
 
         var followUpEmbed = new EmbedBuilder();
         followUpEmbed.WithTitle("Removal successful");
-        followUpEmbed.WithDescription("Your settings, friends and any other data have been successfully deleted from .fmbot.");
+        followUpEmbed.WithDescription(
+            "Your settings, friends and any other data have been successfully deleted from .fmbot.");
         await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
     }
 
@@ -728,7 +868,8 @@ public class UserSlashCommands : InteractionModuleBase
         if (interactionToDelete == null)
         {
             await RespondAsync("No .fmbot response to delete or interaction wasn't stored. \n" +
-                               "You can only use this option on the command itself or on the .fmbot response.", ephemeral: true);
+                               "You can only use this option on the command itself or on the .fmbot response.",
+                ephemeral: true);
             return;
         }
 
@@ -753,7 +894,7 @@ public class UserSlashCommands : InteractionModuleBase
         }
 
         await fetchedMessage.DeleteAsync(options: new RequestOptions
-        { AuditLogReason = "Deleted through message command " });
+            { AuditLogReason = "Deleted through message command " });
 
         await RespondAsync("Removed .fmbot response.", ephemeral: true);
         this.Context.LogCommandUsed();
@@ -762,19 +903,23 @@ public class UserSlashCommands : InteractionModuleBase
     [SlashCommand("judge", "Judges your music taste using AI")]
     [UsernameSetRequired]
     public async Task JudgeAsync(
-        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [Summary("User", "The user to judge (Supporter-only option)")] string user = null)
+        [Summary("Time-period", "Time period")] [Autocomplete(typeof(DateTimeAutoComplete))]
+        string timePeriod = null,
+        [Summary("User", "The user to judge (Supporter-only option)")]
+        string user = null)
     {
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
 
         var differentUserButNotAllowed = false;
 
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         if (userSettings.DifferentUser && contextUser.UserType == UserType.User)
         {
-            userSettings = await this._settingService.GetUser("", contextUser, this.Context.Guild, this.Context.User, true);
+            userSettings =
+                await this._settingService.GetUser("", contextUser, this.Context.Guild, this.Context.User, true);
 
             differentUserButNotAllowed = true;
         }
@@ -787,7 +932,9 @@ public class UserSlashCommands : InteractionModuleBase
         }
         else
         {
-            var lfmTopArtists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, artistLimit);
+            var lfmTopArtists =
+                await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings,
+                    artistLimit);
             topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
         }
 
@@ -809,7 +956,8 @@ public class UserSlashCommands : InteractionModuleBase
         try
         {
             var response =
-                UserBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings, contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
+                UserBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings,
+                    contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
 
             if (commandUsesLeft <= 0)
             {
@@ -837,7 +985,9 @@ public class UserSlashCommands : InteractionModuleBase
                 .AddUser(this.Context.User)
                 .Build();
 
-            var result = await this.Interactivity.SendSelectionAsync(selection, this.Context.Interaction, TimeSpan.FromMinutes(10));
+            var result =
+                await this.Interactivity.SendSelectionAsync(selection, this.Context.Interaction,
+                    TimeSpan.FromMinutes(10));
 
             var handledResponse = await this._userBuilder.JudgeHandleAsync(new ContextModel(this.Context, contextUser),
                 userSettings, result, topArtists);
@@ -852,7 +1002,8 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FeaturedAsync()
     {
@@ -869,19 +1020,22 @@ public class UserSlashCommands : InteractionModuleBase
             PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Interaction.Id, message.Id);
             PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Interaction.Id);
 
-            if (this._timerService.CurrentFeatured?.Reactions != null && this._timerService.CurrentFeatured.Reactions.Any())
+            if (this._timerService.CurrentFeatured?.Reactions != null &&
+                this._timerService.CurrentFeatured.Reactions.Any())
             {
                 await GuildService.AddReactionsAsync(message, this._timerService.CurrentFeatured.Reactions);
             }
             else
             {
-                if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
+                if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() &&
+                    SupporterService.IsSupporter(contextUser.UserType))
                 {
                     await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
                 }
                 else if (this.Context.Guild != null)
                 {
-                    await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+                    await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild,
+                        response.Text == "in-server");
                 }
             }
         }
@@ -953,14 +1107,17 @@ public class UserSlashCommands : InteractionModuleBase
     [SlashCommand("featuredlog", "Shows you or someone else's featured history")]
     [UsernameSetRequired]
     public async Task FeaturedLogAsync(
-        [Summary("View", "Type of log you want to view")] FeaturedView view = FeaturedView.User,
-        [Summary("User", "The user to view the featured log for (defaults to self)")] string user = null)
+        [Summary("View", "Type of log you want to view")]
+        FeaturedView view = FeaturedView.User,
+        [Summary("User", "The user to view the featured log for (defaults to self)")]
+        string user = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
             await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var response = await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, contextUser), userSettings, view);
+        var response =
+            await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, contextUser), userSettings, view);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -984,7 +1141,8 @@ public class UserSlashCommands : InteractionModuleBase
 
             var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
             var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+                this.Context.Guild, this.Context.User);
 
             var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
             if (message == null)
@@ -992,7 +1150,9 @@ public class UserSlashCommands : InteractionModuleBase
                 return;
             }
 
-            var response = await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, viewType);
+            var response =
+                await this._userBuilder.FeaturedLogAsync(
+                    new ContextModel(this.Context, contextUser, discordContextUser), userSettings, viewType);
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -1005,15 +1165,18 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("profile", "Shows you or someone else's profile")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ProfileAsync(
-        [Summary("User", "The user of which you want to view their profile")] string user = null)
+        [Summary("User", "The user of which you want to view their profile")]
+        string user = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser), userSettings);
 
@@ -1033,9 +1196,12 @@ public class UserSlashCommands : InteractionModuleBase
 
         var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
         var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+            this.Context.Guild, this.Context.User);
 
-        var response = await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings);
+        var response =
+            await this._userBuilder.ProfileAsync(new ContextModel(this.Context, contextUser, discordContextUser),
+                userSettings);
 
         await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -1056,7 +1222,9 @@ public class UserSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetOriginalContextUser(
             discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var response = await this._userBuilder.ProfileHistoryAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings);
+        var response =
+            await this._userBuilder.ProfileHistoryAsync(new ContextModel(this.Context, contextUser, discordContextUser),
+                userSettings);
 
         await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -1084,8 +1252,10 @@ public class UserSlashCommands : InteractionModuleBase
             if (dataSource == DataSource.LastFm)
             {
                 components = new ComponentBuilder()
-                    .WithButton("Delete imported Spotify history", InteractionConstants.ImportClearSpotify, style: ButtonStyle.Danger, row: 0)
-                    .WithButton("Delete imported Apple Music history", InteractionConstants.ImportClearAppleMusic, style: ButtonStyle.Danger, row: 0);
+                    .WithButton("Delete imported Spotify history", InteractionConstants.ImportClearSpotify,
+                        style: ButtonStyle.Danger, row: 0)
+                    .WithButton("Delete imported Apple Music history", InteractionConstants.ImportClearAppleMusic,
+                        style: ButtonStyle.Danger, row: 0);
             }
 
             await RespondAsync(null, new[] { embed.Build() }, ephemeral: true, components: components?.Build());
@@ -1139,7 +1309,8 @@ public class UserSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
+            var response =
+                await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -1158,7 +1329,9 @@ public class UserSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser), true);
+            var response =
+                await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser),
+                    true);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -1177,7 +1350,9 @@ public class UserSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser), true);
+            var response =
+                await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser),
+                    true);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
