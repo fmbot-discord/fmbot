@@ -599,6 +599,14 @@ public class IndexService
                 return;
             }
 
+            var cacheKey = $"user-updated-{discordGuildUser.Id}";
+            if (this._cache.TryGetValue(cacheKey, out _))
+            {
+                return;
+            }
+
+            this._cache.Set(cacheKey, true, TimeSpan.FromSeconds(2));
+
             await using var db = await this._contextFactory.CreateDbContextAsync();
 
             var guild = await db.Guilds
