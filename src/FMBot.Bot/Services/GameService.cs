@@ -204,7 +204,7 @@ public class GameService
                     .OrderByDescending(o => o.UserPlaycount)
                     .ElementAtOrDefault(fallBackIndex);
             }
-            
+
             return fallbackAlbum;
         }
 
@@ -396,7 +396,7 @@ public class GameService
         db.Update(game);
         await db.SaveChangesAsync();
     }
-    
+
     public async Task JumbleStoreBlurLevel(JumbleSession game, float blurLevel)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -633,18 +633,32 @@ public class GameService
         return new string(letters);
     }
 
-    public static bool AnswerIsRight(JumbleSession game, string messageContent)
+    public static bool AnswerIsRight(JumbleSession game, string messageContent, string uncleanedAnswer)
     {
-        var userAnswer = CleanString(messageContent);
-        var correctAnswer = CleanString(game.CorrectAnswer);
+        var userAnswer = StringExtensions.RemoveEditionSuffix(NormalizeAnswer(messageContent));
+        var correctAnswer = NormalizeAnswer(game.CorrectAnswer);
+        var uncleanedCorrectAnswer = NormalizeAnswer(game.CorrectAnswer);
 
-        return userAnswer.Contains(correctAnswer, StringComparison.OrdinalIgnoreCase) ||
-               correctAnswer.Equals(userAnswer, StringComparison.OrdinalIgnoreCase);
+        if (userAnswer.Contains(correctAnswer, StringComparison.OrdinalIgnoreCase) ||
+            userAnswer.Contains(uncleanedCorrectAnswer, StringComparison.OrdinalIgnoreCase) ||
+            correctAnswer.Equals(userAnswer, StringComparison.OrdinalIgnoreCase) ||
+            uncleanedCorrectAnswer.Equals(userAnswer, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var closeness = GetLevenshteinDistance(userAnswer.ToLower(), correctAnswer.ToLower());
+        if ((userAnswer.Length > 4 && closeness == 1) || (userAnswer.Length > 10 && closeness == 2))
+        {
+            return true;
+        }
+
+        return false;
     }
 
-    private static string CleanString(string input)
+    private static string NormalizeAnswer(string input)
     {
-        var normalizedString = input.Trim().Replace("-", "").Replace(" ", "").Normalize(NormalizationForm.FormD);
+        var normalizedString = input.Trim().Normalize(NormalizationForm.FormD);
 
         normalizedString = normalizedString
             .Replace("Ø", "O")
@@ -656,9 +670,14 @@ public class GameService
             .Replace("Λ", "A")
             .Replace("Å", "A")
             .Replace("?", "")
-            .Replace("’", "'")
-            .Replace("‘", "'")
-            .Replace("…", "");
+            .Replace("!", "")
+            .Replace("’", "")
+            .Replace("‘", "")
+            .Replace("…", "")
+            .Replace(":", "")
+            .Replace("-", "")
+            .Replace(" ", "")
+            .Replace("\"", "");
 
         var stringBuilder = new StringBuilder();
         foreach (var c in normalizedString)
@@ -735,7 +754,7 @@ public class GameService
         {
             return image;
         }
-        
+
         return null;
     }
 
@@ -785,7 +804,7 @@ public class GameService
         }
         return pixelatedBitmap;
     }
-    
+
     public async Task<JumbleUserStats> GetJumbleUserStats(int userId, ulong discordUserId, JumbleType jumbleType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

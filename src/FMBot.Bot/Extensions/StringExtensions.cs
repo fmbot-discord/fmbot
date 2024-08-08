@@ -9,7 +9,7 @@ using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Extensions;
 
-public static class StringExtensions
+public static partial class StringExtensions
 {
     public static IEnumerable<string> SplitByMessageLength(this string str)
     {
@@ -231,7 +231,7 @@ public static class StringExtensions
     {
         return hints == 1 ? "hint" : "hints";
     }
-    
+
     public static string GetGamesString(long? games)
     {
         return games == 1 ? "game" : "games";
@@ -485,12 +485,15 @@ public static class StringExtensions
             return input;
         }
 
-        const string pattern = @"\s*\(((?:[^)]+\s+)?(edition|version|remastered|remaster|remix|mix|soundtrack|deluxe))\)\s*$";
-        input = Regex.Replace(input, pattern, "", RegexOptions.IgnoreCase).TrimEnd();
-
-        const string kpopPattern = @"\s*-\s*(The \d+(st|nd|rd|th) (Mini )?Album( Repackage)?)\s*$";
-        input = Regex.Replace(input, kpopPattern, "", RegexOptions.IgnoreCase);
+        input = EditionRegex().Replace(input, "").Trim();
+        input = KpopRegex().Replace(input, "");
 
         return input.Trim();
     }
+
+    [GeneratedRegex(@"\s*\([^)]*\)\s*", RegexOptions.IgnoreCase)]
+    private static partial Regex EditionRegex();
+
+    [GeneratedRegex(@"\s*-\s*(The \d+(st|nd|rd|th) (Mini )?Album( Repackage)?)\s*$", RegexOptions.IgnoreCase)]
+    private static partial Regex KpopRegex();
 }

@@ -532,6 +532,10 @@ public class GameBuilders
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
+        var playAgainButton = new ComponentBuilder().WithButton("Play again",
+            $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
+            ButtonStyle.Secondary);
+
         if (currentGame.Answers is { Count: >= 1 })
         {
             var separateResponse = new EmbedBuilder();
@@ -539,17 +543,18 @@ public class GameBuilders
                 $"**{userTitle}** gave up! It was `{currentGame.CorrectAnswer}`" :
                 $"**{userTitle}** gave up! It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
-            var components = new ComponentBuilder().WithButton("Play again",
-                $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
-                ButtonStyle.Secondary);
             if (context.DiscordChannel is IMessageChannel msgChannel)
             {
-                _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, components, new ReferencedMusic
+                _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainButton, new ReferencedMusic
                 {
                     Artist = currentGame.ArtistName,
                     Album = currentGame.AlbumName
                 }));
             }
+        }
+        else
+        {
+            response.Components = playAgainButton;
         }
 
         if (currentGame.JumbleType == JumbleType.Pixelation)
@@ -597,14 +602,14 @@ public class GameBuilders
             var messageLength = commandContext.Message.Content.Length;
             var answerLength = currentGame.CorrectAnswer.Length;
 
-            var uncleanedAnswerLength = currentGame.JumbleType == JumbleType.Artist
-                ? currentGame.ArtistName.Length
-                : currentGame.AlbumName.Length;
+            var uncleanedAnswer = currentGame.JumbleType == JumbleType.Artist
+                ? currentGame.ArtistName
+                : currentGame.AlbumName;
 
             if (messageLength >= answerLength / 2 &&
-                messageLength <= Math.Max(Math.Min(answerLength + answerLength / 2, answerLength + 15), uncleanedAnswerLength + 2))
+                messageLength <= Math.Max(Math.Min(answerLength + answerLength / 2, answerLength + 15), uncleanedAnswer.Length + 2))
             {
-                var answerIsRight = GameService.AnswerIsRight(currentGame, commandContext.Message.Content);
+                var answerIsRight = GameService.AnswerIsRight(currentGame, commandContext.Message.Content, uncleanedAnswer);
 
                 if (answerIsRight)
                 {
@@ -625,12 +630,12 @@ public class GameBuilders
                     var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
                     separateResponse.WithFooter($"Answered in {timeTaken.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}s");
                     separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
-                    var components = new ComponentBuilder().WithButton("Play again",
+                    var playAgainComponent = new ComponentBuilder().WithButton("Play again",
                         $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
                         ButtonStyle.Secondary);
                     if (context.DiscordChannel is IMessageChannel msgChannel)
                     {
-                        _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, components, new ReferencedMusic
+                        _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent, new ReferencedMusic
                         {
                             Artist = currentGame.ArtistName,
                             Album = currentGame.AlbumName
@@ -682,7 +687,7 @@ public class GameBuilders
                     var levenshteinDistance =
                         GameService.GetLevenshteinDistance(currentGame.CorrectAnswer.ToLower(), commandContext.Message.Content.ToLower());
 
-                    if (levenshteinDistance == 1)
+                    if (levenshteinDistance == 1 || levenshteinDistance == 2 && commandContext.Message.Content.Length > 4)
                     {
                         await commandContext.Message.AddReactionAsync(new Emoji("🤏"));
                     }
@@ -724,6 +729,10 @@ public class GameBuilders
         response.Components = null;
         response.Embed.WithColor(DiscordConstants.AppleMusicRed);
 
+        var playAgainComponent = new ComponentBuilder().WithButton("Play again",
+            $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
+            ButtonStyle.Secondary);
+
         if (currentGame.Answers is { Count: >= 1 })
         {
             var separateResponse = new EmbedBuilder();
@@ -731,17 +740,18 @@ public class GameBuilders
                 $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}`" :
                 $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
-            var components = new ComponentBuilder().WithButton("Play again",
-                $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
-                ButtonStyle.Secondary);
             if (context.DiscordChannel is IMessageChannel msgChannel)
             {
-                _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, components, new ReferencedMusic
+                _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainComponent, new ReferencedMusic
                 {
                     Artist = currentGame.ArtistName,
                     Album = currentGame.AlbumName
                 }));
             }
+        }
+        else
+        {
+            response.Components = playAgainComponent;
         }
 
         if (currentGame.JumbleType == JumbleType.Pixelation)
