@@ -440,6 +440,8 @@ public class ArtistSlashCommands : InteractionModuleBase
     [SlashCommand("globalwhoknows", "Shows what other users listen to an artist in .fmbot")]
     [UsernameSetRequired]
     [RequiresIndex]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task GlobalWhoKnowsAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,

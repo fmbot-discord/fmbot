@@ -155,6 +155,8 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("gwktrack", "Shows what other users listen to a track globally in .fmbot")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task GlobalWhoKnowsTrackAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(TrackAutoComplete))] string name = null,

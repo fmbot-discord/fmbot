@@ -182,6 +182,8 @@ public class AlbumSlashCommands : InteractionModuleBase
 
     [SlashCommand("gwkalbum", "Shows what other users listen to an album globally in .fmbot")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task GlobalWhoKnowsAlbumAsync(
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))]
