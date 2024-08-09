@@ -304,7 +304,7 @@ public class IndexService
             return new List<UserPlay>();
         }
 
-        var indexLimitFilter = DateTime.UtcNow.AddYears(-2);
+        var indexLimitFilter = DateTime.UtcNow.AddYears(-1).AddMonths(-6);
         return recentPlays.Content.RecentTracks
             .Where(w => !w.NowPlaying && w.TimePlayed.HasValue)
             .Where(w => UserHasHigherIndexLimit(user) || w.TimePlayed > indexLimitFilter)
