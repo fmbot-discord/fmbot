@@ -24,7 +24,8 @@ public abstract class MusicBot
         new TempoMusicBot(),
         new BleedMusicBot(),
         new UzoxMusicBot(),
-        new ListenMusicBot()
+        new ListenMusicBot(),
+        new FlaviMusicBot()
     };
 
     protected MusicBot(string name, bool possiblyIncludesLinks = true, bool skipUploaderName = false, bool trackNameFirst = false)
