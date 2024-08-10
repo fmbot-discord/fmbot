@@ -12,7 +12,7 @@ public enum UserSetting
     WkMode = 4,
     [Option("Out of sync", "Info on what to do when Spotify and Last.fm are out of sync")]
     OutOfSync = 6,
-    [Option("Spotify import ⭐", "Add and manage your Spotify imports")]
+    [Option("Spotify & Apple Music imports ⭐", "Add and manage your Spotify & Apple Music imports")]
     SpotifyImport = 10,
     [Option("User reactions ⭐", "Set personal automated emoji reactions")]
     UserReactions = 11,

@@ -280,7 +280,7 @@ public class CommandHandler
 
                     embed.UsernameNotSetErrorResponse(prfx ?? this._botSettings.Bot.Prefix,
                         userNickname ?? context.User.GlobalName ?? context.User.Username);
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    await context.Channel.SendMessageAsync("", false, embed.Build(), components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
                 }

@@ -204,6 +204,41 @@ public class UserBuilder
         return response;
     }
 
+    public static ResponseModel Login(User contextUser, string authToken, string publicKey)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var reply = new StringBuilder();
+        var link =
+            $"http://www.last.fm/api/auth/?api_key={publicKey}&token={authToken}";
+
+        if (contextUser == null)
+        {
+            reply.AppendLine($"Use the button below to add your Last.fm account to .fmbot.");
+            reply.AppendLine();
+            reply.AppendLine("This link will expire in 5 minutes, please wait a moment after allowing access...");
+        }
+        else
+        {
+            reply.AppendLine(
+                $"You have already connected a Last.fm account to the bot. If you want to change or reconnect your connected Last.fm account, **[click here.]({link})** " +
+                $"Note that this link will expire after 5 minutes. Also use this link if the bot says you have to re-login.");
+            reply.AppendLine();
+            reply.AppendLine(
+                $"Using Spotify and having problems with your music not being tracked or it lagging behind? " +
+                $"Re-logging in again will not fix this, please use `/outofsync` for help instead.");
+        }
+
+        response.Embed.WithColor(DiscordConstants.LastFmColorRed);
+        response.Embed.WithDescription(reply.ToString());
+        response.Components = new ComponentBuilder()
+            .WithButton("Connect Last.fm account to .fmbot", style: ButtonStyle.Link, url: link);
+        return response;
+    }
+
     public static ResponseModel FmMode(
         ContextModel context,
         Guild guild = null)
