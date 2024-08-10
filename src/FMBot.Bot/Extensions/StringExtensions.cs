@@ -150,13 +150,15 @@ public static partial class StringExtensions
             CommandCategory.Tracks => "Info, WhoKnows, love, unlove, servertracks, toptracks",
             CommandCategory.Albums => "Info, WhoKnows, cover, serveralbums, topalbums",
             CommandCategory.WhoKnows => "Global, server, friends, settings",
+            CommandCategory.Games => "Jumble and Pixel Jumble",
             CommandCategory.Friends => "Add, remove, WhoKnows, view",
             CommandCategory.Genres => "Info, WhoKnows, topgenres",
             CommandCategory.Charts => "Image charts",
             CommandCategory.Crowns => "Crowns commands and crown management",
-            CommandCategory.ThirdParty => "Spotify, Discogs, Youtube and Genius",
+            CommandCategory.ThirdParty => "Spotify, Discogs, Youtube, Apple Music and Genius",
             CommandCategory.UserSettings => "Configure your user settings",
             CommandCategory.ServerSettings => "Configure your server settings",
+            CommandCategory.Importing => "Importing Spotify or Apple Music history",
             CommandCategory.Other => "Other",
             _ => null
         };

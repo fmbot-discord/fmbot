@@ -72,9 +72,9 @@ public class UserCommands : BaseCommandModule
     }
 
     [Command("settings", RunMode = RunMode.Async)]
-    [Summary("Shows user settings for .fmbot")]
+    [Summary("Shows overview of user settings for .fmbot")]
     [UsernameSetRequired]
-    [CommandCategories(CommandCategory.ServerSettings)]
+    [CommandCategories(CommandCategory.UserSettings)]
     [Alias("userconfig", "usersettings", "usersetting", "setting")]
     public async Task UserSettingsAsync([Remainder] string searchValues = null)
     {
