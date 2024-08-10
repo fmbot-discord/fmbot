@@ -128,20 +128,20 @@ public class GameService
 
         var today = DateTime.Today;
         var recentJumblesHashset = recentJumbles
-            .Where(w => w.DateStarted.Date == today && w.AlbumName != null)
+            .Where(w => w.DateStarted.Date >= today && w.AlbumName != null)
             .GroupBy(g => g.AlbumName)
             .Select(s => s.Key)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         if (topAlbums.Count > 250 && recentJumbles.Count > 50)
         {
-            var recentJumbleAnswers = recentJumbles
+            var recentJumbleAlbums = recentJumbles
                 .Where(w => w.AlbumName != null)
                 .GroupBy(g => g.AlbumName)
                 .Select(s => s.Key)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            recentJumblesHashset.UnionWith(recentJumbleAnswers);
+            recentJumblesHashset.UnionWith(recentJumbleAlbums);
         }
 
         topAlbums = topAlbums
@@ -314,7 +314,7 @@ public class GameService
 
     public async Task<List<JumbleSession>> GetRecentJumbles(int userId, JumbleType jumbleType)
     {
-        const string sql = "SELECT correct_answer, date_started FROM public.jumble_sessions " +
+        const string sql = "SELECT correct_answer, date_started, album_name, artist_name FROM public.jumble_sessions " +
                            "WHERE starter_user_id = @userId AND jumble_type = @jumbleType LIMIT 250 ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
