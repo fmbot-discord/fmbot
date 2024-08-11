@@ -239,80 +239,13 @@ public class UserSlashCommands : InteractionModuleBase
     public async Task LoginAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var token = await this._dataSourceFactory.GetAuthToken();
 
         try
         {
-            var loginUrlResponse =
-                UserBuilder.Login(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey);
+            var response = UserBuilder.LoginRequired("/", contextUser != null);
 
-            await RespondAsync(null, [loginUrlResponse.Embed.Build()], ephemeral: true, components: loginUrlResponse.Components.Build());
-            this.Context.LogCommandUsed();
-
-            var loginSuccess = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
-
-            var followUpEmbed = new EmbedBuilder();
-            if (loginSuccess)
-            {
-                followUpEmbed.WithColor(DiscordConstants.SuccessColorGreen);
-                var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-                var settingCommand = PublicProperties.SlashCommands.ContainsKey("settings")
-                    ? $"</settings:{PublicProperties.SlashCommands["settings"]}>"
-                    : "`/settings`";
-                var description =
-                    $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newUserSettings.UserNameLastFM)})!\n\n" +
-                    $"Use {settingCommand} to change your settings and to customize your .fmbot experience.\n\n" +
-                    $"Please note that .fmbot is not affiliated with Last.fm.";
-
-                followUpEmbed.WithDescription(description);
-
-                await FollowupAsync(null, new[] { followUpEmbed.Build() }, ephemeral: true);
-
-                this.Context.LogCommandUsed();
-
-                if (contextUser != null && !string.Equals(contextUser.UserNameLastFM, newUserSettings.UserNameLastFM,
-                        StringComparison.CurrentCultureIgnoreCase))
-                {
-                    await this._indexService.IndexUser(newUserSettings);
-                }
-
-                if (this.Context.Guild != null)
-                {
-                    var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
-                    if (guild != null)
-                    {
-                        var discordGuildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-                        var newGuildUser = new GuildUser
-                        {
-                            Bot = false,
-                            GuildId = guild.GuildId,
-                            UserId = newUserSettings.UserId,
-                            UserName = discordGuildUser?.DisplayName,
-                        };
-
-                        if (guild.WhoKnowsWhitelistRoleId.HasValue && discordGuildUser != null)
-                        {
-                            newGuildUser.WhoKnowsWhitelisted =
-                                discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
-                        }
-
-                        await this._indexService.AddGuildUserToDatabase(newGuildUser);
-                    }
-                }
-            }
-            else
-            {
-                followUpEmbed.WithColor(DiscordConstants.WarningColorOrange);
-                followUpEmbed.WithDescription(
-                    $"Login expired. Re-run the command to try again.\n\n" +
-                    $"Getting 'Invalid API key' error? This is a [known Last.fm issue](https://support.last.fm/t/invalid-api-key-error-when-connecting-to-discord-fmbot-on-iphone/65329) on iOS. " +
-                    $"Current workaround is to try connecting on a different device.\n\n" +
-                    $"Still having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.");
-
-                await FollowupAsync(null, new[] { followUpEmbed.Build() }, ephemeral: true);
-
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            }
+            await this.Context.SendResponse(this.Interactivity, response, true);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -329,36 +262,24 @@ public class UserSlashCommands : InteractionModuleBase
         try
         {
             var loginUrlResponse =
-                UserBuilder.Login(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey);
+                UserBuilder.StartLogin(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey);
 
             await RespondAsync(null, [loginUrlResponse.Embed.Build()], ephemeral: true, components: loginUrlResponse.Components.Build());
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
 
             var loginSuccess = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
 
-            var followUpEmbed = new EmbedBuilder();
             if (loginSuccess)
             {
-                followUpEmbed.WithColor(DiscordConstants.SuccessColorGreen);
                 var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-                var description =
-                    $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newUserSettings.UserNameLastFM)})!\n\n" +
-                    $"Use the button below to configure your settings and to customize your .fmbot experience.\n\n" +
-                    $"Please note that .fmbot is not affiliated with Last.fm.";
-                var settingComponents = new ComponentBuilder()
-                    .WithButton("Settings", style: ButtonStyle.Secondary, customId: InteractionConstants.User.Settings,
-                        emote: new Emoji("⚙️"))
-                    .WithButton("Add .fmbot", style: ButtonStyle.Link,
-                        url: "https://discord.com/oauth2/authorize?client_id=356268235697553409");
+                var loginSuccessResponse =
+                    UserBuilder.LoginSuccess(newUserSettings);
 
-                followUpEmbed.WithDescription(description);
-
-                await FollowupAsync(null, new[] { followUpEmbed.Build() }, ephemeral: true,
-                    components: settingComponents.Build());
-
+                await FollowupAsync(null, [loginSuccessResponse.Embed.Build()], ephemeral: true,
+                    components: loginSuccessResponse.Components.Build());
                 this.Context.LogCommandUsed();
 
-                if (contextUser != null && !string.Equals(contextUser.UserNameLastFM, newUserSettings.UserNameLastFM,
+                if (contextUser == null || !string.Equals(contextUser.UserNameLastFM, newUserSettings.UserNameLastFM,
                         StringComparison.CurrentCultureIgnoreCase))
                 {
                     await this._indexService.IndexUser(newUserSettings);
@@ -390,14 +311,8 @@ public class UserSlashCommands : InteractionModuleBase
             }
             else
             {
-                followUpEmbed.WithColor(DiscordConstants.WarningColorOrange);
-                followUpEmbed.WithDescription(
-                    $"Login expired. Re-run the command to try again.\n\n" +
-                    $"Getting 'Invalid API key' error? This is a [known Last.fm issue](https://support.last.fm/t/invalid-api-key-error-when-connecting-to-discord-fmbot-on-iphone/65329) on iOS. " +
-                    $"Current workaround is to try connecting on a different device.\n\n" +
-                    $"Still having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.");
-
-                await FollowupAsync(null, new[] { followUpEmbed.Build() }, ephemeral: true);
+                var loginFailure = UserBuilder.LoginFailure();
+                await FollowupAsync(null, [loginFailure.Embed.Build()], ephemeral: true);
 
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
             }

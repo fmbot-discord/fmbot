@@ -140,15 +140,21 @@ public class UserCommands : BaseCommandModule
 
             if (userSettings.DifferentUser && guildUsers.ContainsKey(userSettings.UserId))
             {
-                await this.Context.Channel.SendMessageAsync($"<@{userSettings.DiscordUserId}>'s Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}", allowedMentions: AllowedMentions.None);
+                await this.Context.Channel.SendMessageAsync(
+                    $"<@{userSettings.DiscordUserId}>'s Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
+                    allowedMentions: AllowedMentions.None);
             }
             else if (userSettings.DifferentUser)
             {
-                await this.Context.Channel.SendMessageAsync($"Their Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}", allowedMentions: AllowedMentions.None);
+                await this.Context.Channel.SendMessageAsync(
+                    $"Their Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
+                    allowedMentions: AllowedMentions.None);
             }
             else
             {
-                await this.Context.Channel.SendMessageAsync($"Your Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}", allowedMentions: AllowedMentions.None);
+                await this.Context.Channel.SendMessageAsync(
+                    $"Your Last.fm profile: {LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}",
+                    allowedMentions: AllowedMentions.None);
             }
 
             this.Context.LogCommandUsed();
@@ -188,13 +194,16 @@ public class UserCommands : BaseCommandModule
         }
         else
         {
-            var lfmTopArtists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, artistLimit);
+            var lfmTopArtists =
+                await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings,
+                    artistLimit);
             topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
         }
 
         if (topArtists == null || !topArtists.Any())
         {
-            this._embed.WithDescription($"Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
+            this._embed.WithDescription(
+                $"Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
             this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
             await ReplyAsync(embed: this._embed.Build());
             return;
@@ -207,7 +216,8 @@ public class UserCommands : BaseCommandModule
         try
         {
             var response =
-                UserBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings, contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
+                UserBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings,
+                    contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
 
             if (commandUsesLeft <= 0)
             {
@@ -235,9 +245,11 @@ public class UserCommands : BaseCommandModule
                 .AddUser(this.Context.User)
                 .Build();
 
-            var result = await this.Interactivity.SendSelectionAsync(selection, this.Context.Channel, TimeSpan.FromMinutes(10));
+            var result =
+                await this.Interactivity.SendSelectionAsync(selection, this.Context.Channel, TimeSpan.FromMinutes(10));
 
-            var handledResponse = await this._userBuilder.JudgeHandleAsync(new ContextModel(this.Context, prfx, contextUser),
+            var handledResponse = await this._userBuilder.JudgeHandleAsync(
+                new ContextModel(this.Context, prfx, contextUser),
                 userSettings, result, topArtists);
 
             this.Context.LogCommandUsed(handledResponse.CommandResponse);
@@ -251,7 +263,8 @@ public class UserCommands : BaseCommandModule
     [Command("userreactions", RunMode = RunMode.Async)]
     [Summary("Sets the automatic emoji reactions for the `fm` and `featured` command.\n\n" +
              "Use this command without any emojis to disable.")]
-    [Examples("userreactions :PagChomp: :PensiveBlob:", "userreactions 😀 😯 🥵", "userreactions 😀 😯 :PensiveBlob:", "userreactions")]
+    [Examples("userreactions :PagChomp: :PensiveBlob:", "userreactions 😀 😯 🥵", "userreactions 😀 😯 :PensiveBlob:",
+        "userreactions")]
     [Alias("usersetreactions", "useremojis", "userreacts")]
     [UsernameSetRequired]
     public async Task SetUserReactionsAsync([Remainder] string emojis = null)
@@ -259,7 +272,8 @@ public class UserCommands : BaseCommandModule
         var user = await this._userService.GetUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var supporterRequiredResponse = UserBuilder.UserReactionsSupporterRequired(new ContextModel(this.Context, prfx, user), prfx);
+        var supporterRequiredResponse =
+            UserBuilder.UserReactionsSupporterRequired(new ContextModel(this.Context, prfx, user), prfx);
 
         if (supporterRequiredResponse != null)
         {
@@ -274,9 +288,10 @@ public class UserCommands : BaseCommandModule
 
             if (user?.EmoteReactions == null || !user.EmoteReactions.Any())
             {
-                this._embed.WithDescription("Use this command with emojis to set the default reactions to `fm` and `featured`.\n\n" +
-                                            "For example:\n" +
-                                            $"`{prfx}userreactions ⬆️ ⬇️`");
+                this._embed.WithDescription(
+                    "Use this command with emojis to set the default reactions to `fm` and `featured`.\n\n" +
+                    "For example:\n" +
+                    $"`{prfx}userreactions ⬆️ ⬇️`");
             }
             else
             {
@@ -318,8 +333,9 @@ public class UserCommands : BaseCommandModule
         await this._userService.SetUserReactionsAsync(user.UserId, emoteArray);
 
         this._embed.WithTitle("Automatic user emoji reactions set");
-        this._embed.WithDescription("This will apply these emotes to all your `fm` and `featured` commands, regardless of server. " +
-                                    "Please check if all reactions have been applied to this message correctly.");
+        this._embed.WithDescription(
+            "This will apply these emotes to all your `fm` and `featured` commands, regardless of server. " +
+            "Please check if all reactions have been applied to this message correctly.");
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var message = await ReplyAsync(embed: this._embed.Build());
@@ -383,19 +399,22 @@ public class UserCommands : BaseCommandModule
                 PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Message.Id, message.Id);
                 PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Message.Id);
 
-                if (this._timerService.CurrentFeatured?.Reactions != null && this._timerService.CurrentFeatured.Reactions.Any())
+                if (this._timerService.CurrentFeatured?.Reactions != null &&
+                    this._timerService.CurrentFeatured.Reactions.Any())
                 {
                     await GuildService.AddReactionsAsync(message, this._timerService.CurrentFeatured.Reactions);
                 }
                 else
                 {
-                    if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
+                    if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() &&
+                        SupporterService.IsSupporter(contextUser.UserType))
                     {
                         await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
                     }
                     else if (this.Context.Guild != null)
                     {
-                        await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+                        await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild,
+                            response.Text == "in-server");
                     }
                 }
             }
@@ -446,7 +465,8 @@ public class UserCommands : BaseCommandModule
     }
 
     [Command("rateyourmusic", RunMode = RunMode.Async)]
-    [Summary("Enables or disables the rateyourmusic links. This changes all album links in .fmbot to RYM links instead of Last.fm links.")]
+    [Summary(
+        "Enables or disables the rateyourmusic links. This changes all album links in .fmbot to RYM links instead of Last.fm links.")]
     [Alias("rym")]
     [CommandCategories(CommandCategory.UserSettings)]
     [UsernameSetRequired]
@@ -593,165 +613,18 @@ public class UserCommands : BaseCommandModule
     }
 
     [Command("login", RunMode = RunMode.Async)]
-    [Summary("Logs you in using a link.\n\n" +
-             "Not receiving a DM? Please check if you have direct messages from server members enabled.")]
+    [Summary("Starts the login process for connecting a Last.fm account to .fmbot.")]
     [Alias("set", "setusername", "fm set", "connect")]
     [CommandCategories(CommandCategory.UserSettings)]
     public async Task LoginAsync([Remainder] string _ = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
 
-        var msg = this.Context.Message as SocketUserMessage;
-        if (StackCooldownTarget.Contains(this.Context.Message.Author))
-        {
-            if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(1) >= DateTimeOffset.Now)
-            {
-                var loginCommand = PublicProperties.SlashCommands.ContainsKey("login") ? $"</login:{PublicProperties.SlashCommands["login"]}>" : "`/login`";
+        var response = UserBuilder.LoginRequired(prfx, contextUser != null);
 
-                await ReplyAsync($"A login link has already been sent to your DMs.\n" +
-                                 $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
-                                 $"You can also try using the slash command version {loginCommand}.");
-
-                this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now.AddMinutes(-5);
-                return;
-            }
-
-            StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
-        }
-        else
-        {
-            StackCooldownTarget.Add(msg.Author);
-            StackCooldownTimer.Add(DateTimeOffset.Now);
-        }
-
-        var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var token = await this._dataSourceFactory.GetAuthToken();
-
-        var reply = new StringBuilder();
-        var link =
-            $"http://www.last.fm/api/auth/?api_key={this._botSettings.LastFm.PublicKey}&token={token.Content.Token}";
-
-        if (existingUserSettings == null)
-        {
-            reply.AppendLine($"**[Click here to add your Last.fm account to .fmbot]({link})**");
-            reply.AppendLine();
-            reply.AppendLine("Link will expire after 5 minutes, please wait a moment after allowing access...");
-            reply.AppendLine();
-            reply.AppendLine("Don't have a Last.fm account yet? " +
-                             $"[Sign up here](https://last.fm/join) and see [how to track your music here](https://last.fm/about/trackmymusic). " +
-                             $"After that you can [authorize .fmbot]({link}).");
-        }
-        else
-        {
-            reply.AppendLine(
-                $"You have already logged in before. If you want to change or reconnect your connected Last.fm account, **[click here.]({link})** " +
-                $"Note that this link will expire after 5 minutes. Also use this link if the bot says you have to re-login.");
-            reply.AppendLine();
-            reply.AppendLine(
-                $"Using Spotify and having problems with your music not being tracked or it lagging behind? " +
-                $"Re-logging in again will not fix this, please use `/outofsync` for help instead.");
-        }
-
-        this._embed.WithDescription(reply.ToString());
-        this._embed.WithColor(DiscordConstants.LastFmColorRed);
-
-        var authorizeMessage = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
-
-        if (!this._guildService.CheckIfDM(this.Context))
-        {
-            var serverEmbed = new EmbedBuilder()
-                .WithColor(DiscordConstants.InformationColorBlue);
-
-            var guildReply = "Check your DMs for a link to connect your Last.fm account to .fmbot!";
-
-            if (this.Context.Message.Content.Contains("set"))
-            {
-                guildReply += $"\nPlease use `{prfx}mode` to change how your .fm command looks.";
-            }
-
-            if (existingUserSettings != null)
-            {
-                guildReply = $"You have already logged in before, however a link to re-connect your Last.fm account to .fmbot has still been sent to your DMs!\n\n" +
-                             $"Using Spotify and having problems with your music not being tracked or it lagging behind? Re-logging in again will not fix this, please use `{prfx}outofsync` for help instead.";
-            }
-
-            serverEmbed.WithDescription(guildReply);
-            await this.Context.Channel.SendMessageAsync("", false, serverEmbed.Build());
-        }
-
-        var success = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
-
-        if (success)
-        {
-            var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            await authorizeMessage.ModifyAsync(m =>
-            {
-                var settingCommand = PublicProperties.SlashCommands.ContainsKey("settings") ? $"</settings:{PublicProperties.SlashCommands["settings"]}>" : "`/settings`";
-                var description =
-                    $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newUserSettings.UserNameLastFM)})!\n\n" +
-                    $"Use {settingCommand} to change your settings and to customize your .fmbot experience.";
-
-                var sourceGuildId = this.Context.Guild?.Id;
-                var sourceChannel = this.Context.Channel;
-
-                if (sourceGuildId != null && sourceChannel != null)
-                {
-                    description += "\n\n" +
-                                   $"**[Click here to go back to #{sourceChannel.Name}](https://discord.com/channels/{sourceGuildId}/{sourceChannel.Id}/)**";
-                }
-
-                m.Embed = new EmbedBuilder()
-                    .WithDescription(description)
-                    .WithColor(DiscordConstants.SuccessColorGreen)
-                    .Build();
-            });
-
-            this.Context.LogCommandUsed();
-
-            if (existingUserSettings != null && !string.Equals(existingUserSettings.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
-            {
-                await this._indexService.IndexUser(newUserSettings);
-            }
-
-            if (!this._guildService.CheckIfDM(this.Context))
-            {
-                var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
-                if (guild != null)
-                {
-                    var discordGuildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-                    var newGuildUser = new GuildUser
-                    {
-                        Bot = false,
-                        GuildId = guild.GuildId,
-                        UserId = newUserSettings.UserId,
-                        UserName = discordGuildUser?.DisplayName,
-                    };
-
-                    if (guild.WhoKnowsWhitelistRoleId.HasValue && discordGuildUser != null)
-                    {
-                        newGuildUser.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
-                    }
-
-                    await this._indexService.AddGuildUserToDatabase(newGuildUser);
-                }
-            }
-        }
-        else
-        {
-            await authorizeMessage.ModifyAsync(m =>
-            {
-                m.Embed = new EmbedBuilder()
-                    .WithDescription($"Login expired. Re-run the command to try again.\n\n" +
-                                     $"Getting 'Invalid API key' error? This is a [known Last.fm issue](https://support.last.fm/t/invalid-api-key-error-when-connecting-to-discord-fmbot-on-iphone/65329) on iOS. " +
-                                     $"Current workaround is to try connecting on a different device.\n\n" +
-                                     $"Still having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.")
-                    .WithColor(DiscordConstants.WarningColorOrange)
-                    .Build();
-            });
-
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-        }
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("remove", RunMode = RunMode.Async)]
