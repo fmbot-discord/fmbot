@@ -2,6 +2,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -62,9 +63,9 @@ public class ImportBuilders
                 emote: Emote.Parse("<:spotify:882221219334725662>"))
             .WithButton("Apple Music", InteractionConstants.ImportInstructionsAppleMusic,
                 emote: Emote.Parse("<:apple_music:1218182727149420544>"));
-        
+
         response.Embed.WithDescription(description.ToString());
-        
+
         return response;
     }
 
@@ -214,9 +215,10 @@ public class ImportBuilders
 
         foreach (var year in yearGroups)
         {
+            var playcount = year.Count();
             years.AppendLine(
                 $"**`{year.Key}`** " +
-                $"- **{year.Count()}** plays");
+                $"- **{playcount}** {StringExtensions.GetPlaysString(playcount)}");
         }
 
         return years.Length > 0 ? years.ToString() : null;

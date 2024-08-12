@@ -9,6 +9,7 @@ using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
@@ -61,7 +62,7 @@ public static class CommandContextExtensions
 
     public static async Task<ulong?> SendResponse(this ICommandContext context, InteractiveService interactiveService, ResponseModel response)
     {
-        ulong? responseId = null;
+        IUserMessage responseMessage = null;
 
         if (PublicProperties.UsedCommandsResponseMessageId.ContainsKey(context.Message.Id))
         {
@@ -135,18 +136,18 @@ public static class CommandContextExtensions
         {
             case ResponseType.Text:
                 var text = await context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None, components: response.Components?.Build());
-                responseId = text.Id;
+                responseMessage = text;
                 break;
             case ResponseType.Embed:
                 var embed = await context.Channel.SendMessageAsync("", false, response.Embed.Build(), components: response.Components?.Build());
-                responseId = embed.Id;
+                responseMessage = embed;
                 break;
             case ResponseType.Paginator:
                 var paginator = await interactiveService.SendPaginatorAsync(
                     response.StaticPaginator,
                     context.Channel,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-                responseId = paginator.Message.Id;
+                responseMessage = paginator.Message;
                 break;
             case ResponseType.ImageWithEmbed:
                 var imageEmbedFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
@@ -160,7 +161,7 @@ public static class CommandContextExtensions
                     components: response.Components?.Build());
 
                 await response.Stream.DisposeAsync();
-                responseId = imageWithEmbed.Id;
+                responseMessage = imageWithEmbed;
                 break;
             case ResponseType.ImageOnly:
                 var imageFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
@@ -173,16 +174,16 @@ public static class CommandContextExtensions
                     components: response.Components?.Build());
 
                 await response.Stream.DisposeAsync();
-                responseId = image.Id;
+                responseMessage = image;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
 
-        if (responseId.HasValue)
+        if (responseMessage != null)
         {
-            PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Message.Id, responseId.Value);
-            PublicProperties.UsedCommandsResponseContextId.TryAdd(responseId.Value, context.Message.Id);
+            PublicProperties.UsedCommandsResponseMessageId.TryAdd(context.Message.Id, responseMessage.Id);
+            PublicProperties.UsedCommandsResponseContextId.TryAdd(responseMessage.Id, context.Message.Id);
         }
 
         if (response.HintShown == true && !PublicProperties.UsedCommandsHintShown.Contains(context.Message.Id))
@@ -190,7 +191,24 @@ public static class CommandContextExtensions
             PublicProperties.UsedCommandsHintShown.Add(context.Message.Id);
         }
 
-        return responseId;
+        if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
+            response.CommandResponse == CommandResponse.Ok)
+        {
+            try
+            {
+                await GuildService.AddReactionsAsync(responseMessage, response.EmoteReactions);
+            }
+            catch (Exception e)
+            {
+                await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
+                _ = interactiveService.DelayedDeleteMessageAsync(
+                    await context.Channel.SendMessageAsync(
+                        $"Could not add automatic emoji reactions. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."),
+                    TimeSpan.FromSeconds(60));
+            }
+        }
+
+        return responseMessage?.Id;
     }
 
     public static string GenerateRandomCode()

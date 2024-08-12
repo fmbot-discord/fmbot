@@ -443,7 +443,7 @@ public class GameBuilders
             response.FileName = $"pixelation-{currentGame.JumbleSessionId}-{blurLevel}.png";
         }
 
-        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints);
+        BuildJumbleEmbed(response.Embed, currentGame.JumbledArtist, currentGame.Hints, jumbleType: currentGame.JumbleType);
         response.Components = BuildJumbleComponents(currentGame.JumbleSessionId, currentGame.Hints, currentGame.BlurLevel, currentGame.JumbledArtist == null);
 
         return response;

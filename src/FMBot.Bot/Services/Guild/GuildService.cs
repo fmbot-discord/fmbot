@@ -254,7 +254,7 @@ public class GuildService
 
             users = users
                 .Where(w => w.Value.Roles != null && !guild.BlockedRoles.Any(a => w.Value.Roles.Contains(a)))
-                .ToDictionary(i => i.Key, i => i.Value); 
+                .ToDictionary(i => i.Key, i => i.Value);
 
             stats.BlockedRolesFiltered = preFilterCount - users.Count;
         }
@@ -1047,7 +1047,7 @@ public class GuildService
         {
             return null;
         }
-        
+
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
             .AsQueryable()
@@ -1202,6 +1202,21 @@ public class GuildService
             var emote = new Emoji("🥳");
             await message.AddReactionAsync(emote);
         }
+    }
+
+    public async Task<string[]> GetGuildReactions(ulong discordGuildId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var dbGuild = await db.Guilds
+            .AsQueryable()
+            .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+
+        if (dbGuild?.EmoteReactions == null || !dbGuild.EmoteReactions.Any())
+        {
+            return null;
+        }
+
+        return dbGuild.EmoteReactions;
     }
 
     public static async Task AddReactionsAsync(IUserMessage message, IEnumerable<string> reactions)

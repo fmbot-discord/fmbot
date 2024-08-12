@@ -151,43 +151,7 @@ public class PlayCommands : BaseCommandModule
 
             var response = await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, prfx, contextUser), userSettings);
 
-            IUserMessage message;
-            if (response.ResponseType == ResponseType.Embed)
-            {
-                message = await ReplyAsync("", false, response.Embed.Build(), allowedMentions: AllowedMentions.None);
-            }
-            else
-            {
-                message = await ReplyAsync(response.Text, allowedMentions: AllowedMentions.None);
-            }
-
-            PublicProperties.UsedCommandsResponseMessageId.TryAdd(this.Context.Message.Id, message.Id);
-            PublicProperties.UsedCommandsResponseContextId.TryAdd(message.Id, this.Context.Message.Id);
-
-            try
-            {
-                if (message != null && response.CommandResponse == CommandResponse.Ok)
-                {
-                    if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
-                    {
-                        await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
-                    }
-                    else if (this.Context.Guild != null)
-                    {
-                        await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
-                _ = this.Interactivity.DelayedDeleteMessageAsync(
-                    await ReplyAsync(
-                        $"Could not add automatic emoji reactions to `{prfx}fm`. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`.",
-                        allowedMentions: AllowedMentions.None),
-                    TimeSpan.FromSeconds(60));
-            }
-
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -417,7 +381,7 @@ public class PlayCommands : BaseCommandModule
 
             if (response.FileName != null)
             {
-                
+
             }
         }
         catch (Exception e)

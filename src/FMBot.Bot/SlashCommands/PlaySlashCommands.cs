@@ -96,6 +96,9 @@ public class PlaySlashCommands : InteractionModuleBase
             var response =
                 await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, contextUser), userSettings);
 
+            string[] emoteReactions = null;
+
+
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
 
@@ -108,14 +111,7 @@ public class PlaySlashCommands : InteractionModuleBase
                     response.CommandResponse == CommandResponse.Ok &&
                     this.Context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
                 {
-                    if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() && SupporterService.IsSupporter(contextUser.UserType))
-                    {
-                        await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);
-                    }
-                    else if (this.Context.Guild != null)
-                    {
-                        await this._guildService.AddGuildReactionsAsync(message, this.Context.Guild);
-                    }
+
                 }
             }
             catch (Exception e)

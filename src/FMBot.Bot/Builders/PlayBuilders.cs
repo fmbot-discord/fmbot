@@ -310,6 +310,15 @@ public class PlayBuilder
                 break;
         }
 
+        if (context.ContextUser.EmoteReactions != null && context.ContextUser.EmoteReactions.Any() && SupporterService.IsSupporter(context.ContextUser.UserType))
+        {
+            response.EmoteReactions = context.ContextUser.EmoteReactions;
+        }
+        else if (context.DiscordGuild != null)
+        {
+            response.EmoteReactions = await this._guildService.GetGuildReactions(context.DiscordGuild.Id);
+        }
+
         return response;
     }
 

@@ -36,6 +36,8 @@ public class ResponseModel
     
     public int? GameSessionId { get; set; }
 
+    public string[] EmoteReactions { get; set; }
+
     public StaticPaginator StaticPaginator { get; set; }
 
     public CommandResponse CommandResponse { get; set; }

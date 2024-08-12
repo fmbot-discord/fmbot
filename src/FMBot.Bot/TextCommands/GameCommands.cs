@@ -17,7 +17,7 @@ using FMBot.Domain;
 
 namespace FMBot.Bot.TextCommands;
 
-//[Name("Games")]
+[Name("Games")]
 public class GameCommands : BaseCommandModule
 {
     private readonly UserService _userService;
