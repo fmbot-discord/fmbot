@@ -343,6 +343,12 @@ public class SupporterService
                             $"*🎮 Play the new `.pixel` game and guess the album together with your friends.*";
                         break;
                     }
+                case 13:
+                    {
+                        message =
+                            $"*🤖 Use .fmbot slash commands everywhere by [adding it to your Discord account](https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1).*";
+                        break;
+                    }
             }
         }
         else

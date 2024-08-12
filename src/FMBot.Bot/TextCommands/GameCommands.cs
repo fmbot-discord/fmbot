@@ -47,7 +47,7 @@ public class GameCommands : BaseCommandModule
     [Command("jumble", RunMode = RunMode.Async)]
     [Summary("Play the Jumble game.")]
     [UsernameSetRequired]
-    [CommandCategories(CommandCategory.Other)]
+    [CommandCategories(CommandCategory.Games)]
     [Alias("j", "jmbl", "jum", "jumbmle")]
     [Options("stats")]
     public async Task JumbleAsync([Remainder] string options = null)
@@ -140,7 +140,7 @@ public class GameCommands : BaseCommandModule
     [Command("pixel", RunMode = RunMode.Async)]
     [Summary("Play the pixel jumble game with albums.")]
     [UsernameSetRequired]
-    [CommandCategories(CommandCategory.Other)]
+    [CommandCategories(CommandCategory.Games)]
     [Alias("px", "pixelation", "aj", "abj", "popidle", "pixeljumble", "pxj")]
     [Options("stats")]
     public async Task PixelAsync([Remainder] string options = null)

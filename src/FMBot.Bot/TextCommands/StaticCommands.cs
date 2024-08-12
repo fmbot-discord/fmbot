@@ -22,6 +22,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Google.Apis.YouTube.v3.Data;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -107,13 +108,18 @@ public class StaticCommands : BaseCommandModule
                                         $"client_id={selfId}" +
                                         "&scope=bot%20applications.commands" +
                                         $"&permissions={Constants.InviteLinkPermissions}).**");
+            embedDescription.AppendLine("- Add .fmbot to your Discord account by **[clicking here](" +
+                                        "https://discord.com/oauth2/authorize?" +
+                                        $"client_id={selfId}" +
+                                        "&scope=applications.commands" +
+                                        "&integration_type=1).**");
         }
 
         embedDescription.AppendLine(
             "- Join the [.fmbot server](http://server.fmbot.xyz/) for support and updates.");
 
         embedDescription.AppendLine(
-            "- Help us cover hosting and other costs on our [OpenCollective](https://opencollective.com/fmbot) and get .fmbot supporter");
+            $"- Help us cover hosting, development and other costs by getting [.fmbot supporter]({Constants.GetSupporterDiscordLink})");
 
         embedDescription.AppendLine(
             "- Check our [website](https://fmbot.xyz/) for more information.");
@@ -127,7 +133,15 @@ public class StaticCommands : BaseCommandModule
                 "The invite link linked here invites the self-hosted instance and not the official .fmbot.");
         }
 
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+        var components = new ComponentBuilder()
+            .WithButton("Add to server", style: ButtonStyle.Link,
+                url:
+                $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=bot%20applications.commands&permissions={Constants.InviteLinkPermissions}")
+            .WithButton("Add to user", style: ButtonStyle.Link,
+                url:
+                $"https://discord.com/oauth2/authorize?client_id={selfId}&scope=applications.commands&integration_type=1");
+
+        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), components: components.Build());
         this.Context.LogCommandUsed();
     }
 
@@ -244,7 +258,7 @@ public class StaticCommands : BaseCommandModule
                     instanceOverviewDescription.Append(
                         $"{DiscordConstants.OneToFiveDown}");
                 }
-                
+
                 instanceOverviewDescription.Append(
                     $" `{instance.InstanceName}`");
                 instanceOverviewDescription.Append(
@@ -581,6 +595,13 @@ public class StaticCommands : BaseCommandModule
                             this._embed.WithDescription(commands);
                             this._embed.Footer = null;
                             this._embed.Fields = new List<EmbedFieldBuilder>();
+                            if (selectedCategory == CommandCategory.Importing)
+                            {
+                                this._embed.AddField("Slash commands:",
+                                    "**`/import spotify`** | *Starts your Spotify import*\n" +
+                                    "**`/import applemusic`** | *Starts your Apple Music import*\n" +
+                                    "**`/import manage`** | *Manage and configure your existing imports*");
+                            }
                         }
                     }
                 }
@@ -665,17 +686,22 @@ public class StaticCommands : BaseCommandModule
 
         description.AppendLine();
         description.AppendLine("**Links**");
-        description.Append("[Help website](https://fmbot.xyz/) - ");
+        description.Append("[Website](https://fmbot.xyz/) - ");
 
         var socketCommandContext = (SocketCommandContext)this.Context;
         var selfId = socketCommandContext.Client.CurrentUser.Id.ToString();
-        description.Append("[Invite the bot](" +
+        description.Append("[Add to server](" +
                            "https://discord.com/oauth2/authorize?" +
                            $"client_id={selfId}" +
                            "&scope=bot%20applications.commands" +
                            $"&permissions={Constants.InviteLinkPermissions})");
+        description.Append(" - [Add to user](" +
+                           "https://discord.com/oauth2/authorize?" +
+                           $"client_id={selfId}" +
+                           "&scope=applications.commands" +
+                           "&integration_type=1)");
 
-        description.Append(" - [Get Supporter](https://opencollective.com/fmbot/contribute)");
+        description.Append($" - [Get Supporter]({Constants.GetSupporterDiscordLink})");
         description.Append(" - [Support server](https://discord.gg/6y3jJjtDqK)");
 
         if (PublicProperties.IssuesAtLastFm)

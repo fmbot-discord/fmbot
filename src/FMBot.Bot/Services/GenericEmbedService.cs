@@ -22,11 +22,18 @@ public static class GenericEmbedService
         var loginCommand = PublicProperties.SlashCommands.ContainsKey("login") ? $"</login:{PublicProperties.SlashCommands["login"]}>" : "`/login`";
         embed.WithDescription($"Hi {name}, welcome to .fmbot. \n" +
                               $"To use this bot you first need to add your Last.fm account.\n\n" +
-                              $"Please use the {loginCommand} command. The bot will then send you a link so you can connect your Last.fm account.");
+                              $"Use the buttons below to sign up or connect your existing Last.fm account.");
 
         embed.WithUrl($"{Constants.DocsUrl}/commands/");
-        
+
         embed.WithColor(DiscordConstants.WarningColorOrange);
+    }
+
+    public static ComponentBuilder UsernameNotSetErrorComponents()
+    {
+        return new ComponentBuilder()
+            .WithButton("Sign up", style: ButtonStyle.Link, url: "https://www.last.fm/join")
+            .WithButton("Connect Last.fm account", style: ButtonStyle.Secondary, customId: InteractionConstants.User.Login);
     }
 
     public static void RateLimitedResponse(this EmbedBuilder embed)

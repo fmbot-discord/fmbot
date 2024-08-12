@@ -14,7 +14,6 @@ public static class Constants
     public const long InviteLinkPermissions = 275415092288;
 
     public const ulong BotProductionId = 356268235697553409;
-
     public const ulong BotBetaId = 493845886166630443;
 
     public const string DocsUrl = "https://fmbot.xyz";
@@ -34,7 +33,6 @@ public static class Constants
 
     public const string GetSupporterButton = "Get .fmbot supporter";
 
-    public const string GetSupporterOverviewButton = "View all supporter perks here.";
     public const string GetSupporterOverviewLink = "https://fmbot.xyz/supporter/";
     public const string GetSupporterDiscordLink = "https://discord.com/application-directory/356268235697553409/store/1120720816154345532";
 

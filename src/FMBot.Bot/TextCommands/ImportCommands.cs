@@ -34,7 +34,7 @@ public class ImportCommands : BaseCommandModule
     }
 
     [Command("import")]
-    [Summary("Imports your Spotify history into .fmbot")]
+    [Summary("Imports your Spotify or Apple Music history into .fmbot")]
     [Alias("import spotify", "import apple", "import applemusic", "spotifyimport", "spotifyimport")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Importing)]

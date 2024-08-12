@@ -110,7 +110,7 @@ public class InteractionHandler
                 !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
                     ? "user_app"
                     : "guild_app";
-            
+
             Statistics.SlashCommandsExecuted.WithLabels(command.Name, integrationType).Inc();
 
             _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
@@ -264,7 +264,7 @@ public class InteractionHandler
                 var userNickname = (context.User as SocketGuildUser)?.DisplayName;
                 embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
 
-                await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+                await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true, components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return false;
             }

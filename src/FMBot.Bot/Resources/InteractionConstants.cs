@@ -68,6 +68,8 @@ public static class InteractionConstants
 
     public static class User
     {
+        public const string Login = "user-login";
+        public const string Settings = "user-settings";
         public const string Profile = "user-profile";
         public const string History = "user-history";
         public const string CrownSelectMenu = "user-crownpicker";
@@ -97,7 +99,7 @@ public static class InteractionConstants
 
         public const string ReportAlbum = "report-album";
         public const string ReportAlbumModal = "report-album-modal";
-        
+
         public const string MoveUserData = "move-user-data-*-*";
     }
 
@@ -159,7 +161,7 @@ public static class InteractionConstants
     {
         public const string GenreGuild = "genre-guild";
         public const string GenreUser = "genre-user";
-        
+
         public const string GenreSelectMenu = "genre-picker";
     }
 
