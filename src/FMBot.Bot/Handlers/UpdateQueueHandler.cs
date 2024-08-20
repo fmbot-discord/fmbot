@@ -11,7 +11,7 @@ namespace FMBot.Bot.Handlers;
 
 public class UpdateQueueHandler : IDisposable
 {
-    private const int MaxConcurrentTasks = 1;
+    private const int MaxConcurrentTasks = 2;
     private const int EmptyQueueDelayMs = 200;
 
     private readonly ConcurrentQueue<UpdateUserQueueItem> _queue = new();
