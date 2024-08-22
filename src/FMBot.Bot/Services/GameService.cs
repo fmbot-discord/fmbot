@@ -197,7 +197,7 @@ public class GameService
                     .ElementAtOrDefault(fallBackIndex);
             }
 
-            if (fallbackAlbum == null)
+            if (fallbackAlbum == null && topAlbums.Count > 0)
             {
                 var fallBackIndex = RandomNumberGenerator.GetInt32(topAlbums.Count);
                 fallbackAlbum = topAlbums
