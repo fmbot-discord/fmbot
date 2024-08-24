@@ -29,7 +29,7 @@ public class CrownBuilders
     private readonly GuildService _guildService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly MusicDataFactory _musicDataFactory;
-    
+
     public CrownBuilders(CrownService crownService,
         ArtistsService artistsService,
         IDataSourceFactory dataSourceFactory,
@@ -116,7 +116,7 @@ public class CrownBuilders
             $"{LastfmUrlExtensions.GetUserUrl(users[currentCrown.UserId].UserNameLastFM)}/library/music/{HttpUtility.UrlEncode(artistSearch.Artist.ArtistName)}";
 
         guildUsers.TryGetValue(currentCrown.UserId, out var currentGuildUser);
-        response.Embed.AddField("Current crown holder", CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, currentCrown.Created, userArtistUrl));
+        response.Embed.AddField("Current crown holder", CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, currentCrown.Modified, userArtistUrl));
 
         var lastCrownCreateDate = currentCrown.Created;
         if (artistCrowns.Count > 1)
@@ -213,7 +213,7 @@ public class CrownBuilders
                 response.Embed.WithDescription($"You or the user you're searching for don't have any crowns yet. \n\n" +
                                                $"Use `{context.Prefix}whoknows` to start getting crowns!");
             }
-            
+
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
             return response;

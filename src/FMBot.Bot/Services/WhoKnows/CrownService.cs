@@ -95,7 +95,7 @@ public class CrownService
             if (oldPlaycount < topUser.Playcount)
             {
                 currentCrownHolder.CurrentPlaycount = topUser.Playcount;
-                currentCrownHolder.Modified = DateTime.UtcNow;
+                currentCrownHolder.Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 currentCrownHolder.SeededCrown = false;
 
                 await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
