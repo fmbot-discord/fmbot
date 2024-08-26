@@ -516,6 +516,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
     [UserCommand("Compare taste")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task UserTasteAsync(IUser user)
     {
         await TasteAsync(user.Id.ToString(), privateResponse: true);
@@ -523,6 +525,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
     [SlashCommand("taste", "Compares your top artist, genres and countries to those from another user.")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task TasteAsync(
         [Summary("User", "The user to compare your taste with")] string user,
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
