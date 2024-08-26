@@ -80,7 +80,7 @@ public class GameService
             _ => 1
         };
 
-        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-4)) switch
+        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-3)) switch
         {
             >= 75 => 1,
             >= 40 => 2,
@@ -162,7 +162,7 @@ public class GameService
             _ => 1
         };
 
-        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-4)) switch
+        var minPlaycount = recentJumbles.Count(w => w.DateStarted.Date >= today.AddDays(-3)) switch
         {
             >= 75 => 1,
             >= 40 => 2,
@@ -315,7 +315,7 @@ public class GameService
     public async Task<List<JumbleSession>> GetRecentJumbles(int userId, JumbleType jumbleType)
     {
         const string sql = "SELECT correct_answer, date_started, album_name, artist_name FROM public.jumble_sessions " +
-                           "WHERE starter_user_id = @userId AND jumble_type = @jumbleType LIMIT 250 ";
+                           "WHERE starter_user_id = @userId AND jumble_type = @jumbleType LIMIT 200 ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
