@@ -520,7 +520,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task UserTasteAsync(IUser user)
     {
-        await TasteAsync(user.Id.ToString(), privateResponse: true);
+        await TasteAsync(user.Id.ToString());
     }
 
     [SlashCommand("taste", "Compares your top artist, genres and countries to those from another user.")]
