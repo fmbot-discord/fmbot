@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -448,6 +449,7 @@ public class FeaturedService
         return true;
     }
 
+    [SuppressMessage("ReSharper", "RedundantIfElseBlock")]
     private async Task<User> GetUserToFeatureAsync(int lastUsedFilter, bool supportersOnly = false)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -480,11 +482,6 @@ public class FeaturedService
         // Great coding for staff that also has supporter
         if (supportersOnly)
         {
-            var voaz = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 119517941820686338);
-            if (voaz != null)
-            {
-                users.Add(voaz);
-            }
             var rndl = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 546055787835949077);
             if (rndl != null)
             {
@@ -499,6 +496,11 @@ public class FeaturedService
             if (aeth != null)
             {
                 users.Add(aeth);
+            }
+            var arap = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 339561593320767498);
+            if (arap != null)
+            {
+                users.Add(arap);
             }
         }
 
