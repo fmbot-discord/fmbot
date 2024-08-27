@@ -108,28 +108,27 @@ public class CrownBuilders
 
         var currentCrown = artistCrowns
             .Where(w => w.Active)
-                .OrderByDescending(o => o.CurrentPlaycount)
-                .First();
-
+            .OrderByDescending(o => o.CurrentPlaycount)
+            .First();
 
         var userArtistUrl =
             $"{LastfmUrlExtensions.GetUserUrl(users[currentCrown.UserId].UserNameLastFM)}/library/music/{HttpUtility.UrlEncode(artistSearch.Artist.ArtistName)}";
 
         guildUsers.TryGetValue(currentCrown.UserId, out var currentGuildUser);
-        response.Embed.AddField("Current crown holder", CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, currentCrown.Modified, userArtistUrl));
+        response.Embed.AddField("Current crown holder", CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, userArtistUrl));
 
-        var lastCrownCreateDate = currentCrown.Created;
         if (artistCrowns.Count > 1)
         {
             var crownHistory = new StringBuilder();
 
-            foreach (var artistCrown in artistCrowns.Take(10).Where(w => !w.Active))
+            foreach (var artistCrown in artistCrowns
+                         .OrderByDescending(o => o.Modified)
+                         .Take(10)
+                         .Where(w => !w.Active))
             {
                 guildUsers.TryGetValue(artistCrown.UserId, out var guildUser);
 
-                crownHistory.AppendLine(CrownToString(guildUser, users[artistCrown.UserId], artistCrown, lastCrownCreateDate));
-
-                lastCrownCreateDate = artistCrown.Created;
+                crownHistory.AppendLine(CrownToString(guildUser, users[artistCrown.UserId], artistCrown));
             }
 
             response.Embed.AddField("Crown history", crownHistory.ToString());
@@ -142,7 +141,7 @@ public class CrownBuilders
 
                 guildUsers.TryGetValue(firstCrown.UserId, out var firstGuildUser);
 
-                response.Embed.AddField("First crownholder", CrownToString(firstGuildUser, users[firstCrown.UserId], firstCrown, lastCrownCreateDate));
+                response.Embed.AddField("First crownholder", CrownToString(firstGuildUser, users[firstCrown.UserId], firstCrown));
             }
         }
 
@@ -155,11 +154,11 @@ public class CrownBuilders
         return response;
     }
 
-    private static string CrownToString(FullGuildUser guildUser, User user, UserCrown crown, DateTime lastCrownCreateDate, string url = null)
+    private static string CrownToString(FullGuildUser guildUser, User user, UserCrown crown, string url = null)
     {
         var description = new StringBuilder();
 
-        description.Append($"**<t:{((DateTimeOffset)crown.Created).ToUnixTimeSeconds()}:D>** to **<t:{((DateTimeOffset)lastCrownCreateDate).ToUnixTimeSeconds()}:D>** — ");
+        description.Append($"**<t:{((DateTimeOffset)crown.Created).ToUnixTimeSeconds()}:D>** to **<t:{((DateTimeOffset)crown.Modified).ToUnixTimeSeconds()}:D>** — ");
 
         if (url != null)
         {
