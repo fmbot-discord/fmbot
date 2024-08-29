@@ -23,8 +23,7 @@ public class PuppeteerService
     private async Task InitializeAsync()
     {
         Log.Information("Fetching puppeteer browser");
-        using var browserFetcher = new BrowserFetcher();
-        await browserFetcher.DownloadAsync();
+        await new BrowserFetcher().DownloadAsync();
 
         Log.Information("Starting puppeteer browser");
         this._browser = await Puppeteer.LaunchAsync(new LaunchOptions()
