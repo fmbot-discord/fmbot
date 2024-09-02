@@ -531,6 +531,22 @@ public class ArtistsService
             .ToListAsync();
     }
 
+    public async Task<int> GetUserAlbumCount(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.UserAlbums
+            .AsNoTracking()
+            .CountAsync(c => c.UserId == userId);
+    }
+
+    public async Task<int> GetUserTrackCount(int userId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.UserTracks
+            .AsNoTracking()
+            .CountAsync(c => c.UserId == userId);
+    }
+
     public async Task<List<string>> GetLatestArtists(ulong discordUserId, bool cacheEnabled = true)
     {
         try
