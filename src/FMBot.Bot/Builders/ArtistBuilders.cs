@@ -660,11 +660,6 @@ public class ArtistBuilders
                 footer.AppendLine($"Artist #{artistSearch.RandomArtistPosition} ({artistSearch.RandomArtistPlaycount} {StringExtensions.GetPlaysString(artistSearch.RandomArtistPlaycount)})");
             }
 
-            if (maybeMissingResults)
-            {
-                footer.AppendLine("Some tracks outside of top 6000 might not be visible");
-            }
-
             footer.AppendLine($"Page {pageCounter}/{topTrackPages.Count} - {topTracks.Count} different tracks");
             var title = new StringBuilder();
 
@@ -680,6 +675,12 @@ public class ArtistBuilders
                 title.Append($"Your top tracks for '{artistSearch.Artist.ArtistName}'");
 
                 response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            }
+
+            if (maybeMissingResults)
+            {
+                footer.AppendLine();
+                footer.Append("Some tracks outside of top 6000 might not be visible");
             }
 
             response.EmbedAuthor.WithName(title.ToString());
