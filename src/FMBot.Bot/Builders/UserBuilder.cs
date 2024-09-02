@@ -871,17 +871,10 @@ public class UserBuilder
             response.Embed.AddField("Stats", stats.ToString());
         }
 
+        var discogs = false;
         if (user.UserDiscogs != null)
         {
             var collection = new StringBuilder();
-
-            if (user.UserDiscogs.HideValue != true)
-            {
-                collection.AppendLine($"{user.UserDiscogs.MinimumValue} min " +
-                                      $"• {user.UserDiscogs.MedianValue} med " +
-                                      $"• {user.UserDiscogs.MaximumValue} max");
-            }
-
             if (user.UserType != UserType.User)
             {
                 var discogsCollection = await this._discogsService.GetUserCollection(userSettings.UserId);
@@ -895,6 +888,8 @@ public class UserBuilder
                         collection.AppendLine(
                             $"**`{type.Key}` {StringService.GetDiscogsFormatEmote(type.Key)}** - **{type.Count()}** ");
                     }
+
+                    discogs = true;
                 }
             }
 
@@ -930,9 +925,19 @@ public class UserBuilder
         }
 
         response.Components = new ComponentBuilder()
-            .WithButton("View history",
+            .WithButton("History",
                 $"{InteractionConstants.User.History}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: new Emoji("📖"))
+                style: ButtonStyle.Secondary, emote: new Emoji("📖"));
+
+        if (discogs)
+        {
+            response.Components
+                .WithButton("Collection",
+                    $"{InteractionConstants.Discogs.Collection}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                    style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.Vinyl));
+        }
+
+        response.Components
             .WithButton("Last.fm", style: ButtonStyle.Link,
                 url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm),
                 emote: Emote.Parse("<:lastfm:882227627287515166>"));
@@ -1111,7 +1116,7 @@ public class UserBuilder
         response.Embed.WithDescription(description.ToString());
 
         response.Components = new ComponentBuilder()
-            .WithButton("View profile",
+            .WithButton("Profile",
                 $"{InteractionConstants.User.Profile}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: new Emoji("ℹ"))
             .WithButton("Last.fm", style: ButtonStyle.Link,

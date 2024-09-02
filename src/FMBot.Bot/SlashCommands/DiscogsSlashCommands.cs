@@ -199,4 +199,35 @@ public class DiscogsSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [ComponentInteraction($"{InteractionConstants.Discogs.Collection}-*-*")]
+    public async Task CollectionAsync(string discordUser, string requesterDiscordUser)
+    {
+        _ = DeferAsync();
+        await this.Context.DisableInteractionButtons();
+
+        var discordUserId = ulong.Parse(discordUser);
+        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+
+        var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+        var collectionSettings = new DiscogsCollectionSettings
+        {
+            Formats = new()
+        };
+
+        try
+        {
+            var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, collectionSettings, null, true);
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }
