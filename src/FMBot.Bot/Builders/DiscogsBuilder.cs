@@ -166,7 +166,8 @@ public class DiscogsBuilder
     public async Task<ResponseModel> DiscogsCollectionAsync(ContextModel context,
         UserSettingsModel userSettings,
         DiscogsCollectionSettings collectionSettings,
-        string searchValues)
+        string searchValues,
+        bool addProfileButton = false)
     {
         var response = new ResponseModel
         {
@@ -302,7 +303,10 @@ public class DiscogsBuilder
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.StaticPaginator = addProfileButton ?
+            StringService.BuildStaticPaginator(pages, $"{InteractionConstants.User.Profile}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}", new Emoji("ℹ")) :
+            StringService.BuildStaticPaginator(pages);
+
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

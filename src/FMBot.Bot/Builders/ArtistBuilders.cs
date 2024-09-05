@@ -614,6 +614,12 @@ public class ArtistBuilders
             topTracks = await this._artistsService.GetTopTracksForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
         }
 
+        var maybeMissingResults = !SupporterService.IsSupporter(userSettings.UserType) &&
+                                  !userSettings.DifferentUser &&
+                                  timeSettings.TimePeriod == TimePeriod.AllTime &&
+                                  (await this._artistsService.GetUserTrackCount(userSettings.UserId)) >= 6000 &&
+                                  topTracks.Sum(s => s.Playcount) < artistSearch.Artist.UserPlaycount;
+
         var pages = new List<PageBuilder>();
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
@@ -669,6 +675,12 @@ public class ArtistBuilders
                 title.Append($"Your top tracks for '{artistSearch.Artist.ArtistName}'");
 
                 response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            }
+
+            if (maybeMissingResults)
+            {
+                footer.AppendLine();
+                footer.Append("Some tracks outside of top 6000 might not be visible");
             }
 
             response.EmbedAuthor.WithName(title.ToString());
@@ -751,6 +763,11 @@ public class ArtistBuilders
             response.EmbedAuthor.WithUrl(url);
         }
 
+        var maybeMissingResults = !SupporterService.IsSupporter(userSettings.UserType) &&
+                                  !userSettings.DifferentUser &&
+                                  (await this._artistsService.GetUserAlbumCount(userSettings.UserId)) >= 5000 &&
+                                  topAlbums.Sum(s => s.Playcount) < artistSearch.Artist.UserPlaycount;
+
         var pages = new List<PageBuilder>();
         var albumPages = topAlbums.ChunkBy(10);
 
@@ -766,6 +783,13 @@ public class ArtistBuilders
             }
 
             var footer = new StringBuilder();
+
+            if (maybeMissingResults)
+            {
+                footer.Append("Some albums outside of top 5000 might not be visible");
+                footer.AppendLine();
+            }
+
             footer.Append($"Page {pageCounter}/{albumPages.Count}");
             var title = new StringBuilder();
 
