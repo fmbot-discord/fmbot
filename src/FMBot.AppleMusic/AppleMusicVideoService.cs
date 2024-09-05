@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using OpenCvSharp;
 using Serilog;
 using SkiaSharp;
@@ -34,7 +35,7 @@ public class AppleMusicVideoService
         return url.Replace(".m3u8", "-.mp4");
     }
 
-    public static async Task<Stream> ConvertM3U8ToGifAsync(string m3u8Url)
+    public static async Task<Stream> ConvertM3U8ToGifAsync(string m3u8Url, int timeout = 120000)
     {
         var gifStream = new MemoryStream();
 
@@ -43,7 +44,8 @@ public class AppleMusicVideoService
             StartInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = $"-i \"{m3u8Url}\" -map 0:5 -vf \"fps=9,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" -t 12 -f gif pipe:1",
+                Arguments =
+                    $"-i \"{m3u8Url}\" -map 0:6 -vf \"fps=9,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" -t 12 -f gif pipe:1",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -51,29 +53,57 @@ public class AppleMusicVideoService
             }
         };
 
-        ffmpegProcess.Start();
-
-        var outputTask = Task.Run(async () =>
+        try
         {
-            await ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(gifStream);
-        });
+            ffmpegProcess.Start();
 
-        var errorTask = Task.Run(async () =>
-        {
-            var errorOutput = await ffmpegProcess.StandardError.ReadToEndAsync();
-            Log.Warning($"FFmpeg log: {errorOutput}");
-        });
+            var outputTask = ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(gifStream);
 
-        await Task.WhenAll(outputTask, errorTask);
-        await ffmpegProcess.WaitForExitAsync();
+            var errorBuilder = new StringBuilder();
+            var errorTask = Task.Run(async () =>
+            {
+                while (await ffmpegProcess.StandardError.ReadLineAsync() is { } line)
+                {
+                    errorBuilder.AppendLine(line);
+                    if (line.Contains("error", StringComparison.OrdinalIgnoreCase))
+                    {
+                        break;
+                    }
+                }
+            });
 
-        if (ffmpegProcess.ExitCode != 0)
-        {
-            throw new Exception($"FFmpeg failed with exit code: {ffmpegProcess.ExitCode}");
+            await Task.WhenAny(outputTask, errorTask, Task.Delay(timeout));
+            await Task.Delay(500);
+
+            if (!outputTask.IsCompleted)
+            {
+                throw new TimeoutException($"FFmpeg process timed out after {timeout}ms");
+            }
+
+            await ffmpegProcess.WaitForExitAsync();
+
+            if (ffmpegProcess.ExitCode != 0)
+            {
+                throw new Exception(
+                    $"FFmpeg failed with exit code: {ffmpegProcess.ExitCode}. Error output: {errorBuilder}");
+            }
+
+            gifStream.Position = 0;
+            return gifStream;
         }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error during M3U8 to GIF conversion");
+            throw;
+        }
+        finally
+        {
+            if (!ffmpegProcess.HasExited)
+            {
+                ffmpegProcess.Kill();
+            }
 
-        gifStream.Position = 0;
-
-        return gifStream;
+            ffmpegProcess.Dispose();
+        }
     }
 }
