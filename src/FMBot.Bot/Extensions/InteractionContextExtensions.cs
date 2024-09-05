@@ -175,6 +175,7 @@ public static class InteractionContextExtensions
         }
 
         if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
+            response.EmoteReactions.FirstOrDefault()?.Length > 0 &&
             response.CommandResponse == CommandResponse.Ok &&
             context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
         {
@@ -265,6 +266,7 @@ public static class InteractionContextExtensions
         }
 
         if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
+            response.EmoteReactions.FirstOrDefault()?.Length > 0 &&
             response.CommandResponse == CommandResponse.Ok &&
             context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
         {

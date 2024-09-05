@@ -192,7 +192,7 @@ public static class CommandContextExtensions
         }
 
         if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
-            response.CommandResponse == CommandResponse.Ok)
+            response.EmoteReactions.FirstOrDefault()?.Length > 0 && response.CommandResponse == CommandResponse.Ok)
         {
             try
             {

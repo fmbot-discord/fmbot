@@ -500,7 +500,7 @@ public class MusicDataFactory
                 this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
         }
 
-        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddMilliseconds(-60))
+        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-7))
         {
             updateAppleMusic =
                 this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName, true);
@@ -674,9 +674,6 @@ public class MusicDataFactory
         {
             var existingEditorialVideo = existingImages.FirstOrDefault(f =>
                 f.ImageSource == imageSource && f.ImageType == ImageType.VideoSquare);
-
-            // var fixedVideoUrl =
-            //     await this._appleMusicVideoService.GetModifiedVideoUrl(editorialVideo.MotionDetailSquare.Video);
 
             var fixedVideoUrl = editorialVideo.MotionDetailSquare.Video;
 
