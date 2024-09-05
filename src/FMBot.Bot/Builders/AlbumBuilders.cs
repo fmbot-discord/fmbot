@@ -1168,7 +1168,7 @@ public class AlbumBuilders
         response.Stream = image;
         var extension = gifResult ? "gif" : "png";
         response.FileName =
-            $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}.{extension}")}";
+            $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}")}.{extension}";
         response.Spoiler = safeForChannel == CensorService.CensorResult.Nsfw;
 
         if (!gifResult)

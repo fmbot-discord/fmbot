@@ -55,6 +55,8 @@ public static partial class StringExtensions
         var invalidChars = Path.GetInvalidFileNameChars();
         var result = string.Join("_", filename.Split(invalidChars));
 
+        result = TruncateLongString(result, 80);
+
         if (!string.IsNullOrWhiteSpace(extension))
         {
             result += extension;

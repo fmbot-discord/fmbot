@@ -150,7 +150,7 @@ public static class CommandContextExtensions
                 responseMessage = paginator.Message;
                 break;
             case ResponseType.ImageWithEmbed:
-                var imageEmbedFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
+                var imageEmbedFilename = StringExtensions.ReplaceInvalidChars(response.FileName);
                 var imageWithEmbed = await context.Channel.SendFileAsync(
                     response.Stream,
                     imageEmbedFilename,
@@ -164,7 +164,7 @@ public static class CommandContextExtensions
                 responseMessage = imageWithEmbed;
                 break;
             case ResponseType.ImageOnly:
-                var imageFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
+                var imageFilename = StringExtensions.ReplaceInvalidChars(response.FileName);
                 var image = await context.Channel.SendFileAsync(
                     response.Stream,
                     imageFilename,

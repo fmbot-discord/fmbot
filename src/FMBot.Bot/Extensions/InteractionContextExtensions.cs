@@ -144,7 +144,7 @@ public static class InteractionContextExtensions
                 break;
             case ResponseType.ImageWithEmbed:
                 var imageEmbedFilename =
-                    StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
+                    StringExtensions.ReplaceInvalidChars(response.FileName);
                 await context.Interaction.RespondWithFileAsync(response.Stream,
                     (response.Spoiler
                         ? "SPOILER_"
@@ -222,7 +222,7 @@ public static class InteractionContextExtensions
                 break;
             case ResponseType.ImageWithEmbed:
                 var imageEmbedFilename =
-                    StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
+                    StringExtensions.ReplaceInvalidChars(response.FileName);
                 var imageWithEmbed = await context.Interaction.FollowupWithFileAsync(response.Stream,
                     (response.Spoiler
                         ? "SPOILER_"
@@ -238,7 +238,7 @@ public static class InteractionContextExtensions
                 break;
             case ResponseType.ImageOnly:
                 var imageName =
-                    StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
+                    StringExtensions.ReplaceInvalidChars(response.FileName);
                 var image = await context.Interaction.FollowupWithFileAsync(response.Stream,
                     (response.Spoiler
                         ? "SPOILER_"
