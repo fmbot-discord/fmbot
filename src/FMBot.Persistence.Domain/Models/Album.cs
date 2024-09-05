@@ -17,6 +17,7 @@ public class Album
 
     public Guid? Mbid { get; set; }
     public string Upc { get; set; }
+    public string Type { get; set; }
 
     public string SpotifyImageUrl { get; set; }
     public DateTime? SpotifyImageDate { get; set; }

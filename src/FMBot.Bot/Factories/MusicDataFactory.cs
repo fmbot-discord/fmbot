@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using FMBot.AppleMusic;
 using FMBot.AppleMusic.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
@@ -29,8 +31,12 @@ public class MusicDataFactory
     private readonly MusicBrainzService _musicBrainzService;
     private readonly BotSettings _botSettings;
     private readonly AppleMusicService _appleMusicService;
+    private readonly AppleMusicVideoService _appleMusicVideoService;
 
-    public MusicDataFactory(IOptions<BotSettings> botSettings, SpotifyService spotifyService, ArtistEnrichment.ArtistEnrichmentClient artistEnrichment, IDbContextFactory<FMBotDbContext> contextFactory, MusicBrainzService musicBrainzService, AppleMusicService appleMusicService, AlbumEnrichment.AlbumEnrichmentClient albumEnrichment)
+    public MusicDataFactory(IOptions<BotSettings> botSettings, SpotifyService spotifyService,
+        ArtistEnrichment.ArtistEnrichmentClient artistEnrichment, IDbContextFactory<FMBotDbContext> contextFactory,
+        MusicBrainzService musicBrainzService, AppleMusicService appleMusicService,
+        AlbumEnrichment.AlbumEnrichmentClient albumEnrichment, AppleMusicVideoService appleMusicVideoService)
     {
         this._spotifyService = spotifyService;
         this._artistEnrichment = artistEnrichment;
@@ -38,10 +44,12 @@ public class MusicDataFactory
         this._musicBrainzService = musicBrainzService;
         this._appleMusicService = appleMusicService;
         this._albumEnrichment = albumEnrichment;
+        this._appleMusicVideoService = appleMusicVideoService;
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<Artist> GetOrStoreArtistAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null, bool redirectsEnabled = true)
+    public async Task<Artist> GetOrStoreArtistAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null,
+        bool redirectsEnabled = true)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -102,12 +110,14 @@ public class MusicDataFactory
                     if (spotifyArtist.Images.Any())
                     {
                         var img = spotifyArtist.Images.OrderByDescending(o => o.Height).First();
-                        await AddOrUpdateArtistImage(db, artistToAdd.Id, ImageSource.Spotify, img.Url, img.Height, img.Width);
+                        await AddOrUpdateArtistImage(db, artistToAdd.Id, ImageSource.Spotify, img.Url, img.Height,
+                            img.Width);
                     }
 
                     if (spotifyArtist.Genres.Any())
                     {
-                        await ArtistRepository.AddOrUpdateArtistGenres(artistToAdd.Id, spotifyArtist.Genres.Select(s => s), connection);
+                        await ArtistRepository.AddOrUpdateArtistGenres(artistToAdd.Id,
+                            spotifyArtist.Genres.Select(s => s), connection);
                     }
                 }
                 else
@@ -116,7 +126,8 @@ public class MusicDataFactory
                     await db.SaveChangesAsync();
                 }
 
-                if (musicBrainzUpdated.Updated && artistToAdd.ArtistLinks != null && artistToAdd.ArtistLinks.Count != 0 && artistToAdd.Id != 0)
+                if (musicBrainzUpdated.Updated && artistToAdd.ArtistLinks != null &&
+                    artistToAdd.ArtistLinks.Count != 0 && artistToAdd.Id != 0)
                 {
                     await ArtistRepository.AddOrUpdateArtistLinks(artistToAdd.Id, artistToAdd.ArtistLinks, connection);
                 }
@@ -143,8 +154,10 @@ public class MusicDataFactory
 
                     if (amArtist.Attributes?.Artwork?.Url != null)
                     {
-                        await AddOrUpdateArtistImage(db, artistToAdd.Id, ImageSource.AppleMusic, amArtist.Attributes.Artwork?.Url,
-                            amArtist.Attributes.Artwork.Height, amArtist.Attributes.Artwork.Width, amArtist.Attributes.Artwork);
+                        await AddOrUpdateArtistImage(db, artistToAdd.Id, ImageSource.AppleMusic,
+                            amArtist.Attributes.Artwork?.Url,
+                            amArtist.Attributes.Artwork.Height, amArtist.Attributes.Artwork.Width,
+                            amArtist.Attributes.Artwork);
                     }
 
                     artistToAdd.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
@@ -163,10 +176,12 @@ public class MusicDataFactory
             {
                 updateSpotify = this._spotifyService.GetArtistFromSpotify(artistInfo.ArtistName);
             }
+
             if (dbArtist.MusicBrainzDate == null || dbArtist.MusicBrainzDate < DateTime.UtcNow.AddDays(-120))
             {
                 updateMusicBrainz = this._musicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
             }
+
             if (dbArtist.AppleMusicDate == null || dbArtist.AppleMusicDate < DateTime.UtcNow.AddDays(-120))
             {
                 updateAppleMusic = this._appleMusicService.GetAppleMusicArtist(artistInfo.ArtistName);
@@ -232,12 +247,14 @@ public class MusicDataFactory
                         });
                     }
 
-                    await AddOrUpdateArtistImage(db, dbArtist.Id, ImageSource.Spotify, newImage.Url, newImage.Height, newImage.Width);
+                    await AddOrUpdateArtistImage(db, dbArtist.Id, ImageSource.Spotify, newImage.Url, newImage.Height,
+                        newImage.Width);
                 }
 
                 if (spotifyArtist != null && spotifyArtist.Genres.Any())
                 {
-                    await ArtistRepository.AddOrUpdateArtistGenres(dbArtist.Id, spotifyArtist.Genres.Select(s => s), connection);
+                    await ArtistRepository.AddOrUpdateArtistGenres(dbArtist.Id, spotifyArtist.Genres.Select(s => s),
+                        connection);
                 }
 
                 dbArtist.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
@@ -265,8 +282,10 @@ public class MusicDataFactory
 
                     if (amArtist.Attributes.Artwork?.Url != null)
                     {
-                        await AddOrUpdateArtistImage(db, dbArtist.Id, ImageSource.AppleMusic, amArtist.Attributes.Artwork?.Url,
-                            amArtist.Attributes.Artwork.Height, amArtist.Attributes.Artwork.Width, amArtist.Attributes.Artwork);
+                        await AddOrUpdateArtistImage(db, dbArtist.Id, ImageSource.AppleMusic,
+                            amArtist.Attributes.Artwork?.Url,
+                            amArtist.Attributes.Artwork.Height, amArtist.Attributes.Artwork.Width,
+                            amArtist.Attributes.Artwork);
                     }
                 }
 
@@ -366,7 +385,8 @@ public class MusicDataFactory
                 albumToAdd.ArtistId = artist.Id;
             }
 
-            var spotifyAlbumTask = this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
+            var spotifyAlbumTask =
+                this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
             var amAlbumTask = this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName);
 
             var spotifyAlbum = await spotifyAlbumTask;
@@ -383,6 +403,7 @@ public class MusicDataFactory
 
                 var spotifyUpc = spotifyAlbum.ExternalIds.FirstOrDefault(f => f.Key == "upc");
                 albumToAdd.Upc = spotifyUpc.Value;
+                albumToAdd.Type = spotifyAlbum.Type;
             }
 
             if (amAlbum != null)
@@ -439,6 +460,7 @@ public class MusicDataFactory
 
             return albumToAdd;
         }
+
         if (albumInfo.AlbumCoverUrl != null &&
             !albumInfo.AlbumCoverUrl.Contains("i.scdn.co"))
         {
@@ -449,6 +471,7 @@ public class MusicDataFactory
             db.Entry(dbAlbum).State = EntityState.Modified;
             await db.SaveChangesAsync();
         }
+
         if (albumInfo.Description != null && dbAlbum.LastFmDescription != albumInfo.Description)
         {
             dbAlbum.LastFmDescription = albumInfo.Description;
@@ -473,12 +496,14 @@ public class MusicDataFactory
 
         if (dbAlbum.SpotifyImageDate == null || dbAlbum.SpotifyImageDate < DateTime.UtcNow.AddDays(-60))
         {
-            updateSpotify = this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
+            updateSpotify =
+                this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
         }
-        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-120))
+
+        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddMilliseconds(-60))
         {
             updateAppleMusic =
-                this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName);
+                this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName, true);
         }
 
         if (updateSpotify != null)
@@ -492,7 +517,6 @@ public class MusicDataFactory
 
                 if (img == null)
                 {
-
                 }
 
                 dbAlbum.SpotifyId = spotifyAlbum.Id;
@@ -501,6 +525,7 @@ public class MusicDataFactory
                 dbAlbum.SpotifyImageUrl = img?.Url;
                 dbAlbum.ReleaseDate = spotifyAlbum.ReleaseDate;
                 dbAlbum.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision;
+                dbAlbum.Type = spotifyAlbum.Type;
 
                 if (img != null)
                 {
@@ -542,7 +567,8 @@ public class MusicDataFactory
                 if (amAlbum.Attributes.Artwork?.Url != null)
                 {
                     await AddOrUpdateAlbumImage(db, dbAlbum.Id, ImageSource.AppleMusic, amAlbum.Attributes.Artwork.Url,
-                        amAlbum.Attributes.Artwork.Height, amAlbum.Attributes.Artwork.Width, amAlbum.Attributes.Artwork);
+                        amAlbum.Attributes.Artwork.Height, amAlbum.Attributes.Artwork.Width,
+                        amAlbum.Attributes.Artwork, amAlbum.Attributes.EditorialVideo);
                 }
 
                 if (dbAlbum.ReleaseDate == null && amAlbum.Attributes.ReleaseDate != null)
@@ -596,14 +622,16 @@ public class MusicDataFactory
         await db.SaveChangesAsync();
     }
 
-    private static async Task AddOrUpdateAlbumImage(FMBotDbContext db, int albumId, ImageSource imageSource,
-        string imageUrl, int? height, int? width, AmArtwork artworkDetails = null)
+    private async Task AddOrUpdateAlbumImage(FMBotDbContext db, int albumId, ImageSource imageSource,
+        string imageUrl, int? height, int? width, AmArtwork artworkDetails = null,
+        AmEditorialVideo editorialVideo = null)
     {
         var existingImages = await db.AlbumImages
             .Where(w => w.AlbumId == albumId)
             .ToListAsync();
 
-        var existingImage = existingImages.FirstOrDefault(f => f.ImageSource == imageSource);
+        var existingImage =
+            existingImages.FirstOrDefault(f => f.ImageSource == imageSource && f.ImageType == ImageType.Image);
         if (existingImage != null)
         {
             existingImage.Url = imageUrl;
@@ -629,6 +657,7 @@ public class MusicDataFactory
             {
                 AlbumId = albumId,
                 ImageSource = imageSource,
+                ImageType = ImageType.Image,
                 Width = width,
                 Height = height,
                 LastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
@@ -639,6 +668,52 @@ public class MusicDataFactory
                 TextColor3 = artworkDetails?.TextColor3,
                 TextColor4 = artworkDetails?.TextColor4
             });
+        }
+
+        if (editorialVideo != null)
+        {
+            var existingEditorialVideo = existingImages.FirstOrDefault(f => f.ImageSource == imageSource && f.ImageType == ImageType.VideoSquare);
+
+            var fixedVideoUrl =
+                await this._appleMusicVideoService.GetModifiedVideoUrl(editorialVideo.MotionDetailSquare.Video);
+
+            if (existingEditorialVideo != null)
+            {
+                existingEditorialVideo.Url = fixedVideoUrl;
+                existingEditorialVideo.LastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+                existingEditorialVideo.Width = editorialVideo.MotionDetailSquare.PreviewFrame.Width;
+                existingEditorialVideo.Height = editorialVideo.MotionDetailSquare.PreviewFrame.Height;
+
+                existingEditorialVideo.BgColor = editorialVideo.MotionDetailSquare.PreviewFrame.BgColor;
+                existingEditorialVideo.TextColor1 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor1;
+                existingEditorialVideo.TextColor2 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor2;
+                existingEditorialVideo.TextColor3 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor3;
+                existingEditorialVideo.TextColor4 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor4;
+
+                existingEditorialVideo.PreviewFrameUrl = editorialVideo.MotionDetailSquare.PreviewFrame.Url;
+
+                db.AlbumImages.Update(existingEditorialVideo);
+            }
+            else
+            {
+                await db.AlbumImages.AddAsync(new AlbumImage
+                {
+                    AlbumId = albumId,
+                    ImageSource = imageSource,
+                    ImageType = ImageType.VideoSquare,
+                    Width = editorialVideo.MotionDetailSquare.PreviewFrame.Width,
+                    Height = editorialVideo.MotionDetailSquare.PreviewFrame.Height,
+                    LastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                    Url = fixedVideoUrl,
+                    BgColor = editorialVideo.MotionDetailSquare.PreviewFrame.BgColor,
+                    TextColor1 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor1,
+                    TextColor2 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor2,
+                    TextColor3 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor3,
+                    TextColor4 = editorialVideo.MotionDetailSquare.PreviewFrame.TextColor4,
+                    PreviewFrameUrl = editorialVideo.MotionDetailSquare.PreviewFrame.Url
+                });
+            }
         }
 
         await db.SaveChangesAsync();
@@ -675,7 +750,8 @@ public class MusicDataFactory
                     trackToAdd.ArtistId = artist.Id;
                 }
 
-                var spotifyTrackTask = this._spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
+                var spotifyTrackTask =
+                    this._spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
                 var amSongTask =
                     this._appleMusicService.GetAppleMusicSong(trackInfo.ArtistName, trackInfo.TrackName);
 
@@ -729,6 +805,7 @@ public class MusicDataFactory
 
                 return trackToAdd;
             }
+
             if (!dbTrack.ArtistId.HasValue)
             {
                 var artist = await ArtistRepository.GetArtistForName(trackInfo.ArtistName, connection);
@@ -746,12 +823,14 @@ public class MusicDataFactory
                 dbTrack.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 db.Entry(dbTrack).State = EntityState.Modified;
             }
+
             if (trackInfo.Description != null && dbTrack.LastFmDescription != trackInfo.Description)
             {
                 dbTrack.LastFmDescription = trackInfo.Description;
                 dbTrack.LastfmDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 db.Entry(dbTrack).State = EntityState.Modified;
             }
+
             if (dbTrack.DurationMs == null && trackInfo.Duration.HasValue)
             {
                 dbTrack.DurationMs = (int)trackInfo.Duration.Value;
@@ -764,8 +843,10 @@ public class MusicDataFactory
 
             if (dbTrack.SpotifyLastUpdated == null || dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddDays(-120))
             {
-                updateSpotify = this._spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
+                updateSpotify =
+                    this._spotifyService.GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
             }
+
             if (dbTrack.AppleMusicDate == null || dbTrack.AppleMusicDate < DateTime.UtcNow.AddDays(-120))
             {
                 updateAppleMusic =

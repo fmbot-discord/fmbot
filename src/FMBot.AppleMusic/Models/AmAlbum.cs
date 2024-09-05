@@ -55,6 +55,9 @@ public class AmAlbumAttributes
     [JsonPropertyName("editorialNotes")]
     public AmEditorialNotes EditorialNotes { get; set; }
 
+    [JsonPropertyName("editorialVideo")]
+    public AmEditorialVideo EditorialVideo { get; set; }
+
     [JsonPropertyName("isComplete")]
     public bool IsComplete { get; set; }
 

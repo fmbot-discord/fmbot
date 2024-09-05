@@ -41,14 +41,14 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Artist> Artists { get; set; }
         public virtual DbSet<Album> Albums { get; set; }
         public virtual DbSet<Track> Tracks { get; set; }
-        
+
         public virtual DbSet<ArtistImage> ArtistImages { get; set; }
         public virtual DbSet<AlbumImage> AlbumImages { get; set; }
 
         public virtual DbSet<CensoredMusic> CensoredMusic { get; set; }
         public virtual DbSet<FeaturedLog> FeaturedLogs { get; set; }
         public virtual DbSet<AiPrompt> AiPrompts { get; set; }
-        
+
         public virtual DbSet<JumbleSession> JumbleSessions { get; set; }
         public virtual DbSet<JumbleSessionAnswer> JumbleSessionAnswers { get; set; }
 
