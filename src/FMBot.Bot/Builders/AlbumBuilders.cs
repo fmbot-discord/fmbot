@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
+using FMBot.AppleMusic;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
 using FMBot.Bot.Interfaces;
@@ -18,6 +19,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -48,6 +50,7 @@ public class AlbumBuilders
     private readonly WhoKnowsService _whoKnowsService;
     private readonly FeaturedService _featuredService;
     private readonly MusicDataFactory _musicDataFactory;
+    private readonly AppleMusicVideoService _appleMusicVideoService;
 
     public AlbumBuilders(UserService userService,
         GuildService guildService,
@@ -66,7 +69,7 @@ public class AlbumBuilders
         PuppeteerService puppeteerService,
         WhoKnowsService whoKnowsService,
         FeaturedService featuredService,
-        MusicDataFactory musicDataFactory)
+        MusicDataFactory musicDataFactory, AppleMusicVideoService appleMusicVideoService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -86,6 +89,7 @@ public class AlbumBuilders
         this._whoKnowsService = whoKnowsService;
         this._featuredService = featuredService;
         this._musicDataFactory = musicDataFactory;
+        this._appleMusicVideoService = appleMusicVideoService;
     }
 
     public async Task<ResponseModel> AlbumAsync(ContextModel context,
@@ -994,7 +998,8 @@ public class AlbumBuilders
     public async Task<ResponseModel> CoverAsync(
         ContextModel context,
         UserSettingsModel userSettings,
-        string searchValue)
+        string searchValue,
+        bool video = false)
     {
         var response = new ResponseModel
         {
@@ -1016,6 +1021,8 @@ public class AlbumBuilders
         {
             albumCoverUrl = databaseAlbum.SpotifyImageUrl;
         }
+
+        var albumImages = await this._albumService.GetAlbumImages(databaseAlbum.Id);
 
         response.Components = new ComponentBuilder()
             .WithButton("Album", $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}", style: ButtonStyle.Secondary, emote: new Emoji("💽"))
@@ -1049,6 +1056,12 @@ public class AlbumBuilders
             return response;
         }
 
+        if (albumImages.Any(a => a.ImageType == ImageType.VideoSquare))
+        {
+            albumCoverUrl = albumImages.First(f => f.ImageType == ImageType.VideoSquare).Url;
+            response.VideoFile = true;
+        }
+
         var image = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(albumCoverUrl);
         if (image == null)
         {
@@ -1079,8 +1092,16 @@ public class AlbumBuilders
             $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}")}";
         response.Spoiler = safeForChannel == CensorService.CensorResult.Nsfw;
 
-        var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
-        await ChartService.OverwriteCache(cacheStream, cacheFilePath);
+        if (!response.VideoFile)
+        {
+            var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+            await ChartService.OverwriteCache(cacheStream, cacheFilePath);
+        }
+        else
+        {
+            var gifStream = await AppleMusicVideoService.ConvertMp4ToGifAsync(response.Stream);
+            response.Stream = gifStream;
+        }
 
         await cacheStream.DisposeAsync();
 

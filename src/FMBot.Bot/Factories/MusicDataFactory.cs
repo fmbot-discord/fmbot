@@ -672,10 +672,13 @@ public class MusicDataFactory
 
         if (editorialVideo != null)
         {
-            var existingEditorialVideo = existingImages.FirstOrDefault(f => f.ImageSource == imageSource && f.ImageType == ImageType.VideoSquare);
+            var existingEditorialVideo = existingImages.FirstOrDefault(f =>
+                f.ImageSource == imageSource && f.ImageType == ImageType.VideoSquare);
 
-            var fixedVideoUrl =
-                await this._appleMusicVideoService.GetModifiedVideoUrl(editorialVideo.MotionDetailSquare.Video);
+            // var fixedVideoUrl =
+            //     await this._appleMusicVideoService.GetModifiedVideoUrl(editorialVideo.MotionDetailSquare.Video);
+
+            var fixedVideoUrl = editorialVideo.MotionDetailSquare.Video;
 
             if (existingEditorialVideo != null)
             {
