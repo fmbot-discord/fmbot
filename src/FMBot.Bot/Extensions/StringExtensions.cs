@@ -41,13 +41,26 @@ public static partial class StringExtensions
 
     public static string ReplaceInvalidChars(string filename)
     {
+        var extension = Path.GetExtension(filename);
+        if (!string.IsNullOrWhiteSpace(extension))
+        {
+            filename = filename.Replace(extension, "");
+        }
+
         filename = filename.Replace("\"", "_");
         filename = filename.Replace("'", "_");
         filename = filename.Replace(".", "_");
         filename = filename.Replace(" ", "_");
 
         var invalidChars = Path.GetInvalidFileNameChars();
-        return string.Join("_", filename.Split(invalidChars));
+        var result = string.Join("_", filename.Split(invalidChars));
+
+        if (!string.IsNullOrWhiteSpace(extension))
+        {
+            result += extension;
+        }
+
+        return result;
     }
 
     public static string SanitizeTrackNameForComparison(string trackName)
@@ -63,6 +76,7 @@ public static partial class StringExtensions
 
         return trackName;
     }
+
     public static long ToUnixEpochDate(this DateTime @this)
     {
         DateTimeOffset dateTimeOffset = new(@this);
@@ -70,7 +84,8 @@ public static partial class StringExtensions
         return dateTimeOffset.ToUnixTimeSeconds();
     }
 
-    private static readonly string[] SensitiveCharacters = {
+    private static readonly string[] SensitiveCharacters =
+    {
         "\\",
         "*",
         "_",
@@ -92,6 +107,7 @@ public static partial class StringExtensions
                 text = text.Replace(sensitiveCharacter, "\\" + sensitiveCharacter);
             }
         }
+
         return text;
     }
 
@@ -245,6 +261,7 @@ public static partial class StringExtensions
         {
             return "Up from";
         }
+
         return oldValue > newValue ? "Down from" : "From";
     }
 
@@ -301,6 +318,7 @@ public static partial class StringExtensions
 
             return time.ToString();
         }
+
         if (timeSpan.Days == 1)
         {
             time.Append($"{(int)timeSpan.TotalDays} day");
@@ -322,6 +340,7 @@ public static partial class StringExtensions
 
             return time.ToString();
         }
+
         if (timeSpan.Hours == 1)
         {
             time.Append($"{timeSpan.Hours} hour");
@@ -342,7 +361,8 @@ public static partial class StringExtensions
     {
         var albumRymUrl = new StringBuilder();
         albumRymUrl.Append(@"https://rateyourmusic.com/search?searchterm=");
-        albumRymUrl.Append(HttpUtility.UrlEncode($"{artistName} {albumName.Replace("- Single", "").Replace("- EP", "").TrimEnd()}"));
+        albumRymUrl.Append(
+            HttpUtility.UrlEncode($"{artistName} {albumName.Replace("- Single", "").Replace("- EP", "").TrimEnd()}"));
         albumRymUrl.Append($"&searchtype=l");
 
         return albumRymUrl.ToString();
@@ -373,30 +393,37 @@ public static partial class StringExtensions
         {
             return ts.Seconds == 1 ? "one second ago" : ts.Seconds + " seconds ago";
         }
+
         if (delta < 60 * 2)
         {
             return "a minute ago";
         }
+
         if (delta < 45 * 60)
         {
             return ts.Minutes + " minutes ago";
         }
+
         if (delta < 90 * 60)
         {
             return "an hour ago";
         }
+
         if (delta < 24 * 60 * 60)
         {
             return ts.Hours + " hours ago";
         }
+
         if (delta < 48 * 60 * 60)
         {
             return "yesterday";
         }
+
         if (delta < 30 * 24 * 60 * 60)
         {
             return ts.Days + " days ago";
         }
+
         if (delta < 12 * 30 * 24 * 60 * 60)
         {
             var months = Convert.ToInt32(Math.Floor((double)ts.Days / 30));
@@ -415,35 +442,43 @@ public static partial class StringExtensions
         {
             return ts.Seconds + "s";
         }
+
         if (delta < 60 * 2)
         {
             return "1m";
         }
+
         if (delta < 45 * 60)
         {
             return ts.Minutes + "m";
         }
+
         if (delta < 90 * 60)
         {
             return "1h";
         }
+
         if (delta < 24 * 60 * 60)
         {
             return ts.Hours + "h";
         }
+
         if (delta < 48 * 60 * 60)
         {
             return "yesterday";
         }
+
         if (delta < 30 * 24 * 60 * 60)
         {
             return ts.Days + "d";
         }
+
         if (delta < 12 * 30 * 24 * 60 * 60)
         {
             var months = Convert.ToInt32(Math.Floor((double)ts.Days / 30));
             return months + " mnths";
         }
+
         var years = Convert.ToInt32(Math.Floor((double)ts.Days / 365));
         return years + "y";
     }
@@ -469,7 +504,8 @@ public static partial class StringExtensions
         }
     }
 
-    public static void ReplaceOrAddToDictionary(this Dictionary<string, string> currentDictionary, Dictionary<string, string> optionsToAdd)
+    public static void ReplaceOrAddToDictionary(this Dictionary<string, string> currentDictionary,
+        Dictionary<string, string> optionsToAdd)
     {
         foreach (var optionToAdd in optionsToAdd)
         {

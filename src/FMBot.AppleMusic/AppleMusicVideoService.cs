@@ -42,7 +42,7 @@ public class AppleMusicVideoService
             StartInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = $"-i \"{m3u8Url}\" -map 0:8 -vf \"fps=10,scale=960:960:flags=lanczos\" -t 10 -f gif pipe:1",
+                Arguments = $"-i \"{m3u8Url}\" -map 0:6 -vf \"fps=10,scale=486:486:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" -f gif pipe:1",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,

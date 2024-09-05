@@ -267,7 +267,7 @@ public class GenreBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"top-genres-{userSettings.DiscordUserId}";
+            response.FileName = $"top-genres-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;

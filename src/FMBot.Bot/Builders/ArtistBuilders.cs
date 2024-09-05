@@ -999,7 +999,7 @@ public class ArtistBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"top-artists-{userSettings.DiscordUserId}";
+            response.FileName = $"top-artists-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -1198,7 +1198,7 @@ public class ArtistBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"top-tracks-{userSettings.DiscordUserId}";
+            response.FileName = $"top-tracks-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -1459,7 +1459,7 @@ public class ArtistBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"whoknows-{artistSearch.Artist.ArtistName}";
+            response.FileName = $"whoknows-{artistSearch.Artist.ArtistName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             if (safeForChannel == CensorService.CensorResult.Nsfw)
@@ -1636,7 +1636,7 @@ public class ArtistBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"global-whoknows-{artistSearch.Artist.ArtistName}";
+            response.FileName = $"global-whoknows-{artistSearch.Artist.ArtistName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             if (safeForChannel == CensorService.CensorResult.Nsfw)
@@ -1760,7 +1760,7 @@ public class ArtistBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"friends-whoknow-{artistSearch.Artist.ArtistName}";
+            response.FileName = $"friends-whoknow-{artistSearch.Artist.ArtistName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             if (safeForChannel == CensorService.CensorResult.Nsfw)

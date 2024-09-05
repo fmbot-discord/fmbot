@@ -30,8 +30,6 @@ public class ResponseModel
     public string FileName { get; set; }
     public bool Spoiler { get; set; }
 
-    public bool VideoFile { get; set; }
-
     public string Text { get; set; }
 
     public bool? HintShown { get; set; }

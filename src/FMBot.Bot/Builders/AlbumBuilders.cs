@@ -318,7 +318,7 @@ public class AlbumBuilders
                 emote: Emoji.Parse("🎶"))
             .WithButton(
                 "Cover",
-                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings?.DiscordUserId ?? context.ContextUser.DiscordUserId}-{context.ContextUser.DiscordUserId}-motion",
                 style: ButtonStyle.Secondary,
                 emote: Emoji.Parse("🖼️"));
 
@@ -395,7 +395,7 @@ public class AlbumBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"whoknows-album-{album.Album.ArtistName}-{album.Album.AlbumName}";
+            response.FileName = $"whoknows-album-{album.Album.ArtistName}-{album.Album.AlbumName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -553,7 +553,7 @@ public class AlbumBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"friends-whoknow-album-{album.Album.ArtistName}-{album.Album.AlbumName}";
+            response.FileName = $"friends-whoknow-album-{album.Album.ArtistName}-{album.Album.AlbumName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -680,7 +680,7 @@ public class AlbumBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"global-whoknows-album-{album.Album.ArtistName}-{album.Album.AlbumName}";
+            response.FileName = $"global-whoknows-album-{album.Album.ArtistName}-{album.Album.AlbumName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -1061,7 +1061,7 @@ public class AlbumBuilders
         ContextModel context,
         UserSettingsModel userSettings,
         string searchValue,
-        bool video = false)
+        bool motionCover = true)
     {
         var response = new ResponseModel
         {
@@ -1091,9 +1091,7 @@ public class AlbumBuilders
         response.Components = new ComponentBuilder()
             .WithButton("Album",
                 $"{InteractionConstants.Album.Info}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: new Emoji("💽"))
-            .WithButton($"For {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}",
-                style: ButtonStyle.Secondary, disabled: true, customId: "0");
+                style: ButtonStyle.Secondary, emote: new Emoji("💽"));
 
         if (albumSearch.IsRandom)
         {
@@ -1102,6 +1100,20 @@ public class AlbumBuilders
             response.Components.WithButton("Reroll",
                 $"{InteractionConstants.Album.RandomCover}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: new Emoji("🎲"));
+        }
+
+        var gifResult = false;
+        if (motionCover && albumImages.Any(a => a.ImageType == ImageType.VideoSquare))
+        {
+            albumCoverUrl = albumImages.First(f => f.ImageType == ImageType.VideoSquare).Url;
+            gifResult = true;
+            response.Components.WithButton("Still", $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-still",
+                ButtonStyle.Secondary, new Emoji("🖼️"));
+        }
+        else if (albumImages.Any(a => a.ImageType == ImageType.VideoSquare))
+        {
+            response.Components.WithButton("Motion", $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-motion",
+                ButtonStyle.Secondary, new Emoji("▶️"));
         }
 
         if (albumCoverUrl == null)
@@ -1122,12 +1134,6 @@ public class AlbumBuilders
             response.CommandResponse = CommandResponse.Censored;
             response.ResponseType = ResponseType.Embed;
             return response;
-        }
-
-        if (albumImages.Any(a => a.ImageType == ImageType.VideoSquare))
-        {
-            albumCoverUrl = albumImages.First(f => f.ImageType == ImageType.VideoSquare).Url;
-            response.VideoFile = true;
         }
 
         var image = await this._dataSourceFactory.GetAlbumImageAsStreamAsync(albumCoverUrl);
@@ -1154,14 +1160,18 @@ public class AlbumBuilders
             description.AppendLine("⚠️ NSFW - Click to reveal");
         }
 
+        description.AppendLine(
+            $"-# *Requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}*");
+
         response.Embed.WithDescription(description.ToString());
 
         response.Stream = image;
+        var extension = gifResult ? "gif" : "png";
         response.FileName =
-            $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}")}";
+            $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}.{extension}")}";
         response.Spoiler = safeForChannel == CensorService.CensorResult.Nsfw;
 
-        if (!response.VideoFile)
+        if (!gifResult)
         {
             var cacheFilePath =
                 ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
@@ -1293,7 +1303,7 @@ public class AlbumBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"top-albums-{userSettings.DiscordUserId}";
+            response.FileName = $"top-albums-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;

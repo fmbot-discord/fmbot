@@ -243,9 +243,9 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Album.Cover}-*-*-*")]
+    [ComponentInteraction($"{InteractionConstants.Album.Cover}-*-*-*-*")]
     [UsernameSetRequired]
-    public async Task AlbumCoverAsync(string album, string discordUser, string requesterDiscordUser)
+    public async Task AlbumCoverAsync(string album, string discordUser, string requesterDiscordUser, string type)
     {
         _ = DeferAsync();
         await this.Context.DisableInteractionButtons();
@@ -262,7 +262,7 @@ public class AlbumSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, $"{dbAlbum.ArtistName} | {dbAlbum.Name}");
+            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, $"{dbAlbum.ArtistName} | {dbAlbum.Name}", type == "motion");
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);

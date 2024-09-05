@@ -586,7 +586,7 @@ public class PlayBuilder
 
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library");
         response.Embed.WithAuthor(response.EmbedAuthor);
-        response.FileName = emoji;
+        response.EmoteReactions = new []{emoji};
 
         return response;
     }

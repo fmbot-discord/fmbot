@@ -149,10 +149,9 @@ public static class InteractionContextExtensions
                     (response.Spoiler
                         ? "SPOILER_"
                         : "") +
-                    imageEmbedFilename +
-                    ".png",
+                    imageEmbedFilename,
                     null,
-                    new[] { response.Embed?.Build() },
+                    [response.Embed?.Build()],
                     ephemeral: ephemeral,
                     components: response.Components?.Build());
                 break;
@@ -227,10 +226,9 @@ public static class InteractionContextExtensions
                     (response.Spoiler
                         ? "SPOILER_"
                         : "") +
-                    imageEmbedFilename +
-                    ".png",
+                    imageEmbedFilename,
                     null,
-                    new[] { response.Embed?.Build() },
+                    [response.Embed?.Build()],
                     ephemeral: ephemeral,
                     components: response.Components?.Build());
 
@@ -244,8 +242,7 @@ public static class InteractionContextExtensions
                     (response.Spoiler
                         ? "SPOILER_"
                         : "") +
-                    imageName +
-                    ".png",
+                    imageName,
                     null,
                     ephemeral: ephemeral);
 
@@ -388,7 +385,7 @@ public static class InteractionContextExtensions
                 ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
                 {
                     new(response.Stream,
-                        response.Spoiler ? $"SPOILER_{response.FileName}.png" : $"{response.FileName}.png")
+                        response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")
                 })
                 : null;
         });

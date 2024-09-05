@@ -376,13 +376,8 @@ public class PlayCommands : BaseCommandModule
             var response = await this._playBuilder.StreakAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, userWithStreak);
 
-            var responseId = await this.Context.SendResponse(this.Interactivity, response);
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
-
-            if (response.FileName != null)
-            {
-
-            }
         }
         catch (Exception e)
         {

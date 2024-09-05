@@ -86,7 +86,7 @@ public static class CommandContextExtensions
                         msg.Components = response.Components?.Build();
                         msg.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
                         {
-                            new(response.Stream, (response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName) + (response.VideoFile ? ".gif" : ".png"))
+                            new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName)
                         }) : null;
                     });
 
@@ -153,7 +153,7 @@ public static class CommandContextExtensions
                 var imageEmbedFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
                 var imageWithEmbed = await context.Channel.SendFileAsync(
                     response.Stream,
-                    imageEmbedFilename + (response.VideoFile ? ".gif" : ".png"),
+                    imageEmbedFilename,
                     null,
                     false,
                     response.Embed.Build(),
@@ -167,7 +167,7 @@ public static class CommandContextExtensions
                 var imageFilename = StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
                 var image = await context.Channel.SendFileAsync(
                     response.Stream,
-                    imageFilename + ".png",
+                    imageFilename,
                     null,
                     false,
                     isSpoiler: response.Spoiler,

@@ -387,7 +387,7 @@ public class CountryBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"top-countries-{userSettings.DiscordUserId}";
+            response.FileName = $"top-countries-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -536,7 +536,7 @@ public class CountryBuilders
 
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream();
-        response.FileName = "artist-map";
+        response.FileName = "artist-map.png";
 
         return response;
     }
