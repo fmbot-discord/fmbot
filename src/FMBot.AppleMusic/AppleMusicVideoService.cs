@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using OpenCvSharp;
+using Serilog;
 using SkiaSharp;
 
 namespace FMBot.AppleMusic;
@@ -42,7 +43,7 @@ public class AppleMusicVideoService
             StartInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = $"-i \"{m3u8Url}\" -map 0:6 -vf \"fps=10,scale=486:486:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" -f gif pipe:1",
+                Arguments = $"-i \"{m3u8Url}\" -map 0:5 -vf \"fps=9,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" -t 12 -f gif pipe:1",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -60,7 +61,7 @@ public class AppleMusicVideoService
         var errorTask = Task.Run(async () =>
         {
             var errorOutput = await ffmpegProcess.StandardError.ReadToEndAsync();
-            Console.WriteLine($"FFmpeg log: {errorOutput}");
+            Log.Warning($"FFmpeg log: {errorOutput}");
         });
 
         await Task.WhenAll(outputTask, errorTask);
