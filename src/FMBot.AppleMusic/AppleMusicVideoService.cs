@@ -35,7 +35,7 @@ public class AppleMusicVideoService
         return url.Replace(".m3u8", "-.mp4");
     }
 
-    public static async Task<Stream> ConvertM3U8ToGifAsync(string m3u8Url, int timeout = 120000)
+    public static async Task<Stream> ConvertM3U8ToGifAsync(string m3u8Url)
     {
         var gifStream = new MemoryStream();
 
@@ -57,35 +57,14 @@ public class AppleMusicVideoService
         {
             ffmpegProcess.Start();
 
-            var outputTask = ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(gifStream);
-
-            var errorBuilder = new StringBuilder();
-            var errorTask = Task.Run(async () =>
-            {
-                while (await ffmpegProcess.StandardError.ReadLineAsync() is { } line)
-                {
-                    errorBuilder.AppendLine(line);
-                    if (line.Contains("error", StringComparison.OrdinalIgnoreCase))
-                    {
-                        break;
-                    }
-                }
-            });
-
-            await Task.WhenAny(outputTask, errorTask, Task.Delay(timeout));
-            await Task.Delay(500);
-
-            if (!outputTask.IsCompleted)
-            {
-                throw new TimeoutException($"FFmpeg process timed out after {timeout}ms");
-            }
+            await ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(gifStream);
 
             await ffmpegProcess.WaitForExitAsync();
 
             if (ffmpegProcess.ExitCode != 0)
             {
                 throw new Exception(
-                    $"FFmpeg failed with exit code: {ffmpegProcess.ExitCode}. Error output: {errorBuilder}");
+                    $"FFmpeg failed with exit code: {ffmpegProcess.ExitCode}");
             }
 
             gifStream.Position = 0;
