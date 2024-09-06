@@ -1185,7 +1185,8 @@ public class AlbumBuilders
 
             if (!File.Exists(cacheFilePath))
             {
-                gifStream = await AppleMusicVideoService.ConvertM3U8ToGifAsync(albumCoverUrl);
+                var specificUrl = await this._appleMusicVideoService.GetVideoUrlFromM3U8(albumCoverUrl);
+                gifStream = await AppleMusicVideoService.ConvertM3U8ToGifAsync(specificUrl);
                 await ChartService.OverwriteCache(gifStream, cacheFilePath, SKEncodedImageFormat.Gif);
             }
             else

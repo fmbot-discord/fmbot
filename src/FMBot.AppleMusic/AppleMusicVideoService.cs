@@ -16,24 +16,14 @@ public class AppleMusicVideoService
         this._httpClient = httpClient;
     }
 
-    public async Task<string> GetModifiedVideoUrl(string m3u8Url)
-    {
-        var lastUrl = await GetLastUrlFromM3U8(m3u8Url);
-        return ModifyUrl(lastUrl);
-    }
-
-    private async Task<string> GetLastUrlFromM3U8(string m3u8Url)
+    public async Task<string> GetVideoUrlFromM3U8(string m3u8Url)
     {
         var content = await _httpClient.GetStringAsync(m3u8Url);
         var lines = content.Split('\n');
         return lines.LastOrDefault(line =>
-            line.Trim().StartsWith("https://") && line.EndsWith(".m3u8") && line.Contains("960x960"));
+            line.Trim().StartsWith("https://") && line.EndsWith(".m3u8") && line.Contains("486x486"));
     }
 
-    private static string ModifyUrl(string url)
-    {
-        return url.Replace(".m3u8", "-.mp4");
-    }
 
     public static async Task<Stream> ConvertM3U8ToGifAsync(string m3u8Url)
     {
@@ -45,7 +35,7 @@ public class AppleMusicVideoService
             {
                 FileName = "ffmpeg",
                 Arguments =
-                    $"-i \"{m3u8Url}\" -map 0:6 -vf \"fps=9,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" -t 12 -f gif pipe:1",
+                    $"-hwaccel auto -i \"{m3u8Url}\" -vf \"fps=10,format=rgb24,colorspace=bt709:iall=bt601-6-625:fast=1,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle\" -t 15 -f gif pipe:1",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -57,14 +47,35 @@ public class AppleMusicVideoService
         {
             ffmpegProcess.Start();
 
-            await ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(gifStream);
+            var outputTask = ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(gifStream);
+
+            var errorBuilder = new StringBuilder();
+            var errorTask = Task.Run(async () =>
+            {
+                while (await ffmpegProcess.StandardError.ReadLineAsync() is { } line)
+                {
+                    errorBuilder.AppendLine(line);
+                    if (line.Contains("error", StringComparison.OrdinalIgnoreCase))
+                    {
+                        break;
+                    }
+                }
+            });
+
+            await Task.WhenAny(outputTask, errorTask);
 
             await ffmpegProcess.WaitForExitAsync();
 
+            if (errorBuilder.Length > 0)
+            {
+                Log.Debug(
+                    $"FFmpeg output: {errorBuilder}");
+            }
+
             if (ffmpegProcess.ExitCode != 0)
             {
-                throw new Exception(
-                    $"FFmpeg failed with exit code: {ffmpegProcess.ExitCode}");
+                Log.Warning(
+                    $"FFmpeg failed with exit code: {ffmpegProcess.ExitCode}. Error output: {errorBuilder}");
             }
 
             gifStream.Position = 0;
