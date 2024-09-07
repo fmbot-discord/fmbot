@@ -403,7 +403,7 @@ public class MusicDataFactory
 
                 var spotifyUpc = spotifyAlbum.ExternalIds.FirstOrDefault(f => f.Key == "upc");
                 albumToAdd.Upc = spotifyUpc.Value;
-                albumToAdd.Type = spotifyAlbum.Type;
+                albumToAdd.Type = spotifyAlbum.AlbumType;
             }
 
             if (amAlbum != null)
@@ -500,7 +500,7 @@ public class MusicDataFactory
                 this._spotifyService.GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
         }
 
-        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-1))
+        if (dbAlbum.AppleMusicDate == null || dbAlbum.AppleMusicDate < DateTime.UtcNow.AddDays(-7))
         {
             updateAppleMusic =
                 this._appleMusicService.GetAppleMusicAlbum(albumInfo.ArtistName, albumInfo.AlbumName, true);
@@ -525,7 +525,7 @@ public class MusicDataFactory
                 dbAlbum.SpotifyImageUrl = img?.Url;
                 dbAlbum.ReleaseDate = spotifyAlbum.ReleaseDate;
                 dbAlbum.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision;
-                dbAlbum.Type = spotifyAlbum.Type;
+                dbAlbum.Type = spotifyAlbum.AlbumType;
 
                 if (img != null)
                 {
