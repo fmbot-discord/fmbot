@@ -6,12 +6,13 @@ namespace FMBot.Persistence.Domain.Models;
 public class Image
 {
     public int Id { get; set; }
-    
+
     public ImageSource ImageSource { get; set; }
+    public ImageType ImageType { get; set; }
 
     public string Url { get; set; }
     public DateTime LastUpdated { get; set; }
-    
+
     public int? Width { get; set; }
     public int? Height { get; set; }
 
@@ -20,4 +21,6 @@ public class Image
     public string TextColor2 { get; set; }
     public string TextColor3 { get; set; }
     public string TextColor4 { get; set; }
+
+    public string PreviewFrameUrl { get; set; }
 }

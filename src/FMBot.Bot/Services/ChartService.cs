@@ -111,7 +111,8 @@ public class ChartService
                         {
                             var albumCoverUrl = album.AlbumCoverUrl;
 
-                            if (albumCoverUrl.Contains("lastfm.freetls.fastly.net") && !albumCoverUrl.Contains("/300x300/"))
+                            if (albumCoverUrl.Contains("lastfm.freetls.fastly.net") &&
+                                !albumCoverUrl.Contains("/300x300/"))
                             {
                                 albumCoverUrl = albumCoverUrl.Replace("/770x0/", "/");
                                 albumCoverUrl = albumCoverUrl.Replace("/i/u/", "/i/u/300x300/");
@@ -158,7 +159,8 @@ public class ChartService
                         validImage = false;
                     }
 
-                    AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album, nsfw: nsfw, censored: censor);
+                    AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage,
+                        album, nsfw: nsfw, censored: censor);
                 }
             }
             else
@@ -233,13 +235,16 @@ public class ChartService
                         validImage = false;
                     }
 
-                    AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, artist: artist, nsfw: nsfw, censored: censor);
+                    AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage,
+                        artist: artist, nsfw: nsfw, censored: censor);
                 }
             }
 
             SKImage finalImage = null;
 
-            using (var tempSurface = SKSurface.Create(new SKImageInfo(chart.ChartImages.First().Image.Width * chart.Width, chart.ChartImages.First().Image.Height * chart.Height)))
+            using (var tempSurface = SKSurface.Create(new SKImageInfo(
+                       chart.ChartImages.First().Image.Width * chart.Width,
+                       chart.ChartImages.First().Image.Height * chart.Height)))
             {
                 var canvas = tempSurface.Canvas;
 
@@ -274,7 +279,8 @@ public class ChartService
                         continue;
                     }
 
-                    canvas.DrawBitmap(chartImage.Image, SKRect.Create(offset, offsetTop, chartImage.Image.Width, chartImage.Image.Height));
+                    canvas.DrawBitmap(chartImage.Image,
+                        SKRect.Create(offset, offsetTop, chartImage.Image.Width, chartImage.Image.Height));
 
 
                     if (i == (chart.Width - 1) || i - (chart.Width) * heightRow == chart.Width - 1)
@@ -292,6 +298,7 @@ public class ChartService
                     {
                         chart.ContainsNsfw = true;
                     }
+
                     if (chartImage.Censored)
                     {
                         if (chart.CensoredItems.HasValue)
@@ -320,12 +327,14 @@ public class ChartService
         }
     }
 
-    public static string AlbumUrlToCacheFilePath(string albumName, string artistName)
+    public static string AlbumUrlToCacheFilePath(string albumName, string artistName, string extension = ".png")
     {
-        var encodedId = EncodeToBase64($"{StringExtensions.TruncateLongString(albumName, 80)}--{StringExtensions.TruncateLongString(artistName, 40)}");
+        var encodedId =
+            EncodeToBase64(
+                $"{StringExtensions.TruncateLongString(albumName, 80)}--{StringExtensions.TruncateLongString(artistName, 40)}");
         var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 100);
 
-        var fileName = localAlbumId + ".png";
+        var fileName = localAlbumId + extension;
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
         return localPath;
     }
@@ -346,10 +355,10 @@ public class ChartService
         data.SaveTo(stream);
     }
 
-    public static async Task OverwriteCache(MemoryStream stream, string cacheFilePath)
+    public static async Task OverwriteCache(Stream stream, string cacheFilePath,
+        SKEncodedImageFormat format = SKEncodedImageFormat.Png)
     {
         stream.Position = 0;
-        var chartImage = SKBitmap.Decode(stream);
 
         if (File.Exists(cacheFilePath))
         {
@@ -357,7 +366,22 @@ public class ChartService
             await Task.Delay(100);
         }
 
-        await SaveImageToCache(chartImage, cacheFilePath);
+        if (format == SKEncodedImageFormat.Png)
+        {
+            var chartImage = SKBitmap.Decode(stream);
+            await SaveImageToCache(chartImage, cacheFilePath);
+        }
+        else
+        {
+            await SaveStreamToCache(stream, cacheFilePath);
+        }
+    }
+
+    public static async Task SaveStreamToCache(Stream stream, string localPath)
+    {
+        stream.Position = 0; // Ensure the stream is at the beginning
+        await using var fileStream = File.OpenWrite(localPath);
+        await stream.CopyToAsync(fileStream);
     }
 
     private void AddImageToChart(ChartSettings chart, SKBitmap chartImage, int chartImageHeight,
@@ -391,7 +415,8 @@ public class ChartService
             var leftOffset = finalWidth != chartImageWidth ? (chartImageWidth - finalWidth) / 2 : 0;
             var topOffset = finalHeight != chartImageHeight ? (chartImageHeight - finalHeight) / 2 : 0;
 
-            surface.Canvas.DrawBitmap(chartImage, new SKRectI(leftOffset, topOffset, finalWidth + leftOffset, finalHeight + topOffset),
+            surface.Canvas.DrawBitmap(chartImage,
+                new SKRectI(leftOffset, topOffset, finalWidth + leftOffset, finalHeight + topOffset),
                 paint);
             surface.Canvas.Flush();
 
@@ -424,7 +449,8 @@ public class ChartService
         chart.ChartImages.Add(new ChartImage(chartImage, index, validImage, primaryColor, nsfw, censored));
     }
 
-    private void AddTitleToChartImage(SKBitmap chartImage, bool largerImages, TopAlbum album = null, TopArtist artist = null)
+    private void AddTitleToChartImage(SKBitmap chartImage, bool largerImages, TopAlbum album = null,
+        TopArtist artist = null)
     {
         var textColor = chartImage.GetTextColor();
         var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
@@ -466,21 +492,28 @@ public class ChartService
         textPaint.MeasureText(artistName, ref artistBounds);
         textPaint.MeasureText(albumName, ref albumBounds);
 
-        var rectangleLeft = (chartImage.Width - Math.Max(albumBounds.Width, artistBounds.Width)) / 2 - (largerImages ? 6 : 3);
-        var rectangleRight = (chartImage.Width + Math.Max(albumBounds.Width, artistBounds.Width)) / 2 + (largerImages ? 6 : 3);
-        var rectangleTop = albumName != null ? chartImage.Height - (largerImages ? 44 : 30) : chartImage.Height - (largerImages ? 23 : 16);
+        var rectangleLeft = (chartImage.Width - Math.Max(albumBounds.Width, artistBounds.Width)) / 2 -
+                            (largerImages ? 6 : 3);
+        var rectangleRight = (chartImage.Width + Math.Max(albumBounds.Width, artistBounds.Width)) / 2 +
+                             (largerImages ? 6 : 3);
+        var rectangleTop = albumName != null
+            ? chartImage.Height - (largerImages ? 44 : 30)
+            : chartImage.Height - (largerImages ? 23 : 16);
         var rectangleBottom = chartImage.Height - 1;
 
         var backgroundRectangle = new SKRect(rectangleLeft, rectangleTop, rectangleRight, rectangleBottom);
 
         bitmapCanvas.DrawRoundRect(backgroundRectangle, 4, 4, rectanglePaint);
 
-        bitmapCanvas.DrawText(artistName, (float)chartImage.Width / 2, -artistBounds.Top + chartImage.Height - (albumName != null ? largerImages ? 39 : 26 : largerImages ? 20 : 13),
+        bitmapCanvas.DrawText(artistName, (float)chartImage.Width / 2,
+            -artistBounds.Top + chartImage.Height -
+            (albumName != null ? largerImages ? 39 : 26 : largerImages ? 20 : 13),
             textPaint);
 
         if (albumName != null)
         {
-            bitmapCanvas.DrawText(albumName, (float)chartImage.Width / 2, -albumBounds.Top + chartImage.Height - (largerImages ? 20 : 13),
+            bitmapCanvas.DrawText(albumName, (float)chartImage.Width / 2,
+                -albumBounds.Top + chartImage.Height - (largerImages ? 20 : 13),
                 textPaint);
         }
     }
@@ -494,7 +527,8 @@ public class ChartService
             TextSize = 11,
             IsAntialias = true,
             Color = textColor,
-            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal,
+                SKFontStyleSlant.Upright)
         };
 
         var artistBounds = new SKRect();
@@ -536,6 +570,7 @@ public class ChartService
             chartSettings.SkipWithoutImage = true;
             chartSettings.CustomOptionsEnabled = true;
         }
+
         if (extraOptions.Contains("sfw"))
         {
             chartSettings.SkipNsfw = true;
@@ -609,6 +644,7 @@ public class ChartService
                     }
                 }
             }
+
             if (!aotdFound)
             {
                 chartSettings.ReleaseDecadeFilter = (DateTime.UtcNow.Year / 10) * 10;
@@ -634,6 +670,7 @@ public class ChartService
                     aoty = true;
                 }
             }
+
             if (option.StartsWith("d:", StringComparison.OrdinalIgnoreCase) ||
                 option.StartsWith("decade:", StringComparison.OrdinalIgnoreCase))
             {
@@ -662,7 +699,8 @@ public class ChartService
             }
         }
 
-        var timeSettings = SettingService.GetTimePeriod(optionsAsString, aoty || aotd ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(optionsAsString,
+            aoty || aotd ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
         chartSettings.TimeSettings = timeSettings;
         chartSettings.TimespanString = timeSettings.Description;
@@ -673,7 +711,8 @@ public class ChartService
 
     public static ChartSettings GetDimensions(ChartSettings chartSettings, string option)
     {
-        var matchFound = Regex.IsMatch(option, "^([1-9]|[1-4][0-9]|50)x([1-9]|[1-9]|[1-4][0-9]|50)$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
+        var matchFound = Regex.IsMatch(option, "^([1-9]|[1-4][0-9]|50)x([1-9]|[1-9]|[1-4][0-9]|50)$",
+            RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
         if (matchFound)
         {
             var dimensions = option.ToLower().Split('x').Select(value =>
@@ -689,7 +728,8 @@ public class ChartService
         return chartSettings;
     }
 
-    public static string AddSettingsToDescription(ChartSettings chartSettings, string embedDescription, string randomSupporter, string prfx)
+    public static string AddSettingsToDescription(ChartSettings chartSettings, string embedDescription,
+        string randomSupporter, string prfx)
     {
         var single = chartSettings.ArtistChart ? "Artist" : "Album";
         var multiple = chartSettings.ArtistChart ? "Artists" : "Albums";
@@ -698,30 +738,37 @@ public class ChartService
         {
             embedDescription += "Chart options:\n";
         }
+
         if (chartSettings.ReleaseYearFilter.HasValue)
         {
             embedDescription += $"- Filtering to albums released in {chartSettings.ReleaseYearFilter.Value}\n";
         }
+
         if (chartSettings.ReleaseDecadeFilter.HasValue)
         {
             embedDescription += $"- Filtering to albums released in the {chartSettings.ReleaseDecadeFilter.Value}s\n";
         }
+
         if (chartSettings.SkipWithoutImage)
         {
             embedDescription += $"- {multiple} without images skipped\n";
         }
+
         if (chartSettings.SkipNsfw)
         {
             embedDescription += $"- {multiple} with NSFW images skipped\n";
         }
+
         if (chartSettings.TitleSetting == TitleSetting.TitlesDisabled)
         {
             embedDescription += $"- {single} titles disabled\n";
         }
+
         if (chartSettings.TitleSetting == TitleSetting.ClassicTitles)
         {
             embedDescription += "- Classic titles enabled\n";
         }
+
         if (chartSettings.RainbowSortingEnabled)
         {
             embedDescription += "- Secret rainbow option enabled! (Not perfect but hey, it somewhat exists)\n";

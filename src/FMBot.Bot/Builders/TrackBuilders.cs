@@ -322,7 +322,7 @@ public class TrackBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"whoknows-track-{track.Track.ArtistName}-{track.Track.TrackName}";
+            response.FileName = $"whoknows-track-{track.Track.ArtistName}-{track.Track.TrackName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -454,7 +454,7 @@ public class TrackBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"friends-whoknow-track-{track.Track.ArtistName}-{track.Track.TrackName}";
+            response.FileName = $"friends-whoknow-track-{track.Track.ArtistName}-{track.Track.TrackName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -574,7 +574,7 @@ public class TrackBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"global-whoknows-track-{track.Track.ArtistName}-{track.Track.TrackName}";
+            response.FileName = $"global-whoknows-track-{track.Track.ArtistName}-{track.Track.TrackName}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -1015,7 +1015,7 @@ public class TrackBuilders
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
-            response.FileName = $"top-tracks-{userSettings.DiscordUserId}";
+            response.FileName = $"top-tracks-{userSettings.DiscordUserId}.png";
             response.ResponseType = ResponseType.ImageOnly;
 
             return response;
@@ -1177,7 +1177,7 @@ public class TrackBuilders
 
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream();
-        response.FileName = "receipt";
+        response.FileName = "receipt.png";
 
         return response;
     }

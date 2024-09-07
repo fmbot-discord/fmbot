@@ -629,4 +629,12 @@ public class AlbumService
             throw;
         }
     }
+
+    public async Task<List<AlbumImage>> GetAlbumImages(int albumId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.AlbumImages
+            .Where(w => w.AlbumId == albumId)
+            .ToListAsync();
+    }
 }

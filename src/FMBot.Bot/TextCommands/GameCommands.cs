@@ -132,7 +132,7 @@ public class GameCommands : BaseCommandModule
             m.Embed = response.Embed.Build();
             m.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
             {
-                new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}.png" : $"{response.FileName}.png")
+                new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")
             }) : null;
         });
     }

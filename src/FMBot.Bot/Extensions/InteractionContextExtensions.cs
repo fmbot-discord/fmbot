@@ -144,15 +144,14 @@ public static class InteractionContextExtensions
                 break;
             case ResponseType.ImageWithEmbed:
                 var imageEmbedFilename =
-                    StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
+                    StringExtensions.ReplaceInvalidChars(response.FileName);
                 await context.Interaction.RespondWithFileAsync(response.Stream,
                     (response.Spoiler
                         ? "SPOILER_"
                         : "") +
-                    imageEmbedFilename +
-                    ".png",
+                    imageEmbedFilename,
                     null,
-                    new[] { response.Embed?.Build() },
+                    [response.Embed?.Build()],
                     ephemeral: ephemeral,
                     components: response.Components?.Build());
                 break;
@@ -176,6 +175,7 @@ public static class InteractionContextExtensions
         }
 
         if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
+            response.EmoteReactions.FirstOrDefault()?.Length > 0 &&
             response.CommandResponse == CommandResponse.Ok &&
             context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
         {
@@ -222,15 +222,14 @@ public static class InteractionContextExtensions
                 break;
             case ResponseType.ImageWithEmbed:
                 var imageEmbedFilename =
-                    StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
+                    StringExtensions.ReplaceInvalidChars(response.FileName);
                 var imageWithEmbed = await context.Interaction.FollowupWithFileAsync(response.Stream,
                     (response.Spoiler
                         ? "SPOILER_"
                         : "") +
-                    imageEmbedFilename +
-                    ".png",
+                    imageEmbedFilename,
                     null,
-                    new[] { response.Embed?.Build() },
+                    [response.Embed?.Build()],
                     ephemeral: ephemeral,
                     components: response.Components?.Build());
 
@@ -239,13 +238,12 @@ public static class InteractionContextExtensions
                 break;
             case ResponseType.ImageOnly:
                 var imageName =
-                    StringExtensions.TruncateLongString(StringExtensions.ReplaceInvalidChars(response.FileName), 60);
+                    StringExtensions.ReplaceInvalidChars(response.FileName);
                 var image = await context.Interaction.FollowupWithFileAsync(response.Stream,
                     (response.Spoiler
                         ? "SPOILER_"
                         : "") +
-                    imageName +
-                    ".png",
+                    imageName,
                     null,
                     ephemeral: ephemeral);
 
@@ -268,6 +266,7 @@ public static class InteractionContextExtensions
         }
 
         if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
+            response.EmoteReactions.FirstOrDefault()?.Length > 0 &&
             response.CommandResponse == CommandResponse.Ok &&
             context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
         {
@@ -388,7 +387,7 @@ public static class InteractionContextExtensions
                 ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
                 {
                     new(response.Stream,
-                        response.Spoiler ? $"SPOILER_{response.FileName}.png" : $"{response.FileName}.png")
+                        response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")
                 })
                 : null;
         });

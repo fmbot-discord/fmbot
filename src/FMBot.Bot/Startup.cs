@@ -44,6 +44,7 @@ using Discord.Rest;
 using FMBot.AppleMusic;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
+using Microsoft.VisualBasic;
 
 namespace FMBot.Bot;
 
@@ -300,6 +301,25 @@ public class Startup
             client.DefaultRequestHeaders.Add("Authorization", authHeader);
             client.BaseAddress = new Uri("https://api.music.apple.com/v1/catalog/us/");
         });
+
+        services.AddHttpClient<AppleMusicAltApi>((provider, client) =>
+        {
+            var authProvider = provider.GetRequiredService<PuppeteerService>();
+            var authHeader = authProvider.GetAppleToken().Result;
+            if (authHeader != null)
+            {
+                client.DefaultRequestHeaders.Add("Authorization", authHeader);
+                client.DefaultRequestHeaders.Add("Origin", "https://music.apple.com");
+                client.DefaultRequestHeaders.Add("Referer", "https://music.apple.com");
+            }
+            else
+            {
+                Log.Warning("No alt Apple Music auth header");
+            }
+            client.BaseAddress = new Uri("https://amp-api.music.apple.com/v1/catalog/us/");
+        });
+
+        services.AddHttpClient<AppleMusicVideoService>();
 
         services.AddConfiguredGrpcClient<TimeEnrichment.TimeEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<StatusHandler.StatusHandlerClient>(this.Configuration);
