@@ -1156,7 +1156,7 @@ public class UserSlashCommands : InteractionModuleBase
             var embed = new EmbedBuilder();
             embed.WithDescription($"Import mode set to **{name}**.\n\n" +
                                   $"Your stored top artist/albums/tracks are being recalculated. \n\n" +
-                                  $"**Please wait for this to be confirmed before switching modes again.**");
+                                  $"⚠️ **You must wait for this to complete before switching to a different mode.**");
             embed.WithColor(DiscordConstants.SuccessColorGreen);
 
             ComponentBuilder components = null;
