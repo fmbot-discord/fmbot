@@ -22,7 +22,6 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
-using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -264,7 +263,8 @@ public class UserSlashCommands : InteractionModuleBase
             var loginUrlResponse =
                 UserBuilder.StartLogin(contextUser, token.Content.Token, this._botSettings.LastFm.PublicKey);
 
-            await RespondAsync(null, [loginUrlResponse.Embed.Build()], ephemeral: true, components: loginUrlResponse.Components.Build());
+            await RespondAsync(null, [loginUrlResponse.Embed.Build()], ephemeral: true,
+                components: loginUrlResponse.Components.Build());
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
 
             var loginSuccess = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
@@ -704,13 +704,19 @@ public class UserSlashCommands : InteractionModuleBase
             return;
         }
 
+        var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+        if (message == null)
+        {
+            return;
+        }
+
         await this.Context.Interaction.RespondWithModalAsync<RemoveAccountConfirmModal>(
-            $"{InteractionConstants.RemoveFmbotAccountModal}-{discordUserId}");
+            $"{InteractionConstants.RemoveFmbotAccountModal}-{discordUserId}-{message.Id}");
     }
 
-    [ModalInteraction($"{InteractionConstants.RemoveFmbotAccountModal}-*")]
+    [ModalInteraction($"{InteractionConstants.RemoveFmbotAccountModal}-*-*")]
     [UsernameSetRequired]
-    public async Task RemoveConfirmAsync(string discordUserId, RemoveAccountConfirmModal modal)
+    public async Task RemoveConfirmAsync(string discordUserId, string messageId, RemoveAccountConfirmModal modal)
     {
         var parsedId = ulong.Parse(discordUserId);
         if (parsedId != this.Context.User.Id)
@@ -733,18 +739,35 @@ public class UserSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.DeferAsync(true);
+        var parsedMessageId = ulong.Parse(messageId);
+        var msg = await this.Context.Channel.GetMessageAsync(parsedMessageId);
 
-        await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
-        await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
+        if (msg is not IUserMessage message)
+        {
+            return;
+        }
 
-        await this._userService.DeleteUser(userSettings.UserId);
+        try
+        {
+            await message.ModifyAsync(m => m.Components = new ComponentBuilder().Build());
 
-        var followUpEmbed = new EmbedBuilder();
-        followUpEmbed.WithTitle("Removal successful");
-        followUpEmbed.WithDescription(
-            "Your settings, friends and any other data have been successfully deleted from .fmbot.");
-        await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
+            await this.DeferAsync(true);
+
+            await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
+            await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
+
+            await this._userService.DeleteUser(userSettings.UserId);
+
+            var followUpEmbed = new EmbedBuilder();
+            followUpEmbed.WithTitle("Removal successful");
+            followUpEmbed.WithDescription(
+                "Your settings, friends and any other data have been successfully deleted from .fmbot.");
+            await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [MessageCommand("Delete response")]

@@ -194,20 +194,20 @@ public class OwnerCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot admins can remove deleted users.");
+            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can remove deleted users.");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
 
     [Command("deleteoldduplicateusers")]
-    [Summary("Removes users who have deleted their Last.fm account from .fmbot")]
+    [Summary("Removes duplicate users and moves their data to their new account")]
     public async Task DeleteOldDuplicateUsersAsync()
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
             try
             {
-                await ReplyAsync($"Starting inactive user deleter.");
+                await ReplyAsync($"Starting inactive user deleter / de-duplicater.");
                 var deletedUsers = await this._userService.DeleteOldDuplicateUsers();
                 await ReplyAsync($"Deleted {deletedUsers} inactive users from the database (test so not actually)");
             }
@@ -218,7 +218,7 @@ public class OwnerCommands : BaseCommandModule
         }
         else
         {
-            await ReplyAsync("Error: Insufficient rights. Only FMBot admins can remove deleted users.");
+            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can remove deleted users.");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
