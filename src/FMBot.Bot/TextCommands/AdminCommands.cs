@@ -1453,6 +1453,32 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("updateavatar"), Summary("Changes the avatar to given url.")]
+    public async Task UpdateAvatar(string url)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            try
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                await this._timer.ChangeToNewAvatar(this._client, url);
+
+                await this.Context.Channel.SendMessageAsync($"Changed avatar to {url}");
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can change avatar.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
     [Command("reconnectshard", RunMode = RunMode.Async)]
     [Summary("Reconnects a shard")]
     [GuildOnly]

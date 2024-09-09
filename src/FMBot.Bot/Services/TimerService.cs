@@ -448,7 +448,8 @@ public class TimerService
 
         var cached = (string)this._cache.Get("avatar");
 
-        if ((this._botSettings.Shards == null || this._botSettings.Shards?.MainInstance == true) && cached != newFeatured.ImageUrl)
+        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
+        if (mainGuildConnected && cached != newFeatured.ImageUrl)
         {
             try
             {
@@ -461,12 +462,10 @@ public class TimerService
             }
         }
 
-        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
         if (this._client.CurrentUser.Id == Constants.BotProductionId && mainGuildConnected && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
         {
             Log.Information("Featured: Posting new featured to webhooks");
 
-            var botType = BotTypeExtension.GetBotType(this._client.CurrentUser.Id);
             await this._webhookService.PostFeatured(newFeatured, this._client);
             await this._featuredService.SetFeatured(newFeatured);
             await this._webhookService.SendFeaturedWebhooks(newFeatured);
@@ -512,40 +511,28 @@ public class TimerService
         await this._discogsService.UpdateDiscogsUsers(usersToUpdate);
     }
 
-    public static async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
+    public async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
     {
-        Log.Information($"Updating avatar to {imageUrl}");
+        Log.Information($"ChangeToNewAvatar: Updating avatar to {imageUrl}");
+
         try
         {
-            var request = WebRequest.Create(imageUrl);
-            var response = await request.GetResponseAsync();
-            using (Stream output = File.Create(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
-            using (var input = response.GetResponseStream())
+            using (var response = await this._httpClient.GetAsync(imageUrl))
             {
-                input.CopyTo(output);
-                if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
+                response.EnsureSuccessStatusCode();
+                Log.Information("ChangeToNewAvatar: Got new avatar in stream");
+                await using (var stream = await response.Content.ReadAsStreamAsync())
                 {
-                    File.SetAttributes(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png", FileAttributes.Normal);
+                    await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(stream));
+                    Log.Information("ChangeToNewAvatar: Avatar successfully changed");
                 }
-
-                output.Close();
-                Log.Information("New avatar downloaded");
-            }
-
-            if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
-            {
-                var fileStream = new FileStream(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png", FileMode.Open);
-                await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream));
-                fileStream.Close();
-                Log.Information("Avatar successfully changed");
             }
 
             await Task.Delay(5000);
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "Featured: Error while attempting to change avatar");
-            throw;
+            Log.Error(exception, "ChangeToNewAvatar: Error while attempting to change avatar");
         }
     }
 

@@ -223,7 +223,6 @@ public class Startup
             .AddSingleton<SettingService>()
             .AddSingleton<StartupService>()
             .AddSingleton<SupporterService>()
-            .AddSingleton<TimerService>()
             .AddSingleton<TimeService>()
             .AddSingleton<MusicBotService>()
             .AddSingleton<TrackBuilders>()
@@ -254,6 +253,7 @@ public class Startup
         services.AddHttpClient<ChartService>();
         services.AddHttpClient<InvidiousApi>();
         services.AddHttpClient<ImportService>();
+        services.AddHttpClient<TimerService>();
         services.AddHttpClient<DiscogsApi>();
         services.AddHttpClient<ILastfmRepository, LastFmRepository>();
         services.AddHttpClient<TrackService>();
