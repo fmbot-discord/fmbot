@@ -310,7 +310,8 @@ public class PlayBuilder
                 break;
         }
 
-        if (context.ContextUser.EmoteReactions != null && context.ContextUser.EmoteReactions.Any() && SupporterService.IsSupporter(context.ContextUser.UserType))
+        if (context.ContextUser.EmoteReactions != null && context.ContextUser.EmoteReactions.Any() &&
+            SupporterService.IsSupporter(context.ContextUser.UserType))
         {
             response.EmoteReactions = context.ContextUser.EmoteReactions;
         }
@@ -586,7 +587,12 @@ public class PlayBuilder
 
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library");
         response.Embed.WithAuthor(response.EmbedAuthor);
-        response.EmoteReactions = [emoji];
+
+        if (emoji != null)
+        {
+            response.EmoteReactions = [emoji.Trim()];
+        }
+
 
         return response;
     }
