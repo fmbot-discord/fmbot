@@ -423,14 +423,14 @@ public class FeaturedService
             .ToListAsync();
     }
 
-    public async Task<List<FeaturedLog>> GetFeaturedHistoryForUser(int userId)
+    public async Task<List<FeaturedLog>> GetFeaturedHistoryForUser(int userId, string userNameLastFm)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.FeaturedLogs
             .AsQueryable()
             .Include(i => i.User)
-            .Where(w => w.UserId == userId &&
+            .Where(w => (w.UserId == userId || (w.User != null && w.User.UserNameLastFM == userNameLastFm)) &&
                         w.HasFeatured)
             .OrderByDescending(o => o.DateTime)
             .ToListAsync();

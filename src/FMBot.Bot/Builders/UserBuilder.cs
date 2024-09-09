@@ -567,7 +567,7 @@ public class UserBuilder
             }
             case FeaturedView.User:
             {
-                featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId);
+                featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId, userSettings.UserNameLastFm);
                 response.Embed.WithTitle(
                     $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s featured history");
 
@@ -900,7 +900,7 @@ public class UserBuilder
             }
         }
 
-        var featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId);
+        var featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId, userSettings.UserNameLastFm);
 
         var footer = new StringBuilder();
         if (user.Friends?.Count > 0)
@@ -1398,7 +1398,7 @@ public class UserBuilder
         description.AppendLine("**Are you sure you want to delete all your data from .fmbot?**");
         description.AppendLine("This will remove the following data:");
 
-        description.AppendLine("- Account settings like your connected Last.fm account");
+        description.AppendLine("- .fmbot settings and data");
 
         if (context.ContextUser.Friends?.Count > 0)
         {
@@ -1413,26 +1413,30 @@ public class UserBuilder
         }
 
         description.AppendLine("- All crowns you've gained or lost");
-        description.AppendLine("- All featured history");
-
         if (context.ContextUser.DataSource != DataSource.LastFm)
         {
-            description.AppendLine("- Your Spotify data imports");
+            description.AppendLine("- Your Spotify and/or Apple Music data imports");
         }
 
         if (context.ContextUser.UserType != UserType.User)
         {
             description.AppendLine($"- `{context.ContextUser.UserType}` account status");
-            description.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
+            if (context.ContextUser.UserType == UserType.Supporter)
+            {
+                description.AppendLine("-# *If you have supporter purchased through Discord and plan to create a new .fmbot account with the same Discord account, your status will re-apply in a few minutes. Supporter purchased through Discord can't be moved to different Discord accounts." +
+                                       "If you are a supporter purchased though OpenCollective, please open a help thread on [our server](https://discord.gg/fmbot) for account transfers.*");
+            }
+            else
+            {
+                description.AppendLine("*⚠️ Account status has to be manually changed back by an .fmbot admin*");
+            }
         }
 
         description.AppendLine();
-        description.AppendLine($"Spotify out of sync? Check `/outofsync`");
-        description.AppendLine($"Changed Last.fm username? Run `/login`");
+        description.AppendLine($"Spotify out of sync? Check `{context.Prefix}outofsync`");
+        description.AppendLine($"Changed Last.fm username? Run `{context.Prefix}login`");
+        description.AppendLine($"Data not matching Last.fm profile? Run `{context.Prefix}update full`");
         description.AppendLine();
-
-
-        description.AppendLine($"If you still wish to logout, please click the button below.");
 
         response.Components = new ComponentBuilder().WithButton("Delete my .fmbot account",
             $"{InteractionConstants.RemoveFmbotAccount}-{context.DiscordUser.Id}", ButtonStyle.Danger);
