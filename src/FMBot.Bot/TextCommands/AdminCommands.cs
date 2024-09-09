@@ -54,6 +54,7 @@ public class AdminCommands : BaseCommandModule
     private readonly WhoKnowsFilterService _whoKnowsFilterService;
     private readonly PlayService _playService;
     private readonly DiscordShardedClient _client;
+    private readonly WebhookService _webhookService;
 
     private InteractiveService Interactivity { get; }
 
@@ -76,7 +77,7 @@ public class AdminCommands : BaseCommandModule
         ArtistsService artistsService,
         AliasService aliasService,
         WhoKnowsFilterService whoKnowsFilterService,
-        PlayService playService, DiscordShardedClient client) : base(botSettings)
+        PlayService playService, DiscordShardedClient client, WebhookService webhookService) : base(botSettings)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -97,6 +98,7 @@ public class AdminCommands : BaseCommandModule
         this._whoKnowsFilterService = whoKnowsFilterService;
         this._playService = playService;
         this._client = client;
+        this._webhookService = webhookService;
     }
 
     //[Command("debug")]
@@ -1462,7 +1464,7 @@ public class AdminCommands : BaseCommandModule
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                await this._timer.ChangeToNewAvatar(this._client, url);
+                await this._webhookService.ChangeToNewAvatar(this._client, url);
 
                 await this.Context.Channel.SendMessageAsync($"Changed avatar to {url}");
                 this.Context.LogCommandUsed();

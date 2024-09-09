@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -25,12 +26,14 @@ public class WebhookService
     private readonly BotSettings _botSettings;
     private readonly GuildService _guildService;
     private readonly OpenAiService _openAiService;
+    private readonly HttpClient _httpClient;
 
-    public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService, OpenAiService openAiService)
+    public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService, OpenAiService openAiService, HttpClient httpClient)
     {
         this._contextFactory = contextFactory;
         this._guildService = guildService;
         this._openAiService = openAiService;
+        this._httpClient = httpClient;
         this._botSettings = botSettings.Value;
 
         this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "default-avatar.png");
@@ -290,6 +293,31 @@ public class WebhookService
         finally
         {
             webhookClient.Dispose();
+        }
+    }
+
+    public async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
+    {
+        Log.Information($"ChangeToNewAvatar: Updating avatar to {imageUrl}");
+
+        try
+        {
+            using (var response = await this._httpClient.GetAsync(imageUrl))
+            {
+                response.EnsureSuccessStatusCode();
+                Log.Information("ChangeToNewAvatar: Got new avatar in stream");
+                await using (var stream = await response.Content.ReadAsStreamAsync())
+                {
+                    await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(stream));
+                    Log.Information("ChangeToNewAvatar: Avatar successfully changed");
+                }
+            }
+
+            await Task.Delay(5000);
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "ChangeToNewAvatar: Error while attempting to change avatar");
         }
     }
 }

@@ -4,14 +4,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
-using FMBot.Bot.Extensions;
 using FMBot.Bot.Handlers;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -25,7 +23,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Web.InternalApi;
-using Image = Discord.Image;
 
 namespace FMBot.Bot.Services;
 
@@ -453,7 +450,7 @@ public class TimerService
         {
             try
             {
-                await ChangeToNewAvatar(this._client, newFeatured.ImageUrl);
+                await this._webhookService.ChangeToNewAvatar(this._client, newFeatured.ImageUrl);
                 this._cache.Set("avatar", newFeatured.ImageUrl, TimeSpan.FromMinutes(30));
             }
             catch
@@ -509,31 +506,6 @@ public class TimerService
     {
         var usersToUpdate = await this._discogsService.GetOutdatedDiscogsUsers();
         await this._discogsService.UpdateDiscogsUsers(usersToUpdate);
-    }
-
-    public async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
-    {
-        Log.Information($"ChangeToNewAvatar: Updating avatar to {imageUrl}");
-
-        try
-        {
-            using (var response = await this._httpClient.GetAsync(imageUrl))
-            {
-                response.EnsureSuccessStatusCode();
-                Log.Information("ChangeToNewAvatar: Got new avatar in stream");
-                await using (var stream = await response.Content.ReadAsStreamAsync())
-                {
-                    await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(stream));
-                    Log.Information("ChangeToNewAvatar: Avatar successfully changed");
-                }
-            }
-
-            await Task.Delay(5000);
-        }
-        catch (Exception exception)
-        {
-            Log.Error(exception, "ChangeToNewAvatar: Error while attempting to change avatar");
-        }
     }
 
     public async Task PickNewFeatureds()

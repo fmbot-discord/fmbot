@@ -223,6 +223,7 @@ public class Startup
             .AddSingleton<SettingService>()
             .AddSingleton<StartupService>()
             .AddSingleton<SupporterService>()
+            .AddSingleton<TimerService>()
             .AddSingleton<TimeService>()
             .AddSingleton<MusicBotService>()
             .AddSingleton<TrackBuilders>()
@@ -230,7 +231,6 @@ public class Startup
             .AddSingleton<UserEventHandler>()
             .AddSingleton<UserBuilder>()
             .AddSingleton<UserService>()
-            .AddSingleton<WebhookService>()
             .AddSingleton<WhoKnowsService>()
             .AddSingleton<WhoKnowsAlbumService>()
             .AddSingleton<WhoKnowsArtistService>()
@@ -253,13 +253,13 @@ public class Startup
         services.AddHttpClient<ChartService>();
         services.AddHttpClient<InvidiousApi>();
         services.AddHttpClient<ImportService>();
-        services.AddHttpClient<TimerService>();
         services.AddHttpClient<DiscogsApi>();
         services.AddHttpClient<ILastfmRepository, LastFmRepository>();
         services.AddHttpClient<TrackService>();
         services.AddHttpClient<DiscordSkuService>();
         services.AddHttpClient<OpenAiService>();
         services.AddHttpClient<EurovisionService>();
+        services.AddHttpClient<WebhookService>();
 
         services.AddHttpClient("OpenCollective", client =>
         {

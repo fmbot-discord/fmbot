@@ -150,8 +150,8 @@ public class SupporterService
         thankYouMessage.AppendLine();
 
         thankYouMessage.AppendLine("📈 **Expanded commands with more statistics**");
-        thankYouMessage.AppendLine("- `.profile` — Get an expanded profile with more insights and a yearly overview");
-        thankYouMessage.AppendLine("- `.year` — Get an extra page with discoveries and months");
+        thankYouMessage.AppendLine("- `.profile` — Expanded profile with more insights and a yearly overview");
+        thankYouMessage.AppendLine("- `.year` — Extra page with discoveries and months");
         thankYouMessage.AppendLine("- `.recent` — See your lifetime listening history and filter to specific artists");
         thankYouMessage.AppendLine("- `.artisttracks` — See all tracks, even those outside of your top 6000");
         thankYouMessage.AppendLine("- `.artistalbums` — See all albums, even those outside of your top 5000");
@@ -160,7 +160,7 @@ public class SupporterService
         thankYouMessage.AppendLine("🎮 **Enhanced commands**");
         thankYouMessage.AppendLine(
             $"- `.featured` — Chance to get featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
-        thankYouMessage.AppendLine("- `.judge` — Get better output and use the command on others");
+        thankYouMessage.AppendLine("- `.judge` — Better output and ability to use the command on others");
         thankYouMessage.AppendLine("- `.jumble` — Play unlimited Jumble games");
         thankYouMessage.AppendLine("- `.pixel` — Play unlimited Pixel Jumble games");
         thankYouMessage.AppendLine();
