@@ -469,7 +469,7 @@ public class TimerService
             var botType = BotTypeExtension.GetBotType(this._client.CurrentUser.Id);
             await this._webhookService.PostFeatured(newFeatured, this._client);
             await this._featuredService.SetFeatured(newFeatured);
-            await this._webhookService.SendFeaturedWebhooks(botType, newFeatured);
+            await this._webhookService.SendFeaturedWebhooks(newFeatured);
 
             if (newFeatured.FeaturedMode == FeaturedMode.RecentPlays)
             {

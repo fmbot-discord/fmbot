@@ -121,7 +121,7 @@ public class WebhookService
         }
     }
 
-    public async Task SendFeaturedWebhooks(BotType botType, FeaturedLog featured)
+    public async Task SendFeaturedWebhooks(FeaturedLog featured)
     {
         var embed = new EmbedBuilder();
         embed.WithThumbnailUrl(featured.ImageUrl);
@@ -245,10 +245,10 @@ public class WebhookService
 
     private async Task SendWebhookEmbed(Webhook webhook, EmbedBuilder embed, int? featuredUserId)
     {
+        var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
+
         try
         {
-            var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
-
             if (featuredUserId.HasValue)
             {
                 await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -263,7 +263,8 @@ public class WebhookService
 
                     if (guildUser != null)
                     {
-                        embed.WithFooter($"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
+                        embed.WithFooter(
+                            $"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
                     }
                 }
             }
@@ -285,6 +286,10 @@ public class WebhookService
             {
                 Log.Error(e, "Unknown error while testing webhook for {guildId}", webhook.GuildId);
             }
+        }
+        finally
+        {
+            webhookClient.Dispose();
         }
     }
 }
