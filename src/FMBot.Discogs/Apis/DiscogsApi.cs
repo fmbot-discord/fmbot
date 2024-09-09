@@ -26,10 +26,14 @@ public class DiscogsApi
 
     public async Task<DiscogsAuthInitialization> GetDiscogsAuthLink()
     {
-        var client = new RestClient(this._client)
-        {
-            Authenticator = OAuth1Authenticator.ForRequestToken(this._key, this._secret),
+        var options = new RestClientOptions() {
+            Authenticator = OAuth1Authenticator.ForRequestToken(
+                this._key,
+                this._secret
+            ),
         };
+
+        var client = new RestClient(this._client, options);
 
         var request = new RestRequest("oauth/request_token");
         request.AddHeader("User-Agent", UserAgent);
@@ -52,8 +56,7 @@ public class DiscogsApi
 
     public async Task<DiscogsAuth> StoreDiscogsAuth(DiscogsAuthInitialization discogsAuth, string verifier)
     {
-        var client = new RestClient(this._client)
-        {
+        var options = new RestClientOptions() {
             Authenticator = OAuth1Authenticator.ForAccessToken(
                 this._key,
                 this._secret,
@@ -62,6 +65,8 @@ public class DiscogsApi
                 verifier
             )
         };
+
+        var client = new RestClient(this._client, options);
 
         var request = new RestRequest("oauth/access_token", Method.Post);
         request.AddHeader("User-Agent", UserAgent);
@@ -82,17 +87,17 @@ public class DiscogsApi
 
     private RestClient GetClient(DiscogsAuth discogsAuth)
     {
-        var client = new RestClient(this._client)
-        {
+        var options = new RestClientOptions() {
             Authenticator = OAuth1Authenticator.ForAccessToken(
                 this._key,
                 this._secret,
                 discogsAuth.AccessToken,
                 discogsAuth.AccessTokenSecret
-            )
+            ),
         };
 
-        client.UseSystemTextJson();
+        var client = new RestClient(this._client, options);
+
         client.AddDefaultHeader("User-Agent", UserAgent);
 
         return client;
