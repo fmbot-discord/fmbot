@@ -131,7 +131,7 @@ public class IndexCommands : BaseCommandModule
             var update = await this._updateService.UpdateUserAndGetRecentTracks(contextUser);
 
             var updatePromo =
-                await this._supporterService.GetPromotionalUpdateMessage(contextUser, prfx, this.Context.Client, this.Context.Guild?.Id);
+                await this._supporterService.GetPromotionalUpdateMessage(contextUser, prfx, this.Context.Guild?.Id);
             var upgradeButton = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
 
             await message.ModifyAsync(m =>

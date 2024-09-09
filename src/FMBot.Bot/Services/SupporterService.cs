@@ -139,12 +139,12 @@ public class SupporterService
                                   supporter.SubscriptionType == SubscriptionType.LifetimeStripe))
         {
             thankYouMessage.AppendLine(
-                "Your purchase allows us to keep the bot running and continually add improvements. Here's an overview of the features you can now access:");
+                "Your purchase allows us to keep the bot running and continuously add improvements. Here's an overview of the features you can now access:");
         }
         else
         {
             thankYouMessage.AppendLine(
-                "Your subscription allows us to keep the bot running and continually add improvements. Here's an overview of the features you can now access:");
+                "Your subscription allows us to keep the bot running and continuously add improvements. Here's an overview of the features you can now access:");
         }
 
         thankYouMessage.AppendLine();
@@ -159,7 +159,7 @@ public class SupporterService
 
         thankYouMessage.AppendLine("🎮 **Enhanced commands**");
         thankYouMessage.AppendLine(
-            $"- `.featured` — Chance to get featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
+            $"- `.featured` — Chance to get featured on Supporter Sunday (next in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
         thankYouMessage.AppendLine("- `.judge` — Better output and ability to use the command on others");
         thankYouMessage.AppendLine("- `.jumble` — Play unlimited Jumble games");
         thankYouMessage.AppendLine("- `.pixel` — Play unlimited Pixel Jumble games");
@@ -175,7 +175,7 @@ public class SupporterService
         thankYouMessage.AppendLine($"- `/fmmode` — Expand your `fm` footer with more and exclusive options");
         thankYouMessage.AppendLine($"- `.userreactions` — Set your own emote reactions used globally");
         thankYouMessage.AppendLine(
-            $"- `.addfriend` — Add up to {Constants.MaxFriendsSupporter} friends, up from {Constants.MaxFriends}");
+            $"- `.addfriends` — Add up to {Constants.MaxFriendsSupporter} friends, up from {Constants.MaxFriends}");
         thankYouMessage.AppendLine();
 
         thankYouMessage.AppendLine("<:discoveries:1145740579284713512> **Go back in time**");
@@ -218,7 +218,7 @@ public class SupporterService
         if (openCollective)
         {
             goodbyeMessage.AppendLine(
-                "If you ever want to come back in the future you can re-subscribe through the same OpenCollective account. Your supporter will then be automatically re-activated.");
+                "If you wish to resubscribe, use the same OpenCollective account or subscribe through Discord instead. Your supporter will then be automatically re-activated.");
             goodbyeMessage.AppendLine();
         }
 
@@ -232,26 +232,15 @@ public class SupporterService
         goodbyeMessage.AppendLine(
             "Thanks for having supported the bot! If you have any feedback about the bot or the supporter program feel free to open a thread in #help on [our server](https://discord.gg/fmbot). You can also DM the developer who is identified on the server if preferable.");
 
-        if (openCollective)
-        {
-            goodbyeMessage.AppendLine();
-            goodbyeMessage.AppendLine(
-                "Didn't cancel? It could be that there was an issue with your payment going through. Feel free to open a help thread if you need assistance.");
-        }
-
-        ComponentBuilder buttons = null;
-        if (!openCollective)
-        {
-            buttons = new ComponentBuilder().WithButton("Manage subscription", style: ButtonStyle.Link,
-                url: Constants.GetSupporterDiscordLink);
-        }
+        var buttons = new ComponentBuilder()
+            .WithButton("Resubscribe", style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink)
+            .WithButton("Support server", style: ButtonStyle.Link, url: "https://discord.gg/fmbot");
 
         goodbyeEmbed.WithDescription(goodbyeMessage.ToString());
-        await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons?.Build());
+        await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons.Build());
     }
 
     public async Task<(string message, bool showUpgradeButton)> GetPromotionalUpdateMessage(User user, string prfx,
-        IDiscordClient contextClient,
         ulong? guildId = null)
     {
         var randomHintNumber = RandomNumberGenerator.GetInt32(1, 48);
