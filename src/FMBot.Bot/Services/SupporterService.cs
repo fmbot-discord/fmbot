@@ -433,8 +433,8 @@ public class SupporterService
         var supporterToAdd = new Supporter
         {
             Name = openCollectiveUser.Name,
-            Created = DateTime.UtcNow,
-            Modified = DateTime.UtcNow,
+            Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+            Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
             Notes = "Added through OpenCollective integration",
             SupporterMessagesEnabled = true,
             VisibleInOverview = true,
@@ -626,7 +626,7 @@ public class SupporterService
                         existingSupporter.Name, existingSupporter.LastPayment, openCollectiveSupporter.LastPayment);
 
                     existingSupporter.LastPayment = openCollectiveSupporter.LastPayment;
-                    existingSupporter.Modified = DateTime.UtcNow;
+                    existingSupporter.Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                     Log.Information("Updating name for supporter {supporterName} to {newName}", existingSupporter.Name,
                         openCollectiveSupporter.Name);
@@ -852,7 +852,7 @@ public class SupporterService
                     var oldDate = existingSupporter.LastPayment;
 
                     existingSupporter.LastPayment = discordSupporter.EndsAt;
-                    existingSupporter.Modified = DateTime.UtcNow;
+                    existingSupporter.Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                     db.Update(existingSupporter);
                     await db.SaveChangesAsync();
@@ -963,7 +963,7 @@ public class SupporterService
                 var oldDate = existingSupporter.LastPayment;
 
                 existingSupporter.LastPayment = discordSupporter.EndsAt;
-                existingSupporter.Modified = DateTime.UtcNow;
+                existingSupporter.Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 db.Update(existingSupporter);
                 await db.SaveChangesAsync();
 
@@ -1239,7 +1239,7 @@ public class SupporterService
         supporter.SupporterMessagesEnabled = true;
         supporter.VisibleInOverview = true;
         supporter.LastPayment = entitlement.EndsAt;
-        supporter.Modified = DateTime.UtcNow;
+        supporter.Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
         db.Update(supporter);
         await db.SaveChangesAsync();
