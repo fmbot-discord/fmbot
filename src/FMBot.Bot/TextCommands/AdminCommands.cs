@@ -54,6 +54,7 @@ public class AdminCommands : BaseCommandModule
     private readonly WhoKnowsFilterService _whoKnowsFilterService;
     private readonly PlayService _playService;
     private readonly DiscordShardedClient _client;
+    private readonly WebhookService _webhookService;
 
     private InteractiveService Interactivity { get; }
 
@@ -76,7 +77,7 @@ public class AdminCommands : BaseCommandModule
         ArtistsService artistsService,
         AliasService aliasService,
         WhoKnowsFilterService whoKnowsFilterService,
-        PlayService playService, DiscordShardedClient client) : base(botSettings)
+        PlayService playService, DiscordShardedClient client, WebhookService webhookService) : base(botSettings)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -97,6 +98,7 @@ public class AdminCommands : BaseCommandModule
         this._whoKnowsFilterService = whoKnowsFilterService;
         this._playService = playService;
         this._client = client;
+        this._webhookService = webhookService;
     }
 
     //[Command("debug")]
@@ -1449,6 +1451,32 @@ public class AdminCommands : BaseCommandModule
         else
         {
             await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can set featured.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("updateavatar"), Summary("Changes the avatar to given url.")]
+    public async Task UpdateAvatar(string url)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            try
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                await this._webhookService.ChangeToNewAvatar(this._client, url);
+
+                await this.Context.Channel.SendMessageAsync($"Changed avatar to {url}");
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can change avatar.");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }

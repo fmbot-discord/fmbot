@@ -231,7 +231,6 @@ public class Startup
             .AddSingleton<UserEventHandler>()
             .AddSingleton<UserBuilder>()
             .AddSingleton<UserService>()
-            .AddSingleton<WebhookService>()
             .AddSingleton<WhoKnowsService>()
             .AddSingleton<WhoKnowsAlbumService>()
             .AddSingleton<WhoKnowsArtistService>()
@@ -260,6 +259,7 @@ public class Startup
         services.AddHttpClient<DiscordSkuService>();
         services.AddHttpClient<OpenAiService>();
         services.AddHttpClient<EurovisionService>();
+        services.AddHttpClient<WebhookService>();
 
         services.AddHttpClient("OpenCollective", client =>
         {

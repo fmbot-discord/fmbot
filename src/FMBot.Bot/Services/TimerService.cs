@@ -4,14 +4,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
-using FMBot.Bot.Extensions;
 using FMBot.Bot.Handlers;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -25,7 +23,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Web.InternalApi;
-using Image = Discord.Image;
 
 namespace FMBot.Bot.Services;
 
@@ -448,11 +445,12 @@ public class TimerService
 
         var cached = (string)this._cache.Get("avatar");
 
-        if ((this._botSettings.Shards == null || this._botSettings.Shards?.MainInstance == true) && cached != newFeatured.ImageUrl)
+        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
+        if (mainGuildConnected && cached != newFeatured.ImageUrl)
         {
             try
             {
-                await ChangeToNewAvatar(this._client, newFeatured.ImageUrl);
+                await this._webhookService.ChangeToNewAvatar(this._client, newFeatured.ImageUrl);
                 this._cache.Set("avatar", newFeatured.ImageUrl, TimeSpan.FromMinutes(30));
             }
             catch
@@ -461,15 +459,13 @@ public class TimerService
             }
         }
 
-        var mainGuildConnected = this._client.Guilds.Any(a => a.Id == ConfigData.Data.Bot.BaseServerId);
         if (this._client.CurrentUser.Id == Constants.BotProductionId && mainGuildConnected && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
         {
             Log.Information("Featured: Posting new featured to webhooks");
 
-            var botType = BotTypeExtension.GetBotType(this._client.CurrentUser.Id);
             await this._webhookService.PostFeatured(newFeatured, this._client);
             await this._featuredService.SetFeatured(newFeatured);
-            await this._webhookService.SendFeaturedWebhooks(botType, newFeatured);
+            await this._webhookService.SendFeaturedWebhooks(newFeatured);
 
             if (newFeatured.FeaturedMode == FeaturedMode.RecentPlays)
             {
@@ -510,43 +506,6 @@ public class TimerService
     {
         var usersToUpdate = await this._discogsService.GetOutdatedDiscogsUsers();
         await this._discogsService.UpdateDiscogsUsers(usersToUpdate);
-    }
-
-    public static async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
-    {
-        Log.Information($"Updating avatar to {imageUrl}");
-        try
-        {
-            var request = WebRequest.Create(imageUrl);
-            var response = await request.GetResponseAsync();
-            using (Stream output = File.Create(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
-            using (var input = response.GetResponseStream())
-            {
-                input.CopyTo(output);
-                if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
-                {
-                    File.SetAttributes(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png", FileAttributes.Normal);
-                }
-
-                output.Close();
-                Log.Information("New avatar downloaded");
-            }
-
-            if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
-            {
-                var fileStream = new FileStream(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png", FileMode.Open);
-                await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream));
-                fileStream.Close();
-                Log.Information("Avatar successfully changed");
-            }
-
-            await Task.Delay(5000);
-        }
-        catch (Exception exception)
-        {
-            Log.Error(exception, "Featured: Error while attempting to change avatar");
-            throw;
-        }
     }
 
     public async Task PickNewFeatureds()

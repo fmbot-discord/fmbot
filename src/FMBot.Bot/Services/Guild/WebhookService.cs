@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -25,12 +26,14 @@ public class WebhookService
     private readonly BotSettings _botSettings;
     private readonly GuildService _guildService;
     private readonly OpenAiService _openAiService;
+    private readonly HttpClient _httpClient;
 
-    public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService, OpenAiService openAiService)
+    public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService, OpenAiService openAiService, HttpClient httpClient)
     {
         this._contextFactory = contextFactory;
         this._guildService = guildService;
         this._openAiService = openAiService;
+        this._httpClient = httpClient;
         this._botSettings = botSettings.Value;
 
         this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "default-avatar.png");
@@ -121,7 +124,7 @@ public class WebhookService
         }
     }
 
-    public async Task SendFeaturedWebhooks(BotType botType, FeaturedLog featured)
+    public async Task SendFeaturedWebhooks(FeaturedLog featured)
     {
         var embed = new EmbedBuilder();
         embed.WithThumbnailUrl(featured.ImageUrl);
@@ -245,10 +248,10 @@ public class WebhookService
 
     private async Task SendWebhookEmbed(Webhook webhook, EmbedBuilder embed, int? featuredUserId)
     {
+        var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
+
         try
         {
-            var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
-
             if (featuredUserId.HasValue)
             {
                 await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -263,7 +266,8 @@ public class WebhookService
 
                     if (guildUser != null)
                     {
-                        embed.WithFooter($"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
+                        embed.WithFooter(
+                            $"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
                     }
                 }
             }
@@ -285,6 +289,35 @@ public class WebhookService
             {
                 Log.Error(e, "Unknown error while testing webhook for {guildId}", webhook.GuildId);
             }
+        }
+        finally
+        {
+            webhookClient.Dispose();
+        }
+    }
+
+    public async Task ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
+    {
+        Log.Information($"ChangeToNewAvatar: Updating avatar to {imageUrl}");
+
+        try
+        {
+            using (var response = await this._httpClient.GetAsync(imageUrl))
+            {
+                response.EnsureSuccessStatusCode();
+                Log.Information("ChangeToNewAvatar: Got new avatar in stream");
+                await using (var stream = await response.Content.ReadAsStreamAsync())
+                {
+                    await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(stream));
+                    Log.Information("ChangeToNewAvatar: Avatar successfully changed");
+                }
+            }
+
+            await Task.Delay(5000);
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "ChangeToNewAvatar: Error while attempting to change avatar");
         }
     }
 }
