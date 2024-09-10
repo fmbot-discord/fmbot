@@ -301,6 +301,8 @@ public class WebhookService
     {
         Log.Information($"ChangeToNewAvatar: Updating avatar to {imageUrl}");
 
+        imageUrl = imageUrl.Replace(".jpg", ".webp").Replace(".png", ".webp");
+
         try
         {
             using (var response = await this._httpClient.GetAsync(imageUrl))
