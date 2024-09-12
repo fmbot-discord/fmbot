@@ -25,7 +25,8 @@ public abstract class MusicBot
         new BleedMusicBot(),
         new UzoxMusicBot(),
         new ListenMusicBot(),
-        new FlaviMusicBot()
+        new FlaviMusicBot(),
+        new MakiMusicBot()
     };
 
     protected MusicBot(string name, bool possiblyIncludesLinks = true, bool skipUploaderName = false, bool trackNameFirst = false)

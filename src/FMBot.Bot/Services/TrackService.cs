@@ -399,6 +399,15 @@ public class TrackService
 
             if (!description.Contains("-"))
             {
+                // Maki
+                if (description.Contains("—"))
+                {
+                    return new TrackSearchResult
+                    {
+                        TrackName = description.Split(" — ")[0],
+                        ArtistName = description.Split(" — ")[1]
+                    };
+                }
                 if (description.Contains(" by ", StringComparison.OrdinalIgnoreCase))
                 {
                     return new TrackSearchResult

@@ -16,6 +16,7 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
+using SkiaSharp;
 
 namespace FMBot.Bot.Services.Guild;
 
@@ -300,24 +301,60 @@ public class WebhookService
     {
         Log.Information($"ChangeToNewAvatar: Updating avatar to {imageUrl}");
 
+        imageUrl = imageUrl.Replace(".jpg", ".webp").Replace(".png", ".webp");
+
         try
         {
             using (var response = await this._httpClient.GetAsync(imageUrl))
             {
                 response.EnsureSuccessStatusCode();
                 Log.Information("ChangeToNewAvatar: Got new avatar in stream");
-                await using (var stream = await response.Content.ReadAsStreamAsync())
+
+                var contentType = response.Content.Headers.ContentType?.MediaType;
+                Log.Information($"ChangeToNewAvatar: Content-Type: {contentType}");
+
+                var imageData = await response.Content.ReadAsByteArrayAsync();
+
+                if (contentType?.ToLower() == "image/webp")
                 {
-                    await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(stream));
+                    imageData = ConvertWebPToPng(imageData);
+                    Log.Information("ChangeToNewAvatar: Converted WebP to PNG");
+                }
+
+                using (var imageStream = new MemoryStream(imageData))
+                {
+                    await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(imageStream));
                     Log.Information("ChangeToNewAvatar: Avatar successfully changed");
                 }
             }
 
-            await Task.Delay(5000);
+            await Task.Delay(3000);
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "ChangeToNewAvatar: Error while attempting to change avatar");
+            Log.Error(exception, "ChangeToNewAvatar: Error while attempting to change avatar: {ErrorMessage}", exception.Message);
         }
+    }
+
+    private static byte[] ConvertWebPToPng(byte[] webpData)
+    {
+        using var inputStream = new MemoryStream(webpData);
+        using var outputStream = new MemoryStream();
+        using (var codec = SKCodec.Create(inputStream))
+        using (var surface = SKSurface.Create(new SKImageInfo(codec.Info.Width, codec.Info.Height)))
+        {
+            var canvas = surface.Canvas;
+            using (var image = SKImage.FromEncodedData(webpData))
+            {
+                canvas.DrawImage(image, 0, 0);
+            }
+
+            using (var image = surface.Snapshot())
+            using (var data = image.Encode(SKEncodedImageFormat.Png, 100))
+            {
+                data.SaveTo(outputStream);
+            }
+        }
+        return outputStream.ToArray();
     }
 }
