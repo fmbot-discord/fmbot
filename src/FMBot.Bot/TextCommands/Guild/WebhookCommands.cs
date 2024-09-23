@@ -76,8 +76,6 @@ public class WebhookCommands : BaseCommandModule
             return;
         }
 
-        var type = socketCommandContext.Channel.GetChannelType();
-
         var createdWebhook = await this._webhookService.CreateWebhook(this.Context, guild.GuildId);
 
         await this._webhookService.TestWebhook(createdWebhook, "If you see this message the webhook has been successfully added!\n\n" +
