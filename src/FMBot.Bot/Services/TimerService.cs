@@ -471,7 +471,7 @@ public class TimerService
                 await this._featuredService.ScrobbleTrack(this._client.CurrentUser.Id, newFeatured);
             }
 
-            await this._webhookService.SendFeaturedWebhooks(newFeatured);
+            _ = this._webhookService.SendFeaturedWebhooks(newFeatured);
         }
 
         Log.Information($"{nameof(CheckForNewFeatured)}: Setting new featured in bot");
