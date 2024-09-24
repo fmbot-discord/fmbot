@@ -1,5 +1,5 @@
 using System;
-using System.Diagnostics.Eventing.Reader;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -97,10 +97,10 @@ public class WebhookService
 
     public async Task<bool> TestWebhook(Webhook webhook, string text)
     {
+        var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
+
         try
         {
-            var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
-
             await webhookClient.SendMessageAsync(text, threadId: webhook.DiscordThreadId);
 
             return true;
@@ -123,6 +123,10 @@ public class WebhookService
 
             return false;
         }
+        finally
+        {
+            webhookClient.Dispose();
+        }
     }
 
     public async Task SendFeaturedWebhooks(FeaturedLog featured)
@@ -136,10 +140,14 @@ public class WebhookService
             .AsQueryable()
             .ToListAsync();
 
+        var tasks = new List<Task>();
         foreach (var webhook in webhooks)
         {
-            await SendWebhookEmbed(webhook, embed, featured.UserId);
+            tasks.Add(SendWebhookEmbed(webhook, embed, featured.UserId));
         }
+
+        Log.Information("SendFeaturedWebhooks: Sending {webhookCount} featured webhooks", webhooks.Count);
+        await Task.WhenAll(tasks);
     }
 
     public async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
