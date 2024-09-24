@@ -465,12 +465,13 @@ public class TimerService
 
             await this._webhookService.PostFeatured(newFeatured, this._client);
             await this._featuredService.SetFeatured(newFeatured);
-            await this._webhookService.SendFeaturedWebhooks(newFeatured);
 
             if (newFeatured.FeaturedMode == FeaturedMode.RecentPlays)
             {
                 await this._featuredService.ScrobbleTrack(this._client.CurrentUser.Id, newFeatured);
             }
+
+            await this._webhookService.SendFeaturedWebhooks(newFeatured);
         }
 
         Log.Information($"{nameof(CheckForNewFeatured)}: Setting new featured in bot");
