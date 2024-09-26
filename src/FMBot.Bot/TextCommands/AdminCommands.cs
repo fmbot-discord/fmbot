@@ -203,9 +203,9 @@ public class AdminCommands : BaseCommandModule
             {
                 PublicProperties.IssuesAtLastFm = true;
                 PublicProperties.IssuesReason = reason;
-                await ReplyAsync("Enabled issue mode. This adds some warning messages, changes the bot status and disables full updates.\n" +
-                                 $"Reason given: *\"{reason}\"*", allowedMentions: AllowedMentions.None);
-
+                await ReplyAsync(
+                    "Enabled issue mode. This adds some warning messages, changes the bot status and disables full updates.\n" +
+                    $"Reason given: *\"{reason}\"*", allowedMentions: AllowedMentions.None);
             }
             else
             {
@@ -265,8 +265,10 @@ public class AdminCommands : BaseCommandModule
 
             var description = new StringBuilder();
 
-            description.AppendLine($"Found {filteredUsers.Count(c => c.Reason == GlobalFilterReason.PlayTimeInPeriod)} users exceeding max playtime");
-            description.AppendLine($"Found {filteredUsers.Count(c => c.Reason == GlobalFilterReason.AmountPerPeriod)} users exceeding max amount");
+            description.AppendLine(
+                $"Found {filteredUsers.Count(c => c.Reason == GlobalFilterReason.PlayTimeInPeriod)} users exceeding max playtime");
+            description.AppendLine(
+                $"Found {filteredUsers.Count(c => c.Reason == GlobalFilterReason.AmountPerPeriod)} users exceeding max amount");
             await ReplyAsync(description.ToString());
 
             this.Context.LogCommandUsed();
@@ -322,6 +324,7 @@ public class AdminCommands : BaseCommandModule
                         {
                             description.Append($"/");
                         }
+
                         description.Append($"**{log.CommandName}** - <t:{log.Timestamp.ToUnixEpochDate()}:R>");
 
                         if (log.ErrorReferenceId != null)
@@ -346,14 +349,17 @@ public class AdminCommands : BaseCommandModule
                             {
                                 description.Append(log.Artist);
                             }
+
                             if (log.Album != null)
                             {
                                 description.Append($" - {log.Album}");
                             }
+
                             if (log.Track != null)
                             {
                                 description.Append($" - {log.Track}");
                             }
+
                             description.Append("*");
                             description.AppendLine();
                         }
@@ -388,9 +394,11 @@ public class AdminCommands : BaseCommandModule
                 if (!pages.Any())
                 {
                     pages.Add(new PageBuilder()
-                        .WithDescription("No bot scrobbling logs yet, make sure fmbot can see the 'Now playing' message")
+                        .WithDescription(
+                            "No bot scrobbling logs yet, make sure fmbot can see the 'Now playing' message")
                         .WithFooter($"Page {pageCounter}/{logPages.Count()}")
-                        .WithTitle($"Bot scrobbling debug log for {this.Context.Guild.Name} | {this.Context.Guild.Id}"));
+                        .WithTitle(
+                            $"Bot scrobbling debug log for {this.Context.Guild.Name} | {this.Context.Guild.Id}"));
                 }
 
                 var paginator = StringService.BuildStaticPaginator(pages);
@@ -480,7 +488,9 @@ public class AdminCommands : BaseCommandModule
 
         try
         {
-            var response = await this._staticBuilders.OpenCollectiveSupportersAsync(new ContextModel(this.Context, prfx, userSettings), extraOptions == "expired");
+            var response =
+                await this._staticBuilders.OpenCollectiveSupportersAsync(
+                    new ContextModel(this.Context, prfx, userSettings), extraOptions == "expired");
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -510,7 +520,8 @@ public class AdminCommands : BaseCommandModule
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         try
         {
-            var response = await this._staticBuilders.DiscordSupportersAsync(new ContextModel(this.Context, prfx, userSettings));
+            var response =
+                await this._staticBuilders.DiscordSupportersAsync(new ContextModel(this.Context, prfx, userSettings));
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -537,33 +548,43 @@ public class AdminCommands : BaseCommandModule
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues, userSettings.UserNameLastFM, referencedMessage: this.Context.Message.ReferencedMessage);
+            var albumSearch = await this._albumService.SearchAlbum(new ResponseModel(), this.Context.User, albumValues,
+                userSettings.UserNameLastFM, referencedMessage: this.Context.Message.ReferencedMessage);
             if (albumSearch.Album == null)
             {
                 await this.Context.SendResponse(this.Interactivity, albumSearch.Response);
                 return;
             }
 
-            var existingAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+            var existingAlbum =
+                await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
             if (existingAlbum == null)
             {
                 if (this.Context.Message.Content[..12].Contains("nsfw"))
                 {
-                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.AlbumCoverNsfw);
-                    this._embed.WithDescription($"Marked `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` as NSFW.");
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                        CensorType.AlbumCoverNsfw);
+                    this._embed.WithDescription(
+                        $"Marked `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` as NSFW.");
                 }
                 else if (this.Context.Message.Content[..12].Contains("censored"))
                 {
-                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.AlbumCoverCensored);
-                    this._embed.WithDescription($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored albums.");
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                        CensorType.AlbumCoverCensored);
+                    this._embed.WithDescription(
+                        $"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored albums.");
                 }
                 else
                 {
-                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, CensorType.None);
-                    this._embed.WithDescription($"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored music list, however not banned anywhere.");
+                    await this._censorService.AddAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                        CensorType.None);
+                    this._embed.WithDescription(
+                        $"Added `{albumSearch.Album.AlbumName}` by `{albumSearch.Album.ArtistName}` to the censored music list, however not banned anywhere.");
                 }
 
-                existingAlbum = await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+                existingAlbum =
+                    await this._censorService.GetCurrentAlbum(albumSearch.Album.AlbumName,
+                        albumSearch.Album.ArtistName);
             }
             else
             {
@@ -726,7 +747,8 @@ public class AdminCommands : BaseCommandModule
                 else
                 {
                     await this._censorService.AddArtist(artist, CensorType.None);
-                    this._embed.WithDescription($"Added `{artist}` to the censored music list, however not banned anywhere.");
+                    this._embed.WithDescription(
+                        $"Added `{artist}` to the censored music list, however not banned anywhere.");
                 }
 
                 existingArtist = await this._censorService.GetCurrentArtist(artist);
@@ -835,13 +857,15 @@ public class AdminCommands : BaseCommandModule
                 this._embed.AddField("Avg scrobbles / day in last year", Math.Round(avgPerDay.GetValueOrDefault(0), 1));
             }
 
-            this._embed.AddField("Banned from GlobalWhoKnows", bottedUser == null ? "No" : bottedUser.BanActive ? "Yes" : "No, but has been banned before");
+            this._embed.AddField("Banned from GlobalWhoKnows",
+                bottedUser == null ? "No" : bottedUser.BanActive ? "Yes" : "No, but has been banned before");
             if (bottedUser != null)
             {
                 this._embed.AddField("Reason / additional notes", bottedUser.Notes ?? "*No reason/notes*");
                 if (bottedUser.LastFmRegistered != null)
                 {
-                    this._embed.AddField("Last.fm join date banned", "Yes (This means that the gwk ban will survive username changes)");
+                    this._embed.AddField("Last.fm join date banned",
+                        "Yes (This means that the gwk ban will survive username changes)");
                 }
             }
 
@@ -862,7 +886,8 @@ public class AdminCommands : BaseCommandModule
                 else
                 {
                     this._embed.AddField("Globally filtered", "No, but was filtered in the past");
-                    this._embed.AddField("Expired filter reason", WhoKnowsFilterService.FilteredUserReason(filteredUser));
+                    this._embed.AddField("Expired filter reason",
+                        WhoKnowsFilterService.FilteredUserReason(filteredUser));
                 }
             }
             else
@@ -873,7 +898,8 @@ public class AdminCommands : BaseCommandModule
             ComponentBuilder components = null;
             if (filteredUser != null && bottedUser == null)
             {
-                components = new ComponentBuilder().WithButton($"Convert to ban", $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary);
+                components = new ComponentBuilder().WithButton($"Convert to ban",
+                    $"gwk-filtered-user-to-ban-{filteredUser.GlobalFilteredUserId}", style: ButtonStyle.Secondary);
             }
 
             this._embed.WithFooter("Command not intended for use in public channels");
@@ -949,7 +975,6 @@ public class AdminCommands : BaseCommandModule
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();
-
         }
         else
         {
@@ -992,7 +1017,9 @@ public class AdminCommands : BaseCommandModule
                 }
                 else
                 {
-                    await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason `{reason}`" + (age.HasValue ? " (+ join date so username change resilient)" : ""),
+                    await ReplyAsync(
+                        $"User {user} has been banned from GlobalWhoKnows with reason `{reason}`" +
+                        (age.HasValue ? " (+ join date so username change resilient)" : ""),
                         allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed();
                 }
@@ -1006,13 +1033,13 @@ public class AdminCommands : BaseCommandModule
                 }
                 else
                 {
-                    await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason `{reason}`" + (age.HasValue ? " (+ join date so username change resilient)" : ""),
+                    await ReplyAsync(
+                        $"User {user} has been banned from GlobalWhoKnows with reason `{reason}`" +
+                        (age.HasValue ? " (+ join date so username change resilient)" : ""),
                         allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed();
                 }
             }
-
-
         }
         else
         {
@@ -1030,8 +1057,9 @@ public class AdminCommands : BaseCommandModule
         {
             if (string.IsNullOrEmpty(user))
             {
-                await ReplyAsync("Enter an username to remove from the gwk banlist. This will flag their ban as `false`.\n" +
-                                 "Example: `.removebotteduser \"Kefkef123\"`");
+                await ReplyAsync(
+                    "Enter an username to remove from the gwk banlist. This will flag their ban as `false`.\n" +
+                    "Example: `.removebotteduser \"Kefkef123\"`");
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
@@ -1104,7 +1132,9 @@ public class AdminCommands : BaseCommandModule
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
-            if (userSettings.UserType != UserType.User && !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+
+            if (userSettings.UserType != UserType.User &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
                 await ReplyAsync("`Can only change usertype of normal users`\n\n" + formatError);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
@@ -1129,7 +1159,9 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            var supporter = await this._supporterService.AddOpenCollectiveSupporter(userSettings.DiscordUserId, openCollectiveSupporter);
+            var supporter =
+                await this._supporterService.AddOpenCollectiveSupporter(userSettings.DiscordUserId,
+                    openCollectiveSupporter);
 
             await this._supporterService.ModifyGuildRole(userSettings.DiscordUserId);
 
@@ -1147,7 +1179,8 @@ public class AdminCommands : BaseCommandModule
             var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
-                await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null, supporter);
+                await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
+                    supporter);
 
                 description.AppendLine("✅ Thank you dm sent");
             }
@@ -1205,7 +1238,8 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null, supporter);
+            await SupporterService.SendSupporterWelcomeMessage(discordUser, userSettings.UserDiscogs != null,
+                supporter);
 
             await ReplyAsync("✅ Thank you dm sent");
         }
@@ -1273,6 +1307,7 @@ public class AdminCommands : BaseCommandModule
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
+
             if (userSettings.UserType != UserType.Supporter)
             {
                 await ReplyAsync("`User is not a supporter`\n\n" + formatError);
@@ -1349,7 +1384,8 @@ public class AdminCommands : BaseCommandModule
     }
 
     [Command("addsupporterclassic")]
-    [Examples("addsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"", "addsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"")]
+    [Examples("addsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"",
+        "addsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"")]
     public async Task AddSupporterClassicAsync(string user = null, string name = null, string internalNotes = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -1359,7 +1395,8 @@ public class AdminCommands : BaseCommandModule
                               "`.addsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"`\n" +
                               "`.addsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"`";
 
-            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(internalNotes) || string.IsNullOrEmpty(name) || user == "help")
+            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(internalNotes) || string.IsNullOrEmpty(name) ||
+                user == "help")
             {
                 await ReplyAsync(formatError);
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -1381,6 +1418,7 @@ public class AdminCommands : BaseCommandModule
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
+
             if (userSettings.UserType != UserType.User)
             {
                 await ReplyAsync("`Can only change usertype of normal users`\n\n" + formatError);
@@ -1498,7 +1536,8 @@ public class AdminCommands : BaseCommandModule
 
         if (!guildId.HasValue)
         {
-            await this.Context.Channel.SendMessageAsync($"Enter a server id please (this server is `{this.Context.Guild.Id}`)");
+            await this.Context.Channel.SendMessageAsync(
+                $"Enter a server id please (this server is `{this.Context.Guild.Id}`)");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -1519,7 +1558,8 @@ public class AdminCommands : BaseCommandModule
 
         if (shard != null)
         {
-            if (shard.ConnectionState == ConnectionState.Disconnected || shard.ConnectionState == ConnectionState.Disconnecting)
+            if (shard.ConnectionState == ConnectionState.Disconnected ||
+                shard.ConnectionState == ConnectionState.Disconnecting)
             {
                 await this.Context.Channel.SendMessageAsync($"Connecting Shard #{shard.ShardId}");
                 await shard.StartAsync();
@@ -1554,7 +1594,8 @@ public class AdminCommands : BaseCommandModule
 
         if (string.IsNullOrWhiteSpace("type"))
         {
-            await ReplyAsync("Pick an embed type that you want to post. Currently available: `gwkreporter` or `nsfwreporter`");
+            await ReplyAsync(
+                "Pick an embed type that you want to post. Currently available: `gwkreporter` or `nsfwreporter`");
             return;
         }
 
@@ -1565,14 +1606,18 @@ public class AdminCommands : BaseCommandModule
             this._embed.WithTitle("GlobalWhoKnows report form");
 
             var description = new StringBuilder();
-            description.AppendLine("Want staff to take a look at someone that might be adding artificial or fake scrobbles? Report their profile here.");
+            description.AppendLine(
+                "Want staff to take a look at someone that might be adding artificial or fake scrobbles? Report their profile here.");
             description.AppendLine();
-            description.AppendLine("Optionally you can add a note to your report. Keep in mind that everyone is kept to the same standard regardless of the added note.");
+            description.AppendLine(
+                "Optionally you can add a note to your report. Keep in mind that everyone is kept to the same standard regardless of the added note.");
             description.AppendLine();
-            description.AppendLine("Note that we don't take reports for sleep or 24/7 scrobbling, those get filtered automatically with temporary bans.");
+            description.AppendLine(
+                "Note that we don't take reports for sleep or 24/7 scrobbling, those get filtered automatically with temporary bans.");
             this._embed.WithDescription(description.ToString());
 
-            var components = new ComponentBuilder().WithButton("Report user", style: ButtonStyle.Secondary, customId: InteractionConstants.ModerationCommands.GlobalWhoKnowsReport);
+            var components = new ComponentBuilder().WithButton("Report user", style: ButtonStyle.Secondary,
+                customId: InteractionConstants.ModerationCommands.GlobalWhoKnowsReport);
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
         }
 
@@ -1581,25 +1626,30 @@ public class AdminCommands : BaseCommandModule
             this._embed.WithTitle("NSFW and NSFL artwork report form");
 
             var description = new StringBuilder();
-            description.AppendLine("Found album artwork or an artist image that should be marked NSFW or censored entirely? Please report that here.");
+            description.AppendLine(
+                "Found album artwork or an artist image that should be marked NSFW or censored entirely? Please report that here.");
             description.AppendLine();
-            description.AppendLine("Note that artwork is censored according to Discord guidelines and only as required by Discord. .fmbot is fundamentally opposed to artistic censorship.");
+            description.AppendLine(
+                "Note that artwork is censored according to Discord guidelines and only as required by Discord. .fmbot is fundamentally opposed to artistic censorship.");
             description.AppendLine();
             description.AppendLine("**Marked NSFW**");
-            description.AppendLine("Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology]");
+            description.AppendLine(
+                "Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology]");
             description.AppendLine();
             description.AppendLine("**Fully censored / NSFL**");
-            description.AppendLine("Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]");
+            description.AppendLine(
+                "Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]");
             this._embed.WithDescription(description.ToString());
 
             var components = new ComponentBuilder()
-                .WithButton("Report artist image", style: ButtonStyle.Secondary, customId: InteractionConstants.ModerationCommands.ReportArtist)
-                .WithButton("Report album cover", style: ButtonStyle.Secondary, customId: InteractionConstants.ModerationCommands.ReportAlbum);
+                .WithButton("Report artist image", style: ButtonStyle.Secondary,
+                    customId: InteractionConstants.ModerationCommands.ReportArtist)
+                .WithButton("Report album cover", style: ButtonStyle.Secondary,
+                    customId: InteractionConstants.ModerationCommands.ReportAlbum);
 
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
         }
     }
-
 
 
     //[Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link.")]
@@ -1691,7 +1741,8 @@ public class AdminCommands : BaseCommandModule
                 updateDescription.AppendLine(newFeature.ImageUrl);
                 updateDescription.AppendLine();
 
-                updateDescription.AppendLine("Featured timer restarted. Can take up to three minutes to show, max 3 times / hour");
+                updateDescription.AppendLine(
+                    "Featured timer restarted. Can take up to three minutes to show, max 3 times / hour");
 
                 var dateValue = ((DateTimeOffset)feature.DateTime).ToUnixTimeSeconds();
                 this._embed.AddField("Time", $"<t:{dateValue}:F>");
@@ -2063,7 +2114,8 @@ public class AdminCommands : BaseCommandModule
                 else
                 {
                     await ReplyAsync("You have already added " + user +
-                                     " to the list of blocked users or something went wrong.", allowedMentions: AllowedMentions.None);
+                                     " to the list of blocked users or something went wrong.",
+                        allowedMentions: AllowedMentions.None);
                 }
 
                 this.Context.LogCommandUsed();
@@ -2091,7 +2143,8 @@ public class AdminCommands : BaseCommandModule
             {
                 if (!user.HasValue)
                 {
-                    await ReplyAsync("Please specify what user you want to remove from the list of users who are blocked from using .fmbot.");
+                    await ReplyAsync(
+                        "Please specify what user you want to remove from the list of users who are blocked from using .fmbot.");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
@@ -2100,12 +2153,17 @@ public class AdminCommands : BaseCommandModule
 
                 if (blacklistResult)
                 {
-                    await ReplyAsync("Removed " + user + " from the list of users who are blocked from using .fmbot.", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync("Removed " + user + " from the list of users who are blocked from using .fmbot.",
+                        allowedMentions: AllowedMentions.None);
                 }
                 else
                 {
-                    await ReplyAsync("You have already removed " + user + " from the list of users who are blocked from using the bot.", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync(
+                        "You have already removed " + user +
+                        " from the list of users who are blocked from using the bot.",
+                        allowedMentions: AllowedMentions.None);
                 }
+
                 this.Context.LogCommandUsed();
             }
             else
@@ -2137,7 +2195,8 @@ public class AdminCommands : BaseCommandModule
                     return;
                 }
 
-                await ReplyAsync($"Running full update for '{userToUpdate.UserNameLastFM}'", allowedMentions: AllowedMentions.None);
+                await ReplyAsync($"Running full update for '{userToUpdate.UserNameLastFM}'",
+                    allowedMentions: AllowedMentions.None);
                 this.Context.LogCommandUsed();
 
                 await this._indexService.IndexUser(userToUpdate);
@@ -2171,7 +2230,8 @@ public class AdminCommands : BaseCommandModule
                     return;
                 }
 
-                await ReplyAsync($"Running top list update for '{userToUpdate.UserNameLastFM}'", allowedMentions: AllowedMentions.None);
+                await ReplyAsync($"Running top list update for '{userToUpdate.UserNameLastFM}'",
+                    allowedMentions: AllowedMentions.None);
                 this.Context.LogCommandUsed();
 
                 await this._indexService.RecalculateTopLists(userToUpdate);
@@ -2196,9 +2256,11 @@ public class AdminCommands : BaseCommandModule
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                var components = new ComponentBuilder().WithButton("Generate link", customId: InteractionConstants.SupporterLinks.GetPurchaseLink);
+                var components = new ComponentBuilder().WithButton("Generate link",
+                    customId: InteractionConstants.SupporterLinks.GetPurchaseLink);
 
-                await ReplyAsync($"Use the button below to get your unique purchase link", allowedMentions: AllowedMentions.None, components: components.Build());
+                await ReplyAsync($"Use the button below to get your unique purchase link",
+                    allowedMentions: AllowedMentions.None, components: components.Build());
                 this.Context.LogCommandUsed();
             }
             else
@@ -2257,8 +2319,10 @@ public class AdminCommands : BaseCommandModule
 
             if (dbUser.UserType != UserType.User)
             {
-                description.AppendLine($"**{StringExtensions.Sanitize(userSettings.DisplayName)} {dbUser.UserType.UserTypeToIcon()}**");
+                description.AppendLine(
+                    $"**{StringExtensions.Sanitize(userSettings.DisplayName)} {dbUser.UserType.UserTypeToIcon()}**");
             }
+
             if (dbUser.DataSource != DataSource.LastFm)
             {
                 var name = dbUser.DataSource.GetAttribute<OptionAttribute>().Name;
@@ -2278,7 +2342,8 @@ public class AdminCommands : BaseCommandModule
 
                 var firstImportPlay = allPlays
                     .OrderBy(o => o.TimePlayed)
-                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => artistName == null ||
+                                string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
                     .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
                 if (firstImportPlay != null)
                 {
@@ -2291,7 +2356,8 @@ public class AdminCommands : BaseCommandModule
 
                 var lastImportPlay = allPlays
                     .OrderByDescending(o => o.TimePlayed)
-                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => artistName == null ||
+                                string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
                     .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
                 if (lastImportPlay != null)
                 {
@@ -2302,7 +2368,8 @@ public class AdminCommands : BaseCommandModule
                 description.AppendLine();
                 var firstFinalizedImportPlay = allFinalizedPlays
                     .OrderBy(o => o.TimePlayed)
-                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => artistName == null ||
+                                string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
                     .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
                 if (firstFinalizedImportPlay != null)
                 {
@@ -2315,7 +2382,8 @@ public class AdminCommands : BaseCommandModule
 
                 var lastFinalizedImportPlay = allFinalizedPlays
                     .OrderByDescending(o => o.TimePlayed)
-                    .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                    .Where(w => artistName == null ||
+                                string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
                     .FirstOrDefault(w => w.PlaySource != PlaySource.LastFm);
                 if (lastFinalizedImportPlay != null)
                 {
@@ -2328,7 +2396,8 @@ public class AdminCommands : BaseCommandModule
 
             var firstLfmPlay = allPlays
                 .OrderBy(o => o.TimePlayed)
-                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                .Where(w => artistName == null ||
+                            string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
             if (firstLfmPlay != null)
             {
@@ -2341,7 +2410,8 @@ public class AdminCommands : BaseCommandModule
 
             var lastLfmPlay = allPlays
                 .OrderByDescending(o => o.TimePlayed)
-                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                .Where(w => artistName == null ||
+                            string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
             if (lastLfmPlay != null)
             {
@@ -2353,7 +2423,8 @@ public class AdminCommands : BaseCommandModule
 
             var firstFilteredLfmPlay = allFinalizedPlays
                 .OrderBy(o => o.TimePlayed)
-                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                .Where(w => artistName == null ||
+                            string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
             if (firstFilteredLfmPlay != null)
             {
@@ -2366,7 +2437,8 @@ public class AdminCommands : BaseCommandModule
 
             var lastFilteredLfmPlay = allFinalizedPlays
                 .OrderByDescending(o => o.TimePlayed)
-                .Where(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
+                .Where(w => artistName == null ||
+                            string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault(w => w.PlaySource == PlaySource.LastFm);
             if (lastFilteredLfmPlay != null)
             {
@@ -2378,18 +2450,21 @@ public class AdminCommands : BaseCommandModule
 
             var firstFilteredPlay = allFinalizedPlays
                 .OrderBy(o => o.TimePlayed)
-                .FirstOrDefault(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(w =>
+                    artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase));
             if (firstFilteredPlay != null)
             {
                 var dateValue = ((DateTimeOffset)firstFilteredPlay.TimePlayed).ToUnixTimeSeconds();
                 description.AppendLine($"Final first play: <t:{dateValue}:F>");
             }
 
-            description.AppendLine($"Final play count: `{allFinalizedPlays.Count(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))}`");
+            description.AppendLine(
+                $"Final play count: `{allFinalizedPlays.Count(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase))}`");
 
             var lastFilteredPlay = allFinalizedPlays
                 .OrderByDescending(o => o.TimePlayed)
-                .FirstOrDefault(w => artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(w =>
+                    artistName == null || string.Equals(artistName, w.ArtistName, StringComparison.OrdinalIgnoreCase));
             if (lastFilteredPlay != null)
             {
                 var dateValue = ((DateTimeOffset)lastFilteredPlay.TimePlayed).ToUnixTimeSeconds();
@@ -2419,7 +2494,8 @@ public class AdminCommands : BaseCommandModule
             {
                 if (oldUserId == null || newUserId == null)
                 {
-                    await ReplyAsync("Enter the old and new id. For example, `.moveimports 125740103539621888 356268235697553409`");
+                    await ReplyAsync(
+                        "Enter the old and new id. For example, `.moveimports 125740103539621888 356268235697553409`");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
@@ -2429,7 +2505,8 @@ public class AdminCommands : BaseCommandModule
 
                 if (oldUser == null || newUser == null)
                 {
-                    await ReplyAsync("One or both users could not be found. Are you sure they are registered in .fmbot?");
+                    await ReplyAsync(
+                        "One or both users could not be found. Are you sure they are registered in .fmbot?");
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return;
                 }
@@ -2447,7 +2524,8 @@ public class AdminCommands : BaseCommandModule
                     oldUserDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
                 }
 
-                embed.AddField($"Old user - {oldUser.UserId} {oldUser.UserType.UserTypeToIcon()}", oldUserDescription.ToString());
+                embed.AddField($"Old user - {oldUser.UserId} {oldUser.UserType.UserTypeToIcon()}",
+                    oldUserDescription.ToString());
 
                 var newUserDescription = new StringBuilder();
                 newUserDescription.AppendLine($"`{newUser.DiscordUserId}` - <@{newUser.DiscordUserId}>");
@@ -2460,7 +2538,8 @@ public class AdminCommands : BaseCommandModule
                     newUserDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
                 }
 
-                embed.AddField($"New user - {newUser.UserId} {newUser.UserType.UserTypeToIcon()}", newUserDescription.ToString());
+                embed.AddField($"New user - {newUser.UserId} {newUser.UserType.UserTypeToIcon()}",
+                    newUserDescription.ToString());
 
                 if (!string.Equals(oldUser.UserNameLastFM, newUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
                 {
@@ -2473,9 +2552,11 @@ public class AdminCommands : BaseCommandModule
                     "- The new user should have no imports! Otherwise they might be duplicated" +
                     "- After moving they can enable the imports with `/import manage`");
 
-                var components = new ComponentBuilder().WithButton("Move data", customId: $"move-user-data-{oldUser.UserId}-{newUser.UserId}", ButtonStyle.Danger);
+                var components = new ComponentBuilder().WithButton("Move data",
+                    customId: $"move-user-data-{oldUser.UserId}-{newUser.UserId}", ButtonStyle.Danger);
 
-                await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None, components: components.Build());
+                await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None,
+                    components: components.Build());
                 this.Context.LogCommandUsed();
             }
             else
@@ -2497,7 +2578,8 @@ public class AdminCommands : BaseCommandModule
     {
         try
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner) && this.Context.Guild.Id == 821660544581763093)
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner) &&
+                this.Context.Guild.Id == 821660544581763093)
             {
                 if (userToDelete == null)
                 {
@@ -2528,12 +2610,15 @@ public class AdminCommands : BaseCommandModule
                     userDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
                 }
 
-                embed.AddField($"User to delete - {user.UserId} {user.UserType.UserTypeToIcon()}", userDescription.ToString());
+                embed.AddField($"User to delete - {user.UserId} {user.UserType.UserTypeToIcon()}",
+                    userDescription.ToString());
                 embed.WithFooter("⚠️ You cant revert this ⚠️ watch out whee oooo");
 
-                var components = new ComponentBuilder().WithButton("Delete user", customId: $"admin-delete-user-{user.UserId}", ButtonStyle.Danger);
+                var components = new ComponentBuilder().WithButton("Delete user",
+                    customId: $"admin-delete-user-{user.UserId}", ButtonStyle.Danger);
 
-                await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None, components: components.Build());
+                await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None,
+                    components: components.Build());
                 this.Context.LogCommandUsed();
             }
             else
@@ -2545,6 +2630,43 @@ public class AdminCommands : BaseCommandModule
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("lastfmissue")]
+    [Alias("lfmissue")]
+    public async Task LastfmIssue(string _ = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            var embed = new EmbedBuilder();
+            embed.WithDescription(
+                "It looks like you're asking for help with a Last.fm issue.\n\n" +
+                "Feel free to ask, just note that .fmbot is not affiliated with Last.fm. The bot and website are two different things.");
+
+            var components = new ComponentBuilder()
+                .WithButton(url: "https://support.last.fm/", label: "Last.fm support forums", style: ButtonStyle.Link)
+                .WithButton(url: "https://discord.gg/lastfm", label: "Last.fm Discord", style: ButtonStyle.Link);
+
+            embed.WithColor(DiscordConstants.LastFmColorRed);
+
+            await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None,
+                components: components.Build());
+
+            if (this.Context.Channel is SocketThreadChannel { ParentChannel: SocketForumChannel forumChannel } threadChannel &&
+                forumChannel.Tags.Any())
+            {
+                var tagToApply = forumChannel.Tags.FirstOrDefault(f => f.Name == "Last.fm issue");
+                if (tagToApply != null)
+                {
+                    await threadChannel.ModifyAsync(m => m.AppliedTags = new List<ulong> { tagToApply.Id });
+                }
+            }
+
+            await this.Context.Message.DeleteAsync(new RequestOptions
+            {
+                AuditLogReason = ".lfmissue command"
+            });
         }
     }
 }
