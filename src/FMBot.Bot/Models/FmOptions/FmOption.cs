@@ -19,8 +19,6 @@ public record FmResult(string Content);
 public abstract class FmOption
 {
     public FmFooterOption Option { get; set; }
-    public abstract Task<FmResult> ExecuteAsync(FmContext context, DbDataReader reader);
-    public abstract NpgsqlBatchCommand CreateBatchCommand(FmContext context);
 
     public int Order { get; set; }
 
@@ -35,12 +33,12 @@ public class SqlFmOption : FmOption
 
     public bool ProcessMultipleRows { get; set; } = false;
 
-    public override Task<FmResult> ExecuteAsync(FmContext context, DbDataReader reader)
+    public virtual Task<FmResult> ExecuteAsync(FmContext context, DbDataReader reader)
     {
         return ResultProcessor(context, reader);
     }
 
-    public override NpgsqlBatchCommand CreateBatchCommand(FmContext context)
+    public virtual NpgsqlBatchCommand CreateBatchCommand(FmContext context)
     {
         var command = new NpgsqlBatchCommand(SqlQuery);
         var parameters = ParametersFactory(context);
@@ -57,12 +55,12 @@ public class ComplexFmOption : FmOption
 {
     public Func<FmContext, Task<FmResult>> ExecutionLogic { get; set; }
 
-    public override Task<FmResult> ExecuteAsync(FmContext context, DbDataReader reader)
+    public virtual Task<FmResult> ExecuteAsync(FmContext context, DbDataReader reader)
     {
         return ExecutionLogic(context);
     }
 
-    public override NpgsqlBatchCommand CreateBatchCommand(FmContext context)
+    public virtual NpgsqlBatchCommand CreateBatchCommand(FmContext context)
     {
         return null;
     }
@@ -72,12 +70,12 @@ public class FmContext
 {
     public UserSettingsModel UserSettings { get; set; }
     public NpgsqlConnection Connection { get; set; }
-    public string ArtistName { get; set; }
-    public string AlbumName { get; set; }
-    public string TrackName { get; set; }
+
+    public RecentTrack CurrentTrack { get; set; }
+
+    public RecentTrack PreviousTrack { get; set; }
 
     public long TotalScrobbles { get; set; }
-    public bool Loved { get; set; }
     public Guild Guild { get; set; }
 
     public string Genres { get; set; }
@@ -104,7 +102,7 @@ public class FmOptionsHandler
                 Option = FmFooterOption.Loved,
                 Order = 10,
                 ExecutionLogic = context =>
-                    Task.FromResult(context.Loved ? new FmResult("❤️ Loved track") : null)
+                    Task.FromResult(context.CurrentTrack.Loved ? new FmResult("❤️ Loved track") : null)
             },
             new SqlFmOption
             {
@@ -120,7 +118,7 @@ public class FmOptionsHandler
                 ParametersFactory = context => new Dictionary<string, object>
                 {
                     { "userId", context.UserSettings.UserId },
-                    { "artistName", context.ArtistName }
+                    { "artistName", context.CurrentTrack.ArtistName }
                 }
             },
             new SqlFmOption
@@ -137,8 +135,8 @@ public class FmOptionsHandler
                 ParametersFactory = context => new Dictionary<string, object>
                 {
                     { "userId", context.UserSettings.UserId },
-                    { "artistName", context.ArtistName },
-                    { "albumName", context.AlbumName },
+                    { "artistName", context.CurrentTrack.ArtistName },
+                    { "albumName", context.CurrentTrack.AlbumName },
                 }
             },
             new SqlFmOption
@@ -155,8 +153,8 @@ public class FmOptionsHandler
                 ParametersFactory = context => new Dictionary<string, object>
                 {
                     { "userId", context.UserSettings.UserId },
-                    { "artistName", context.ArtistName },
-                    { "trackName", context.TrackName },
+                    { "artistName", context.CurrentTrack.ArtistName },
+                    { "trackName", context.CurrentTrack.TrackName },
                 }
             },
             new ComplexFmOption
@@ -176,7 +174,7 @@ public class FmOptionsHandler
                     var plays = await PlayRepository.GetUserPlaysWithinTimeRange(context.UserSettings.UserId,
                         context.Connection, start);
                     var count = plays.Count(a =>
-                        a.ArtistName.Equals(context.ArtistName, StringComparison.OrdinalIgnoreCase));
+                        a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase));
                     return new FmResult($"{count} artist plays this week");
                 }
             },
@@ -207,7 +205,7 @@ public class FmOptionsHandler
                 },
                 ParametersFactory = context => new Dictionary<string, object>
                 {
-                    { "artistName", context.ArtistName }
+                    { "artistName", context.CurrentTrack.ArtistName }
                 }
             },
             new SqlFmOption
@@ -257,7 +255,7 @@ public class FmOptionsHandler
                 },
                 ParametersFactory = context => new Dictionary<string, object>
                 {
-                    { "artistName", context.ArtistName }
+                    { "artistName", context.CurrentTrack.ArtistName }
                 }
             },
             new SqlFmOption
@@ -292,7 +290,7 @@ public class FmOptionsHandler
                 },
                 ParametersFactory = context => new Dictionary<string, object>
                 {
-                    { "artistName", context.ArtistName }
+                    { "artistName", context.CurrentTrack.ArtistName }
                 }
             },
             new SqlFmOption
@@ -316,8 +314,8 @@ public class FmOptionsHandler
                 },
                 ParametersFactory = context => new Dictionary<string, object>
                 {
-                    { "artistName", context.ArtistName },
-                    { "trackName", context.TrackName }
+                    { "artistName", context.CurrentTrack.ArtistName },
+                    { "trackName", context.CurrentTrack.TrackName }
                 }
             },
             new SqlFmOption
@@ -352,8 +350,8 @@ public class FmOptionsHandler
                 },
                 ParametersFactory = context => new Dictionary<string, object>
                 {
-                    { "artistName", context.ArtistName },
-                    { "trackName", context.TrackName }
+                    { "artistName", context.CurrentTrack.ArtistName },
+                    { "trackName", context.CurrentTrack.TrackName }
                 }
             },
             new ComplexFmOption
@@ -362,7 +360,7 @@ public class FmOptionsHandler
                 Order = 400,
                 ExecutionLogic = async context =>
                 {
-                    if (string.IsNullOrEmpty(context.AlbumName))
+                    if (string.IsNullOrEmpty(context.CurrentTrack.AlbumName))
                     {
                         return null;
                     }
@@ -374,11 +372,11 @@ public class FmOptionsHandler
                     }
 
                     var albumCollection = await Task.Run(() => discogsUser.DiscogsReleases.Where(w =>
-                            (w.Release.Title.StartsWith(context.AlbumName, StringComparison.OrdinalIgnoreCase) ||
-                             context.AlbumName.StartsWith(w.Release.Title, StringComparison.OrdinalIgnoreCase))
+                            (w.Release.Title.StartsWith(context.CurrentTrack.AlbumName, StringComparison.OrdinalIgnoreCase) ||
+                             context.CurrentTrack.AlbumName.StartsWith(w.Release.Title, StringComparison.OrdinalIgnoreCase))
                             &&
-                            (w.Release.Artist.StartsWith(context.ArtistName, StringComparison.OrdinalIgnoreCase) ||
-                             context.ArtistName.StartsWith(w.Release.Artist, StringComparison.OrdinalIgnoreCase)))
+                            (w.Release.Artist.StartsWith(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) ||
+                             context.CurrentTrack.ArtistName.StartsWith(w.Release.Artist, StringComparison.OrdinalIgnoreCase)))
                         .ToList());
 
                     var discogsAlbum = await Task.Run(() => albumCollection.MaxBy(o => o.DateAdded));
@@ -419,7 +417,7 @@ public class FmOptionsHandler
                 ParametersFactory = context => new Dictionary<string, object>
                 {
                     { "guildId", context.Guild?.GuildId ?? 0 },
-                    { "artistName", context.ArtistName }
+                    { "artistName", context.CurrentTrack.ArtistName }
                 }
             },
             new ComplexFmOption
@@ -434,7 +432,7 @@ public class FmOptionsHandler
                     }
 
                     var artistListeners = await context.WhoKnowsArtistService.GetIndexedUsersForArtist(null,
-                        context.GuildUsers, context.Guild.GuildId, context.ArtistName);
+                        context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName);
                     artistListeners = WhoKnowsService.FilterWhoKnowsObjects(artistListeners, context.Guild)
                         .filteredUsers;
 
@@ -464,7 +462,7 @@ public class FmOptionsHandler
                     }
 
                     var artistListeners = await context.WhoKnowsArtistService.GetIndexedUsersForArtist(null,
-                        context.GuildUsers, context.Guild.GuildId, context.ArtistName);
+                        context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName);
                     artistListeners = WhoKnowsService.FilterWhoKnowsObjects(artistListeners, context.Guild)
                         .filteredUsers;
 
@@ -477,13 +475,13 @@ public class FmOptionsHandler
                 Order = 620,
                 ExecutionLogic = async context =>
                 {
-                    if (context.Guild == null || context.AlbumName == null)
+                    if (context.Guild == null || context.CurrentTrack.AlbumName == null)
                     {
                         return null;
                     }
 
                     var albumListeners = await context.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
-                        context.GuildUsers, context.Guild.GuildId, context.ArtistName, context.AlbumName);
+                        context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName, context.CurrentTrack.AlbumName);
                     albumListeners = WhoKnowsService.FilterWhoKnowsObjects(albumListeners, context.Guild).filteredUsers;
 
                     if (albumListeners.Any())
@@ -505,13 +503,13 @@ public class FmOptionsHandler
                 Order = 630,
                 ExecutionLogic = async context =>
                 {
-                    if (context.Guild == null || context.AlbumName == null)
+                    if (context.Guild == null || context.CurrentTrack.AlbumName == null)
                     {
                         return null;
                     }
 
                     var albumListeners = await context.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
-                        context.GuildUsers, context.Guild.GuildId, context.ArtistName, context.AlbumName);
+                        context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName, context.CurrentTrack.AlbumName);
                     albumListeners = WhoKnowsService.FilterWhoKnowsObjects(albumListeners, context.Guild).filteredUsers;
 
                     return albumListeners.Any()
@@ -531,7 +529,7 @@ public class FmOptionsHandler
                     }
 
                     var trackListeners = await context.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
-                        context.GuildUsers, context.Guild.GuildId, context.ArtistName, context.TrackName);
+                        context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName, context.CurrentTrack.TrackName);
                     trackListeners = WhoKnowsService.FilterWhoKnowsObjects(trackListeners, context.Guild).filteredUsers;
 
                     if (trackListeners.Any())
@@ -559,7 +557,7 @@ public class FmOptionsHandler
                     }
 
                     var trackListeners = await context.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
-                        context.GuildUsers, context.Guild.GuildId, context.ArtistName, context.TrackName);
+                        context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName, context.CurrentTrack.TrackName);
                     trackListeners = WhoKnowsService.FilterWhoKnowsObjects(trackListeners, context.Guild).filteredUsers;
 
                     return trackListeners.Any()
@@ -605,7 +603,7 @@ public class FmOptionsHandler
                 ParametersFactory = context => new Dictionary<string, object>
                 {
                     { "userId", context.UserSettings.UserId },
-                    { "artistName", context.ArtistName }
+                    { "artistName", context.CurrentTrack.ArtistName }
                 }
             },
             new SqlFmOption
@@ -647,8 +645,8 @@ public class FmOptionsHandler
                 ParametersFactory = context => new Dictionary<string, object>
                 {
                     { "userId", context.UserSettings.UserId },
-                    { "artistName", context.ArtistName },
-                    { "albumName", context.AlbumName }
+                    { "artistName", context.CurrentTrack.ArtistName },
+                    { "albumName", context.CurrentTrack.AlbumName }
                 }
             },
             new SqlFmOption
@@ -690,8 +688,8 @@ public class FmOptionsHandler
                 ParametersFactory = context => new Dictionary<string, object>
                 {
                     { "userId", context.UserSettings.UserId },
-                    { "artistName", context.ArtistName },
-                    { "trackName", context.TrackName }
+                    { "artistName", context.CurrentTrack.ArtistName },
+                    { "trackName", context.CurrentTrack.TrackName }
                 }
             },
             new ComplexFmOption
@@ -707,7 +705,7 @@ public class FmOptionsHandler
 
                     var firstPlay =
                         await context.PlayService.GetArtistFirstPlayDate(context.UserSettings.UserId,
-                            context.ArtistName);
+                            context.CurrentTrack.ArtistName);
                     return firstPlay != null
                         ? new FmResult($"Artist discovered {firstPlay.Value.ToString("MMMM d yyyy")}")
                         : null;
@@ -719,13 +717,13 @@ public class FmOptionsHandler
                 Order = 810,
                 ExecutionLogic = async context =>
                 {
-                    if (!SupporterService.IsSupporter(context.UserSettings.UserType) || context.AlbumName == null)
+                    if (!SupporterService.IsSupporter(context.UserSettings.UserType) || context.CurrentTrack.AlbumName == null)
                     {
                         return null;
                     }
 
                     var firstPlay = await context.PlayService.GetAlbumFirstPlayDate(context.UserSettings.UserId,
-                        context.ArtistName, context.AlbumName);
+                        context.CurrentTrack.ArtistName, context.CurrentTrack.AlbumName);
                     return firstPlay != null
                         ? new FmResult($"Album discovered {firstPlay.Value.ToString("MMMM d yyyy")}")
                         : null;
@@ -743,7 +741,7 @@ public class FmOptionsHandler
                     }
 
                     var firstPlay = await context.PlayService.GetTrackFirstPlayDate(context.UserSettings.UserId,
-                        context.ArtistName, context.TrackName);
+                        context.CurrentTrack.ArtistName, context.CurrentTrack.TrackName);
                     return firstPlay != null
                         ? new FmResult($"Track discovered {firstPlay.Value.ToString("MMMM d yyyy")}")
                         : null;
@@ -783,7 +781,7 @@ public class FmOptionsHandler
         var complexTasks = complexOptions.Select(o => ProcessComplexOptionAsync(o, context, options));
         await Task.WhenAll(complexTasks);
 
-        var eurovision = EurovisionService.GetEurovisionEntry(context.ArtistName, context.TrackName);
+        var eurovision = EurovisionService.GetEurovisionEntry(context.CurrentTrack.ArtistName, context.CurrentTrack.TrackName);
         if (eurovision != null)
         {
             var description = EurovisionService.GetEurovisionDescription(eurovision);

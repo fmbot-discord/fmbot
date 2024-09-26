@@ -167,9 +167,8 @@ public class PlayBuilder
             : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
         var fmText = "";
-        var footerText = await this._userService.GetFooterAsync(context.ContextUser.FmFooterOptions, userSettings,
-            currentTrack.ArtistName, currentTrack.AlbumName, currentTrack.TrackName, currentTrack.Loved, totalPlaycount,
-            guild, guildUsers,
+        var footerText = await this._userService.GetFooterAsync(
+            context.ContextUser.FmFooterOptions, userSettings, currentTrack, previousTrack, totalPlaycount, guild, guildUsers,
             embedType == FmEmbedType.TextFull || embedType == FmEmbedType.TextMini);
 
         if (!userSettings.DifferentUser &&
