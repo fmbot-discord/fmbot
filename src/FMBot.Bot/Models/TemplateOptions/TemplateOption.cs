@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
@@ -89,6 +90,36 @@ public static class TemplateOptions
     {
         new ComplexTemplateOption
         {
+            Variable = "lastfm.username",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.UserNameLastFm))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "lastfm.join-date",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.RegisteredLastFm?.ToString("MMMM d yyyy")))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "lastfm.total-scrobbles",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.TotalScrobbles.ToString()))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "user.displayname",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.DisplayName))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "user.user-type",
+            ExecutionLogic = context => Task.FromResult(new FmResult(Enum.GetName(context.UserSettings.UserType)))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "user.user-type-emoji",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.UserType.UserTypeToIcon()))
+        },
+        new ComplexTemplateOption
+        {
             FooterOption = FmFooterOption.Loved,
             Variable = "track.loved",
             FooterOrder = 10,
@@ -161,6 +192,16 @@ public static class TemplateOptions
         },
         new ComplexTemplateOption
         {
+            Variable = "album.url",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.AlbumUrl))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "album.cover-url",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.AlbumCoverUrl))
+        },
+        new ComplexTemplateOption
+        {
             FooterOption = FmFooterOption.ArtistPlaysThisWeek,
             Variable = "artist.weekplays",
             FooterOrder = 60,
@@ -173,6 +214,11 @@ public static class TemplateOptions
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase));
                 return new FmResult($"{count} artist plays this week");
             }
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "artist.url",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.ArtistUrl))
         },
         new SqlTemplateOption
         {
@@ -319,6 +365,31 @@ public static class TemplateOptions
         {
             Variable = "track.artist",
             ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.ArtistName))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "track.url",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.TrackUrl))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "previousTrack.name",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.TrackName))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "previousTrack.album",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.AlbumName))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "previousTrack.artist",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.ArtistName))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "previousTrack.url",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.TrackUrl))
         },
         new SqlTemplateOption
         {
