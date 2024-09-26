@@ -10,7 +10,7 @@ using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Models.FmOptions;
+using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
@@ -41,7 +41,7 @@ public class UserService
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
     private readonly FriendsService _friendsService;
     private readonly AdminService _adminService;
-    private readonly FmOptionsHandler _fmOptionsHandler;
+    private readonly TemplateService _templateService;
 
     public UserService(IMemoryCache cache,
         IDbContextFactory<FMBotDbContext> contextFactory,
@@ -54,7 +54,7 @@ public class UserService
         WhoKnowsTrackService whoKnowsTrackService,
         FriendsService friendsService,
         AdminService adminService,
-        FmOptionsHandler fmOptionsHandler)
+        TemplateService templateService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
@@ -66,7 +66,7 @@ public class UserService
         this._whoKnowsTrackService = whoKnowsTrackService;
         this._friendsService = friendsService;
         this._adminService = adminService;
-        this._fmOptionsHandler = fmOptionsHandler;
+        this._templateService = templateService;
         this._botSettings = botSettings.Value;
     }
 
@@ -657,7 +657,7 @@ public class UserService
         await connection.OpenAsync();
         DefaultTypeMap.MatchNamesWithUnderscores = true;
 
-        var footerContext = new FmContext
+        var footerContext = new TemplateContext
         {
             UserService = this,
             CurrentTrack = currentTrack,
@@ -674,7 +674,7 @@ public class UserService
             TotalScrobbles = totalScrobbles
         };
 
-        var footer = await this._fmOptionsHandler.GetFooterAsync(footerOptions, footerContext);
+        var footer = await this._templateService.GetFooterAsync(footerOptions, footerContext);
         return CreateFooter(footer, footerContext.Genres, useSmallMarkdown);
     }
 
