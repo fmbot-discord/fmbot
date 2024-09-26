@@ -184,6 +184,7 @@ public class SupporterService
         thankYouMessage.AppendLine();
 
         thankYouMessage.AppendLine("🌐 **Community perks**");
+        thankYouMessage.AppendLine("- Support hosting and development");
         thankYouMessage.AppendLine("- ⭐ — Supporter badge in the bot");
         thankYouMessage.AppendLine("- Exclusive role and channel on [our server](https://discord.gg/fmbot)");
         thankYouMessage.AppendLine();

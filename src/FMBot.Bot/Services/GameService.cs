@@ -521,7 +521,7 @@ public class GameService
 
         if (artist?.CountryCode != null && country != null)
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Country, $"- Their country has this flag: :flag_{country.Code.ToLower()}:"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Country, $"- Their country flag: :flag_{country.Code.ToLower()}:"));
         }
 
         return hints;
@@ -605,7 +605,7 @@ public class GameService
 
         if (artist?.CountryCode != null && country != null)
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Country, $"- Artist their country has this flag: :flag_{country.Code.ToLower()}:"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Country, $"- Artist country flag: :flag_{country.Code.ToLower()}:"));
         }
 
         return hints;

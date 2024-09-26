@@ -42,6 +42,7 @@ using FMBot.Bot.Extensions;
 using Web.InternalApi;
 using Discord.Rest;
 using FMBot.AppleMusic;
+using FMBot.Bot.Models.FmOptions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
 using Microsoft.VisualBasic;
@@ -238,6 +239,7 @@ public class Startup
             .AddSingleton<WhoKnowsFilterService>()
             .AddSingleton<WhoKnowsTrackService>()
             .AddSingleton<YoutubeService>()
+            .AddSingleton<FmOptionsHandler>()
             .AddSingleton<UpdateService, UpdateService>()
             .AddSingleton<IDataSourceFactory, DataSourceFactory>()
             .AddSingleton<IPlayDataSourceRepository, PlayDataSourceRepository>()
