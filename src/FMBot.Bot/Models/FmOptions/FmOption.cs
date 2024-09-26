@@ -11,16 +11,15 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.Repositories;
 using Npgsql;
-using SpotifyAPI.Web;
 
 namespace FMBot.Bot.Models.FmOptions;
 
-public record FmOptionResult(string Content, int Order);
+public record FmResult(string Content);
 
 public abstract class FmOption
 {
     public FmFooterOption Option { get; set; }
-    public abstract Task<FmOptionResult> ExecuteAsync(FmContext context, DbDataReader reader);
+    public abstract Task<FmResult> ExecuteAsync(FmContext context, DbDataReader reader);
     public abstract NpgsqlBatchCommand CreateBatchCommand(FmContext context);
 
     public int Order { get; set; }
@@ -31,10 +30,12 @@ public abstract class FmOption
 public class SqlFmOption : FmOption
 {
     public string SqlQuery { get; set; }
-    public Func<FmContext, DbDataReader, Task<FmOptionResult>> ResultProcessor { get; set; }
+    public Func<FmContext, DbDataReader, Task<FmResult>> ResultProcessor { get; set; }
     public Func<FmContext, Dictionary<string, object>> ParametersFactory { get; set; }
 
-    public override Task<FmOptionResult> ExecuteAsync(FmContext context, DbDataReader reader)
+    public bool ProcessMultipleRows { get; set; } = false;
+
+    public override Task<FmResult> ExecuteAsync(FmContext context, DbDataReader reader)
     {
         return ResultProcessor(context, reader);
     }
@@ -54,16 +55,16 @@ public class SqlFmOption : FmOption
 
 public class ComplexFmOption : FmOption
 {
-    public Func<FmContext, Task<FmOptionResult>> ExecutionLogic { get; set; }
+    public Func<FmContext, Task<FmResult>> ExecutionLogic { get; set; }
 
-    public override Task<FmOptionResult> ExecuteAsync(FmContext context, DbDataReader reader)
+    public override Task<FmResult> ExecuteAsync(FmContext context, DbDataReader reader)
     {
         return ExecutionLogic(context);
     }
 
     public override NpgsqlBatchCommand CreateBatchCommand(FmContext context)
     {
-        return null; // Complex options don't use SQL batch commands
+        return null;
     }
 }
 
@@ -101,18 +102,20 @@ public class FmOptionsHandler
             new ComplexFmOption
             {
                 Option = FmFooterOption.Loved,
+                Order = 10,
                 ExecutionLogic = context =>
-                    Task.FromResult(context.Loved ? new FmOptionResult("❤️ Loved track", 10) : null)
+                    Task.FromResult(context.Loved ? new FmResult("❤️ Loved track") : null)
             },
             new SqlFmOption
             {
                 Option = FmFooterOption.ArtistPlays,
+                Order = 20,
                 SqlQuery = "SELECT ua.playcount FROM user_artists AS ua WHERE ua.user_id = @userId AND " +
                            "UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))",
                 ResultProcessor = async (context, reader) =>
                 {
                     var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                    return new FmOptionResult($"{playcount} artist scrobbles", 20);
+                    return new FmResult($"{playcount} artist scrobbles");
                 },
                 ParametersFactory = context => new Dictionary<string, object>
                 {
@@ -123,12 +126,13 @@ public class FmOptionsHandler
             new SqlFmOption
             {
                 Option = FmFooterOption.AlbumPlays,
+                Order = 30,
                 SqlQuery = "SELECT ua.playcount FROM user_albums AS ua WHERE ua.user_id = @userId AND " +
                            "UPPER(ua.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT))",
                 ResultProcessor = async (context, reader) =>
                 {
                     var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                    return new FmOptionResult($"{playcount} album scrobbles", 30);
+                    return new FmResult($"{playcount} album scrobbles");
                 },
                 ParametersFactory = context => new Dictionary<string, object>
                 {
@@ -140,12 +144,13 @@ public class FmOptionsHandler
             new SqlFmOption
             {
                 Option = FmFooterOption.TrackPlays,
+                Order = 40,
                 SqlQuery = "SELECT ut.playcount FROM user_tracks AS ut WHERE ut.user_id = @userId AND " +
                            "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))",
                 ResultProcessor = async (context, reader) =>
                 {
                     var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                    return new FmOptionResult($"{playcount} track scrobbles", 40);
+                    return new FmResult($"{playcount} track scrobbles");
                 },
                 ParametersFactory = context => new Dictionary<string, object>
                 {
@@ -157,12 +162,14 @@ public class FmOptionsHandler
             new ComplexFmOption
             {
                 Option = FmFooterOption.TotalScrobbles,
+                Order = 50,
                 ExecutionLogic = context =>
-                    Task.FromResult(new FmOptionResult($"{context.TotalScrobbles} total scrobbles", 45))
+                    Task.FromResult(new FmResult($"{context.TotalScrobbles} total scrobbles"))
             },
             new ComplexFmOption
             {
                 Option = FmFooterOption.ArtistPlaysThisWeek,
+                Order = 60,
                 ExecutionLogic = async context =>
                 {
                     var start = DateTime.UtcNow.AddDays(-7);
@@ -170,12 +177,13 @@ public class FmOptionsHandler
                         context.Connection, start);
                     var count = plays.Count(a =>
                         a.ArtistName.Equals(context.ArtistName, StringComparison.OrdinalIgnoreCase));
-                    return new FmOptionResult($"{count} artist plays this week", 50);
+                    return new FmResult($"{count} artist plays this week");
                 }
             },
             new SqlFmOption
             {
                 Option = FmFooterOption.ArtistCountry,
+                Order = 100,
                 SqlQuery = @"
                     SELECT country_code
                     FROM public.artists
@@ -190,7 +198,7 @@ public class FmOptionsHandler
                             var artistCountry = context.CountryService.GetValidCountry(countryCode);
                             if (artistCountry?.Name != null)
                             {
-                                return new FmOptionResult(artistCountry.Name, 60);
+                                return new FmResult(artistCountry.Name);
                             }
                         }
                     }
@@ -205,6 +213,7 @@ public class FmOptionsHandler
             new SqlFmOption
             {
                 Option = FmFooterOption.ArtistBirthday,
+                Order = 110,
                 SqlQuery = @"
                     SELECT start_date, end_date
                     FROM public.artists
@@ -217,7 +226,6 @@ public class FmOptionsHandler
                         var endDate = await reader.IsDBNullAsync(1)
                             ? (DateTime?)null
                             : await reader.GetFieldValueAsync<DateTime>(1);
-                        var order = 70;
 
                         if (startDate.Month != 1 || startDate.Day != 1)
                         {
@@ -227,20 +235,20 @@ public class FmOptionsHandler
                             if (startDate.Month == today.Month && startDate.Day == today.Day)
                             {
                                 return !endDate.HasValue
-                                    ? new FmOptionResult($"🎂 today! ({age})", order)
-                                    : new FmOptionResult("🎂 today!", order);
+                                    ? new FmResult($"🎂 today! ({age})")
+                                    : new FmResult("🎂 today!");
                             }
                             else if (startDate.Month == today.AddDays(1).Month && startDate.Day == today.AddDays(1).Day)
                             {
                                 return !endDate.HasValue
-                                    ? new FmOptionResult($"🎂 tomorrow (becomes {age + 1})", order)
-                                    : new FmOptionResult("🎂 tomorrow", order);
+                                    ? new FmResult($"🎂 tomorrow (becomes {age + 1})")
+                                    : new FmResult("🎂 tomorrow");
                             }
                             else
                             {
                                 return !endDate.HasValue
-                                    ? new FmOptionResult($"🎂 {startDate:MMMM d} (currently {age})", order)
-                                    : new FmOptionResult($"🎂 {startDate:MMMM d}", order);
+                                    ? new FmResult($"🎂 {startDate:MMMM d} (currently {age})")
+                                    : new FmResult($"🎂 {startDate:MMMM d}");
                             }
                         }
                     }
@@ -255,11 +263,14 @@ public class FmOptionsHandler
             new SqlFmOption
             {
                 Option = FmFooterOption.ArtistGenres,
+                Order = 200,
+                ProcessMultipleRows = true,
                 SqlQuery = @"
-                    SELECT ag.*
+                    SELECT ag.name
                     FROM public.artists a
                     JOIN public.artist_genres ag ON a.id = ag.artist_id
                     WHERE UPPER(a.name) = UPPER(CAST(@artistName AS CITEXT))
+                    ORDER BY ag.id
                     LIMIT 6",
                 ResultProcessor = async (context, reader) =>
                 {
@@ -268,13 +279,15 @@ public class FmOptionsHandler
                     {
                         genres.Add(new ArtistGenre
                         {
-                            Id = await reader.GetFieldValueAsync<int>(reader.GetOrdinal("id")),
-                            ArtistId = await reader.GetFieldValueAsync<int>(reader.GetOrdinal("artist_id")),
-                            Name = await reader.GetFieldValueAsync<string>(reader.GetOrdinal("name"))
+                            Name = reader.GetString(0)
                         });
                     }
 
-                    context.Genres = GenreService.GenresToString(genres.Take(6).ToList());
+                    if (genres.Any())
+                    {
+                        context.Genres = GenreService.GenresToString(genres);
+                    }
+
                     return null;
                 },
                 ParametersFactory = context => new Dictionary<string, object>
@@ -285,6 +298,7 @@ public class FmOptionsHandler
             new SqlFmOption
             {
                 Option = FmFooterOption.TrackBpm,
+                Order = 300,
                 SqlQuery = @"
                     SELECT tempo
                     FROM public.tracks
@@ -295,7 +309,7 @@ public class FmOptionsHandler
                     if (!await reader.IsDBNullAsync(0))
                     {
                         var tempo = await reader.GetFieldValueAsync<float>(0);
-                        return new FmOptionResult($"bpm {tempo:0.0}", 110);
+                        return new FmResult($"bpm {tempo:0.0}");
                     }
 
                     return null;
@@ -309,6 +323,7 @@ public class FmOptionsHandler
             new SqlFmOption
             {
                 Option = FmFooterOption.TrackDuration,
+                Order = 310,
                 SqlQuery = @"
                     SELECT duration_ms
                     FROM public.tracks
@@ -330,7 +345,7 @@ public class FmOptionsHandler
                             12 => "🕛", _ => "🕒"
                         };
 
-                        return new FmOptionResult($"{emoji} {formattedTrackLength}", 120);
+                        return new FmResult($"{emoji} {formattedTrackLength}");
                     }
 
                     return null;
@@ -344,6 +359,7 @@ public class FmOptionsHandler
             new ComplexFmOption
             {
                 Option = FmFooterOption.DiscogsCollection,
+                Order = 400,
                 ExecutionLogic = async context =>
                 {
                     if (string.IsNullOrEmpty(context.AlbumName))
@@ -367,32 +383,49 @@ public class FmOptionsHandler
 
                     var discogsAlbum = await Task.Run(() => albumCollection.MaxBy(o => o.DateAdded));
                     return discogsAlbum != null
-                        ? new FmOptionResult(StringService.UserDiscogsReleaseToSimpleString(discogsAlbum), 130)
+                        ? new FmResult(StringService.UserDiscogsReleaseToSimpleString(discogsAlbum))
                         : null;
                 }
             },
-            new ComplexFmOption
+            new SqlFmOption
             {
                 Option = FmFooterOption.CrownHolder,
-                ExecutionLogic = async context =>
+                Order = 500,
+                SqlQuery = @"
+                    SELECT uc.current_playcount, gu.user_id, gu.user_name
+                    FROM public.user_crowns AS uc
+                    INNER JOIN guild_users AS gu ON gu.user_id = uc.user_id AND gu.guild_id = @guildId
+                    WHERE uc.guild_id = @guildId
+                      AND uc.active = true
+                      AND UPPER(uc.artist_name) = UPPER(CAST(@artistName AS CITEXT))
+                    ORDER BY uc.current_playcount DESC
+                    LIMIT 1",
+                ResultProcessor = async (context, reader) =>
                 {
                     if (context.Guild == null || context.Guild.CrownsDisabled == true)
                     {
                         return null;
                     }
 
-                    var currentCrownHolder = await CrownService.GetCurrentCrownHolderWithName(context.Connection,
-                        context.Guild.GuildId, context.ArtistName);
-                    return currentCrownHolder != null
-                        ? new FmOptionResult(
-                            $"👑 {Format.Sanitize(currentCrownHolder.UserName)} ({currentCrownHolder.CurrentPlaycount} plays)",
-                            140)
-                        : null;
+                    if (!await reader.IsDBNullAsync(0))
+                    {
+                        var currentPlaycount = await reader.GetFieldValueAsync<int>(0);
+                        var userName = await reader.GetFieldValueAsync<string>(2);
+                        return new FmResult($"👑 {Format.Sanitize(userName)} ({currentPlaycount} plays)");
+                    }
+
+                    return null;
+                },
+                ParametersFactory = context => new Dictionary<string, object>
+                {
+                    { "guildId", context.Guild?.GuildId ?? 0 },
+                    { "artistName", context.ArtistName }
                 }
             },
             new ComplexFmOption
             {
                 Option = FmFooterOption.ServerArtistRank,
+                Order = 600,
                 ExecutionLogic = async context =>
                 {
                     if (context.Guild == null)
@@ -412,7 +445,7 @@ public class FmOptionsHandler
                         if (requestedUser != null)
                         {
                             var index = artistListeners.IndexOf(requestedUser);
-                            return new FmOptionResult($"WhoKnows #{index + 1}", 150);
+                            return new FmResult($"WhoKnows #{index + 1}");
                         }
                     }
 
@@ -422,6 +455,7 @@ public class FmOptionsHandler
             new ComplexFmOption
             {
                 Option = FmFooterOption.ServerArtistListeners,
+                Order = 610,
                 ExecutionLogic = async context =>
                 {
                     if (context.Guild == null)
@@ -434,12 +468,13 @@ public class FmOptionsHandler
                     artistListeners = WhoKnowsService.FilterWhoKnowsObjects(artistListeners, context.Guild)
                         .filteredUsers;
 
-                    return artistListeners.Any() ? new FmOptionResult($"{artistListeners.Count} listeners", 160) : null;
+                    return artistListeners.Any() ? new FmResult($"{artistListeners.Count} listeners") : null;
                 }
             },
             new ComplexFmOption
             {
                 Option = FmFooterOption.ServerAlbumRank,
+                Order = 620,
                 ExecutionLogic = async context =>
                 {
                     if (context.Guild == null || context.AlbumName == null)
@@ -457,7 +492,7 @@ public class FmOptionsHandler
                         if (requestedUser != null)
                         {
                             var index = albumListeners.IndexOf(requestedUser);
-                            return new FmOptionResult($"WhoKnows album #{index + 1}", 170);
+                            return new FmResult($"WhoKnows album #{index + 1}");
                         }
                     }
 
@@ -467,6 +502,7 @@ public class FmOptionsHandler
             new ComplexFmOption
             {
                 Option = FmFooterOption.ServerAlbumListeners,
+                Order = 630,
                 ExecutionLogic = async context =>
                 {
                     if (context.Guild == null || context.AlbumName == null)
@@ -479,13 +515,14 @@ public class FmOptionsHandler
                     albumListeners = WhoKnowsService.FilterWhoKnowsObjects(albumListeners, context.Guild).filteredUsers;
 
                     return albumListeners.Any()
-                        ? new FmOptionResult($"{albumListeners.Count} album listeners", 180)
+                        ? new FmResult($"{albumListeners.Count} album listeners")
                         : null;
                 }
             },
             new ComplexFmOption
             {
                 Option = FmFooterOption.ServerTrackRank,
+                Order = 640,
                 ExecutionLogic = async context =>
                 {
                     if (context.Guild == null)
@@ -503,7 +540,7 @@ public class FmOptionsHandler
                         if (requestedUser != null)
                         {
                             var index = trackListeners.IndexOf(requestedUser);
-                            return new FmOptionResult($"WhoKnows track #{index + 1}", 190);
+                            return new FmResult($"WhoKnows track #{index + 1}");
                         }
                     }
 
@@ -513,6 +550,7 @@ public class FmOptionsHandler
             new ComplexFmOption
             {
                 Option = FmFooterOption.ServerTrackListeners,
+                Order = 650,
                 ExecutionLogic = async context =>
                 {
                     if (context.Guild == null)
@@ -525,40 +563,41 @@ public class FmOptionsHandler
                     trackListeners = WhoKnowsService.FilterWhoKnowsObjects(trackListeners, context.Guild).filteredUsers;
 
                     return trackListeners.Any()
-                        ? new FmOptionResult($"{trackListeners.Count} track listeners", 200)
+                        ? new FmResult($"{trackListeners.Count} track listeners")
                         : null;
                 }
             },
             new SqlFmOption
             {
                 Option = FmFooterOption.GlobalArtistRank,
+                Order = 700,
                 SqlQuery = @"
-        WITH ranked_users AS (
-            SELECT
-                ua.user_id,
-                ua.playcount,
-                ROW_NUMBER() OVER (ORDER BY ua.playcount DESC) as rank
-            FROM (
-                SELECT DISTINCT ON (UPPER(u.user_name_last_fm))
-                    ua.user_id,
-                    ua.playcount
-                FROM user_artists AS ua
-                JOIN users AS u ON ua.user_id = u.user_id
-                WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))
-                  AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
-                  AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
-                ORDER BY UPPER(u.user_name_last_fm), ua.playcount DESC
-            ) ua
-        )
-        SELECT rank
-        FROM ranked_users
-        WHERE user_id = @userId",
+                    WITH ranked_users AS (
+                        SELECT
+                            ua.user_id,
+                            ua.playcount,
+                            ROW_NUMBER() OVER (ORDER BY ua.playcount DESC) as rank
+                        FROM (
+                            SELECT DISTINCT ON (UPPER(u.user_name_last_fm))
+                                ua.user_id,
+                                ua.playcount
+                            FROM user_artists AS ua
+                            JOIN users AS u ON ua.user_id = u.user_id
+                            WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))
+                              AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
+                              AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
+                            ORDER BY UPPER(u.user_name_last_fm), ua.playcount DESC
+                        ) ua
+                    )
+                    SELECT rank
+                    FROM ranked_users
+                    WHERE user_id = @userId",
                 ResultProcessor = async (context, reader) =>
                 {
                     if (!await reader.IsDBNullAsync(0))
                     {
                         var rank = await reader.GetFieldValueAsync<long>(0);
-                        return new FmOptionResult($"GlobalWhoKnows #{rank}", 300);
+                        return new FmResult($"GlobalWhoKnows #{rank}");
                     }
 
                     return null;
@@ -572,34 +611,35 @@ public class FmOptionsHandler
             new SqlFmOption
             {
                 Option = FmFooterOption.GlobalAlbumRank,
+                Order = 710,
                 SqlQuery = @"
-        WITH ranked_users AS (
-            SELECT
-                ub.user_id,
-                ub.playcount,
-                ROW_NUMBER() OVER (ORDER BY ub.playcount DESC) as rank
-            FROM (
-                SELECT DISTINCT ON (UPPER(u.user_name_last_fm))
-                    ub.user_id,
-                    ub.playcount
-                FROM user_albums AS ub
-                JOIN users AS u ON ub.user_id = u.user_id
-                WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT))
-                  AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT))
-                  AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
-                  AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
-                ORDER BY UPPER(u.user_name_last_fm), ub.playcount DESC
-            ) ub
-        )
-        SELECT rank
-        FROM ranked_users
-        WHERE user_id = @userId",
+                    WITH ranked_users AS (
+                        SELECT
+                            ub.user_id,
+                            ub.playcount,
+                            ROW_NUMBER() OVER (ORDER BY ub.playcount DESC) as rank
+                        FROM (
+                            SELECT DISTINCT ON (UPPER(u.user_name_last_fm))
+                                ub.user_id,
+                                ub.playcount
+                            FROM user_albums AS ub
+                            JOIN users AS u ON ub.user_id = u.user_id
+                            WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT))
+                              AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT))
+                              AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
+                              AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
+                            ORDER BY UPPER(u.user_name_last_fm), ub.playcount DESC
+                        ) ub
+                    )
+                    SELECT rank
+                    FROM ranked_users
+                    WHERE user_id = @userId",
                 ResultProcessor = async (context, reader) =>
                 {
                     if (!await reader.IsDBNullAsync(0))
                     {
                         var rank = await reader.GetFieldValueAsync<long>(0);
-                        return new FmOptionResult($"GlobalWhoKnows album #{rank}", 310);
+                        return new FmResult($"GlobalWhoKnows album #{rank}");
                     }
 
                     return null;
@@ -614,34 +654,35 @@ public class FmOptionsHandler
             new SqlFmOption
             {
                 Option = FmFooterOption.GlobalTrackRank,
+                Order = 720,
                 SqlQuery = @"
-        WITH ranked_users AS (
-            SELECT
-                ut.user_id,
-                ut.playcount,
-                ROW_NUMBER() OVER (ORDER BY ut.playcount DESC) as rank
-            FROM (
-                SELECT DISTINCT ON (UPPER(u.user_name_last_fm))
-                    ut.user_id,
-                    ut.playcount
-                FROM user_tracks AS ut
-                JOIN users AS u ON ut.user_id = u.user_id
-                WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT))
-                  AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))
-                  AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
-                  AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
-                ORDER BY UPPER(u.user_name_last_fm), ut.playcount DESC
-            ) ut
-        )
-        SELECT rank
-        FROM ranked_users
-        WHERE user_id = @userId",
+                    WITH ranked_users AS (
+                        SELECT
+                            ut.user_id,
+                            ut.playcount,
+                            ROW_NUMBER() OVER (ORDER BY ut.playcount DESC) as rank
+                        FROM (
+                            SELECT DISTINCT ON (UPPER(u.user_name_last_fm))
+                                ut.user_id,
+                                ut.playcount
+                            FROM user_tracks AS ut
+                            JOIN users AS u ON ut.user_id = u.user_id
+                            WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT))
+                              AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))
+                              AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true)
+                              AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months')
+                            ORDER BY UPPER(u.user_name_last_fm), ut.playcount DESC
+                        ) ut
+                    )
+                    SELECT rank
+                    FROM ranked_users
+                    WHERE user_id = @userId",
                 ResultProcessor = async (context, reader) =>
                 {
                     if (!await reader.IsDBNullAsync(0))
                     {
                         var rank = await reader.GetFieldValueAsync<long>(0);
-                        return new FmOptionResult($"GlobalWhoKnows track #{rank}", 320);
+                        return new FmResult($"GlobalWhoKnows track #{rank}");
                     }
 
                     return null;
@@ -656,6 +697,7 @@ public class FmOptionsHandler
             new ComplexFmOption
             {
                 Option = FmFooterOption.FirstArtistListen,
+                Order = 800,
                 ExecutionLogic = async context =>
                 {
                     if (!SupporterService.IsSupporter(context.UserSettings.UserType))
@@ -667,13 +709,14 @@ public class FmOptionsHandler
                         await context.PlayService.GetArtistFirstPlayDate(context.UserSettings.UserId,
                             context.ArtistName);
                     return firstPlay != null
-                        ? new FmOptionResult($"Artist discovered {firstPlay.Value.ToString("MMMM d yyyy")}", 400)
+                        ? new FmResult($"Artist discovered {firstPlay.Value.ToString("MMMM d yyyy")}")
                         : null;
                 }
             },
             new ComplexFmOption
             {
                 Option = FmFooterOption.FirstAlbumListen,
+                Order = 810,
                 ExecutionLogic = async context =>
                 {
                     if (!SupporterService.IsSupporter(context.UserSettings.UserType) || context.AlbumName == null)
@@ -684,13 +727,14 @@ public class FmOptionsHandler
                     var firstPlay = await context.PlayService.GetAlbumFirstPlayDate(context.UserSettings.UserId,
                         context.ArtistName, context.AlbumName);
                     return firstPlay != null
-                        ? new FmOptionResult($"Album discovered {firstPlay.Value.ToString("MMMM d yyyy")}", 410)
+                        ? new FmResult($"Album discovered {firstPlay.Value.ToString("MMMM d yyyy")}")
                         : null;
                 }
             },
             new ComplexFmOption
             {
                 Option = FmFooterOption.FirstTrackListen,
+                Order = 820,
                 ExecutionLogic = async context =>
                 {
                     if (!SupporterService.IsSupporter(context.UserSettings.UserType))
@@ -701,7 +745,7 @@ public class FmOptionsHandler
                     var firstPlay = await context.PlayService.GetTrackFirstPlayDate(context.UserSettings.UserId,
                         context.ArtistName, context.TrackName);
                     return firstPlay != null
-                        ? new FmOptionResult($"Track discovered {firstPlay.Value.ToString("MMMM d yyyy")}", 420)
+                        ? new FmResult($"Track discovered {firstPlay.Value.ToString("MMMM d yyyy")}")
                         : null;
                 }
             }
@@ -710,49 +754,79 @@ public class FmOptionsHandler
 
     public async Task<List<string>> GetFooterAsync(FmFooterOption footerOptions, FmContext context)
     {
-        var options = new ConcurrentBag<FmOptionResult>();
+        var options = new ConcurrentBag<(FmResult Result, int Order)>();
         var relevantOptions = _options.Where(o => footerOptions.HasFlag(o.Option)).ToList();
 
-        // Prepare batch for SQL options
+        var sqlOptions = relevantOptions.OfType<SqlFmOption>().ToList();
+        var complexOptions = relevantOptions.OfType<ComplexFmOption>().ToList();
+
         await using var batch = new NpgsqlBatch(context.Connection);
-        foreach (var option in relevantOptions.OfType<SqlFmOption>())
+        foreach (var option in sqlOptions)
         {
             batch.BatchCommands.Add(option.CreateBatchCommand(context));
         }
 
-        // Execute SQL batch
         if (batch.BatchCommands.Count > 0)
         {
             await using var reader = await batch.ExecuteReaderAsync();
-            foreach (var option in relevantOptions.OfType<SqlFmOption>())
-            {
-                if (await reader.ReadAsync())
-                {
-                    var result = await option.ExecuteAsync(context, reader);
-                    if (!string.IsNullOrEmpty(result?.Content))
-                    {
-                        options.Add(result);
-                    }
-                }
+            var sqlTasks = new List<Task>();
 
-                await reader.NextResultAsync();
+            foreach (var option in sqlOptions)
+            {
+                var task = ProcessSqlOptionAsync(option, context, reader, options);
+                sqlTasks.Add(task);
+            }
+
+            await Task.WhenAll(sqlTasks);
+        }
+
+        var complexTasks = complexOptions.Select(o => ProcessComplexOptionAsync(o, context, options));
+        await Task.WhenAll(complexTasks);
+
+        var eurovision = EurovisionService.GetEurovisionEntry(context.ArtistName, context.TrackName);
+        if (eurovision != null)
+        {
+            var description = EurovisionService.GetEurovisionDescription(eurovision);
+            options.Add((new FmResult(description.oneline), 500));
+        }
+
+        return options.OrderBy(o => o.Order).Select(o => o.Result.Content).ToList();
+    }
+
+    private static async Task ProcessSqlOptionAsync(SqlFmOption option, FmContext context, NpgsqlDataReader reader,
+        ConcurrentBag<(FmResult Result, int Order)> options)
+    {
+        if (option.ProcessMultipleRows)
+        {
+            var result = await option.ExecuteAsync(context, reader);
+            if (result != null)
+            {
+                options.Add((result, option.Order));
+            }
+        }
+        else
+        {
+            if (await reader.ReadAsync())
+            {
+                var result = await option.ExecuteAsync(context, reader);
+                if (result != null)
+                {
+                    options.Add((result, option.Order));
+                }
             }
         }
 
-        // Execute complex options
-        var complexTasks = relevantOptions.OfType<ComplexFmOption>()
-            .Select(async o =>
-            {
-                var result = await o.ExecuteAsync(context, null);
-                if (!string.IsNullOrEmpty(result?.Content))
-                {
-                    options.Add(result);
-                }
-            });
+        await reader.NextResultAsync();
+    }
 
-        await Task.WhenAll(complexTasks);
-
-        return options.OrderBy(o => o.Order).Select(o => o.Content).ToList();
+    private static async Task ProcessComplexOptionAsync(ComplexFmOption option, FmContext context,
+        ConcurrentBag<(FmResult Result, int Order)> options)
+    {
+        var result = await option.ExecuteAsync(context, null);
+        if (result != null)
+        {
+            options.Add((result, option.Order));
+        }
     }
 
     private static int GetAgeInYears(DateTime birthDate)

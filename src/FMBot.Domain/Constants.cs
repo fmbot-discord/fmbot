@@ -52,7 +52,7 @@ public static class Constants
     public const int MaxFriendsSupporter = 18;
 
     public const int MaxFooterOptions = 4;
-    public const int MaxFooterOptionsSupporter = 8;
+    public const int MaxFooterOptionsSupporter = 10;
 
     public const int StreakSaveThreshold = 25;
 

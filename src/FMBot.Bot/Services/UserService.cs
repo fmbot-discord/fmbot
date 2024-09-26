@@ -678,7 +678,7 @@ public class UserService
             TotalScrobbles = totalScrobbles
         };
         var footer = await this._fmOptionsHandler.GetFooterAsync(footerOptions, footerContext);
-        return CreateFooter(footer, null, useSmallMarkdown);
+        return CreateFooter(footer, footerContext.Genres, useSmallMarkdown);
 
         var options = new List<string>();
         string genres = null;
