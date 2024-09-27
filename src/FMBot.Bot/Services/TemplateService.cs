@@ -118,7 +118,7 @@ public class TemplateService
             );
     }
 
-    public async Task<EmbedBuilder> TemplateToEmbed(Template template, TemplateContext context)
+    private async Task<EmbedBuilder> TemplateToEmbed(Template template, TemplateContext context)
     {
         var embed = new EmbedBuilder();
         var script = template.Content.Replace("$$fm-template", "").TrimStart();
@@ -190,7 +190,7 @@ public class TemplateService
         return embed;
     }
 
-    private async Task<List<(string Key, string Value)>> ReplaceVariablesAsync(List<(string Key, string Line)> lines,
+    private static async Task<List<(string Key, string Value)>> ReplaceVariablesAsync(List<(string Key, string Line)> lines,
         TemplateContext context)
     {
         var result = new List<(string Key, string Value)>();
@@ -289,12 +289,12 @@ public class TemplateService
         return result;
     }
 
-    private string ReplaceVariablesInLine(string input, Dictionary<string, string> variableMap)
+    private static string ReplaceVariablesInLine(string input, Dictionary<string, string> variableMap)
     {
         var result = input;
         var regex = new Regex(@"\{\{(.*?)\}\}");
-        var matches = regex.Matches(result);
 
+        var matches = regex.Matches(result);
         foreach (Match match in matches)
         {
             var expression = match.Groups[1].Value.Trim();
@@ -310,7 +310,8 @@ public class TemplateService
         var parts = expression.Split('+').Select(p => p.Trim()).ToList();
         var resultParts = new List<string>();
 
-        if (!parts.Any(variableMap.ContainsKey))
+        var hasVariable = parts.Any(p => !p.StartsWith("\"") && !p.EndsWith("\"") && variableMap.ContainsKey(p));
+        if (!hasVariable)
         {
             return null;
         }
@@ -321,12 +322,13 @@ public class TemplateService
             {
                 resultParts.Add(part.Trim('"'));
             }
+            else if (variableMap.TryGetValue(part, out var value))
+            {
+                resultParts.Add(value);
+            }
             else
             {
-                if (variableMap.TryGetValue(part, out var value))
-                {
-                    resultParts.Add(value);
-                }
+                resultParts.Add(part);
             }
         }
 

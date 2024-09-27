@@ -149,6 +149,24 @@ public static class ExampleTemplates
             Id = 1,
             Type = TemplateType.Fm,
             Content = @"$$fm-template
+$$author:{{user.display-name}}{{user.user-type-emoji}} is playing a banger
+$$author-image-url:{{user.discord-image-url}}
+$$thumbnail-image-url:{{album.cover-url}}
+$$embed-color-hex:#A020F0
+$$description:## [{{track.name}}]({{track.url}})
+**{{track.artist}}** •  *{{track.album}}*
+### {{""<:Whiskeydogearnest:1097591075822129292> <:dreamleft:1289310421932576821> I think this artist is from "" + artist.country + ""... <:dreamright:1289310420170965074>""}}
+$$footer:{{lastfm.total-scrobbles}} total scrobbles{{"" - "" + artist.genres}}",
+            Name = "Example - Dog",
+            ShareCode = "ABCD",
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow
+        },
+        new Template
+        {
+            Id = 2,
+            Type = TemplateType.Fm,
+            Content = @"$$fm-template
 $$author:Now playing - {{user.display-name}} {{user.user-type-emoji}}
 $$author-image-url:{{user.discord-image-url}}
 $$thumbnail-image-url:{{album.cover-url}}
@@ -160,12 +178,12 @@ $$description:-# *Current:*
 -# *Previous:*
 **[{{previous-track.name}}]({{previous-track.url}})**
 **{{previous-track.artist}}** • *{{previous-track.album}}*
-$$footer:{{lastfm.total-scrobbles}} total scrobbles{{"" - "" + artist.genres}}",
+$$footer:{{lastfm.total-scrobbles}} total scrobbles {{""- "" + artist.genres}}",
             Name = "Example - Embed Full",
-            ShareCode = "ABCD",
+            ShareCode = "EFGH",
             Created = DateTime.UtcNow,
             Modified = DateTime.UtcNow
-        }
+        },
     };
 }
 
