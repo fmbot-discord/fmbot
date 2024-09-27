@@ -66,6 +66,9 @@ public sealed class ComplexTemplateOption : TemplateOption
 public class TemplateContext
 {
     public UserSettingsModel UserSettings { get; set; }
+    public IUser DiscordContextUser { get; set; }
+    public IGuild DiscordContextGuild { get; set; }
+
     public NpgsqlConnection Connection { get; set; }
 
     public RecentTrack CurrentTrack { get; set; }
@@ -88,38 +91,53 @@ public class TemplateContext
 
 public enum EmbedOption
 {
-    [Option("Author")]
+    [Option("Author")] [EmbedOption("author")]
     Author = 10,
-    [Option("Author icon url")]
+
+    [Option("Author icon url")] [EmbedOption("author-icon-url")]
     AuthorIconUrl = 11,
-    [Option("Author url")]
+
+    [Option("Author url")] [EmbedOption("author-url")]
     AuthorUrl = 12,
 
-    [Option("Title")]
+    [Option("Title")] [EmbedOption("title")]
     Title = 20,
-    [Option("Url")]
-    Url = 21,
-    [Option("Description")]
+    [Option("Url")] [EmbedOption("url")] Url = 21,
+
+    [Option("Description")] [EmbedOption("description")]
     Description = 22,
-    [Option("Thumbnail image url")]
+
+    [Option("Thumbnail image url")] [EmbedOption("thumbnail-image-url")]
     ThumbnailImageUrl = 23,
-    [Option("Large image url")]
+
+    [Option("Large image url")] [EmbedOption("large-image-url")]
     LargeImageUrl = 24,
-    [Option("Color (hex code)")]
+
+    [Option("Color (hex code)")] [EmbedOption("embed-color-hex")]
     ColorHex = 25,
 
-    [Option("Add field")]
-    AddField = 30,
+    [Option("Add field")] AddField = 30,
 
-    [Option("Footer")]
+    [Option("Footer")] [EmbedOption("footer")]
     Footer = 40,
-    [Option("Footer icon url")]
+
+    [Option("Footer icon url")] [EmbedOption("footer-icon-url")]
     FooterIconUrl = 41,
-    [Option("Footer timestamp")]
+
+    [Option("Footer timestamp")] [EmbedOption("footer-timestamp")]
     FooterTimestamp = 42,
 
-    [Option("Add button")]
-    AddButton = 50,
+    [Option("Add button")] AddButton = 50,
+}
+
+public class EmbedOptionAttribute : Attribute
+{
+    public string ScriptName { get; private set; }
+
+    public EmbedOptionAttribute(string scriptName)
+    {
+        this.ScriptName = scriptName;
+    }
 }
 
 public static class ExampleTemplates
@@ -131,17 +149,24 @@ public static class ExampleTemplates
             Id = 1,
             Type = TemplateType.Fm,
             Content = @"$$fm-template
-$$title:Now playing for {{user.display-name}}
-$$description:[{{track.name}}]({{track.url}})
-{{track.artist}} - *{{track.album}}*
-$$footer:{{lastfm.total-scrobbles}}",
-            Name = "Example",
+$$author:Now playing - {{user.display-name}} {{user.user-type-emoji}}
+$$author-image-url:{{user.discord-image-url}}
+$$thumbnail-image-url:{{album.cover-url}}
+$$embed-color-hex:#A020F0
+$$description:-# *Current:*
+**[{{track.name}}]({{track.url}})**
+**{{track.artist}}** •  *{{track.album}}*
+
+-# *Previous:*
+**[{{previous-track.name}}]({{previous-track.url}})**
+**{{previous-track.artist}}** • *{{previous-track.album}}*
+$$footer:{{lastfm.total-scrobbles}} total scrobbles - {{artist.genres}}",
+            Name = "Example - Embed Full",
             ShareCode = "ABCD",
             Created = DateTime.UtcNow,
             Modified = DateTime.UtcNow
         }
     };
-
 }
 
 public static class TemplateOptions
@@ -150,7 +175,7 @@ public static class TemplateOptions
     {
         new ComplexTemplateOption
         {
-            Variable = "lastfm.username",
+            Variable = "lastfm.user-name",
             ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.UserNameLastFm))
         },
         new ComplexTemplateOption
@@ -166,7 +191,7 @@ public static class TemplateOptions
         },
         new ComplexTemplateOption
         {
-            Variable = "user.displayname",
+            Variable = "user.display-name",
             ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.DisplayName))
         },
         new ComplexTemplateOption
@@ -178,6 +203,67 @@ public static class TemplateOptions
         {
             Variable = "user.user-type-emoji",
             ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.UserType.UserTypeToIcon()))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "author.discord-image-url",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.GetDisplayAvatarUrl()))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "author.display-name",
+            ExecutionLogic = async context =>
+            {
+                var name = await UserService.GetNameAsync(context.DiscordContextGuild, context.DiscordContextUser);
+                return new FmResult(name);
+            }
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "author.user-name",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.Username))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "author.global-name",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.GlobalName))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "author.id",
+            ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.Id.ToString()))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "server.name",
+            ExecutionLogic = context =>
+                Task.FromResult(context.DiscordContextGuild != null
+                    ? new FmResult(context.DiscordContextGuild.Name)
+                    : null)
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "server.id",
+            ExecutionLogic = context =>
+                Task.FromResult(context.DiscordContextGuild != null
+                    ? new FmResult(context.DiscordContextGuild.Id.ToString())
+                    : null)
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "server.icon-image-url",
+            ExecutionLogic = context =>
+                Task.FromResult(context.DiscordContextGuild != null
+                    ? new FmResult(context.DiscordContextGuild.IconUrl)
+                    : null)
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "server.banner-image-url",
+            ExecutionLogic = context =>
+                Task.FromResult(context.DiscordContextGuild != null
+                    ? new FmResult(context.DiscordContextGuild.BannerUrl)
+                    : null)
         },
         new ComplexTemplateOption
         {
@@ -246,7 +332,7 @@ public static class TemplateOptions
         new ComplexTemplateOption
         {
             FooterOption = FmFooterOption.TotalScrobbles,
-            Variable = "lastfm.totalscrobbles",
+            Variable = "lastfm.total-scrobbles",
             FooterOrder = 50,
             ExecutionLogic = context =>
                 Task.FromResult(new FmResult($"{context.TotalScrobbles} total scrobbles"))
@@ -433,22 +519,22 @@ public static class TemplateOptions
         },
         new ComplexTemplateOption
         {
-            Variable = "previousTrack.name",
+            Variable = "previous-track.name",
             ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.TrackName))
         },
         new ComplexTemplateOption
         {
-            Variable = "previousTrack.album",
+            Variable = "previous-track.album",
             ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.AlbumName))
         },
         new ComplexTemplateOption
         {
-            Variable = "previousTrack.artist",
+            Variable = "previous-track.artist",
             ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.ArtistName))
         },
         new ComplexTemplateOption
         {
-            Variable = "previousTrack.url",
+            Variable = "previous-track.url",
             ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.TrackUrl))
         },
         new SqlTemplateOption

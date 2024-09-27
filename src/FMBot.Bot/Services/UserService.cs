@@ -678,6 +678,39 @@ public class UserService
         return CreateFooter(footer, footerContext.Genres, useSmallMarkdown);
     }
 
+    public async Task<EmbedBuilder> GetTemplateFmAsync(
+        int userId,
+        UserSettingsModel userSettings,
+        RecentTrack currentTrack,
+        RecentTrack previousTrack,
+        long totalScrobbles,
+        Persistence.Domain.Models.Guild guild = null,
+        IDictionary<int, FullGuildUser> guildUsers = null)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+        var footerContext = new TemplateContext
+        {
+            UserService = this,
+            CurrentTrack = currentTrack,
+            PreviousTrack = previousTrack,
+            Connection = connection,
+            Guild = guild,
+            GuildUsers = guildUsers,
+            WhoKnowsTrackService = this._whoKnowsTrackService,
+            WhoKnowsAlbumService = this._whoKnowsAlbumService,
+            WhoKnowsArtistService = this._whoKnowsArtistService,
+            CountryService = this._countryService,
+            PlayService = this._playService,
+            UserSettings = userSettings,
+            TotalScrobbles = totalScrobbles
+        };
+
+        return await this._templateService.GetTemplateFmAsync(userId, footerContext);
+    }
+
     private static int GetAgeInYears(DateTime birthDate)
     {
         var now = DateTime.UtcNow;
