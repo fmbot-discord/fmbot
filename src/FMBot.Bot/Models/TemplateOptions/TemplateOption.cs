@@ -7,6 +7,8 @@ using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain.Attributes;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.Repositories;
@@ -84,6 +86,64 @@ public class TemplateContext
     public PlayService PlayService { get; set; }
 }
 
+public enum EmbedOption
+{
+    [Option("Author")]
+    Author = 10,
+    [Option("Author icon url")]
+    AuthorIconUrl = 11,
+    [Option("Author url")]
+    AuthorUrl = 12,
+
+    [Option("Title")]
+    Title = 20,
+    [Option("Url")]
+    Url = 21,
+    [Option("Description")]
+    Description = 22,
+    [Option("Thumbnail image url")]
+    ThumbnailImageUrl = 23,
+    [Option("Large image url")]
+    LargeImageUrl = 24,
+    [Option("Color (hex code)")]
+    ColorHex = 25,
+
+    [Option("Add field")]
+    AddField = 30,
+
+    [Option("Footer")]
+    Footer = 40,
+    [Option("Footer icon url")]
+    FooterIconUrl = 41,
+    [Option("Footer timestamp")]
+    FooterTimestamp = 42,
+
+    [Option("Add button")]
+    AddButton = 50,
+}
+
+public static class ExampleTemplates
+{
+    public static readonly List<Template> Templates = new()
+    {
+        new Template
+        {
+            Id = 1,
+            Type = TemplateType.Fm,
+            Content = @"$$fm-template
+$$title:Now playing for {{user.display-name}}
+$$description:[{{track.name}}]({{track.url}})
+{{track.artist}} - *{{track.album}}*
+$$footer:{{lastfm.total-scrobbles}}",
+            Name = "Example",
+            ShareCode = "ABCD",
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow
+        }
+    };
+
+}
+
 public static class TemplateOptions
 {
     public static readonly List<TemplateOption> Options = new()
@@ -96,7 +156,8 @@ public static class TemplateOptions
         new ComplexTemplateOption
         {
             Variable = "lastfm.join-date",
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.RegisteredLastFm?.ToString("MMMM d yyyy")))
+            ExecutionLogic = context =>
+                Task.FromResult(new FmResult(context.UserSettings.RegisteredLastFm?.ToString("MMMM d yyyy")))
         },
         new ComplexTemplateOption
         {
@@ -280,18 +341,17 @@ public static class TemplateOptions
                                 ? new FmResult($"🎂 today! ({age})")
                                 : new FmResult("🎂 today!");
                         }
-                        else if (startDate.Month == today.AddDays(1).Month && startDate.Day == today.AddDays(1).Day)
+
+                        if (startDate.Month == today.AddDays(1).Month && startDate.Day == today.AddDays(1).Day)
                         {
                             return !endDate.HasValue
                                 ? new FmResult($"🎂 tomorrow (becomes {age + 1})")
                                 : new FmResult("🎂 tomorrow");
                         }
-                        else
-                        {
-                            return !endDate.HasValue
-                                ? new FmResult($"🎂 {startDate:MMMM d} (currently {age})")
-                                : new FmResult($"🎂 {startDate:MMMM d}");
-                        }
+
+                        return !endDate.HasValue
+                            ? new FmResult($"🎂 {startDate:MMMM d} (currently {age})")
+                            : new FmResult($"🎂 {startDate:MMMM d}");
                     }
                 }
 

@@ -176,4 +176,22 @@ public static class InteractionConstants
         public const string JumbleReshuffle = "jumble-reshuffle";
         public const string JumblePlayAgain = "jumble-playagain";
     }
+
+    public static class Template
+    {
+        public const string Create = "fm-template-create";
+        public const string ImportCode = "fm-template-importcode";
+        public const string ImportScript = "fm-template-importscript";
+        public const string ManagePicker = "fm-template-manage";
+        public const string SetGlobalDefaultPicker = "fm-template-setglobal";
+        public const string SetGuildDefaultPicker = "fm-template-setguild";
+
+        public const string SetOptionPicker = "template-option-set";
+        public const string ViewScript = "template-view-script";
+        public const string AddButton = "template-add-button";
+
+        public const string Rename = "template-rename";
+        public const string Copy = "template-copy";
+        public const string Delete = "template-delete";
+    }
 }

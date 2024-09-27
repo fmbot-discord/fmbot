@@ -10,7 +10,7 @@ public class OptionAttribute : Attribute
     public bool SupporterOnly { get; private set; }
     public int? Order { get; private set; }
 
-    public OptionAttribute(string name, string description, bool supporterOnly = false)
+    public OptionAttribute(string name, string description = null, bool supporterOnly = false)
     {
         this.Name = name;
         this.Description = description;

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using Npgsql;
 
 namespace FMBot.Bot.Services;
@@ -89,5 +90,15 @@ public class TemplateService
         {
             options.Add((result, option.FooterOrder));
         }
+    }
+
+    public async Task<List<Template>> GetTemplates(int userId)
+    {
+        return ExampleTemplates.Templates;
+    }
+
+    public async Task<Template> GetTemplate(int templateId)
+    {
+        return ExampleTemplates.Templates.First(f => f.Id == templateId);
     }
 }
