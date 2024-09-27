@@ -160,7 +160,7 @@ $$description:-# *Current:*
 -# *Previous:*
 **[{{previous-track.name}}]({{previous-track.url}})**
 **{{previous-track.artist}}** • *{{previous-track.album}}*
-$$footer:{{lastfm.total-scrobbles}} total scrobbles - {{artist.genres}}",
+$$footer:{{lastfm.total-scrobbles}} total scrobbles{{"" - "" + artist.genres}}",
             Name = "Example - Embed Full",
             ShareCode = "ABCD",
             Created = DateTime.UtcNow,
@@ -490,7 +490,7 @@ public static class TemplateOptions
                     context.Genres = GenreService.GenresToString(genres);
                 }
 
-                return null;
+                return new FmResult(GenreService.GenresToString(genres));
             },
             ParametersFactory = context => new Dictionary<string, object>
             {

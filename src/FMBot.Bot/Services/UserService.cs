@@ -10,6 +10,7 @@ using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
@@ -644,11 +645,13 @@ public class UserService
         return title;
     }
 
-    public async Task<StringBuilder> GetFooterAsync(FmFooterOption footerOptions,
+    public async Task<StringBuilder> GetFooterAsync(
+        FmFooterOption footerOptions,
         UserSettingsModel userSettings,
         RecentTrack currentTrack,
         RecentTrack previousTrack,
         long totalScrobbles,
+        ContextModel contextModel,
         Persistence.Domain.Models.Guild guild = null,
         IDictionary<int, FullGuildUser> guildUsers = null,
         bool useSmallMarkdown = false)
@@ -671,7 +674,9 @@ public class UserService
             CountryService = this._countryService,
             PlayService = this._playService,
             UserSettings = userSettings,
-            TotalScrobbles = totalScrobbles
+            TotalScrobbles = totalScrobbles,
+            DiscordContextGuild = contextModel.DiscordGuild,
+            DiscordContextUser = contextModel.DiscordUser
         };
 
         var footer = await this._templateService.GetFooterAsync(footerOptions, footerContext);
@@ -705,7 +710,8 @@ public class UserService
             CountryService = this._countryService,
             PlayService = this._playService,
             UserSettings = userSettings,
-            TotalScrobbles = totalScrobbles
+            TotalScrobbles = totalScrobbles,
+
         };
 
         return await this._templateService.GetTemplateFmAsync(userId, footerContext);

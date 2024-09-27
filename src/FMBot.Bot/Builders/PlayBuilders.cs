@@ -166,14 +166,14 @@ public class PlayBuilder
             ? $"{requesterUserTitle}"
             : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
-        // var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
-        //     previousTrack, totalPlaycount, guild, guildUsers);
-        // response.Embed = embed;
-        // return response;
+        var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
+            previousTrack, totalPlaycount, guild, guildUsers);
+        response.Embed = embed;
+        return response;
 
         var fmText = "";
         var footerText = await this._userService.GetFooterAsync(
-            context.ContextUser.FmFooterOptions, userSettings, currentTrack, previousTrack, totalPlaycount, guild, guildUsers,
+            context.ContextUser.FmFooterOptions, userSettings, currentTrack, previousTrack, totalPlaycount, context, guild, guildUsers,
             embedType == FmEmbedType.TextFull || embedType == FmEmbedType.TextMini);
 
         if (!userSettings.DifferentUser &&

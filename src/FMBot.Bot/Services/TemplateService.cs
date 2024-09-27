@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Models.TemplateOptions;
@@ -19,7 +20,7 @@ public class TemplateService
     {
         var options = new ConcurrentBag<(FmResult Result, int Order)>();
         var relevantOptions = TemplateOptions.Options
-            .Where(w => footerOptions.HasFlag(w.FooterOption))
+            .Where(w => w.FooterOption != 0 && footerOptions.HasFlag(w.FooterOption))
             .ToList();
 
         var sqlOptions = relevantOptions.OfType<SqlTemplateOption>().ToList();
@@ -56,7 +57,8 @@ public class TemplateService
             options.Add((new FmResult(description.oneline), 500));
         }
 
-        return options.OrderBy(o => o.Order).Select(o => o.Result.Content).ToList();
+        return options.Where(w => context.Genres != w.Result.Content).OrderBy(o => o.Order)
+            .Select(o => o.Result.Content).ToList();
     }
 
     public async Task<EmbedBuilder> GetTemplateFmAsync(int userId, TemplateContext context)
@@ -124,7 +126,7 @@ public class TemplateService
 
         var currentOption = EmbedOption.Description;
         var contentBuilders = new Dictionary<EmbedOption, StringBuilder>();
-        var replacementTasks = new List<Task<(string Key, string Value)>>();
+        var lineOptions = new List<(string Key, string Line)>();
 
         foreach (var line in lines)
         {
@@ -138,7 +140,7 @@ public class TemplateService
                     {
                         currentOption = embedOption;
                         contentBuilders[currentOption] = new StringBuilder();
-                        replacementTasks.Add(ReplaceVariablesAsync(key, parts[1].Trim(), context));
+                        lineOptions.Add((key, parts[1].Trim()));
                     }
                 }
             }
@@ -149,11 +151,11 @@ public class TemplateService
                     contentBuilders[currentOption] = new StringBuilder();
                 }
 
-                replacementTasks.Add(ReplaceVariablesAsync(string.Empty, line, context));
+                lineOptions.Add((string.Empty, line));
             }
         }
 
-        var replacedParts = await Task.WhenAll(replacementTasks);
+        var replacedParts = await ReplaceVariablesAsync(lineOptions, context);
 
         foreach (var (key, value) in replacedParts)
         {
@@ -162,27 +164,176 @@ public class TemplateService
                 currentOption = embedOption;
             }
 
-            if (contentBuilders[currentOption].Length == 0)
+            if (!string.IsNullOrWhiteSpace(value) || value == "\r")
             {
-                contentBuilders[currentOption].Append(value);
-                contentBuilders[currentOption].AppendLine();
-            }
-            else
-            {
-                contentBuilders[currentOption].Append(value);
+                if (contentBuilders[currentOption].Length == 0)
+                {
+                    contentBuilders[currentOption].Append(value);
+                    contentBuilders[currentOption].AppendLine();
+                }
+                else
+                {
+                    contentBuilders[currentOption].Append(value);
+                }
             }
         }
 
         foreach (var (option, contentBuilder) in contentBuilders)
         {
             var content = contentBuilder.ToString().Trim();
-            ApplyEmbedOption(embed, option, content);
+            if (!string.IsNullOrWhiteSpace(content) || content == "\n")
+            {
+                ApplyEmbedOption(embed, option, content);
+            }
         }
 
         return embed;
     }
 
-    private void ApplyEmbedOption(EmbedBuilder embed, EmbedOption option, string content)
+    private async Task<List<(string Key, string Value)>> ReplaceVariablesAsync(List<(string Key, string Line)> lines,
+        TemplateContext context)
+    {
+        var result = new List<(string Key, string Value)>();
+        var sqlOptions = new List<SqlTemplateOption>();
+        var complexOptions = new List<ComplexTemplateOption>();
+        var variableMap = new Dictionary<string, string>();
+
+        // First pass: Collect all variables
+        foreach (var (key, line) in lines)
+        {
+            var regex = new Regex(@"\{\{(.*?)\}\}");
+            var matches = regex.Matches(line);
+
+            foreach (Match match in matches)
+            {
+                var expression = match.Groups[1].Value.Trim();
+                var parts = expression.Split('+').Select(p => p.Trim()).ToList();
+
+                foreach (var part in parts)
+                {
+                    if (!part.StartsWith("\"") && !part.EndsWith("\""))
+                    {
+                        var option = TemplateOptions.Options.FirstOrDefault(o => o.Variable == part);
+                        if (option is SqlTemplateOption sqlOption)
+                        {
+                            sqlOptions.Add(sqlOption);
+                        }
+                        else if (option is ComplexTemplateOption complexOption)
+                        {
+                            complexOptions.Add(complexOption);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Execute SQL batch
+        await using var batch = new NpgsqlBatch(context.Connection);
+        foreach (var option in sqlOptions)
+        {
+            batch.BatchCommands.Add(option.CreateBatchCommand(context));
+        }
+
+        if (batch.BatchCommands.Count > 0)
+        {
+            await using var reader = await batch.ExecuteReaderAsync();
+            foreach (var option in sqlOptions)
+            {
+                if (option.ProcessMultipleRows)
+                {
+                    var fmResult = await option.ExecuteAsync(context, reader);
+                    if (fmResult != null)
+                    {
+                        variableMap[option.Variable] = fmResult.Content;
+                    }
+                }
+                else
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        var fmResult = await option.ExecuteAsync(context, reader);
+                        if (fmResult != null)
+                        {
+                            variableMap[option.Variable] = fmResult.Content;
+                        }
+                    }
+                }
+
+                await reader.NextResultAsync();
+            }
+        }
+
+        // Execute complex options concurrently
+        var complexTasks = complexOptions.Select(async option =>
+        {
+            var fmResult = await option.ExecutionLogic(context);
+            return (option.Variable, fmResult);
+        });
+
+        var complexResults = await Task.WhenAll(complexTasks);
+        foreach (var (variable, fmResult) in complexResults)
+        {
+            if (fmResult != null)
+            {
+                variableMap[variable] = fmResult.Content;
+            }
+        }
+
+        // Second pass: Replace variables
+        foreach (var (key, line) in lines)
+        {
+            var replacedLine = ReplaceVariablesInLine(line, variableMap);
+            result.Add((key, replacedLine));
+        }
+
+        return result;
+    }
+
+    private string ReplaceVariablesInLine(string input, Dictionary<string, string> variableMap)
+    {
+        var result = input;
+        var regex = new Regex(@"\{\{(.*?)\}\}");
+        var matches = regex.Matches(result);
+
+        foreach (Match match in matches)
+        {
+            var expression = match.Groups[1].Value.Trim();
+            var replacementValue = EvaluateExpressionAsync(expression, variableMap);
+            result = result.Replace(match.Value, replacementValue);
+        }
+
+        return result;
+    }
+
+    private static string EvaluateExpressionAsync(string expression, Dictionary<string, string> variableMap)
+    {
+        var parts = expression.Split('+').Select(p => p.Trim()).ToList();
+        var resultParts = new List<string>();
+
+        if (!parts.Any(variableMap.ContainsKey))
+        {
+            return null;
+        }
+
+        foreach (var part in parts)
+        {
+            if (part.StartsWith("\"") && part.EndsWith("\""))
+            {
+                resultParts.Add(part.Trim('"'));
+            }
+            else
+            {
+                if (variableMap.TryGetValue(part, out var value))
+                {
+                    resultParts.Add(value);
+                }
+            }
+        }
+
+        return string.Join("", resultParts);
+    }
+
+    private static void ApplyEmbedOption(EmbedBuilder embed, EmbedOption option, string content)
     {
         switch (option)
         {
@@ -237,59 +388,6 @@ public class TemplateService
 
                 break;
         }
-    }
-
-    private static async Task<(string Key, string Value)> ReplaceVariablesAsync(string key, string input,
-        TemplateContext context)
-    {
-        var result = input;
-        var replacementTasks = new List<Task<(string Placeholder, string ReplacementValue)>>();
-
-        foreach (var option in TemplateOptions.Options)
-        {
-            var placeholder = $"{{{{{option.Variable}}}}}";
-            if (result.Contains(placeholder))
-            {
-                replacementTasks.Add(GetReplacementValueAsync(option, placeholder, context));
-            }
-        }
-
-        var replacements = await Task.WhenAll(replacementTasks);
-
-        foreach (var (placeholder, replacementValue) in replacements)
-        {
-            result = result.Replace(placeholder, replacementValue);
-        }
-
-        return (key, result);
-    }
-
-    private static async Task<(string Placeholder, string ReplacementValue)> GetReplacementValueAsync(
-        TemplateOption option,
-        string placeholder, TemplateContext context)
-    {
-        FmResult fmResult = null;
-
-        if (option is SqlTemplateOption sqlOption)
-        {
-            await using var command = new NpgsqlCommand(sqlOption.SqlQuery, context.Connection);
-            foreach (var param in sqlOption.ParametersFactory(context))
-            {
-                command.Parameters.AddWithValue(param.Key, param.Value);
-            }
-
-            await using var reader = await command.ExecuteReaderAsync();
-            if (await reader.ReadAsync())
-            {
-                fmResult = await sqlOption.ResultProcessor(context, reader);
-            }
-        }
-        else if (option is ComplexTemplateOption complexOption)
-        {
-            fmResult = await complexOption.ExecutionLogic(context);
-        }
-
-        return (placeholder, fmResult?.Content ?? "");
     }
 
     public async Task<List<Template>> GetTemplates(int userId)
