@@ -38,6 +38,7 @@ public class UserCommands : BaseCommandModule
     private readonly ArtistsService _artistsService;
     private readonly OpenAiService _openAiService;
     private readonly TimerService _timerService;
+    private readonly TemplateBuilders _templateBuilders;
 
     private InteractiveService Interactivity { get; }
 
@@ -56,7 +57,8 @@ public class UserCommands : BaseCommandModule
         InteractiveService interactivity,
         ArtistsService artistsService,
         OpenAiService openAiService,
-        TimerService timerService) : base(botSettings)
+        TimerService timerService,
+        TemplateBuilders templateBuilders) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -69,6 +71,7 @@ public class UserCommands : BaseCommandModule
         this._artistsService = artistsService;
         this._openAiService = openAiService;
         this._timerService = timerService;
+        this._templateBuilders = templateBuilders;
     }
 
     [Command("settings", RunMode = RunMode.Async)]
@@ -610,6 +613,52 @@ public class UserCommands : BaseCommandModule
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [Command("templates", RunMode = RunMode.Async)]
+    [Summary("Configure your fm templates.")]
+    [Examples("templates")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.UserSettings)]
+    public async Task TemplatesAsync(params string[] otherSettings)
+    {
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var supporterRequiredResponse =
+                TemplateBuilders.TemplatesSupporterRequired(new ContextModel(this.Context, prfx, contextUser), prfx);
+
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
+            }
+
+            var response =
+                await this._templateBuilders.TemplatePicker(new ContextModel(this.Context, prfx, contextUser), guild);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+
+            // await this.Context.User.SendMessageAsync(embed: response.Embed.Build(),
+            //     components: response.Components.Build());
+            //
+            // if (this.Context.Guild != null)
+            // {
+            //     await ReplyAsync("Check your DMs to configure your `fm` settings!");
+            // }
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await ReplyAsync("Error occurred while trying to send DM, maybe you have DMs disabled. \n" +
+                             "Try using the slash command version `/fmmode` instead.");
+            await this.Context.HandleCommandException(e, sendReply: false);
+        }
     }
 
     [Command("login", RunMode = RunMode.Async)]

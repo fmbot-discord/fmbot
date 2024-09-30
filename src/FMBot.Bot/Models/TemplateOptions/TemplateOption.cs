@@ -91,43 +91,57 @@ public class TemplateContext
 
 public enum EmbedOption
 {
-    [Option("Author")] [EmbedOption("author")]
+    [Option("Author")]
+    [EmbedOption("author")]
     Author = 10,
 
-    [Option("Author icon url")] [EmbedOption("author-icon-url")]
+    [Option("Author icon url")]
+    [EmbedOption("author-icon-url")]
     AuthorIconUrl = 11,
 
-    [Option("Author url")] [EmbedOption("author-url")]
+    [Option("Author url")]
+    [EmbedOption("author-url")]
     AuthorUrl = 12,
 
-    [Option("Title")] [EmbedOption("title")]
+    [Option("Title")]
+    [EmbedOption("title")]
     Title = 20,
-    [Option("Url")] [EmbedOption("url")] Url = 21,
+    [Option("Url")]
+    [EmbedOption("url")] Url = 21,
 
-    [Option("Description")] [EmbedOption("description")]
+    [Option("Description")]
+    [EmbedOption("description")]
     Description = 22,
 
-    [Option("Thumbnail image url")] [EmbedOption("thumbnail-image-url")]
+    [Option("Thumbnail image url")]
+    [EmbedOption("thumbnail-image-url")]
     ThumbnailImageUrl = 23,
 
-    [Option("Large image url")] [EmbedOption("large-image-url")]
+    [Option("Large image url")]
+    [EmbedOption("large-image-url")]
     LargeImageUrl = 24,
 
-    [Option("Color (hex code)")] [EmbedOption("embed-color-hex")]
+    [Option("Color (hex code)")]
+    [EmbedOption("embed-color-hex")]
     ColorHex = 25,
 
-    [Option("Add field")] AddField = 30,
+    [Option("Add field")]
+    AddField = 30,
 
-    [Option("Footer")] [EmbedOption("footer")]
+    [Option("Footer")]
+    [EmbedOption("footer")]
     Footer = 40,
 
-    [Option("Footer icon url")] [EmbedOption("footer-icon-url")]
+    [Option("Footer icon url")]
+    [EmbedOption("footer-icon-url")]
     FooterIconUrl = 41,
 
-    [Option("Footer timestamp")] [EmbedOption("footer-timestamp")]
+    [Option("Footer timestamp")]
+    [EmbedOption("footer-timestamp")]
     FooterTimestamp = 42,
 
-    [Option("Add button")] AddButton = 50,
+    [Option("Add button")]
+    AddButton = 50,
 }
 
 public class EmbedOptionAttribute : Attribute

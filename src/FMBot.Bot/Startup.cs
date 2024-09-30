@@ -239,6 +239,7 @@ public class Startup
             .AddSingleton<WhoKnowsTrackService>()
             .AddSingleton<YoutubeService>()
             .AddSingleton<TemplateService>()
+            .AddSingleton<TemplateBuilders>()
             .AddSingleton<UpdateService, UpdateService>()
             .AddSingleton<IDataSourceFactory, DataSourceFactory>()
             .AddSingleton<IPlayDataSourceRepository, PlayDataSourceRepository>()
