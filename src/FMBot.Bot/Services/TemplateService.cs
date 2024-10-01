@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -14,11 +15,11 @@ using Npgsql;
 
 namespace FMBot.Bot.Services;
 
-public class TemplateService
+public partial class TemplateService
 {
     public async Task<List<string>> GetFooterAsync(FmFooterOption footerOptions, TemplateContext context)
     {
-        var options = new ConcurrentBag<(FmResult Result, int Order)>();
+        var options = new ConcurrentBag<(VariableResult Result, int Order)>();
         var relevantOptions = TemplateOptions.Options
             .Where(w => w.FooterOption != 0 && footerOptions.HasFlag(w.FooterOption))
             .ToList();
@@ -54,7 +55,7 @@ public class TemplateService
         if (eurovision != null)
         {
             var description = EurovisionService.GetEurovisionDescription(eurovision);
-            options.Add((new FmResult(description.oneline), 500));
+            options.Add((new VariableResult(description.oneline), 500));
         }
 
         return options.Where(w => context.Genres != w.Result.Content).OrderBy(o => o.Order)
@@ -70,7 +71,7 @@ public class TemplateService
 
     private static async Task ProcessSqlOptionAsync(SqlTemplateOption option, TemplateContext context,
         NpgsqlDataReader reader,
-        ConcurrentBag<(FmResult Result, int Order)> options)
+        ConcurrentBag<(VariableResult Result, int Order)> options)
     {
         if (option.ProcessMultipleRows)
         {
@@ -96,7 +97,7 @@ public class TemplateService
     }
 
     private static async Task ProcessComplexOptionAsync(ComplexTemplateOption option, TemplateContext context,
-        ConcurrentBag<(FmResult Result, int Order)> options)
+        ConcurrentBag<(VariableResult Result, int Order)> options)
     {
         var result = await option.ExecuteAsync(context, null);
         if (result != null)
@@ -201,18 +202,19 @@ public class TemplateService
         return new TemplateResult(embed, embedOptions);
     }
 
-    private static async Task<List<(string Key, string Value)>> ReplaceVariablesAsync(List<(string Key, string Line)> lines,
+    private static async Task<List<(string Key, string Value)>> ReplaceVariablesAsync(
+        List<(string Key, string Line)> lines,
         TemplateContext context)
     {
         var result = new List<(string Key, string Value)>();
         var sqlOptions = new List<SqlTemplateOption>();
         var complexOptions = new List<ComplexTemplateOption>();
-        var variableMap = new Dictionary<string, string>();
+        var variableMap = new Dictionary<string, VariableResult>();
 
         // First pass: Collect all variables
         foreach (var (key, line) in lines)
         {
-            var regex = new Regex(@"\{\{(.*?)\}\}");
+            var regex = VariableRegex();
             var matches = regex.Matches(line);
 
             foreach (Match match in matches)
@@ -224,7 +226,9 @@ public class TemplateService
                 {
                     if (!part.StartsWith("\"") && !part.EndsWith("\""))
                     {
-                        var option = TemplateOptions.Options.FirstOrDefault(o => o.Variable == part);
+                        var option = TemplateOptions.Options.FirstOrDefault(o =>
+                            (o.Variable == part ||
+                             o.Variable == part.Replace("-result", "", StringComparison.OrdinalIgnoreCase)));
                         if (option is SqlTemplateOption sqlOption)
                         {
                             sqlOptions.Add(sqlOption);
@@ -252,10 +256,10 @@ public class TemplateService
             {
                 if (option.ProcessMultipleRows)
                 {
-                    var fmResult = await option.ExecuteAsync(context, reader);
-                    if (fmResult != null)
+                    var variableResult = await option.ExecuteAsync(context, reader);
+                    if (variableResult != null)
                     {
-                        variableMap[option.Variable] = fmResult.Content;
+                        variableMap[option.Variable] = variableResult;
                     }
                 }
                 else
@@ -265,7 +269,7 @@ public class TemplateService
                         var fmResult = await option.ExecuteAsync(context, reader);
                         if (fmResult != null)
                         {
-                            variableMap[option.Variable] = fmResult.Content;
+                            variableMap[option.Variable] = fmResult;
                         }
                     }
                 }
@@ -286,7 +290,7 @@ public class TemplateService
         {
             if (fmResult != null)
             {
-                variableMap[variable] = fmResult.Content;
+                variableMap[variable] = fmResult;
             }
         }
 
@@ -300,10 +304,10 @@ public class TemplateService
         return result;
     }
 
-    private static string ReplaceVariablesInLine(string input, Dictionary<string, string> variableMap)
+    private static string ReplaceVariablesInLine(string input, Dictionary<string, VariableResult> variableMap)
     {
         var result = input;
-        var regex = new Regex(@"\{\{(.*?)\}\}");
+        var regex = VariableRegex();
 
         var matches = regex.Matches(result);
         foreach (Match match in matches)
@@ -316,12 +320,15 @@ public class TemplateService
         return result;
     }
 
-    private static string EvaluateExpressionAsync(string expression, Dictionary<string, string> variableMap)
+    private static string EvaluateExpressionAsync(string expression, Dictionary<string, VariableResult> variableMap)
     {
         var parts = expression.Split('+').Select(p => p.Trim()).ToList();
         var resultParts = new List<string>();
 
-        var hasVariable = parts.Any(p => !p.StartsWith("\"") && !p.EndsWith("\"") && variableMap.ContainsKey(p));
+        var hasVariable = parts.Any(p =>
+            !p.StartsWith("\"") && !p.EndsWith("\"") &&
+            (variableMap.ContainsKey(p) ||
+             variableMap.ContainsKey(p.Replace("-result", "", StringComparison.OrdinalIgnoreCase))));
         if (!hasVariable)
         {
             return null;
@@ -329,17 +336,25 @@ public class TemplateService
 
         foreach (var part in parts)
         {
-            if (part.StartsWith("\"") && part.EndsWith("\""))
+            var variablePart = part;
+
+            var resultOnly = part.Contains("-result", StringComparison.OrdinalIgnoreCase);
+            if (resultOnly)
             {
-                resultParts.Add(part.Trim('"'));
+                variablePart = part.Replace("-result", "");
             }
-            else if (variableMap.TryGetValue(part, out var value))
+
+            if (variablePart.StartsWith("\"") && variablePart.EndsWith("\""))
             {
-                resultParts.Add(value);
+                resultParts.Add(variablePart.Trim('"'));
+            }
+            else if (variableMap.TryGetValue(variablePart, out var value))
+            {
+                resultParts.Add(resultOnly ? value.Result : value.Content);
             }
             else
             {
-                resultParts.Add(part);
+                resultParts.Add(variablePart);
             }
         }
 
@@ -421,4 +436,7 @@ public class TemplateService
     {
         return ExampleTemplates.Templates.First(f => f.Id == templateId);
     }
+
+    [GeneratedRegex(@"\{\{(.*?)\}\}")]
+    private static partial Regex VariableRegex();
 }

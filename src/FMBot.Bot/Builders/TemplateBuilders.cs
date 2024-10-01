@@ -129,11 +129,12 @@ public class TemplateBuilders
             .WithSelectMenu(templateOptionPicker)
             .WithButton("Rename", $"{InteractionConstants.Template.Rename}-{template.Id}", ButtonStyle.Secondary)
             .WithButton("Copy", $"{InteractionConstants.Template.Copy}-{template.Id}", ButtonStyle.Secondary)
-            .WithButton("Delete", $"{InteractionConstants.Template.Delete}-{template.Id}", ButtonStyle.Secondary)
             .WithButton("Script", $"{InteractionConstants.Template.ViewScript}-{template.Id}", ButtonStyle.Secondary)
-            .WithButton("Variables", $"{InteractionConstants.Template.ViewVariables}", ButtonStyle.Secondary);
+            .WithButton("Variables", $"{InteractionConstants.Template.ViewVariables}", ButtonStyle.Secondary)
+            .WithButton("Delete", $"{InteractionConstants.Template.Delete}-{template.Id}", ButtonStyle.Danger);
 
         response.Embed.WithAuthor($"Editing template '{template.Name}'");
+        response.Embed.WithDescription($"Sharecode: `{template.ShareCode}`");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var extraResponse = new ResponseModel

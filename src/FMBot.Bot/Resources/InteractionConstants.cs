@@ -188,6 +188,7 @@ public static class InteractionConstants
 
         public const string SetOptionPicker = "template-option-set";
         public const string ViewScript = "template-view-script";
+        public const string ViewScriptModal = "template-view-scriptmodal";
         public const string ViewVariables = "template-variables";
         public const string AddButton = "template-add-button";
 

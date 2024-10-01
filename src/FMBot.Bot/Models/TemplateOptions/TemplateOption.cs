@@ -4,11 +4,13 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.Repositories;
@@ -16,7 +18,7 @@ using Npgsql;
 
 namespace FMBot.Bot.Models.TemplateOptions;
 
-public record FmResult(string Content);
+public record VariableResult(string Content, string Result = null);
 
 public abstract class TemplateOption
 {
@@ -33,12 +35,12 @@ public abstract class TemplateOption
 public sealed class SqlTemplateOption : TemplateOption
 {
     public string SqlQuery { get; set; }
-    public Func<TemplateContext, DbDataReader, Task<FmResult>> ResultProcessor { get; set; }
+    public Func<TemplateContext, DbDataReader, Task<VariableResult>> ResultProcessor { get; set; }
     public Func<TemplateContext, Dictionary<string, object>> ParametersFactory { get; set; }
 
     public bool ProcessMultipleRows { get; set; } = false;
 
-    public Task<FmResult> ExecuteAsync(TemplateContext context, DbDataReader reader)
+    public Task<VariableResult> ExecuteAsync(TemplateContext context, DbDataReader reader)
     {
         return this.ResultProcessor(context, reader);
     }
@@ -58,9 +60,9 @@ public sealed class SqlTemplateOption : TemplateOption
 
 public sealed class ComplexTemplateOption : TemplateOption
 {
-    public Func<TemplateContext, Task<FmResult>> ExecutionLogic { get; set; }
+    public Func<TemplateContext, Task<VariableResult>> ExecutionLogic { get; set; }
 
-    public Task<FmResult> ExecuteAsync(TemplateContext context, DbDataReader reader)
+    public Task<VariableResult> ExecuteAsync(TemplateContext context, DbDataReader reader)
     {
         return this.ExecutionLogic(context);
     }
@@ -96,36 +98,47 @@ public enum EmbedOption
 {
     [Option("Author")]
     [EmbedOption("author")]
+    [EmbedOptionAccepts(VariableType.Text)]
     Author = 10,
 
     [Option("Author icon url")]
     [EmbedOption("author-icon-url")]
+    [EmbedOptionAccepts(VariableType.ImageUrl)]
     AuthorIconUrl = 11,
 
     [Option("Author url")]
     [EmbedOption("author-url")]
+    [EmbedOptionAccepts(VariableType.ResourceUrl)]
     AuthorUrl = 12,
 
     [Option("Title")]
     [EmbedOption("title")]
+    [EmbedOptionAccepts(VariableType.Text)]
     Title = 20,
+
     [Option("Url")]
-    [EmbedOption("url")] Url = 21,
+    [EmbedOption("url")]
+    [EmbedOptionAccepts(VariableType.ResourceUrl, VariableType.ImageUrl)]
+    Url = 21,
 
     [Option("Description")]
     [EmbedOption("description")]
+    [EmbedOptionAccepts(VariableType.Text, VariableType.ResourceUrl, VariableType.ImageUrl)]
     Description = 22,
 
     [Option("Thumbnail image url")]
     [EmbedOption("thumbnail-image-url")]
+    [EmbedOptionAccepts(VariableType.ImageUrl)]
     ThumbnailImageUrl = 23,
 
     [Option("Large image url")]
     [EmbedOption("large-image-url")]
+    [EmbedOptionAccepts(VariableType.ImageUrl)]
     LargeImageUrl = 24,
 
     [Option("Color (hex code)")]
     [EmbedOption("embed-color-hex")]
+    [EmbedOptionAccepts(VariableType.HexColor)]
     ColorHex = 25,
 
     [Option("Add field")]
@@ -133,37 +146,21 @@ public enum EmbedOption
 
     [Option("Footer")]
     [EmbedOption("footer")]
+    [EmbedOptionAccepts(VariableType.Text)]
     Footer = 40,
 
     [Option("Footer icon url")]
     [EmbedOption("footer-icon-url")]
+    [EmbedOptionAccepts(VariableType.ImageUrl)]
     FooterIconUrl = 41,
 
     [Option("Footer timestamp")]
     [EmbedOption("footer-timestamp")]
+    [EmbedOptionAccepts(VariableType.Timestamp)]
     FooterTimestamp = 42,
 
     [Option("Add button")]
     AddButton = 50,
-}
-
-public enum VariableType
-{
-    Text,
-    ResourceUrl,
-    ImageUrl,
-    HexColor,
-    Timestamp
-}
-
-public class EmbedOptionAttribute : Attribute
-{
-    public string ScriptName { get; private set; }
-
-    public EmbedOptionAttribute(string scriptName)
-    {
-        this.ScriptName = scriptName;
-    }
 }
 
 public static class ExampleTemplates
@@ -182,7 +179,7 @@ $$embed-color-hex:#A020F0
 $$description:## [{{track.name}}]({{track.url}})
 **{{track.artist}}** •  *{{track.album}}*
 {{""### <:Whiskeydogearnest:1097591075822129292> <:dreamleft:1289310421932576821> I think this artist is from "" + artist.country + ""... <:dreamright:1289310420170965074>""}}
-$$footer:{{lastfm.total-scrobbles}} total scrobbles{{"" - "" + artist.genres}}",
+$$footer:{{lastfm.total-scrobbles-result + "" total scrobbles""}} {{"" - "" + artist.genres}}",
             Name = "Example - Dog",
             ShareCode = "ABCD",
             Created = DateTime.UtcNow,
@@ -222,7 +219,7 @@ public static class TemplateOptions
             Variable = "lastfm.user-name",
             Description = "Last.fm username",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.UserNameLastFm))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.UserSettings.UserNameLastFm))
         },
         new ComplexTemplateOption
         {
@@ -230,35 +227,45 @@ public static class TemplateOptions
             Description = "Last.fm account creation date",
             VariableType = VariableType.Text,
             ExecutionLogic = context =>
-                Task.FromResult(new FmResult(context.UserSettings.RegisteredLastFm?.ToString("MMMM d yyyy")))
+                Task.FromResult(new VariableResult(context.UserSettings.RegisteredLastFm?.ToString("MMMM d yyyy")))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "lastfm.url",
+            Description = "Last.fm account url",
+            VariableType = VariableType.Text,
+            ExecutionLogic = context =>
+                Task.FromResult(new VariableResult(LastfmUrlExtensions.GetUserUrl(context.UserSettings.UserNameLastFm)))
         },
         new ComplexTemplateOption
         {
             Variable = "user.display-name",
             Description = "User's display name",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.DisplayName))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.UserSettings.DisplayName))
         },
         new ComplexTemplateOption
         {
             Variable = "user.user-type",
             Description = "User's usertype in the bot",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(Enum.GetName(context.UserSettings.UserType)))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(Enum.GetName(context.UserSettings.UserType)))
         },
         new ComplexTemplateOption
         {
             Variable = "user.user-type-emoji",
             Description = "User's usertype emoji",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.UserType.UserTypeToIcon()))
+            ExecutionLogic = context =>
+                Task.FromResult(new VariableResult(context.UserSettings.UserType.UserTypeToIcon()))
         },
         new ComplexTemplateOption
         {
             Variable = "author.discord-image-url",
             Description = "Authors Discord avatar url",
             VariableType = VariableType.ImageUrl,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.GetDisplayAvatarUrl()))
+            ExecutionLogic = context =>
+                Task.FromResult(new VariableResult(context.DiscordContextUser.GetDisplayAvatarUrl()))
         },
         new ComplexTemplateOption
         {
@@ -268,7 +275,7 @@ public static class TemplateOptions
             ExecutionLogic = async context =>
             {
                 var name = await UserService.GetNameAsync(context.DiscordContextGuild, context.DiscordContextUser);
-                return new FmResult(name);
+                return new VariableResult(name);
             }
         },
         new ComplexTemplateOption
@@ -276,14 +283,14 @@ public static class TemplateOptions
             Variable = "author.user-name",
             Description = "Authors Discord username",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.Username))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.DiscordContextUser.Username))
         },
         new ComplexTemplateOption
         {
             Variable = "author.global-name",
             Description = "Authors Discord global name",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.GlobalName))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.DiscordContextUser.GlobalName))
         },
         new ComplexTemplateOption
         {
@@ -292,7 +299,7 @@ public static class TemplateOptions
             VariableType = VariableType.Text,
             ExecutionLogic = context =>
                 Task.FromResult(context.DiscordContextGuild != null
-                    ? new FmResult(context.DiscordContextGuild.Name)
+                    ? new VariableResult(context.DiscordContextGuild.Name)
                     : null)
         },
         new ComplexTemplateOption
@@ -302,7 +309,7 @@ public static class TemplateOptions
             VariableType = VariableType.ImageUrl,
             ExecutionLogic = context =>
                 Task.FromResult(context.DiscordContextGuild != null
-                    ? new FmResult(context.DiscordContextGuild.IconUrl)
+                    ? new VariableResult(context.DiscordContextGuild.IconUrl)
                     : null)
         },
         new ComplexTemplateOption
@@ -312,7 +319,7 @@ public static class TemplateOptions
             VariableType = VariableType.ImageUrl,
             ExecutionLogic = context =>
                 Task.FromResult(context.DiscordContextGuild != null
-                    ? new FmResult(context.DiscordContextGuild.BannerUrl)
+                    ? new VariableResult(context.DiscordContextGuild.BannerUrl)
                     : null)
         },
         new ComplexTemplateOption
@@ -323,7 +330,7 @@ public static class TemplateOptions
             VariableType = VariableType.Text,
             FooterOrder = 10,
             ExecutionLogic = context =>
-                Task.FromResult(context.CurrentTrack.Loved ? new FmResult("❤️ Loved track") : null)
+                Task.FromResult(context.CurrentTrack.Loved ? new VariableResult("❤️ Loved track", "❤️") : null)
         },
         new SqlTemplateOption
         {
@@ -337,12 +344,44 @@ public static class TemplateOptions
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                return new FmResult($"{playcount} artist scrobbles");
+                return new VariableResult($"{playcount} artist scrobbles", playcount.ToString());
             },
             ParametersFactory = context => new Dictionary<string, object>
             {
                 { "userId", context.UserSettings.UserId },
                 { "artistName", context.CurrentTrack.ArtistName }
+            }
+        },
+        new ComplexTemplateOption
+        {
+            FooterOption = FmFooterOption.ArtistPlaysThisWeek,
+            Variable = "artist.plays-week",
+            Description = "Playcount on artist in last 7 days",
+            VariableType = VariableType.Text,
+            FooterOrder = 60,
+            ExecutionLogic = async context =>
+            {
+                var start = DateTime.UtcNow.AddDays(-7);
+                var plays = await PlayRepository.GetUserPlaysWithinTimeRange(context.UserSettings.UserId,
+                    context.Connection, start);
+                var count = plays.Count(a =>
+                    a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase));
+                return new VariableResult($"{count} artist plays this week", count.ToString());
+            }
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "artist.plays-month",
+            Description = "Playcount on artist in last 30 days",
+            VariableType = VariableType.Text,
+            ExecutionLogic = async context =>
+            {
+                var start = DateTime.UtcNow.AddDays(-30);
+                var plays = await PlayRepository.GetUserPlaysWithinTimeRange(context.UserSettings.UserId,
+                    context.Connection, start);
+                var count = plays.Count(a =>
+                    a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase));
+                return new VariableResult($"{count} artist plays this month", count.ToString());
             }
         },
         new SqlTemplateOption
@@ -357,13 +396,47 @@ public static class TemplateOptions
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                return new FmResult($"{playcount} album scrobbles");
+                return new VariableResult($"{playcount} album scrobbles", playcount.ToString());
             },
             ParametersFactory = context => new Dictionary<string, object>
             {
                 { "userId", context.UserSettings.UserId },
                 { "artistName", context.CurrentTrack.ArtistName },
                 { "albumName", context.CurrentTrack.AlbumName },
+            }
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "album.plays-week",
+            Description = "Playcount on album in last 7 days",
+            VariableType = VariableType.Text,
+            ExecutionLogic = async context =>
+            {
+                var start = DateTime.UtcNow.AddDays(-7);
+                var plays = await PlayRepository.GetUserPlaysWithinTimeRange(context.UserSettings.UserId,
+                    context.Connection, start);
+                var count = plays.Count(a =>
+                    a.AlbumName != null &&
+                    a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
+                    a.AlbumName.Equals(context.CurrentTrack.AlbumName, StringComparison.OrdinalIgnoreCase));
+                return new VariableResult($"{count} album plays this week", count.ToString());
+            }
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "album.plays-month",
+            Description = "Playcount on album in last 30 days",
+            VariableType = VariableType.Text,
+            ExecutionLogic = async context =>
+            {
+                var start = DateTime.UtcNow.AddDays(-30);
+                var plays = await PlayRepository.GetUserPlaysWithinTimeRange(context.UserSettings.UserId,
+                    context.Connection, start);
+                var count = plays.Count(a =>
+                    a.AlbumName != null &&
+                    a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
+                    a.AlbumName.Equals(context.CurrentTrack.AlbumName, StringComparison.OrdinalIgnoreCase));
+                return new VariableResult($"{count} album plays this month", count.ToString());
             }
         },
         new SqlTemplateOption
@@ -378,7 +451,7 @@ public static class TemplateOptions
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                return new FmResult($"{playcount} track scrobbles");
+                return new VariableResult($"{playcount} track scrobbles", playcount.ToString());
             },
             ParametersFactory = context => new Dictionary<string, object>
             {
@@ -389,51 +462,67 @@ public static class TemplateOptions
         },
         new ComplexTemplateOption
         {
-            FooterOption = FmFooterOption.TotalScrobbles,
-            Variable = "lastfm.total-scrobbles",
-            Description = "Last.fm total scrobble count",
+            Variable = "track.plays-week",
+            Description = "Playcount on track in last 7 days",
             VariableType = VariableType.Text,
-            FooterOrder = 50,
-            ExecutionLogic = context =>
-                Task.FromResult(new FmResult($"{context.TotalScrobbles} total scrobbles"))
-        },
-        new ComplexTemplateOption
-        {
-            Variable = "album.url",
-            Description = "Last.fm album link",
-            VariableType = VariableType.ResourceUrl,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.AlbumUrl))
-        },
-        new ComplexTemplateOption
-        {
-            Variable = "album.cover-url",
-            Description = "Last.fm album cover image link",
-            VariableType = VariableType.ImageUrl,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.AlbumCoverUrl))
-        },
-        new ComplexTemplateOption
-        {
-            FooterOption = FmFooterOption.ArtistPlaysThisWeek,
-            Variable = "artist.weekplays",
-            Description = "Playcount on artist in last seven days",
-            VariableType = VariableType.Text,
-            FooterOrder = 60,
             ExecutionLogic = async context =>
             {
                 var start = DateTime.UtcNow.AddDays(-7);
                 var plays = await PlayRepository.GetUserPlaysWithinTimeRange(context.UserSettings.UserId,
                     context.Connection, start);
                 var count = plays.Count(a =>
-                    a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase));
-                return new FmResult($"{count} artist plays this week");
+                    a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
+                    a.AlbumName.Equals(context.CurrentTrack.TrackName, StringComparison.OrdinalIgnoreCase));
+                return new VariableResult($"{count} track plays this week", count.ToString());
             }
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "track.plays-month",
+            Description = "Playcount on track in last 30 days",
+            VariableType = VariableType.Text,
+            ExecutionLogic = async context =>
+            {
+                var start = DateTime.UtcNow.AddDays(-30);
+                var plays = await PlayRepository.GetUserPlaysWithinTimeRange(context.UserSettings.UserId,
+                    context.Connection, start);
+                var count = plays.Count(a =>
+                    a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
+                    a.AlbumName.Equals(context.CurrentTrack.TrackName, StringComparison.OrdinalIgnoreCase));
+                return new VariableResult($"{count} track plays this month", count.ToString());
+            }
+        },
+        new ComplexTemplateOption
+        {
+            FooterOption = FmFooterOption.TotalScrobbles,
+            Variable = "lastfm.total-scrobbles",
+            Description = "Last.fm total scrobble count",
+            VariableType = VariableType.Text,
+            FooterOrder = 50,
+            ExecutionLogic = context =>
+                Task.FromResult(new VariableResult($"{context.TotalScrobbles} total scrobbles",
+                    context.TotalScrobbles.ToString()))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "album.url",
+            Description = "Last.fm album link",
+            VariableType = VariableType.ResourceUrl,
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.CurrentTrack.AlbumUrl))
+        },
+        new ComplexTemplateOption
+        {
+            Variable = "album.cover-url",
+            Description = "Last.fm album cover image link",
+            VariableType = VariableType.ImageUrl,
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.CurrentTrack.AlbumCoverUrl))
         },
         new ComplexTemplateOption
         {
             Variable = "artist.url",
             Description = "Last.fm artist link",
             VariableType = VariableType.ResourceUrl,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.ArtistUrl))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.CurrentTrack.ArtistUrl))
         },
         new SqlTemplateOption
         {
@@ -456,7 +545,7 @@ public static class TemplateOptions
                         var artistCountry = context.CountryService.GetValidCountry(countryCode);
                         if (artistCountry?.Name != null)
                         {
-                            return new FmResult(artistCountry.Name);
+                            return new VariableResult(artistCountry.Name);
                         }
                     }
                 }
@@ -496,20 +585,20 @@ public static class TemplateOptions
                         if (startDate.Month == today.Month && startDate.Day == today.Day)
                         {
                             return !endDate.HasValue
-                                ? new FmResult($"🎂 today! ({age})")
-                                : new FmResult("🎂 today!");
+                                ? new VariableResult($"🎂 today! ({age})")
+                                : new VariableResult("🎂 today!");
                         }
 
                         if (startDate.Month == today.AddDays(1).Month && startDate.Day == today.AddDays(1).Day)
                         {
                             return !endDate.HasValue
-                                ? new FmResult($"🎂 tomorrow (becomes {age + 1})")
-                                : new FmResult("🎂 tomorrow");
+                                ? new VariableResult($"🎂 tomorrow (becomes {age + 1})")
+                                : new VariableResult("🎂 tomorrow");
                         }
 
                         return !endDate.HasValue
-                            ? new FmResult($"🎂 {startDate:MMMM d} (currently {age})")
-                            : new FmResult($"🎂 {startDate:MMMM d}");
+                            ? new VariableResult($"🎂 {startDate:MMMM d} (currently {age})")
+                            : new VariableResult($"🎂 {startDate:MMMM d}");
                     }
                 }
 
@@ -564,7 +653,7 @@ public static class TemplateOptions
                     context.Genres = GenreService.GenresToString(genres);
                 }
 
-                return new FmResult(GenreService.GenresToString(genres));
+                return new VariableResult(GenreService.GenresToString(genres));
             },
             ParametersFactory = context => new Dictionary<string, object>
             {
@@ -576,56 +665,56 @@ public static class TemplateOptions
             Variable = "track.name",
             Description = "Track name",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.TrackName))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.CurrentTrack.TrackName))
         },
         new ComplexTemplateOption
         {
             Variable = "track.album",
             Description = "Album name",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.AlbumName))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.CurrentTrack.AlbumName))
         },
         new ComplexTemplateOption
         {
             Variable = "track.artist",
             Description = "Artist name",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.ArtistName))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.CurrentTrack.ArtistName))
         },
         new ComplexTemplateOption
         {
             Variable = "track.url",
             Description = "Last.fm track link",
             VariableType = VariableType.ResourceUrl,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.TrackUrl))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.CurrentTrack.TrackUrl))
         },
         new ComplexTemplateOption
         {
             Variable = "previous-track.name",
             Description = "Previous track name",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.TrackName))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.PreviousTrack.TrackName))
         },
         new ComplexTemplateOption
         {
             Variable = "previous-track.album",
             Description = "Previous album name",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.AlbumName))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.PreviousTrack.AlbumName))
         },
         new ComplexTemplateOption
         {
             Variable = "previous-track.artist",
             Description = "Previous track artist",
             VariableType = VariableType.Text,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.ArtistName))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.PreviousTrack.ArtistName))
         },
         new ComplexTemplateOption
         {
             Variable = "previous-track.url",
             Description = "Previous Last.fm track link",
             VariableType = VariableType.ResourceUrl,
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.TrackUrl))
+            ExecutionLogic = context => Task.FromResult(new VariableResult(context.PreviousTrack.TrackUrl))
         },
         new SqlTemplateOption
         {
@@ -644,7 +733,7 @@ public static class TemplateOptions
                 if (!await reader.IsDBNullAsync(0))
                 {
                     var tempo = await reader.GetFieldValueAsync<float>(0);
-                    return new FmResult($"bpm {tempo:0.0}");
+                    return new VariableResult($"bpm {tempo:0.0}", $"{tempo:0.0}");
                 }
 
                 return null;
@@ -683,7 +772,7 @@ public static class TemplateOptions
                         12 => "🕛", _ => "🕒"
                     };
 
-                    return new FmResult($"{emoji} {formattedTrackLength}");
+                    return new VariableResult($"{emoji} {formattedTrackLength}", formattedTrackLength);
                 }
 
                 return null;
@@ -728,7 +817,7 @@ public static class TemplateOptions
 
                 var discogsAlbum = await Task.Run(() => albumCollection.MaxBy(o => o.DateAdded));
                 return discogsAlbum != null
-                    ? new FmResult(StringService.UserDiscogsReleaseToSimpleString(discogsAlbum))
+                    ? new VariableResult(StringService.UserDiscogsReleaseToSimpleString(discogsAlbum))
                     : null;
             }
         },
@@ -759,7 +848,8 @@ public static class TemplateOptions
                 {
                     var currentPlaycount = await reader.GetFieldValueAsync<int>(0);
                     var userName = await reader.GetFieldValueAsync<string>(2);
-                    return new FmResult($"👑 {Format.Sanitize(userName)} ({currentPlaycount} plays)");
+                    return new VariableResult($"👑 {Format.Sanitize(userName)} ({currentPlaycount} plays)",
+                        Format.Sanitize(userName));
                 }
 
                 return null;
@@ -796,7 +886,7 @@ public static class TemplateOptions
                     if (requestedUser != null)
                     {
                         var index = artistListeners.IndexOf(requestedUser);
-                        return new FmResult($"WhoKnows #{index + 1}");
+                        return new VariableResult($"WhoKnows #{index + 1}", (index + 1).ToString());
                     }
                 }
 
@@ -822,7 +912,9 @@ public static class TemplateOptions
                 artistListeners = WhoKnowsService.FilterWhoKnowsObjects(artistListeners, context.Guild)
                     .filteredUsers;
 
-                return artistListeners.Any() ? new FmResult($"{artistListeners.Count} listeners") : null;
+                return artistListeners.Any()
+                    ? new VariableResult($"{artistListeners.Count} listeners", artistListeners.Count.ToString())
+                    : null;
             }
         },
         new ComplexTemplateOption
@@ -850,7 +942,7 @@ public static class TemplateOptions
                     if (requestedUser != null)
                     {
                         var index = albumListeners.IndexOf(requestedUser);
-                        return new FmResult($"WhoKnows album #{index + 1}");
+                        return new VariableResult($"WhoKnows album #{index + 1}", (index + 1).ToString());
                     }
                 }
 
@@ -877,7 +969,7 @@ public static class TemplateOptions
                 albumListeners = WhoKnowsService.FilterWhoKnowsObjects(albumListeners, context.Guild).filteredUsers;
 
                 return albumListeners.Any()
-                    ? new FmResult($"{albumListeners.Count} album listeners")
+                    ? new VariableResult($"{albumListeners.Count} album listeners", albumListeners.Count.ToString())
                     : null;
             }
         },
@@ -906,7 +998,7 @@ public static class TemplateOptions
                     if (requestedUser != null)
                     {
                         var index = trackListeners.IndexOf(requestedUser);
-                        return new FmResult($"WhoKnows track #{index + 1}");
+                        return new VariableResult($"WhoKnows track #{index + 1}", (index + 1).ToString());
                     }
                 }
 
@@ -933,7 +1025,7 @@ public static class TemplateOptions
                 trackListeners = WhoKnowsService.FilterWhoKnowsObjects(trackListeners, context.Guild).filteredUsers;
 
                 return trackListeners.Any()
-                    ? new FmResult($"{trackListeners.Count} track listeners")
+                    ? new VariableResult($"{trackListeners.Count} track listeners", trackListeners.Count.ToString())
                     : null;
             }
         },
@@ -970,7 +1062,7 @@ public static class TemplateOptions
                 if (!await reader.IsDBNullAsync(0))
                 {
                     var rank = await reader.GetFieldValueAsync<long>(0);
-                    return new FmResult($"GlobalWhoKnows #{rank}");
+                    return new VariableResult($"GlobalWhoKnows #{rank}", rank.ToString());
                 }
 
                 return null;
@@ -1015,7 +1107,7 @@ public static class TemplateOptions
                 if (!await reader.IsDBNullAsync(0))
                 {
                     var rank = await reader.GetFieldValueAsync<long>(0);
-                    return new FmResult($"GlobalWhoKnows album #{rank}");
+                    return new VariableResult($"GlobalWhoKnows album #{rank}", rank.ToString());
                 }
 
                 return null;
@@ -1061,7 +1153,7 @@ public static class TemplateOptions
                 if (!await reader.IsDBNullAsync(0))
                 {
                     var rank = await reader.GetFieldValueAsync<long>(0);
-                    return new FmResult($"GlobalWhoKnows track #{rank}");
+                    return new VariableResult($"GlobalWhoKnows track #{rank}", rank.ToString());
                 }
 
                 return null;
@@ -1091,7 +1183,8 @@ public static class TemplateOptions
                     await context.PlayService.GetArtistFirstPlayDate(context.UserSettings.UserId,
                         context.CurrentTrack.ArtistName);
                 return firstPlay != null
-                    ? new FmResult($"Artist discovered {firstPlay.Value.ToString("MMMM d yyyy")}")
+                    ? new VariableResult($"Artist discovered {firstPlay.Value.ToString("MMMM d yyyy")}",
+                        $"{firstPlay.Value.ToString("MMMM d yyyy")}")
                     : null;
             }
         },
@@ -1113,7 +1206,8 @@ public static class TemplateOptions
                 var firstPlay = await context.PlayService.GetAlbumFirstPlayDate(context.UserSettings.UserId,
                     context.CurrentTrack.ArtistName, context.CurrentTrack.AlbumName);
                 return firstPlay != null
-                    ? new FmResult($"Album discovered {firstPlay.Value.ToString("MMMM d yyyy")}")
+                    ? new VariableResult($"Album discovered {firstPlay.Value.ToString("MMMM d yyyy")}",
+                        $"{firstPlay.Value.ToString("MMMM d yyyy")}")
                     : null;
             }
         },
@@ -1134,7 +1228,8 @@ public static class TemplateOptions
                 var firstPlay = await context.PlayService.GetTrackFirstPlayDate(context.UserSettings.UserId,
                     context.CurrentTrack.ArtistName, context.CurrentTrack.TrackName);
                 return firstPlay != null
-                    ? new FmResult($"Track discovered {firstPlay.Value.ToString("MMMM d yyyy")}")
+                    ? new VariableResult($"Track discovered {firstPlay.Value.ToString("MMMM d yyyy")}",
+                        $"{firstPlay.Value.ToString("MMMM d yyyy")}")
                     : null;
             }
         }
