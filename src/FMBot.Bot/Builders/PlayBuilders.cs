@@ -168,7 +168,7 @@ public class PlayBuilder
 
         var embed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, userSettings, currentTrack,
             previousTrack, totalPlaycount, guild, guildUsers);
-        response.Embed = embed;
+        response.Embed = embed.EmbedBuilder;
         return response;
 
         var fmText = "";

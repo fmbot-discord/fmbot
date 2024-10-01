@@ -130,8 +130,14 @@ public static class InteractionContextExtensions
     }
 
     public static async Task SendResponse(this IInteractionContext context, InteractiveService interactiveService,
-        ResponseModel response, bool ephemeral = false)
+        ResponseModel response, bool ephemeral = false, ResponseModel extraResponse = null)
     {
+        var embeds = new[] { response.Embed.Build() };
+        if (extraResponse != null)
+        {
+            embeds = new[] { response.Embed.Build(), extraResponse.Embed?.Build() };
+        }
+
         switch (response.ResponseType)
         {
             case ResponseType.Text:
@@ -139,7 +145,7 @@ public static class InteractionContextExtensions
                     ephemeral: ephemeral, components: response.Components?.Build());
                 break;
             case ResponseType.Embed:
-                await context.Interaction.RespondAsync(null, new[] { response.Embed.Build() },
+                await context.Interaction.RespondAsync(null, embeds,
                     ephemeral: ephemeral, components: response.Components?.Build());
                 break;
             case ResponseType.ImageWithEmbed:

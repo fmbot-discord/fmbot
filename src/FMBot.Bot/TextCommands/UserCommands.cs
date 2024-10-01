@@ -629,7 +629,7 @@ public class UserCommands : BaseCommandModule
         try
         {
             var supporterRequiredResponse =
-                TemplateBuilders.TemplatesSupporterRequired(new ContextModel(this.Context, prfx, contextUser), prfx);
+                TemplateBuilders.TemplatesSupporterRequired(new ContextModel(this.Context, prfx, contextUser));
 
             if (supporterRequiredResponse != null)
             {

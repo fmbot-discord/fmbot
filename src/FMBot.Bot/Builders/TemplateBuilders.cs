@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Extensions;
@@ -6,8 +8,10 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
@@ -16,10 +20,18 @@ namespace FMBot.Bot.Builders;
 public class TemplateBuilders
 {
     private readonly TemplateService _templateService;
+    private readonly UserService _userService;
+    private readonly SettingService _settingService;
+    private readonly IDataSourceFactory _dataSourceFactory;
+    private readonly GuildService _guildService;
 
-    public TemplateBuilders(TemplateService templateService)
+    public TemplateBuilders(TemplateService templateService, UserService userService, SettingService settingService, IDataSourceFactory dataSourceFactory, GuildService guildService)
     {
         this._templateService = templateService;
+        this._userService = userService;
+        this._settingService = settingService;
+        this._dataSourceFactory = dataSourceFactory;
+        this._guildService = guildService;
     }
 
     public async Task<ResponseModel> TemplatePicker(
@@ -69,9 +81,10 @@ public class TemplateBuilders
         return response;
     }
 
-    public async Task<ResponseModel> TemplateManage(
+    public async Task<(ResponseModel response, ResponseModel extraResponse)> TemplateManage(
         ContextModel context,
-        int templateId)
+        int templateId,
+        Guild guild)
     {
         var response = new ResponseModel
         {
@@ -86,14 +99,30 @@ public class TemplateBuilders
             .WithMinValues(1)
             .WithMaxValues(1);
 
+        var exampleUserSettings = await this._settingService
+            .GetOriginalContextUser(context.ContextUser.DiscordUserId, context.ContextUser.DiscordUserId, context.DiscordGuild, context.DiscordUser);
+        var recentTracks =
+            await this._dataSourceFactory.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, useCache: true);
+
+        if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
+        {
+            return (GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, context.ContextUser.UserNameLastFM), null);
+        }
+
+        guild ??= await this._guildService.GetGuildAsync(821660544581763093);
+        var guildUsers = await this._guildService.GetGuildUsers(guild.DiscordGuildId);
+
+        var fmEmbed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, exampleUserSettings, recentTracks.Content.RecentTracks[0],
+            recentTracks.Content.RecentTracks[1], context.ContextUser.TotalPlaycount ?? 100, guild, guildUsers);
+
         foreach (var option in ((EmbedOption[])Enum.GetValues(typeof(EmbedOption))))
         {
             var name = option.GetAttribute<OptionAttribute>().Name;
             var value = Enum.GetName(option);
 
-            var description = "Not set";
+            fmEmbed.Content.TryGetValue(option, out var description);
 
-            templateOptionPicker.AddOption(new SelectMenuOptionBuilder(name, value, description));
+            templateOptionPicker.AddOption(new SelectMenuOptionBuilder(name, value, StringExtensions.TruncateLongString(description, 95) ?? "Not set"));
         }
 
         response.Components = new ComponentBuilder()
@@ -101,14 +130,42 @@ public class TemplateBuilders
             .WithButton("Rename", $"{InteractionConstants.Template.Rename}-{template.Id}", ButtonStyle.Secondary)
             .WithButton("Copy", $"{InteractionConstants.Template.Copy}-{template.Id}", ButtonStyle.Secondary)
             .WithButton("Delete", $"{InteractionConstants.Template.Delete}-{template.Id}", ButtonStyle.Secondary)
-            .WithButton("Edit script", $"{InteractionConstants.Template.ViewScript}-{template.Id}", ButtonStyle.Secondary);
+            .WithButton("Script", $"{InteractionConstants.Template.ViewScript}-{template.Id}", ButtonStyle.Secondary)
+            .WithButton("Variables", $"{InteractionConstants.Template.ViewVariables}", ButtonStyle.Secondary);
 
-        response.Embed.WithTitle($"Editing template '{template.Name}'");
+        response.Embed.WithAuthor($"Editing template '{template.Name}'");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var extraResponse = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+            Embed = fmEmbed.EmbedBuilder
+        };
+
+        return (response, extraResponse);
+    }
+
+    public static ResponseModel GetTemplateVariables(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var description = new StringBuilder();
+        foreach (var option in TemplateOptions.Options.OrderBy(o => o.Variable))
+        {
+            description.AppendLine($"**`{option.Variable}`** - {option.Description}");
+        }
+
+        response.Embed.WithAuthor("Template variables");
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         return response;
     }
 
-    public static ResponseModel TemplatesSupporterRequired(ContextModel context, string prfx)
+    public static ResponseModel TemplatesSupporterRequired(ContextModel context)
     {
         if (SupporterService.IsSupporter(context.ContextUser.UserType))
         {

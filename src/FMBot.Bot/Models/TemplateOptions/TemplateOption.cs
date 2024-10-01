@@ -25,6 +25,9 @@ public abstract class TemplateOption
     public int FooterOrder { get; set; }
 
     public string Variable { get; set; }
+
+    public string Description { get; set; }
+    public VariableType VariableType { get; set; }
 }
 
 public sealed class SqlTemplateOption : TemplateOption
@@ -144,6 +147,15 @@ public enum EmbedOption
     AddButton = 50,
 }
 
+public enum VariableType
+{
+    Text,
+    ResourceUrl,
+    ImageUrl,
+    HexColor,
+    Timestamp
+}
+
 public class EmbedOptionAttribute : Attribute
 {
     public string ScriptName { get; private set; }
@@ -169,7 +181,7 @@ $$thumbnail-image-url:{{album.cover-url}}
 $$embed-color-hex:#A020F0
 $$description:## [{{track.name}}]({{track.url}})
 **{{track.artist}}** •  *{{track.album}}*
-### {{""<:Whiskeydogearnest:1097591075822129292> <:dreamleft:1289310421932576821> I think this artist is from "" + artist.country + ""... <:dreamright:1289310420170965074>""}}
+{{""### <:Whiskeydogearnest:1097591075822129292> <:dreamleft:1289310421932576821> I think this artist is from "" + artist.country + ""... <:dreamright:1289310420170965074>""}}
 $$footer:{{lastfm.total-scrobbles}} total scrobbles{{"" - "" + artist.genres}}",
             Name = "Example - Dog",
             ShareCode = "ABCD",
@@ -208,42 +220,51 @@ public static class TemplateOptions
         new ComplexTemplateOption
         {
             Variable = "lastfm.user-name",
+            Description = "Last.fm username",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.UserNameLastFm))
         },
         new ComplexTemplateOption
         {
             Variable = "lastfm.join-date",
+            Description = "Last.fm account creation date",
+            VariableType = VariableType.Text,
             ExecutionLogic = context =>
                 Task.FromResult(new FmResult(context.UserSettings.RegisteredLastFm?.ToString("MMMM d yyyy")))
         },
         new ComplexTemplateOption
         {
-            Variable = "lastfm.total-scrobbles",
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.TotalScrobbles.ToString()))
-        },
-        new ComplexTemplateOption
-        {
             Variable = "user.display-name",
+            Description = "User's display name",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.DisplayName))
         },
         new ComplexTemplateOption
         {
             Variable = "user.user-type",
+            Description = "User's usertype in the bot",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(Enum.GetName(context.UserSettings.UserType)))
         },
         new ComplexTemplateOption
         {
             Variable = "user.user-type-emoji",
+            Description = "User's usertype emoji",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.UserSettings.UserType.UserTypeToIcon()))
         },
         new ComplexTemplateOption
         {
             Variable = "author.discord-image-url",
+            Description = "Authors Discord avatar url",
+            VariableType = VariableType.ImageUrl,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.GetDisplayAvatarUrl()))
         },
         new ComplexTemplateOption
         {
             Variable = "author.display-name",
+            Description = "Authors Discord display name",
+            VariableType = VariableType.Text,
             ExecutionLogic = async context =>
             {
                 var name = await UserService.GetNameAsync(context.DiscordContextGuild, context.DiscordContextUser);
@@ -253,21 +274,22 @@ public static class TemplateOptions
         new ComplexTemplateOption
         {
             Variable = "author.user-name",
+            Description = "Authors Discord username",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.Username))
         },
         new ComplexTemplateOption
         {
             Variable = "author.global-name",
+            Description = "Authors Discord global name",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.GlobalName))
         },
         new ComplexTemplateOption
         {
-            Variable = "author.id",
-            ExecutionLogic = context => Task.FromResult(new FmResult(context.DiscordContextUser.Id.ToString()))
-        },
-        new ComplexTemplateOption
-        {
             Variable = "server.name",
+            Description = "Server name",
+            VariableType = VariableType.Text,
             ExecutionLogic = context =>
                 Task.FromResult(context.DiscordContextGuild != null
                     ? new FmResult(context.DiscordContextGuild.Name)
@@ -275,15 +297,9 @@ public static class TemplateOptions
         },
         new ComplexTemplateOption
         {
-            Variable = "server.id",
-            ExecutionLogic = context =>
-                Task.FromResult(context.DiscordContextGuild != null
-                    ? new FmResult(context.DiscordContextGuild.Id.ToString())
-                    : null)
-        },
-        new ComplexTemplateOption
-        {
             Variable = "server.icon-image-url",
+            Description = "Server icon image url",
+            VariableType = VariableType.ImageUrl,
             ExecutionLogic = context =>
                 Task.FromResult(context.DiscordContextGuild != null
                     ? new FmResult(context.DiscordContextGuild.IconUrl)
@@ -292,6 +308,8 @@ public static class TemplateOptions
         new ComplexTemplateOption
         {
             Variable = "server.banner-image-url",
+            Description = "Server banner image url",
+            VariableType = VariableType.ImageUrl,
             ExecutionLogic = context =>
                 Task.FromResult(context.DiscordContextGuild != null
                     ? new FmResult(context.DiscordContextGuild.BannerUrl)
@@ -301,6 +319,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.Loved,
             Variable = "track.loved",
+            Description = "Indicator if track is loved on Last.fm",
+            VariableType = VariableType.Text,
             FooterOrder = 10,
             ExecutionLogic = context =>
                 Task.FromResult(context.CurrentTrack.Loved ? new FmResult("❤️ Loved track") : null)
@@ -309,6 +329,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.ArtistPlays,
             Variable = "artist.plays",
+            Description = "Amount of plays user has on artist",
+            VariableType = VariableType.Text,
             FooterOrder = 20,
             SqlQuery = "SELECT ua.playcount FROM user_artists AS ua WHERE ua.user_id = @userId AND " +
                        "UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))",
@@ -327,6 +349,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.AlbumPlays,
             Variable = "album.plays",
+            Description = "Amount of plays user has on album",
+            VariableType = VariableType.Text,
             FooterOrder = 30,
             SqlQuery = "SELECT ua.playcount FROM user_albums AS ua WHERE ua.user_id = @userId AND " +
                        "UPPER(ua.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT))",
@@ -346,6 +370,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.TrackPlays,
             Variable = "track.plays",
+            Description = "Amount of plays user has on track",
+            VariableType = VariableType.Text,
             FooterOrder = 40,
             SqlQuery = "SELECT ut.playcount FROM user_tracks AS ut WHERE ut.user_id = @userId AND " +
                        "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))",
@@ -365,6 +391,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.TotalScrobbles,
             Variable = "lastfm.total-scrobbles",
+            Description = "Last.fm total scrobble count",
+            VariableType = VariableType.Text,
             FooterOrder = 50,
             ExecutionLogic = context =>
                 Task.FromResult(new FmResult($"{context.TotalScrobbles} total scrobbles"))
@@ -372,17 +400,23 @@ public static class TemplateOptions
         new ComplexTemplateOption
         {
             Variable = "album.url",
+            Description = "Last.fm album link",
+            VariableType = VariableType.ResourceUrl,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.AlbumUrl))
         },
         new ComplexTemplateOption
         {
             Variable = "album.cover-url",
+            Description = "Last.fm album cover image link",
+            VariableType = VariableType.ImageUrl,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.AlbumCoverUrl))
         },
         new ComplexTemplateOption
         {
             FooterOption = FmFooterOption.ArtistPlaysThisWeek,
             Variable = "artist.weekplays",
+            Description = "Playcount on artist in last seven days",
+            VariableType = VariableType.Text,
             FooterOrder = 60,
             ExecutionLogic = async context =>
             {
@@ -397,12 +431,16 @@ public static class TemplateOptions
         new ComplexTemplateOption
         {
             Variable = "artist.url",
+            Description = "Last.fm artist link",
+            VariableType = VariableType.ResourceUrl,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.ArtistUrl))
         },
         new SqlTemplateOption
         {
             FooterOption = FmFooterOption.ArtistCountry,
             Variable = "artist.country",
+            Description = "Artist country (from Musicbrainz)",
+            VariableType = VariableType.Text,
             FooterOrder = 100,
             SqlQuery = @"
                     SELECT country_code
@@ -434,6 +472,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.ArtistBirthday,
             Variable = "artist.birthday",
+            Description = "Artist birthday (from Musicbrainz)",
+            VariableType = VariableType.Text,
             FooterOrder = 110,
             SqlQuery = @"
                     SELECT start_date, end_date
@@ -497,6 +537,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.ArtistGenres,
             Variable = "artist.genres",
+            Description = "Artist genres (from Spotify)",
+            VariableType = VariableType.Text,
             FooterOrder = 200,
             ProcessMultipleRows = true,
             SqlQuery = @"
@@ -532,47 +574,65 @@ public static class TemplateOptions
         new ComplexTemplateOption
         {
             Variable = "track.name",
+            Description = "Track name",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.TrackName))
         },
         new ComplexTemplateOption
         {
             Variable = "track.album",
+            Description = "Album name",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.AlbumName))
         },
         new ComplexTemplateOption
         {
             Variable = "track.artist",
+            Description = "Artist name",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.ArtistName))
         },
         new ComplexTemplateOption
         {
             Variable = "track.url",
+            Description = "Last.fm track link",
+            VariableType = VariableType.ResourceUrl,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.CurrentTrack.TrackUrl))
         },
         new ComplexTemplateOption
         {
             Variable = "previous-track.name",
+            Description = "Previous track name",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.TrackName))
         },
         new ComplexTemplateOption
         {
             Variable = "previous-track.album",
+            Description = "Previous album name",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.AlbumName))
         },
         new ComplexTemplateOption
         {
             Variable = "previous-track.artist",
+            Description = "Previous track artist",
+            VariableType = VariableType.Text,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.ArtistName))
         },
         new ComplexTemplateOption
         {
             Variable = "previous-track.url",
+            Description = "Previous Last.fm track link",
+            VariableType = VariableType.ResourceUrl,
             ExecutionLogic = context => Task.FromResult(new FmResult(context.PreviousTrack.TrackUrl))
         },
         new SqlTemplateOption
         {
             FooterOption = FmFooterOption.TrackBpm,
             Variable = "track.bpm",
+            Description = "Track beats per minute",
+            VariableType = VariableType.Text,
             FooterOrder = 300,
             SqlQuery = @"
                     SELECT tempo
@@ -599,6 +659,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.TrackDuration,
             Variable = "track.duration",
+            Description = "Track duration",
+            VariableType = VariableType.Text,
             FooterOrder = 310,
             SqlQuery = @"
                     SELECT duration_ms
@@ -636,6 +698,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.DiscogsCollection,
             Variable = "discogs.collection-item",
+            Description = "Discogs collection item",
+            VariableType = VariableType.Text,
             FooterOrder = 400,
             ExecutionLogic = async context =>
             {
@@ -672,6 +736,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.CrownHolder,
             Variable = "crown.current-holder",
+            Description = "Current artist crown holder",
+            VariableType = VariableType.Text,
             FooterOrder = 500,
             SqlQuery = @"
                     SELECT uc.current_playcount, gu.user_id, gu.user_name
@@ -708,6 +774,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.ServerArtistRank,
             Variable = "server.artist-whoknows-rank",
+            Description = "WhoKnows artist ranking",
+            VariableType = VariableType.Text,
             FooterOrder = 600,
             ExecutionLogic = async context =>
             {
@@ -739,6 +807,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.ServerArtistListeners,
             Variable = "server.artist-listeners",
+            Description = "Amount of artist listeners in server",
+            VariableType = VariableType.Text,
             FooterOrder = 610,
             ExecutionLogic = async context =>
             {
@@ -759,6 +829,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.ServerAlbumRank,
             Variable = "server.album-whoknows-rank",
+            Description = "WhoKnows album ranking",
+            VariableType = VariableType.Text,
             FooterOrder = 620,
             ExecutionLogic = async context =>
             {
@@ -789,6 +861,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.ServerAlbumListeners,
             Variable = "server.album-listeners",
+            Description = "Amount of album listeners in server",
+            VariableType = VariableType.Text,
             FooterOrder = 630,
             ExecutionLogic = async context =>
             {
@@ -811,6 +885,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.ServerTrackRank,
             Variable = "server.track-whoknows-rank",
+            Description = "WhoKnows track ranking",
+            VariableType = VariableType.Text,
             FooterOrder = 640,
             ExecutionLogic = async context =>
             {
@@ -841,6 +917,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.ServerTrackListeners,
             Variable = "server.track-listeners",
+            Description = "Amount of track listeners in server",
+            VariableType = VariableType.Text,
             FooterOrder = 650,
             ExecutionLogic = async context =>
             {
@@ -863,6 +941,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.GlobalArtistRank,
             Variable = "global.artist-whoknows-rank",
+            Description = "Global WhoKnows artist ranking",
+            VariableType = VariableType.Text,
             FooterOrder = 700,
             SqlQuery = @"
                     WITH ranked_users AS (
@@ -905,6 +985,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.GlobalAlbumRank,
             Variable = "global.album-whoknows-rank",
+            Description = "Global WhoKnows album ranking",
+            VariableType = VariableType.Text,
             FooterOrder = 710,
             SqlQuery = @"
                     WITH ranked_users AS (
@@ -949,6 +1031,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.GlobalTrackRank,
             Variable = "global.track-whoknows-rank",
+            Description = "Global WhoKnows track ranking",
+            VariableType = VariableType.Text,
             FooterOrder = 720,
             SqlQuery = @"
                     WITH ranked_users AS (
@@ -993,6 +1077,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.FirstArtistListen,
             Variable = "discovery.artist-discovered",
+            Description = "Artist discovery date",
+            VariableType = VariableType.Text,
             FooterOrder = 800,
             ExecutionLogic = async context =>
             {
@@ -1013,6 +1099,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.FirstAlbumListen,
             Variable = "discovery.album-discovered",
+            Description = "Album discovery date",
+            VariableType = VariableType.Text,
             FooterOrder = 810,
             ExecutionLogic = async context =>
             {
@@ -1033,6 +1121,8 @@ public static class TemplateOptions
         {
             FooterOption = FmFooterOption.FirstTrackListen,
             Variable = "discovery.track-discovered",
+            Description = "Track discovery date",
+            VariableType = VariableType.Text,
             FooterOrder = 820,
             ExecutionLogic = async context =>
             {

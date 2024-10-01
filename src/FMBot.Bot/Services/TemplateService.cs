@@ -61,7 +61,7 @@ public class TemplateService
             .Select(o => o.Result.Content).ToList();
     }
 
-    public async Task<EmbedBuilder> GetTemplateFmAsync(int userId, TemplateContext context)
+    public async Task<TemplateResult> GetTemplateFmAsync(int userId, TemplateContext context)
     {
         var template = ExampleTemplates.Templates.First();
 
@@ -118,7 +118,9 @@ public class TemplateService
             );
     }
 
-    private async Task<EmbedBuilder> TemplateToEmbed(Template template, TemplateContext context)
+    public record TemplateResult(EmbedBuilder EmbedBuilder, Dictionary<EmbedOption, string> Content);
+
+    private async Task<TemplateResult> TemplateToEmbed(Template template, TemplateContext context)
     {
         var embed = new EmbedBuilder();
         var script = template.Content.Replace("$$fm-template", "").TrimStart();
@@ -126,6 +128,7 @@ public class TemplateService
 
         var currentOption = EmbedOption.Description;
         var contentBuilders = new Dictionary<EmbedOption, StringBuilder>();
+        var embedOptions = new Dictionary<EmbedOption, string>();
         var lineOptions = new List<(string Key, string Line)>();
 
         foreach (var line in lines)
@@ -140,7 +143,10 @@ public class TemplateService
                     {
                         currentOption = embedOption;
                         contentBuilders[currentOption] = new StringBuilder();
-                        lineOptions.Add((key, parts[1].Trim()));
+
+                        var lineContent = parts[1].Trim();
+                        lineOptions.Add((key, lineContent));
+                        embedOptions.Add(currentOption, lineContent);
                     }
                 }
             }
@@ -152,6 +158,11 @@ public class TemplateService
                 }
 
                 lineOptions.Add((string.Empty, line));
+
+                if (!embedOptions.TryAdd(currentOption, line))
+                {
+                    embedOptions[currentOption] += line;
+                }
             }
         }
 
@@ -187,7 +198,7 @@ public class TemplateService
             }
         }
 
-        return embed;
+        return new TemplateResult(embed, embedOptions);
     }
 
     private static async Task<List<(string Key, string Value)>> ReplaceVariablesAsync(List<(string Key, string Line)> lines,
@@ -390,6 +401,15 @@ public class TemplateService
 
                 break;
         }
+    }
+
+    public async Task<EmbedBuilder> GetTemplateVariablesAsync(int userId, TemplateContext context)
+    {
+        var template = ExampleTemplates.Templates.First();
+
+        var result = await TemplateToEmbed(template, context);
+
+        return result.EmbedBuilder;
     }
 
     public async Task<List<Template>> GetTemplates(int userId)

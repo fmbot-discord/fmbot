@@ -41,10 +41,10 @@ public class TemplateSlashCommands : InteractionModuleBase
         {
             var templateId = int.Parse(inputs.First().Replace($"{InteractionConstants.Template.ManagePicker}-", ""));
 
-            var response = await this._templateBuilders.TemplateManage(new ContextModel(this.Context, contextUser), templateId);
+            var response = await this._templateBuilders.TemplateManage(new ContextModel(this.Context, contextUser), templateId, guild);
 
-            await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-            this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.SendResponse(this.Interactivity, response.response, ephemeral: true, response.extraResponse);
+            this.Context.LogCommandUsed(response.response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -52,4 +52,22 @@ public class TemplateSlashCommands : InteractionModuleBase
         }
     }
 
+    [ComponentInteraction(InteractionConstants.Template.ViewVariables)]
+    [UsernameSetRequired]
+    public async Task TemplateViewVariables()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = TemplateBuilders.GetTemplateVariables(new ContextModel(this.Context, contextUser));
+
+            await this.Context.SendResponse(this.Interactivity, response, true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }

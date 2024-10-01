@@ -683,7 +683,7 @@ public class UserService
         return CreateFooter(footer, footerContext.Genres, useSmallMarkdown);
     }
 
-    public async Task<EmbedBuilder> GetTemplateFmAsync(
+    public async Task<TemplateService.TemplateResult> GetTemplateFmAsync(
         int userId,
         UserSettingsModel userSettings,
         RecentTrack currentTrack,
@@ -715,19 +715,6 @@ public class UserService
         };
 
         return await this._templateService.GetTemplateFmAsync(userId, footerContext);
-    }
-
-    private static int GetAgeInYears(DateTime birthDate)
-    {
-        var now = DateTime.UtcNow;
-        var age = now.Year - birthDate.Year;
-
-        if (now.Month < birthDate.Month || (now.Month == birthDate.Month && now.Day < birthDate.Day))
-        {
-            age--;
-        }
-
-        return age;
     }
 
     private static StringBuilder CreateFooter(IReadOnlyList<string> options, string genres, bool useSmallMarkdown)
