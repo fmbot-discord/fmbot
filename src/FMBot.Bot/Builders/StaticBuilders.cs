@@ -375,10 +375,18 @@ public class StaticBuilders
 
                 var startsAtValue = ((DateTimeOffset)supporter.Created).ToUnixTimeSeconds();
 
-                var endsAt = DateTime.SpecifyKind(supporter.LastPayment.Value, DateTimeKind.Utc);
-                var endsAtValue = ((DateTimeOffset)endsAt).ToUnixTimeSeconds();
+                if (supporter.LastPayment.HasValue)
+                {
+                    var endsAt = DateTime.SpecifyKind(supporter.LastPayment.Value, DateTimeKind.Utc);
+                    var endsAtValue = ((DateTimeOffset)endsAt).ToUnixTimeSeconds();
 
-                supporterString.AppendLine($"Started <t:{startsAtValue}:f> - Ends on <t:{endsAtValue}:D>");
+                    supporterString.AppendLine($"Started <t:{startsAtValue}:f> - Ends on <t:{endsAtValue}:D>");
+                }
+                else
+                {
+                    supporterString.AppendLine($"Started <t:{startsAtValue}:f> - Ends on unknown>");
+                }
+
 
                 supporterString.AppendLine();
             }
