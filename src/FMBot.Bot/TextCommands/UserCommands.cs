@@ -620,8 +620,11 @@ public class UserCommands : BaseCommandModule
     [Examples("templates")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
+    [ExcludeFromHelp]
     public async Task TemplatesAsync(params string[] otherSettings)
     {
+        return;
+
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

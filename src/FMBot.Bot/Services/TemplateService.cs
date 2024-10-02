@@ -437,6 +437,13 @@ public partial class TemplateService
         return ExampleTemplates.Templates.First(f => f.Id == templateId);
     }
 
+    public async Task UpdateTemplate(int templateId, string newContent)
+    {
+        var template = ExampleTemplates.Templates.First(f => f.Id == templateId);
+
+        template.Content = newContent;
+    }
+
     [GeneratedRegex(@"\{\{(.*?)\}\}")]
     private static partial Regex VariableRegex();
 }

@@ -1,18 +1,22 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AngleSharp.Css;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
+using Serilog;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -94,6 +98,24 @@ public class TemplateSlashCommands : InteractionModuleBase
                 .AddTextInput("Content", "content", TextInputStyle.Paragraph, value: template.Content);
 
             await Context.Interaction.RespondWithModalAsync(mb.Build());
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ModalInteraction($"{InteractionConstants.Template.ViewScriptModal}-*")]
+    [UsernameSetRequired]
+    public async Task TemplateViewScriptSubmit(string templateId, TemplateViewScriptModal modal)
+    {
+        try
+        {
+            var parsedTemplateId = int.Parse(templateId);
+            var template = await this._templateService.GetTemplate(parsedTemplateId);
+
+            await this._templateService.UpdateTemplate(template.Id, modal.Content);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
