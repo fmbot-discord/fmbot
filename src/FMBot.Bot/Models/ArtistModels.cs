@@ -118,3 +118,4 @@ public class ArtistSearch
     public int? RandomArtistPosition { get; set; }
     public long? RandomArtistPlaycount { get; set; }
 }
+

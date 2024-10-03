@@ -31,13 +31,15 @@ public class ArtistRepository
             .MapInteger("user_id", x => x.UserId)
             .MapInteger("playcount", x => x.Playcount);
 
-        await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {userId};", connection);
+        await using var deleteCurrentArtists =
+            new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {userId};", connection);
         await deleteCurrentArtists.ExecuteNonQueryAsync();
 
         return await copyHelper.SaveAllAsync(connection, artists);
     }
 
-    public static async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection, bool includeGenres = false, bool includeLinks = false, bool includeImages = false)
+    public static async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection,
+        bool includeGenres = false, bool includeLinks = false, bool includeImages = false)
     {
         const string getArtistQuery = "SELECT * FROM public.artists " +
                                       "WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))";
@@ -81,7 +83,7 @@ public class ArtistRepository
     private static async Task<ICollection<ArtistLink>> GetArtistLinks(int artistId, NpgsqlConnection connection)
     {
         const string getArtistLinkQuery = "SELECT * FROM public.artist_links " +
-                                           "WHERE artist_id = @artistId";
+                                          "WHERE artist_id = @artistId";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return (await connection.QueryAsync<ArtistLink>(getArtistLinkQuery, new
@@ -93,7 +95,7 @@ public class ArtistRepository
     public static async Task<ICollection<ArtistImage>> GetArtistImages(int artistId, NpgsqlConnection connection)
     {
         const string getArtistLinkQuery = "SELECT * FROM public.artist_images " +
-                                           "WHERE artist_id = @artistId";
+                                          "WHERE artist_id = @artistId";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return (await connection.QueryAsync<ArtistImage>(getArtistLinkQuery, new
@@ -102,7 +104,8 @@ public class ArtistRepository
         })).ToList();
     }
 
-    public static async Task AddOrUpdateArtistAlias(int artistId, string artistNameBeforeCorrect, NpgsqlConnection connection)
+    public static async Task AddOrUpdateArtistAlias(int artistId, string artistNameBeforeCorrect,
+        NpgsqlConnection connection)
     {
         if (string.Equals(artistNameBeforeCorrect, "rnd", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(artistNameBeforeCorrect, "random", StringComparison.OrdinalIgnoreCase) ||
@@ -111,7 +114,8 @@ public class ArtistRepository
             return;
         }
 
-        const string selectQuery = @"SELECT * FROM public.artist_aliases WHERE artist_id = @artistId AND alias = @alias LIMIT 1";
+        const string selectQuery =
+            @"SELECT * FROM public.artist_aliases WHERE artist_id = @artistId AND alias = @alias LIMIT 1";
         var result = await connection.QueryFirstOrDefaultAsync<ArtistAlias>(selectQuery, new
         {
             artistId,
@@ -132,7 +136,8 @@ public class ArtistRepository
         }
     }
 
-    public static async Task AddOrUpdateArtistGenres(int artistId, IEnumerable<string> genreNames, NpgsqlConnection connection)
+    public static async Task AddOrUpdateArtistGenres(int artistId, IEnumerable<string> genreNames,
+        NpgsqlConnection connection)
     {
         const string deleteQuery = @"DELETE FROM public.artist_genres WHERE artist_id = @artistId";
         await connection.ExecuteAsync(deleteQuery, new { artistId });
@@ -150,15 +155,18 @@ public class ArtistRepository
         }
     }
 
-    public static async Task AddOrUpdateArtistLinks(int artistId, IEnumerable<ArtistLink> links, NpgsqlConnection connection)
+    public static async Task AddOrUpdateArtistLinks(int artistId, IEnumerable<ArtistLink> links,
+        NpgsqlConnection connection)
     {
         try
         {
-            const string deleteQuery = @"DELETE FROM public.artist_links WHERE artist_id = @artistId AND manually_added = false";
+            const string deleteQuery =
+                @"DELETE FROM public.artist_links WHERE artist_id = @artistId AND manually_added = false";
             await connection.ExecuteAsync(deleteQuery, new { artistId });
 
-            const string insertQuery = @"INSERT INTO public.artist_links(artist_id, url, username, type, manually_added) " +
-                                       "VALUES (@artistId, @url, @username, @type, @manuallyAdded)";
+            const string insertQuery =
+                @"INSERT INTO public.artist_links(artist_id, url, username, type, manually_added) " +
+                "VALUES (@artistId, @url, @username, @type, @manuallyAdded)";
 
             foreach (var link in links)
             {
@@ -177,7 +185,6 @@ public class ArtistRepository
             Console.WriteLine(e);
             throw;
         }
-        
     }
 
     public static async Task<IReadOnlyCollection<UserArtist>> GetUserArtists(int userId, NpgsqlConnection connection)
@@ -203,5 +210,27 @@ public class ArtistRepository
             userId,
             artistName
         });
+    }
+
+    public static async Task<List<ArtistPopularity>> GetArtistsPopularity(List<string> artistNames,
+        NpgsqlConnection connection)
+    {
+        const string getArtistsQuery = @"
+            WITH artist_list(name) AS (
+                VALUES (CAST(@artistNames AS CITEXT[]))
+            )
+            SELECT a.name, a.popularity
+            FROM public.artists a
+            JOIN artist_list l ON UPPER(a.name) = UPPER(l.name)
+            WHERE a.popularity IS NOT NULL
+            ORDER BY a.name";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var artists = await connection.QueryAsync<ArtistPopularity>(getArtistsQuery, new
+        {
+            artistNames = artistNames.ToArray()
+        });
+
+        return artists.ToList();
     }
 }

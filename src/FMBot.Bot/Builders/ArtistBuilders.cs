@@ -2141,7 +2141,7 @@ public class ArtistBuilders
         return response;
     }
 
-    private string CalculateAffinityPercentage(double neighborPoints, double ownPoints, int multiplier = 2)
+    private static string CalculateAffinityPercentage(double neighborPoints, double ownPoints, int multiplier = 2)
     {
         var numberInfo = new NumberFormatInfo
         {
