@@ -193,7 +193,9 @@ public static class InteractionConstants
         public const string AddButton = "template-add-button";
 
         public const string Rename = "template-rename";
+        public const string RenameModal = "template-renamemodal";
         public const string Copy = "template-copy";
         public const string Delete = "template-delete";
+        public const string DeleteConfirmed = "template-deleteconfirmed";
     }
 }

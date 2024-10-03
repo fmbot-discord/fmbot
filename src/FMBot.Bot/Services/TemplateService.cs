@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Models.TemplateOptions;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Npgsql;
@@ -169,7 +170,7 @@ public partial class TemplateService
 
         var replacedParts = await ReplaceVariablesAsync(lineOptions, context);
 
-        foreach (var (key, value) in replacedParts)
+        foreach (var (key, value) in replacedParts.variableResults)
         {
             if (EmbedOptionMap.TryGetValue(key, out var embedOption))
             {
@@ -202,11 +203,11 @@ public partial class TemplateService
         return new TemplateResult(embed, embedOptions);
     }
 
-    private static async Task<List<(string Key, string Value)>> ReplaceVariablesAsync(
+    private static async Task<(List<(string Key, string Value)> variableResults, Dictionary<string, VariableResult> variableMap)> ReplaceVariablesAsync(
         List<(string Key, string Line)> lines,
         TemplateContext context)
     {
-        var result = new List<(string Key, string Value)>();
+        var variableResults = new List<(string Key, string Value)>();
         var sqlOptions = new List<SqlTemplateOption>();
         var complexOptions = new List<ComplexTemplateOption>();
         var variableMap = new Dictionary<string, VariableResult>();
@@ -298,10 +299,10 @@ public partial class TemplateService
         foreach (var (key, line) in lines)
         {
             var replacedLine = ReplaceVariablesInLine(line, variableMap);
-            result.Add((key, replacedLine));
+            variableResults.Add((key, replacedLine));
         }
 
-        return result;
+        return (variableResults, variableMap);
     }
 
     private static string ReplaceVariablesInLine(string input, Dictionary<string, VariableResult> variableMap)
@@ -437,11 +438,43 @@ public partial class TemplateService
         return ExampleTemplates.Templates.First(f => f.Id == templateId);
     }
 
-    public async Task UpdateTemplate(int templateId, string newContent)
+    public async Task<Template> CreateTemplate(int userId)
+    {
+        // TODO: Count where user id
+        var count = ExampleTemplates.Templates.Count();
+
+        var name = $"Template {count}";
+
+        var newTemplate = new UserTemplate
+        {
+            Name = name,
+            Content = "$$fm-template",
+            GlobalDefault = count == 0,
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow,
+            Type = TemplateType.Fm
+        };
+
+        return newTemplate;
+    }
+
+    public async Task UpdateTemplateName(int templateId, string newName)
+    {
+        var template = ExampleTemplates.Templates.First(f => f.Id == templateId);
+
+        template.Name = newName;
+    }
+
+    public async Task UpdateTemplateContent(int templateId, string newContent)
     {
         var template = ExampleTemplates.Templates.First(f => f.Id == templateId);
 
         template.Content = newContent;
+    }
+
+    public async Task DeleteTemplate(int templateId)
+    {
+        // TODO implement template deletion
     }
 
     [GeneratedRegex(@"\{\{(.*?)\}\}")]

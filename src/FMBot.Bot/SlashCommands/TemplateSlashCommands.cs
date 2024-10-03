@@ -83,6 +83,23 @@ public class TemplateSlashCommands : InteractionModuleBase
         }
     }
 
+    [ComponentInteraction($"{InteractionConstants.Template.Create}")]
+    [UsernameSetRequired]
+    public async Task TemplateCreate()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var newTemplate = await this._templateService.CreateTemplate(contextUser.UserId);
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [ComponentInteraction($"{InteractionConstants.Template.ViewScript}-*")]
     [UsernameSetRequired]
     public async Task TemplateViewScript(string templateId)
@@ -115,7 +132,95 @@ public class TemplateSlashCommands : InteractionModuleBase
             var parsedTemplateId = int.Parse(templateId);
             var template = await this._templateService.GetTemplate(parsedTemplateId);
 
-            await this._templateService.UpdateTemplate(template.Id, modal.Content);
+            await this._templateService.UpdateTemplateContent(template.Id, modal.Content);
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Template.Rename}-*")]
+    [UsernameSetRequired]
+    public async Task TemplateRename(string templateId)
+    {
+        try
+        {
+            var parsedTemplateId = int.Parse(templateId);
+            var template = await this._templateService.GetTemplate(parsedTemplateId);
+
+            var mb = new ModalBuilder()
+                .WithTitle($"Renaming template '{template.Name}'")
+                .WithCustomId($"{InteractionConstants.Template.RenameModal}-{parsedTemplateId}")
+                .AddTextInput("Name", "name", value: template.Name, maxLength: 32);
+
+            await Context.Interaction.RespondWithModalAsync(mb.Build());
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ModalInteraction($"{InteractionConstants.Template.RenameModal}-*")]
+    [UsernameSetRequired]
+    public async Task TemplateRenameSubmit(string templateId, TemplateNameModal modal)
+    {
+        try
+        {
+            var parsedTemplateId = int.Parse(templateId);
+            var template = await this._templateService.GetTemplate(parsedTemplateId);
+
+            await this._templateService.UpdateTemplateName(template.Id, modal.Name);
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Template.Delete}-*")]
+    [UsernameSetRequired]
+    public async Task TemplateDelete(string templateId)
+    {
+        try
+        {
+            var parsedTemplateId = int.Parse(templateId);
+            var template = await this._templateService.GetTemplate(parsedTemplateId);
+
+            var embed = new EmbedBuilder()
+                .WithColor(DiscordConstants.WarningColorOrange)
+                .WithDescription($"Are you sure you want to delete **{template.Name}**?");
+
+            var components = new ComponentBuilder()
+                .WithButton("Yes, delete", $"{InteractionConstants.Template.DeleteConfirmed}-{templateId}", ButtonStyle.Danger);
+
+            await Context.Interaction.RespondAsync(null, [embed.Build()], components: components.Build(), ephemeral: true);
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Template.DeleteConfirmed}-*")]
+    [UsernameSetRequired]
+    public async Task TemplateDeleteConfirmed(string templateId)
+    {
+        try
+        {
+            var parsedTemplateId = int.Parse(templateId);
+            await this._templateService.DeleteTemplate(parsedTemplateId);
+
+            var embed = new EmbedBuilder()
+                .WithColor(DiscordConstants.WarningColorOrange)
+                .WithDescription($"Template has been deleted.");
+
+            await Context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
