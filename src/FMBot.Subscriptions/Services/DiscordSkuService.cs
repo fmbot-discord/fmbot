@@ -93,7 +93,7 @@ public class DiscordSkuService
 
     private static DiscordEntitlement DiscordEntitlement(IGrouping<ulong, DiscordEntitlementResponseModel> s)
     {
-        var noEndDate = s.OrderByDescending(o => o.StartsAt).First().EndsAt == null;
+        var noEndDate = s.Any(a => !a.EndsAt.HasValue);
 
         return new DiscordEntitlement
         {

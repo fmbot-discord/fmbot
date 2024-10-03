@@ -1883,6 +1883,49 @@ public class AdminCommands : BaseCommandModule
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
+    [Command("updatemultidiscordsupporters")]
+    [Summary("Updates multiple discord supporter")]
+    public async Task UpdateMultipleDiscordSupporters([Remainder] string user)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                var idsToUpdate = user.Split(",");
+                var updated = new StringBuilder();
+                var skipped = new StringBuilder();
+
+                foreach (var id in idsToUpdate)
+                {
+                    var userToUpdate = await this._settingService.GetDifferentUser(user);
+
+                    if (userToUpdate == null)
+                    {
+                        skipped.AppendLine($"{id} - <@{id}>");
+                        continue;
+                    }
+
+                    await this._supporterService.UpdateSingleDiscordSupporter(userToUpdate.DiscordUserId);
+                    updated.AppendLine($"{id} - <@{id}>");
+                }
+
+                await ReplyAsync("Updated:\n" +
+                                 $"{updated}\n" +
+                                 $"Skipped:\n" +
+                                 $"{skipped}",
+                    allowedMentions: AllowedMentions.None);
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
 
     [Command("refreshpremiumservers")]
     [Summary("Refreshes cached premium servers")]
@@ -1954,6 +1997,50 @@ public class AdminCommands : BaseCommandModule
         else
         {
             await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("removetimer")]
+    [Summary("Remove a timer manually (only works if it exists)")]
+    [Alias("removejob", "deletejob")]
+    public async Task RemoveJobAsync([Remainder] string job = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                if (job == null)
+                {
+                    await ReplyAsync("Pick a job to remove. Check `.timerstatus` for available jobs.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
+
+                var jobToRemove = recurringJobs.FirstOrDefault(f => f.Id.ToLower() == job.ToLower());
+
+                if (jobToRemove == null)
+                {
+                    await ReplyAsync("Could not find job you're looking for. Check `.timerstatus` for available jobs.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                RecurringJob.RemoveIfExists(jobToRemove.Id);
+                await ReplyAsync($"Removed job {jobToRemove.Id}", allowedMentions: AllowedMentions.None);
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only FMBot owners can remove jobs.");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
