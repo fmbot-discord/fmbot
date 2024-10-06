@@ -829,6 +829,7 @@ public class AdminCommands : BaseCommandModule
 
             var bottedUser = await this._adminService.GetBottedUserAsync(user, targetedDate);
             var filteredUser = await this._adminService.GetFilteredUserAsync(user, targetedDate);
+            var isBannedSomewhere = false;
 
             var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(user);
 
@@ -859,6 +860,10 @@ public class AdminCommands : BaseCommandModule
 
             this._embed.AddField("Banned from GlobalWhoKnows",
                 bottedUser == null ? "No" : bottedUser.BanActive ? "Yes" : "No, but has been banned before");
+            if (bottedUser?.BanActive == true)
+            {
+                isBannedSomewhere = true;
+            }
             if (bottedUser != null)
             {
                 this._embed.AddField("Reason / additional notes", bottedUser.Notes ?? "*No reason/notes*");
@@ -882,6 +887,7 @@ public class AdminCommands : BaseCommandModule
                     var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
 
                     this._embed.AddField("Filter expires", $"<t:{dateValue}:R> - <t:{dateValue}:F>");
+                    isBannedSomewhere = true;
                 }
                 else
                 {
@@ -903,6 +909,9 @@ public class AdminCommands : BaseCommandModule
             }
 
             this._embed.WithFooter("Command not intended for use in public channels");
+            this._embed.WithColor(isBannedSomewhere
+                ? DiscordConstants.WarningColorOrange
+                : DiscordConstants.SuccessColorGreen);
 
             await ReplyAsync("", false, this._embed.Build(), components: components?.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();
