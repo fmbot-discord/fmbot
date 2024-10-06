@@ -860,9 +860,12 @@ public class SupporterService
 
                     var supporterAuditLogChannel =
                         new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
+                    var endDate = discordSupporter.EndsAt.HasValue ? $"<t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>" : "no end date";
+
                     var embed = new EmbedBuilder().WithDescription(
                         $"Updated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
-                        $"*End date from <t:{((DateTimeOffset?)oldDate)?.ToUnixTimeSeconds()}:f> to <t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>*");
+                        $"*End date from <t:{((DateTimeOffset?)oldDate)?.ToUnixTimeSeconds()}:f> to {endDate}*");
                     await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
                 }
 
@@ -932,6 +935,7 @@ public class SupporterService
     public async Task CheckExpiredDiscordSupporters()
     {
         var expiredDate = DateTime.UtcNow.AddDays(-3);
+        var modifiedDate = DateTime.UtcNow.AddDays(-35);
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var possiblyExpiredSupporters = await db.Supporters
@@ -939,8 +943,10 @@ public class SupporterService
                 w.DiscordUserId != null &&
                 w.SubscriptionType == SubscriptionType.Discord &&
                 w.Expired != true &&
-                w.LastPayment.HasValue &&
-                w.LastPayment.Value < expiredDate)
+                (w.LastPayment.HasValue &&
+                w.LastPayment.Value < expiredDate ||
+                w.Modified.HasValue &&
+                w.Modified < modifiedDate))
             .ToListAsync();
 
         foreach (var existingSupporter in possiblyExpiredSupporters)
@@ -970,9 +976,12 @@ public class SupporterService
 
                 var supporterAuditLogChannel =
                     new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+                var endDate = discordSupporter.EndsAt.HasValue ? $"<t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>" : "no end date";
+
                 var embed = new EmbedBuilder().WithDescription(
                     $"Updated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
-                    $"*End date from <t:{((DateTimeOffset?)oldDate)?.ToUnixTimeSeconds()}:f> to <t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>*");
+                    $"*End date from <t:{((DateTimeOffset?)oldDate)?.ToUnixTimeSeconds()}:f> to {endDate}*");
+
                 await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
 
                 continue;
