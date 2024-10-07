@@ -12,6 +12,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Models.Modals;
+using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -226,6 +227,19 @@ public class TemplateSlashCommands : InteractionModuleBase
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Template.SetOptionPicker)]
+    [UsernameSetRequired]
+    public async Task SetOption(string[] inputs)
+    {
+        var embed = new EmbedBuilder();
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (Enum.TryParse(inputs.FirstOrDefault(), out EmbedOption embedOption))
+        {
+
         }
     }
 }
