@@ -48,6 +48,9 @@ RUN dotnet publish "FMBot.Bot.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+ENV DOTNET_gcServer=1
+
 ENTRYPOINT ["dotnet", "FMBot.Bot.dll"]
 
 HEALTHCHECK --interval=20s --timeout=20s --retries=90 CMD find healthcheck -mmin -1
