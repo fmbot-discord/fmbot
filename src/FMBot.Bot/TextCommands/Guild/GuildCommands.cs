@@ -58,7 +58,6 @@ public class GuildCommands : BaseCommandModule
 
     [Command("configuration", RunMode = RunMode.Async)]
     [Summary("Shows server configuration for .fmbot")]
-    [UsernameSetRequired]
     [CommandCategories(CommandCategory.ServerSettings)]
     [Alias("ss", "config", "serversettings", "fmbotconfig", "serverconfig")]
     public async Task GuildSettingsAsync([Remainder] string searchValues = null)

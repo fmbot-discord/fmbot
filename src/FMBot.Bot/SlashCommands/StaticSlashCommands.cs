@@ -17,7 +17,7 @@ public class StaticSlashCommands : InteractionModuleBase
     private readonly UserService _userService;
     private readonly StaticBuilders _staticBuilders;
     private readonly SupporterService _supporterService;
-    
+
     private InteractiveService Interactivity { get; }
 
 
@@ -63,17 +63,31 @@ public class StaticSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction(InteractionConstants.SupporterLinks.GetPurchaseLink)]
+    [ComponentInteraction($"{InteractionConstants.SupporterLinks.GetPurchaseLink}-*")]
     [UserSessionRequired]
-    public async Task GetSupporterLink()
+    public async Task GetSupporterLink(string type)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id);
+        var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id, type);
 
-        var components = new ComponentBuilder().WithButton("Get supporter", style: ButtonStyle.Link, url: link, emote: Emoji.Parse("⭐"));
+        var components = new ComponentBuilder().WithButton($"Get {type} supporter", style: ButtonStyle.Link, url: link, emote: Emoji.Parse("⭐"));
 
-        await RespondAsync("Click the unique link below to purchase supporter!", ephemeral: true, components: components.Build());
+        await RespondAsync($"Click the unique link below to purchase supporter!", ephemeral: true, components: components.Build());
+        this.Context.LogCommandUsed();
+    }
+
+    [ComponentInteraction(InteractionConstants.SupporterLinks.GetManageLink)]
+    [UserSessionRequired]
+    public async Task GetManageLink()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var link = await this._supporterService.GetSupporterManageLink(this.Context.User.Id);
+
+        var components = new ComponentBuilder().WithButton("Manage supporter", style: ButtonStyle.Link, url: link, emote: Emoji.Parse("⭐"));
+
+        await RespondAsync("Click the unique link below to manage supporter!", ephemeral: true, components: components.Build());
         this.Context.LogCommandUsed();
     }
 }

@@ -9,16 +9,27 @@ package supporter;
 service SupporterLinkService {
   rpc GetCheckoutLink (CreateLinkOptions) returns (CreateLinkReply);
 
+  rpc GetManageLink (GetManageLinkOptions) returns (GetManageLinkReply);
+
   rpc AddStripeSupporter (AddStripeSupporterRequest) returns (AddStripeSupporterReply);
 }
 
 
 message CreateLinkOptions {
   int64 discordUserId = 1;
+  string type = 2;
 }
 
 message CreateLinkReply {
   string checkoutLink = 1;
+}
+
+message GetManageLinkOptions {
+  string stripeCustomerId = 1;
+}
+
+message GetManageLinkReply {
+  string manageLink = 1;
 }
 
 message AddStripeSupporterRequest {

@@ -136,7 +136,7 @@ public class SupporterService
         thankYouEmbed.WithAuthor("Thank you for getting .fmbot supporter!");
 
         if (supporter != null && (supporter.SubscriptionType == SubscriptionType.LifetimeOpenCollective ||
-                                  supporter.SubscriptionType == SubscriptionType.LifetimeStripe))
+                                  supporter.SubscriptionType == SubscriptionType.LifetimeStripeManual))
         {
             thankYouMessage.AppendLine(
                 "Your purchase allows us to keep the bot running and continuously add improvements. Here's an overview of the features you can now access:");
@@ -1394,13 +1394,24 @@ public class SupporterService
             .ToListAsync();
     }
 
-    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId)
+    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string type)
     {
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
-            DiscordUserId = (long)discordUserId
+            DiscordUserId = (long)discordUserId,
+            Type = type
         });
 
         return url?.CheckoutLink;
+    }
+
+    public async Task<string> GetSupporterManageLink(ulong discordUserId)
+    {
+        var url = await this._supporterLinkService.GetManageLinkAsync(new GetManageLinkOptions
+        {
+           StripeCustomerId = ""
+        });
+
+        return url?.ManageLink;
     }
 }

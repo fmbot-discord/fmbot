@@ -10,9 +10,6 @@ public enum SubscriptionType
 
     Discord = 4,
 
-    MonthlyStripe = 5,
-
-    YearlyStripe = 6,
-
-    LifetimeStripe = 7,
+    LifetimeStripeManual = 7,
+    Stripe = 8,
 }
