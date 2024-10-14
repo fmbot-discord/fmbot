@@ -200,7 +200,7 @@ public class Startup
             .AddSingleton<GuildService>()
             .AddSingleton<GuildSettingBuilder>()
             .AddSingleton<GuildDisabledCommandService>()
-            .AddSingleton<ChannelDisabledCommandService>()
+            .AddSingleton<ChannelToggledCommandService>()
             .AddSingleton<DisabledChannelService>()
             .AddSingleton<IndexService, IndexService>()
             .AddSingleton<IPrefixService, PrefixService>()

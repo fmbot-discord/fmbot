@@ -126,7 +126,8 @@ public class CommandHandler
         }
     }
 
-    private async Task MessageUpdated(Cacheable<IMessage, ulong> originalMessage, SocketMessage updatedMessage, ISocketMessageChannel sourceChannel)
+    private async Task MessageUpdated(Cacheable<IMessage, ulong> originalMessage, SocketMessage updatedMessage,
+        ISocketMessageChannel sourceChannel)
     {
         Statistics.DiscordEvents.WithLabels(nameof(MessageUpdated)).Inc();
 
@@ -147,7 +148,8 @@ public class CommandHandler
         TryForCommand(context, msg, true);
     }
 
-    private bool TryForCommand(ShardedCommandContext shardedCommandContext, SocketUserMessage socketUserMessage, bool update)
+    private bool TryForCommand(ShardedCommandContext shardedCommandContext, SocketUserMessage socketUserMessage,
+        bool update)
     {
         var argPos = 0;
         var prfx = this._prefixService.GetPrefix(shardedCommandContext.Guild?.Id) ?? this._botSettings.Bot.Prefix;
@@ -193,12 +195,14 @@ public class CommandHandler
         return false;
     }
 
-    private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos, string prfx, bool update = false)
+    private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos, string prfx,
+        bool update = false)
     {
         var searchResult = this._commands.Search(context, argPos);
 
         // If no commands found and message does not start with prefix
-        if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && !msg.Content.StartsWith(prfx, StringComparison.OrdinalIgnoreCase))
+        if ((searchResult.Commands == null || searchResult.Commands.Count == 0) &&
+            !msg.Content.StartsWith(prfx, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -280,7 +284,8 @@ public class CommandHandler
 
                     embed.UsernameNotSetErrorResponse(prfx ?? this._botSettings.Bot.Prefix,
                         userNickname ?? context.User.GlobalName ?? context.User.Username);
-                    await context.Channel.SendMessageAsync("", false, embed.Build(), components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
+                    await context.Channel.SendMessageAsync("", false, embed.Build(),
+                        components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
                 }
@@ -369,7 +374,8 @@ public class CommandHandler
                 }
                 else
                 {
-                    _ = Task.Run(() => this._userService.UpdateInteractionContextThroughReference(context.Message.Id, true, false));
+                    _ = Task.Run(() =>
+                        this._userService.UpdateInteractionContextThroughReference(context.Message.Id, true, false));
                 }
             }
             else
@@ -400,13 +406,15 @@ public class CommandHandler
         return true;
     }
 
-    private async Task<bool> CommandEnabled(SocketCommandContext context, SearchResult searchResult, bool update = false)
+    private async Task<bool> CommandEnabled(SocketCommandContext context, SearchResult searchResult,
+        bool update = false)
     {
         if (context.Guild != null)
         {
             if (searchResult.Commands != null &&
-                searchResult.Commands.Any(a => a.Command.Name.Equals("togglecommand", StringComparison.OrdinalIgnoreCase) ||
-                                               a.Command.Name.Equals("toggleservercommand", StringComparison.OrdinalIgnoreCase)))
+                searchResult.Commands.Any(a =>
+                    a.Command.Name.Equals("togglecommand", StringComparison.OrdinalIgnoreCase) ||
+                    a.Command.Name.Equals("toggleservercommand", StringComparison.OrdinalIgnoreCase)))
             {
                 return true;
             }
@@ -414,6 +422,16 @@ public class CommandHandler
             var channelDisabled = DisabledChannelService.GetDisabledChannel(context.Channel.Id);
             if (channelDisabled)
             {
+                var toggledChannelCommands = ChannelToggledCommandService.GetToggledCommands(context.Channel?.Id);
+                if (searchResult.Commands != null &&
+                    toggledChannelCommands != null &&
+                    toggledChannelCommands.Any() &&
+                    toggledChannelCommands.Any(searchResult.Commands[0].Command.Name.Equals) &&
+                    context.Channel != null)
+                {
+                    return true;
+                }
+
                 if (searchResult.Commands == null || !searchResult.Commands.Any())
                 {
                     return false;
@@ -421,14 +439,25 @@ public class CommandHandler
 
                 if (!update)
                 {
-                    _ = this._interactiveService.DelayedDeleteMessageAsync(
-                        await context.Channel.SendMessageAsync("The bot has been disabled in this channel."),
-                        TimeSpan.FromSeconds(8));
+                    if (toggledChannelCommands != null &&
+                        toggledChannelCommands.Any())
+                    {
+                        _ = this._interactiveService.DelayedDeleteMessageAsync(
+                            await context.Channel.SendMessageAsync("The command you're trying to execute is not enabled in this channel."),
+                            TimeSpan.FromSeconds(8));
+                    }
+                    else
+                    {
+                        _ = this._interactiveService.DelayedDeleteMessageAsync(
+                            await context.Channel.SendMessageAsync("The bot has been disabled in this channel."),
+                            TimeSpan.FromSeconds(8));
+                    }
                 }
+
                 return false;
             }
 
-            var disabledGuildCommands = GuildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
+            var disabledGuildCommands = GuildDisabledCommandService.GetToggledCommands(context.Guild?.Id);
             if (searchResult.Commands != null &&
                 disabledGuildCommands != null &&
                 disabledGuildCommands.Any(searchResult.Commands[0].Command.Name.Equals))
@@ -444,7 +473,7 @@ public class CommandHandler
                 return false;
             }
 
-            var disabledChannelCommands = ChannelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
+            var disabledChannelCommands = ChannelToggledCommandService.GetToggledCommands(context.Channel?.Id);
             if (searchResult.Commands != null &&
                 disabledChannelCommands != null &&
                 disabledChannelCommands.Any() &&
@@ -503,7 +532,8 @@ public class CommandHandler
     {
         var guildUsers = await context.Guild.GetUsersAsync();
 
-        Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord", guildUsers.Count, context.Guild.Id, context.Guild.Name);
+        Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
+            guildUsers.Count, context.Guild.Id, context.Guild.Name);
 
         await this._indexService.StoreGuildUsers(context.Guild, guildUsers);
 

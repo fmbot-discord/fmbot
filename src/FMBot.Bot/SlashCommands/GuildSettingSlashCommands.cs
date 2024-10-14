@@ -34,7 +34,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
 
     private readonly CommandService _commands;
 
-    private readonly ChannelDisabledCommandService _channelDisabledCommandService;
+    private readonly ChannelToggledCommandService _channelToggledCommandService;
     private readonly DisabledChannelService _disabledChannelService;
     private readonly GuildDisabledCommandService _guildDisabledCommandService;
     private readonly CrownService _crownService;
@@ -50,7 +50,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         IPrefixService prefixService,
         GuildService guildService,
         CommandService commands,
-        ChannelDisabledCommandService channelDisabledCommandService,
+        ChannelToggledCommandService channelToggledCommandService,
         DisabledChannelService disabledChannelService,
         GuildDisabledCommandService guildDisabledCommandService,
         IOptions<BotSettings> botSettings,
@@ -63,7 +63,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         this._prefixService = prefixService;
         this._guildService = guildService;
         this._commands = commands;
-        this._channelDisabledCommandService = channelDisabledCommandService;
+        this._channelToggledCommandService = channelToggledCommandService;
         this._disabledChannelService = disabledChannelService;
         this._guildDisabledCommandService = guildDisabledCommandService;
         this._crownService = crownService;
@@ -571,7 +571,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this._guildService
             .DisableChannelCommandsAsync(selectedChannel, guild.GuildId, new List<string> { commandToDisable.Command.Name }, this.Context.Guild.Id);
 
-        await this._channelDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
+        await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
 
         var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
 
@@ -622,7 +622,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this._guildService
             .EnableChannelCommandsAsync(selectedChannel, new List<string> { commandToEnable.Command.Name }, this.Context.Guild.Id);
 
-        await this._channelDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
+        await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
 
         var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
 
@@ -639,7 +639,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         var selectedChannel = await this.Context.Guild.GetChannelAsync(parsedChannelId);
         await this._guildService.ClearDisabledChannelCommandsAsync(selectedChannel, this.Context.Guild.Id);
 
-        await this._channelDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
+        await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
 
         var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);

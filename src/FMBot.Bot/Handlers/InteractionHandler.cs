@@ -285,8 +285,6 @@ public class InteractionHandler
         }
         if (attributes.OfType<GuildOnly>().Any())
         {
-            var contextUser = await this._userService.GetUserAsync(context.User.Id);
-
             if (context.Guild == null)
             {
                 await context.Interaction.RespondAsync("This command is not supported in DMs.");
@@ -328,13 +326,33 @@ public class InteractionHandler
             var channelDisabled = DisabledChannelService.GetDisabledChannel(context.Channel.Id);
             if (channelDisabled)
             {
-                await context.Interaction.RespondAsync(
-                    "The bot has been disabled in this channel.",
-                    ephemeral: true);
+                var toggledChannelCommands = ChannelToggledCommandService.GetToggledCommands(context.Channel?.Id);
+                if (toggledChannelCommands != null &&
+                    toggledChannelCommands.Any() &&
+                    toggledChannelCommands.Any(searchResult.Name.Equals) &&
+                    context.Channel != null)
+                {
+                    return true;
+                }
+
+                if (toggledChannelCommands != null &&
+                    toggledChannelCommands.Any())
+                {
+                    await context.Interaction.RespondAsync(
+                        "The command you're trying to execute is not enabled in this channel.",
+                        ephemeral: true);
+                }
+                else
+                {
+                    await context.Interaction.RespondAsync(
+                        "The bot has been disabled in this channel.",
+                        ephemeral: true);
+                }
+
                 return false;
             }
 
-            var disabledGuildCommands = GuildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
+            var disabledGuildCommands = GuildDisabledCommandService.GetToggledCommands(context.Guild?.Id);
             if (disabledGuildCommands != null &&
                 disabledGuildCommands.Any(searchResult.Name.Equals))
             {
@@ -344,7 +362,7 @@ public class InteractionHandler
                 return false;
             }
 
-            var disabledChannelCommands = ChannelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
+            var disabledChannelCommands = ChannelToggledCommandService.GetToggledCommands(context.Channel?.Id);
             if (disabledChannelCommands != null &&
                 disabledChannelCommands.Any() &&
                 disabledChannelCommands.Any(searchResult.Name.Equals) &&

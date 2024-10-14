@@ -19,7 +19,7 @@ public class ClientLogHandler
 {
     private readonly IMemoryCache _cache;
     private readonly DiscordShardedClient _client;
-    private readonly ChannelDisabledCommandService _channelDisabledCommandService;
+    private readonly ChannelToggledCommandService _channelToggledCommandService;
     private readonly GuildDisabledCommandService _guildDisabledCommandService;
     private readonly DisabledChannelService _disabledChannelService;
     private readonly IPrefixService _prefixService;
@@ -27,7 +27,7 @@ public class ClientLogHandler
     private readonly IndexService _indexService;
 
     public ClientLogHandler(DiscordShardedClient client,
-        ChannelDisabledCommandService channelDisabledCommandService,
+        ChannelToggledCommandService channelToggledCommandService,
         GuildDisabledCommandService guildDisabledCommandService,
         GuildService guildService,
         IPrefixService prefixService,
@@ -36,7 +36,7 @@ public class ClientLogHandler
         DisabledChannelService disabledChannelService)
     {
         this._client = client;
-        this._channelDisabledCommandService = channelDisabledCommandService;
+        this._channelToggledCommandService = channelToggledCommandService;
         this._guildDisabledCommandService = guildDisabledCommandService;
         this._guildService = guildService;
         this._prefixService = prefixService;
@@ -144,7 +144,7 @@ public class ClientLogHandler
         Log.Information(
             "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
 
-        _ = this._channelDisabledCommandService.ReloadDisabledCommands(guild.Id);
+        _ = this._channelToggledCommandService.ReloadToggledCommands(guild.Id);
         _ = this._guildDisabledCommandService.ReloadDisabledCommands(guild.Id);
         _ = this._disabledChannelService.ReloadDisabledChannels(guild.Id);
         _ = this._prefixService.ReloadPrefix(guild.Id);
@@ -196,7 +196,7 @@ public class ClientLogHandler
             Log.Information(
                 "LeftGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
 
-            _ = this._channelDisabledCommandService.RemoveDisabledCommandsForGuild(guild.Id);
+            _ = this._channelToggledCommandService.RemoveToggledCommandsForGuild(guild.Id);
             _ = this._disabledChannelService.RemoveDisabledChannelsForGuild(guild.Id);
             _ = this._guildService.RemoveGuildAsync(guild.Id);
         }

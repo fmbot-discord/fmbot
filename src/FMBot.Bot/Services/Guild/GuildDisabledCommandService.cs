@@ -11,7 +11,7 @@ public class GuildDisabledCommandService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-    private static readonly ConcurrentDictionary<ulong, string[]> GuildDisabledCommands = new();
+    private static readonly ConcurrentDictionary<ulong, string[]> GuildToggledCommands = new();
 
     public GuildDisabledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
     {
@@ -20,15 +20,15 @@ public class GuildDisabledCommandService
 
     public static void StoreDisabledCommands(string[] commands, ulong key)
     {
-        if (GuildDisabledCommands.ContainsKey(key))
+        if (GuildToggledCommands.ContainsKey(key))
         {
             if (commands == null)
             {
                 RemoveDisabledCommands(key);
             }
 
-            var oldDisabledCommands = GetDisabledCommands(key);
-            if (!GuildDisabledCommands.TryUpdate(key, commands, oldDisabledCommands))
+            var oldDisabledCommands = GetToggledCommands(key);
+            if (!GuildToggledCommands.TryUpdate(key, commands, oldDisabledCommands))
             {
                 Log.Information($"Failed to update disabled guild commands {commands} with the key: {key} from the dictionary");
             }
@@ -36,32 +36,32 @@ public class GuildDisabledCommandService
             return;
         }
 
-        if (!GuildDisabledCommands.TryAdd(key, commands))
+        if (!GuildToggledCommands.TryAdd(key, commands))
         {
             Log.Information($"Failed to add disabled guild commands {commands} with the key: {key} from the dictionary");
         }
     }
 
 
-    public static string[] GetDisabledCommands(ulong? key)
+    public static string[] GetToggledCommands(ulong? key)
     {
         if (!key.HasValue)
         {
             return null;
         }
 
-        return !GuildDisabledCommands.ContainsKey(key.Value) ? null : GuildDisabledCommands[key.Value];
+        return !GuildToggledCommands.ContainsKey(key.Value) ? null : GuildToggledCommands[key.Value];
     }
 
 
     private static void RemoveDisabledCommands(ulong key)
     {
-        if (!GuildDisabledCommands.ContainsKey(key))
+        if (!GuildToggledCommands.ContainsKey(key))
         {
             return;
         }
 
-        if (!GuildDisabledCommands.TryRemove(key, out var removedDisabledCommands))
+        if (!GuildToggledCommands.TryRemove(key, out var removedDisabledCommands))
         {
             Log.Information($"Failed to remove custom disabled guild commands {removedDisabledCommands} with the key: {key} from the dictionary");
         }

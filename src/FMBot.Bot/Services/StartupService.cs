@@ -32,7 +32,7 @@ public class StartupService
     private readonly CommandService _commands;
     private readonly InteractionService _interactions;
     private readonly GuildDisabledCommandService _guildDisabledCommands;
-    private readonly ChannelDisabledCommandService _channelDisabledCommands;
+    private readonly ChannelToggledCommandService _channelToggledCommands;
     private readonly DisabledChannelService _disabledChannelService;
     private readonly DiscordShardedClient _client;
     private readonly IPrefixService _prefixService;
@@ -51,7 +51,7 @@ public class StartupService
         CommandService commands,
         IPrefixService prefixService,
         GuildDisabledCommandService guildDisabledCommands,
-        ChannelDisabledCommandService channelDisabledCommands,
+        ChannelToggledCommandService channelToggledCommands,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IOptions<BotSettings> botSettings,
         InteractionService interactionService,
@@ -67,7 +67,7 @@ public class StartupService
         this._commands = commands;
         this._prefixService = prefixService;
         this._guildDisabledCommands = guildDisabledCommands;
-        this._channelDisabledCommands = channelDisabledCommands;
+        this._channelToggledCommands = channelToggledCommands;
         this._contextFactory = contextFactory;
         this._interactionService = interactionService;
         this._interactions = interactions;
@@ -110,7 +110,7 @@ public class StartupService
         await this._guildDisabledCommands.LoadAllDisabledCommands();
 
         Log.Information("Loading all channel disabled commands");
-        await this._channelDisabledCommands.LoadAllDisabledCommands();
+        await this._channelToggledCommands.LoadAllToggledCommands();
 
         Log.Information("Loading all disabled channels");
         await this._disabledChannelService.LoadAllDisabledChannels();

@@ -7,27 +7,27 @@ using Serilog;
 
 namespace FMBot.Bot.Services.Guild;
 
-public class ChannelDisabledCommandService
+public class ChannelToggledCommandService
 {
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
     private static readonly ConcurrentDictionary<ulong, string[]> ChannelDisabledCommands = new();
 
-    public ChannelDisabledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
+    public ChannelToggledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._contextFactory = contextFactory;
     }
 
-    private static void StoreDisabledCommands(string[] commands, ulong key)
+    private static void StoreToggledCommands(string[] commands, ulong key)
     {
         if (ChannelDisabledCommands.ContainsKey(key))
         {
             if (commands == null)
             {
-                RemoveDisabledCommands(key);
+                RemoveToggledCommands(key);
             }
 
-            var oldDisabledCommands = GetDisabledCommands(key);
+            var oldDisabledCommands = GetToggledCommands(key);
             if (!ChannelDisabledCommands.TryUpdate(key, commands, oldDisabledCommands))
             {
                 Log.Information($"Failed to update disabled channel commands {commands} with the key: {key} from the dictionary");
@@ -42,7 +42,7 @@ public class ChannelDisabledCommandService
         }
     }
 
-    public static string[] GetDisabledCommands(ulong? key)
+    public static string[] GetToggledCommands(ulong? key)
     {
         if (!key.HasValue)
         {
@@ -53,7 +53,7 @@ public class ChannelDisabledCommandService
     }
 
 
-    private static void RemoveDisabledCommands(ulong key)
+    private static void RemoveToggledCommands(ulong key)
     {
         if (!ChannelDisabledCommands.ContainsKey(key))
         {
@@ -66,7 +66,7 @@ public class ChannelDisabledCommandService
         }
     }
 
-    public async Task LoadAllDisabledCommands()
+    public async Task LoadAllToggledCommands()
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var channels = await db
@@ -77,11 +77,11 @@ public class ChannelDisabledCommandService
 
         foreach (var channel in channels.Where(w => w.DisabledCommands.Length > 0))
         {
-            StoreDisabledCommands(channel.DisabledCommands, channel.DiscordChannelId);
+            StoreToggledCommands(channel.DisabledCommands, channel.DiscordChannelId);
         }
     }
 
-    public async Task RemoveDisabledCommandsForGuild(ulong discordGuildId)
+    public async Task RemoveToggledCommandsForGuild(ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var guild = await db
@@ -94,12 +94,12 @@ public class ChannelDisabledCommandService
         {
             foreach (var channel in guild.Channels)
             {
-                RemoveDisabledCommands(channel.DiscordChannelId);
+                RemoveToggledCommands(channel.DiscordChannelId);
             }
         }
     }
 
-    public async Task ReloadDisabledCommands(ulong discordGuildId)
+    public async Task ReloadToggledCommands(ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var guild = await db
@@ -112,7 +112,7 @@ public class ChannelDisabledCommandService
         {
             foreach (var channel in guild.Channels)
             {
-                StoreDisabledCommands(channel.DisabledCommands, channel.DiscordChannelId);
+                StoreToggledCommands(channel.DisabledCommands, channel.DiscordChannelId);
             }
         }
     }
