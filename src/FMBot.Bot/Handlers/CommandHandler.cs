@@ -38,7 +38,6 @@ public class CommandHandler
     private readonly IndexService _indexService;
     private readonly GameBuilders _gameBuilders;
 
-    // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
     public CommandHandler(
         DiscordShardedClient discord,
         CommandService commands,
@@ -218,7 +217,7 @@ public class CommandHandler
 
         using (Statistics.TextCommandHandlerDuration.NewTimer())
         {
-            if (!await CommandEnabled(context, searchResult, update))
+            if (!await CommandEnabled(context, searchResult, prfx, update))
             {
                 return;
             }
@@ -240,7 +239,7 @@ public class CommandHandler
                     return;
                 }
 
-                if (!await CommandEnabled(context, fmSearchResult, update))
+                if (!await CommandEnabled(context, fmSearchResult, prfx, update))
                 {
                     return;
                 }
@@ -406,11 +405,19 @@ public class CommandHandler
         return true;
     }
 
-    private async Task<bool> CommandEnabled(SocketCommandContext context, SearchResult searchResult,
+    private async Task<bool> CommandEnabled(SocketCommandContext context, SearchResult searchResult, string prfx,
         bool update = false)
     {
         if (context.Guild != null)
         {
+            var isMod = false;
+            var guildUser = (IGuildUser)context.User;
+            if (guildUser.GuildPermissions.BanMembers ||
+                guildUser.GuildPermissions.Administrator)
+            {
+                isMod = true;
+            }
+
             if (searchResult.Commands != null &&
                 searchResult.Commands.Any(a =>
                     a.Command.Name.Equals("togglecommand", StringComparison.OrdinalIgnoreCase) ||
@@ -443,13 +450,16 @@ public class CommandHandler
                         toggledChannelCommands.Any())
                     {
                         _ = this._interactiveService.DelayedDeleteMessageAsync(
-                            await context.Channel.SendMessageAsync("The command you're trying to execute is not enabled in this channel."),
+                            await context.Channel.SendMessageAsync(
+                                "The command you're trying to execute is not enabled in this channel." +
+                                (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)),
                             TimeSpan.FromSeconds(8));
                     }
                     else
                     {
                         _ = this._interactiveService.DelayedDeleteMessageAsync(
-                            await context.Channel.SendMessageAsync("The bot has been disabled in this channel."),
+                            await context.Channel.SendMessageAsync("The bot has been disabled in this channel." +
+                                                                   (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)),
                             TimeSpan.FromSeconds(8));
                     }
                 }
@@ -466,7 +476,8 @@ public class CommandHandler
                 {
                     _ = this._interactiveService.DelayedDeleteMessageAsync(
                         await context.Channel.SendMessageAsync(
-                            "The command you're trying to execute has been disabled in this server."),
+                            "The command you're trying to execute has been disabled in this server." +
+                            (isMod ? $"\n-# *Configured with `{prfx}toggleservercommand`*" : null)),
                         TimeSpan.FromSeconds(8));
                 }
 
@@ -484,7 +495,8 @@ public class CommandHandler
                 {
                     _ = this._interactiveService.DelayedDeleteMessageAsync(
                         await context.Channel.SendMessageAsync(
-                            "The command you're trying to execute has been disabled in this channel."),
+                            "The command you're trying to execute has been disabled in this channel." +
+                            (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)),
                         TimeSpan.FromSeconds(8));
                 }
 
