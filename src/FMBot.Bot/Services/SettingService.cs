@@ -327,6 +327,16 @@ public class SettingService
                     settingsModel.StartDateTime = new DateTime(2000, 1, 1);
                 }
             }
+            else if (defaultTimePeriod == TimePeriod.Yearly)
+            {
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
+                settingsModel.TimePeriod = TimePeriod.Yearly;
+                settingsModel.Description = "Yearly";
+                settingsModel.AltDescription = "last year";
+                settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
+                settingsModel.ApiParameter = "12month";
+                settingsModel.PlayDays = 365;
+            }
             else if (defaultTimePeriod == TimePeriod.Monthly)
             {
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;

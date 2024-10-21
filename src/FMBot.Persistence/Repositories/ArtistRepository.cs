@@ -216,14 +216,14 @@ public class ArtistRepository
         NpgsqlConnection connection)
     {
         const string getArtistsQuery = @"
-            WITH artist_list(name) AS (
-                VALUES (CAST(@artistNames AS CITEXT[]))
-            )
-            SELECT a.name, a.popularity
-            FROM public.artists a
-            JOIN artist_list l ON UPPER(a.name) = UPPER(l.name)
-            WHERE a.popularity IS NOT NULL
-            ORDER BY a.name";
+        WITH artist_list(name) AS (
+            SELECT unnest(@artistNames)::citext
+        )
+        SELECT a.name, a.popularity
+        FROM public.artists a
+        JOIN artist_list l ON a.name = l.name
+        WHERE a.popularity IS NOT NULL
+        ORDER BY a.name";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var artists = await connection.QueryAsync<ArtistPopularity>(getArtistsQuery, new

@@ -2364,7 +2364,7 @@ public class AdminCommands : BaseCommandModule
                 embed.AddField("Monthly - $3.99",
                     "-# $3.99 per month", true);
                 embed.AddField("Yearly - $29.99",
-                    "-# $2.49 per month", true);
+                    "-# $2.49 per month - Saves 45%", true);
                 embed.WithColor(DiscordConstants.InformationColorBlue);
 
                 await ReplyAsync(embed: embed.Build(), components: components.Build());
