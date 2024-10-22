@@ -49,7 +49,7 @@ public class SettingService
         var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc), timeZoneInfo);
         var localMidnightInUtc = TimeZoneInfo.ConvertTimeToUtc(localTime.Date, timeZoneInfo);
 
-        var year = GetYear(options);
+        var year = GetYear(options, false);
         var month = GetMonth(options);
 
         if ((year != null || month != null) && !cachedOrAllTimeOnly)
@@ -326,6 +326,16 @@ public class SettingService
                 {
                     settingsModel.StartDateTime = new DateTime(2000, 1, 1);
                 }
+            }
+            else if (defaultTimePeriod == TimePeriod.Yearly)
+            {
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
+                settingsModel.TimePeriod = TimePeriod.Yearly;
+                settingsModel.Description = "Yearly";
+                settingsModel.AltDescription = "last year";
+                settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
+                settingsModel.ApiParameter = "12month";
+                settingsModel.PlayDays = 365;
             }
             else if (defaultTimePeriod == TimePeriod.Monthly)
             {
@@ -927,7 +937,7 @@ public class SettingService
         return amount;
     }
 
-    public static int? GetYear(string extraOptions)
+    public static int? GetYear(string extraOptions, bool cleanSetter = true)
     {
         if (string.IsNullOrWhiteSpace(extraOptions))
         {
@@ -937,9 +947,17 @@ public class SettingService
         var options = extraOptions.Split(' ');
         foreach (var option in options)
         {
-            var cleaned = option
-                .Replace("r:", "", StringComparison.OrdinalIgnoreCase)
-                .Replace("released:", "", StringComparison.OrdinalIgnoreCase);
+            string cleaned;
+            if (cleanSetter)
+            {
+                cleaned = option
+                    .Replace("r:", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("released:", "", StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                cleaned = option;
+            }
 
             if (cleaned.Length == 4 && int.TryParse(cleaned, out var result))
             {

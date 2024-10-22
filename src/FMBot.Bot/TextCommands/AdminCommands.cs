@@ -864,6 +864,7 @@ public class AdminCommands : BaseCommandModule
             {
                 isBannedSomewhere = true;
             }
+
             if (bottedUser != null)
             {
                 this._embed.AddField("Reason / additional notes", bottedUser.Notes ?? "*No reason/notes*");
@@ -1943,6 +1944,7 @@ public class AdminCommands : BaseCommandModule
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
     }
+
     [Command("updatemultidiscordsupporters")]
     [Summary("Updates multiple discord supporter")]
     public async Task UpdateMultipleDiscordSupporters([Remainder] string user)
@@ -2352,11 +2354,20 @@ public class AdminCommands : BaseCommandModule
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                var components = new ComponentBuilder().WithButton("Generate link",
-                    customId: InteractionConstants.SupporterLinks.GetPurchaseLink);
+                var components = new ComponentBuilder()
+                    .WithButton("Get monthly", customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly")
+                    .WithButton("Get yearly", customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly")
+                    .WithButton("View perks", customId: InteractionConstants.SupporterLinks.ViewPerks);
 
-                await ReplyAsync($"Use the button below to get your unique purchase link",
-                    allowedMentions: AllowedMentions.None, components: components.Build());
+                var embed = new EmbedBuilder();
+                embed.WithDescription("⭐ Support .fmbot with .fmbot supporter and unlock extra perks");
+                embed.AddField("Monthly - $3.99",
+                    "-# $3.99 per month", true);
+                embed.AddField("Yearly - $29.99",
+                    "-# $2.49 per month - Saves 45%", true);
+                embed.WithColor(DiscordConstants.InformationColorBlue);
+
+                await ReplyAsync(embed: embed.Build(), components: components.Build());
                 this.Context.LogCommandUsed();
             }
             else
@@ -2749,7 +2760,10 @@ public class AdminCommands : BaseCommandModule
             await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None,
                 components: components.Build());
 
-            if (this.Context.Channel is SocketThreadChannel { ParentChannel: SocketForumChannel forumChannel } threadChannel &&
+            if (this.Context.Channel is SocketThreadChannel
+                {
+                    ParentChannel: SocketForumChannel forumChannel
+                } threadChannel &&
                 forumChannel.Tags.Any())
             {
                 var tagToApply = forumChannel.Tags.FirstOrDefault(f => f.Name == "Last.fm issue");

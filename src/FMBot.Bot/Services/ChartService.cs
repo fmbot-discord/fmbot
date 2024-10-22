@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -22,7 +23,7 @@ public class ChartService
     private readonly CensorService _censorService;
 
     private readonly string _fontPath;
-    private readonly string _altFontPath;
+    private readonly string _workSansFontPath;
     private readonly string _loadingErrorImagePath;
     private readonly string _unknownImagePath;
     private readonly string _unknownArtistImagePath;
@@ -33,13 +34,12 @@ public class ChartService
     public ChartService(CensorService censorService, HttpClient httpClient)
     {
         this._censorService = censorService;
-
         this._client = httpClient;
 
         try
         {
             this._fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arial-unicode-ms.ttf");
-            this._altFontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf");
+            this._workSansFontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf");
             this._loadingErrorImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loading-error.png");
             this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown.png");
             this._unknownArtistImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown-artist.png");
@@ -48,20 +48,40 @@ public class ChartService
             if (!File.Exists(this._fontPath))
             {
                 Log.Information("Downloading chart files...");
-                var wc = new System.Net.WebClient();
-                wc.DownloadFile("https://fmbot.xyz/fonts/arial-unicode-ms.ttf", this._fontPath);
-                wc.DownloadFile("https://fmbot.xyz/fonts/worksans-regular.otf", this._altFontPath);
-                wc.DownloadFile("https://fmbot.xyz/img/bot/loading-error.png", this._loadingErrorImagePath);
-                wc.DownloadFile("https://fmbot.xyz/img/bot/unknown.png", this._unknownImagePath);
-                wc.DownloadFile("https://fmbot.xyz/img/bot/unknown-artist.png", this._unknownArtistImagePath);
-                wc.DownloadFile("https://fmbot.xyz/img/bot/censored.png", this._censoredImagePath);
-                wc.Dispose();
+                DownloadChartFilesAsync().Wait();
             }
         }
         catch (Exception e)
         {
             Log.Error(e, "Something went wrong while downloading chart files");
         }
+    }
+
+    private async Task DownloadChartFilesAsync()
+    {
+        var files = new Dictionary<string, string>
+        {
+            { "https://fmbot.xyz/fonts/arial-unicode-ms.ttf", this._fontPath },
+            { "https://fmbot.xyz/fonts/worksans-regular.otf", this._workSansFontPath },
+            { "https://fmbot.xyz/img/bot/loading-error.png", this._loadingErrorImagePath },
+            { "https://fmbot.xyz/img/bot/unknown.png", this._unknownImagePath },
+            { "https://fmbot.xyz/img/bot/unknown-artist.png", this._unknownArtistImagePath },
+            { "https://fmbot.xyz/img/bot/censored.png", this._censoredImagePath }
+        };
+
+        foreach (var file in files)
+        {
+            await DownloadFileAsync(file.Key, file.Value);
+        }
+    }
+
+    private async Task DownloadFileAsync(string url, string filePath)
+    {
+        using var response = await this._client.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        await using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+        await stream.CopyToAsync(fileStream);
     }
 
     public async Task<SKImage> GenerateChartAsync(ChartSettings chart)

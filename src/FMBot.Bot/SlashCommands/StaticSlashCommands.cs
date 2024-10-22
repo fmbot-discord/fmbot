@@ -63,6 +63,17 @@ public class StaticSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
+    [ComponentInteraction(InteractionConstants.SupporterLinks.ViewPerks)]
+    [UserSessionRequired]
+    public async Task SupporterPerks()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var response = await this._staticBuilders.DonateAsync(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response, true);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
     [ComponentInteraction($"{InteractionConstants.SupporterLinks.GetPurchaseLink}-*")]
     [UserSessionRequired]
     public async Task GetSupporterLink(string type)

@@ -64,7 +64,8 @@ public class PuppeteerService
         {
             foreach (var country in groupedCountry.CountryCodes)
             {
-                cssToAdd.Append($".{country.ToLower()}{{fill:#497dff; fill-opacity: {groupedCountry.Opacity.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}}} ");
+                cssToAdd.Append(
+                    $".{country.ToLower()}{{fill:#497dff; fill-opacity: {groupedCountry.Opacity.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}}} ");
             }
         }
 
@@ -82,8 +83,10 @@ public class PuppeteerService
         return skImg;
     }
 
-    public async Task<SKBitmap> GetWhoKnows(string type, string location, string imageUrl, string title, IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
-        PrivacyLevel minPrivacyLevel, UserCrown userCrown = null, string crownText = null, bool hidePrivateUsers = false)
+    public async Task<SKBitmap> GetWhoKnows(string type, string location, string imageUrl, string title,
+        IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
+        PrivacyLevel minPrivacyLevel, UserCrown userCrown = null, string crownText = null,
+        bool hidePrivateUsers = false)
     {
         await this._initializationTask;
 
@@ -118,7 +121,9 @@ public class PuppeteerService
         content = content.Replace("{{type}}", type);
         content = content.Replace("{{location}}", sanitizer.Sanitize(location));
 
-        content = imageUrl != null ? content.Replace("{{image-url}}", imageUrl) : content.Replace("{{hide-img}}", "hidden");
+        content = imageUrl != null
+            ? content.Replace("{{image-url}}", imageUrl)
+            : content.Replace("{{hide-img}}", "hidden");
 
         content = content.Replace("{{title}}", sanitizer.Sanitize(title));
 
@@ -256,10 +261,10 @@ public class PuppeteerService
         name = self ? $"<b>{name}</b>" : name;
 
         return $"""
-            <li>
-                <div class="{cssClass}">{position}</div> {name} <span class="float-right">{plays}</span>
-            </li>
-            """;
+                <li>
+                    <div class="{cssClass}">{position}</div> {name} <span class="float-right">{plays}</span>
+                </li>
+                """;
     }
 
     private static string Name(WhoKnowsObjectWithUser user, HtmlSanitizer sanitizer)
@@ -276,7 +281,8 @@ public class PuppeteerService
         return nameWithLink;
     }
 
-    public async Task<SKBitmap> GetTopList(string name, string title, string type, string time, long totalDifferent, long totalPlays, string imageUrl, IList<TopListObject> topListObjects)
+    public async Task<SKBitmap> GetTopList(string name, string title, string type, string time, long totalDifferent,
+        long totalPlays, string imageUrl, IList<TopListObject> topListObjects)
     {
         await this._initializationTask;
 
@@ -313,7 +319,9 @@ public class PuppeteerService
         content = content.Replace("{{totalDifferent}}", totalDifferent.ToString());
         content = content.Replace("{{totalPlays}}", totalPlays.ToString());
 
-        content = imageUrl != null ? content.Replace("{{image-url}}", imageUrl) : content.Replace("{{hide-img}}", "hidden");
+        content = imageUrl != null
+            ? content.Replace("{{image-url}}", imageUrl)
+            : content.Replace("{{hide-img}}", "hidden");
 
         if (totalDifferent == 0)
         {
@@ -343,7 +351,8 @@ public class PuppeteerService
 
             if (subNamesEnabled)
             {
-                userList.Append(GetTopLineWithSub(positionCounter, topItem.Name, topItem.SubName, topItem.Playcount, sanitizer));
+                userList.Append(GetTopLineWithSub(positionCounter, topItem.Name, topItem.SubName, topItem.Playcount,
+                    sanitizer));
             }
             else
             {
@@ -385,10 +394,10 @@ public class PuppeteerService
         name = name.Length > 28 ? $"{name[..27]}.." : name;
 
         return $"""
-            <li>
-                <div class="num">{position}</div> {name} <span class="float-right">{plays}</span>
-            </li>
-            """;
+                <li>
+                    <div class="num">{position}</div> {name} <span class="float-right">{plays}</span>
+                </li>
+                """;
     }
 
     private static string GetTopLineWithSub(string position, string name, string sub, long plays,
@@ -401,14 +410,14 @@ public class PuppeteerService
         sub = sub.Length > 36 ? $"{sub[..35]}.." : sub;
 
         return $"""
-            <li class="flex-wrap">
-                <div class="num" style="padding-top:12px;margin-left:-8px !important;">{position}</div>
-                <div>
-                    <div>{name} <span class="float-right" style="padding-top:12px;">{plays}</span></div>
-                    <div class="sub">{sub}</div>
-                </div>
-            </li>
-            """;
+                <li class="flex-wrap">
+                    <div class="num" style="padding-top:12px;margin-left:-8px !important;">{position}</div>
+                    <div>
+                        <div>{name} <span class="float-right" style="padding-top:12px;">{plays}</span></div>
+                        <div class="sub">{sub}</div>
+                    </div>
+                </li>
+                """;
     }
 
     public async Task<SKBitmap> GetReceipt(UserSettingsModel user, TopTrackList topTracks,
@@ -438,7 +447,8 @@ public class PuppeteerService
         await page.SetViewportAsync(new ViewPortOptions
         {
             Width = 500,
-            Height = 870 + (topTracks.TotalAmount > 0 ? lineHeight : 0) + (user.UserType == UserType.Supporter ? lineHeight : 0) + extraHeight
+            Height = 870 + (topTracks.TotalAmount > 0 ? lineHeight : 0) +
+                     (user.UserType == UserType.Supporter ? lineHeight : 0) + extraHeight
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "receipt.html");
@@ -459,7 +469,8 @@ public class PuppeteerService
 
         content = content.Replace("{{tracks}}", tracksToAdd.ToString());
 
-        content = content.Replace("{{subtotal}}", topTracks.TopTracks.Take(amountOfTracks).Sum(s => s.UserPlaycount.GetValueOrDefault()).ToString());
+        content = content.Replace("{{subtotal}}",
+            topTracks.TopTracks.Take(amountOfTracks).Sum(s => s.UserPlaycount.GetValueOrDefault()).ToString());
         content = content.Replace("{{total-plays}}", count.GetValueOrDefault().ToString());
 
         if (topTracks.TotalAmount > 0)
@@ -487,10 +498,15 @@ public class PuppeteerService
         content = content.Replace("{{discord-username}}", sanitizer.Sanitize(user.DisplayName));
         content = content.Replace("{{auth-code}}", user.UserId.ToString());
         content = content.Replace("{{background-offset}}", new Random().Next(10, 1000).ToString());
-        content = content.Replace("{{year}}", timeSettings.EndDateTime.HasValue ? timeSettings.EndDateTime.Value.Year.ToString() : DateTime.UtcNow.Year.ToString());
+        content = content.Replace("{{year}}",
+            timeSettings.EndDateTime.HasValue
+                ? timeSettings.EndDateTime.Value.Year.ToString()
+                : DateTime.UtcNow.Year.ToString());
 
-        content = content.Replace("{{thanks}}", user.UserType == UserType.Supporter ?
-            "Thank you for being an .fmbot supporter - Dankjewel !" : "Thank you for visiting - Dankjewel !");
+        content = content.Replace("{{thanks}}",
+            user.UserType == UserType.Supporter
+                ? "Thank you for being an .fmbot supporter - Dankjewel !"
+                : "Thank you for visiting - Dankjewel !");
 
         await page.SetContentAsync(content);
         await page.WaitForSelectorAsync("table");
@@ -564,7 +580,8 @@ public class PuppeteerService
         const int rectangleTop = 700;
         const int rectangleBottom = 1350;
 
-        var backgroundRectangle = new SKRect(rectangleLeft, rectangleTop, rectangleRight, rectangleBottom - (lineHeight * (7 - lines.Count)));
+        var backgroundRectangle = new SKRect(rectangleLeft, rectangleTop, rectangleRight,
+            rectangleBottom - (lineHeight * (7 - lines.Count)));
 
         bitmapCanvas.DrawRoundRect(backgroundRectangle, 12, 12, rectanglePaint);
 
@@ -585,7 +602,8 @@ public class PuppeteerService
                 Color = new SKColor(0, 0, 15),
                 IsAntialias = true
             };
-            var colorRectangle = new SKRect(rectangleLeft + 25, rectangleTop + 100 + (index * lineHeight), rectangleLeft + 90, rectangleTop + 132 + (index * lineHeight));
+            var colorRectangle = new SKRect(rectangleLeft + 25, rectangleTop + 100 + (index * lineHeight),
+                rectangleLeft + 90, rectangleTop + 132 + (index * lineHeight));
             bitmapCanvas.DrawRoundRect(colorRectangle, 8, 8, colorRectanglePaintBackground);
             bitmapCanvas.DrawRoundRect(colorRectangle, 8, 8, colorRectanglePaint);
 
@@ -593,8 +611,119 @@ public class PuppeteerService
             bitmapCanvas.DrawText(text, rectangleLeft + 200, rectangleTop + 129 + (index * 65), textPaint);
         }
 
-        bitmapCanvas.DrawText($"{lines.SelectMany(s => s.CountryCodes).Count()} countries", rectangleLeft + 170, rectangleTop + 140 + ((lines.Count) * lineHeight), textPaint);
-        bitmapCanvas.DrawText($"Generated by .fmbot", rectangleLeft + 170, rectangleTop + 170 + ((lines.Count) * lineHeight), promoTextPaint);
+        bitmapCanvas.DrawText($"{lines.SelectMany(s => s.CountryCodes).Count()} countries", rectangleLeft + 170,
+            rectangleTop + 140 + ((lines.Count) * lineHeight), textPaint);
+        bitmapCanvas.DrawText($"Generated by .fmbot", rectangleLeft + 170,
+            rectangleTop + 170 + ((lines.Count) * lineHeight), promoTextPaint);
+    }
+
+    private const int ImageWidth = 2481;
+    private const int ImageHeight = 4005;
+    private const int FirstArtistY = 1030;
+    private const int LastArtistY = ImageHeight - 400;
+    private const int SectionHeight = 330;
+    private const int TextColorChangeY = 1850;
+    private const int TotalSections = 8;
+
+    private record ArtistNamePosition(int Order, float X, float Y);
+
+    private List<ArtistNamePosition> GenerateArtistNamePositions(float sectionY)
+    {
+        float margin = 480;
+        var topY = sectionY + 70;
+        var middleY = sectionY + SectionHeight / 2;
+        var bottomY = sectionY + SectionHeight - 90;
+
+        return
+        [
+            new ArtistNamePosition(1, margin, topY),
+            new ArtistNamePosition(2, ImageWidth - margin, topY),
+            new ArtistNamePosition(3, ImageWidth / 2, middleY),
+            new ArtistNamePosition(4, margin, bottomY),
+            new ArtistNamePosition(5, ImageWidth - margin, bottomY)
+        ];
+    }
+
+    public void CreatePopularityIcebergImage(SKBitmap chartImage, string username, string timePeriod,
+        List<ArtistPopularity> artists)
+    {
+        var typeface = SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf"));
+
+        using var bitmapCanvas = new SKCanvas(chartImage);
+
+        // Draw title
+        using var titlePaint = new SKPaint
+        {
+            TextSize = 180,
+            IsAntialias = true,
+            TextAlign = SKTextAlign.Center,
+            Color = SKColors.Black,
+            Typeface = typeface
+        };
+
+        bitmapCanvas.DrawText($"{username}'s", 1180, 435, titlePaint);
+
+        titlePaint.TextSize = 120;
+        bitmapCanvas.DrawText($"iceberg", 1660, 565, titlePaint);
+
+        titlePaint.TextSize = 85;
+        bitmapCanvas.DrawText(timePeriod, 1960, 870, titlePaint);
+
+        using var artistTextPaint = new SKPaint
+        {
+            TextSize = 75,
+            IsAntialias = true,
+            TextAlign = SKTextAlign.Center,
+            Typeface = typeface,
+            Color = SKColors.Black
+        };
+
+        using var artistStrokePaint = new SKPaint
+        {
+            TextSize = 75,
+            IsAntialias = true,
+            TextAlign = SKTextAlign.Center,
+            Typeface = typeface,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 8,
+            Color = SKColors.White
+        };
+
+        const float sectionRange = 100f / TotalSections;
+        const float totalAvailableHeight = LastArtistY - FirstArtistY;
+
+        for (var section = 0; section < TotalSections; section++)
+        {
+            var maxPopularity = 100 - (section * sectionRange);
+            var minPopularity = maxPopularity - sectionRange;
+
+            var sectionArtists = artists
+                .Where(a =>
+                    a.Playcount >= 5 &&
+                    a.Popularity > minPopularity && a.Popularity <= maxPopularity)
+                .OrderByDescending(a => a.Playcount)
+                .Take(5)
+                .ToList();
+
+            var sectionY = FirstArtistY + (section * (totalAvailableHeight / TotalSections));
+            var positions = GenerateArtistNamePositions(sectionY);
+
+            for (var i = 0; i < Math.Min(sectionArtists.Count, 5); i++)
+            {
+                var position = positions[i];
+                var isWhiteText = position.Y >= TextColorChangeY;
+
+                if (isWhiteText)
+                {
+                    artistTextPaint.Color = SKColors.White;
+                    artistStrokePaint.Color = SKColors.Black;
+
+                    bitmapCanvas.DrawText(sectionArtists[i].Name, position.X, position.Y, artistStrokePaint);
+                }
+
+                bitmapCanvas.DrawText(sectionArtists[i].Name, position.X, position.Y, artistTextPaint);
+            }
+        }
     }
 
     public async Task<string> GetAppleToken()

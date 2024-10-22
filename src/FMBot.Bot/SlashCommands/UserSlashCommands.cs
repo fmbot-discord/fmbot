@@ -417,6 +417,9 @@ public class UserSlashCommands : InteractionModuleBase
                     globalStatus.AppendLine(
                         "You can still use all other functionalities of the bot, you just won't be globally visible when other users use commands. " +
                         "We automatically moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
+
+                    globalStatus.AppendLine();
+                    globalStatus.AppendLine(".fmbot is not affiliated with Last.fm. This filter only applies to global charts in .fmbot.");
                 }
 
                 if (globalStatus.Length > 0)

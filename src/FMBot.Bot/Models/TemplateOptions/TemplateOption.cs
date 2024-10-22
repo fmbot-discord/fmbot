@@ -402,7 +402,7 @@ public static class TemplateOptions
             {
                 { "userId", context.UserSettings.UserId },
                 { "artistName", context.CurrentTrack.ArtistName },
-                { "albumName", context.CurrentTrack.AlbumName },
+                { "albumName", context.CurrentTrack.AlbumName ?? "" },
             }
         },
         new ComplexTemplateOption
@@ -1116,7 +1116,7 @@ public static class TemplateOptions
             {
                 { "userId", context.UserSettings.UserId },
                 { "artistName", context.CurrentTrack.ArtistName },
-                { "albumName", context.CurrentTrack.AlbumName }
+                { "albumName", context.CurrentTrack.AlbumName ?? "" }
             }
         },
         new SqlTemplateOption

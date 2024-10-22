@@ -1,10 +1,13 @@
 ﻿using System;
+using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models;
 
-public class StripeSupporter
+public class SupporterStripe
 {
-    public ulong DiscordUserId { get; set; }
+    public ulong PurchaserDiscordUserId { get; set; }
+
+    public ulong ReceiverDiscordUserId { get; set; }
 
     public string Email { get; set; }
 
@@ -12,9 +15,13 @@ public class StripeSupporter
 
     public string StripeCustomerId { get; set; }
 
+    public string StripeProductId { get; set; }
+
+    public string Type { get; set; }
+
     public DateTime DateStarted { get; set; }
 
     public DateTime? DateEnding { get; set; }
 
-    public bool SubscriptionDeleted { get; set; }
+    public bool EntitlementDeleted { get; set; }
 }
