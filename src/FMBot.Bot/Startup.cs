@@ -218,6 +218,7 @@ public class Startup
             .AddSingleton<PremiumSettingBuilder>()
             .AddSingleton<PuppeteerService>()
             .AddSingleton<Random>()
+            .AddSingleton<RecapBuilders>()
             .AddSingleton<StaticBuilders>()
             .AddSingleton<MusicDataFactory>()
             .AddSingleton<SettingService>()

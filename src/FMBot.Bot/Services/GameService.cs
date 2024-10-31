@@ -805,7 +805,8 @@ public class GameService
         return pixelatedBitmap;
     }
 
-    public async Task<JumbleUserStats> GetJumbleUserStats(int userId, ulong discordUserId, JumbleType jumbleType)
+    public async Task<JumbleUserStats> GetJumbleUserStats(int userId, ulong discordUserId, JumbleType jumbleType,
+        DateTime? startDateTime, DateTime? endDateTime)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -818,6 +819,8 @@ public class GameService
                     )
             )
             .Where(w => w.JumbleType == jumbleType)
+            .Where(w => !startDateTime.HasValue || w.DateStarted >= startDateTime.Value)
+            .Where(w => !endDateTime.HasValue || w.DateStarted <= endDateTime.Value)
             .Include(i => i.Answers)
             .Include(i => i.Hints)
             .ToListAsync();
@@ -832,6 +835,8 @@ public class GameService
 
         var userAnswers = jumbleSessions
             .SelectMany(s => s.Answers.Where(a => a.DiscordUserId == discordUserId))
+            .Where(a => !startDateTime.HasValue || a.DateAnswered >= startDateTime.Value)
+            .Where(a => !endDateTime.HasValue || a.DateAnswered <= endDateTime.Value)
             .ToList();
 
         var correctAnswers = userAnswers.Where(a => a.Correct).ToList();

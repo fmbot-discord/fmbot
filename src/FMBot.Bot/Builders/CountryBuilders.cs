@@ -278,7 +278,7 @@ public class CountryBuilders
         return response;
     }
 
-    public async Task<ResponseModel> GetTopCountries(ContextModel context,
+    public async Task<ResponseModel> TopCountriesAsync(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         TopListSettings topListSettings,

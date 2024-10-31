@@ -617,22 +617,22 @@ public class PuppeteerService
             rectangleTop + 170 + ((lines.Count) * lineHeight), promoTextPaint);
     }
 
-    private const int ImageWidth = 2481;
-    private const int ImageHeight = 4005;
-    private const int FirstArtistY = 1030;
-    private const int LastArtistY = ImageHeight - 400;
-    private const int SectionHeight = 330;
-    private const int TextColorChangeY = 1850;
+    private const int ImageWidth = 1241;
+    private const int ImageHeight = 2003;
+    private const int FirstArtistY = 525;
+    private const int LastArtistY = ImageHeight - 180;
+    private const int SectionHeight = 165;
+    private const int TextColorChangeY = 935;
     private const int TotalSections = 8;
 
     private record ArtistNamePosition(int Order, float X, float Y);
 
     private List<ArtistNamePosition> GenerateArtistNamePositions(float sectionY)
     {
-        float margin = 480;
-        var topY = sectionY + 70;
+        float margin = 240;
+        var topY = sectionY + 35;
         var middleY = sectionY + SectionHeight / 2;
-        var bottomY = sectionY + SectionHeight - 90;
+        var bottomY = sectionY + SectionHeight - 45;
 
         return
         [
@@ -647,31 +647,31 @@ public class PuppeteerService
     public void CreatePopularityIcebergImage(SKBitmap chartImage, string username, string timePeriod,
         List<ArtistPopularity> artists)
     {
-        var typeface = SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf"));
+        var typeface = SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arial-unicode-ms.ttf"));
 
         using var bitmapCanvas = new SKCanvas(chartImage);
 
         // Draw title
         using var titlePaint = new SKPaint
         {
-            TextSize = 180,
+            TextSize = 90,
             IsAntialias = true,
             TextAlign = SKTextAlign.Center,
             Color = SKColors.Black,
             Typeface = typeface
         };
 
-        bitmapCanvas.DrawText($"{username}'s", 1180, 435, titlePaint);
+        bitmapCanvas.DrawText($"{username}'s", 590, 198, titlePaint);
 
-        titlePaint.TextSize = 120;
-        bitmapCanvas.DrawText($"iceberg", 1660, 565, titlePaint);
+        titlePaint.TextSize = 60;
+        bitmapCanvas.DrawText($"iceberg", 830, 262, titlePaint);
 
-        titlePaint.TextSize = 85;
-        bitmapCanvas.DrawText(timePeriod, 1960, 870, titlePaint);
+        titlePaint.TextSize = 42;
+        bitmapCanvas.DrawText(timePeriod, 980, 415, titlePaint);
 
         using var artistTextPaint = new SKPaint
         {
-            TextSize = 75,
+            TextSize = 36,
             IsAntialias = true,
             TextAlign = SKTextAlign.Center,
             Typeface = typeface,
@@ -680,12 +680,12 @@ public class PuppeteerService
 
         using var artistStrokePaint = new SKPaint
         {
-            TextSize = 75,
+            TextSize = 36,
             IsAntialias = true,
             TextAlign = SKTextAlign.Center,
             Typeface = typeface,
             Style = SKPaintStyle.Stroke,
-            StrokeWidth = 8,
+            StrokeWidth = 6,
             Color = SKColors.White
         };
 
@@ -697,9 +697,11 @@ public class PuppeteerService
             var maxPopularity = 100 - (section * sectionRange);
             var minPopularity = maxPopularity - sectionRange;
 
+            var minPlaycount = artists.Count(c => c.Playcount >= 15) > 100 ? 15 : 5;
+
             var sectionArtists = artists
                 .Where(a =>
-                    a.Playcount >= 5 &&
+                    a.Playcount >= minPlaycount &&
                     a.Popularity > minPopularity && a.Popularity <= maxPopularity)
                 .OrderByDescending(a => a.Playcount)
                 .Take(5)

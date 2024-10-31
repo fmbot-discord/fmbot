@@ -37,7 +37,7 @@ public static class StringService
             if (rymEnabled == true)
             {
                 var albumRymUrl = StringExtensions.GetRymUrl(track.AlbumName, track.ArtistName);
-                
+
                 description.Append($" • *[{StringExtensions.Sanitize(track.AlbumName)}]({albumRymUrl})*");
             }
             else
@@ -50,12 +50,14 @@ public static class StringService
         return description.ToString();
     }
 
-    public static string TrackToLinkedStringWithTimestamp(RecentTrack track, bool? rymEnabled = null, TimeSpan? trackLength = null)
+    public static string TrackToLinkedStringWithTimestamp(RecentTrack track, bool? rymEnabled = null,
+        TimeSpan? trackLength = null)
     {
         var description = new StringBuilder();
 
-        description.AppendLine($"**[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 200))}]({track.TrackUrl})** by **{StringExtensions.Sanitize(track.ArtistName)}**");
-        
+        description.AppendLine(
+            $"**[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.TrackName, 200))}]({track.TrackUrl})** by **{StringExtensions.Sanitize(track.ArtistName)}**");
+
         description.Append("-# ");
 
         if (!track.TimePlayed.HasValue || track.NowPlaying)
@@ -90,27 +92,31 @@ public static class StringService
             {
                 var searchTerm = track.AlbumName.Replace(" - Single", "");
                 searchTerm = searchTerm.Replace(" - EP", "");
-                searchTerm = $"{StringExtensions.TruncateLongString(track.ArtistName, 25)} {StringExtensions.TruncateLongString(searchTerm, 25)}";
+                searchTerm =
+                    $"{StringExtensions.TruncateLongString(track.ArtistName, 25)} {StringExtensions.TruncateLongString(searchTerm, 25)}";
 
                 var url = QueryHelpers.AddQueryString("https://rateyourmusic.com/search",
                     new Dictionary<string, string>
-                {
-                    {"searchterm", $"{searchTerm}"},
-                    {"searchtype", $"l"}
-                });
+                    {
+                        { "searchterm", $"{searchTerm}" },
+                        { "searchtype", $"l" }
+                    });
 
                 if (url.Length < 180)
                 {
-                    description.Append($"[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 160))}]({url})");
+                    description.Append(
+                        $"[{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 160))}]({url})");
                 }
                 else
                 {
-                    description.Append($"{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}");
+                    description.Append(
+                        $"{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}");
                 }
             }
             else
             {
-                description.Append($"{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}");
+                description.Append(
+                    $"{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.AlbumName, 200))}");
             }
 
             description.Append("*");
@@ -163,7 +169,6 @@ public static class StringService
                 {
                     line.Append($"{DiscordConstants.FiveOrMoreUp}");
                 }
-
             }
             else
             {
@@ -194,6 +199,7 @@ public static class StringService
         {
             return $"Billboard mode enabled - Comparing to {timeSettings.BillboardTimeDescription}";
         }
+
         if (timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
         {
             var startDateTime = timeSettings.BillboardStartDateTime.Value;
@@ -205,18 +211,20 @@ public static class StringService
 
             if (timeSettings.BillboardStartDateTime.Value.Year == DateTime.UtcNow.Year)
             {
-                return $"Billboard mode enabled - Comparing to {startDateTime:MMM dd} til {timeSettings.BillboardEndDateTime.Value:MMM dd}";
-
+                return
+                    $"Billboard mode enabled - Comparing to {startDateTime:MMM dd} til {timeSettings.BillboardEndDateTime.Value:MMM dd}";
             }
 
-            return $"Billboard mode enabled - Comparing to {startDateTime:MMM dd yyyy} til {timeSettings.BillboardEndDateTime.Value:MMM dd yyyy}";
+            return
+                $"Billboard mode enabled - Comparing to {startDateTime:MMM dd yyyy} til {timeSettings.BillboardEndDateTime.Value:MMM dd yyyy}";
         }
 
         return null;
     }
 
     public static void SinglePageToEmbedResponseWithButton(this ResponseModel response, PageBuilder page,
-        string customOptionId = null, IEmote optionEmote = null, string optionDescription = null, SelectMenuBuilder selectMenu = null)
+        string customOptionId = null, IEmote optionEmote = null, string optionDescription = null,
+        SelectMenuBuilder selectMenu = null)
     {
         response.Embed.WithTitle(page.Title);
         response.Embed.WithAuthor(page.Author);
@@ -230,17 +238,21 @@ public static class StringService
         {
             response.Components = new ComponentBuilder();
         }
+
         if (customOptionId != null)
         {
-            response.Components.WithButton(customId: customOptionId, emote: optionEmote, label: optionDescription, style: ButtonStyle.Secondary);
+            response.Components.WithButton(customId: customOptionId, emote: optionEmote, label: optionDescription,
+                style: ButtonStyle.Secondary);
         }
+
         if (selectMenu != null)
         {
             response.Components.WithSelectMenu(selectMenu);
         }
     }
 
-    public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null, IEmote optionEmote = null)
+    public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null,
+        IEmote optionEmote = null, SelectMenuBuilder selectMenuBuilder = null)
     {
         var builder = new StaticPaginatorBuilder()
             .WithPages(pages)
@@ -263,7 +275,14 @@ public static class StringService
 
         if (customOptionId == null && pages.Count >= 25)
         {
-            builder.AddOption(new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"), PaginatorAction.Jump));
+            builder.AddOption(
+                new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"),
+                    PaginatorAction.Jump));
+        }
+
+        if (selectMenuBuilder != null)
+        {
+            builder.WithSelectMenus(new List<SelectMenuBuilder> { selectMenuBuilder });
         }
 
         return builder.Build();
@@ -293,7 +312,9 @@ public static class StringService
 
         if (pages.Count >= 10 && customOptionId == null)
         {
-            builder.AddOption(new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"), PaginatorAction.Jump));
+            builder.AddOption(
+                new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"),
+                    PaginatorAction.Jump));
         }
 
         if (selectMenuBuilder != null)
@@ -313,8 +334,8 @@ public static class StringService
 
         builder.WithOptions(new Dictionary<IEmote, PaginatorAction>
         {
-            { Emote.Parse("<:pages_previous:883825508507336704>"), PaginatorAction.Backward},
-            { Emote.Parse("<:pages_next:883825508087922739>"), PaginatorAction.Forward},
+            { Emote.Parse("<:pages_previous:883825508507336704>"), PaginatorAction.Backward },
+            { Emote.Parse("<:pages_next:883825508087922739>"), PaginatorAction.Forward },
         });
 
         return builder.Build();
@@ -328,12 +349,14 @@ public static class StringService
 
         if (discogsRelease.Release.FeaturingArtistJoin != null && discogsRelease.Release.FeaturingArtist != null)
         {
-            description.Append($"** {discogsRelease.Release.FeaturingArtistJoin} **{discogsRelease.Release.FeaturingArtist}");
+            description.Append(
+                $"** {discogsRelease.Release.FeaturingArtistJoin} **{discogsRelease.Release.FeaturingArtist}");
         }
 
         description.Append($" - ");
 
-        description.Append($"[{discogsRelease.Release.Title}]({Constants.DiscogsReleaseUrl}{discogsRelease.Release.DiscogsId})");
+        description.Append(
+            $"[{discogsRelease.Release.Title}]({Constants.DiscogsReleaseUrl}{discogsRelease.Release.DiscogsId})");
         description.Append("**");
 
         description.AppendLine();
@@ -368,7 +391,8 @@ public static class StringService
 
         description.Append(GetDiscogsFormatEmote(discogsRelease.Release.Format));
 
-        description.Append($" [{discogsRelease.Release.Format}]({Constants.DiscogsReleaseUrl}{discogsRelease.Release.DiscogsId})");
+        description.Append(
+            $" [{discogsRelease.Release.Format}]({Constants.DiscogsReleaseUrl}{discogsRelease.Release.DiscogsId})");
         if (discogsRelease.Release.FormatText != null)
         {
             description.Append($" - *{discogsRelease.Release.FormatText}*");

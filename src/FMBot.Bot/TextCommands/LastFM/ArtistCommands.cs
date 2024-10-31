@@ -661,27 +661,21 @@ public class ArtistCommands : BaseCommandModule
     }
 
     [Command("iceberg", RunMode = RunMode.Async)]
-    [Summary("Shows your iceberg.")]
+    [Summary("Shows your iceberg, based on artists popularity.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
-    [Examples("receipt", "receipt 2022", "rcpt week")]
-    [Alias("ice", "icebergify")]
+    [Examples("iceberg", "iceberg 2024", "iceberg alltime")]
+    [Alias("ice", "icebergify", "berg")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
-    [ExcludeFromHelp]
     public async Task IcebergAsync([Remainder] string extraOptions = null)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            return;
-        }
-
         _ = this.Context.Channel.TriggerTypingAsync();
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Quarterly);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var response = await this._artistBuilders.GetIceberg(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings);
