@@ -620,28 +620,42 @@ public class PuppeteerService
     private const int ImageWidth = 1241;
     private const int ImageHeight = 2003;
     private const int FirstArtistY = 525;
-    private const int LastArtistY = ImageHeight - 180;
+    private const int LastArtistY = ImageHeight - 190;
     private const int SectionHeight = 165;
     private const int TextColorChangeY = 935;
     private const int TotalSections = 8;
 
     private record ArtistNamePosition(int Order, float X, float Y);
 
-    private List<ArtistNamePosition> GenerateArtistNamePositions(float sectionY)
+    private List<ArtistNamePosition> GenerateArtistNamePositions(float sectionY, int sectionArtistsCount)
     {
         float margin = 240;
         var topY = sectionY + 35;
         var middleY = sectionY + SectionHeight / 2;
         var bottomY = sectionY + SectionHeight - 45;
-
-        return
-        [
-            new ArtistNamePosition(1, margin, topY),
-            new ArtistNamePosition(2, ImageWidth - margin, topY),
-            new ArtistNamePosition(3, ImageWidth / 2, middleY),
-            new ArtistNamePosition(4, margin, bottomY),
-            new ArtistNamePosition(5, ImageWidth - margin, bottomY)
-        ];
+        return sectionArtistsCount switch
+        {
+            1 => [new ArtistNamePosition(3, ImageWidth / 2, middleY),],
+            2 =>
+            [
+                new ArtistNamePosition(2, ImageWidth - margin - 100, middleY),
+                new ArtistNamePosition(4, margin + 100, middleY),
+            ],
+            3 =>
+            [
+                new ArtistNamePosition(2, ImageWidth - margin, topY + 15),
+                new ArtistNamePosition(3, ImageWidth / 2, middleY + 20),
+                new ArtistNamePosition(4, margin, topY + 15),
+            ],
+            _ =>
+            [
+                new ArtistNamePosition(1, margin, topY),
+                new ArtistNamePosition(2, ImageWidth - margin, topY),
+                new ArtistNamePosition(3, ImageWidth / 2, middleY),
+                new ArtistNamePosition(4, margin, bottomY),
+                new ArtistNamePosition(5, ImageWidth - margin, bottomY)
+            ]
+        };
     }
 
     public void CreatePopularityIcebergImage(SKBitmap chartImage, string username, string timePeriod,
@@ -708,7 +722,7 @@ public class PuppeteerService
                 .ToList();
 
             var sectionY = FirstArtistY + (section * (totalAvailableHeight / TotalSections));
-            var positions = GenerateArtistNamePositions(sectionY);
+            var positions = GenerateArtistNamePositions(sectionY, sectionArtists.Count);
 
             for (var i = 0; i < Math.Min(sectionArtists.Count, 5); i++)
             {
