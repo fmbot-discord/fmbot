@@ -596,7 +596,9 @@ public class ArtistSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Quarterly);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod,
+            registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone,
+            defaultTimePeriod: TimePeriod.AllTime);
 
         var response = await this._artistBuilders.GetIceberg(new ContextModel(this.Context, contextUser), userSettings, timeSettings);
 
