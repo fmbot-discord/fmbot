@@ -276,6 +276,12 @@ public class PlayCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (contextUser.UserType != UserType.Admin || contextUser.UserType != UserType.Owner)
+        {
+            return;
+        }
+
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
