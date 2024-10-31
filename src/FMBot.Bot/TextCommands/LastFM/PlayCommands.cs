@@ -278,7 +278,7 @@ public class PlayCommands : BaseCommandModule
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (contextUser.UserType != UserType.Admin || contextUser.UserType != UserType.Owner)
+        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
         {
             return;
         }
