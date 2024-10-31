@@ -271,6 +271,7 @@ public class PlayCommands : BaseCommandModule
     [Summary("Shows a recap")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
+    [ExcludeFromHelp]
     public async Task RecapAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
