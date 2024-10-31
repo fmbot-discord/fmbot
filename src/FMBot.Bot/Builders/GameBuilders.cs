@@ -277,7 +277,7 @@ public class GameBuilders
     }
 
     public async Task<ResponseModel> GetJumbleUserStats(ContextModel context, UserSettingsModel userSettings,
-        JumbleType jumbleType)
+        JumbleType jumbleType, TimeSettingsModel timeSettings = null)
     {
         var response = new ResponseModel
         {
@@ -292,7 +292,7 @@ public class GameBuilders
         userPage.WithAuthor($"{name} user stats - {userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}");
 
         var userStats =
-            await this._gameService.GetJumbleUserStats(userSettings.UserId, userSettings.DiscordUserId, jumbleType);
+            await this._gameService.GetJumbleUserStats(userSettings.UserId, userSettings.DiscordUserId, jumbleType, timeSettings?.StartDateTime, timeSettings?.EndDateTime);
 
         if (userStats == null)
         {
@@ -321,9 +321,13 @@ public class GameBuilders
             userPage.AddField("Answers", answerStats.ToString());
         }
 
-        userPage.WithFooter("➡️ Server stats");
+        if (timeSettings == null)
+        {
+            userPage.WithFooter("➡️ Server stats");
+        }
 
         pages.Add(userPage);
+        response.Embed = userPage.GetEmbedBuilder();
 
         var guildPage = new PageBuilder();
         guildPage.WithAuthor($"{name} server stats - {context.DiscordGuild.Name}");

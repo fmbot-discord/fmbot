@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -40,6 +41,7 @@ public class PlayBuilder
     private readonly CountryService _countryService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly AlbumService _albumService;
+    private readonly OpenAiService _openAiService;
 
     private InteractiveService Interactivity { get; }
 
@@ -57,7 +59,8 @@ public class PlayBuilder
         GenreService genreService,
         TrackService trackService,
         CountryService countryService,
-        AlbumService albumService)
+        AlbumService albumService,
+        OpenAiService openAiService)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -73,6 +76,7 @@ public class PlayBuilder
         this._trackService = trackService;
         this._countryService = countryService;
         this._albumService = albumService;
+        this._openAiService = openAiService;
     }
 
     public async Task<ResponseModel> NowPlayingAsync(
@@ -173,7 +177,8 @@ public class PlayBuilder
 
         var fmText = "";
         var footerText = await this._userService.GetFooterAsync(
-            context.ContextUser.FmFooterOptions, userSettings, currentTrack, previousTrack, totalPlaycount, context, guild, guildUsers,
+            context.ContextUser.FmFooterOptions, userSettings, currentTrack, previousTrack, totalPlaycount, context,
+            guild, guildUsers,
             embedType == FmEmbedType.TextFull || embedType == FmEmbedType.TextMini);
 
         if (!userSettings.DifferentUser &&

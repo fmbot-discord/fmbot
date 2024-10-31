@@ -29,6 +29,7 @@ public class PlaySlashCommands : InteractionModuleBase
     private readonly PlayBuilder _playBuilder;
     private readonly GuildService _guildService;
     private readonly IDataSourceFactory _dataSourceFactory;
+    private readonly RecapBuilders _recapBuilders;
 
     private InteractiveService Interactivity { get; }
 
@@ -40,7 +41,7 @@ public class PlaySlashCommands : InteractionModuleBase
         PlayBuilder playBuilder,
         GuildService guildService,
         IDataSourceFactory dataSourceFactory,
-        InteractiveService interactivity)
+        InteractiveService interactivity, RecapBuilders recapBuilders)
     {
         this._userService = userService;
         this._settingService = settingService;
@@ -48,6 +49,7 @@ public class PlaySlashCommands : InteractionModuleBase
         this._guildService = guildService;
         this._dataSourceFactory = dataSourceFactory;
         this.Interactivity = interactivity;
+        this._recapBuilders = recapBuilders;
     }
 
     [SlashCommand("fm", "Now Playing - Shows you or someone else's current track")]
@@ -414,6 +416,56 @@ public class PlaySlashCommands : InteractionModuleBase
                 userSettings, parsedYear);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.Recap)]
+    [RequiresIndex]
+    [GuildOnly]
+    public async Task RecapAsync(string[] inputs)
+    {
+        try
+        {
+            _ = DeferAsync();
+
+            var splitInput = inputs.First().Split("-");
+            if (!Enum.TryParse(splitInput[0], out RecapPage viewType))
+            {
+                return;
+            }
+
+            if (!Enum.TryParse(splitInput[1], out RecapPeriod period))
+            {
+                return;
+            }
+
+            var discordUserId = ulong.Parse(splitInput[2]);
+            var requesterDiscordUserId = ulong.Parse(splitInput[3]);
+
+            var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+            var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+                this.Context.Guild, this.Context.User);
+
+            var timeSettings = SettingService.GetTimePeriod("", registeredLastFm: userSettings.RegisteredLastFm,
+                timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
+
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            if (message == null)
+            {
+                return;
+            }
+
+            var response =
+                await this._recapBuilders.RecapAsync(
+                    new ContextModel(this.Context, contextUser, discordContextUser), userSettings, timeSettings, viewType);
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

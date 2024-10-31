@@ -57,7 +57,7 @@ public class ChartCommands : BaseCommandModule
         "Size: `WidthxHeight` - `2x2`, `3x3`, `4x5`, `20x4` up to 100 total images",
         Constants.UserMentionExample)]
     [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly", "aoty 2023")]
-    [Alias("c", "aoty", "albumsoftheyear", "albumoftheyear", "aotd", "albumsofthedecade", "albumofthedecade")]
+    [Alias("c", "aoty", "albumsoftheyear", "albumoftheyear", "aotd", "albumsofthedecade", "albumofthedecade", "topster", "topsters")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Albums)]
     public async Task ChartAsync(params string[] otherSettings)
@@ -102,7 +102,7 @@ public class ChartCommands : BaseCommandModule
             var messageContent = this.Context.Message.Content.ToLower();
             var aoty = messageContent.Contains("aoty") || messageContent.Contains("albumsoftheyear") || messageContent.Contains("albumoftheyear");
             var aotd = messageContent.Contains("aotd") || messageContent.Contains("albumsofthedecade") || messageContent.Contains("albumofthedecade");
-                
+
             chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, userSettings, aoty, aotd);
 
             var response = await this._chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,

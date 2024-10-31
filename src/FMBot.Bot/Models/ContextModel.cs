@@ -41,5 +41,7 @@ public class ContextModel
 
     public IUserMessage ReferencedMessage { get; set; }
 
+    public SelectMenuBuilder SelectMenu { get; set; }
+
     public User ContextUser { get; set; }
 }

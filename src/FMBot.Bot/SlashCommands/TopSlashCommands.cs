@@ -157,7 +157,7 @@ public class TopSlashCommands : InteractionModuleBase
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
-        var response = await this._genreBuilders.GetTopGenres(new ContextModel(this.Context, contextUser),
+        var response = await this._genreBuilders.TopGenresAsync(new ContextModel(this.Context, contextUser),
             userSettings, timeSettings, topListSettings, mode.Value);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
@@ -184,7 +184,7 @@ public class TopSlashCommands : InteractionModuleBase
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default, billboard);
 
-        var response = await this._countryBuilders.GetTopCountries(new ContextModel(this.Context, contextUser),
+        var response = await this._countryBuilders.TopCountriesAsync(new ContextModel(this.Context, contextUser),
             userSettings, timeSettings, topListSettings, mode.Value);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);

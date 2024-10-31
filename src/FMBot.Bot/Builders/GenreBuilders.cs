@@ -159,7 +159,7 @@ public class GenreBuilders
         return response;
     }
 
-    public async Task<ResponseModel> GetTopGenres(ContextModel context,
+    public async Task<ResponseModel> TopGenresAsync(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         TopListSettings topListSettings,

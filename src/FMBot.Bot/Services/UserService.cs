@@ -213,7 +213,8 @@ public class UserService
                 }
 
                 string errorReference = null;
-                if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Message.Id, out var fetchedErrorId))
+                if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Message.Id,
+                        out var fetchedErrorId))
                 {
                     errorReference = fetchedErrorId;
                 }
@@ -237,7 +238,8 @@ public class UserService
                 }
 
                 ulong? responseId = null;
-                if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Message.Id, out var fetchedResponseId))
+                if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Message.Id,
+                        out var fetchedResponseId))
                 {
                     responseId = fetchedResponseId;
                 }
@@ -296,7 +298,8 @@ public class UserService
                 }
 
                 string errorReference = null;
-                if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Interaction.Id, out var fetchedErrorId))
+                if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Interaction.Id,
+                        out var fetchedErrorId))
                 {
                     errorReference = fetchedErrorId;
                 }
@@ -320,7 +323,8 @@ public class UserService
                 }
 
                 ulong? responseId = null;
-                if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Interaction.Id, out var fetchedResponseId))
+                if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Interaction.Id,
+                        out var fetchedResponseId))
                 {
                     responseId = fetchedResponseId;
                 }
@@ -352,8 +356,9 @@ public class UserService
                     DiscordResponseId = responseId,
                     Response = commandResponse,
                     Type = context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                           !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall) ?
-                            UserInteractionType.SlashCommandUser : UserInteractionType.SlashCommandGuild,
+                           !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
+                        ? UserInteractionType.SlashCommandUser
+                        : UserInteractionType.SlashCommandGuild,
                     ErrorReferenceId = errorReference,
                     Artist = artist,
                     Album = album,
@@ -372,7 +377,8 @@ public class UserService
         }
     }
 
-    public async Task UpdateInteractionContextThroughReference(ulong interactionId, bool updateDelay = false, bool updateInternal = true)
+    public async Task UpdateInteractionContextThroughReference(ulong interactionId, bool updateDelay = false,
+        bool updateInternal = true)
     {
         if (updateDelay)
         {
@@ -387,7 +393,8 @@ public class UserService
         await UpdateInteractionContext(interactionId, value, updateInternal);
     }
 
-    public async Task UpdateInteractionContext(ulong interactionId, ReferencedMusic responseContext, bool updateInternal = true)
+    public async Task UpdateInteractionContext(ulong interactionId, ReferencedMusic responseContext,
+        bool updateInternal = true)
     {
         if (updateInternal)
         {
@@ -395,6 +402,7 @@ public class UserService
             {
                 PublicProperties.UsedCommandsTracks.TryAdd(interactionId, responseContext.Track);
             }
+
             if (PublicProperties.UsedCommandsAlbums.TryRemove(interactionId, out _))
             {
                 if (responseContext.Album != null)
@@ -402,6 +410,7 @@ public class UserService
                     PublicProperties.UsedCommandsAlbums.TryAdd(interactionId, responseContext.Album);
                 }
             }
+
             if (PublicProperties.UsedCommandsArtists.TryRemove(interactionId, out _))
             {
                 PublicProperties.UsedCommandsArtists.TryAdd(interactionId, responseContext.Artist);
@@ -423,6 +432,265 @@ public class UserService
         }
     }
 
+    public async Task<List<UserInteraction>> GetUserInteractions(int userId, TimeSettingsModel timeSettings)
+    {
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        const string sql = "SELECT * FROM public.user_interactions WHERE user_id = @userId AND " +
+                           "\"timestamp\" >= @startDateTime AND \"timestamp\" <= @endDateTime";
+
+        var interactions = await connection.QueryAsync<UserInteraction>(sql, new
+        {
+            userId = userId,
+            startDateTime = timeSettings.StartDateTime,
+            endDateTime = timeSettings.EndDateTime
+        });
+
+        return interactions.ToList();
+    }
+
+    public BotUsageStats CalculateBotStats(List<UserInteraction> interactions)
+    {
+        if (!interactions.Any())
+        {
+            return new BotUsageStats();
+        }
+
+        var orderedInteractions = interactions.OrderBy(i => i.Timestamp).ToList();
+        const int sessionTimeoutMinutes = 30;
+
+        var stats = new BotUsageStats
+        {
+            TotalCommands = interactions.Count,
+
+            CommandUsage = interactions
+                .GroupBy(i => i.CommandName)
+                .Where(w => w.Key != "discordsupporters" &&
+                            w.Key != "opencollectivesupporters")
+                .ToDictionary(g => g.Key, g => g.Count()),
+            UniqueArtistsSearched = interactions
+                .Where(i => !string.IsNullOrEmpty(i.Artist))
+                .Select(i => i.Artist.ToLower())
+                .Distinct()
+                .Count(),
+            UniqueAlbumsSearched = interactions
+                .Where(i => !string.IsNullOrEmpty(i.Album))
+                .Select(i => i.Album.ToLower())
+                .Distinct()
+                .Count(),
+            UniqueTracksSearched = interactions
+                .Where(i => !string.IsNullOrEmpty(i.Track))
+                .Select(i => i.Track.ToLower())
+                .Distinct()
+                .Count(),
+            TopSearchedArtists = interactions
+                .Where(i => !string.IsNullOrEmpty(i.Artist))
+                .GroupBy(i => i.Artist, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase),
+            ServersUsedIn = interactions
+                .Where(i => i.DiscordGuildId.HasValue)
+                .Select(i => i.DiscordGuildId.Value)
+                .Distinct()
+                .Count(),
+            ActivityByHour = interactions
+                .GroupBy(i => i.Timestamp.Hour)
+                .ToDictionary(g => g.Key, g => g.Count()),
+            ErrorRate = interactions.Count > 0
+                ? (decimal)interactions.Count(i => !string.IsNullOrEmpty(i.ErrorReferenceId)) / interactions.Count * 100
+                : 0,
+            MostActiveDay = interactions
+                .GroupBy(i => i.Timestamp.Date)
+                .OrderByDescending(g => g.Count())
+                .First()
+                .Key,
+            MostActiveHour = interactions
+                .GroupBy(i => i.Timestamp.Hour)
+                .OrderByDescending(g => g.Count())
+                .First()
+                .Key,
+            MostActiveDayOfWeek = interactions
+                .GroupBy(i => i.Timestamp.DayOfWeek)
+                .OrderByDescending(g => g.Count())
+                .First()
+                .Key,
+            TopResponseTypes = interactions
+                .GroupBy(i => i.Response)
+                .ToDictionary(g => g.Key.ToString(), g => g.Count()),
+
+            // Activity by day of week
+            ActivityByDayOfWeek = interactions
+                .GroupBy(i => i.Timestamp.DayOfWeek)
+                .ToDictionary(g => g.Key, g => g.Count()),
+
+            // Session analysis (group commands within 30 minutes of each other)
+            SessionAnalysis = CalculateSessionStats(orderedInteractions, sessionTimeoutMinutes),
+
+            // Total unique items searched (combined artists/albums/tracks)
+            TotalUniqueSearches = interactions
+                .Select(i => new
+                {
+                    SearchKey = $"{i.Artist?.ToLower()}|{i.Album?.ToLower()}|{i.Track?.ToLower()}"
+                })
+                .Where(s => s.SearchKey != "||")
+                .Select(s => s.SearchKey)
+                .Distinct()
+                .Count(),
+
+            // Average commands per session
+            AverageCommandsPerSession = CalculateAverageCommandsPerSession(orderedInteractions, sessionTimeoutMinutes),
+
+            // Common command combinations (commands used within 5 minutes of each other)
+            CommandCombinations = CalculateCommandCombinations(orderedInteractions),
+
+            // Average time between commands
+            AverageTimeBetweenCommands = CalculateAverageTimeBetweenCommands(orderedInteractions),
+
+            // Longest streak of daily bot usage
+            LongestCommandStreak = CalculateLongestStreak(orderedInteractions),
+
+            // Peak usage days (top 5 days with most activity)
+            PeakUsageDays = interactions
+                .GroupBy(i => i.Timestamp.Date)
+                .Select(g => (g.Key, g.Count()))
+                .OrderByDescending(x => x.Item2)
+                .Take(3)
+                .ToList()
+        };
+
+        return stats;
+    }
+
+    private Dictionary<TimeSpan, int> CalculateSessionStats(List<UserInteraction> orderedInteractions,
+        int sessionTimeoutMinutes)
+    {
+        var sessions = new List<TimeSpan>();
+        DateTime? sessionStart = null;
+        DateTime? lastCommand = null;
+
+        foreach (var interaction in orderedInteractions)
+        {
+            if (!sessionStart.HasValue)
+            {
+                sessionStart = interaction.Timestamp;
+            }
+            else if (lastCommand.HasValue &&
+                     (interaction.Timestamp - lastCommand.Value).TotalMinutes > sessionTimeoutMinutes)
+            {
+                sessions.Add(lastCommand.Value - sessionStart.Value);
+                sessionStart = interaction.Timestamp;
+            }
+
+            lastCommand = interaction.Timestamp;
+        }
+
+        if (sessionStart.HasValue && lastCommand.HasValue)
+        {
+            sessions.Add(lastCommand.Value - sessionStart.Value);
+        }
+
+        return sessions
+            .GroupBy(s => TimeSpan.FromMinutes(Math.Floor(s.TotalMinutes / 15) * 15))
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    private float CalculateAverageCommandsPerSession(List<UserInteraction> orderedInteractions,
+        int sessionTimeoutMinutes)
+    {
+        var sessionCounts = new List<int>();
+        var currentSession = new List<UserInteraction>();
+
+        foreach (var interaction in orderedInteractions)
+        {
+            if (!currentSession.Any() || (interaction.Timestamp - currentSession.Last().Timestamp).TotalMinutes <=
+                sessionTimeoutMinutes)
+            {
+                currentSession.Add(interaction);
+            }
+            else
+            {
+                sessionCounts.Add(currentSession.Count);
+                currentSession = new List<UserInteraction> { interaction };
+            }
+        }
+
+        if (currentSession.Any())
+        {
+            sessionCounts.Add(currentSession.Count);
+        }
+
+        return (float)(sessionCounts.Any() ? sessionCounts.Average() : 0);
+    }
+
+    private Dictionary<string, List<string>> CalculateCommandCombinations(List<UserInteraction> orderedInteractions)
+    {
+        var combinations = new Dictionary<string, List<string>>();
+        const int combinationTimeWindowMinutes = 5;
+
+        for (int i = 0; i < orderedInteractions.Count - 1; i++)
+        {
+            var current = orderedInteractions[i];
+            var next = orderedInteractions[i + 1];
+
+            if ((next.Timestamp - current.Timestamp).TotalMinutes <= combinationTimeWindowMinutes)
+            {
+                if (!combinations.ContainsKey(current.CommandName))
+                {
+                    combinations[current.CommandName] = new List<string>();
+                }
+
+                combinations[current.CommandName].Add(next.CommandName);
+            }
+        }
+
+        return combinations;
+    }
+
+    private TimeSpan CalculateAverageTimeBetweenCommands(List<UserInteraction> orderedInteractions)
+    {
+        var timeDiffs = new List<TimeSpan>();
+        for (int i = 0; i < orderedInteractions.Count - 1; i++)
+        {
+            var diff = orderedInteractions[i + 1].Timestamp - orderedInteractions[i].Timestamp;
+            if (diff.TotalHours <= 24) // Only consider commands within 24 hours of each other
+            {
+                timeDiffs.Add(diff);
+            }
+        }
+
+        return timeDiffs.Any()
+            ? TimeSpan.FromTicks((long)timeDiffs.Average(t => t.Ticks))
+            : TimeSpan.Zero;
+    }
+
+    private int CalculateLongestStreak(List<UserInteraction> orderedInteractions)
+    {
+        var dates = orderedInteractions
+            .Select(i => i.Timestamp.Date)
+            .Distinct()
+            .OrderBy(d => d)
+            .ToList();
+
+        int currentStreak = 1;
+        int maxStreak = 1;
+
+        for (int i = 1; i < dates.Count; i++)
+        {
+            if ((dates[i] - dates[i - 1]).Days == 1)
+            {
+                currentStreak++;
+                maxStreak = Math.Max(maxStreak, currentStreak);
+            }
+            else
+            {
+                currentStreak = 1;
+            }
+        }
+
+        return maxStreak;
+    }
+
     public async Task<bool> InteractionExists(ulong contextMessageId)
     {
         if (PublicProperties.UsedCommandsResponseMessageId.ContainsKey(contextMessageId))
@@ -430,7 +698,8 @@ public class UserService
             return true;
         }
 
-        const string sql = "SELECT * FROM public.user_interactions WHERE discord_id = @lookupId AND discord_response_id IS NOT NULL";
+        const string sql =
+            "SELECT * FROM public.user_interactions WHERE discord_id = @lookupId AND discord_response_id IS NOT NULL";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -452,7 +721,8 @@ public class UserService
 
     public async Task<ReferencedMusic> GetReferencedMusic(ulong lookupId)
     {
-        const string sql = "SELECT * FROM public.user_interactions WHERE discord_id = @lookupId OR discord_response_id = @lookupId ";
+        const string sql =
+            "SELECT * FROM public.user_interactions WHERE discord_id = @lookupId OR discord_response_id = @lookupId ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -498,7 +768,8 @@ public class UserService
             return new ContextMessageIdAndUserId(lookupId, responseId, discordUserId);
         }
 
-        const string sql = "SELECT * FROM public.user_interactions WHERE discord_id = @lookupId OR discord_response_id = @lookupId ";
+        const string sql =
+            "SELECT * FROM public.user_interactions WHERE discord_id = @lookupId OR discord_response_id = @lookupId ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -514,7 +785,8 @@ public class UserService
             var user = await GetUserForIdAsync(interaction.UserId);
             if (user != null)
             {
-                return new ContextMessageIdAndUserId(interaction.DiscordId.Value, interaction.DiscordResponseId.Value, user.DiscordUserId);
+                return new ContextMessageIdAndUserId(interaction.DiscordId.Value, interaction.DiscordResponseId.Value,
+                    user.DiscordUserId);
             }
         }
 
@@ -536,9 +808,9 @@ public class UserService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.UserInteractions
             .AnyAsync(c => c.UserId == userId &&
-                             c.Response == CommandResponse.Ok &&
-                             c.CommandName == command &&
-                             c.HintShown == true);
+                           c.Response == CommandResponse.Ok &&
+                           c.CommandName == command &&
+                           c.HintShown == true);
     }
 
     public async Task SetUserReactionsAsync(int userId, string[] reactions)
@@ -566,6 +838,7 @@ public class UserService
             .AsNoTracking()
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
     }
+
     public async Task<User> GetUserWithFriendsAsync(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -711,7 +984,6 @@ public class UserService
             PlayService = this._playService,
             UserSettings = userSettings,
             TotalScrobbles = totalScrobbles,
-
         };
 
         return await this._templateService.GetTemplateFmAsync(userId, footerContext);
@@ -728,11 +1000,13 @@ public class UserService
             {
                 footer.Append("-# ");
             }
+
             footer.AppendLine(genres);
             if (useSmallMarkdown)
             {
                 footer.Append("-# ");
             }
+
             genresAdded = true;
         }
 
@@ -749,6 +1023,7 @@ public class UserService
                 {
                     footer.Append("-# ");
                 }
+
                 lineLength = option.Length;
                 footer.Append(option);
             }
@@ -775,6 +1050,7 @@ public class UserService
             {
                 footer.Append("-# ");
             }
+
             footer.AppendLine(genres);
         }
 
@@ -799,14 +1075,17 @@ public class UserService
             {
                 description.AppendLine($"- Could not fetch user info from Last.fm");
             }
+
             if (stats.FailedUpdates.HasFlag(UpdateType.Artist))
             {
                 description.AppendLine($"- Could not fetch top artists");
             }
+
             if (stats.FailedUpdates.HasFlag(UpdateType.Albums))
             {
                 description.AppendLine($"- Could not fetch top albums");
             }
+
             if (stats.FailedUpdates.HasFlag(UpdateType.Tracks))
             {
                 description.AppendLine($"- Could not fetch top tracks");
@@ -826,14 +1105,17 @@ public class UserService
                 {
                     description.AppendLine($"- Last **{stats.PlayCount}** plays");
                 }
+
                 if (stats.ArtistCount.HasValue)
                 {
                     description.AppendLine($"- Top **{stats.ArtistCount}** artists");
                 }
+
                 if (stats.AlbumCount.HasValue)
                 {
                     description.AppendLine($"- Top **{stats.AlbumCount}** albums");
                 }
+
                 if (stats.TrackCount.HasValue)
                 {
                     description.AppendLine($"- Top **{stats.TrackCount}** tracks");
@@ -845,14 +1127,17 @@ public class UserService
                 {
                     description.AppendLine($"- **{stats.PlayCount}** Last.fm plays");
                 }
+
                 if (stats.ArtistCount.HasValue)
                 {
                     description.AppendLine($"- **{stats.ArtistCount}** top artists");
                 }
+
                 if (stats.AlbumCount.HasValue)
                 {
                     description.AppendLine($"- **{stats.AlbumCount}** top albums");
                 }
+
                 if (stats.TrackCount.HasValue)
                 {
                     description.AppendLine($"- **{stats.TrackCount}** top tracks");
@@ -864,7 +1149,8 @@ public class UserService
 
                     var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
                     description.AppendLine($"Import setting: {name}");
-                    description.AppendLine($"Combined with your **{stats.ImportCount}** imported plays you have a total of **{stats.TotalCount}** plays.");
+                    description.AppendLine(
+                        $"Combined with your **{stats.ImportCount}** imported plays you have a total of **{stats.TotalCount}** plays.");
                 }
             }
 
@@ -875,7 +1161,8 @@ public class UserService
                  stats.ArtistCount >= 3900))
             {
                 description.AppendLine();
-                description.AppendLine($"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterDiscordLink}).");
+                description.AppendLine(
+                    $"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterDiscordLink}).");
                 promo = true;
             }
         }
@@ -942,7 +1229,8 @@ public class UserService
 
     public async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
     {
-        Log.Information("LastfmAuth: Login session starting for {user} | {discordUserId}", contextUser.Username, contextUser.Id);
+        Log.Information("LastfmAuth: Login session starting for {user} | {discordUserId}", contextUser.Username,
+            contextUser.Id);
 
         var loginDelay = 8000;
         for (var i = 0; i < 11; i++)
@@ -960,16 +1248,20 @@ public class UserService
                     SessionKeyLastFm = authSession.Content.Session.Key,
                 };
 
-                Log.Information("LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})", authSession.Content.Session.Name, contextUser.Id);
+                Log.Information(
+                    "LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})",
+                    authSession.Content.Session.Name, contextUser.Id);
                 await SetLastFm(contextUser, userSettings, true);
                 return true;
             }
 
             if (!authSession.Success && i == 10)
             {
-                Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})", contextUser.Id);
+                Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})",
+                    contextUser.Id);
                 return false;
             }
+
             if (!authSession.Success)
             {
                 loginDelay += 3000;
@@ -1125,7 +1417,8 @@ public class UserService
 
             PublicProperties.RegisteredUsers.TryRemove(user.DiscordUserId, out _);
 
-            Log.Information("Deleted user {userId} - {discordUserId} - {userNameLastFm}", user.UserId, user.DiscordUserId, user.UserNameLastFM);
+            Log.Information("Deleted user {userId} - {discordUserId} - {userNameLastFm}", user.UserId,
+                user.DiscordUserId, user.UserNameLastFM);
         }
         catch (Exception e)
         {
@@ -1225,7 +1518,9 @@ public class UserService
 
         foreach (var inactiveUser in inactiveUsers)
         {
-            if (inactiveUser.First().User != null && (inactiveUser.First().User.LastUsed == null || inactiveUser.First().User.LastUsed < DateTime.UtcNow.AddDays(-30)))
+            if (inactiveUser.First().User != null && (inactiveUser.First().User.LastUsed == null ||
+                                                      inactiveUser.First().User.LastUsed <
+                                                      DateTime.UtcNow.AddDays(-30)))
             {
                 var userExists =
                     await this._dataSourceFactory.LastFmUserExistsAsync(inactiveUser.First().UserNameLastFM);
@@ -1239,24 +1534,32 @@ public class UserService
 
                     await DeleteUser(inactiveUser.Key);
 
-                    Log.Information("DeleteInactiveUsers: User {userNameLastFm} | {userId} | {discordUserId} deleted", inactiveUser.First().User.UserNameLastFM, inactiveUser.Key, inactiveUser.First().User.DiscordUserId);
+                    Log.Information("DeleteInactiveUsers: User {userNameLastFm} | {userId} | {discordUserId} deleted",
+                        inactiveUser.First().User.UserNameLastFM, inactiveUser.Key,
+                        inactiveUser.First().User.DiscordUserId);
                     deletedInactiveUsers++;
 
-                    var otherUsers = await this._adminService.GetUsersWithLfmUsernameAsync(inactiveUser.First().User.UserNameLastFM);
-                    foreach (var otherUser in otherUsers.Where(w => w.UserId != inactiveUser.Key && (w.LastUsed == null || w.LastUsed < DateTime.UtcNow.AddDays(-30))))
+                    var otherUsers =
+                        await this._adminService.GetUsersWithLfmUsernameAsync(inactiveUser.First().User.UserNameLastFM);
+                    foreach (var otherUser in otherUsers.Where(w =>
+                                 w.UserId != inactiveUser.Key &&
+                                 (w.LastUsed == null || w.LastUsed < DateTime.UtcNow.AddDays(-30))))
                     {
                         await this._friendsService.RemoveAllFriendsAsync(otherUser.UserId);
                         await this._friendsService.RemoveUserFromOtherFriendsAsync(otherUser.UserId);
 
                         await DeleteUser(otherUser.UserId);
 
-                        Log.Information("DeleteInactiveUsers: OtherUser {userNameLastFm} | {userId} | {discordUserId} deleted", otherUser.UserNameLastFM, otherUser.UserId, otherUser.DiscordUserId);
+                        Log.Information(
+                            "DeleteInactiveUsers: OtherUser {userNameLastFm} | {userId} | {discordUserId} deleted",
+                            otherUser.UserNameLastFM, otherUser.UserId, otherUser.DiscordUserId);
                         deletedInactiveUsers++;
                     }
                 }
                 else
                 {
-                    Log.Information("DeleteInactiveUsers: User {userNameLastFm} exists, so deletion cancelled", inactiveUser.First().User.UserNameLastFM);
+                    Log.Information("DeleteInactiveUsers: User {userNameLastFm} exists, so deletion cancelled",
+                        inactiveUser.First().User.UserNameLastFM);
                 }
 
                 Thread.Sleep(800);
@@ -1295,14 +1598,20 @@ public class UserService
                 //await this._friendsService.RemoveAllFriendsAsync(oldUnusedAccount.UserId);
                 //await DeleteUser(oldUnusedAccount.UserId);
 
-                Log.Information("DeleteOldDuplicateUsers: User {userNameLastFm} | {userId} | {discordUserId} - Last used {lastUsed}", oldUnusedAccount.UserNameLastFM, oldUnusedAccount.UserId, oldUnusedAccount.DiscordUserId, oldUnusedAccount.LastUsed);
+                Log.Information(
+                    "DeleteOldDuplicateUsers: User {userNameLastFm} | {userId} | {discordUserId} - Last used {lastUsed}",
+                    oldUnusedAccount.UserNameLastFM, oldUnusedAccount.UserId, oldUnusedAccount.DiscordUserId,
+                    oldUnusedAccount.LastUsed);
                 counter++;
                 anyDeleted = true;
             }
 
             if (anyDeleted)
             {
-                Log.Information("DeleteOldDuplicateUsers: Main {userNameLastFm} | {userId} | {discordUserId} - Last used {lastUsed}", lastUsedAccount.UserNameLastFM, lastUsedAccount.UserId, lastUsedAccount.DiscordUserId, lastUsedAccount.LastUsed);
+                Log.Information(
+                    "DeleteOldDuplicateUsers: Main {userNameLastFm} | {userId} | {discordUserId} - Last used {lastUsed}",
+                    lastUsedAccount.UserNameLastFM, lastUsedAccount.UserId, lastUsedAccount.DiscordUserId,
+                    lastUsedAccount.LastUsed);
             }
         }
 

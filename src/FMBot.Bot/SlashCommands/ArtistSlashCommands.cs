@@ -581,4 +581,28 @@ public class ArtistSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [SlashCommand("iceberg", "Shows your iceberg, based on artists popularity.")]
+    [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task IcebergAsync(
+        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        _ = DeferAsync(privateResponse);
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        var timeSettings = SettingService.GetTimePeriod(timePeriod,
+            registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone,
+            defaultTimePeriod: TimePeriod.AllTime);
+
+        var response = await this._artistBuilders.GetIceberg(new ContextModel(this.Context, contextUser), userSettings, timeSettings);
+
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
 }

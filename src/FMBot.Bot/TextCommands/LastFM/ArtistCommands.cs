@@ -126,7 +126,8 @@ public class ArtistCommands : BaseCommandModule
 
         try
         {
-            var response = await this._artistBuilders.ArtistOverviewAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await this._artistBuilders.ArtistOverviewAsync(
+                new ContextModel(this.Context, prfx, contextUser),
                 userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -144,7 +145,8 @@ public class ArtistCommands : BaseCommandModule
         "at",
         "artisttracks",
         "artisttracks DMX")]
-    [Alias("at", "att", "artisttrack", "artist track", "artist tracks", "artistrack", "artisttoptracks", "artisttoptrack", "favs")]
+    [Alias("at", "att", "artisttrack", "artist track", "artist tracks", "artistrack", "artisttoptracks",
+        "artisttoptrack", "favs")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     public async Task ArtistTracksAsync([Remainder] string artistValues = null)
@@ -156,9 +158,11 @@ public class ArtistCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
-        var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.AllTime, cachedOrAllTimeOnly: true, dailyTimePeriods: false);
+        var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.AllTime,
+            cachedOrAllTimeOnly: true, dailyTimePeriods: false);
 
-        var response = await this._artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, prfx, contextUser), timeSettings,
+        var response = await this._artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, prfx, contextUser),
+            timeSettings,
             userSettings, redirectsEnabled.NewSearchValue, redirectsEnabled.Enabled);
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -171,7 +175,8 @@ public class ArtistCommands : BaseCommandModule
         "aa",
         "artistalbums",
         "artistalbums The Prodigy")]
-    [Alias("aa", "aab", "atab", "artistalbum", "artist album", "artist albums", "artistopalbum", "artisttopalbums", "artisttab")]
+    [Alias("aa", "aab", "atab", "artistalbum", "artist album", "artist albums", "artistopalbum", "artisttopalbums",
+        "artisttab")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     public async Task ArtistAlbumsAsync([Remainder] string artistValues = null)
@@ -240,11 +245,13 @@ public class ArtistCommands : BaseCommandModule
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var redirectsEnabled = SettingService.RedirectsEnabled(userSettings.NewSearchValue);
-            var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.Monthly, cachedOrAllTimeOnly: true, timeZone: userSettings.TimeZone);
+            var timeSettings = SettingService.GetTimePeriod(redirectsEnabled.NewSearchValue, TimePeriod.Monthly,
+                cachedOrAllTimeOnly: true, timeZone: userSettings.TimeZone);
 
             if (timeSettings.TimePeriod == TimePeriod.AllTime)
             {
-                timeSettings = SettingService.GetTimePeriod("monthly", TimePeriod.Monthly, timeZone: userSettings.TimeZone);
+                timeSettings =
+                    SettingService.GetTimePeriod("monthly", TimePeriod.Monthly, timeZone: userSettings.TimeZone);
             }
 
             var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, prfx, contextUser),
@@ -286,7 +293,8 @@ public class ArtistCommands : BaseCommandModule
                 userSettings.RegisteredLastFm = DateTime.MinValue;
             }
 
-            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly,
+            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue,
+                topListSettings.Discogs ? TimePeriod.AllTime : TimePeriod.Weekly,
                 registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
             var mode = SettingService.SetMode(extraOptions, contextUser.Mode);
 
@@ -342,11 +350,13 @@ public class ArtistCommands : BaseCommandModule
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
-            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, TimePeriod.Quarterly, registeredLastFm: userSettings.RegisteredLastFm,
+            var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue, TimePeriod.Quarterly,
+                registeredLastFm: userSettings.RegisteredLastFm,
                 timeZone: userSettings.TimeZone);
             var mode = SettingService.SetMode(timeSettings.NewSearchValue, contextUser.Mode);
 
-            var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings, userSettings, mode.mode);
+            var response = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings, timeSettings,
+                userSettings, mode.mode);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -359,7 +369,8 @@ public class ArtistCommands : BaseCommandModule
 
     [Command("taste", RunMode = RunMode.Async)]
     [Summary("Compares your top artists, genres and countries to those from another user.")]
-    [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`", Constants.EmbedSizeExample)]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`",
+        Constants.EmbedSizeExample)]
     [Examples("t frikandel_", "t @user", "taste bitldev", "taste @user monthly embed")]
     [UsernameSetRequired]
     [Alias("t")]
@@ -371,7 +382,9 @@ public class ArtistCommands : BaseCommandModule
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var otherUser = await this._settingService.GetUser(extraOptions, userSettings, this.Context, firstOptionIsLfmUsername: true);
+        var otherUser =
+            await this._settingService.GetUser(extraOptions, userSettings, this.Context,
+                firstOptionIsLfmUsername: true);
 
         var timeSettings = SettingService.GetTimePeriod(
             otherUser.NewSearchValue,
@@ -423,7 +436,8 @@ public class ArtistCommands : BaseCommandModule
                 DisplayRoleFilter = false
             };
 
-            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
+            var settings =
+                this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
             var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context,
                     prfx,
@@ -438,7 +452,8 @@ public class ArtistCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+            if (!string.IsNullOrEmpty(e.Message) &&
+                e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
@@ -475,7 +490,8 @@ public class ArtistCommands : BaseCommandModule
                 ResponseMode = contextUser.Mode ?? ResponseMode.Embed
             };
 
-            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
+            var settings =
+                this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
             var response = await this._artistBuilders
                 .GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), settings);
@@ -485,7 +501,8 @@ public class ArtistCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+            if (!string.IsNullOrEmpty(e.Message) &&
+                e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
@@ -501,7 +518,8 @@ public class ArtistCommands : BaseCommandModule
     [Command("friendwhoknows", RunMode = RunMode.Async)]
     [Summary("Shows who of your friends listen to an artist in .fmbot")]
     [Examples("fw", "fwk COMA", "friendwhoknows", "friendwhoknows DJ Seinfeld")]
-    [Alias("fw", "fwk", "friendwhoknows artist", "friend whoknows", "friends whoknows", "friend whoknows artist", "friends whoknows artist")]
+    [Alias("fw", "fwk", "friendwhoknows artist", "friend whoknows", "friends whoknows", "friend whoknows artist",
+        "friends whoknows artist")]
     [UsernameSetRequired]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
@@ -520,7 +538,8 @@ public class ArtistCommands : BaseCommandModule
                 NewSearchValue = artistValues
             };
 
-            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
+            var settings =
+                this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
             var response = await this._artistBuilders
                 .FriendsWhoKnowArtistAsync(new ContextModel(this.Context, prfx, contextUser),
@@ -531,7 +550,8 @@ public class ArtistCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+            if (!string.IsNullOrEmpty(e.Message) &&
+                e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
@@ -569,16 +589,20 @@ public class ArtistCommands : BaseCommandModule
         };
 
         guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, extraOptions);
-        var timeSettings = SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
+        var timeSettings =
+            SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
 
-        if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+        if (timeSettings.UsePlays ||
+            timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
         {
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }
 
         try
         {
-            var response = await this._artistBuilders.GuildArtistsAsync(new ContextModel(this.Context, prfx), guild, guildListSettings);
+            var response =
+                await this._artistBuilders.GuildArtistsAsync(new ContextModel(this.Context, prfx), guild,
+                    guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
                 response.StaticPaginator,
@@ -612,7 +636,8 @@ public class ArtistCommands : BaseCommandModule
         {
             var guildUsers = await this._guildService.GetGuildUsers(this.Context.Guild.Id);
 
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context, firstOptionIsLfmUsername: true);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context,
+                firstOptionIsLfmUsername: true);
 
             var largeGuild = guildUsers.Count > 2000;
 
@@ -636,7 +661,8 @@ public class ArtistCommands : BaseCommandModule
                 var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 response = await this._artistBuilders
-                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers, largeGuild);
+                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers,
+                        largeGuild);
 
                 _ = this.Interactivity.SendPaginatorAsync(
                     response.StaticPaginator,
@@ -646,13 +672,13 @@ public class ArtistCommands : BaseCommandModule
             else
             {
                 response = await this._artistBuilders
-                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers, largeGuild);
+                    .AffinityAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, guild, guildUsers,
+                        largeGuild);
 
                 await this.Context.SendResponse(this.Interactivity, response);
             }
 
             this.Context.LogCommandUsed(response.CommandResponse);
-
         }
         catch (Exception e)
         {
@@ -661,30 +687,27 @@ public class ArtistCommands : BaseCommandModule
     }
 
     [Command("iceberg", RunMode = RunMode.Async)]
-    [Summary("Shows your iceberg.")]
+    [Summary("Shows your iceberg, based on artists popularity.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
-    [Examples("receipt", "receipt 2022", "rcpt week")]
-    [Alias("ice", "icebergify")]
+    [Examples("iceberg", "iceberg 2024", "iceberg alltime")]
+    [Alias("ice", "icebergify", "berg")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
-    [ExcludeFromHelp]
     public async Task IcebergAsync([Remainder] string extraOptions = null)
     {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-        {
-            return;
-        }
-
         _ = this.Context.Channel.TriggerTypingAsync();
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions,
+                registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone,
+                defaultTimePeriod: TimePeriod.AllTime);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._artistBuilders.GetIceberg(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings);
+            var response = await this._artistBuilders.GetIceberg(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, timeSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

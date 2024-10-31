@@ -886,7 +886,7 @@ public class UserBuilder
                     foreach (var type in collectionTypes)
                     {
                         collection.AppendLine(
-                            $"**`{type.Key}` {StringService.GetDiscogsFormatEmote(type.Key)}** - **{type.Count()}** ");
+                            $" {StringService.GetDiscogsFormatEmote(type.Key)} **{type.Key}** - *{type.Count()} {StringExtensions.GetItemsString(type.Count())}* ");
                     }
 
                     discogs = true;

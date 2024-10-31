@@ -35,6 +35,7 @@ public class PlayCommands : BaseCommandModule
     private readonly UserService _userService;
     private readonly PlayBuilder _playBuilder;
     private readonly GuildBuilders _guildBuilders;
+    private readonly RecapBuilders _recapBuilders;
     private InteractiveService Interactivity { get; }
 
     private static readonly List<DateTimeOffset> StackCooldownTimer = new();
@@ -51,7 +52,8 @@ public class PlayCommands : BaseCommandModule
         InteractiveService interactivity,
         IOptions<BotSettings> botSettings,
         PlayBuilder playBuilder,
-        GuildBuilders guildBuilders) : base(botSettings)
+        GuildBuilders guildBuilders,
+        RecapBuilders recapBuilders) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -62,6 +64,7 @@ public class PlayCommands : BaseCommandModule
         this.Interactivity = interactivity;
         this._playBuilder = playBuilder;
         this._guildBuilders = guildBuilders;
+        this._recapBuilders = recapBuilders;
     }
 
     [Command("fm", RunMode = RunMode.Async)]
@@ -78,12 +81,14 @@ public class PlayCommands : BaseCommandModule
         if (contextUser?.UserNameLastFM == null)
         {
             var userNickname = (this.Context.User as SocketGuildUser)?.DisplayName;
-            this._embed.UsernameNotSetErrorResponse(prfx, userNickname ?? this.Context.User.GlobalName ?? this.Context.User.Username);
+            this._embed.UsernameNotSetErrorResponse(prfx,
+                userNickname ?? this.Context.User.GlobalName ?? this.Context.User.Username);
 
             await ReplyAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
             return;
         }
+
         if (options == "help")
         {
             var fmString = "fm";
@@ -121,7 +126,8 @@ public class PlayCommands : BaseCommandModule
                 var msg = this.Context.Message as SocketUserMessage;
                 if (StackCooldownTarget.Contains(this.Context.Message.Author))
                 {
-                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(existingFmCooldown.Value) >= DateTimeOffset.Now)
+                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)]
+                            .AddSeconds(existingFmCooldown.Value) >= DateTimeOffset.Now)
                     {
                         var secondsLeft = (int)(StackCooldownTimer[
                                 StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
@@ -129,7 +135,8 @@ public class PlayCommands : BaseCommandModule
                         if (secondsLeft <= existingFmCooldown.Value - 2)
                         {
                             _ = this.Interactivity.DelayedDeleteMessageAsync(
-                                await this.Context.Channel.SendMessageAsync($"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."),
+                                await this.Context.Channel.SendMessageAsync(
+                                    $"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."),
                                 TimeSpan.FromSeconds(6));
                             this.Context.LogCommandUsed(CommandResponse.Cooldown);
                         }
@@ -149,14 +156,17 @@ public class PlayCommands : BaseCommandModule
             _ = this.Context.Channel.TriggerTypingAsync();
             var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
 
-            var response = await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, prfx, contextUser), userSettings);
+            var response =
+                await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, prfx, contextUser),
+                    userSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
-            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+            if (!string.IsNullOrEmpty(e.Message) &&
+                e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
@@ -257,9 +267,46 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
+    [Command("recap", RunMode = RunMode.Async)]
+    [Summary("Shows a recap")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
+    [ExcludeFromHelp]
+    public async Task RecapAsync([Remainder] string extraOptions = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
+        {
+            return;
+        }
+
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+        var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm,
+            timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
+
+        try
+        {
+            var response = await this._recapBuilders.RecapAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, timeSettings, RecapPage.Overview);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [Command("pace", RunMode = RunMode.Async)]
     [Summary("Shows estimated date you reach a scrobble goal based on average scrobbles per day")]
-    [Options(Constants.CompactTimePeriodList, "Optional goal amount: For example `10000` or `10k`", Constants.UserMentionExample)]
+    [Options(Constants.CompactTimePeriodList, "Optional goal amount: For example `10000` or `10k`",
+        Constants.UserMentionExample)]
     [Examples("pc", "pc 100k q", "pc 40000 h @user", "pace", "pace yearly @user 250000")]
     [UsernameSetRequired]
     [Alias("pc")]
@@ -274,13 +321,15 @@ public class PlayCommands : BaseCommandModule
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
 
         var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
-        var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+        var timeSettings =
+            SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         if (string.IsNullOrWhiteSpace(extraOptions) &&
             !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
         {
-            goalAmount = SettingService.GetGoalAmount(this.Context.Message.ReferencedMessage.Content, userInfo.Playcount);
+            goalAmount =
+                SettingService.GetGoalAmount(this.Context.Message.ReferencedMessage.Content, userInfo.Playcount);
         }
 
         var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
@@ -314,10 +363,12 @@ public class PlayCommands : BaseCommandModule
             if (string.IsNullOrWhiteSpace(extraOptions) &&
                 !string.IsNullOrWhiteSpace(this.Context.Message.ReferencedMessage?.Content))
             {
-                mileStoneAmount = SettingService.GetMilestoneAmount(this.Context.Message.ReferencedMessage.Content, userInfo.Playcount);
+                mileStoneAmount = SettingService.GetMilestoneAmount(this.Context.Message.ReferencedMessage.Content,
+                    userInfo.Playcount);
             }
 
-            var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, mileStoneAmount.amount, userInfo.Playcount, mileStoneAmount.isRandom);
+            var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, mileStoneAmount.amount, userInfo.Playcount, mileStoneAmount.isRandom);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -342,10 +393,12 @@ public class PlayCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context, true);
-        var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+        var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime,
+            timeZone: userSettings.TimeZone);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._playBuilder.PlaysAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings);
+        var response = await this._playBuilder.PlaysAsync(new ContextModel(this.Context, prfx, contextUser),
+            userSettings, timeSettings);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -431,7 +484,8 @@ public class PlayCommands : BaseCommandModule
             var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await this._guildBuilders.MemberOverviewAsync(
+                new ContextModel(this.Context, prfx, contextUser),
                 guild, GuildViewType.Plays);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -461,7 +515,8 @@ public class PlayCommands : BaseCommandModule
             var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser),
+            var response = await this._guildBuilders.MemberOverviewAsync(
+                new ContextModel(this.Context, prfx, contextUser),
                 guild, GuildViewType.ListeningTime);
 
             await this.Context.SendResponse(this.Interactivity, response);

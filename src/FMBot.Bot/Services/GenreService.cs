@@ -438,7 +438,7 @@ public class GenreService
         return foundGenres;
     }
 
-    public async Task<List<string>> GetTopGenresForPlays(IEnumerable<UserPlay> plays)
+    public async Task<List<string>> GetTopGenresForPlays(IEnumerable<UserPlay> plays, int amount = 3)
     {
         var artists = plays
             .GroupBy(x => new { x.ArtistName })
@@ -458,7 +458,7 @@ public class GenreService
         return result
             .OrderByDescending(o => o.UserPlaycount)
             .Select(s => s.GenreName)
-            .Take(3)
+            .Take(amount)
             .ToList();
     }
 

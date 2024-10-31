@@ -168,6 +168,7 @@ public static class InteractionConstants
 
     public const string GuildMembers = "guild-members";
     public const string FeaturedLog = "featured-log";
+    public const string Recap = "user-recap";
 
     public static class Game
     {
