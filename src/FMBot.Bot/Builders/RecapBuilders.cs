@@ -48,8 +48,7 @@ public class RecapBuilders
         this._gameBuilders = gameBuilders;
     }
 
-    public async Task<ResponseModel> RecapAsync(
-        ContextModel context,
+    public async Task<ResponseModel> RecapAsync(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         RecapPage view)
@@ -93,6 +92,9 @@ public class RecapBuilders
             .WithSelectMenu(viewType);
         response.Components = componentBuilder;
         context.SelectMenu = viewType;
+
+        // Send back something so it knows to start typing, while continuing the function
+        // Generate code here please
 
         switch (view)
         {
