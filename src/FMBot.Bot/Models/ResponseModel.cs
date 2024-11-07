@@ -38,7 +38,7 @@ public class ResponseModel
 
     public string[] EmoteReactions { get; set; }
 
-    public StaticPaginator StaticPaginator { get; set; }
+    public StaticPaginatorBuilder StaticPaginator { get; set; }
 
     public CommandResponse CommandResponse { get; set; }
 

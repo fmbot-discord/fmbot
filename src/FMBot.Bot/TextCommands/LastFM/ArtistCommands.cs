@@ -605,7 +605,7 @@ public class ArtistCommands : BaseCommandModule
                     guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
-                response.StaticPaginator,
+                response.StaticPaginator.Build(),
                 this.Context.Channel,
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
@@ -665,7 +665,7 @@ public class ArtistCommands : BaseCommandModule
                         largeGuild);
 
                 _ = this.Interactivity.SendPaginatorAsync(
-                    response.StaticPaginator,
+                    response.StaticPaginator.Build(),
                     message,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
             }

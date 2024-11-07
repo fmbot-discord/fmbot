@@ -1,4 +1,5 @@
 using System;
+using FMBot.Domain.Enums;
 using IF.Lastfm.Core.Api.Enums;
 
 namespace FMBot.Domain.Models;
@@ -27,6 +28,8 @@ public class TimeSettingsModel
 
     public long? TimeFrom  { get; set; }
     public long? TimeUntil  { get; set; }
+
+    public RecapPeriod RecapPeriod { get; set; }
 }
 
 public class UserSettingsModel

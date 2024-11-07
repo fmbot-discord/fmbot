@@ -251,7 +251,7 @@ public static class StringService
         }
     }
 
-    public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null,
+    public static StaticPaginatorBuilder BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null,
         IEmote optionEmote = null, SelectMenuBuilder selectMenuBuilder = null)
     {
         var builder = new StaticPaginatorBuilder()
@@ -285,10 +285,10 @@ public static class StringService
             builder.WithSelectMenus(new List<SelectMenuBuilder> { selectMenuBuilder });
         }
 
-        return builder.Build();
+        return builder;
     }
 
-    public static StaticPaginator BuildStaticPaginatorWithSelectMenu(IList<PageBuilder> pages,
+    public static StaticPaginatorBuilder BuildStaticPaginatorWithSelectMenu(IList<PageBuilder> pages,
         SelectMenuBuilder selectMenuBuilder, string customOptionId = null, IEmote optionEmote = null)
     {
         var builder = new StaticPaginatorBuilder()
@@ -322,10 +322,10 @@ public static class StringService
             builder.WithSelectMenus(new List<SelectMenuBuilder> { selectMenuBuilder });
         }
 
-        return builder.Build();
+        return builder;
     }
 
-    public static StaticPaginator BuildSimpleStaticPaginator(IEnumerable<PageBuilder> pages)
+    public static StaticPaginatorBuilder BuildSimpleStaticPaginator(IEnumerable<PageBuilder> pages)
     {
         var builder = new StaticPaginatorBuilder()
             .WithPages(pages)
@@ -338,7 +338,7 @@ public static class StringService
             { Emote.Parse("<:pages_next:883825508087922739>"), PaginatorAction.Forward },
         });
 
-        return builder.Build();
+        return builder;
     }
 
     public static string UserDiscogsReleaseToStringWithTitle(UserDiscogsReleases discogsRelease)

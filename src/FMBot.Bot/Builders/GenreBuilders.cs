@@ -311,7 +311,7 @@ public class GenreBuilders
                 footer.AppendLine(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
             }
 
-            if (rnd == 1 && !topListSettings.Billboard)
+            if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
                 footer.AppendLine("View this list as a billboard by adding 'billboard' or 'bb'");
             }
@@ -323,7 +323,7 @@ public class GenreBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
         return response;
     }
 

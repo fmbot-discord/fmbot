@@ -163,7 +163,7 @@ public static class InteractionContextExtensions
                 break;
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
-                    response.StaticPaginator,
+                    response.StaticPaginator.Build(),
                     (SocketInteraction)context.Interaction,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     ephemeral: ephemeral);
@@ -220,7 +220,7 @@ public static class InteractionContextExtensions
                 break;
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
-                    response.StaticPaginator,
+                    response.StaticPaginator.Build(),
                     (SocketInteraction)context.Interaction,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     InteractionResponseType.DeferredChannelMessageWithSource,
@@ -408,7 +408,7 @@ public static class InteractionContextExtensions
         IUserMessage message, ResponseModel response)
     {
         _ = interactiveService.SendPaginatorAsync(
-            response.StaticPaginator,
+            response.StaticPaginator.Build(),
             message,
             TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
         return Task.CompletedTask;
