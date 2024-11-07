@@ -147,6 +147,7 @@ public class TrackService
                     response.ResponseType = ResponseType.Embed;
                     return new TrackSearch(null, response);
                 }
+
                 if (!trackInfo.Success || trackInfo.Content == null)
                 {
                     response.Embed.ErrorResponse(trackInfo.Error, trackInfo.Message, null, discordUser, "album");
@@ -168,12 +169,14 @@ public class TrackService
             }
             else
             {
-                recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                recentScrobbles =
+                    await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
             }
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
             {
-                var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName);
+                var errorResponse =
+                    GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName);
                 return new TrackSearch(null, errorResponse);
             }
 
@@ -187,11 +190,13 @@ public class TrackService
             Response<TrackInfo> trackInfo;
             if (useCachedTracks)
             {
-                trackInfo = await GetCachedTrack(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, lastFmUserName, userId);
+                trackInfo = await GetCachedTrack(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, lastFmUserName,
+                    userId);
             }
             else
             {
-                trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
+                trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(lastPlayedTrack.TrackName,
+                    lastPlayedTrack.ArtistName,
                     lastFmUserName);
             }
 
@@ -237,11 +242,13 @@ public class TrackService
             Response<TrackInfo> trackInfo;
             if (useCachedTracks)
             {
-                trackInfo = await GetCachedTrack(result.Content.ArtistName, result.Content.TrackName, lastFmUserName, userId);
+                trackInfo = await GetCachedTrack(result.Content.ArtistName, result.Content.TrackName, lastFmUserName,
+                    userId);
             }
             else
             {
-                trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(result.Content.TrackName, result.Content.ArtistName,
+                trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(result.Content.TrackName,
+                    result.Content.ArtistName,
                     lastFmUserName);
             }
 
@@ -291,7 +298,8 @@ public class TrackService
         return new TrackSearch(null, response);
     }
 
-    public async Task<Response<TrackInfo>> GetCachedTrack(string artistName, string trackName, string lastFmUserName, int? userId = null)
+    public async Task<Response<TrackInfo>> GetCachedTrack(string artistName, string trackName, string lastFmUserName,
+        int? userId = null)
     {
         Response<TrackInfo> trackInfo;
         var cachedTrack = await GetTrackFromDatabase(artistName, trackName);
@@ -307,10 +315,18 @@ public class TrackService
             {
                 var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(cachedTrack.ArtistName,
                     cachedTrack.Name, userId.Value);
-                trackInfo.Content.UserPlaycount = userPlaycount;
+                if (userPlaycount == 0)
+                {
+                    trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName, lastFmUserName);
+                }
+                else
+                {
+                    trackInfo.Content.UserPlaycount = userPlaycount;
+                }
             }
 
-            var cachedAlbum = await this._albumService.GetAlbumFromDatabase(cachedTrack.ArtistName, cachedTrack.AlbumName);
+            var cachedAlbum =
+                await this._albumService.GetAlbumFromDatabase(cachedTrack.ArtistName, cachedTrack.AlbumName);
             if (cachedAlbum != null)
             {
                 trackInfo.Content.AlbumCoverUrl = cachedAlbum.SpotifyImageUrl ?? cachedAlbum.SpotifyImageUrl;
@@ -327,7 +343,8 @@ public class TrackService
         return trackInfo;
     }
 
-    public async Task<TrackSearchResult> GetTrackFromLink(string description, bool possiblyContainsLinks = true, bool skipUploaderName = false, bool trackNameFirst = false)
+    public async Task<TrackSearchResult> GetTrackFromLink(string description, bool possiblyContainsLinks = true,
+        bool skipUploaderName = false, bool trackNameFirst = false)
     {
         try
         {
@@ -408,6 +425,7 @@ public class TrackService
                         ArtistName = description.Split(" — ")[1]
                     };
                 }
+
                 if (description.Contains(" by ", StringComparison.OrdinalIgnoreCase))
                 {
                     return new TrackSearchResult
@@ -432,7 +450,8 @@ public class TrackService
             else
             {
                 if (description.Contains("~"))
-                { // check whether requester is "on" in hydra
+                {
+                    // check whether requester is "on" in hydra
                     description = description.Split(" ~ ")[0];
                 }
 
@@ -462,7 +481,7 @@ public class TrackService
 
                 var queryParams = new Dictionary<string, string>
                 {
-                    {"track", trackName }
+                    { "track", trackName }
                 };
 
                 var url = QueryHelpers.AddQueryString("https://metadata-filter.vercel.app/api/youtube", queryParams);
@@ -517,7 +536,6 @@ public class TrackService
             }
 
             return null;
-
         }
         catch (Exception e)
         {
@@ -549,6 +567,7 @@ public class TrackService
                 //**text** => text
                 return split.Length == 3 ? split[1] : null;
             }
+
             var left = UnBold(description[..delimiterIndex]);
             var right = UnBold(description[(delimiterIndex + byDelimiter.Length)..]);
             if (left != null && right != null)
@@ -560,6 +579,7 @@ public class TrackService
                 };
             }
         }
+
         return null;
     }
 
@@ -605,7 +625,8 @@ public class TrackService
         var count = 0;
         foreach (var track in topTracks)
         {
-            var audioFeatures = (InternalTrackAudioFeatures)this._cache.Get(CacheKeyForAudioFeature(track.TrackName, track.ArtistName));
+            var audioFeatures =
+                (InternalTrackAudioFeatures)this._cache.Get(CacheKeyForAudioFeature(track.TrackName, track.ArtistName));
 
             if (audioFeatures != null)
             {
@@ -638,6 +659,7 @@ public class TrackService
             trackAudioFeatureDescription.Append(
                 $" ({StringExtensions.GetChangeString(avgPrevDanceability, avgCurrentDanceability)} {avgPrevDanceability:P})");
         }
+
         trackAudioFeatureDescription.AppendLine();
 
         var avgCurrentEnergy = (decimal)currentOverview.Average.Energy / currentOverview.Total;
@@ -648,6 +670,7 @@ public class TrackService
             trackAudioFeatureDescription.Append(
                 $" ({StringExtensions.GetChangeString(avgPrevEnergy, avgCurrentEnergy)} {avgPrevEnergy:P})");
         }
+
         trackAudioFeatureDescription.AppendLine();
 
         var avgCurrentSpeechiness = (decimal)currentOverview.Average.Speechiness / currentOverview.Total;
@@ -658,6 +681,7 @@ public class TrackService
             trackAudioFeatureDescription.Append(
                 $" ({StringExtensions.GetChangeString(avgPrevSpeechiness, avgCurrentSpeechiness)} {avgPrevSpeechiness:P})");
         }
+
         trackAudioFeatureDescription.AppendLine();
 
         var avgCurrentAcousticness = (decimal)currentOverview.Average.Acousticness / currentOverview.Total;
@@ -668,6 +692,7 @@ public class TrackService
             trackAudioFeatureDescription.Append(
                 $" ({StringExtensions.GetChangeString(avgPrevAcousticness, avgCurrentAcousticness)} {avgPrevAcousticness:P})");
         }
+
         trackAudioFeatureDescription.AppendLine();
 
         var avgCurrentInstrumentalness = (decimal)currentOverview.Average.Instrumentalness / currentOverview.Total;
@@ -678,6 +703,7 @@ public class TrackService
             trackAudioFeatureDescription.Append(
                 $" ({StringExtensions.GetChangeString(avgPrevInstrumentalness, avgCurrentInstrumentalness)} {avgPrevInstrumentalness:P})");
         }
+
         trackAudioFeatureDescription.AppendLine();
 
         var avgCurrentValence = (decimal)currentOverview.Average.Valence / currentOverview.Total;
@@ -688,6 +714,7 @@ public class TrackService
             trackAudioFeatureDescription.Append(
                 $" ({StringExtensions.GetChangeString(avgPrevValence, avgCurrentValence)} {avgPrevValence:P})");
         }
+
         trackAudioFeatureDescription.AppendLine();
 
         //trackAudioFeatureDescription.Append(
@@ -724,8 +751,10 @@ public class TrackService
         foreach (var track in audioFeatures.Where(w => w.Valence.HasValue && w.Tempo.HasValue))
         {
             var audioFeature = new InternalTrackAudioFeatures(track.Danceability.GetValueOrDefault(),
-                track.Energy.GetValueOrDefault(), track.Speechiness.GetValueOrDefault(), track.Acousticness.GetValueOrDefault(),
-                track.Instrumentalness.GetValueOrDefault(), track.Valence.GetValueOrDefault(), (decimal)track.Tempo.GetValueOrDefault());
+                track.Energy.GetValueOrDefault(), track.Speechiness.GetValueOrDefault(),
+                track.Acousticness.GetValueOrDefault(),
+                track.Instrumentalness.GetValueOrDefault(), track.Valence.GetValueOrDefault(),
+                (decimal)track.Tempo.GetValueOrDefault());
 
             this._cache.Set(CacheKeyForAudioFeature(track.Name, track.ArtistName), audioFeature);
         }
@@ -811,7 +840,8 @@ public class TrackService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-2));
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection,
+                DateTime.UtcNow.AddDays(-2));
 
             var tracks = plays
                 .OrderByDescending(o => o.TimePlayed)
@@ -830,7 +860,8 @@ public class TrackService
         }
     }
 
-    public async Task<List<TrackAutoCompleteSearchModel>> GetRecentTopTracks(ulong discordUserId, bool cacheEnabled = true)
+    public async Task<List<TrackAutoCompleteSearchModel>> GetRecentTopTracks(ulong discordUserId,
+        bool cacheEnabled = true)
     {
         try
         {
@@ -852,7 +883,8 @@ public class TrackService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-20));
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection,
+                DateTime.UtcNow.AddDays(-20));
 
             var tracks = plays
                 .GroupBy(g => new TrackAutoCompleteSearchModel(g.ArtistName, g.TrackName))
@@ -871,7 +903,8 @@ public class TrackService
         }
     }
 
-    public async Task<List<TrackAutoCompleteSearchModel>> SearchThroughTracks(string searchValue, bool cacheEnabled = true)
+    public async Task<List<TrackAutoCompleteSearchModel>> SearchThroughTracks(string searchValue,
+        bool cacheEnabled = true)
     {
         try
         {
