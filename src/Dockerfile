@@ -6,6 +6,15 @@ RUN apt-get update && apt-get install -y \
     webp \
     wget \
     xz-utils \
+    libvpx7 \
+    libx264-163 \
+    libx265-199 \
+    libmp3lame0 \
+    libass9 \
+    libwebpmux3 \
+    libvorbis0a \
+    libtheora0 \
+    libopus0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install latest static FFmpeg build
