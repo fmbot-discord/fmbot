@@ -1166,7 +1166,7 @@ public class AlbumBuilders
         response.Embed.WithDescription(description.ToString());
 
         response.Stream = image;
-        var extension = gifResult ? "gif" : "png";
+        var extension = gifResult ? "webp" : "png";
         response.FileName =
             $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}")}.{extension}";
         response.Spoiler = safeForChannel == CensorService.CensorResult.Nsfw;
@@ -1180,14 +1180,14 @@ public class AlbumBuilders
         else
         {
             var cacheFilePath =
-                ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, ".gif");
+                ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, ".webp");
             Stream gifStream;
 
             if (!File.Exists(cacheFilePath))
             {
                 var specificUrl = await this._appleMusicVideoService.GetVideoUrlFromM3U8(albumCoverUrl);
-                gifStream = await AppleMusicVideoService.ConvertM3U8ToGifAsync(specificUrl);
-                await ChartService.OverwriteCache(gifStream, cacheFilePath, SKEncodedImageFormat.Gif);
+                gifStream = await AppleMusicVideoService.ConvertM3U8ToWebPAsync(specificUrl);
+                await ChartService.OverwriteCache(gifStream, cacheFilePath, SKEncodedImageFormat.Webp);
             }
             else
             {

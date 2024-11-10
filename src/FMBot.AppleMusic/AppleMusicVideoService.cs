@@ -24,18 +24,22 @@ public class AppleMusicVideoService
             line.Trim().StartsWith("https://") && line.EndsWith(".m3u8") && line.Contains("486x486"));
     }
 
-
-    public static async Task<Stream> ConvertM3U8ToGifAsync(string m3u8Url)
+    public static async Task<Stream> ConvertM3U8ToWebPAsync(string m3u8Url)
     {
-        var gifStream = new MemoryStream();
+        var webpStream = new MemoryStream();
 
         var ffmpegProcess = new Process
         {
             StartInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments =
-                    $"-hwaccel auto -i \"{m3u8Url}\" -vf \"fps=10,format=rgb24,colorspace=bt709:iall=bt601-6-625:fast=1,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle\" -t 15 -f gif pipe:1",
+                Arguments = $"-hwaccel auto " +
+                            $"-i \"{m3u8Url}\" " +
+                            "-vf \"fps=fps=20\" " +
+                            "-lossless 0 " +
+                            "-compression_level 5 " +
+                            "-loop 1 " +
+                            "-f webp pipe:1",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -47,7 +51,7 @@ public class AppleMusicVideoService
         {
             ffmpegProcess.Start();
 
-            var outputTask = ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(gifStream);
+            var outputTask = ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(webpStream);
 
             var errorBuilder = new StringBuilder();
             var errorTask = Task.Run(async () =>
@@ -78,12 +82,12 @@ public class AppleMusicVideoService
                     $"FFmpeg failed with exit code: {ffmpegProcess.ExitCode}. Error output: {errorBuilder}");
             }
 
-            gifStream.Position = 0;
-            return gifStream;
+            webpStream.Position = 0;
+            return webpStream;
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error during M3U8 to GIF conversion");
+            Log.Error(ex, "Error during M3U8 to WebP conversion");
             throw;
         }
         finally
