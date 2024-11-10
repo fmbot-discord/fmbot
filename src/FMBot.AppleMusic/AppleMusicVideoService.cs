@@ -36,9 +36,11 @@ public class AppleMusicVideoService
                 Arguments = $"-hwaccel auto " +
                             $"-i \"{m3u8Url}\" " +
                             "-vf \"fps=fps=20\" " +
+                            "-vcodec libwebp_anim " +
                             "-lossless 0 " +
                             "-compression_level 5 " +
                             "-loop 1 " +
+                            "-metadata comment=\"Created with FFmpeg\" " +
                             "-f webp pipe:1",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
