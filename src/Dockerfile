@@ -1,13 +1,7 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
-
-COPY --from=jrottenberg/ffmpeg:7.1-alpine320 /usr/local/bin/ffmpeg /usr/bin/ffmpeg
-COPY --from=jrottenberg/ffmpeg:7.1-alpine320 /usr/local/bin/ffprobe /usr/bin/ffprobe
-
-# Install required dependencies
-RUN apt-get update && apt-get install -y libgdiplus
-
+FROM mcr.microsoft.com/dotnet/runtime:9.0 AS base
+RUN apt-get update && apt-get install -y libgdiplus ffmpeg
 WORKDIR /app
 
 #####################
@@ -56,8 +50,6 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 ENV DOTNET_gcServer=1
-
-RUN chmod +x /usr/bin/ffmpeg /usr/bin/ffprobe
 
 ENTRYPOINT ["dotnet", "FMBot.Bot.dll"]
 
