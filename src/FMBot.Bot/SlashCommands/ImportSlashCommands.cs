@@ -329,6 +329,15 @@ public class ImportSlashCommands : InteractionModuleBase
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
+            if (imports.status == ImportStatus.WrongCsvFailure)
+            {
+                embed.WithColor(DiscordConstants.WarningColorOrange);
+                await UpdateImportEmbed(message, embed, description, $"❌ We couldn't read the `.csv` file that was provided.\n\n" +
+                                                                     $"We can only read a `Apple Music Play Activity.csv` file. Other files do not contain the data required for importing.\n\n" +
+                                                                     $"Still having issues? You can also open a help thread on [our server](https://discord.gg/fmbot).", true);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
 
             await UpdateImportEmbed(message, embed, description, $"- **{imports.result.Count}** Apple Music imports found");
 

@@ -35,7 +35,8 @@ public class ImportService
     private readonly ArtistEnrichment.ArtistEnrichmentClient _artistEnrichment;
 
 
-    public ImportService(HttpClient httpClient, TimeService timeService, IOptions<BotSettings> botSettings, TimeEnrichment.TimeEnrichmentClient timeEnrichment, ArtistEnrichment.ArtistEnrichmentClient artistEnrichment)
+    public ImportService(HttpClient httpClient, TimeService timeService, IOptions<BotSettings> botSettings,
+        TimeEnrichment.TimeEnrichmentClient timeEnrichment, ArtistEnrichment.ArtistEnrichmentClient artistEnrichment)
     {
         this._httpClient = httpClient;
         this._timeService = timeService;
@@ -44,7 +45,8 @@ public class ImportService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<(ImportStatus status, List<AppleMusicCsvImportModel> result)> HandleAppleMusicFiles(User user, IAttachment attachment)
+    public async Task<(ImportStatus status, List<AppleMusicCsvImportModel> result)> HandleAppleMusicFiles(User user,
+        IAttachment attachment)
     {
         var appleMusicPlays = new List<AppleMusicCsvImportModel>();
 
@@ -58,12 +60,15 @@ public class ImportService
             await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
             using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
 
-            if (!zip.Entries.Any(a => a.FullName.EndsWith("Apple Music Play Activity.csv", StringComparison.OrdinalIgnoreCase)))
+            if (!zip.Entries.Any(a =>
+                    a.FullName.EndsWith("Apple Music Play Activity.csv", StringComparison.OrdinalIgnoreCase)))
             {
-                var innerZipEntry = zip.Entries.FirstOrDefault(f => f.FullName.EndsWith("Apple_Media_Services.zip", StringComparison.OrdinalIgnoreCase));
+                var innerZipEntry = zip.Entries.FirstOrDefault(f =>
+                    f.FullName.EndsWith("Apple_Media_Services.zip", StringComparison.OrdinalIgnoreCase));
                 if (innerZipEntry == null)
                 {
-                    Log.Information("Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Could not find 'Apple_Media_Services.zip' inside first zip - {zipName}",
+                    Log.Information(
+                        "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Could not find 'Apple_Media_Services.zip' inside first zip - {zipName}",
                         user.UserId, user.DiscordUserId, attachment.Filename);
 
                     return (ImportStatus.UnknownFailure, null);
@@ -72,7 +77,8 @@ public class ImportService
                 await using var innerZipStream = innerZipEntry.Open();
                 using var innerZip = new ZipArchive(innerZipStream, ZipArchiveMode.Read);
 
-                var csvEntry = innerZip.Entries.FirstOrDefault(f => f.FullName.EndsWith("Apple Music Play Activity.csv", StringComparison.OrdinalIgnoreCase));
+                var csvEntry = innerZip.Entries.FirstOrDefault(f =>
+                    f.FullName.EndsWith("Apple Music Play Activity.csv", StringComparison.OrdinalIgnoreCase));
                 if (csvEntry != null)
                 {
                     await ExtractPlaysFromCsv(csvEntry);
@@ -80,26 +86,39 @@ public class ImportService
             }
             else
             {
-                var csvEntry = zip.Entries.FirstOrDefault(f => f.FullName.EndsWith("Apple Music Play Activity.csv", StringComparison.OrdinalIgnoreCase));
+                var csvEntry = zip.Entries.FirstOrDefault(f =>
+                    f.FullName.EndsWith("Apple Music Play Activity.csv", StringComparison.OrdinalIgnoreCase));
                 if (csvEntry != null)
                 {
                     await ExtractPlaysFromCsv(csvEntry);
                 }
             }
         }
+
         if (attachment.Filename.EndsWith(".csv"))
         {
             await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
             using var innerCsvStreamReader = new StreamReader(stream);
 
-            using var csv = new CsvReader(innerCsvStreamReader, csvConfig);
-
-            var records = csv.GetRecords<AppleMusicCsvImportModel>();
-            if (records.Any())
+            try
             {
-                appleMusicPlays.AddRange(records.Where(w => w.PlayDurationMs > 0 &&
-                                                            !string.IsNullOrWhiteSpace(w.AlbumName) &&
-                                                            !string.IsNullOrWhiteSpace(w.SongName)).ToList());
+                using var csv = new CsvReader(innerCsvStreamReader, csvConfig);
+
+
+                var records = csv.GetRecords<AppleMusicCsvImportModel>();
+                if (records.Any())
+                {
+                    appleMusicPlays.AddRange(records.Where(w => w.PlayDurationMs > 0 &&
+                                                                !string.IsNullOrWhiteSpace(w.AlbumName) &&
+                                                                !string.IsNullOrWhiteSpace(w.SongName)).ToList());
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Information(
+                    "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Failed to parse csv - {zipName}",
+                    user.UserId, user.DiscordUserId, attachment.Filename);
+                return (ImportStatus.WrongCsvFailure, appleMusicPlays);
             }
         }
 
@@ -127,7 +146,8 @@ public class ImportService
         }
     }
 
-    public async Task<(RepeatedField<PlayWithoutArtist> userPlays, string matchFoundPercentage)> AppleMusicImportAddArtists(User user, List<AppleMusicCsvImportModel> appleMusicPlays)
+    public async Task<(RepeatedField<PlayWithoutArtist> userPlays, string matchFoundPercentage)>
+        AppleMusicImportAddArtists(User user, List<AppleMusicCsvImportModel> appleMusicPlays)
     {
         var simplePlays = appleMusicPlays
             .Where(w => w.AlbumName != null &&
@@ -158,24 +178,29 @@ public class ImportService
 
         var playsWithArtist = await this._artistEnrichment.AddArtistToPlaysAsync(appleMusicImports);
 
-        Log.Information("Importing: {userId} / {discordUserId} - AppleMusicImportToUserPlays - Total {totalPlays} - Artist found {artistFound} - Artist not found {artistNotFound}",
-            user.UserId, user.DiscordUserId, playsWithArtist.Plays.Count, playsWithArtist.ArtistFound, playsWithArtist.ArtistNotFound);
+        Log.Information(
+            "Importing: {userId} / {discordUserId} - AppleMusicImportToUserPlays - Total {totalPlays} - Artist found {artistFound} - Artist not found {artistNotFound}",
+            user.UserId, user.DiscordUserId, playsWithArtist.Plays.Count, playsWithArtist.ArtistFound,
+            playsWithArtist.ArtistNotFound);
 
         var validPlays = playsWithArtist.Plays
             .Where(w => IsValidScrobble(w.MsPlayed, w.MediaLength)).ToList();
 
-        Log.Information("Importing: {userId} / {discordUserId} - AppleMusicImportToUserPlays - {validScrobbles} plays left after listening time filter",
+        Log.Information(
+            "Importing: {userId} / {discordUserId} - AppleMusicImportToUserPlays - {validScrobbles} plays left after listening time filter",
             user.UserId, user.DiscordUserId, validPlays.Count);
 
         return (playsWithArtist.Plays, $"{(decimal)playsWithArtist.ArtistFound / playsWithArtist.Plays.Count:0%}");
     }
 
-    public static List<UserPlay> AppleMusicImportsToValidUserPlays(User user, RepeatedField<PlayWithoutArtist> appleMusicPlays)
+    public static List<UserPlay> AppleMusicImportsToValidUserPlays(User user,
+        RepeatedField<PlayWithoutArtist> appleMusicPlays)
     {
         var validPlays = appleMusicPlays
             .Where(w => IsValidScrobble(w.MsPlayed, w.MediaLength)).ToList();
 
-        Log.Information("Importing: {userId} / {discordUserId} - AppleMusicImportToUserPlays - {validScrobbles} plays left after listening time filter",
+        Log.Information(
+            "Importing: {userId} / {discordUserId} - AppleMusicImportToUserPlays - {validScrobbles} plays left after listening time filter",
             user.UserId, user.DiscordUserId, validPlays.Count);
 
         return validPlays.Select(s => new UserPlay
@@ -200,14 +225,16 @@ public class ImportService
         };
     }
 
-    public async Task<(ImportStatus status, List<SpotifyEndSongImportModel> result, List<string> processedFiles)> HandleSpotifyFiles(User user, IEnumerable<IAttachment> attachments)
+    public async Task<(ImportStatus status, List<SpotifyEndSongImportModel> result, List<string> processedFiles)>
+        HandleSpotifyFiles(User user, IEnumerable<IAttachment> attachments)
     {
         try
         {
             var spotifyPlays = new List<SpotifyEndSongImportModel>();
             var processedFiles = new List<string>();
 
-            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".json")).GroupBy(g => g.Filename))
+            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".json"))
+                         .GroupBy(g => g.Filename))
             {
                 await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
 
@@ -220,10 +247,13 @@ public class ImportService
                 }
                 catch (Exception e)
                 {
-                    Log.Error("Importing: {userId} / {discordUserId} - Error in import .zip file ({fileName})", user.UserId, user.DiscordUserId, attachment.Key, e);
+                    Log.Error("Importing: {userId} / {discordUserId} - Error in import .zip file ({fileName})",
+                        user.UserId, user.DiscordUserId, attachment.Key, e);
                 }
             }
-            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".zip")).GroupBy(g => g.Filename))
+
+            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".zip"))
+                         .GroupBy(g => g.Filename))
             {
                 await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
 
@@ -246,7 +276,8 @@ public class ImportService
                     }
                     catch (Exception e)
                     {
-                        Log.Error("Importing: {userId} / {discordUserId} - Error in import .zip file ({fileName})", user.UserId, user.DiscordUserId, entry.Name, e);
+                        Log.Error("Importing: {userId} / {discordUserId} - Error in import .zip file ({fileName})",
+                            user.UserId, user.DiscordUserId, entry.Name, e);
                     }
                 }
             }
@@ -255,7 +286,8 @@ public class ImportService
         }
         catch (Exception e)
         {
-            Log.Error("Importing: {userId} / {discordUserId} - Error while attempting to process Spotify import file", user.UserId, user.DiscordUserId, e);
+            Log.Error("Importing: {userId} / {discordUserId} - Error while attempting to process Spotify import file",
+                user.UserId, user.DiscordUserId, e);
             return (ImportStatus.UnknownFailure, null, null);
         }
     }
@@ -284,7 +316,8 @@ public class ImportService
 
         var filterInvalidPlays = await this._timeEnrichment.FilterInvalidSpotifyImportsAsync(spotifyImports);
 
-        Log.Information("Importing: {userId} / {discordUserId} - SpotifyImportToUserPlays found {validPlays} valid plays and {invalidPlays} invalid plays",
+        Log.Information(
+            "Importing: {userId} / {discordUserId} - SpotifyImportToUserPlays found {validPlays} valid plays and {invalidPlays} invalid plays",
             user.UserId, user.DiscordUserId, filterInvalidPlays.ValidImports.Count, filterInvalidPlays.InvalidPlays);
 
         return filterInvalidPlays.ValidImports.Select(s => new UserPlay
@@ -292,7 +325,9 @@ public class ImportService
             UserId = user.UserId,
             TimePlayed = DateTime.SpecifyKind(s.Ts.ToDateTime(), DateTimeKind.Utc),
             ArtistName = s.MasterMetadataAlbumArtistName,
-            AlbumName = !string.IsNullOrWhiteSpace(s.MasterMetadataAlbumAlbumName) ? s.MasterMetadataAlbumAlbumName : null,
+            AlbumName = !string.IsNullOrWhiteSpace(s.MasterMetadataAlbumAlbumName)
+                ? s.MasterMetadataAlbumAlbumName
+                : null,
             TrackName = s.MasterMetadataTrackName,
             PlaySource = PlaySource.SpotifyImport,
             MsPlayed = s.MsPlayed
@@ -342,7 +377,8 @@ public class ImportService
         await connection.OpenAsync();
 
         await PlayRepository.SetDefaultSourceForPlays(user.UserId, connection);
-        Log.Information("Importing: {userId} / {discordUserId} - Set default data source", user.UserId, user.DiscordUserId);
+        Log.Information("Importing: {userId} / {discordUserId} - Set default data source", user.UserId,
+            user.DiscordUserId);
     }
 
     public async Task InsertImportPlays(User user, IList<UserPlay> plays)
@@ -353,11 +389,14 @@ public class ImportService
             await connection.OpenAsync();
 
             var inserted = await PlayRepository.InsertTimeSeriesPlays(plays, connection);
-            Log.Information("Importing: {userId} / {discordUserId} - Inserted {insertCount} plays (Should be {importCount})", user.UserId, user.DiscordUserId, inserted, plays.Count);
+            Log.Information(
+                "Importing: {userId} / {discordUserId} - Inserted {insertCount} plays (Should be {importCount})",
+                user.UserId, user.DiscordUserId, inserted, plays.Count);
         }
         else
         {
-            Log.Error("Importing: {userId} / {discordUserId} Tried to insert 0 import plays!", user.UserId, user.DiscordUserId);
+            Log.Error("Importing: {userId} / {discordUserId} Tried to insert 0 import plays!", user.UserId,
+                user.DiscordUserId);
         }
     }
 
@@ -368,7 +407,8 @@ public class ImportService
 
         await PlayRepository.RemoveAllImportedSpotifyPlays(user.UserId, connection);
 
-        Log.Information("Importing: {userId} / {discordUserId} - Removed imported Spotify plays", user.UserId, user.DiscordUserId);
+        Log.Information("Importing: {userId} / {discordUserId} - Removed imported Spotify plays", user.UserId,
+            user.DiscordUserId);
     }
 
     public async Task RemoveImportedAppleMusicPlays(User user)
@@ -378,7 +418,8 @@ public class ImportService
 
         await PlayRepository.RemoveAllImportedAppleMusicPlays(user.UserId, connection);
 
-        Log.Information("Importing: {userId} / {discordUserId} - Removed imported Apple Music plays", user.UserId, user.DiscordUserId);
+        Log.Information("Importing: {userId} / {discordUserId} - Removed imported Apple Music plays", user.UserId,
+            user.DiscordUserId);
     }
 
     public async Task<bool> HasImported(int userId)
@@ -395,6 +436,7 @@ public class ImportService
         {
             return null;
         }
+
         if (playSources.Contains(PlaySource.SpotifyImport) && playSources.Contains(PlaySource.AppleMusicImport))
         {
             stringBuilder.AppendLine("Contains imported Spotify and Apple Music plays");
