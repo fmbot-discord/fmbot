@@ -2,8 +2,8 @@
 
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
 
-# Copy FFmpeg from the official FFmpeg image - using alpine variant for static binaries
-COPY --from=jrottenberg/ffmpeg:7.1-alpine320 /usr/local /usr/local/
+COPY --from=jrottenberg/ffmpeg:7.1-alpine320 /usr/local/bin/ffmpeg /usr/bin/ffmpeg
+COPY --from=jrottenberg/ffmpeg:7.1-alpine320 /usr/local/bin/ffprobe /usr/bin/ffprobe
 
 # Install required dependencies
 RUN apt-get update && apt-get install -y libgdiplus
@@ -56,6 +56,8 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 ENV DOTNET_gcServer=1
+
+RUN chmod +x /usr/bin/ffmpeg /usr/bin/ffprobe
 
 ENTRYPOINT ["dotnet", "FMBot.Bot.dll"]
 
