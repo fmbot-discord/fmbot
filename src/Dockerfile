@@ -1,30 +1,12 @@
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
-# Install dependencies and add FFmpeg repository
-RUN apt-get update && apt-get install -y \
-    libgdiplus \
-    libwebp-dev \
-    webp \
-    wget \
-    xz-utils \
-    libvpx7 \
-    libx264-163 \
-    libx265-199 \
-    libmp3lame0 \
-    libass9 \
-    libwebpmux3 \
-    libvorbis0a \
-    libtheora0 \
-    libopus0 \
-    && rm -rf /var/lib/apt/lists/*
+#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-# Install latest static FFmpeg build
-RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
-    && tar xvf ffmpeg-release-amd64-static.tar.xz \
-    && mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/ \
-    && mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/ \
-    && rm -rf ffmpeg-*-amd64-static* \
-    && chmod +x /usr/local/bin/ffmpeg \
-    && chmod +x /usr/local/bin/ffprobe
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
+
+# Copy FFmpeg from the official FFmpeg image - using alpine variant for static binaries
+COPY --from=jrottenberg/ffmpeg:7.1-alpine320 /usr/local /usr/local/
+
+# Install required dependencies
+RUN apt-get update && apt-get install -y libgdiplus
 
 WORKDIR /app
 
