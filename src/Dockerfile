@@ -1,18 +1,7 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 FROM mcr.microsoft.com/dotnet/runtime:8.0-noble-amd64 AS base
-RUN apt-get update && apt-get install -y libgdiplus wget xz-utils \
-    libwebp-dev libwebpmux3 libwebpdemux2 libwebp7 webp
-
-# Install static FFmpeg build
-WORKDIR /tmp
-RUN wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz && \
-    tar xvf ffmpeg-git-amd64-static.tar.xz && \
-    cp ffmpeg-git-*-amd64-static/ffmpeg /usr/local/bin/ && \
-    cp ffmpeg-git-*-amd64-static/ffprobe /usr/local/bin/ && \
-    chmod +x /usr/local/bin/ffmpeg && \
-    chmod +x /usr/local/bin/ffprobe && \
-    rm -rf ffmpeg-git-* *.tar.xz*
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y libgdiplus ffmpeg
 
 WORKDIR /app
 
