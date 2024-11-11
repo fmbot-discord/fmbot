@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -192,67 +194,87 @@ public class DiscordSkuService
         response.EnsureSuccessStatusCode();
     }
 
-    private async Task<(string waveform, double durationSecs)> GenerateWaveformFromAudioBytesAsync(byte[] audioBytes)
+    private static async Task<(string waveform, double durationSecs)> GenerateWaveformFromAudioBytesAsync(byte[] audioBytes)
     {
+        var duration = 30;
+
         using var audioStream = new MemoryStream(audioBytes);
-        await using var mp3Reader = new Mp3FileReader(audioStream);
-        await using var waveStream = WaveFormatConversionStream.CreatePcmStream(mp3Reader);
+        using var pcmStream = new MemoryStream();
 
-        var sampleProvider = waveStream.ToSampleProvider();
-        var sampleRate = sampleProvider.WaveFormat.SampleRate;
-        var channels = sampleProvider.WaveFormat.Channels;
-
-        // Calculate total samples
-        var totalTime = mp3Reader.TotalTime;
-
-        var samples = new List<float>();
-        var buffer = new float[sampleRate * channels];
-        int samplesRead;
-
-        while ((samplesRead = sampleProvider.Read(buffer, 0, buffer.Length)) > 0)
+        var ffmpegProcess = new Process
         {
-            // If stereo, average channels to mono
-            if (channels == 2)
+            StartInfo = new ProcessStartInfo
             {
-                for (int i = 0; i < samplesRead; i += 2)
-                {
-                    samples.Add((buffer[i] + buffer[i + 1]) / 2f);
-                }
+                FileName = "ffmpeg",
+                Arguments = "-i pipe:0 " + // Read from stdin
+                            "-ac 1 " + // Convert to mono
+                            "-ar 48000 " + // Sample rate
+                            "-f s16le " + // 16-bit PCM
+                            "pipe:1", // Output to stdout
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
             }
-            else
-            {
-                for (int i = 0; i < samplesRead; i++)
-                {
-                    samples.Add(buffer[i]);
-                }
-            }
-        }
+        };
 
-        var numPoints = Math.Min((int)Math.Floor(samples.Count / (sampleRate / 10.0)), 256);
-        var waveformPoints = new byte[numPoints];
-
-        for (var i = 0; i < numPoints; i++)
+        try
         {
-            var startIndex = (int)Math.Floor(i * samples.Count / (double)numPoints);
-            var endIndex = (int)Math.Floor((i + 1) * samples.Count / (double)numPoints);
+            ffmpegProcess.Start();
 
-            // Find peak amplitude in this segment
-            float maxAmplitude = 0;
-            for (var j = startIndex; j < endIndex && j < samples.Count; j++)
+            var inputTask = audioStream.CopyToAsync(ffmpegProcess.StandardInput.BaseStream)
+                .ContinueWith(t => ffmpegProcess.StandardInput.Close());
+
+            var outputTask = ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(pcmStream);
+
+            var errorBuilder = new StringBuilder();
+            var errorTask = Task.Run(async () =>
             {
-                var amplitude = Math.Abs(samples[j]);
-                if (maxAmplitude < amplitude)
+                while (await ffmpegProcess.StandardError.ReadLineAsync() is { } line)
                 {
-                    maxAmplitude = amplitude;
+                    errorBuilder.AppendLine(line);
                 }
+            });
+
+            await Task.WhenAll(inputTask, outputTask, errorTask);
+            await ffmpegProcess.WaitForExitAsync();
+
+            if (ffmpegProcess.ExitCode != 0)
+            {
+                throw new Exception(
+                    $"FFmpeg failed with exit code: {ffmpegProcess.ExitCode}. Error output: {errorBuilder}");
             }
 
-            waveformPoints[i] = (byte)Math.Min(255, Math.Floor(maxAmplitude * 255));
-        }
+            // Process PCM data to generate waveform
+            pcmStream.Position = 0;
+            var waveformPoints = new byte[256];
+            var samplesPerPoint = (int)(pcmStream.Length / (2 * 256)); // 2 bytes per sample
 
-        return (
-            Convert.ToBase64String(waveformPoints),
-            totalTime.TotalSeconds
-        );
+            using var reader = new BinaryReader(pcmStream);
+            for (int i = 0; i < 256; i++)
+            {
+                float maxAmplitude = 0;
+                for (int j = 0; j < samplesPerPoint && pcmStream.Position < pcmStream.Length; j++)
+                {
+                    // Read 16-bit sample and convert to float
+                    var sample = reader.ReadInt16() / 32768f;
+                    maxAmplitude = Math.Max(maxAmplitude, Math.Abs(sample));
+                }
+
+                waveformPoints[i] = (byte)Math.Min(255, Math.Floor(maxAmplitude * 255));
+            }
+
+            return (Convert.ToBase64String(waveformPoints), duration);
+        }
+        finally
+        {
+            if (!ffmpegProcess.HasExited)
+            {
+                ffmpegProcess.Kill();
+            }
+
+            ffmpegProcess.Dispose();
+        }
     }
 }
