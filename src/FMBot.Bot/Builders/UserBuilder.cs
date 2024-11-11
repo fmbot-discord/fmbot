@@ -724,6 +724,11 @@ public class UserBuilder
 
             var active = option == view;
 
+            if (option == FeaturedView.Server && context.DiscordGuild ==  null)
+            {
+                continue;
+            }
+
             viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
         }
 
