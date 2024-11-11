@@ -203,10 +203,9 @@ public class DiscordSkuService
         response.EnsureSuccessStatusCode();
     }
 
-    private static async Task<(string waveform, double durationSecs)> GenerateWaveformFromAudioBytesAsync(byte[] audioBytes)
+    private static async Task<(string waveform, double durationSecs)> GenerateWaveformFromAudioBytesAsync(
+        byte[] audioBytes)
     {
-        var duration = 30;
-
         using var audioStream = new MemoryStream(audioBytes);
         using var pcmStream = new MemoryStream();
 
@@ -215,11 +214,8 @@ public class DiscordSkuService
             StartInfo = new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = "-i pipe:0 " + // Read from stdin
-                            "-ac 1 " + // Convert to mono
-                            "-ar 48000 " + // Sample rate
-                            "-f s16le " + // 16-bit PCM
-                            "pipe:1", // Output to stdout
+                // Add -t to get duration info in stderr
+                Arguments = $"-f mp3 -i pipe:0 -ac 1 -ar 48000 -f s16le pipe:1",
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -232,22 +228,26 @@ public class DiscordSkuService
         {
             ffmpegProcess.Start();
 
-            var inputTask = audioStream.CopyToAsync(ffmpegProcess.StandardInput.BaseStream)
-                .ContinueWith(t => ffmpegProcess.StandardInput.Close());
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-            var outputTask = ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(pcmStream);
+            var inputTask = audioStream.CopyToAsync(ffmpegProcess.StandardInput.BaseStream, cts.Token)
+                .ContinueWith(t => ffmpegProcess.StandardInput.Close(), cts.Token);
+
+            var outputTask = ffmpegProcess.StandardOutput.BaseStream.CopyToAsync(pcmStream, cts.Token);
 
             var errorBuilder = new StringBuilder();
             var errorTask = Task.Run(async () =>
             {
-                while (await ffmpegProcess.StandardError.ReadLineAsync() is { } line)
+                while (!cts.Token.IsCancellationRequested &&
+                       await ffmpegProcess.StandardError.ReadLineAsync(cts.Token) is { } line)
                 {
                     errorBuilder.AppendLine(line);
+                    Log.Debug("FFmpeg: {line}", line);
                 }
-            });
+            }, cts.Token);
 
             await Task.WhenAll(inputTask, outputTask, errorTask);
-            await ffmpegProcess.WaitForExitAsync();
+            await ffmpegProcess.WaitForExitAsync(cts.Token);
 
             if (ffmpegProcess.ExitCode != 0)
             {
@@ -255,26 +255,46 @@ public class DiscordSkuService
                     $"FFmpeg failed with exit code: {ffmpegProcess.ExitCode}. Error output: {errorBuilder}");
             }
 
-            // Process PCM data to generate waveform
+            // Calculate duration based on PCM data
+            var durationSecs = (double)pcmStream.Length / (48000 * 2); // bytes / (sample_rate * bytes_per_sample)
+
+            // Calculate number of samples needed
+            var samplesNeeded = Math.Min(256, (int)(durationSecs * 10)); // 10 samples per second (100ms intervals)
+            var samplesPerPoint = (int)(pcmStream.Length / (2 * samplesNeeded)); // 2 bytes per sample
+
             pcmStream.Position = 0;
-            var waveformPoints = new byte[256];
-            var samplesPerPoint = (int)(pcmStream.Length / (2 * 256)); // 2 bytes per sample
+            var waveformPoints = new byte[samplesNeeded];
 
             using var reader = new BinaryReader(pcmStream);
-            for (int i = 0; i < 256; i++)
+            for (int i = 0; i < samplesNeeded; i++)
             {
                 float maxAmplitude = 0;
-                for (int j = 0; j < samplesPerPoint && pcmStream.Position < pcmStream.Length; j++)
+                for (int j = 0; j < samplesPerPoint && pcmStream.Position < pcmStream.Length - 1; j++)
                 {
-                    // Read 16-bit sample and convert to float
-                    var sample = reader.ReadInt16() / 32768f;
-                    maxAmplitude = Math.Max(maxAmplitude, Math.Abs(sample));
+                    try
+                    {
+                        var sample = reader.ReadInt16() / 32768f; // Normalize to [-1, 1]
+                        maxAmplitude = Math.Max(maxAmplitude, Math.Abs(sample));
+                    }
+                    catch (EndOfStreamException)
+                    {
+                        Log.Warning("Reached end of stream while reading PCM data");
+                        break;
+                    }
                 }
 
+                // Scale to [0, 255]
                 waveformPoints[i] = (byte)Math.Min(255, Math.Floor(maxAmplitude * 255));
+
+                // Skip to next sampling point if we have remaining data
+                var bytesToSkip = (long)(((i + 1) * pcmStream.Length / samplesNeeded) - pcmStream.Position);
+                if (bytesToSkip > 0)
+                {
+                    pcmStream.Seek(bytesToSkip, SeekOrigin.Current);
+                }
             }
 
-            return (Convert.ToBase64String(waveformPoints), duration);
+            return (Convert.ToBase64String(waveformPoints), durationSecs);
         }
         finally
         {
