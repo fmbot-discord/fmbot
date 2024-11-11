@@ -327,9 +327,9 @@ public class TrackService
 
             var cachedAlbum =
                 await this._albumService.GetAlbumFromDatabase(cachedTrack.ArtistName, cachedTrack.AlbumName);
-            if (cachedAlbum != null)
+            if (cachedAlbum != null && trackInfo.Content != null)
             {
-                trackInfo.Content.AlbumCoverUrl = cachedAlbum.SpotifyImageUrl ?? cachedAlbum.SpotifyImageUrl;
+                trackInfo.Content.AlbumCoverUrl = cachedAlbum.SpotifyImageUrl;
                 trackInfo.Content.AlbumUrl = cachedAlbum.LastFmUrl;
                 trackInfo.Content.TrackUrl = cachedAlbum.LastFmUrl;
             }
