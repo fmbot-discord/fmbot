@@ -186,6 +186,8 @@ public class RecapBuilders
                         $"You ran **{userInteractions.Count}** commands, which showed you **{differentArtists}** different artists.");
                 }
 
+                response.Embed.WithFooter("⬇️ Dive deeper with the dropdown below");
+
                 break;
             }
             case RecapPage.BotStats:
