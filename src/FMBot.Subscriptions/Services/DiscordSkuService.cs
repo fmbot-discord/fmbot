@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -7,7 +6,6 @@ using FMBot.Subscriptions.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
-using NAudio.Wave;
 using Serilog;
 
 namespace FMBot.Subscriptions.Services;
