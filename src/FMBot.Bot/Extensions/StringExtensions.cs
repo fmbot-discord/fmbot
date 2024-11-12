@@ -315,7 +315,8 @@ public static partial class StringExtensions
             time.Append($"{(int)timeSpan.TotalDays} days");
             if (timeSpan.Hours > 0)
             {
-                time.Append($", {timeSpan.Hours} hours");
+                time.Append($", {timeSpan.Hours} ");
+                time.Append(timeSpan.Hours == 1 ? $"hour" : $"hours");
             }
 
             return time.ToString();
@@ -324,10 +325,8 @@ public static partial class StringExtensions
         if (timeSpan.Days == 1)
         {
             time.Append($"{(int)timeSpan.TotalDays} day");
-            if (timeSpan.Hours > 0)
-            {
-                time.Append($", {timeSpan.Hours} hours");
-            }
+            time.Append($", {timeSpan.Hours} ");
+            time.Append(timeSpan.Hours == 1 ? $"hour" : $"hours");
 
             return time.ToString();
         }

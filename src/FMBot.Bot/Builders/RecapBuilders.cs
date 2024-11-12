@@ -87,7 +87,8 @@ public class RecapBuilders
             Width = 3,
             Height = 3,
             TimeSettings = timeSettings,
-            TitleSetting = TitleSetting.TitlesDisabled
+            TitleSetting = TitleSetting.TitlesDisabled,
+            TimespanString = timeSettings.Description
         };
 
         var viewType = new SelectMenuBuilder()
@@ -439,6 +440,19 @@ public class RecapBuilders
                         $"- **`All`** " +
                         $"— **{enrichedPlays.enrichedPlays.Count}** plays " +
                         $"— **{StringExtensions.GetLongListeningTimeString(enrichedPlays.totalPlayTime)}**");
+
+                    var numberOfMonths = monthGroups.Count();
+                    if (numberOfMonths > 0)
+                    {
+                        var averagePlays = enrichedPlays.enrichedPlays.Count / numberOfMonths;
+                        var averageTime =
+                            TimeSpan.FromMilliseconds(enrichedPlays.totalPlayTime.TotalMilliseconds / numberOfMonths);
+
+                        monthDescription.AppendLine(
+                            $"- **`Avg`** " +
+                            $"— **{averagePlays}** plays " +
+                            $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
+                    }
 
                     foreach (var month in monthGroups)
                     {
