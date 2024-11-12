@@ -303,7 +303,6 @@ public class RecapBuilders
                 throw new ArgumentOutOfRangeException(nameof(view), view, null);
         }
 
-
         if (footer.Length > 0)
         {
             response.Embed.WithFooter(footer.ToString());

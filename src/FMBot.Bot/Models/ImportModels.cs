@@ -100,5 +100,6 @@ public enum ImportStatus
 {
     Success,
     UnknownFailure,
-    WrongPackageFailure
+    WrongPackageFailure,
+    WrongCsvFailure
 }

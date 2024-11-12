@@ -242,6 +242,29 @@ public class TrackSlashCommands : InteractionModuleBase
         }
     }
 
+    [ComponentInteraction($"{InteractionConstants.TrackPreview}-*")]
+    [UsernameSetRequired]
+    public async Task TrackPreviewAsync(string trackId)
+    {
+        _ = DeferAsync();
+        await this.Context.DisableInteractionButtons();
+
+        var parsedTrackId = int.Parse(trackId);
+        var dbTrack = await this._trackService.GetTrackForId(parsedTrackId);
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._trackBuilders.TrackPreviewAsync(new ContextModel(this.Context, contextUser), $"{dbTrack.ArtistName} | {dbTrack.Name}", Context.Interaction.Token);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [SlashCommand("love", "Loves track you're currently listening to or searching for on Last.fm")]
     [UserSessionRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]

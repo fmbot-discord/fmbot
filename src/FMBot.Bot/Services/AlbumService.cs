@@ -66,8 +66,10 @@ public class AlbumService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<AlbumSearch> SearchAlbum(ResponseModel response, IUser discordUser, string albumValues, string lastFmUserName, string sessionKey = null,
-            string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null, IUserMessage referencedMessage = null, bool redirectsEnabled = true)
+    public async Task<AlbumSearch> SearchAlbum(ResponseModel response, IUser discordUser, string albumValues,
+        string lastFmUserName, string sessionKey = null,
+        string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null,
+        IUserMessage referencedMessage = null, bool redirectsEnabled = true)
     {
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(albumValues))
@@ -121,7 +123,8 @@ public class AlbumService
                 Response<AlbumInfo> albumInfo;
                 if (useCachedAlbums)
                 {
-                    albumInfo = await GetCachedAlbum(searchArtistName, searchAlbumName, lastFmUserName, userId, redirectsEnabled);
+                    albumInfo = await GetCachedAlbum(searchArtistName, searchAlbumName, lastFmUserName, userId,
+                        redirectsEnabled);
                 }
                 else
                 {
@@ -142,11 +145,13 @@ public class AlbumService
 
                 if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
                 {
-                    response.Embed.WithDescription($"Album `{searchAlbumName}` by `{searchArtistName}` could not be found, please check your search values and try again.");
+                    response.Embed.WithDescription(
+                        $"Album `{searchAlbumName}` by `{searchArtistName}` could not be found, please check your search values and try again.");
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
                     return new AlbumSearch(null, response);
                 }
+
                 if (!albumInfo.Success || albumInfo.Content == null)
                 {
                     response.Embed.ErrorResponse(albumInfo.Error, albumInfo.Message, null, discordUser, "album");
@@ -168,12 +173,14 @@ public class AlbumService
             }
             else
             {
-                recentScrobbles = await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                recentScrobbles =
+                    await this._dataSourceFactory.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
             }
 
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
             {
-                var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName);
+                var errorResponse =
+                    GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, lastFmUserName);
                 return new AlbumSearch(null, errorResponse);
             }
 
@@ -186,8 +193,9 @@ public class AlbumService
 
             if (string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName))
             {
-                response.Embed.WithDescription($"The track you're scrobbling (**{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**) does not have an album associated with it according to Last.fm.\n" +
-                                            $"Please note that .fmbot is not associated with Last.fm.");
+                response.Embed.WithDescription(
+                    $"The track you're scrobbling (**{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**) does not have an album associated with it according to Last.fm.\n" +
+                    $"Please note that .fmbot is not associated with Last.fm.");
 
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
@@ -197,11 +205,13 @@ public class AlbumService
             Response<AlbumInfo> albumInfo;
             if (useCachedAlbums)
             {
-                albumInfo = await GetCachedAlbum(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName, lastFmUserName, userId);
+                albumInfo = await GetCachedAlbum(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName, lastFmUserName,
+                    userId);
             }
             else
             {
-                albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName,
+                albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(lastPlayedTrack.ArtistName,
+                    lastPlayedTrack.AlbumName,
                     lastFmUserName);
             }
 
@@ -218,9 +228,10 @@ public class AlbumService
 
             if (albumInfo?.Content == null || !albumInfo.Success)
             {
-                response.Embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
-                                            $"This usually happens on recently released albums or on albums by smaller artists. Please try again later.\n\n" +
-                                            $"Please note that .fmbot is not associated with Last.fm.");
+                response.Embed.WithDescription(
+                    $"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
+                    $"This usually happens on recently released albums or on albums by smaller artists. Please try again later.\n\n" +
+                    $"Please note that .fmbot is not associated with Last.fm.");
 
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
@@ -284,7 +295,8 @@ public class AlbumService
         return new AlbumSearch(null, response);
     }
 
-    private async Task<Response<AlbumInfo>> GetCachedAlbum(string artistName, string albumName, string lastFmUserName, int? userId = null,
+    private async Task<Response<AlbumInfo>> GetCachedAlbum(string artistName, string albumName, string lastFmUserName,
+        int? userId = null,
         bool redirectsEnabled = true)
     {
         Response<AlbumInfo> albumInfo;
@@ -301,7 +313,15 @@ public class AlbumService
             {
                 var userPlaycount = await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(cachedAlbum.ArtistName,
                     cachedAlbum.Name, userId.Value);
-                albumInfo.Content.UserPlaycount = userPlaycount;
+                if (userPlaycount == 0)
+                {
+                    albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(artistName, albumName,
+                        lastFmUserName, redirectsEnabled);
+                }
+                else
+                {
+                    albumInfo.Content.UserPlaycount = userPlaycount;
+                }
             }
         }
         else
@@ -525,7 +545,8 @@ public class AlbumService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-2));
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection,
+                DateTime.UtcNow.AddDays(-2));
 
             var albums = plays
                 .Where(w => w.AlbumName != null)
@@ -545,7 +566,8 @@ public class AlbumService
         }
     }
 
-    public async Task<List<AlbumAutoCompleteSearchModel>> GetRecentTopAlbums(ulong discordUserId, bool cacheEnabled = true)
+    public async Task<List<AlbumAutoCompleteSearchModel>> GetRecentTopAlbums(ulong discordUserId,
+        bool cacheEnabled = true)
     {
         try
         {
@@ -567,7 +589,8 @@ public class AlbumService
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection, DateTime.UtcNow.AddDays(-20));
+            var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection,
+                DateTime.UtcNow.AddDays(-20));
 
             var albums = plays
                 .Where(w => w.AlbumName != null)
@@ -587,7 +610,8 @@ public class AlbumService
         }
     }
 
-    public async Task<List<AlbumAutoCompleteSearchModel>> SearchThroughAlbums(string searchValue, bool cacheEnabled = true)
+    public async Task<List<AlbumAutoCompleteSearchModel>> SearchThroughAlbums(string searchValue,
+        bool cacheEnabled = true)
     {
         try
         {
@@ -614,10 +638,10 @@ public class AlbumService
             }
 
             var results = albums.Where(w =>
-                w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase) ||
-                w.Artist.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
+                    w.Name.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
+                    w.Artist.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase) ||
+                    w.Name.Contains(searchValue, StringComparison.OrdinalIgnoreCase) ||
+                    w.Artist.Contains(searchValue, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(o => o.Popularity)
                 .ToList();
 

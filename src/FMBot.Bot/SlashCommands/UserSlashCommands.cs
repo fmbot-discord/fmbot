@@ -823,6 +823,9 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("judge", "Judges your music taste using AI")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task JudgeAsync(
         [Summary("Time-period", "Time period")] [Autocomplete(typeof(DateTimeAutoComplete))]
         string timePeriod = null,
@@ -1027,6 +1030,9 @@ public class UserSlashCommands : InteractionModuleBase
 
     [SlashCommand("featuredlog", "Shows you or someone else's featured history")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FeaturedLogAsync(
         [Summary("View", "Type of log you want to view")]
         FeaturedView view = FeaturedView.User,

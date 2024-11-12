@@ -163,7 +163,7 @@ public static class InteractionContextExtensions
                 break;
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
-                    response.StaticPaginator,
+                    response.StaticPaginator.Build(),
                     (SocketInteraction)context.Interaction,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     ephemeral: ephemeral);
@@ -220,7 +220,7 @@ public static class InteractionContextExtensions
                 break;
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
-                    response.StaticPaginator,
+                    response.StaticPaginator.Build(),
                     (SocketInteraction)context.Interaction,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     InteractionResponseType.DeferredChannelMessageWithSource,
@@ -340,7 +340,7 @@ public static class InteractionContextExtensions
             }
         }
 
-        await message.ModifyAsync(m => m.Components = newComponents.Build());
+        await ModifyComponents(context, message, newComponents);
     }
 
     public static async Task EnableInteractionButtons(this IInteractionContext context)
@@ -365,7 +365,7 @@ public static class InteractionContextExtensions
             }
         }
 
-        await message.ModifyAsync(m => m.Components = newComponents.Build());
+        await ModifyComponents(context, message, newComponents);
     }
 
     public static async Task UpdateMessageEmbed(this IInteractionContext context, ResponseModel response,
@@ -382,21 +382,53 @@ public static class InteractionContextExtensions
         await context.ModifyMessage(message, response);
     }
 
+    public static async Task ModifyComponents(this IInteractionContext context, IUserMessage message, ComponentBuilder newComponents)
+    {
+        if (context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+            !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+        {
+            await context.Interaction.ModifyOriginalResponseAsync(m => m.Components = newComponents.Build());
+        }
+        else
+        {
+            await message.ModifyAsync(m => m.Components = newComponents.Build());
+        }
+    }
+
     public static async Task ModifyMessage(this IInteractionContext context, IUserMessage message,
         ResponseModel response, bool defer = true)
     {
-        await message.ModifyAsync(m =>
+        if (context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+            !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
         {
-            m.Components = response.Components?.Build();
-            m.Embed = response.Embed?.Build();
-            m.Attachments = response.Stream != null
-                ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
-                {
-                    new(response.Stream,
-                        response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")
-                })
-                : null;
-        });
+            await context.Interaction.ModifyOriginalResponseAsync(m =>
+            {
+                m.Components = response.Components?.Build();
+                m.Embed = response.Embed?.Build();
+                m.Attachments = response.Stream != null
+                    ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                    {
+                        new(response.Stream,
+                            response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")
+                    })
+                    : null;
+            });
+        }
+        else
+        {
+            await message.ModifyAsync(m =>
+            {
+                m.Components = response.Components?.Build();
+                m.Embed = response.Embed?.Build();
+                m.Attachments = response.Stream != null
+                    ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                    {
+                        new(response.Stream,
+                            response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")
+                    })
+                    : null;
+            });
+        }
 
         if (defer)
         {
@@ -407,10 +439,23 @@ public static class InteractionContextExtensions
     private static Task ModifyPaginator(this IInteractionContext context, InteractiveService interactiveService,
         IUserMessage message, ResponseModel response)
     {
-        _ = interactiveService.SendPaginatorAsync(
-            response.StaticPaginator,
-            message,
-            TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+        if (context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+            !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+        {
+            _ = interactiveService.SendPaginatorAsync(
+                response.StaticPaginator.Build(),
+                context.Interaction,
+                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                InteractionResponseType.DeferredUpdateMessage);
+        }
+        else
+        {
+            _ = interactiveService.SendPaginatorAsync(
+                response.StaticPaginator.Build(),
+                message,
+                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+        }
+
         return Task.CompletedTask;
     }
 }

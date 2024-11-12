@@ -116,7 +116,7 @@ public class ArtistsService
             Response<ArtistInfo> artistCall;
             if (useCachedArtists)
             {
-                artistCall = await GetDatabaseArtist(artistValues, lastFmUserName, userId, redirectsEnabled);
+                artistCall = await GetCachedArtist(artistValues, lastFmUserName, userId, redirectsEnabled);
             }
             else
             {
@@ -185,7 +185,7 @@ public class ArtistsService
             if (useCachedArtists)
             {
                 artistCall =
-                    await GetDatabaseArtist(lastPlayedTrack.ArtistName, lastFmUserName, userId, redirectsEnabled);
+                    await GetCachedArtist(lastPlayedTrack.ArtistName, lastFmUserName, userId, redirectsEnabled);
             }
             else
             {
@@ -215,7 +215,7 @@ public class ArtistsService
         }
     }
 
-    private async Task<Response<ArtistInfo>> GetDatabaseArtist(string artistName, string lastFmUserName,
+    private async Task<Response<ArtistInfo>> GetCachedArtist(string artistName, string lastFmUserName,
         int? userId = null, bool redirectsEnabled = true)
     {
         Response<ArtistInfo> artistInfo;
@@ -232,7 +232,15 @@ public class ArtistsService
             {
                 var userPlaycount =
                     await this._whoKnowsArtistService.GetArtistPlayCountForUser(cachedArtist.Name, userId.Value);
-                artistInfo.Content.UserPlaycount = userPlaycount;
+                if (userPlaycount == 0)
+                {
+                    artistInfo =
+                        await this._dataSourceFactory.GetArtistInfoAsync(artistName, lastFmUserName, redirectsEnabled);
+                }
+                else
+                {
+                    artistInfo.Content.UserPlaycount = userPlaycount;
+                }
             }
         }
         else

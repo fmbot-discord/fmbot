@@ -54,6 +54,8 @@ public static class InteractionConstants
     public const string DeleteStreak = "user-streak-delete";
     public const string DeleteStreakModal = "user-streak-delete-modal";
 
+    public const string TrackPreview = "track-preview";
+
     public static class Artist
     {
         public const string Info = "artist-info";

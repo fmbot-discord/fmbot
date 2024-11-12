@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -22,6 +23,7 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Subscriptions.Services;
 using Serilog;
 using SkiaSharp;
 
@@ -49,6 +51,7 @@ public class TrackBuilders
     private readonly ArtistsService _artistsService;
     private readonly FeaturedService _featuredService;
     private readonly MusicDataFactory _musicDataFactory;
+    private readonly DiscordSkuService _discordSkuService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -69,7 +72,7 @@ public class TrackBuilders
         DiscogsService discogsService,
         ArtistsService artistsService,
         FeaturedService featuredService,
-        MusicDataFactory musicDataFactory)
+        MusicDataFactory musicDataFactory, DiscordSkuService discordSkuService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -91,6 +94,7 @@ public class TrackBuilders
         this._artistsService = artistsService;
         this._featuredService = featuredService;
         this._musicDataFactory = musicDataFactory;
+        this._discordSkuService = discordSkuService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -113,7 +117,8 @@ public class TrackBuilders
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        response.EmbedAuthor.WithName($"Track: {trackSearch.Track.ArtistName} - {trackSearch.Track.TrackName} for {userTitle}");
+        response.EmbedAuthor.WithName(
+            $"Track: {trackSearch.Track.ArtistName} - {trackSearch.Track.TrackName} for {userTitle}");
 
         if (trackSearch.Track.TrackUrl != null)
         {
@@ -128,12 +133,15 @@ public class TrackBuilders
         var footer = new StringBuilder();
 
         stats.AppendLine($"`{trackSearch.Track.TotalListeners}` listeners");
-        stats.AppendLine($"`{trackSearch.Track.TotalPlaycount}` global {StringExtensions.GetPlaysString(trackSearch.Track.TotalPlaycount)}");
-        stats.AppendLine($"`{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} by you");
+        stats.AppendLine(
+            $"`{trackSearch.Track.TotalPlaycount}` global {StringExtensions.GetPlaysString(trackSearch.Track.TotalPlaycount)}");
+        stats.AppendLine(
+            $"`{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} by you");
 
         if (trackSearch.Track.UserPlaycount.HasValue)
         {
-            await this._updateService.CorrectUserTrackPlaycount(context.ContextUser.UserId, trackSearch.Track.ArtistName,
+            _ = this._updateService.CorrectUserTrackPlaycount(context.ContextUser.UserId,
+                trackSearch.Track.ArtistName,
                 trackSearch.Track.TrackName, trackSearch.Track.UserPlaycount.Value);
         }
 
@@ -149,7 +157,8 @@ public class TrackBuilders
             if (trackSearch.Track.UserPlaycount > 1)
             {
                 var listeningTime =
-                    await this._timeService.GetPlayTimeForTrackWithPlaycount(trackSearch.Track.ArtistName, trackSearch.Track.TrackName,
+                    await this._timeService.GetPlayTimeForTrackWithPlaycount(trackSearch.Track.ArtistName,
+                        trackSearch.Track.TrackName,
                         trackSearch.Track.UserPlaycount.GetValueOrDefault());
 
                 stats.AppendLine($"`{StringExtensions.GetLongListeningTimeString(listeningTime)}` spent listening");
@@ -170,10 +179,11 @@ public class TrackBuilders
                 info.AppendLine($"`{bpm}` bpm");
             }
 
-            if (spotifyTrack.Danceability.HasValue && spotifyTrack.Energy.HasValue && spotifyTrack.Instrumentalness.HasValue &&
-                spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue && spotifyTrack.Liveness.HasValue && spotifyTrack.Valence.HasValue)
+            if (spotifyTrack.Danceability.HasValue && spotifyTrack.Energy.HasValue &&
+                spotifyTrack.Instrumentalness.HasValue &&
+                spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue &&
+                spotifyTrack.Liveness.HasValue && spotifyTrack.Valence.HasValue)
             {
-
                 var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
                 var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
                 var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
@@ -207,22 +217,29 @@ public class TrackBuilders
         else
         {
             var randomHintNumber = new Random().Next(0, Constants.SupporterPromoChance);
-            if (randomHintNumber == 1 && this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType, context.DiscordGuild?.Id))
+            if (randomHintNumber == 1 &&
+                this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType,
+                    context.DiscordGuild?.Id))
             {
                 this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
-                response.Embed.WithDescription($"*[Supporters]({Constants.GetSupporterDiscordLink}) can see track discovery dates.*");
+                response.Embed.WithDescription(
+                    $"*[Supporters]({Constants.GetSupporterDiscordLink}) can see track discovery dates.*");
             }
         }
 
-        var featuredHistory = await this._featuredService.GetTrackFeaturedHistory(trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+        var featuredHistory =
+            await this._featuredService.GetTrackFeaturedHistory(trackSearch.Track.ArtistName,
+                trackSearch.Track.TrackName);
         if (featuredHistory.Any())
         {
-            footer.AppendLine($"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
+            footer.AppendLine(
+                $"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
         }
 
         if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 10)
         {
-            footer.AppendLine($"{(decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your plays are on this track");
+            footer.AppendLine(
+                $"{(decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your plays are on this track");
         }
 
         if (footer.Length > 0)
@@ -259,6 +276,16 @@ public class TrackBuilders
         if (!string.IsNullOrWhiteSpace(trackSearch.Track.Description))
         {
             response.Embed.AddField("Summary", trackSearch.Track.Description);
+        }
+
+        if (spotifyTrack?.SpotifyPreviewUrl != null)
+        {
+            response.Components = new ComponentBuilder()
+                .WithButton(
+                    "Preview",
+                    $"{InteractionConstants.TrackPreview}-{spotifyTrack.Id}",
+                    style: ButtonStyle.Secondary,
+                    emote: Emote.Parse("<:playpreview:1305607890941378672>"));
         }
 
         //if (track.Tags != null && track.Tags.Any())
@@ -299,13 +326,17 @@ public class TrackBuilders
         var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
-        var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers, guild.GuildId, track.Track.ArtistName, track.Track.TrackName);
+        var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(context.DiscordGuild, guildUsers,
+            guild.GuildId, track.Track.ArtistName, track.Track.TrackName);
 
         var discordGuildUser = await context.DiscordGuild.GetUserAsync(context.DiscordUser.Id);
-        var currentUser = await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
-        await this._indexService.UpdateGuildUser(guildUsers, await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId), currentUser.UserId, guild);
+        var currentUser =
+            await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
+        await this._indexService.UpdateGuildUser(guildUsers,
+            await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId), currentUser.UserId, guild);
 
-        usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
+        usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser,
+            trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
         var (filterStats, filteredUsersWithTrack) = WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guild, roles);
 
@@ -317,7 +348,8 @@ public class TrackBuilders
 
         if (mode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, trackName,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
+                $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, trackName,
                 filteredUsersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -328,7 +360,9 @@ public class TrackBuilders
             return response;
         }
 
-        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
+        var serverUsers =
+            WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId,
+                PrivacyLevel.Server);
         if (filteredUsersWithTrack.Count == 0)
         {
             serverUsers = "Nobody in this server (not even you) has listened to this track.";
@@ -370,7 +404,8 @@ public class TrackBuilders
             footer.AppendLine(guildAlsoPlaying);
         }
 
-        response.Embed.WithTitle(StringExtensions.TruncateLongString($"{trackName} in {context.DiscordGuild.Name}", 255));
+        response.Embed.WithTitle(
+            StringExtensions.TruncateLongString($"{trackName} in {context.DiscordGuild.Name}", 255));
 
         if (track.Track.TrackUrl != null)
         {
@@ -435,9 +470,11 @@ public class TrackBuilders
 
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
-        var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(context.DiscordGuild, guildUsers, guild?.GuildId ?? 0, context.ContextUser.UserId, track.Track.ArtistName, track.Track.TrackName);
+        var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(context.DiscordGuild, guildUsers,
+            guild?.GuildId ?? 0, context.ContextUser.UserId, track.Track.ArtistName, track.Track.TrackName);
 
-        usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
+        usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser,
+            trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
@@ -449,7 +486,8 @@ public class TrackBuilders
 
         if (mode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"from <b>{userTitle}</b>'s friends", albumCoverUrl, trackName,
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"from <b>{userTitle}</b>'s friends",
+                albumCoverUrl, trackName,
                 usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -460,7 +498,8 @@ public class TrackBuilders
             return response;
         }
 
-        var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
+        var serverUsers =
+            WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
         if (!usersWithTrack.Any())
         {
             serverUsers = "None of your friends have listened to this track.";
@@ -473,7 +512,8 @@ public class TrackBuilders
         var amountOfHiddenFriends = context.ContextUser.Friends.Count(c => !c.FriendUserId.HasValue);
         if (amountOfHiddenFriends > 0)
         {
-            footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
+            footer +=
+                $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
         }
 
         if (usersWithTrack.Any() && usersWithTrack.Count() > 1)
@@ -525,11 +565,14 @@ public class TrackBuilders
 
         var trackName = $"{track.Track.TrackName} by {track.Track.ArtistName}";
 
-        var usersWithTrack = await this._whoKnowsTrackService.GetGlobalUsersForTrack(context.DiscordGuild, track.Track.ArtistName, track.Track.TrackName);
+        var usersWithTrack = await this._whoKnowsTrackService.GetGlobalUsersForTrack(context.DiscordGuild,
+            track.Track.ArtistName, track.Track.TrackName);
 
-        var filteredUsersWithTrack = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack, settings.QualityFilterDisabled);
+        var filteredUsersWithTrack =
+            await this._whoKnowsService.FilterGlobalUsersAsync(usersWithTrack, settings.QualityFilterDisabled);
 
-        filteredUsersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(filteredUsersWithTrack, context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
+        filteredUsersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(filteredUsersWithTrack,
+            context.ContextUser, trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
         var privacyLevel = PrivacyLevel.Global;
 
@@ -569,8 +612,10 @@ public class TrackBuilders
 
         if (settings.ResponseMode == ResponseMode.Image)
         {
-            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>.fmbot 🌐</b>", albumCoverUrl, trackName,
-                filteredUsersWithTrack, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+            var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>.fmbot 🌐</b>",
+                albumCoverUrl, trackName,
+                filteredUsersWithTrack, context.ContextUser.UserId, privacyLevel,
+                hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -580,7 +625,8 @@ public class TrackBuilders
             return response;
         }
 
-        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+        var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId,
+            privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
         if (!filteredUsersWithTrack.Any())
         {
             serverUsers = "Nobody that uses .fmbot has listened to this track.";
@@ -600,7 +646,8 @@ public class TrackBuilders
                     "We regularly remove people who spam short songs to raise their playcounts from Global WhoKnows. " +
                     "Consider not spamming scrobbles and/or removing your scrobbles on this track if you don't want to be removed.");
 
-                Log.Information("Displayed GlobalWhoKnows short track warning for {userId} - {discordUserId} - {userNameLastFm}",
+                Log.Information(
+                    "Displayed GlobalWhoKnows short track warning for {userId} - {discordUserId} - {userNameLastFm}",
                     context.ContextUser.UserId, context.ContextUser.DiscordUserId, context.ContextUser.UserNameLastFM);
             }
         }
@@ -644,7 +691,8 @@ public class TrackBuilders
 
         if (albumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
+                context.DiscordChannel,
                 track.Track.AlbumName, track.Track.ArtistName, track.Track.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
@@ -671,7 +719,8 @@ public class TrackBuilders
 
         var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
             context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
-            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            otherUserUsername: userSettings.UserNameLastFm, userId: context.ContextUser.UserId,
+            interactionId: context.InteractionId,
             referencedMessage: context.ReferencedMessage);
         if (trackSearch.Track == null)
         {
@@ -684,18 +733,21 @@ public class TrackBuilders
 
         if (trackSearch.Track.UserPlaycount.HasValue && !userSettings.DifferentUser)
         {
-            await this._updateService.CorrectUserTrackPlaycount(context.ContextUser.UserId, trackSearch.Track.ArtistName,
+            await this._updateService.CorrectUserTrackPlaycount(context.ContextUser.UserId,
+                trackSearch.Track.ArtistName,
                 trackSearch.Track.TrackName, trackSearch.Track.UserPlaycount.Value);
         }
 
         if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
         {
             var recentTrackPlaycounts =
-                await this._playService.GetRecentTrackPlaycounts(userSettings.UserId, trackSearch.Track.TrackName, trackSearch.Track.ArtistName);
+                await this._playService.GetRecentTrackPlaycounts(userSettings.UserId, trackSearch.Track.TrackName,
+                    trackSearch.Track.ArtistName);
             if (recentTrackPlaycounts.month != 0)
             {
-                reply += $"\n-# *{recentTrackPlaycounts.week} {StringExtensions.GetPlaysString(recentTrackPlaycounts.week)} last week — " +
-                         $"{recentTrackPlaycounts.month} {StringExtensions.GetPlaysString(recentTrackPlaycounts.month)} last month*";
+                reply +=
+                    $"\n-# *{recentTrackPlaycounts.week} {StringExtensions.GetPlaysString(recentTrackPlaycounts.week)} last week — " +
+                    $"{recentTrackPlaycounts.month} {StringExtensions.GetPlaysString(recentTrackPlaycounts.month)} last month*";
             }
         }
 
@@ -748,11 +800,56 @@ public class TrackBuilders
             }
             else
             {
-                reply.Append($" is a track that we don't have any metadata for, sorry <:Whiskeydogearnest:1097591075822129292>");
+                reply.Append(
+                    $" is a track that we don't have any metadata for, sorry <:Whiskeydogearnest:1097591075822129292>");
             }
         }
 
         response.Text = reply.ToString();
+
+        if (spotifyTrack?.SpotifyPreviewUrl != null)
+        {
+            response.Components = new ComponentBuilder()
+                .WithButton(
+                    "Preview",
+                    $"{InteractionConstants.TrackPreview}-{spotifyTrack.Id}",
+                    style: ButtonStyle.Secondary,
+                    emote: Emote.Parse("<:playpreview:1305607890941378672>"));
+        }
+
+        return response;
+    }
+
+    public async Task<ResponseModel> TrackPreviewAsync(
+        ContextModel context,
+        string searchValue,
+        string interactionToken)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Text,
+        };
+
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
+        if (trackSearch.Track == null)
+        {
+            return trackSearch.Response;
+        }
+
+        var spotifyTrack = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
+
+        try
+        {
+            await this._discordSkuService.SendVoiceMessage(spotifyTrack.SpotifyPreviewUrl, interactionToken);
+        }
+        catch (Exception e)
+        {
+            Log.Error("Error while sending voice message followup", e);
+            throw;
+        }
 
         return response;
     }
@@ -784,7 +881,8 @@ public class TrackBuilders
         }
         else
         {
-            var trackLoved = await this._dataSourceFactory.LoveTrackAsync(context.ContextUser.SessionKeyLastFm, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+            var trackLoved = await this._dataSourceFactory.LoveTrackAsync(context.ContextUser.SessionKeyLastFm,
+                trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
 
             if (trackLoved)
             {
@@ -830,7 +928,8 @@ public class TrackBuilders
         }
         else
         {
-            var trackLoved = await this._dataSourceFactory.UnLoveTrackAsync(context.ContextUser.SessionKeyLastFm, trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+            var trackLoved = await this._dataSourceFactory.UnLoveTrackAsync(context.ContextUser.SessionKeyLastFm,
+                trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
 
             if (trackLoved)
             {
@@ -863,14 +962,18 @@ public class TrackBuilders
         IList<GuildTrack> previousTopGuildTracks = null;
         if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
         {
-            topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, guildListSettings.OrderType, guildListSettings.NewSearchValue);
+            topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId,
+                guildListSettings.OrderType, guildListSettings.NewSearchValue);
         }
         else
         {
-            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId, guildListSettings.AmountOfDaysWithBillboard);
+            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
+                guildListSettings.AmountOfDaysWithBillboard);
 
-            topGuildTracks = PlayService.GetGuildTopTracks(plays, guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue);
-            previousTopGuildTracks = PlayService.GetGuildTopTracks(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue);
+            topGuildTracks = PlayService.GetGuildTopTracks(plays, guildListSettings.StartDateTime,
+                guildListSettings.OrderType, guildListSettings.NewSearchValue);
+            previousTopGuildTracks = PlayService.GetGuildTopTracks(plays, guildListSettings.BillboardStartDateTime,
+                guildListSettings.OrderType, guildListSettings.NewSearchValue);
         }
 
         if (!topGuildTracks.Any())
@@ -883,9 +986,9 @@ public class TrackBuilders
             return response;
         }
 
-        var title = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue) ?
-            $"Top {guildListSettings.TimeDescription.ToLower()} tracks in {context.DiscordGuild.Name}" :
-            $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' tracks in {context.DiscordGuild.Name}";
+        var title = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue)
+            ? $"Top {guildListSettings.TimeDescription.ToLower()} tracks in {context.DiscordGuild.Name}"
+            : $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' tracks in {context.DiscordGuild.Name}";
 
         var footer = new StringBuilder();
         footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
@@ -923,10 +1026,14 @@ public class TrackBuilders
 
                 if (previousTopGuildTracks != null && previousTopGuildTracks.Any())
                 {
-                    var previousTopTrack = previousTopGuildTracks.FirstOrDefault(f => f.ArtistName == track.ArtistName && f.TrackName == track.TrackName);
-                    int? previousPosition = previousTopTrack == null ? null : previousTopGuildTracks.IndexOf(previousTopTrack);
+                    var previousTopTrack = previousTopGuildTracks.FirstOrDefault(f =>
+                        f.ArtistName == track.ArtistName && f.TrackName == track.TrackName);
+                    int? previousPosition = previousTopTrack == null
+                        ? null
+                        : previousTopGuildTracks.IndexOf(previousTopTrack);
 
-                    pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false).Text);
+                    pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false)
+                        .Text);
                 }
                 else
                 {
@@ -981,11 +1088,13 @@ public class TrackBuilders
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
         }
 
-        var userUrl = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/tracks?{timeSettings.UrlParameter}";
+        var userUrl =
+            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/tracks?{timeSettings.UrlParameter}";
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} tracks for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
-        var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200, calculateTimeListened: topListSettings.Type == TopListType.TimeListened);
+        var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200,
+            calculateTimeListened: topListSettings.Type == TopListType.TimeListened);
 
         if (!topTracks.Success)
         {
@@ -994,9 +1103,11 @@ public class TrackBuilders
             response.ResponseType = ResponseType.Embed;
             return response;
         }
+
         if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
         {
-            response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top tracks in the [selected time period]({userUrl}).");
+            response.Embed.WithDescription(
+                $"Sorry, you or the user you're searching for don't have any top tracks in the [selected time period]({userUrl}).");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
@@ -1005,13 +1116,16 @@ public class TrackBuilders
 
         if (mode == ResponseMode.Image)
         {
-            var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom,
+            var totalPlays = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
+                timeSettings.TimeFrom,
                 userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
             var backgroundImage = (await this._artistsService.GetArtistFromDatabase(topTracks.Content.TopTracks.First()
                 .ArtistName))?.SpotifyImageUrl;
 
-            var image = await this._puppeteerService.GetTopList(userTitle, "Top Tracks", "tracks", timeSettings.Description,
-                topTracks.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), backgroundImage, topTracks.TopList);
+            var image = await this._puppeteerService.GetTopList(userTitle, "Top Tracks", "tracks",
+                timeSettings.Description,
+                topTracks.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), backgroundImage,
+                topTracks.TopList);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -1022,10 +1136,13 @@ public class TrackBuilders
         }
 
         var previousTopTracks = new List<TopTrack>();
-        if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+        if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue &&
+            timeSettings.BillboardEndDateTime.HasValue)
         {
             var previousTopTracksCall = await this._dataSourceFactory
-                .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200, calculateTimeListened: topListSettings.Type == TopListType.TimeListened);
+                .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm,
+                    timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200,
+                    calculateTimeListened: topListSettings.Type == TopListType.TimeListened);
 
             if (previousTopTracksCall.Success)
             {
@@ -1046,8 +1163,7 @@ public class TrackBuilders
                 .ToList();
         }
 
-        var trackPages = topTracks.Content.TopTracks.
-            ChunkBy((int)topListSettings.EmbedSize);
+        var trackPages = topTracks.Content.TopTracks.ChunkBy((int)topListSettings.EmbedSize);
 
         var counter = 1;
         var pageCounter = 1;
@@ -1063,7 +1179,8 @@ public class TrackBuilders
                 var name = new StringBuilder();
                 if (!tooMuchChars)
                 {
-                    name.Append($"**{StringExtensions.Sanitize(track.ArtistName)}** - **[{track.TrackName}]({track.TrackUrl})** ");
+                    name.Append(
+                        $"**{StringExtensions.Sanitize(track.ArtistName)}** - **[{track.TrackName}]({track.TrackUrl})** ");
                 }
                 else
                 {
@@ -1083,10 +1200,13 @@ public class TrackBuilders
 
                 if (topListSettings.Billboard && previousTopTracks.Any())
                 {
-                    var previousTopTrack = previousTopTracks.FirstOrDefault(f => f.ArtistName == track.ArtistName && f.TrackName == track.TrackName);
-                    int? previousPosition = previousTopTrack == null ? null : previousTopTracks.IndexOf(previousTopTrack);
+                    var previousTopTrack = previousTopTracks.FirstOrDefault(f =>
+                        f.ArtistName == track.ArtistName && f.TrackName == track.TrackName);
+                    int? previousPosition =
+                        previousTopTrack == null ? null : previousTopTracks.IndexOf(previousTopTrack);
 
-                    trackPageString.AppendLine(StringService.GetBillboardLine(name.ToString(), counter - 1, previousPosition).Text);
+                    trackPageString.AppendLine(StringService
+                        .GetBillboardLine(name.ToString(), counter - 1, previousPosition).Text);
                 }
                 else
                 {
@@ -1106,13 +1226,14 @@ public class TrackBuilders
             {
                 footer.Append($" - {topTracks.Content.TotalAmount.Value} total tracks in this time period");
             }
+
             if (topListSettings.Billboard)
             {
                 footer.AppendLine();
                 footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
             }
 
-            if (rnd == 1 && !topListSettings.Billboard)
+            if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
                 footer.AppendLine();
                 footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
@@ -1148,7 +1269,8 @@ public class TrackBuilders
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
         }
 
-        var userUrl = $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/tracks?{timeSettings.UrlParameter}";
+        var userUrl =
+            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/tracks?{timeSettings.UrlParameter}";
         response.EmbedAuthor.WithName($"Top {timeSettings.Description} tracks for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
         response.Embed.WithAuthor(response.EmbedAuthor);
@@ -1162,16 +1284,19 @@ public class TrackBuilders
             response.ResponseType = ResponseType.Embed;
             return response;
         }
+
         if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
         {
-            response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top tracks in the [selected time period]({userUrl}).");
+            response.Embed.WithDescription(
+                $"Sorry, you or the user you're searching for don't have any top tracks in the [selected time period]({userUrl}).");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.NoScrobbles;
             response.ResponseType = ResponseType.Embed;
             return response;
         }
 
-        var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
+        var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
+            timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
         var image = await this._puppeteerService.GetReceipt(userSettings, topTracks.Content, timeSettings, count);
 
@@ -1195,8 +1320,9 @@ public class TrackBuilders
         {
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.Embed.WithTitle($"{context.Prefix}scrobble");
-            response.Embed.WithDescription("Scrobbles a track. You can enter a search value or enter the exact name with separators. " +
-                                        "You can only scrobble tracks that already exist on Last.fm.");
+            response.Embed.WithDescription(
+                "Scrobbles a track. You can enter a search value or enter the exact name with separators. " +
+                "You can only scrobble tracks that already exist on Last.fm.");
 
             response.Embed.AddField("Search for a track to scrobble",
                 $"Format: `{context.Prefix}scrobble SearchValue`\n" +
@@ -1219,7 +1345,8 @@ public class TrackBuilders
             return response;
         }
 
-        var commandExecutedCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId, "scrobble", DateTime.UtcNow.AddMinutes(-30));
+        var commandExecutedCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId,
+            "scrobble", DateTime.UtcNow.AddMinutes(-30));
         var maxCount = SupporterService.IsSupporter(context.ContextUser.UserType) ? 25 : 12;
 
         if (commandExecutedCount > maxCount)
@@ -1227,11 +1354,13 @@ public class TrackBuilders
             var reply = new StringBuilder();
             reply.AppendLine("Please wait before scrobbling to Last.fm again.");
 
-            var globalWhoKnowsCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId, "globalwhoknows", DateTime.UtcNow.AddHours(-3));
+            var globalWhoKnowsCount = await this._userService.GetCommandExecutedAmount(context.ContextUser.UserId,
+                "globalwhoknows", DateTime.UtcNow.AddHours(-3));
             if (globalWhoKnowsCount >= 1)
             {
                 reply.AppendLine();
-                reply.AppendLine("Note that users who add fake scrobbles or scrobble from multiple sources at the same time might be subject to removal from Global WhoKnows.");
+                reply.AppendLine(
+                    "Note that users who add fake scrobbles or scrobble from multiple sources at the same time might be subject to removal from Global WhoKnows.");
             }
 
             response.Embed.WithDescription(reply.ToString());
@@ -1246,8 +1375,9 @@ public class TrackBuilders
         {
             if (context.ContextUser.UserDiscogs?.AccessToken == null)
             {
-                response.Embed.WithDescription("To use the Discogs commands you have to connect a Discogs account.\n\n" +
-                                                $"Use the `{context.Prefix}discogs` command to get started.");
+                response.Embed.WithDescription(
+                    "To use the Discogs commands you have to connect a Discogs account.\n\n" +
+                    $"Use the `{context.Prefix}discogs` command to get started.");
                 response.Embed.WithColor(DiscordConstants.WarningColorOrange);
                 response.CommandResponse = CommandResponse.UsernameNotSet;
                 return response;
@@ -1266,7 +1396,8 @@ public class TrackBuilders
 
             if (release == null)
             {
-                response.Embed.WithDescription("Could not fetch release from Discogs. Please try again and check your URL.");
+                response.Embed.WithDescription(
+                    "Could not fetch release from Discogs. Please try again and check your URL.");
                 response.Embed.WithColor(DiscordConstants.WarningColorOrange);
                 response.CommandResponse = CommandResponse.NotFound;
                 return response;
@@ -1283,7 +1414,8 @@ public class TrackBuilders
                 if (!string.IsNullOrWhiteSpace(track.Duration))
                 {
                     var splitDuration = track.Duration.Split(":");
-                    if (int.TryParse(splitDuration[0], out var minutes) && int.TryParse(splitDuration[1], out var seconds))
+                    if (int.TryParse(splitDuration[0], out var minutes) &&
+                        int.TryParse(splitDuration[1], out var seconds))
                     {
                         var totalSeconds = minutes * 60 + seconds;
                         trackLength = TimeSpan.FromSeconds(totalSeconds);
@@ -1298,7 +1430,8 @@ public class TrackBuilders
                     }
                 }
 
-                var trackScrobbled = await this._dataSourceFactory.ScrobbleAsync(context.ContextUser.SessionKeyLastFm, artistName, track.Title, release.Title, scrobbleTime);
+                var trackScrobbled = await this._dataSourceFactory.ScrobbleAsync(context.ContextUser.SessionKeyLastFm,
+                    artistName, track.Title, release.Title, scrobbleTime);
 
                 reply.Append($"- ");
                 if (trackScrobbled.Success)
@@ -1350,7 +1483,8 @@ public class TrackBuilders
                 track.Track.AlbumName = searchValue.Split(" | ").ElementAt(2);
             }
 
-            var trackScrobbled = await this._dataSourceFactory.ScrobbleAsync(context.ContextUser.SessionKeyLastFm, track.Track.ArtistName, track.Track.TrackName, track.Track.AlbumName);
+            var trackScrobbled = await this._dataSourceFactory.ScrobbleAsync(context.ContextUser.SessionKeyLastFm,
+                track.Track.ArtistName, track.Track.TrackName, track.Track.AlbumName);
 
             if (trackScrobbled.Success && trackScrobbled.Content.Accepted)
             {

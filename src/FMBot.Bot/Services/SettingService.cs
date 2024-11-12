@@ -74,6 +74,7 @@ public class SettingService
                 settingsModel.AltDescription = $"year {year}";
                 settingsModel.BillboardTimeDescription = $"{year - 1}";
                 settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddYears(1).AddSeconds(-1);
+                settingsModel.RecapPeriod = RecapPeriod.PickedYear;
             }
             if (!year.HasValue && month.HasValue)
             {
@@ -82,6 +83,7 @@ public class SettingService
                 settingsModel.AltDescription = $"month {startUnspecified.ToString("MMMM")}";
                 settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
                 settingsModel.BillboardTimeDescription = $"{startUnspecified.AddMonths(-1):MMMM}";
+                settingsModel.RecapPeriod = RecapPeriod.PickedMonth;
             }
             if (year.HasValue && month.HasValue)
             {
@@ -90,6 +92,7 @@ public class SettingService
                 settingsModel.Description = $"{startUnspecified:MMMM} {year}";
                 settingsModel.AltDescription = $"month {startUnspecified:MMMM} of {year}";
                 settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
+                settingsModel.RecapPeriod = RecapPeriod.PickedMonth;
             }
 
             settingsModel.PlayDays =

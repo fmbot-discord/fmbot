@@ -99,7 +99,7 @@ public static class CommandContextExtensions
                 case ResponseType.Paginator:
                     var existingMessage = await context.Channel.GetMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
                     await interactiveService.SendPaginatorAsync(
-                                response.StaticPaginator,
+                                response.StaticPaginator.Build(),
                                 (IUserMessage)existingMessage,
                                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                     break;
@@ -144,7 +144,7 @@ public static class CommandContextExtensions
                 break;
             case ResponseType.Paginator:
                 var paginator = await interactiveService.SendPaginatorAsync(
-                    response.StaticPaginator,
+                    response.StaticPaginator.Build(),
                     context.Channel,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                 responseMessage = paginator.Message;

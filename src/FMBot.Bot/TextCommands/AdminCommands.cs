@@ -404,7 +404,7 @@ public class AdminCommands : BaseCommandModule
                 var paginator = StringService.BuildStaticPaginator(pages);
 
                 _ = this.Interactivity.SendPaginatorAsync(
-                    paginator,
+                    paginator.Build(),
                     this.Context.Channel,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 

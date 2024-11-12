@@ -116,7 +116,7 @@ public class GenreSlashCommands : InteractionModuleBase
 
         var components =
             new ComponentBuilder().WithButton($"Loading user view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
-        await message.ModifyAsync(m => m.Components = components.Build());
+        await Context.ModifyComponents(message, components);
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -165,7 +165,7 @@ public class GenreSlashCommands : InteractionModuleBase
 
             var components =
                 new ComponentBuilder().WithButton($"Loading {selectedOption}...", customId: "1", emote: Emote.Parse(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
-            await message.ModifyAsync(m => m.Components = components.Build());
+            await Context.ModifyComponents(message, components);
 
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
             var contextUser = await this._userService.GetUserWithFriendsAsync(requesterDiscordUserId);

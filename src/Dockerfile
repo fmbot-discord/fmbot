@@ -1,7 +1,9 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
-RUN apt-get update && apt-get install -y libgdiplus ffmpeg
+FROM mcr.microsoft.com/dotnet/runtime:8.0-noble-amd64 AS base
+RUN apt-get update -y && apt-get install -y libgdiplus software-properties-common
+RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg7 && apt update -y && apt install ffmpeg -y
+
 WORKDIR /app
 
 #####################
