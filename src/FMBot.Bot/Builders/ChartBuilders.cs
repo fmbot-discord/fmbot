@@ -107,7 +107,7 @@ public class ChartBuilders
         }
 
         albums.Content.TopAlbums = await this._albumService.FillMissingAlbumCovers(albums.Content.TopAlbums);
-        
+
         if (chartSettings.ReleaseYearFilter.HasValue)
         {
             albums = await this._albumService.FilterAlbumToReleaseYear(albums, chartSettings.ReleaseYearFilter.Value);
@@ -134,9 +134,9 @@ public class ChartBuilders
                 return response;
             }
         }
-        
+
         var topAlbums = albums.Content.TopAlbums;
-        
+
         var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
         topAlbums = topAlbums.Take(imagesToRequest).ToList();
 
@@ -217,6 +217,11 @@ public class ChartBuilders
         response.FileName =
             $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
         response.Spoiler = chartSettings.ContainsNsfw;
+
+        if (context.SelectMenu != null)
+        {
+            response.Components = new ComponentBuilder().WithSelectMenu(context.SelectMenu);
+        }
 
         return response;
     }
@@ -355,6 +360,11 @@ public class ChartBuilders
         response.FileName =
             $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
         response.Spoiler = chartSettings.ContainsNsfw;
+
+        if (context.SelectMenu != null)
+        {
+            response.Components = new ComponentBuilder().WithSelectMenu(context.SelectMenu);
+        }
 
         return response;
     }

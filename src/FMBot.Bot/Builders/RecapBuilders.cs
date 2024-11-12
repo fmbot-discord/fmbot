@@ -30,11 +30,13 @@ public class RecapBuilders
     private readonly GenreBuilders _genreBuilders;
     private readonly CountryBuilders _countryBuilders;
     private readonly GameBuilders _gameBuilders;
+    private readonly ChartBuilders _chartBuilders;
 
     public RecapBuilders(UserService userService, PlayService playService, OpenAiService openAiService,
         GenreService genreService, IDataSourceFactory dataSourceFactory, TimeService timeService,
         TrackBuilders trackBuilders, AlbumBuilders albumBuilders, ArtistBuilders artistBuilders,
-        GenreBuilders genreBuilders, CountryBuilders countryBuilders, GameBuilders gameBuilders)
+        GenreBuilders genreBuilders, CountryBuilders countryBuilders, GameBuilders gameBuilders,
+        ChartBuilders chartBuilders)
     {
         this._userService = userService;
         this._playService = playService;
@@ -48,6 +50,7 @@ public class RecapBuilders
         this._genreBuilders = genreBuilders;
         this._countryBuilders = countryBuilders;
         this._gameBuilders = gameBuilders;
+        this._chartBuilders = chartBuilders;
     }
 
     public bool RecapCacheHot(string timePeriod, string lastFmUserName)
@@ -77,6 +80,14 @@ public class RecapBuilders
         {
             Type = TopListType.Plays,
             EmbedSize = EmbedSize.Large
+        };
+
+        var chartSettings = new ChartSettings(context.DiscordUser)
+        {
+            Width = 3,
+            Height = 3,
+            TimeSettings = timeSettings,
+            TitleSetting = TitleSetting.TitlesDisabled
         };
 
         var viewType = new SelectMenuBuilder()
@@ -352,6 +363,35 @@ public class RecapBuilders
                 response.StaticPaginator = countryResponse.StaticPaginator;
                 response.Embed = countryResponse.Embed;
                 response.ResponseType = countryResponse.ResponseType;
+
+                break;
+            }
+            case RecapPage.ArtistChart:
+            {
+                chartSettings.ArtistChart = true;
+                var chartResponse = await this._chartBuilders.ArtistChartAsync(context, userSettings, chartSettings);
+
+                response.Stream = chartResponse.Stream;
+                response.Embed = chartResponse.Embed;
+                response.ResponseType = chartResponse.ResponseType;
+                response.FileName = chartResponse.FileName;
+
+                response.Embed.Description = null;
+                response.Embed.Footer = null;
+
+                break;
+            }
+            case RecapPage.AlbumChart:
+            {
+                var chartResponse = await this._chartBuilders.AlbumChartAsync(context, userSettings, chartSettings);
+
+                response.Stream = chartResponse.Stream;
+                response.Embed = chartResponse.Embed;
+                response.ResponseType = chartResponse.ResponseType;
+                response.FileName = chartResponse.FileName;
+
+                response.Embed.Description = null;
+                response.Embed.Footer = null;
 
                 break;
             }
