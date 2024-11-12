@@ -633,7 +633,7 @@ public class GameService
         return new string(letters);
     }
 
-    public static bool AnswerIsRight(JumbleSession game, string messageContent, string uncleanedAnswer)
+    public static bool AnswerIsRight(JumbleSession game, string messageContent)
     {
         var userAnswer = StringExtensions.RemoveEditionSuffix(NormalizeAnswer(messageContent));
         var correctAnswer = NormalizeAnswer(game.CorrectAnswer);
@@ -642,7 +642,9 @@ public class GameService
         if (userAnswer.Contains(correctAnswer, StringComparison.OrdinalIgnoreCase) ||
             userAnswer.Contains(uncleanedCorrectAnswer, StringComparison.OrdinalIgnoreCase) ||
             correctAnswer.Equals(userAnswer, StringComparison.OrdinalIgnoreCase) ||
-            uncleanedCorrectAnswer.Equals(userAnswer, StringComparison.OrdinalIgnoreCase))
+            uncleanedCorrectAnswer.Equals(userAnswer, StringComparison.OrdinalIgnoreCase) ||
+            correctAnswer.Equals(messageContent, StringComparison.OrdinalIgnoreCase)||
+            uncleanedCorrectAnswer.Equals(messageContent, StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

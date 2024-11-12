@@ -648,7 +648,7 @@ public class GameBuilders
                     uncleanedAnswer.Length + 2))
             {
                 var answerIsRight =
-                    GameService.AnswerIsRight(currentGame, commandContext.Message.Content, uncleanedAnswer);
+                    GameService.AnswerIsRight(currentGame, commandContext.Message.Content);
 
                 if (answerIsRight)
                 {
