@@ -137,16 +137,13 @@ public class RecapBuilders
                         w.TimePlayed >= timeSettings.StartDateTime && w.TimePlayed <= timeSettings.EndDateTime)
                     .ToList();
 
-                if (filteredPlays.Count > 100)
-                {
-                    var description = await this._openAiService.GetPlayRecap(timeSettings.Description, filteredPlays,
-                        userSettings.UserNameLastFm);
-                    response.Embed.WithDescription(description);
-                }
-
                 var topArtists =
                     await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 500,
                         useCache: true);
+
+                var description = await this._openAiService.GetPlayRecap(timeSettings.Description, filteredPlays,
+                    userSettings.UserNameLastFm, topArtists);
+                response.Embed.WithDescription(description);
 
                 var genres = await this._genreService.GetTopGenresForTopArtists(topArtists.Content.TopArtists);
                 var genreString = new StringBuilder();

@@ -14,6 +14,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -156,7 +157,8 @@ public class OpenAiService
         return this._cache.TryGetValue($"{lastFmUserName}-recap-{timePeriod}", out _);
     }
 
-    public async Task<string> GetPlayRecap(string timePeriod, List<UserPlay> userPlays, string lastFmUserName)
+    public async Task<string> GetPlayRecap(string timePeriod, List<UserPlay> userPlays, string lastFmUserName,
+        Response<TopArtistList> topArtists)
     {
         try
         {
@@ -173,37 +175,58 @@ public class OpenAiService
 
             prompt.Prompt = prompt.Prompt.Replace("{{recapType}}", timePeriod);
 
-            var skipper = userPlays.Count switch
-            {
-                > 20000 => 30,
-                > 10000 => 18,
-                > 8000 => 12,
-                > 5000 => 10,
-                > 3000 => 8,
-                > 1500 => 6,
-                > 500 => 3,
-                _ => 1
-            };
-
             var promptBuilder = new StringBuilder();
-            promptBuilder.AppendLine("Track name, Album name, Artist name, Time played");
 
-            var amountAdded = 0;
-            for (var i = 0; i < int.Min(userPlays.Count, 40000); i++)
+            promptBuilder.AppendLine("Top 80 artists");
+            foreach (var topArtist in topArtists.Content.TopArtists.Take(80))
             {
-                if (i % skipper == 0)
+                promptBuilder.AppendLine(
+                    $"{StringExtensions.TruncateLongString(topArtist.ArtistName, 25)}, {topArtist.UserPlaycount} plays");
+            }
+
+            if (userPlays.Count > 100)
+            {
+                var topAlbums = userPlays
+                    .Where(w => w.AlbumName != null)
+                    .GroupBy(g => new
+                    {
+                        ArtistName = g.ArtistName.ToLower(),
+                        AlbumName = g.AlbumName.ToLower()
+                    })
+                    .OrderByDescending(o => o.Count())
+                    .Take(40)
+                    .ToList();
+
+                promptBuilder.AppendLine("---");
+                promptBuilder.AppendLine("Top 40 albums");
+                foreach (var topAlbum in topAlbums)
                 {
-                    var play = userPlays[i];
+                    promptBuilder.AppendLine(
+                        $"{StringExtensions.TruncateLongString(topAlbum.Key.AlbumName, 28)} by {StringExtensions.TruncateLongString(topAlbum.Key.ArtistName, 25)}, " +
+                        $"{topAlbum.Count()} plays");
+                }
 
-                    promptBuilder.Append($"{StringExtensions.TruncateLongString(play.TrackName, 20)}, ");
-                    promptBuilder.Append($"{StringExtensions.TruncateLongString(play.AlbumName, 20)}, ");
-                    promptBuilder.Append($"{StringExtensions.TruncateLongString(play.ArtistName, 20)}, ");
-                    promptBuilder.Append($"{play.TimePlayed.ToString(CultureInfo.InvariantCulture)}");
-                    promptBuilder.AppendLine();
+                var topTracks = userPlays
+                    .GroupBy(g => new
+                    {
+                        ArtistName = g.ArtistName.ToLower(),
+                        TrackName = g.TrackName.ToLower()
+                    })
+                    .OrderByDescending(o => o.Count())
+                    .Take(40)
+                    .ToList();
 
-                    amountAdded++;
+                promptBuilder.AppendLine("---");
+                promptBuilder.AppendLine("Top 40 tracks");
+                foreach (var topTrack in topTracks)
+                {
+                    promptBuilder.AppendLine(
+                        $"{StringExtensions.TruncateLongString(topTrack.Key.TrackName, 28)} by {StringExtensions.TruncateLongString(topTrack.Key.ArtistName, 25)}, " +
+                        $"{topTrack.Count()} plays");
                 }
             }
+
+            Log.Information(promptBuilder.ToString());
 
             var response = await SendRequest(prompt.Prompt, userMessage: promptBuilder.ToString());
 
