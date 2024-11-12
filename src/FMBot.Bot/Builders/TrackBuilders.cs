@@ -285,7 +285,7 @@ public class TrackBuilders
                     "Preview",
                     $"{InteractionConstants.TrackPreview}-{spotifyTrack.Id}",
                     style: ButtonStyle.Secondary,
-                    emote: Emoji.Parse("🎵"));
+                    emote: Emote.Parse("<:playpreview:1305607890941378672>"));
         }
 
         //if (track.Tags != null && track.Tags.Any())
