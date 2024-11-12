@@ -432,8 +432,6 @@ public class PlaySlashCommands : InteractionModuleBase
     {
         try
         {
-            _ = DeferAsync();
-
             var splitInput = inputs.First().Split("-");
             if (!Enum.TryParse(splitInput[0], out RecapPage viewType))
             {
@@ -455,6 +453,24 @@ public class PlaySlashCommands : InteractionModuleBase
 
             var timeSettings = SettingService.GetTimePeriod("", registeredLastFm: userSettings.RegisteredLastFm,
                 timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
+
+            if (userSettings.DiscordUserId != this.Context.User.Id &&
+                (viewType == RecapPage.BotStats ||
+                 viewType == RecapPage.BotStatsArtists ||
+                 viewType == RecapPage.BotStatsCommands))
+            {
+                var noPermResponse = new ResponseModel();
+                noPermResponse.Embed.WithDescription(
+                    "Sorry, due to privacy reasons only the user themselves can look up their bot usage stats.");
+                noPermResponse.CommandResponse = CommandResponse.NoPermission;
+                noPermResponse.ResponseType = ResponseType.Embed;
+                noPermResponse.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                await this.Context.SendResponse(this.Interactivity, noPermResponse, true);
+                this.Context.LogCommandUsed(noPermResponse.CommandResponse);
+                return;
+            }
+
+            _ = DeferAsync();
 
             var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
             if (message == null)
