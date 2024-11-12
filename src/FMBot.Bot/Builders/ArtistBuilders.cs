@@ -1162,6 +1162,7 @@ public class ArtistBuilders
 
             pages.Add(new PageBuilder()
                 .WithDescription(artistPageString.ToString())
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString()));
             pageCounter++;

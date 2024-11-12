@@ -1401,6 +1401,7 @@ public class AlbumBuilders
 
             pages.Add(new PageBuilder()
                 .WithDescription(albumPageString.ToString())
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString()));
             pageCounter++;

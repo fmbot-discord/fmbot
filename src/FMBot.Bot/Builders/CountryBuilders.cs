@@ -268,6 +268,7 @@ public class CountryBuilders
             pages.Add(new PageBuilder()
                 .WithDescription(countryPageString.ToString())
                 .WithTitle(title)
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithUrl($"{LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}/library/artists?date_preset=ALL")
                 .WithFooter(footer));
             pageCounter++;

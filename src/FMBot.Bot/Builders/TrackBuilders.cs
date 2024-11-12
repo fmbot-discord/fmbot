@@ -1241,6 +1241,7 @@ public class TrackBuilders
 
             pages.Add(new PageBuilder()
                 .WithDescription(trackPageString.ToString())
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString()));
             pageCounter++;
