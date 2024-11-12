@@ -949,6 +949,8 @@ public class SupporterService
                 w.Modified < modifiedDate))
             .ToListAsync();
 
+        Log.Information("Checking expired supporters - {count} possibly expired", possiblyExpiredSupporters.Count);
+
         foreach (var existingSupporter in possiblyExpiredSupporters)
         {
             var discordSupporters =
@@ -1020,6 +1022,15 @@ public class SupporterService
                 await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
 
                 Log.Information("Removed Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
+
+                continue;
+            }
+
+            if (discordSupporter.Active)
+            {
+                existingSupporter.Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                db.Update(existingSupporter);
+                await db.SaveChangesAsync();
             }
 
             await Task.Delay(500);
