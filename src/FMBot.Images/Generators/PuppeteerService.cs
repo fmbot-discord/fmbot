@@ -643,20 +643,21 @@ public class PuppeteerService
             ],
             3 =>
             [
-                new ArtistNamePosition(2, ImageWidth - margin, topY + 15),
                 new ArtistNamePosition(3, ImageWidth / 2, middleY + 20),
+                new ArtistNamePosition(2, ImageWidth - margin, topY + 15),
                 new ArtistNamePosition(4, margin, topY + 15),
             ],
             _ =>
             [
+                new ArtistNamePosition(3, ImageWidth / 2, middleY),
                 new ArtistNamePosition(1, margin, topY),
                 new ArtistNamePosition(2, ImageWidth - margin, topY),
-                new ArtistNamePosition(3, ImageWidth / 2, middleY),
                 new ArtistNamePosition(4, margin, bottomY),
                 new ArtistNamePosition(5, ImageWidth - margin, bottomY)
             ]
         };
     }
+
 
     public void CreatePopularityIcebergImage(SKBitmap chartImage, string username, string timePeriod,
         List<ArtistPopularity> artists)
@@ -719,12 +720,13 @@ public class PuppeteerService
                     a.Popularity > minPopularity && a.Popularity <= maxPopularity)
                 .OrderByDescending(a => a.Playcount)
                 .Take(5)
+                .OrderByDescending(a => a.Name.Length)
                 .ToList();
 
             var sectionY = FirstArtistY + (section * (totalAvailableHeight / TotalSections));
             var positions = GenerateArtistNamePositions(sectionY, sectionArtists.Count);
 
-            for (var i = 0; i < Math.Min(sectionArtists.Count, 5); i++)
+            for (var i = 0; i < sectionArtists.Count; i++)
             {
                 var position = positions[i];
                 var isWhiteText = position.Y >= TextColorChangeY;
