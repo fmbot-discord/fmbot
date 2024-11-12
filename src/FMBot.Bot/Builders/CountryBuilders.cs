@@ -317,7 +317,7 @@ public class CountryBuilders
         if (!timeSettings.UsePlays && timeSettings.TimePeriod != TimePeriod.AllTime)
         {
             artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
-                timeSettings, 1000);
+                timeSettings, 1000, useCache: true);
 
             if (!artists.Success || artists.Content == null)
             {
@@ -444,6 +444,7 @@ public class CountryBuilders
             pages.Add(new PageBuilder()
                 .WithDescription(countryPageString.ToString())
                 .WithAuthor(response.EmbedAuthor)
+                .WithColor(DiscordConstants.LastFmColorRed)
                 .WithFooter(footer.ToString()));
             pageCounter++;
         }

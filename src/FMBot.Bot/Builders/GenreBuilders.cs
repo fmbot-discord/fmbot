@@ -196,7 +196,7 @@ public class GenreBuilders
         if (!timeSettings.UsePlays && timeSettings.TimePeriod != TimePeriod.AllTime)
         {
             artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
-                timeSettings, 1000);
+                timeSettings, 1000, useCache: true);
 
             if (!artists.Success || artists.Content == null)
             {

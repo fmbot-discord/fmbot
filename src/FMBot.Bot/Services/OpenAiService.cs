@@ -17,6 +17,7 @@ using FMBot.Domain.Enums;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
 namespace FMBot.Bot.Services;
@@ -26,16 +27,19 @@ public class OpenAiService
     private readonly HttpClient _httpClient;
     private readonly BotSettings _botSettings;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+    private readonly IMemoryCache _cache;
 
     public OpenAiService(HttpClient httpClient, IOptions<BotSettings> botSettings,
-        IDbContextFactory<FMBotDbContext> contextFactory)
+        IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
     {
         this._httpClient = httpClient;
         this._contextFactory = contextFactory;
+        this._cache = cache;
         this._botSettings = botSettings.Value;
     }
 
-    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-4o-mini", string userMessage = null)
+    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-4o-mini",
+        string userMessage = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
         request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
@@ -147,26 +151,37 @@ public class OpenAiService
         }
     }
 
-    public async Task<string> GetPlayRecap(RecapPeriod recapPeriod, List<UserPlay> userPlays)
+    public bool RecapCacheHot(string timePeriod, string lastFmUserName)
+    {
+        return this._cache.TryGetValue($"{lastFmUserName}-recap-{timePeriod}", out _);
+    }
+
+    public async Task<string> GetPlayRecap(string timePeriod, List<UserPlay> userPlays, string lastFmUserName)
     {
         try
         {
+            var cacheKey = $"{lastFmUserName}-recap-{timePeriod}";
+            if (this._cache.TryGetValue(cacheKey, out string cachedResponse))
+            {
+                return cachedResponse;
+            }
+
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var prompt = await db.AiPrompts
                 .OrderByDescending(o => o.Version)
                 .FirstAsync(f => f.Type == PromptType.Recap);
 
-            prompt.Prompt = prompt.Prompt.Replace("{{recapType}}", Enum.GetName(recapPeriod));
+            prompt.Prompt = prompt.Prompt.Replace("{{recapType}}", timePeriod);
 
             var skipper = userPlays.Count switch
             {
-                > 20000 => 20,
-                > 10000 => 14,
-                > 8000 => 10,
-                > 5000 => 8,
-                > 3000 => 6,
-                > 1500 => 4,
-                > 500 => 2,
+                > 20000 => 30,
+                > 10000 => 18,
+                > 8000 => 12,
+                > 5000 => 10,
+                > 3000 => 8,
+                > 1500 => 6,
+                > 500 => 3,
                 _ => 1
             };
 
@@ -193,6 +208,9 @@ public class OpenAiService
             var response = await SendRequest(prompt.Prompt, userMessage: promptBuilder.ToString());
 
             var output = response.Choices.FirstOrDefault()?.ChoiceMessage?.Content;
+
+            this._cache.Set(cacheKey, output, TimeSpan.FromHours(2));
+
             return output;
         }
         catch (Exception e)

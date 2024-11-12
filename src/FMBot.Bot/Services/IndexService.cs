@@ -294,7 +294,7 @@ public class IndexService
         Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Getting plays",
             user.UserId, user.DiscordUserId, user.UserNameLastFM);
 
-        var pages = UserHasHigherIndexLimit(user) ? 750 : 50;
+        var pages = UserHasHigherIndexLimit(user) ? 750 : 25;
 
         var recentPlays = await this._dataSourceFactory.GetRecentTracksAsync(user.UserNameLastFM, 1000,
             sessionKey: user.SessionKeyLastFm, amountOfPages: pages);
@@ -304,7 +304,7 @@ public class IndexService
             return new List<UserPlay>();
         }
 
-        var indexLimitFilter = DateTime.UtcNow.AddYears(-1).AddMonths(-6);
+        var indexLimitFilter = DateTime.UtcNow.AddYears(-1);
         return recentPlays.Content.RecentTracks
             .Where(w => !w.NowPlaying && w.TimePlayed.HasValue)
             .Where(w => UserHasHigherIndexLimit(user) || w.TimePlayed > indexLimitFilter)
@@ -766,5 +766,36 @@ public class IndexService
             .OrderBy(o => o.LastIndexed)
             .ThenBy(o => o.LastUsed)
             .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<User>> GetUnusedUsers()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var recentlyUsed = DateTime.UtcNow.AddDays(-90);
+        return await db.Users
+            .AsQueryable()
+            .Where(f => f.LastIndexed != null &&
+                        f.LastUpdated != null &&
+                        f.LastUsed <= recentlyUsed &&
+                        f.UserType == UserType.User)
+            .OrderBy(o => o.LastUsed)
+            .ToListAsync();
+    }
+
+    public async Task RemoveOldPlaysForUsers(IReadOnlyList<User> users)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var count = 1;
+        foreach (var oldUser in users.Where(w => w.UserType == UserType.User))
+        {
+            Log.Information("RemoveOldPlaysForUsers: {userId} / {discordUserId} / {UserNameLastFM} - Removing old plays - {count}",
+                oldUser.UserId, oldUser.DiscordUserId, oldUser.UserNameLastFM, count);
+            await PlayRepository.RemoveOldPlays(oldUser.UserId, connection);
+            count++;
+        }
+
+        await connection.CloseAsync();
     }
 }

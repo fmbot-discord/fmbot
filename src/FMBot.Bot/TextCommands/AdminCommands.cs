@@ -469,6 +469,31 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("removeoldplays")]
+    [Summary("Purges discord caches")]
+    public async Task RemoveOldPlaysAsync()
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var oldUsers = await this._indexService.GetUnusedUsers();
+            await ReplyAsync(
+                $"Found {oldUsers.Count} users that haven't used fmbot in 3 months. I will now remove their cached scrobbles that are over a year and a half old.");
+
+            await this._indexService.RemoveOldPlaysForUsers(oldUsers);
+            await ReplyAsync(
+                $"Done removing old cached scrobbles.");
+
+            this.Context.LogCommandUsed();
+        }
+        else
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
     [Command("opencollectivesupporters", RunMode = RunMode.Async)]
     [Summary("Displays all .fmbot supporters.")]
     [Alias("ocsupporters")]
@@ -2355,7 +2380,8 @@ public class AdminCommands : BaseCommandModule
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 var components = new ComponentBuilder()
-                    .WithButton("Get monthly", customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly")
+                    .WithButton("Get monthly",
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly")
                     .WithButton("Get yearly", customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly")
                     .WithButton("View perks", customId: InteractionConstants.SupporterLinks.ViewPerks);
 

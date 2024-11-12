@@ -35,7 +35,7 @@ public class CountrySlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task GenreAsync(
+    public async Task CountryAsync(
         [Summary("search", "The country or artist you want to view")]
         [Autocomplete(typeof(CountryArtistAutoComplete))]
         string name = null)

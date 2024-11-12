@@ -438,20 +438,15 @@ public class PlaySlashCommands : InteractionModuleBase
                 return;
             }
 
-            if (!Enum.TryParse(splitInput[1], out RecapPeriod period))
-            {
-                return;
-            }
-
-            var discordUserId = ulong.Parse(splitInput[2]);
-            var requesterDiscordUserId = ulong.Parse(splitInput[3]);
+            var discordUserId = ulong.Parse(splitInput[1]);
+            var requesterDiscordUserId = ulong.Parse(splitInput[2]);
 
             var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
             var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
             var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
                 this.Context.Guild, this.Context.User);
 
-            var timeSettings = SettingService.GetTimePeriod("", registeredLastFm: userSettings.RegisteredLastFm,
+            var timeSettings = SettingService.GetTimePeriod(splitInput[3], registeredLastFm: userSettings.RegisteredLastFm,
                 timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
 
             if (userSettings.DiscordUserId != this.Context.User.Id &&
@@ -477,6 +472,11 @@ public class PlaySlashCommands : InteractionModuleBase
             {
                 return;
             }
+
+            var name = viewType.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var components =
+                new ComponentBuilder().WithButton($"{name} for {timeSettings.Description} loading...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+            await Context.ModifyComponents(message, components);
 
             var response =
                 await this._recapBuilders.RecapAsync(

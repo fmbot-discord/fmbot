@@ -278,23 +278,34 @@ public class PlayCommands : BaseCommandModule
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        if (contextUser.UserType != UserType.Admin && contextUser.UserType != UserType.Owner)
-        {
-            return;
-        }
-
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
+        var year = SettingService.GetYear(extraOptions).GetValueOrDefault(DateTime.UtcNow.AddDays(-90).Year);
+        var timePeriod = !string.IsNullOrWhiteSpace(extraOptions) ? extraOptions : year.ToString();
+
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-        var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm,
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, registeredLastFm: userSettings.RegisteredLastFm,
             timeZone: userSettings.TimeZone, defaultTimePeriod: TimePeriod.Yearly);
 
         try
         {
+            var loading = false;
+            if (!this._recapBuilders.RecapCacheHot(timeSettings.Description, userSettings.UserNameLastFm))
+            {
+                await Context.Message.AddReactionAsync(Emote.Parse(DiscordConstants.Loading));
+                loading = true;
+            }
+
             var response = await this._recapBuilders.RecapAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, RecapPage.Overview);
 
             await this.Context.SendResponse(this.Interactivity, response);
+
+            if (loading)
+            {
+                await Context.Message.RemoveReactionAsync(Emote.Parse(DiscordConstants.Loading), this._botSettings.Discord.ApplicationId.GetValueOrDefault());
+            }
+
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

@@ -29,6 +29,9 @@ public enum RecapPage
     [ChoiceDisplay("Discoveries ⭐")]
     Discoveries = 8,
 
+    [ChoiceDisplay("Listening time ⭐")]
+    ListeningTime = 9,
+
     [ChoiceDisplay("Bot stats - Overview")]
     BotStats = 10,
 

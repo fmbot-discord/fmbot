@@ -1043,7 +1043,7 @@ public class ArtistBuilders
         response.EmbedAuthor.WithUrl(userUrl);
 
         var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
-            timeSettings, 200, 1);
+            timeSettings, 200, 1, true);
 
         if (!artists.Success || artists.Content == null)
         {
@@ -1344,7 +1344,7 @@ public class ArtistBuilders
                 .WithAuthor(response.EmbedAuthor));
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
         return response;
     }

@@ -19,9 +19,15 @@ public interface IDataSourceFactory
 
     Task<DataSourceUser> GetLfmUserInfoAsync(string lastFmUserName);
     Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery);
-    Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null, bool redirectsEnabled = true);
+
+    Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null,
+        bool redirectsEnabled = true);
+
     Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, bool redirectsEnabled = true);
-    Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null, bool redirectsEnabled = true);
+
+    Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null,
+        bool redirectsEnabled = true);
+
     Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
@@ -31,7 +37,7 @@ public interface IDataSourceFactory
         DateTime startDateTime, DateTime endDateTime, int count);
 
     Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1);
+        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false);
 
     Task<Response<TopArtistList>> GetTopArtistsForCustomTimePeriodAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count);
@@ -42,15 +48,19 @@ public interface IDataSourceFactory
     Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count, bool calculateTimeListened = false);
 
-    Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null, long? fromUnixTimestamp = null);
+    Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null,
+        long? fromUnixTimestamp = null);
+
     Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl);
     Task<bool> LastFmUserExistsAsync(string lastFmUserName);
     Task<Response<TokenResponse>> GetAuthToken();
     Task<Response<AuthSessionResponse>> GetAuthSession(string token);
     Task<bool> LoveTrackAsync(string lastFmSessionKey, string artistName, string trackName);
     Task<bool> UnLoveTrackAsync(string lastFmSessionKey, string artistName, string trackName);
+
     Task<Response<bool>> SetNowPlayingAsync(string lastFmSessionKey, string artistName, string trackName,
         string albumName = null);
-    Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null, DateTime? timeStamp = null);
 
+    Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName,
+        string albumName = null, DateTime? timeStamp = null);
 }

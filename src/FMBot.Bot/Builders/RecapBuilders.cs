@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -48,6 +50,11 @@ public class RecapBuilders
         this._gameBuilders = gameBuilders;
     }
 
+    public bool RecapCacheHot(string timePeriod, string lastFmUserName)
+    {
+        return this._openAiService.RecapCacheHot(timePeriod, lastFmUserName);
+    }
+
     public async Task<ResponseModel> RecapAsync(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
@@ -58,13 +65,14 @@ public class RecapBuilders
             ResponseType = ResponseType.Embed
         };
 
-        response.Embed.WithTitle($"Recap - {userSettings.DisplayName}");
         var footer = new StringBuilder();
+
+        var botStatsCutoff = new DateTime(2023, 12, 1);
+        var jumbleCutoff = new DateTime(2024, 04, 1);
 
         var userInteractions =
             await this._userService.GetUserInteractions(userSettings.UserId, timeSettings);
 
-        var recapPeriod = RecapPeriod.CurrentYear;
         var topListSettings = new TopListSettings
         {
             Type = TopListType.Plays,
@@ -79,9 +87,21 @@ public class RecapBuilders
 
         foreach (var option in ((RecapPage[])Enum.GetValues(typeof(RecapPage))))
         {
+            if ((option == RecapPage.BotStats || option == RecapPage.BotStatsArtists ||
+                 option == RecapPage.BotStatsCommands) &&
+                timeSettings.EndDateTime <= botStatsCutoff)
+            {
+                continue;
+            }
+
+            if (option == RecapPage.Games && timeSettings.EndDateTime <= jumbleCutoff)
+            {
+                continue;
+            }
+
             var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
             var value =
-                $"{Enum.GetName(option)}-{Enum.GetName(recapPeriod)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+                $"{Enum.GetName(option)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{timeSettings.Description}";
 
             var active = option == view;
 
@@ -93,36 +113,40 @@ public class RecapBuilders
         response.Components = componentBuilder;
         context.SelectMenu = viewType;
 
-        // Send back something so it knows to start typing, while continuing the function
-        // Generate code here please
-
         switch (view)
         {
             case RecapPage.Overview:
             {
+                response.Embed.WithAuthor($"{timeSettings.Description} Recap for {userSettings.DisplayName}");
+
                 var plays = await this._playService.GetAllUserPlays(userSettings.UserId);
                 var filteredPlays = plays
                     .Where(w =>
                         w.TimePlayed >= timeSettings.StartDateTime && w.TimePlayed <= timeSettings.EndDateTime)
                     .ToList();
 
-                var description = await this._openAiService.GetPlayRecap(recapPeriod, filteredPlays);
-                response.Embed.WithDescription(description);
+                if (filteredPlays.Count > 100)
+                {
+                    var description = await this._openAiService.GetPlayRecap(timeSettings.Description, filteredPlays,
+                        userSettings.UserNameLastFm);
+                    response.Embed.WithDescription(description);
+                }
 
-                var genres = await this._genreService.GetTopGenresForPlays(filteredPlays, 6);
+                var topArtists =
+                    await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 500,
+                        useCache: true);
+
+                var genres = await this._genreService.GetTopGenresForTopArtists(topArtists.Content.TopArtists);
                 var genreString = new StringBuilder();
-                for (var index = 0; index < genres.Count; index++)
+                for (var index = 0; index < Math.Min(genres.Count, 6); index++)
                 {
                     var genre = genres[index];
-                    genreString.AppendLine($"{index + 1}. **{genre}**");
+                    genreString.AppendLine($"{index + 1}. **{genre.GenreName}**");
                 }
 
                 response.Embed.AddField("Top genres", genreString.ToString(), true);
-
-                var topArtists =
-                    await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 6);
                 var topArtistString = new StringBuilder();
-                for (var index = 0; index < topArtists.Content.TopArtists.Count; index++)
+                for (var index = 0; index < Math.Min(topArtists.Content.TopArtists.Count, 6); index++)
                 {
                     var topArtist = topArtists.Content.TopArtists[index];
                     topArtistString.AppendLine($"{index + 1}. **{topArtist.ArtistName}**");
@@ -130,22 +154,35 @@ public class RecapBuilders
 
                 response.Embed.AddField("Top artists", topArtistString.ToString(), true);
 
-                var enrichedPlays = await this._timeService.EnrichPlaysWithPlayTime(filteredPlays);
-                response.Embed.AddField("Scrobbles",
-                    $"You got {filteredPlays.Count} {StringExtensions.GetScrobblesString(filteredPlays.Count)} with around {StringExtensions.GetLongListeningTimeString(enrichedPlays.totalPlayTime)} of listening time.");
+                if (SupporterService.IsSupporter(userSettings.UserType))
+                {
+                    var enrichedPlays = await this._timeService.EnrichPlaysWithPlayTime(filteredPlays);
+                    response.Embed.AddField("Scrobbles",
+                        $"You got **{filteredPlays.Count}** {StringExtensions.GetScrobblesString(filteredPlays.Count)} with around **{StringExtensions.GetLongListeningTimeString(enrichedPlays.totalPlayTime)}** of listening time.");
+                }
+                else
+                {
+                    var count = await this._dataSourceFactory.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm,
+                        timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
-                if (!userSettings.DifferentUser)
+                    response.Embed.AddField("Scrobbles",
+                        $"You got **{count}** {StringExtensions.GetScrobblesString(count)}.");
+                }
+
+                if (!userSettings.DifferentUser && timeSettings.EndDateTime >= botStatsCutoff)
                 {
                     var differentArtists =
                         userInteractions.Where(w => w.Artist != null).GroupBy(g => g.Artist.ToLower()).Count();
                     response.Embed.AddField("Bot stats",
-                        $"You ran {userInteractions.Count} commands, which showed you {differentArtists} different artists.");
+                        $"You ran **{userInteractions.Count}** commands, which showed you **{differentArtists}** different artists.");
                 }
 
                 break;
             }
             case RecapPage.BotStats:
             {
+                response.Embed.WithAuthor($"Bot recap for {userSettings.DisplayName} - {timeSettings.Description}");
+
                 var stats = this._userService.CalculateBotStats(userInteractions);
 
                 var searchStats = new StringBuilder();
@@ -185,6 +222,12 @@ public class RecapBuilders
                 patternsField.AppendLine($"Avg. commands per session: **{stats.AverageCommandsPerSession:F1}**");
                 response.Embed.AddField("Usage patterns", patternsField.ToString(), true);
 
+                if (timeSettings.StartDateTime < botStatsCutoff)
+                {
+                    response.Embed.AddField("⚠️ Data possibly incomplete",
+                        "*Commands before <t:1701385200:D> are not included*");
+                }
+
                 footer.AppendLine("Private - Only you can request your bot usage stats");
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -192,6 +235,8 @@ public class RecapBuilders
             }
             case RecapPage.BotStatsCommands:
             {
+                response.Embed.WithAuthor($"Top {timeSettings.Description} commands for {userSettings.DisplayName}");
+
                 var stats = this._userService.CalculateBotStats(userInteractions);
 
                 var topCommands = stats.CommandUsage
@@ -209,6 +254,12 @@ public class RecapBuilders
 
                 response.Embed.WithDescription(commandsField.ToString());
 
+                if (timeSettings.StartDateTime < botStatsCutoff)
+                {
+                    response.Embed.AddField("⚠️ Data possibly incomplete",
+                        "*Commands before <t:1701385200:D> are not included*");
+                }
+
                 footer.AppendLine("Private - Only you can request your bot usage stats");
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -216,6 +267,9 @@ public class RecapBuilders
             }
             case RecapPage.BotStatsArtists:
             {
+                response.Embed.WithAuthor(
+                    $"Top {timeSettings.Description} command artists for {userSettings.DisplayName}");
+
                 var stats = this._userService.CalculateBotStats(userInteractions);
 
                 if (stats.TopSearchedArtists.Any())
@@ -235,6 +289,12 @@ public class RecapBuilders
                     response.Embed.WithDescription(artistsField.ToString());
                 }
 
+                if (timeSettings.StartDateTime < botStatsCutoff)
+                {
+                    response.Embed.AddField("⚠️ Data possibly incomplete",
+                        "*Commands before <t:1701385200:D> are not included*");
+                }
+
                 footer.AppendLine("Private - Only you can request your bot usage stats");
                 response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -246,7 +306,8 @@ public class RecapBuilders
                     userSettings, ResponseMode.Embed);
 
                 response.StaticPaginator = trackResponse.StaticPaginator;
-                response.ResponseType = ResponseType.Paginator;
+                response.Embed = trackResponse.Embed;
+                response.ResponseType = trackResponse.ResponseType;
 
                 break;
             }
@@ -256,7 +317,8 @@ public class RecapBuilders
                     userSettings, ResponseMode.Embed);
 
                 response.StaticPaginator = albumResponse.StaticPaginator;
-                response.ResponseType = ResponseType.Paginator;
+                response.Embed = albumResponse.Embed;
+                response.ResponseType = albumResponse.ResponseType;
 
                 break;
             }
@@ -266,7 +328,8 @@ public class RecapBuilders
                     userSettings, ResponseMode.Embed);
 
                 response.StaticPaginator = artistResponse.StaticPaginator;
-                response.ResponseType = ResponseType.Paginator;
+                response.Embed = artistResponse.Embed;
+                response.ResponseType = artistResponse.ResponseType;
 
                 break;
             }
@@ -276,7 +339,8 @@ public class RecapBuilders
                     topListSettings, ResponseMode.Embed);
 
                 response.StaticPaginator = genreResponse.StaticPaginator;
-                response.ResponseType = ResponseType.Paginator;
+                response.Embed = genreResponse.Embed;
+                response.ResponseType = genreResponse.ResponseType;
 
                 break;
             }
@@ -286,12 +350,87 @@ public class RecapBuilders
                     topListSettings, ResponseMode.Embed);
 
                 response.StaticPaginator = countryResponse.StaticPaginator;
-                response.ResponseType = ResponseType.Paginator;
+                response.Embed = countryResponse.Embed;
+                response.ResponseType = countryResponse.ResponseType;
 
                 break;
             }
             case RecapPage.Discoveries:
+            {
+                if (SupporterService.IsSupporter(userSettings.UserType))
+                {
+                    var artistResponse = await this._artistBuilders.ArtistDiscoveriesAsync(context, topListSettings,
+                        timeSettings,
+                        userSettings, ResponseMode.Embed);
+
+                    response.StaticPaginator = artistResponse.StaticPaginator;
+                    response.Embed = artistResponse.Embed;
+                    response.ResponseType = artistResponse.ResponseType;
+                }
+                else
+                {
+                    response.Embed.Description = ArtistBuilders.DiscoverySupporterRequired(context, userSettings).Embed
+                        .Description;
+                    response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+                    response.Components.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
+                        url: Constants.GetSupporterDiscordLink);
+                }
+
                 break;
+            }
+            case RecapPage.ListeningTime:
+            {
+                if (SupporterService.IsSupporter(userSettings.UserType))
+                {
+                    var plays = await this._playService.GetAllUserPlays(userSettings.UserId);
+                    var filteredPlays = plays
+                        .Where(w =>
+                            w.TimePlayed >= timeSettings.StartDateTime && w.TimePlayed <= timeSettings.EndDateTime)
+                        .ToList();
+
+                    var enrichedPlays = await this._timeService.EnrichPlaysWithPlayTime(filteredPlays);
+
+                    var monthDescription = new StringBuilder();
+                    var monthGroups = enrichedPlays.enrichedPlays
+                        .OrderBy(o => o.TimePlayed)
+                        .GroupBy(g => new { g.TimePlayed.Month, g.TimePlayed.Year });
+
+                    monthDescription.AppendLine(
+                        $"- **`All`** " +
+                        $"— **{enrichedPlays.enrichedPlays.Count}** plays " +
+                        $"— **{StringExtensions.GetLongListeningTimeString(enrichedPlays.totalPlayTime)}**");
+
+                    foreach (var month in monthGroups)
+                    {
+                        if (!enrichedPlays.enrichedPlays.Any(a =>
+                                a.TimePlayed < DateTime.UtcNow.AddMonths(-month.Key.Month)))
+                        {
+                            break;
+                        }
+
+                        var time = TimeService.GetPlayTimeForEnrichedPlays(month);
+                        monthDescription.AppendLine(
+                            $"- **`{CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month.Key.Month)}`** " +
+                            $"— **{month.Count()}** plays " +
+                            $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
+                    }
+
+                    if (monthDescription.Length > 0)
+                    {
+                        response.Embed.WithDescription(monthDescription.ToString());
+                    }
+                }
+                else
+                {
+                    response.Embed.WithDescription(
+                        $"To accurately calculate listening time we need to store your full Last.fm history. Your lifetime history and more are only available for supporters.");
+                    response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+                    response.Components.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
+                        url: Constants.GetSupporterDiscordLink);
+                }
+
+                break;
+            }
             case RecapPage.Games:
             {
                 var gameResponse =

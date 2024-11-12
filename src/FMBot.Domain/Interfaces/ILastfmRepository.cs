@@ -9,7 +9,7 @@ namespace FMBot.Domain.Interfaces;
 public interface ILastfmRepository
 {
     Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false,
-    string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1);
+        string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1);
 
     Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? from = null, string sessionKey = null,
         long? until = null);
@@ -19,9 +19,15 @@ public interface ILastfmRepository
 
     Task<DataSourceUser> GetLfmUserInfoAsync(string lastFmUserName);
     Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery);
-    Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, bool redirectsEnabled, string username = null);
+
+    Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, bool redirectsEnabled,
+        string username = null);
+
     Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, bool redirectsEnabled);
-    Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, bool redirectsEnabled, string username = null);
+
+    Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, bool redirectsEnabled,
+        string username = null);
+
     Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
@@ -34,7 +40,7 @@ public interface ILastfmRepository
         DateTime startDateTime, DateTime endDateTime, int count);
 
     Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1);
+        TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1, bool useCache = false);
 
     Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
         TimePeriod timePeriod, long count = 2, long amountOfPages = 1);
@@ -51,14 +57,19 @@ public interface ILastfmRepository
     Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count);
 
-    Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null, long? fromUnixTimestamp = null);
+    Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null,
+        long? fromUnixTimestamp = null);
+
     Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl);
     Task<bool> LastFmUserExistsAsync(string lastFmUserName);
     Task<Response<TokenResponse>> GetAuthToken();
     Task<Response<AuthSessionResponse>> GetAuthSession(string token);
     Task<bool> LoveTrackAsync(string lastFmSessionKey, string artistName, string trackName);
     Task<bool> UnLoveTrackAsync(string lastFmSessionKey, string artistName, string trackName);
+
     Task<Response<bool>> SetNowPlayingAsync(string lastFmSessionKey, string artistName, string trackName,
         string albumName = null);
-    Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName, string albumName = null, DateTime? timeStamp = null);
+
+    Task<Response<StoredPlayResponse>> ScrobbleAsync(string lastFmSessionKey, string artistName, string trackName,
+        string albumName = null, DateTime? timeStamp = null);
 }

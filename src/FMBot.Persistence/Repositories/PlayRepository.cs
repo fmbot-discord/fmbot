@@ -122,11 +122,22 @@ public static class PlayRepository
 
     public static async Task RemoveOldPlays(int userId, NpgsqlConnection connection)
     {
-        await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                        "WHERE user_id = @userId " +
-                                                        "AND time_played <= CURRENT_DATE - INTERVAL '18 months' " +
-                                                        "AND (play_source = 0 OR play_source IS NULL)", connection);
-        
+        await using var deletePlays = new NpgsqlCommand(
+            @"DELETE FROM public.user_plays
+        WHERE user_id = @userId
+        AND (play_source = 0 OR play_source IS NULL)
+        AND time_played <= CURRENT_DATE - INTERVAL '14 months'
+        AND user_play_id NOT IN (
+            SELECT user_play_id
+            FROM (
+                SELECT user_play_id
+                FROM public.user_plays
+                WHERE user_id = @userId
+                ORDER BY time_played DESC
+                LIMIT 500
+            ) recent_plays
+        )", connection);
+
         deletePlays.Parameters.AddWithValue("userId", userId);
         await deletePlays.ExecuteNonQueryAsync();
     }
@@ -281,7 +292,7 @@ public static class PlayRepository
 
         return play != null;
     }
-    
+
     public static async Task MoveImports(int oldUserId, int newUserId, NpgsqlConnection connection)
     {
         const string sql = "UPDATE public.user_plays SET user_id = @newUserId " +
@@ -294,7 +305,7 @@ public static class PlayRepository
             newUserId
         });
     }
-    
+
     public static async Task MoveStreaks(int oldUserId, int newUserId, NpgsqlConnection connection)
     {
         const string sql = "UPDATE public.user_streaks SET user_id = @newUserId " +
@@ -307,7 +318,7 @@ public static class PlayRepository
             newUserId
         });
     }
-    
+
     public static async Task MoveFeaturedLogs(int oldUserId, int newUserId, NpgsqlConnection connection)
     {
         const string sql = "UPDATE public.featured_logs SET user_id = @newUserId " +
@@ -320,7 +331,7 @@ public static class PlayRepository
             newUserId
         });
     }
-    
+
     public static async Task MoveFriends(int oldUserId, int newUserId, NpgsqlConnection connection)
     {
         const string sql = "UPDATE public.friends SET friend_user_id = @newUserId " +

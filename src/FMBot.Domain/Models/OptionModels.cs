@@ -28,8 +28,6 @@ public class TimeSettingsModel
 
     public long? TimeFrom  { get; set; }
     public long? TimeUntil  { get; set; }
-
-    public RecapPeriod RecapPeriod { get; set; }
 }
 
 public class UserSettingsModel
