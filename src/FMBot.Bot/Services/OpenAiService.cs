@@ -181,7 +181,7 @@ public class OpenAiService
             foreach (var topArtist in topArtists.Content.TopArtists.Take(80))
             {
                 promptBuilder.AppendLine(
-                    $"{StringExtensions.TruncateLongString(topArtist.ArtistName, 25)}, {topArtist.UserPlaycount} plays");
+                    $"{StringExtensions.TruncateLongString(topArtist.ArtistName, 28)}, {topArtist.UserPlaycount} plays");
             }
 
             if (userPlays.Count > 100)
@@ -202,7 +202,7 @@ public class OpenAiService
                 foreach (var topAlbum in topAlbums)
                 {
                     promptBuilder.AppendLine(
-                        $"{StringExtensions.TruncateLongString(topAlbum.Key.AlbumName, 28)} by {StringExtensions.TruncateLongString(topAlbum.Key.ArtistName, 25)}, " +
+                        $"{StringExtensions.TruncateLongString(topAlbum.Key.AlbumName, 32)} by {StringExtensions.TruncateLongString(topAlbum.Key.ArtistName, 28)}, " +
                         $"{topAlbum.Count()} plays");
                 }
 
@@ -221,7 +221,7 @@ public class OpenAiService
                 foreach (var topTrack in topTracks)
                 {
                     promptBuilder.AppendLine(
-                        $"{StringExtensions.TruncateLongString(topTrack.Key.TrackName, 28)} by {StringExtensions.TruncateLongString(topTrack.Key.ArtistName, 25)}, " +
+                        $"{StringExtensions.TruncateLongString(topTrack.Key.TrackName, 32)} by {StringExtensions.TruncateLongString(topTrack.Key.ArtistName, 28)}, " +
                         $"{topTrack.Count()} plays");
                 }
             }
