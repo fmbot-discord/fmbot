@@ -226,8 +226,6 @@ public class OpenAiService
                 }
             }
 
-            Log.Information(promptBuilder.ToString());
-
             var response = await SendRequest(prompt.Prompt, userMessage: promptBuilder.ToString());
 
             var output = response.Choices.FirstOrDefault()?.ChoiceMessage?.Content;

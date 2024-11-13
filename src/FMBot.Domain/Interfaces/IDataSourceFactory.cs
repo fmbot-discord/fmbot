@@ -31,7 +31,7 @@ public interface IDataSourceFactory
     Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery);
 
     Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1);
+        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false);
 
     Task<Response<TopAlbumList>> GetTopAlbumsForCustomTimePeriodAsyncAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count);

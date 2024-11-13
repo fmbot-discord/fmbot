@@ -59,7 +59,7 @@ public class ChartBuilders
         if (chartSettings.ImagesNeeded > 100)
         {
             response.Text = $"You can't create a chart with more than 100 images (10x10).\n" +
-                                 $"Please try a smaller size.";
+                            $"Please try a smaller size.";
             response.ResponseType = ResponseType.Text;
             response.CommandResponse = CommandResponse.WrongInput;
             return response;
@@ -70,12 +70,16 @@ public class ChartBuilders
         {
             extraAlbums = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
         }
+
         if (chartSettings.SkipNsfw)
         {
             extraAlbums = chartSettings.Height;
         }
 
-        var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue ? 1000 : 250);
+        var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm,
+            chartSettings.TimeSettings,
+            chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue ? 1000 : 250,
+            useCache: true);
 
         if (albums.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
         {
@@ -96,7 +100,8 @@ public class ChartBuilders
             return response;
         }
 
-        if ((chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue) && chartSettings.TimeSettings.TimePeriod == TimePeriod.AllTime)
+        if ((chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue) &&
+            chartSettings.TimeSettings.TimePeriod == TimePeriod.AllTime)
         {
             var topAllTimeDb = await this._albumService.GetUserAllTimeTopAlbums(userSettings.UserId);
             if (topAllTimeDb.Count > 1000)
@@ -114,8 +119,9 @@ public class ChartBuilders
 
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Text = $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
-                                $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
+                response.Text =
+                    $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
+                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
                 response.ResponseType = ResponseType.Text;
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
@@ -123,12 +129,14 @@ public class ChartBuilders
         }
         else if (chartSettings.ReleaseDecadeFilter.HasValue)
         {
-            albums = await this._albumService.FilterAlbumToReleaseDecade(albums, chartSettings.ReleaseDecadeFilter.Value);
+            albums = await this._albumService.FilterAlbumToReleaseDecade(albums,
+                chartSettings.ReleaseDecadeFilter.Value);
 
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Text = $"Sorry, you haven't listened to enough albums released in the {chartSettings.ReleaseDecadeFilter}s ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
-                                $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
+                response.Text =
+                    $"Sorry, you haven't listened to enough albums released in the {chartSettings.ReleaseDecadeFilter}s ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
+                    $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
                 response.ResponseType = ResponseType.Text;
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
@@ -146,7 +154,8 @@ public class ChartBuilders
         for (var i = 0; i < amountToFetch; i++)
         {
             var albumWithoutImage = albumsWithoutImage[i];
-            var albumCall = await this._dataSourceFactory.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
+            var albumCall = await this._dataSourceFactory.GetAlbumInfoAsync(albumWithoutImage.ArtistName,
+                albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
             if (albumCall.Success && albumCall.Content?.AlbumUrl != null)
             {
                 var spotifyArtistImage = await this._musicDataFactory.GetOrStoreAlbumAsync(albumCall.Content);
@@ -164,8 +173,9 @@ public class ChartBuilders
         var embedAuthorDescription = "";
         if (!userSettings.DifferentUser)
         {
-            embedAuthorDescription = $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart for " +
-                                     await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+            embedAuthorDescription =
+                $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart for " +
+                await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         }
         else
         {
@@ -183,15 +193,19 @@ public class ChartBuilders
 
         if (!userSettings.DifferentUser)
         {
-            response.EmbedFooter.Text = $"{userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount} scrobbles";
+            response.EmbedFooter.Text =
+                $"{userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount} scrobbles";
             response.Embed.WithFooter(response.EmbedFooter);
         }
 
-        var supporter = await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
-        embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
+        var supporter =
+            await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
+        embedDescription +=
+            ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
         if (supporter != null)
         {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+                style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
@@ -253,7 +267,8 @@ public class ChartBuilders
 
         var imagesToRequest = chartSettings.ImagesNeeded + extraArtists;
 
-        var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
+        var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
+            chartSettings.TimeSettings, imagesToRequest, useCache: true);
 
         if (artists.Content.TopArtists == null || artists.Content.TopArtists.Count < chartSettings.ImagesNeeded)
         {
@@ -286,7 +301,9 @@ public class ChartBuilders
         {
             var artistWithoutImage = artistsWithoutImages[i];
 
-            var artistCall = await this._dataSourceFactory.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm);
+            var artistCall =
+                await this._dataSourceFactory.GetArtistInfoAsync(artistWithoutImage.ArtistName,
+                    userSettings.UserNameLastFm);
             if (artistCall.Success && artistCall.Content?.ArtistUrl != null)
             {
                 var spotifyArtistImage = await this._musicDataFactory.GetOrStoreArtistAsync(artistCall.Content);
@@ -303,8 +320,9 @@ public class ChartBuilders
         var embedAuthorDescription = "";
         if (!userSettings.DifferentUser)
         {
-            embedAuthorDescription = $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Artist Chart for " +
-                                     await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+            embedAuthorDescription =
+                $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Artist Chart for " +
+                await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         }
         else
         {
@@ -331,11 +349,14 @@ public class ChartBuilders
 
         response.Embed.WithFooter(footer.ToString());
 
-        var supporter = await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
-        embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
+        var supporter =
+            await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
+        embedDescription +=
+            ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
         if (supporter != null)
         {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+                style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
@@ -352,6 +373,7 @@ public class ChartBuilders
             embedDescription +=
                 $"⚠️ Contains NSFW covers - Click to reveal\n";
         }
+
         response.Embed.WithDescription(embedDescription);
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);

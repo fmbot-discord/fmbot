@@ -710,18 +710,45 @@ public class LastFmRepository : ILastfmRepository
     }
 
     public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
-        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
+        TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, bool useCache = false)
     {
         try
         {
+            var cacheKey =
+                $"{lastFmUserName}-lastfm-top-albums-{timeSettings.Description}-{timeSettings.UrlParameter}";
+            if (useCache)
+            {
+                var cachedTopAlbums = this._cache.TryGetValue(cacheKey, out TopAlbumList topAlbumResponse);
+                if (cachedTopAlbums && topAlbumResponse.TopAlbums.Any() &&
+                    topAlbumResponse.TopAlbums.Count >= count)
+                {
+                    return new Response<TopAlbumList>
+                    {
+                        Content = topAlbumResponse,
+                        Success = true
+                    };
+                }
+            }
+
+            Response<TopAlbumList> response;
             if (!timeSettings.UseCustomTimePeriod || !timeSettings.StartDateTime.HasValue ||
                 !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
             {
-                return await GetTopAlbumsAsync(lastFmUserName, timeSettings.TimePeriod, count, amountOfPages);
+                response = await GetTopAlbumsAsync(lastFmUserName, timeSettings.TimePeriod, count, amountOfPages);
+            }
+            else
+            {
+                response = await GetTopAlbumsForCustomTimePeriodAsyncAsync(lastFmUserName,
+                    timeSettings.StartDateTime.Value,
+                    timeSettings.EndDateTime.Value, (int)count);
             }
 
-            return await GetTopAlbumsForCustomTimePeriodAsyncAsync(lastFmUserName, timeSettings.StartDateTime.Value,
-                timeSettings.EndDateTime.Value, (int)count);
+            if (response.Success && amountOfPages == 1)
+            {
+                this._cache.Set(cacheKey, response.Content, TimeSpan.FromMinutes(2));
+            }
+
+            return response;
         }
         catch (Exception e)
         {

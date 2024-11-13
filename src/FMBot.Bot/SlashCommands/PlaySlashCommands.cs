@@ -298,7 +298,6 @@ public class PlaySlashCommands : InteractionModuleBase
         }
     }
 
-
     [SlashCommand("plays", "Shows your total scrobble count for a specific time period")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
@@ -415,6 +414,37 @@ public class PlaySlashCommands : InteractionModuleBase
         {
             var response = await this._playBuilder.YearAsync(new ContextModel(this.Context, contextUser),
                 userSettings, parsedYear);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("recap", "Shows a recap for your selected time period")]
+    [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task RecapAsync(
+        [Summary("Time-period", "Time period to show (defaults to year)")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+            var year = SettingService.GetYear(timePeriod).GetValueOrDefault(DateTime.UtcNow.AddDays(-90).Year);
+            var selectedTimePeriod = !string.IsNullOrWhiteSpace(timePeriod) ? timePeriod : year.ToString();
+
+            var timeSettings = SettingService.GetTimePeriod(selectedTimePeriod, TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+
+            var response = await this._recapBuilders.RecapAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings, RecapPage.Overview);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

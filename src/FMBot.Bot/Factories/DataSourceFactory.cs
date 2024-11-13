@@ -251,7 +251,7 @@ public class DataSourceFactory : IDataSourceFactory
     }
 
     public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName, TimeSettingsModel timeSettings,
-        int count = 2, int amountOfPages = 1)
+        int count = 2, int amountOfPages = 1, bool useCache = false)
     {
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
         Response<TopAlbumList> topAlbums;
@@ -264,7 +264,7 @@ public class DataSourceFactory : IDataSourceFactory
             return topAlbums;
         }
 
-        topAlbums = await this._lastfmRepository.GetTopAlbumsAsync(lastFmUserName, timeSettings, count, amountOfPages);
+        topAlbums = await this._lastfmRepository.GetTopAlbumsAsync(lastFmUserName, timeSettings, count, amountOfPages, useCache);
 
         await CorrectTopAlbumNamesInternally(topAlbums);
         AddAlbumTopList(topAlbums, lastFmUserName);

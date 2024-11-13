@@ -1238,7 +1238,7 @@ public class AlbumBuilders
         response.EmbedAuthor.WithUrl(userUrl);
 
         var amount = topListSettings.ReleaseYearFilter.HasValue ? 1000 : 200;
-        var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
+        var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount, useCache: true);
 
         if (!albums.Success || albums.Content == null)
         {
