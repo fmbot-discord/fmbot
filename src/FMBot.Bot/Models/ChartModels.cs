@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Discord;
 using FMBot.Domain.Models;
 using SkiaSharp;
+
 using Color = System.Drawing.Color;
 
 namespace FMBot.Bot.Models;
