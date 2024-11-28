@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="fmbot-restore-2@localhost" uuid="a5da699d-f1dc-4457-a159-2472da319054">
+    <data-source source="LOCAL" name="fmbot@localhost" uuid="a5da699d-f1dc-4457-a159-2472da319054">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>

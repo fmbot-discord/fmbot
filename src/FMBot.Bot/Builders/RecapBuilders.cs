@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -153,7 +153,11 @@ public class RecapBuilders
                     genreString.AppendLine($"{index + 1}. **{genre.GenreName}**");
                 }
 
-                response.Embed.AddField("Top genres", genreString.ToString(), true);
+                if (genreString.Length > 0)
+                {
+                    response.Embed.AddField("Top genres", genreString.ToString(), true);
+                }
+
                 var topArtistString = new StringBuilder();
                 for (var index = 0; index < Math.Min(topArtists.Content.TopArtists.Count, 6); index++)
                 {
@@ -161,7 +165,10 @@ public class RecapBuilders
                     topArtistString.AppendLine($"{index + 1}. **{topArtist.ArtistName}**");
                 }
 
-                response.Embed.AddField("Top artists", topArtistString.ToString(), true);
+                if (topArtistString.Length > 0)
+                {
+                    response.Embed.AddField("Top artists", topArtistString.ToString(), true);
+                }
 
                 if (SupporterService.IsSupporter(userSettings.UserType))
                 {
