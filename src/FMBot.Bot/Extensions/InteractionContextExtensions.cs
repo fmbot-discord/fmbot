@@ -436,7 +436,7 @@ public static class InteractionContextExtensions
         }
     }
 
-    private static Task ModifyPaginator(this IInteractionContext context, InteractiveService interactiveService,
+    private static async Task ModifyPaginator(this IInteractionContext context, InteractiveService interactiveService,
         IUserMessage message, ResponseModel response)
     {
         if (context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
@@ -450,12 +450,20 @@ public static class InteractionContextExtensions
         }
         else
         {
+            if (message.Attachments != null && message.Attachments.Any())
+            {
+                await message.ModifyAsync(m =>
+                {
+                    m.Attachments = null;
+                });
+            }
+
             _ = interactiveService.SendPaginatorAsync(
                 response.StaticPaginator.Build(),
                 message,
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
         }
 
-        return Task.CompletedTask;
+        return;
     }
 }

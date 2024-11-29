@@ -65,7 +65,8 @@ public class RecapBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed
+            ResponseType = ResponseType.Embed,
+            Stream = null
         };
 
         var footer = new StringBuilder();

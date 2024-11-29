@@ -45,6 +45,7 @@ public static class InteractionConstants
 
     public const string ImportManage = "user-import-manage";
     public const string ImportSetting = "user-import-setting";
+    public const string ImportModify = "user-import-modify";
     public const string ImportClearSpotify = "user-import-clear-spotify";
     public const string ImportClearAppleMusic = "user-import-clear-applemusic";
 

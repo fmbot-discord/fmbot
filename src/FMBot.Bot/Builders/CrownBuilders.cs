@@ -18,6 +18,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using Discord.Interactions;
 using FMBot.Bot.Factories;
+using FMBot.Domain;
 
 namespace FMBot.Bot.Builders;
 
@@ -210,7 +211,8 @@ public class CrownBuilders
             else
             {
                 response.Embed.WithDescription($"You or the user you're searching for don't have any crowns yet. \n\n" +
-                                               $"Use `{context.Prefix}whoknows` to start getting crowns!");
+                                               $"Use `{context.Prefix}whoknows` to start getting crowns!\n\n" +
+                                               $"Crowns are rewarded to the #1 listener for an artist with at least {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays.");
             }
 
             response.ResponseType = ResponseType.Embed;

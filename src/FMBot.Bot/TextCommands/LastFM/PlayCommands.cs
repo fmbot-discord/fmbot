@@ -240,7 +240,7 @@ public class PlayCommands : BaseCommandModule
 
     [Command("year", RunMode = RunMode.Async)]
     [Summary("Shows an overview of your year")]
-    [Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year", "wrapped")]
+    [Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     public async Task YearAsync([Remainder] string extraOptions = null)
@@ -272,6 +272,7 @@ public class PlayCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     [ExcludeFromHelp]
+    [Alias("rcp", "wrapped")]
     public async Task RecapAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
