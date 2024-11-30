@@ -12,6 +12,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace FMBot.Bot.Handlers;
 

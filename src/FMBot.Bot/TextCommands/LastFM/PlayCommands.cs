@@ -271,7 +271,6 @@ public class PlayCommands : BaseCommandModule
     [Summary("Shows a recap")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
-    [ExcludeFromHelp]
     [Alias("rcp", "wrapped")]
     public async Task RecapAsync([Remainder] string extraOptions = null)
     {

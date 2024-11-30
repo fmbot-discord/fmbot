@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 
@@ -222,5 +224,115 @@ public class ImportBuilders
         }
 
         return years.Length > 0 ? years.ToString() : null;
+    }
+
+      public async Task<ResponseModel> ImportModify(ContextModel context, int userId)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var importSetting = new SelectMenuBuilder()
+            .WithPlaceholder("Select modification")
+            .WithCustomId(InteractionConstants.ImportModify)
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        var allPlays = await this._playService.GetAllUserPlays(userId, false);
+        var hasImported = allPlays.Any(a =>
+            a.PlaySource == PlaySource.SpotifyImport || a.PlaySource == PlaySource.AppleMusicImport);
+
+        if (!hasImported && context.ContextUser.DataSource == DataSource.LastFm)
+        {
+            importSetting.IsDisabled = true;
+        }
+
+        foreach (var option in ((DataSource[])Enum.GetValues(typeof(DataSource))))
+        {
+            var name = option.GetAttribute<OptionAttribute>().Name;
+            var description = option.GetAttribute<OptionAttribute>().Description;
+            var value = Enum.GetName(option);
+
+            var active = context.ContextUser.DataSource == option;
+
+            importSetting.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+        }
+
+        response.Components = new ComponentBuilder().WithSelectMenu(importSetting);
+
+        response.Embed.WithAuthor("Modify your .fmbot imports");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var importSource = "import data";
+        if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport) &&
+            allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
+        {
+            importSource = "Apple Music & Spotify";
+        }
+        else if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport))
+        {
+            importSource = "Apple Music";
+        }
+        else if (allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
+        {
+            importSource = "Spotify";
+        }
+
+        var embedDescription = new StringBuilder();
+
+        embedDescription.AppendLine("Modify your imported .fmbot data with the options below.");
+        embedDescription.AppendLine();
+        embedDescription.AppendLine("Please keep in mind that this only modifies imports that are stored in .fmbot. Importing in .fmbot works by combining imported plays together with Last.fm scrobbles.");
+        embedDescription.AppendLine();
+        embedDescription.AppendLine("No Last.fm data can be changed or removed with this command.");
+
+        embedDescription.AppendLine($"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
+        embedDescription.AppendLine();
+
+        embedDescription.AppendLine($"**Full Imports, then Last.fm**");
+        embedDescription.AppendLine($"- Uses your full {importSource} history and adds Last.fm afterwards");
+        embedDescription.AppendLine("- Plays from other music apps you scrobbled to Last.fm will not be included");
+
+        if (!hasImported)
+        {
+            embedDescription.AppendLine();
+            embedDescription.AppendLine(
+                "Run the `/import spotify` command to see how to request your data and to get started with imports. " +
+                "After importing you'll be able to change these settings.");
+        }
+        else
+        {
+            embedDescription.AppendLine();
+            embedDescription.AppendLine($"**Total counts**");
+            if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport))
+            {
+                embedDescription.AppendLine(
+                    $"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} imported Apple Music plays");
+            }
+
+            if (allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
+            {
+                embedDescription.AppendLine(
+                    $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} imported Spotify plays");
+            }
+
+            embedDescription.AppendLine(
+                $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
+
+            var playResult =
+                await this._playService.GetPlaysWithDataSource(userId, context.ContextUser.DataSource);
+            embedDescription.AppendLine();
+            embedDescription.AppendLine($"**Data in use with your selected mode**");
+            embedDescription.Append(
+                $"- {playResult.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport)} imports + ");
+            embedDescription.Append(
+                $"{playResult.Count(c => c.PlaySource == PlaySource.LastFm)} scrobbles = ");
+            embedDescription.Append($"{playResult.Count} plays");
+        }
+
+        response.Embed.WithDescription(embedDescription.ToString());
+
+        return response;
     }
 }
