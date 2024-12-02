@@ -29,7 +29,6 @@
     <PackageReference Include="Discord.Net.Rest" Version="3.16.0" />
     <PackageReference Include="Discord.Net.WebSocket" Version="3.16.0" />
     <PackageReference Include="Fergun.Interactive" Version="1.8.1" />
-    <PackageReference Include="Genius.NET" Version="4.0.1" />
     <PackageReference Include="Google.Apis" Version="1.68.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.68.0.3608" />
     <PackageReference Include="Google.Protobuf" Version="3.28.3" />

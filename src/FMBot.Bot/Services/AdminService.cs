@@ -9,14 +9,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Linq;
 using FMBot.Domain.Enums;
-using Genius.Models.Song;
 using Serilog;
 using Microsoft.Extensions.Options;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
-using Genius.Models.User;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;

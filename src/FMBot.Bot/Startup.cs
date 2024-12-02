@@ -191,7 +191,6 @@ public class Startup
             .AddSingleton<FeaturedService>()
             .AddSingleton<FriendsService>()
             .AddSingleton<FriendBuilders>()
-            .AddSingleton<GeniusService>()
             .AddSingleton<GenreBuilders>()
             .AddSingleton<GenreService>()
             .AddSingleton<GameBuilders>()
@@ -257,6 +256,7 @@ public class Startup
         services.AddHttpClient<InvidiousApi>();
         services.AddHttpClient<ImportService>();
         services.AddHttpClient<DiscogsApi>();
+        services.AddHttpClient<GeniusService>();
         services.AddHttpClient<ILastfmRepository, LastFmRepository>();
         services.AddHttpClient<TrackService>();
         services.AddHttpClient<DiscordSkuService>();
