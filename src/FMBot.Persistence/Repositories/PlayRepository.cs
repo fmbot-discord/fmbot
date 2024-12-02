@@ -16,9 +16,10 @@ public static class PlayRepository
 {
     public record PlayUpdate(List<UserPlay> NewPlays, List<UserPlay> RemovedPlays);
 
-    public static async Task<PlayUpdate> InsertLatestPlays(IEnumerable<RecentTrack> recentTracks, int userId, NpgsqlConnection connection)
+    public static async Task<PlayUpdate> InsertLatestPlays(IEnumerable<RecentTrack> recentTracks, int userId,
+        NpgsqlConnection connection)
     {
-        var plays = recentTracks
+        var lastPlays = recentTracks
             .Where(w => !w.NowPlaying &&
                         w.TimePlayed.HasValue)
             .Select(s => new UserPlay
@@ -31,19 +32,20 @@ public static class PlayRepository
                 UserId = userId
             }).ToList();
 
-        var existingPlays = await GetAllUserPlays(userId, connection, plays.Count + 250);
+        var existingPlays = await GetAllUserPlays(userId, connection, lastPlays.Count + 250);
+        existingPlays = existingPlays.Where(w => w.PlaySource == PlaySource.LastFm).ToList();
 
         var firstExistingPlay = existingPlays.MinBy(o => o.TimePlayed);
 
         if (firstExistingPlay != null)
         {
-            plays = plays
+            lastPlays = lastPlays
                 .Where(w => w.TimePlayed >= firstExistingPlay.TimePlayed)
                 .ToList();
         }
 
         var addedPlays = new List<UserPlay>();
-        foreach (var newPlay in plays)
+        foreach (var newPlay in lastPlays)
         {
             if (existingPlays.All(a => a.TimePlayed != newPlay.TimePlayed))
             {
@@ -51,14 +53,14 @@ public static class PlayRepository
             }
         }
 
-        var firstNewPlay = plays.MinBy(o => o.TimePlayed);
+        var firstNewPlay = lastPlays.MinBy(o => o.TimePlayed);
 
         var removedPlays = new List<UserPlay>();
         if (firstNewPlay != null)
         {
             foreach (var existingPlay in existingPlays.Where(w => w.TimePlayed >= firstNewPlay.TimePlayed))
             {
-                if (plays.All(a => a.TimePlayed != existingPlay.TimePlayed))
+                if (lastPlays.All(a => a.TimePlayed != existingPlay.TimePlayed))
                 {
                     removedPlays.Add(existingPlay);
                 }
@@ -66,21 +68,24 @@ public static class PlayRepository
 
             if (removedPlays.Any())
             {
-                Log.Information("Found {removedPlaysCount} time series plays to remove for {userId}", removedPlays.Count, userId);
+                Log.Information("Found {removedPlaysCount} time series plays to remove for {userId}",
+                    removedPlays.Count, userId);
                 await RemoveSpecificPlays(removedPlays, connection);
             }
         }
 
         if (addedPlays.Any())
         {
-            Log.Information("Inserting {addedPlaysCount} new time series plays for user {userId}", addedPlays.Count, userId);
+            Log.Information("Inserting {addedPlaysCount} new time series plays for user {userId}", addedPlays.Count,
+                userId);
             await InsertTimeSeriesPlays(addedPlays, connection);
         }
 
         return new PlayUpdate(addedPlays, removedPlays);
     }
 
-    public static async Task ReplaceAllPlays(IReadOnlyList<UserPlay> playsToInsert, int userId, NpgsqlConnection connection)
+    public static async Task ReplaceAllPlays(IReadOnlyList<UserPlay> playsToInsert, int userId,
+        NpgsqlConnection connection)
     {
         await RemoveAllCurrentLastFmPlays(userId, connection);
 
@@ -91,7 +96,8 @@ public static class PlayRepository
     private static async Task RemoveAllCurrentLastFmPlays(int userId, NpgsqlConnection connection)
     {
         await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                        "WHERE user_id = @userId AND (play_source IS NULL OR play_source = 0);", connection);
+                                                        "WHERE user_id = @userId AND (play_source IS NULL OR play_source = 0);",
+            connection);
 
         deletePlays.Parameters.AddWithValue("userId", userId);
 
@@ -171,7 +177,8 @@ public static class PlayRepository
         return await copyHelper.SaveAllAsync(connection, plays);
     }
 
-    public static async Task<ICollection<UserPlay>> GetAllUserPlays(int userId, NpgsqlConnection connection, int limit = 99999999)
+    public static async Task<ICollection<UserPlay>> GetAllUserPlays(int userId, NpgsqlConnection connection,
+        int limit = 99999999)
     {
         const string sql = "SELECT * FROM public.user_plays WHERE user_id = @userId " +
                            "ORDER BY time_played DESC LIMIT @limit";
@@ -190,20 +197,23 @@ public static class PlayRepository
 
         sql += dataSource switch
         {
-            DataSource.LastFm => " FROM public.user_plays WHERE user_id = @userId AND artist_name IS NOT NULL AND play_source = 0 ",
-            DataSource.FullImportThenLastFm => " FROM public.user_plays WHERE user_id = @userId AND artist_name IS NOT NULL AND ( " +
-                                                "(play_source = 1 OR play_source = 2) OR  " +
-                                                "(play_source = 0 AND time_played >= ( " +
-                                                "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND (play_source = 1 OR play_source = 2) " +
-                                                ")) OR  " +
-                                                "(play_source = 0 AND time_played <= ( " +
-                                                "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND (play_source = 1 OR play_source = 2) " +
-                                                "))) ",
-            DataSource.ImportThenFullLastFm => " FROM public.user_plays WHERE user_id = @userId  AND artist_name IS NOT NULL AND ( " +
-                                                "play_source = 0 OR " +
-                                                "((play_source = 1 OR play_source = 2) AND time_played < ( " +
-                                                "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 0 " +
-                                                "))) ",
+            DataSource.LastFm =>
+                " FROM public.user_plays WHERE user_id = @userId AND artist_name IS NOT NULL AND play_source = 0 ",
+            DataSource.FullImportThenLastFm =>
+                " FROM public.user_plays WHERE user_id = @userId AND artist_name IS NOT NULL AND ( " +
+                "(play_source = 1 OR play_source = 2) OR  " +
+                "(play_source = 0 AND time_played >= ( " +
+                "SELECT MAX(time_played) FROM public.user_plays WHERE user_id = @userId AND (play_source = 1 OR play_source = 2) " +
+                ")) OR  " +
+                "(play_source = 0 AND time_played <= ( " +
+                "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND (play_source = 1 OR play_source = 2) " +
+                "))) ",
+            DataSource.ImportThenFullLastFm =>
+                " FROM public.user_plays WHERE user_id = @userId  AND artist_name IS NOT NULL AND ( " +
+                "play_source = 0 OR " +
+                "((play_source = 1 OR play_source = 2) AND time_played < ( " +
+                "SELECT MIN(time_played) FROM public.user_plays WHERE user_id = @userId AND play_source = 0 " +
+                "))) ",
             _ => " FROM public.user_plays WHERE user_id = @userId "
         };
 
@@ -211,6 +221,7 @@ public static class PlayRepository
         {
             sql += " AND time_played >= @start ";
         }
+
         if (end.HasValue)
         {
             sql += " AND time_played <= @end ";
@@ -224,7 +235,8 @@ public static class PlayRepository
         return sql;
     }
 
-    public static async Task<ICollection<UserPlay>> GetUserPlays(int userId, NpgsqlConnection connection, DataSource dataSource, int limit = 9999999, DateTime? start = null, DateTime? end = null)
+    public static async Task<ICollection<UserPlay>> GetUserPlays(int userId, NpgsqlConnection connection,
+        DataSource dataSource, int limit = 9999999, DateTime? start = null, DateTime? end = null)
     {
         var sql = GetUserPlaysSqlString("SELECT * ", dataSource, start, end);
 
@@ -238,7 +250,8 @@ public static class PlayRepository
         })).ToList();
     }
 
-    public static async Task<int> GetUserPlayCount(int userId, NpgsqlConnection connection, DataSource dataSource, DateTime? start = null, DateTime? end = null)
+    public static async Task<int> GetUserPlayCount(int userId, NpgsqlConnection connection, DataSource dataSource,
+        DateTime? start = null, DateTime? end = null)
     {
         var sql = GetUserPlaysSqlString("SELECT COUNT(*) ", dataSource, start, end);
 
@@ -252,7 +265,8 @@ public static class PlayRepository
         });
     }
 
-    public static async Task<ICollection<UserPlay>> GetUserPlaysWithinTimeRange(int userId, NpgsqlConnection connection, DateTime start, DateTime? end = null)
+    public static async Task<ICollection<UserPlay>> GetUserPlaysWithinTimeRange(int userId, NpgsqlConnection connection,
+        DateTime start, DateTime? end = null)
     {
         end ??= DateTime.UtcNow;
 
@@ -270,7 +284,8 @@ public static class PlayRepository
 
     public static async Task SetDefaultSourceForPlays(int userId, NpgsqlConnection connection)
     {
-        const string sql = "UPDATE public.user_plays SET play_source = 0 WHERE user_id = @userId AND play_source IS null";
+        const string sql =
+            "UPDATE public.user_plays SET play_source = 0 WHERE user_id = @userId AND play_source IS null";
 
         await connection.ExecuteAsync(sql, new
         {
