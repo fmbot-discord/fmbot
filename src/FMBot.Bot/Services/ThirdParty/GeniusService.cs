@@ -65,8 +65,6 @@ public class GeniusService
 
             var result = JsonSerializer.Deserialize<GeniusResponse>(requestBody, jsonSerializerOptions);
 
-            Log.Information(requestBody);
-
             if (result?.Response?.Hits == null || !result.Response.Hits.Any())
             {
                 return null;
@@ -100,7 +98,7 @@ public class GeniusService
         }
         catch (Exception ex)
         {
-            Log.Error("Something went wrong while deserializing the response from the Genius API - {exceptionMessage}", ex, ex);
+            Log.Error("Something went wrong while deserializing the response from the Genius API - {exceptionMessage}", ex);
             return null;
         }
     }
