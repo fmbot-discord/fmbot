@@ -12,6 +12,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Serilog;
 using SkiaSharp;
+using SkiaSharp.HarfBuzz;
 using Color = System.Drawing.Color;
 
 namespace FMBot.Bot.Services;
@@ -525,14 +526,14 @@ public class ChartService
 
         bitmapCanvas.DrawRoundRect(backgroundRectangle, 4, 4, rectanglePaint);
 
-        bitmapCanvas.DrawText(artistName, (float)chartImage.Width / 2,
+        bitmapCanvas.DrawShapedText(artistName, (float)chartImage.Width / 2,
             -artistBounds.Top + chartImage.Height -
             (albumName != null ? largerImages ? 39 : 26 : largerImages ? 20 : 13),
             textPaint);
 
         if (albumName != null)
         {
-            bitmapCanvas.DrawText(albumName, (float)chartImage.Width / 2,
+            bitmapCanvas.DrawShapedText(albumName, (float)chartImage.Width / 2,
                 -albumBounds.Top + chartImage.Height - (largerImages ? 20 : 13),
                 textPaint);
         }
@@ -559,8 +560,8 @@ public class ChartService
         textPaint.MeasureText(album.ArtistName, ref artistBounds);
         textPaint.MeasureText(album.AlbumName, ref albumBounds);
 
-        bitmapCanvas.DrawText(album.ArtistName, 4, 12, textPaint);
-        bitmapCanvas.DrawText(album.AlbumName, 4, 22, textPaint);
+        bitmapCanvas.DrawShapedText(album.ArtistName, 4, 12, textPaint);
+        bitmapCanvas.DrawShapedText(album.AlbumName, 4, 22, textPaint);
     }
 
     public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions,
