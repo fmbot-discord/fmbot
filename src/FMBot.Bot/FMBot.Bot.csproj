@@ -40,6 +40,7 @@
     </PackageReference>
     <PackageReference Include="Hangfire.Core" Version="1.8.15" />
     <PackageReference Include="Hangfire.MemoryStorage" Version="1.8.1.1" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="7.3.0.3" />
     <PackageReference Include="Humanizer.Core" Version="2.14.1" />
     <PackageReference Include="MetaBrainz.MusicBrainz" Version="6.1.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
