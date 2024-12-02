@@ -461,7 +461,7 @@ public class RecapBuilders
                             $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
                     }
 
-                    foreach (var month in monthGroups)
+                    foreach (var month in monthGroups.Take(15))
                     {
                         if (!enrichedPlays.enrichedPlays.Any(a =>
                                 a.TimePlayed < DateTime.UtcNow.AddMonths(-month.Key.Month)))
