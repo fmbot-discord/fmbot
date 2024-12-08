@@ -29,19 +29,27 @@ internal class BettyMusicBot : MusicBot
      */
     public override string GetTrackQuery(IUserMessage msg)
     {
-        var description = msg.Embeds.First().Description;
-
-        // Look for the start and end indices of the song info within **SONGTITLE - AUTHOR**.
-        int startIndex = description.IndexOf("Now Playing **", StringComparison.Ordinal) + "Now Playing **".Length;
-        int endIndex = description.IndexOf("**", startIndex, StringComparison.Ordinal);
-
-        if (startIndex < "Now Playing **".Length || endIndex < 0 || endIndex <= startIndex)
+        foreach (var embed in msg.Embeds)
         {
-            return string.Empty;
+            if (embed.Description != null && embed.Description.StartsWith(":voice:・Now Playing", StringComparison.Ordinal))
+             {
+                var description = embed.Description;
+
+                // Look for the start and end indices of the song info within **SONGTITLE - AUTHOR**.
+                int startIndex = description.IndexOf("Now Playing **", StringComparison.Ordinal) + "Now Playing **".Length;
+                int endIndex = description.IndexOf("**", startIndex, StringComparison.Ordinal);
+    
+                if (startIndex < "Now Playing **".Length || endIndex < 0 || endIndex <= startIndex)
+                {
+                    return string.Empty;
+                }
+
+                // Extract the song info "SONGTITLE - AUTHOR".
+                var songByArtist = description.Substring(startIndex, endIndex - startIndex);
+                return songByArtist;
+            }
         }
 
-        // Extract the song info "SONGTITLE - AUTHOR".
-        var songByArtist = description.Substring(startIndex, endIndex - startIndex);
-        return songByArtist;
+        return string.Empty;
     }
 }
