@@ -946,7 +946,8 @@ public class SupporterService
                 (w.LastPayment.HasValue &&
                 w.LastPayment.Value < expiredDate ||
                 w.Modified.HasValue &&
-                w.Modified < modifiedDate))
+                w.Modified < modifiedDate) ||
+                w.Modified == null)
             .ToListAsync();
 
         Log.Information("Checking expired supporters - {count} possibly expired", possiblyExpiredSupporters.Count);
@@ -1218,7 +1219,8 @@ public class SupporterService
         {
             DiscordUserId = id,
             Name = user?.UserNameLastFM,
-            Created = entitlement.StartsAt ?? DateTime.UtcNow,
+            Created = DateTime.SpecifyKind(entitlement.StartsAt ?? DateTime.UtcNow, DateTimeKind.Utc),
+            Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
             LastPayment = entitlement.EndsAt,
             Notes = "Added through Discord SKU",
             SupporterMessagesEnabled = true,
