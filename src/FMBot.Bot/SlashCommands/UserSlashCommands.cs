@@ -220,9 +220,15 @@ public class UserSlashCommands : InteractionModuleBase
                 }
                 case UserSetting.DeleteAccount:
                 {
-                    response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
+                    var serverEmbed = new EmbedBuilder()
+                        .WithColor(DiscordConstants.WarningColorOrange)
+                        .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
 
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+
+                    response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
+                    await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
+                        components: response.Components.Build());
                     break;
                 }
                 default:
@@ -323,7 +329,6 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-
     [SlashCommand("privacy", "Changes your visibility to other .fmbot users in Global WhoKnows")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
@@ -419,7 +424,8 @@ public class UserSlashCommands : InteractionModuleBase
                         "We automatically moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
 
                     globalStatus.AppendLine();
-                    globalStatus.AppendLine(".fmbot is not affiliated with Last.fm. This filter only applies to global charts in .fmbot.");
+                    globalStatus.AppendLine(
+                        ".fmbot is not affiliated with Last.fm. This filter only applies to global charts in .fmbot.");
                 }
 
                 if (globalStatus.Length > 0)
@@ -697,9 +703,26 @@ public class UserSlashCommands : InteractionModuleBase
     {
         var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
 
-        var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, userSettings));
+        if (this.Context.Guild != null)
+        {
+            var serverEmbed = new EmbedBuilder()
+                .WithColor(DiscordConstants.WarningColorOrange)
+                .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
 
-        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+        }
+        else
+        {
+            var serverEmbed = new EmbedBuilder()
+                .WithColor(DiscordConstants.WarningColorOrange)
+                .WithDescription("Check the message below to continue with your .fmbot account deletion.");
+
+            await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+        }
+
+        var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, userSettings));
+        await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
+            components: response.Components.Build());
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 

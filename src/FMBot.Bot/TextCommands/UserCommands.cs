@@ -695,9 +695,18 @@ public class UserCommands : BaseCommandModule
             return;
         }
 
-        var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
 
-        await this.Context.SendResponse(this.Interactivity, response);
+        if (this.Context.Guild != null)
+        {
+            var serverEmbed = new EmbedBuilder()
+                .WithColor(DiscordConstants.WarningColorOrange)
+                .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
+
+            await ReplyAsync(embed: serverEmbed.Build());
+        }
+
+        var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
+        await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 }
