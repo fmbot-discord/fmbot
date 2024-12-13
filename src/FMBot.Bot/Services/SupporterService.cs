@@ -946,8 +946,8 @@ public class SupporterService
                 (w.LastPayment.HasValue &&
                 w.LastPayment.Value < expiredDate ||
                 w.Modified.HasValue &&
-                w.Modified < modifiedDate) ||
-                w.Modified == null)
+                w.Modified < modifiedDate ||
+                w.Modified == null))
             .ToListAsync();
 
         Log.Information("Checking expired supporters - {count} possibly expired", possiblyExpiredSupporters.Count);
