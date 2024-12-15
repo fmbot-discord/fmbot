@@ -318,7 +318,7 @@ public static class InteractionContextExtensions
         await context.ModifyMessage(message, response, defer);
     }
 
-    public static async Task DisableInteractionButtons(this IInteractionContext context)
+    public static async Task DisableInteractionButtons(this IInteractionContext context, ButtonBuilder extraButtonBuilder = null)
     {
         var message = (context.Interaction as SocketMessageComponent)?.Message;
 
@@ -339,6 +339,33 @@ public static class InteractionContextExtensions
                 }
             }
         }
+
+        await ModifyComponents(context, message, newComponents);
+    }
+
+    public static async Task AddButton(this IInteractionContext context, ButtonBuilder extraButtonBuilder = null)
+    {
+        var message = (context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var newComponents = new ComponentBuilder();
+        foreach (var actionRowComponent in message.Components)
+        {
+            foreach (var component in actionRowComponent.Components)
+            {
+                if (component is ButtonComponent buttonComponent)
+                {
+                    newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                        buttonComponent.Emote, buttonComponent.Url, true);
+                }
+            }
+        }
+
+        newComponents.WithButton(extraButtonBuilder);
 
         await ModifyComponents(context, message, newComponents);
     }
