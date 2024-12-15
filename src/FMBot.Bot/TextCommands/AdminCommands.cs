@@ -2774,8 +2774,9 @@ public class AdminCommands : BaseCommandModule
         {
             var embed = new EmbedBuilder();
             embed.WithDescription(
-                "It looks like you're asking for help with a Last.fm issue.\n\n" +
-                "Feel free to ask, just note that .fmbot is not affiliated with Last.fm. The bot and website are two different things.");
+                "It looks like you asked for help with a Last.fm issue, and not an .fmbot issue.\n\n" +
+                ".fmbot is not affiliated with Last.fm, the bot and the website are two different things.\n\n" +
+                "Generally speaking we can't help with Last.fm issues, but we and other members of the community might still be able to offer suggestions. You can also consider asking the two communities linked below.");
 
             var components = new ComponentBuilder()
                 .WithButton(url: "https://support.last.fm/", label: "Last.fm support forums", style: ButtonStyle.Link)
@@ -2798,11 +2799,6 @@ public class AdminCommands : BaseCommandModule
                     await threadChannel.ModifyAsync(m => m.AppliedTags = new List<ulong> { tagToApply.Id });
                 }
             }
-
-            await this.Context.Message.DeleteAsync(new RequestOptions
-            {
-                AuditLogReason = ".lfmissue command"
-            });
         }
     }
 }
