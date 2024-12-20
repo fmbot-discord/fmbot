@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using FMBot.Youtube.Models;
-using FMBot.Youtube.Services;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
@@ -69,7 +67,7 @@ public class YoutubeService
             }
         }
 
-        public bool IsFamilyFriendly(Video video)
+        public static bool IsFamilyFriendly(Video video)
         {
             if (video?.ContentDetails == null)
             {

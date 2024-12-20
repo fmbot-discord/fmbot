@@ -127,7 +127,7 @@ public class YoutubeCommands : BaseCommandModule
                 var user = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
                 if (user.GuildPermissions.EmbedLinks)
                 {
-                    if (this._youtubeService.IsFamilyFriendly(video))
+                    if (YoutubeService.IsFamilyFriendly(video))
                     {
                         response.Text += $"\nhttps://youtube.com/watch?v={videoId}";
                     }
@@ -136,7 +136,7 @@ public class YoutubeCommands : BaseCommandModule
                         response.Text += $"\n<https://youtube.com/watch?v={videoId}>" +
                                          $"\n`{youtubeResult.Snippet.Title}`" +
                                          $"\n" +
-                                         $"-# *Embed disabled because video might not be SFW.*";
+                                         $"-# *Embed disabled because video is age restricted by YouTube.*";
                     }
                 }
                 else
