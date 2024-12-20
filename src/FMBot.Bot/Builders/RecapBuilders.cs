@@ -423,7 +423,7 @@ public class RecapBuilders
                     response.Components.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
                         url: Constants.GetSupporterDiscordLink);
                 }
-
+  
                 break;
             }
             case RecapPage.ListeningTime:

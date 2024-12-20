@@ -110,6 +110,7 @@ public class ImportBuilders
         description.AppendLine("### Notes");
         description.AppendLine("- We filter out duplicates and skips, so don't worry about submitting the same file twice");
         description.AppendLine("- You can select what from your import you want to use with `/import manage`");
+        description.AppendLine("- The importing service is only available with an active supporter subscription");
 
         var importedYears = await this.GetImportedYears(context.ContextUser.UserId, PlaySource.SpotifyImport);
         if (importedYears != null)
@@ -122,7 +123,7 @@ public class ImportBuilders
         if (!context.SlashCommand || directToSlash)
         {
             footer.AppendLine("Do not share your import files publicly");
-            footer.AppendLine("To start your import, use the slash command version of this command");
+            footer.AppendLine("To start your import, use the slash command version of this command instead");
         }
 
         footer.AppendLine("Having issues with importing? Please open a help thread on discord.gg/fmbot");
@@ -177,6 +178,7 @@ public class ImportBuilders
         description.AppendLine("### Notes");
         description.AppendLine("- Apple provides their history data without artist names. We try to find these as best as possible based on the album and track name.");
         description.AppendLine("- You can select what from your import you want to use with `/import manage`");
+        description.AppendLine("- The importing service is only available with an active supporter subscription");
 
         var importedYears = await this.GetImportedYears(context.ContextUser.UserId, PlaySource.AppleMusicImport);
         if (importedYears != null)
@@ -189,7 +191,7 @@ public class ImportBuilders
         if (!context.SlashCommand || directToSlash)
         {
             footer.AppendLine("Do not share your import files publicly");
-            footer.AppendLine("To start your import, use the slash command version of this command");
+            footer.AppendLine("To start your import, use the slash command version of this command instead");
         }
 
         footer.AppendLine("Having issues with importing? Please open a help thread on discord.gg/fmbot");

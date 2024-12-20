@@ -107,8 +107,7 @@ public class YoutubeCommands : BaseCommandModule
                 };
 
                 var youtubeResult = await this._youtubeService.GetSearchResult(querystring);
-
-                if (youtubeResult == null)
+                if (youtubeResult?.Id?.VideoId == null)
                 {
                     response.Text = "No results have been found for this query.";
                     response.CommandResponse = CommandResponse.NotFound;
@@ -122,27 +121,28 @@ public class YoutubeCommands : BaseCommandModule
 
                 response.Text = $"{StringExtensions.Sanitize(name)} searched for: `{StringExtensions.Sanitize(querystring)}`";
 
-                var video = await this._youtubeService.GetVideoResult(youtubeResult.VideoId);
+                var videoId = youtubeResult.Id.VideoId;
+                var video = await this._youtubeService.GetVideoResult(videoId);
 
                 var user = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
                 if (user.GuildPermissions.EmbedLinks)
                 {
-                    if (video is { IsFamilyFriendly: true })
+                    if (this._youtubeService.IsFamilyFriendly(video))
                     {
-                        response.Text += $"\nhttps://youtube.com/watch?v={youtubeResult.VideoId}";
+                        response.Text += $"\nhttps://youtube.com/watch?v={videoId}";
                     }
                     else
                     {
-                        response.Text += $"\n<https://youtube.com/watch?v={youtubeResult.VideoId}>" +
-                                         $"\n`{youtubeResult.Title}`" +
+                        response.Text += $"\n<https://youtube.com/watch?v={videoId}>" +
+                                         $"\n`{youtubeResult.Snippet.Title}`" +
                                          $"\n" +
                                          $"-# *Embed disabled because video might not be SFW.*";
                     }
                 }
                 else
                 {
-                    response.Text += $"\n<https://youtube.com/watch?v={youtubeResult.VideoId}>" +
-                                     $"\n`{youtubeResult.Title}`" +
+                    response.Text += $"\n<https://youtube.com/watch?v={videoId}>" +
+                                     $"\n`{youtubeResult.Snippet.Title}`" +
                                      $"\n-# *Embed disabled because user that requested link is not allowed to embed links.*";
                 }
 

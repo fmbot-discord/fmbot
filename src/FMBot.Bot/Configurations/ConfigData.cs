@@ -80,6 +80,10 @@ public static class ConfigData
                 OpenAi = new OpenAiConfig
                 {
                     Key = string.Empty,
+                },
+                Google = new GoogleConfig
+                {
+                    ApiKey = string.Empty
                 }
             };
 
