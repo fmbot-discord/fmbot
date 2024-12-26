@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,7 +32,8 @@ public class AlbumRepository
             .MapInteger("user_id", x => x.UserId)
             .MapInteger("playcount", x => x.Playcount);
 
-        await using var deleteCurrentAlbums = new NpgsqlCommand($"DELETE FROM public.user_albums WHERE user_id = {userId};", connection);
+        await using var deleteCurrentAlbums =
+            new NpgsqlCommand($"DELETE FROM public.user_albums WHERE user_id = {userId};", connection);
         await deleteCurrentAlbums.ExecuteNonQueryAsync();
 
         return await copyHelper.SaveAllAsync(connection, albums);
@@ -61,7 +63,8 @@ public class AlbumRepository
         })).ToList();
     }
 
-    public static async Task<int> GetAlbumPlayCountForUser(NpgsqlConnection connection, string artistName, string albumName, int userId)
+    public static async Task<int> GetAlbumPlayCountForUser(NpgsqlConnection connection, string artistName,
+        string albumName, int userId)
     {
         const string sql = "SELECT ua.playcount " +
                            "FROM user_albums AS ua " +
@@ -76,5 +79,67 @@ public class AlbumRepository
             albumName,
             artistName
         });
+    }
+
+    public static async Task GetAlbumCovers(List<TopAlbum> topAlbums,
+        NpgsqlConnection connection)
+    {
+        const string getAlbumQuery = @"
+        SELECT
+            name,
+            artist_name,
+            COALESCE(spotify_image_url, lastfm_image_url) as album_cover_url,
+            spotify_id,
+            release_date,
+            release_date_precision,
+            mbid
+        FROM public.albums
+        WHERE (UPPER(name), UPPER(artist_name)) IN (
+            SELECT UPPER(CAST(unnest(@albumNames) AS CITEXT)),
+                   UPPER(CAST(unnest(@artistNames) AS CITEXT))
+        )";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        var albumData = await connection.QueryAsync<AlbumData>(getAlbumQuery, new
+        {
+            albumNames = topAlbums.Select(a => a.AlbumName).ToArray(),
+            artistNames = topAlbums.Select(a => a.ArtistName).ToArray()
+        });
+
+        var albumLookup = albumData
+            .Where(w => w.AlbumCoverUrl != null)
+            .GroupBy(a => (a.Name.ToLower(), a.ArtistName.ToLower()))
+            .ToDictionary(
+                g => g.Key,
+                g => g.First()
+            );
+
+        foreach (var album in topAlbums)
+        {
+            var key = (album.AlbumName.ToLower(), album.ArtistName.ToLower());
+            if (albumLookup.TryGetValue(key, out var dbAlbum))
+            {
+                album.AlbumCoverUrl = dbAlbum.AlbumCoverUrl;
+                album.ReleaseDatePrecision = dbAlbum.ReleaseDatePrecision;
+
+                album.ReleaseDate = dbAlbum.ReleaseDatePrecision switch
+                {
+                    "year" => DateTime.Parse($"{dbAlbum.ReleaseDate}-1-1"),
+                    "month" => DateTime.Parse($"{dbAlbum.ReleaseDate}-1"),
+                    "day" => DateTime.Parse(dbAlbum.ReleaseDate),
+                    _ => throw new NotImplementedException()
+                };
+            }
+        }
+    }
+
+    private class AlbumData
+    {
+        public string Name { get; set; }
+        public string ArtistName { get; set; }
+        public string AlbumCoverUrl { get; set; }
+        public string SpotifyId { get; set; }
+        public string ReleaseDate { get; set; }
+        public string ReleaseDatePrecision { get; set; }
     }
 }
