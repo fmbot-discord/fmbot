@@ -235,7 +235,7 @@ public class ImportBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var importSetting = new SelectMenuBuilder()
+        var importModify = new SelectMenuBuilder()
             .WithPlaceholder("Select modification")
             .WithCustomId(InteractionConstants.ImportModify)
             .WithMinValues(1)
@@ -247,21 +247,18 @@ public class ImportBuilders
 
         if (!hasImported && context.ContextUser.DataSource == DataSource.LastFm)
         {
-            importSetting.IsDisabled = true;
+            importModify.IsDisabled = true;
         }
 
-        foreach (var option in ((DataSource[])Enum.GetValues(typeof(DataSource))))
+        foreach (var option in ((ImportModifyPick[])Enum.GetValues(typeof(ImportModifyPick))))
         {
             var name = option.GetAttribute<OptionAttribute>().Name;
-            var description = option.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(option);
 
-            var active = context.ContextUser.DataSource == option;
-
-            importSetting.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+            importModify.AddOption(new SelectMenuOptionBuilder(name, value));
         }
 
-        response.Components = new ComponentBuilder().WithSelectMenu(importSetting);
+        response.Components = new ComponentBuilder().WithSelectMenu(importModify);
 
         response.Embed.WithAuthor("Modify your .fmbot imports");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
