@@ -285,8 +285,6 @@ public class ImportBuilders
         embedDescription.AppendLine("Please keep in mind that this only modifies imports that are stored in .fmbot. Importing in .fmbot works by combining imported plays together with Last.fm scrobbles.");
         embedDescription.AppendLine();
         embedDescription.AppendLine("No Last.fm data can be changed or removed with this command.");
-
-        embedDescription.AppendLine($"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
         embedDescription.AppendLine();
 
         embedDescription.AppendLine($"**Full Imports, then Last.fm**");

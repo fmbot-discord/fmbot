@@ -73,11 +73,11 @@ public class ImportCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("importmodify", RunMode = RunMode.Async)]
-    [Summary("Deletes your .fmbot account")]
-    [Alias("modifyimport", "importsmodify", "modifyimports", "import modify")]
-    [CommandCategories(CommandCategory.UserSettings)]
-    [UsernameSetRequired]
+    // [Command("importmodify", RunMode = RunMode.Async)]
+    // [Summary("Deletes your .fmbot account")]
+    // [Alias("modifyimport", "importsmodify", "modifyimports", "import modify")]
+    // [CommandCategories(CommandCategory.UserSettings)]
+    // [UsernameSetRequired]
     public async Task ModifyImportAsync([Remainder] string confirmation = null)
     {
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
