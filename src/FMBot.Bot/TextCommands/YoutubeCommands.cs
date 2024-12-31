@@ -124,8 +124,8 @@ public class YoutubeCommands : BaseCommandModule
                 var videoId = youtubeResult.Id.VideoId;
                 var video = await this._youtubeService.GetVideoResult(videoId);
 
-                var user = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-                if (user.GuildPermissions.EmbedLinks)
+                var user = this.Context.Guild != null ? await this.Context.Guild.GetUserAsync(this.Context.User.Id) : null;
+                if (user == null || user.GuildPermissions.EmbedLinks)
                 {
                     if (YoutubeService.IsFamilyFriendly(video))
                     {

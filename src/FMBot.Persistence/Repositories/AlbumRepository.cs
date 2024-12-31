@@ -127,7 +127,7 @@ public class AlbumRepository
                     "year" => DateTime.Parse($"{dbAlbum.ReleaseDate}-1-1"),
                     "month" => DateTime.Parse($"{dbAlbum.ReleaseDate}-1"),
                     "day" => DateTime.Parse(dbAlbum.ReleaseDate),
-                    _ => throw new NotImplementedException()
+                    _ => null
                 };
             }
         }
