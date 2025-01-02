@@ -1407,18 +1407,19 @@ public class SupporterService
             .ToListAsync();
     }
 
-    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string type)
+    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string lastFmUserName, string type)
     {
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
             DiscordUserId = (long)discordUserId,
+            LastFmUserName = lastFmUserName,
             Type = type
         });
 
         return url?.CheckoutLink;
     }
 
-    public async Task<string> GetSupporterManageLink(ulong discordUserId)
+    public async Task<string> GetSupporterManageLink(ulong discordUserId, string lastFmUserName)
     {
         var url = await this._supporterLinkService.GetManageLinkAsync(new GetManageLinkOptions
         {

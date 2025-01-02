@@ -101,17 +101,20 @@ public class StaticBuilders
             "- See first listen dates, have an expanded profile and advanced recaps\n" +
             "- Ability to store your complete Discogs collection");
 
-        response.Embed.AddField("<:history:1131511469096312914> Import your Spotify history",
-            "- Use your full Spotify listening history together with your Last.fm data\n" +
+        response.Embed.AddField("<:history:1131511469096312914> Import your Spotify and Apple Music history",
+            "- Use your full Spotify and/or Apple Music listening history together with your Last.fm data\n" +
             "- Get the most accurate playcounts and listening time");
 
         response.Embed.AddField("🔥 Expanded judge command",
-            "- GPT-4 powered compliments and roasts\n" +
+            "- GPT-4o powered compliments and roasts\n" +
             "- Increased usage limits and ability to use the command on others");
 
         response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
             "- View when you discovered artists with the exclusive `discoveries` command\n" +
             "- See discovery dates in the `artist`, `album` and `track` commands");
+
+        response.Embed.AddField("🎮 Play unlimited games",
+            "- Remove the daily limit on Jumble and Pixel Jumble and play as much as you want");
 
         response.Embed.AddField("⚙️ Customize your commands",
             "- Expand your `.fm` footer with extra stats\n" +
@@ -119,8 +122,7 @@ public class StaticBuilders
             "- Set your own personal automatic emote reactions");
 
         response.Embed.AddField("⭐ Flex your support",
-            $"- Get a badge after your name to show your support\n" +
-            "- Exclusive role and channel in the [.fmbot server](https://discord.gg/fmbot) with sneak peeks\n" +
+            "- Get a badge in the bot and a role on the [.fmbot server](https://discord.gg/fmbot) with access to sneak peeks\n" +
             $"- Higher chance to get featured on Supporter Sundays (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
 
         if (existingSupporter != null)

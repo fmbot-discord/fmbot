@@ -2372,7 +2372,6 @@ public class AdminCommands : BaseCommandModule
     }
 
     [Command("supporterlink")]
-    [Summary("Runs a toplist update for someone else")]
     public async Task GetSupporterTestLink([Remainder] string user = null)
     {
         try
@@ -2389,8 +2388,8 @@ public class AdminCommands : BaseCommandModule
                 embed.WithDescription("⭐ Support .fmbot with .fmbot supporter and unlock extra perks");
                 embed.AddField("Monthly - $3.99",
                     "-# $3.99 per month", true);
-                embed.AddField("Yearly - $29.99",
-                    "-# $2.49 per month - Saves 45%", true);
+                embed.AddField("Yearly - $23.99",
+                    "-# $1.99 per month - Saves 50%", true);
                 embed.WithColor(DiscordConstants.InformationColorBlue);
 
                 await ReplyAsync(embed: embed.Build(), components: components.Build());
