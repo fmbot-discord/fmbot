@@ -8,6 +8,7 @@ namespace FMBot.Bot.Models.MusicBot;
 internal class BettyMusicBot : MusicBot
 {
     private const string NowPlaying = "・Now Playing";
+
     public BettyMusicBot() : base("Betty", false, trackNameFirst: true)
     {
     }
@@ -24,30 +25,32 @@ internal class BettyMusicBot : MusicBot
     }
 
     /**
-     * Example: 
-     * :voice:・Now Playing **[Escape - Jacob Vallen](https://discord.gg/XXXXX 'An invite link to the support server')**
+     * Example:
+     * <:voice:1005912303503421471>・Now Playing **iluv - Effy**
      */
     public override string GetTrackQuery(IUserMessage msg)
     {
         foreach (var embed in msg.Embeds)
         {
-            if (embed.Description != null && embed.Description.StartsWith(":voice:・Now Playing", StringComparison.Ordinal))
-             {
-                var description = embed.Description;
-
-                // Look for the start and end indices of the song info within **SONGTITLE - AUTHOR**.
-                int startIndex = description.IndexOf("Now Playing **", StringComparison.Ordinal) + "Now Playing **".Length;
-                int endIndex = description.IndexOf("**", startIndex, StringComparison.Ordinal);
-    
-                if (startIndex < "Now Playing **".Length || endIndex < 0 || endIndex <= startIndex)
-                {
-                    return string.Empty;
-                }
-
-                // Extract the song info "SONGTITLE - AUTHOR".
-                var songByArtist = description.Substring(startIndex, endIndex - startIndex);
-                return songByArtist;
+            if (embed.Description == null ||
+                !embed.Description.Contains(NowPlaying, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
             }
+
+            // Look for the start and end indices of the song info within **SONGTITLE - AUTHOR**.
+            var startIndex = embed.Description.IndexOf("Now Playing **", StringComparison.OrdinalIgnoreCase) +
+                             "Now Playing **".Length;
+            var endIndex = embed.Description.IndexOf("**", startIndex, StringComparison.OrdinalIgnoreCase);
+
+            if (startIndex < "Now Playing **".Length || endIndex < 0 || endIndex <= startIndex)
+            {
+                return string.Empty;
+            }
+
+            // Extract the song info "SONGTITLE - AUTHOR".
+            var songByArtist = embed.Description.Substring(startIndex, endIndex - startIndex);
+            return songByArtist;
         }
 
         return string.Empty;
