@@ -7,15 +7,15 @@ public class SupporterStripe
 {
     public ulong PurchaserDiscordUserId { get; set; }
 
+    public ulong PurchaserLastFmUserName { get; set; }
+
     public ulong ReceiverDiscordUserId { get; set; }
 
     public string Email { get; set; }
 
-    public string StripeSubscriptionId { get; set; }
-
     public string StripeCustomerId { get; set; }
 
-    public string StripeProductId { get; set; }
+    public string StripeSubscriptionId { get; set; }
 
     public string Type { get; set; }
 

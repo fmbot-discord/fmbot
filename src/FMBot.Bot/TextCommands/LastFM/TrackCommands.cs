@@ -185,7 +185,7 @@ public class TrackCommands : BaseCommandModule
     [Command("loved", RunMode = RunMode.Async)]
     [Summary("Shows your Last.fm loved tracks.")]
     [Examples("loved", "lt", "lovedtracks lfm:fm-bot", "lovedtracks @user")]
-    [Alias("lovedtracks", "lt")]
+    [Alias("lovedtracks", "lt", "unfucked")]
     [UserSessionRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]

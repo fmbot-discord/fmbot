@@ -247,12 +247,21 @@ public class TrackSlashCommands : InteractionModuleBase
     public async Task TrackPreviewAsync(string trackId)
     {
         _ = DeferAsync();
+
         await this.Context.DisableInteractionButtons();
 
         var parsedTrackId = int.Parse(trackId);
         var dbTrack = await this._trackService.GetTrackForId(parsedTrackId);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var buttonBuilder = new ButtonBuilder();
+        buttonBuilder.WithLabel("Open on Spotify");
+        buttonBuilder.WithStyle(ButtonStyle.Link);
+        buttonBuilder.WithUrl("https://open.spotify.com/track/" + dbTrack.SpotifyId);
+        buttonBuilder.WithEmote(Emote.Parse(DiscordConstants.Spotify));
+
+        await this.Context.AddButton(buttonBuilder);
 
         try
         {

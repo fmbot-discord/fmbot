@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -7,6 +8,7 @@ using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -69,5 +71,37 @@ public class ImportCommands : BaseCommandModule
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    // [Command("importmodify", RunMode = RunMode.Async)]
+    // [Summary("Deletes your .fmbot account")]
+    // [Alias("modifyimport", "importsmodify", "modifyimports", "import modify")]
+    // [CommandCategories(CommandCategory.UserSettings)]
+    // [UsernameSetRequired]
+    public async Task ModifyImportAsync([Remainder] string confirmation = null)
+    {
+        var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        if (this.Context.Guild != null)
+        {
+            var serverEmbed = new EmbedBuilder()
+                .WithColor(DiscordConstants.InformationColorBlue)
+                .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
+
+            await ReplyAsync(embed: serverEmbed.Build());
+        }
+
+        try
+        {
+            var response = await this._importBuilders.ImportModify(new ContextModel(this.Context, prfx, contextUser), contextUser.UserId);
+            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+
     }
 }

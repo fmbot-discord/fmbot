@@ -44,27 +44,26 @@ public class DiscordSkuService
 
         try
         {
-            if (discordUserId != null || before != null || after != null)
+            var queryParams = new Dictionary<string, string>();
+
+            queryParams.Add("exclude_deleted", "false");
+
+            if (discordUserId != null)
             {
-                var queryParams = new Dictionary<string, string>();
-
-                if (discordUserId != null)
-                {
-                    queryParams.Add("user_id", discordUserId.ToString());
-                }
-
-                if (after != null)
-                {
-                    queryParams.Add("after", after.ToString());
-                }
-
-                if (before != null)
-                {
-                    queryParams.Add("before", before.ToString());
-                }
-
-                request.RequestUri = new Uri(QueryHelpers.AddQueryString(fetchEntitlements, queryParams));
+                queryParams.Add("user_id", discordUserId.ToString());
             }
+
+            if (after != null)
+            {
+                queryParams.Add("after", after.ToString());
+            }
+
+            if (before != null)
+            {
+                queryParams.Add("before", before.ToString());
+            }
+
+            request.RequestUri = new Uri(QueryHelpers.AddQueryString(fetchEntitlements, queryParams));
 
             var result = await GetDiscordEntitlements(request);
 

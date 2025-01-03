@@ -80,7 +80,7 @@ public class StaticSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id, type);
+        var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id, contextUser.UserNameLastFM, type);
 
         var components = new ComponentBuilder().WithButton($"Get {type} supporter", style: ButtonStyle.Link, url: link, emote: Emoji.Parse("⭐"));
 
@@ -94,7 +94,7 @@ public class StaticSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var link = await this._supporterService.GetSupporterManageLink(this.Context.User.Id);
+        var link = await this._supporterService.GetSupporterManageLink(this.Context.User.Id, contextUser.UserNameLastFM);
 
         var components = new ComponentBuilder().WithButton("Manage supporter", style: ButtonStyle.Link, url: link, emote: Emoji.Parse("⭐"));
 

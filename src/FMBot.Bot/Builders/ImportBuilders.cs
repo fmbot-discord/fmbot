@@ -110,6 +110,7 @@ public class ImportBuilders
         description.AppendLine("### Notes");
         description.AppendLine("- We filter out duplicates and skips, so don't worry about submitting the same file twice");
         description.AppendLine("- You can select what from your import you want to use with `/import manage`");
+        description.AppendLine("- The importing service is only available with an active supporter subscription");
 
         var importedYears = await this.GetImportedYears(context.ContextUser.UserId, PlaySource.SpotifyImport);
         if (importedYears != null)
@@ -122,7 +123,7 @@ public class ImportBuilders
         if (!context.SlashCommand || directToSlash)
         {
             footer.AppendLine("Do not share your import files publicly");
-            footer.AppendLine("To start your import, use the slash command version of this command");
+            footer.AppendLine("To start your import, use the slash command version of this command instead");
         }
 
         footer.AppendLine("Having issues with importing? Please open a help thread on discord.gg/fmbot");
@@ -177,6 +178,7 @@ public class ImportBuilders
         description.AppendLine("### Notes");
         description.AppendLine("- Apple provides their history data without artist names. We try to find these as best as possible based on the album and track name.");
         description.AppendLine("- You can select what from your import you want to use with `/import manage`");
+        description.AppendLine("- The importing service is only available with an active supporter subscription");
 
         var importedYears = await this.GetImportedYears(context.ContextUser.UserId, PlaySource.AppleMusicImport);
         if (importedYears != null)
@@ -189,7 +191,7 @@ public class ImportBuilders
         if (!context.SlashCommand || directToSlash)
         {
             footer.AppendLine("Do not share your import files publicly");
-            footer.AppendLine("To start your import, use the slash command version of this command");
+            footer.AppendLine("To start your import, use the slash command version of this command instead");
         }
 
         footer.AppendLine("Having issues with importing? Please open a help thread on discord.gg/fmbot");
@@ -233,7 +235,7 @@ public class ImportBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var importSetting = new SelectMenuBuilder()
+        var importModify = new SelectMenuBuilder()
             .WithPlaceholder("Select modification")
             .WithCustomId(InteractionConstants.ImportModify)
             .WithMinValues(1)
@@ -245,21 +247,18 @@ public class ImportBuilders
 
         if (!hasImported && context.ContextUser.DataSource == DataSource.LastFm)
         {
-            importSetting.IsDisabled = true;
+            importModify.IsDisabled = true;
         }
 
-        foreach (var option in ((DataSource[])Enum.GetValues(typeof(DataSource))))
+        foreach (var option in ((ImportModifyPick[])Enum.GetValues(typeof(ImportModifyPick))))
         {
             var name = option.GetAttribute<OptionAttribute>().Name;
-            var description = option.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(option);
 
-            var active = context.ContextUser.DataSource == option;
-
-            importSetting.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
+            importModify.AddOption(new SelectMenuOptionBuilder(name, value));
         }
 
-        response.Components = new ComponentBuilder().WithSelectMenu(importSetting);
+        response.Components = new ComponentBuilder().WithSelectMenu(importModify);
 
         response.Embed.WithAuthor("Modify your .fmbot imports");
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -286,8 +285,6 @@ public class ImportBuilders
         embedDescription.AppendLine("Please keep in mind that this only modifies imports that are stored in .fmbot. Importing in .fmbot works by combining imported plays together with Last.fm scrobbles.");
         embedDescription.AppendLine();
         embedDescription.AppendLine("No Last.fm data can be changed or removed with this command.");
-
-        embedDescription.AppendLine($"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
         embedDescription.AppendLine();
 
         embedDescription.AppendLine($"**Full Imports, then Last.fm**");

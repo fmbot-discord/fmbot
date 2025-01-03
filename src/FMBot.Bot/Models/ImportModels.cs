@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
 using System;
 using CsvHelper.Configuration.Attributes;
+using Discord.Interactions;
+using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 
 namespace FMBot.Bot.Models;
@@ -102,4 +104,22 @@ public enum ImportStatus
     UnknownFailure,
     WrongPackageFailure,
     WrongCsvFailure
+}
+
+public enum ImportModifyPick
+{
+    [Option("Rename artist")]
+    RenameArtist,
+    [Option("Rename artist for specific track")]
+    RenameArtistForTrack,
+    [Option("Rename album")]
+    RenameAlbum,
+    [Option("Rename track")]
+    RenameTrack,
+    [Option("Remove artist")]
+    RemoveArtist,
+    [Option("Remove album")]
+    RemoveAlbum,
+    [Option("Remove track")]
+    RemoveTrack
 }

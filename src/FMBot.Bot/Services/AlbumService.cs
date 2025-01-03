@@ -335,39 +335,16 @@ public class AlbumService
 
     public async Task<List<TopAlbum>> FillMissingAlbumCovers(List<TopAlbum> topAlbums)
     {
-        var request = new AlbumRequest
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var albumsToUpdate = topAlbums
+            .Where(a => string.IsNullOrWhiteSpace(a.AlbumCoverUrl))
+            .ToList();
+
+        if (albumsToUpdate.Any())
         {
-            Albums =
-            {
-                topAlbums.Select(s => new AlbumWithCover
-                {
-                    ArtistName = s.ArtistName,
-                    AlbumName = s.AlbumName,
-                    AlbumCoverUrl = s.AlbumCoverUrl ?? ""
-                })
-            }
-        };
-
-        var albums = await this._albumEnrichment.AddMissingAlbumCoversAsync(request);
-
-        var albumDict = albums.Albums
-            .Where(a => !string.IsNullOrWhiteSpace(a.AlbumCoverUrl))
-            .GroupBy(a => (a.AlbumName.ToLower(), a.ArtistName.ToLower()))
-            .ToDictionary(
-                g => g.Key,
-                g => g.First(f => f.AlbumCoverUrl != null)
-            );
-
-        foreach (var topAlbum in topAlbums)
-        {
-            if (topAlbum.AlbumCoverUrl == null)
-            {
-                var key = (topAlbum.AlbumName.ToLower(), topAlbum.ArtistName.ToLower());
-                if (albumDict.TryGetValue(key, out var coverUrl))
-                {
-                    topAlbum.AlbumCoverUrl = coverUrl.AlbumCoverUrl;
-                }
-            }
+            await AlbumRepository.GetAlbumCovers(albumsToUpdate, connection);
         }
 
         return topAlbums;

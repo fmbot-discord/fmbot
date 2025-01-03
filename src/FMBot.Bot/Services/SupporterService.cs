@@ -946,7 +946,8 @@ public class SupporterService
                 (w.LastPayment.HasValue &&
                 w.LastPayment.Value < expiredDate ||
                 w.Modified.HasValue &&
-                w.Modified < modifiedDate))
+                w.Modified < modifiedDate ||
+                w.Modified == null))
             .ToListAsync();
 
         Log.Information("Checking expired supporters - {count} possibly expired", possiblyExpiredSupporters.Count);
@@ -1218,7 +1219,8 @@ public class SupporterService
         {
             DiscordUserId = id,
             Name = user?.UserNameLastFM,
-            Created = entitlement.StartsAt ?? DateTime.UtcNow,
+            Created = DateTime.SpecifyKind(entitlement.StartsAt ?? DateTime.UtcNow, DateTimeKind.Utc),
+            Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
             LastPayment = entitlement.EndsAt,
             Notes = "Added through Discord SKU",
             SupporterMessagesEnabled = true,
@@ -1405,18 +1407,19 @@ public class SupporterService
             .ToListAsync();
     }
 
-    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string type)
+    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string lastFmUserName, string type)
     {
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
             DiscordUserId = (long)discordUserId,
+            LastFmUserName = lastFmUserName,
             Type = type
         });
 
         return url?.CheckoutLink;
     }
 
-    public async Task<string> GetSupporterManageLink(ulong discordUserId)
+    public async Task<string> GetSupporterManageLink(ulong discordUserId, string lastFmUserName)
     {
         var url = await this._supporterLinkService.GetManageLinkAsync(new GetManageLinkOptions
         {
