@@ -97,7 +97,7 @@ public class AlbumRepository
         WHERE (UPPER(name), UPPER(artist_name)) IN (
             SELECT UPPER(CAST(unnest(@albumNames) AS CITEXT)),
                    UPPER(CAST(unnest(@artistNames) AS CITEXT))
-        )";
+        ) AND release_date != '0000'";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         var albumData = await connection.QueryAsync<AlbumData>(getAlbumQuery, new
