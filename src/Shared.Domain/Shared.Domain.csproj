@@ -4,6 +4,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>Shared.Domain</AssemblyName>
+    <RootNamespace>Shared.Domain</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,19 +17,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="artist.proto">
+    <None Update="Protos/artist.proto">
       <GrpcServices>Server</GrpcServices>
     </None>
-    <None Update="album.proto">
+    <None Update="Protos/album.proto">
       <GrpcServices>Server</GrpcServices>
     </None>
-    <None Update="status.proto">
+    <None Update="Protos/status.proto">
       <GrpcServices>Server</GrpcServices>
     </None>
-    <None Update="supporter.proto">
+    <None Update="Protos/supporter.proto">
       <GrpcServices>Server</GrpcServices>
     </None>
-    <None Update="time.proto">
+    <None Update="Protos/time.proto">
       <GrpcServices>Server</GrpcServices>
     </None>
   </ItemGroup>

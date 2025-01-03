@@ -11,7 +11,7 @@ service SupporterLinkService {
 
   rpc GetManageLink (GetManageLinkOptions) returns (GetManageLinkReply);
 
-  rpc AddOrUpdateStripeSupporter (AddOrUpdateStripeSupporterRequest) returns (AddStripeSupporterReply);
+  rpc AddOrUpdateStripeSupporter (AddOrUpdateStripeSupporterRequest) returns (AddOrUpdateStripeSupporterReply);
 }
 
 
@@ -43,6 +43,6 @@ message AddOrUpdateStripeSupporterRequest {
   google.protobuf.Timestamp endsAt = 6;
 }
 
-message AddStripeSupporterReply {
+message AddOrUpdateStripeSupporterReply {
   bool success = 1;
 }
