@@ -19,7 +19,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Supporter> Supporters { get; set; }
 
-        // public virtual DbSet<StripeSupporter> StripeSupporters { get; set; }
+        public virtual DbSet<StripeSupporter> StripeSupporters { get; set; }
 
         public virtual DbSet<DiscogsRelease> DiscogsReleases { get; set; }
         public virtual DbSet<UserDiscogsReleases> UserDiscogsReleases { get; set; }
@@ -73,7 +73,7 @@ namespace FMBot.Persistence.EntityFrameWork
                 optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 // Uncomment below connection string when creating migrations, and also comment out the above iconfiguration stuff
-                //optionsBuilder.UseNpgsql("Host=localhost;Port=5435;Username=postgres;Password=password;Database=fmbot-restore-2;Command Timeout=60;Timeout=60;Persist Security Info=True");
+                // optionsBuilder.UseNpgsql("Host=localhost;Port=5435;Username=postgres;Password=password;Database=fmbot-restore-2;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
@@ -179,6 +179,11 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<Supporter>(entity =>
             {
                 entity.HasKey(e => e.SupporterId);
+            });
+
+            modelBuilder.Entity<StripeSupporter>(entity =>
+            {
+                entity.HasKey(e => e.Id);
             });
 
             modelBuilder.Entity<BottedUser>(entity =>

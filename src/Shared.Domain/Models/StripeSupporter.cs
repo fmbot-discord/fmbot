@@ -5,6 +5,8 @@ namespace Shared.Domain.Models;
 // This file is managed in Shared.Domain and copied to child projects
 public class StripeSupporter
 {
+    public int Id { get; set; }
+
     public ulong PurchaserDiscordUserId { get; set; }
 
     public string PurchaserLastFmUserName { get; set; }
