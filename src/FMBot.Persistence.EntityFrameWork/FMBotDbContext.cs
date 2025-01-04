@@ -3,6 +3,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Shared.Domain.Models;
 
 namespace FMBot.Persistence.EntityFrameWork
 {
@@ -17,6 +18,8 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Supporter> Supporters { get; set; }
+
+        // public virtual DbSet<StripeSupporter> StripeSupporters { get; set; }
 
         public virtual DbSet<DiscogsRelease> DiscogsReleases { get; set; }
         public virtual DbSet<UserDiscogsReleases> UserDiscogsReleases { get; set; }

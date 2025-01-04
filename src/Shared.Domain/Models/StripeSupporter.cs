@@ -1,18 +1,15 @@
-﻿using System;
-using FMBot.Domain.Enums;
-using FMBot.Domain.Models;
+﻿using Shared.Domain.Enums;
 
-namespace FMBot.Persistence.Domain.Models;
+namespace Shared.Domain.Models;
 
-public class SupporterStripe
+// This file is managed in Shared.Domain and copied to child projects
+public class StripeSupporter
 {
     public ulong PurchaserDiscordUserId { get; set; }
 
-    public ulong PurchaserLastFmUserName { get; set; }
+    public string PurchaserLastFmUserName { get; set; }
 
     public ulong? GiftReceiverDiscordUserId { get; set; }
-
-    public string Email { get; set; }
 
     public string StripeCustomerId { get; set; }
 
@@ -26,5 +23,9 @@ public class SupporterStripe
 
     public int Quantity { get; set; }
 
-    public SupporterStripeType Type { get; set; }
+    public int? TimesTransferred { get; set; }
+
+    public DateTime? LastTimeTransferred { get; set; }
+
+    public StripeSupporterType Type { get; set; }
 }

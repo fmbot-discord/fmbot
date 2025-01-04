@@ -1,6 +1,6 @@
-﻿namespace FMBot.Domain.Enums;
+﻿namespace Shared.Domain.Enums;
 
-public enum SupporterStripeType
+public enum StripeSupporterType
 {
     Supporter = 1,
     GiftedSupporter = 2,
