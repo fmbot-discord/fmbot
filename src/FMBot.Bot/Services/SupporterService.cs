@@ -804,7 +804,7 @@ public class SupporterService
         var existingSupporters = await db.Supporters
             .Where(w =>
                 w.DiscordUserId != null &&
-                w.SubscriptionType == SubscriptionType.Discord)
+                w.SubscriptionType == SubscriptionType.Discord || w.SubscriptionType == SubscriptionType.Stripe)
             .ToListAsync();
 
         foreach (var discordSupporter in discordSupporters)
@@ -836,11 +836,13 @@ public class SupporterService
 
                 var supporterAuditLogChannel =
                     new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+                var subType = Enum.GetName(newSupporter.SubscriptionType.Value);
                 var embed = new EmbedBuilder().WithDescription(
-                    $"Added Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                    $"Added {subType} supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
                 await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
 
-                Log.Information("Added Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
+                Log.Information("Added supporter {discordUserId} - {subscriptionType}", discordSupporter.DiscordUserId,
+                    newSupporter.SubscriptionType);
 
                 continue;
             }
@@ -861,10 +863,13 @@ public class SupporterService
                     var supporterAuditLogChannel =
                         new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
-                    var endDate = discordSupporter.EndsAt.HasValue ? $"<t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>" : "no end date";
+                    var endDate = discordSupporter.EndsAt.HasValue
+                        ? $"<t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>"
+                        : "no end date";
 
+                    var subType = Enum.GetName(existingSupporter.SubscriptionType.Value);
                     var embed = new EmbedBuilder().WithDescription(
-                        $"Updated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
+                        $"Updated {subType} supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
                         $"*End date from <t:{((DateTimeOffset?)oldDate)?.ToUnixTimeSeconds()}:f> to {endDate}*");
                     await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
                 }
@@ -885,8 +890,9 @@ public class SupporterService
 
                     var supporterAuditLogChannel =
                         new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+                    var subType = Enum.GetName(existingSupporter.SubscriptionType.Value);
                     var embed = new EmbedBuilder().WithDescription(
-                        $"Re-activated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                        $"Re-activated {subType} supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
                     await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
 
                     Log.Information("Re-activated Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
@@ -922,8 +928,9 @@ public class SupporterService
                         await SendSupporterGoodbyeMessage(user, false, hadImported);
                     }
 
+                    var subType = Enum.GetName(existingSupporter.SubscriptionType.Value);
                     var embed = new EmbedBuilder().WithDescription(
-                        $"Removed Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
+                        $"Removed {subType} supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>");
                     await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
 
                     Log.Information("Removed Discord supporter {discordUserId}", discordSupporter.DiscordUserId);
@@ -944,10 +951,10 @@ public class SupporterService
                 w.SubscriptionType == SubscriptionType.Discord &&
                 w.Expired != true &&
                 (w.LastPayment.HasValue &&
-                w.LastPayment.Value < expiredDate ||
-                w.Modified.HasValue &&
-                w.Modified < modifiedDate ||
-                w.Modified == null))
+                 w.LastPayment.Value < expiredDate ||
+                 w.Modified.HasValue &&
+                 w.Modified < modifiedDate ||
+                 w.Modified == null))
             .ToListAsync();
 
         Log.Information("Checking expired supporters - {count} possibly expired", possiblyExpiredSupporters.Count);
@@ -979,7 +986,9 @@ public class SupporterService
 
                 var supporterAuditLogChannel =
                     new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
-                var endDate = discordSupporter.EndsAt.HasValue ? $"<t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>" : "no end date";
+                var endDate = discordSupporter.EndsAt.HasValue
+                    ? $"<t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>"
+                    : "no end date";
 
                 var embed = new EmbedBuilder().WithDescription(
                     $"Updated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
@@ -1215,6 +1224,8 @@ public class SupporterService
             db.Update(user);
         }
 
+        var type = entitlement.StartsAt == null ? SubscriptionType.Stripe : SubscriptionType.Discord;
+
         var supporterToAdd = new Supporter
         {
             DiscordUserId = id,
@@ -1226,7 +1237,7 @@ public class SupporterService
             SupporterMessagesEnabled = true,
             VisibleInOverview = true,
             SupporterType = SupporterType.User,
-            SubscriptionType = SubscriptionType.Discord
+            SubscriptionType = type
         };
 
         await db.Supporters.AddAsync(supporterToAdd);
@@ -1423,7 +1434,7 @@ public class SupporterService
     {
         var url = await this._supporterLinkService.GetManageLinkAsync(new GetManageLinkOptions
         {
-           StripeCustomerId = ""
+            StripeCustomerId = ""
         });
 
         return url?.ManageLink;

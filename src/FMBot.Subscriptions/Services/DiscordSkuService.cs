@@ -98,7 +98,8 @@ public class DiscordSkuService
 
     private static DiscordEntitlement DiscordEntitlement(IGrouping<ulong, DiscordEntitlementResponseModel> s)
     {
-        var noEndDate = s.Any(a => !a.EndsAt.HasValue);
+        var noStartDate = s.Where(w => w.Deleted != true).Any(a => !a.StartsAt.HasValue);
+        var noEndDate = s.Where(w => w.Deleted != true).Any(a => !a.EndsAt.HasValue);
 
         return new DiscordEntitlement
         {
@@ -107,9 +108,11 @@ public class DiscordSkuService
                 ? true
                 : !s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue ||
                   s.OrderByDescending(o => o.EndsAt).First().EndsAt.Value > DateTime.UtcNow.AddDays(-2),
-            StartsAt = s.OrderByDescending(o => o.EndsAt).First().StartsAt.HasValue
-                ? DateTime.SpecifyKind(s.OrderByDescending(o => o.EndsAt).First().StartsAt.Value, DateTimeKind.Utc)
-                : null,
+            StartsAt = noStartDate
+                ? null
+                : s.OrderByDescending(o => o.EndsAt).First().StartsAt.HasValue
+                    ? DateTime.SpecifyKind(s.OrderByDescending(o => o.EndsAt).First().StartsAt.Value, DateTimeKind.Utc)
+                    : null,
             EndsAt = noEndDate
                 ? null
                 : s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue
