@@ -798,7 +798,7 @@ public class SupporterService
         await UpdateDiscordSupporters(discordSupporters);
     }
 
-    public async Task UpdateDiscordSupporters(List<DiscordEntitlement> discordSupporters)
+    public async Task UpdateDiscordSupporters(List<DiscordEntitlement> groupedEntitlements)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingSupporters = await db.Supporters
@@ -807,7 +807,7 @@ public class SupporterService
                 w.SubscriptionType == SubscriptionType.Discord || w.SubscriptionType == SubscriptionType.Stripe)
             .ToListAsync();
 
-        foreach (var discordSupporter in discordSupporters)
+        foreach (var discordSupporter in groupedEntitlements)
         {
             var existingSupporter =
                 existingSupporters.FirstOrDefault(f => f.DiscordUserId == discordSupporter.DiscordUserId);
@@ -948,7 +948,7 @@ public class SupporterService
         var possiblyExpiredSupporters = await db.Supporters
             .Where(w =>
                 w.DiscordUserId != null &&
-                w.SubscriptionType == SubscriptionType.Discord &&
+                w.SubscriptionType == SubscriptionType.Discord || w.SubscriptionType == SubscriptionType.Stripe &&
                 w.Expired != true &&
                 (w.LastPayment.HasValue &&
                  w.LastPayment.Value < expiredDate ||
@@ -961,10 +961,10 @@ public class SupporterService
 
         foreach (var existingSupporter in possiblyExpiredSupporters)
         {
-            var discordSupporters =
+            var userEntitlements =
                 await this._discordSkuService.GetEntitlements(existingSupporter.DiscordUserId.Value);
 
-            var discordSupporter = discordSupporters.FirstOrDefault();
+            var discordSupporter = userEntitlements.FirstOrDefault();
 
             if (discordSupporter == null)
             {
@@ -1057,6 +1057,7 @@ public class SupporterService
             .Where(w =>
                 w.DiscordUserId != null &&
                 w.SubscriptionType != SubscriptionType.Discord &&
+                w.SubscriptionType != SubscriptionType.Stripe &&
                 w.Expired != true)
             .FirstOrDefaultAsync(f => f.DiscordUserId == existingSupporter.DiscordUserId.Value);
 

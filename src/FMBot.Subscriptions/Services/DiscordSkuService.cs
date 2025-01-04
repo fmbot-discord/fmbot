@@ -104,10 +104,12 @@ public class DiscordSkuService
         return new DiscordEntitlement
         {
             DiscordUserId = s.OrderByDescending(o => o.EndsAt).First().UserId.Value,
-            Active = noEndDate
-                ? true
-                : !s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue ||
-                  s.OrderByDescending(o => o.EndsAt).First().EndsAt.Value > DateTime.UtcNow.AddDays(-2),
+            Active = s.All(a => a.Deleted)
+                ? false
+                : noEndDate
+                    ? true
+                    : !s.OrderByDescending(o => o.EndsAt).First().EndsAt.HasValue ||
+                      s.OrderByDescending(o => o.EndsAt).First().EndsAt.Value > DateTime.UtcNow.AddDays(-2),
             StartsAt = noStartDate
                 ? null
                 : s.OrderByDescending(o => o.EndsAt).First().StartsAt.HasValue
