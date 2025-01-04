@@ -88,79 +88,46 @@ public class StaticBuilders
 
         if (context.ContextUser.UserType == UserType.Supporter || (existingSupporter != null && existingSupporter.Expired != true))
         {
-            response.Embed.WithTitle("Thank you for being a supporter!");
-            embedDescription.AppendLine("See a list of all your perks below:");
+            embedDescription.AppendLine("Thank you for being a supporter! See a list of all your perks below:");
         }
         else
         {
-            response.Embed.WithTitle("Support .fmbot and get supporter");
+            embedDescription.AppendLine("Support .fmbot and unlock extra perks:");
         }
 
-        response.Embed.AddField("📈 Get more stats",
-            "- Your lifetime Last.fm data will be stored for extra stats\n" +
-            "- See first listen dates, have an expanded profile and advanced recaps\n" +
-            "- Ability to store your complete Discogs collection");
+        response.Embed.AddField("📊 More stats, more insights",
+            "-# Unlock lifetime Last.fm data for deeper analysis. Track first listens, get expanded profiles, expanded commands, your full Discogs collection and more.");
 
-        response.Embed.AddField("<:history:1131511469096312914> Import your Spotify and Apple Music history",
-            "- Use your full Spotify and/or Apple Music listening history together with your Last.fm data\n" +
-            "- Get the most accurate playcounts and listening time");
-
-        response.Embed.AddField("🔥 Expanded judge command",
-            "- GPT-4o powered compliments and roasts\n" +
-            "- Increased usage limits and ability to use the command on others");
+        response.Embed.AddField("<:history:1131511469096312914> Import your history",
+            "-# Import and use your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
 
         response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
-            "- View when you discovered artists with the exclusive `discoveries` command\n" +
-            "- See discovery dates in the `artist`, `album` and `track` commands");
+            "-# See exactly when you discovered artists, albums, and tracks in commands and the exclusive Discovery command.");
 
         response.Embed.AddField("🎮 Play unlimited games",
-            "- Remove the daily limit on Jumble and Pixel Jumble and play as much as you want");
+            "-# Remove the daily limit on Jumble and Pixel Jumble and play as much as you want.");
 
         response.Embed.AddField("⚙️ Customize your commands",
-            "- Expand your `.fm` footer with extra stats\n" +
-            "- Add more friends for expanded friend commands\n"+
-            "- Set your own personal automatic emote reactions");
+            "-# Expand your .fm footer, add more friends, set automatic emoji reactions, and personalize your experience.");
 
-        response.Embed.AddField("⭐ Flex your support",
-            "- Get a badge in the bot and a role on the [.fmbot server](https://discord.gg/fmbot) with access to sneak peeks\n" +
-            $"- Higher chance to get featured on Supporter Sundays (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
+        response.Embed.AddField("🔥 Enhanced judge command",
+            "-# Get a GPT-4o-powered .judge with higher limits, sharper roasts, and the ability to use it on others.");
+
+        response.Embed.AddField("⭐ Exclusive supporter perks",
+            $"-# Show your support with a badge, gain access to a private [Discord role and channel](https://discord.gg/fmbot), and a higher chance to be featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}).");
+
+        var buttons = new ComponentBuilder();
 
         if (existingSupporter != null)
         {
-            var existingSupporterDescription = new StringBuilder();
-
-            var created = DateTime.SpecifyKind(existingSupporter.Created, DateTimeKind.Utc);
-            var createdValue = ((DateTimeOffset)created).ToUnixTimeSeconds();
-            existingSupporterDescription.AppendLine($"Activation date: <t:{createdValue}:D>");
-
-            if (existingSupporter.LastPayment.HasValue)
-            {
-                var lastPayment = DateTime.SpecifyKind(existingSupporter.LastPayment.Value, DateTimeKind.Utc);
-                var lastPaymentValue = ((DateTimeOffset)lastPayment).ToUnixTimeSeconds();
-
-                if (existingSupporter.SubscriptionType != SubscriptionType.Discord)
-                {
-                    existingSupporterDescription.AppendLine($"Last payment: <t:{lastPaymentValue}:D>");
-                }
-                else
-                {
-                    existingSupporterDescription.AppendLine($"Expiry date: <t:{lastPaymentValue}:D>");
-                }
-            }
-
-            if (existingSupporter.SubscriptionType.HasValue)
-            {
-                existingSupporterDescription.AppendLine($"Subscription type: `{Enum.GetName(existingSupporter.SubscriptionType.Value)}`");
-            }
-
-            existingSupporterDescription.AppendLine($"Name: **{StringExtensions.Sanitize(existingSupporter.Name)}**");
-
-            response.Embed.AddField("Your details", existingSupporterDescription.ToString());
+            buttons.WithButton("View current supporter status", style: ButtonStyle.Secondary,
+                customId: InteractionConstants.SupporterLinks.ManageOverview);
         }
 
-        response.Embed.WithDescription(embedDescription.ToString());
+        buttons.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
+            url: Constants.GetSupporterDiscordLink);
 
-        var buttons = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+        response.Embed.WithDescription(embedDescription.ToString());
 
         response.Components = buttons;
 
