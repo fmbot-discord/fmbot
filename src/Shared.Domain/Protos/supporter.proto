@@ -41,6 +41,7 @@ message AddOrUpdateStripeSupporterRequest {
   string stripeSubscriptionId = 4;
   google.protobuf.Timestamp created = 5;
   google.protobuf.Timestamp endsAt = 6;
+  bool active = 7;
 }
 
 message AddOrUpdateStripeSupporterReply {

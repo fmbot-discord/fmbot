@@ -10,6 +10,7 @@ package status;
 // The greeting service definition.
 service StatusHandler {
   rpc SendHeartbeat (InstanceHeartbeat) returns (InstanceOverviewReply);
+  rpc SendInitialHeartbeatWithConfig (InitialHeartbeatConfig) returns (InstanceOverviewReply);
   rpc GetOverview (google.protobuf.Empty) returns (InstanceOverviewReply);
 }
 
@@ -35,4 +36,10 @@ message InstanceStatus {
   int32 connectedShards = 5;
   int32 totalShards = 6;
   int64 memoryBytesUsed = 7;
+}
+
+message InitialHeartbeatConfig {
+  string instanceName = 1;
+  google.protobuf.Timestamp startupTimestamp = 2;
+  string discordToken = 3;
 }
