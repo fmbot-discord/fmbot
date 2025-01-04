@@ -19,7 +19,7 @@ message CreateLinkOptions {
   int64 discordUserId = 1;
   string type = 2;
   string lastFmUserName = 3;
-
+  string existingCustomerId = 4;
 }
 
 message CreateLinkReply {

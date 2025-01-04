@@ -25,7 +25,8 @@ public class StaticBuilders
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
 
-    public StaticBuilders(SupporterService supporterService, UserService userService, IDbContextFactory<FMBotDbContext> contextFactory)
+    public StaticBuilders(SupporterService supporterService, UserService userService,
+        IDbContextFactory<FMBotDbContext> contextFactory)
     {
         this._supporterService = supporterService;
         this._userService = userService;
@@ -45,29 +46,37 @@ public class StaticBuilders
 
         var embedDescription = new StringBuilder();
         embedDescription.AppendLine(".fmbot uses your Last.fm account for knowing what you listen to. ");
-        embedDescription.AppendLine($"Unfortunately, Last.fm and Spotify sometimes have issues keeping up to date with your current song, which can cause `{context.Prefix}fm` and other commands to lag behind the song you're currently listening to.");
+        embedDescription.AppendLine(
+            $"Unfortunately, Last.fm and Spotify sometimes have issues keeping up to date with your current song, which can cause `{context.Prefix}fm` and other commands to lag behind the song you're currently listening to.");
         embedDescription.AppendLine();
-        embedDescription.Append("First, **.fmbot is not affiliated with Last.fm**. Your music is tracked by Last.fm, and not by .fmbot. ");
-        embedDescription.AppendLine("This means that this is a Last.fm issue and **not an .fmbot issue**. __We can't fix it for you__, but we can give you some tips that worked for others.");
+        embedDescription.Append(
+            "First, **.fmbot is not affiliated with Last.fm**. Your music is tracked by Last.fm, and not by .fmbot. ");
+        embedDescription.AppendLine(
+            "This means that this is a Last.fm issue and **not an .fmbot issue**. __We can't fix it for you__, but we can give you some tips that worked for others.");
         embedDescription.AppendLine();
         embedDescription.AppendLine("Some things you can try that usually work:");
         embedDescription.AppendLine("- Restarting your Spotify application");
-        embedDescription.AppendLine("- Disconnecting and **reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)**");
+        embedDescription.AppendLine(
+            "- Disconnecting and **reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)**");
         embedDescription.AppendLine();
-        embedDescription.AppendLine("If the two options above don't work, check out **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
+        embedDescription.AppendLine(
+            "If the two options above don't work, check out **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
 
         response.Embed.WithDescription(embedDescription.ToString());
 
         if (PublicProperties.IssuesAtLastFm)
         {
-            response.Embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues, so the steps listed above might not work. " +
-                                          ".fmbot is not affiliated with Last.fm.");
+            response.Embed.AddField("Note:",
+                "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues, so the steps listed above might not work. " +
+                ".fmbot is not affiliated with Last.fm.");
         }
 
         response.Components = new ComponentBuilder()
             .WithButton("Last.fm settings", style: ButtonStyle.Link, url: "https://www.last.fm/settings/applications")
-            .WithButton("Full guide", style: ButtonStyle.Link, url: "https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184")
-            .WithButton("Your profile", style: ButtonStyle.Link, url: $"{LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}");
+            .WithButton("Full guide", style: ButtonStyle.Link,
+                url: "https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184")
+            .WithButton("Your profile", style: ButtonStyle.Link,
+                url: $"{LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}");
 
         return response;
     }
@@ -86,7 +95,8 @@ public class StaticBuilders
 
         var existingSupporter = await this._supporterService.GetSupporter(context.DiscordUser.Id);
 
-        if (context.ContextUser.UserType == UserType.Supporter || (existingSupporter != null && existingSupporter.Expired != true))
+        if (context.ContextUser.UserType == UserType.Supporter ||
+            (existingSupporter != null && existingSupporter.Expired != true))
         {
             embedDescription.AppendLine("Thank you for being a supporter! See a list of all your perks below:");
         }
@@ -134,6 +144,47 @@ public class StaticBuilders
         return response;
     }
 
+    public async Task<ResponseModel> SupporterButtons(
+        ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var existingSupporter = await this._supporterService.GetSupporter(context.ContextUser.DiscordUserId);
+        var stripeSupporter = await this._supporterService.GetStripeSupporter(context.ContextUser.DiscordUserId);
+        if (stripeSupporter != null && existingSupporter.Expired != true)
+        {
+            response.Embed.AddField("Thank you for being a supporter",
+                "Manage your subscription with the link below.");
+
+            var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
+
+            response.Components = new ComponentBuilder()
+                .WithButton("Manage subscription", style: ButtonStyle.Link, url: stripeManageLink);
+        }
+        else
+        {
+            response.Embed.WithDescription("⭐ Support .fmbot with .fmbot supporter and unlock extra perks");
+
+            response.Embed.AddField("Monthly - $3.99",
+                "-# $3.99 per month", true);
+            response.Embed.AddField("Yearly - $23.99",
+                "-# $1.99 per month - Saves 50%", true);
+
+            response.Components = new ComponentBuilder()
+                .WithButton("Get monthly",
+                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly")
+                .WithButton("Get yearly", customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly")
+                .WithButton("View perks", customId: InteractionConstants.SupporterLinks.ViewPerks);
+        }
+
+        return response;
+    }
+
     public async Task<ResponseModel> SupportersAsync(
         ContextModel context)
     {
@@ -149,8 +200,9 @@ public class StaticBuilders
         var supporterLists = supporters.ChunkBy(10);
 
         var description = new StringBuilder();
-        description.AppendLine("Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot/contribute). \n" +
-                               $"To get a complete list of all supporter advantages, run `{context.Prefix}getsupporter`.");
+        description.AppendLine(
+            "Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot/contribute). \n" +
+            $"To get a complete list of all supporter advantages, run `{context.Prefix}getsupporter`.");
         description.AppendLine();
 
         var pages = new List<PageBuilder>();
@@ -203,8 +255,10 @@ public class StaticBuilders
                 .ToDictionary(d => d.Key, d => d.First());
             supporters.Users = supporters.Users.Where(w => ocIds.ContainsKey(w.Id) &&
                                                            ocIds[w.Id].Expired != true &&
-                                                           ocIds[w.Id].SubscriptionType == SubscriptionType.MonthlyOpenCollective &&
-                                                           ocIds[w.Id].LastPayment <= DateTime.UtcNow.AddDays(-61)).ToList();
+                                                           ocIds[w.Id].SubscriptionType ==
+                                                           SubscriptionType.MonthlyOpenCollective &&
+                                                           ocIds[w.Id].LastPayment <= DateTime.UtcNow.AddDays(-61))
+                .ToList();
         }
 
         var supporterLists = supporters.Users.OrderByDescending(o => o.FirstPayment).Chunk(10);
@@ -227,13 +281,15 @@ public class StaticBuilders
                 var firstPayment = DateTime.SpecifyKind(supporter.FirstPayment, DateTimeKind.Utc);
                 var firstPaymentValue = ((DateTimeOffset)firstPayment).ToUnixTimeSeconds();
 
-                if (firstPaymentValue == lastPaymentValue && supporter.SubscriptionType == SubscriptionType.LifetimeOpenCollective)
+                if (firstPaymentValue == lastPaymentValue &&
+                    supporter.SubscriptionType == SubscriptionType.LifetimeOpenCollective)
                 {
                     supporterString.AppendLine($"Purchase date: <t:{firstPaymentValue}:D>");
                 }
                 else
                 {
-                    supporterString.AppendLine($"First payment: <t:{firstPaymentValue}:D> - Last payment: <t:{lastPaymentValue}:D>");
+                    supporterString.AppendLine(
+                        $"First payment: <t:{firstPaymentValue}:D> - Last payment: <t:{lastPaymentValue}:D>");
                 }
 
                 var existingSupporter = existingSupporters.FirstOrDefault(f => f.OpenCollectiveId == supporter.Id);
@@ -246,7 +302,8 @@ public class StaticBuilders
                         supporterString.Append($" *(Expired)*");
                     }
 
-                    supporterString.Append($" - {existingSupporter.DiscordUserId} / <@{existingSupporter.DiscordUserId}>");
+                    supporterString.Append(
+                        $" - {existingSupporter.DiscordUserId} / <@{existingSupporter.DiscordUserId}>");
                     supporterString.AppendLine();
                 }
 
@@ -319,7 +376,7 @@ public class StaticBuilders
                                                              c.Created.Year == DateTime.UtcNow.AddMonths(-1).Year)}");
         footer.Append(
             $" - New this month: {existingSupporters.Count(c => c.Created.Month == DateTime.UtcNow.Month &&
-                                                             c.Created.Year == DateTime.UtcNow.Year)}");
+                                                                c.Created.Year == DateTime.UtcNow.Year)}");
 
         var pages = new List<PageBuilder>();
         foreach (var supporterList in supporterLists)
@@ -333,7 +390,8 @@ public class StaticBuilders
                 var user = users.FirstOrDefault(f => f.DiscordUserId == supporter.DiscordUserId.Value);
                 if (user != null)
                 {
-                    supporterString.Append($" - [{user.UserNameLastFM}]({Constants.LastFMUserUrl}{user.UserNameLastFM})");
+                    supporterString.Append(
+                        $" - [{user.UserNameLastFM}]({Constants.LastFMUserUrl}{user.UserNameLastFM})");
                 }
                 else
                 {

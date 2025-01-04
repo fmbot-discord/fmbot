@@ -19,6 +19,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Shared.Domain.Models;
 using Web.InternalApi;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
@@ -460,6 +461,14 @@ public class SupporterService
         return await db.Supporters
             .OrderByDescending(o => o.Created)
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+    }
+
+    public async Task<StripeSupporter> GetStripeSupporter(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.StripeSupporters
+            .FirstOrDefaultAsync(f => f.PurchaserDiscordUserId == discordUserId);
     }
 
     public async Task<OpenCollectiveUser> GetOpenCollectiveSupporter(string openCollectiveId)
@@ -1431,23 +1440,30 @@ public class SupporterService
             .ToListAsync();
     }
 
-    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string lastFmUserName, string type)
+    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string lastFmUserName, string type, StripeSupporter existingStripeSupporter = null)
     {
+        var existingStripeCustomerId = "";
+        if (existingStripeSupporter != null)
+        {
+            existingStripeCustomerId = existingStripeSupporter.StripeCustomerId;
+        }
+
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
             DiscordUserId = (long)discordUserId,
             LastFmUserName = lastFmUserName,
-            Type = type
+            Type = type,
+            ExistingCustomerId = existingStripeCustomerId
         });
 
         return url?.CheckoutLink;
     }
 
-    public async Task<string> GetSupporterManageLink(ulong discordUserId, string lastFmUserName)
+    public async Task<string> GetSupporterManageLink(StripeSupporter stripeSupporter)
     {
         var url = await this._supporterLinkService.GetManageLinkAsync(new GetManageLinkOptions
         {
-            StripeCustomerId = ""
+            StripeCustomerId = stripeSupporter.StripeCustomerId
         });
 
         return url?.ManageLink;

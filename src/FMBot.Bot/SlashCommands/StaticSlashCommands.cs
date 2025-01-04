@@ -68,6 +68,17 @@ public class StaticSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
+    [ComponentInteraction(InteractionConstants.SupporterLinks.GetPurchaseButtons)]
+    [UserSessionRequired]
+    public async Task SupporterButtons()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response, true);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
     [ComponentInteraction(InteractionConstants.SupporterLinks.ViewPerks)]
     [UserSessionRequired]
     public async Task SupporterPerks()
@@ -84,9 +95,10 @@ public class StaticSlashCommands : InteractionModuleBase
     public async Task GetSupporterLink(string type)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var existingStripeSupporter = await this._supporterService.GetStripeSupporter(contextUser.DiscordUserId);
 
         var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
-            contextUser.UserNameLastFM, type);
+            contextUser.UserNameLastFM, type, existingStripeSupporter);
 
         var components = new ComponentBuilder().WithButton($"Get {type} supporter", style: ButtonStyle.Link, url: link,
             emote: Emoji.Parse("⭐"));
@@ -209,16 +221,17 @@ public class StaticSlashCommands : InteractionModuleBase
     [UserSessionRequired]
     public async Task GetManageLink()
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var stripeSupporter = await this._supporterService.GetStripeSupporter(this.Context.User.Id);
+        var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
 
-        var link = await this._supporterService.GetSupporterManageLink(this.Context.User.Id,
-            contextUser.UserNameLastFM);
+        var embed = new EmbedBuilder();
+        embed.WithDescription($"**Click the unique link below to manage your supporter.**");
+        embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var components = new ComponentBuilder().WithButton("Manage supporter", style: ButtonStyle.Link, url: link,
-            emote: Emoji.Parse("⭐"));
+        var components = new ComponentBuilder()
+            .WithButton("Manage subscription", style: ButtonStyle.Link, url: stripeManageLink, emote: Emoji.Parse("⭐"));
 
-        await RespondAsync("Click the unique link below to manage supporter!", ephemeral: true,
-            components: components.Build());
+        await RespondAsync(embed: embed.Build(), ephemeral: true, components: components.Build());
         this.Context.LogCommandUsed();
     }
 }

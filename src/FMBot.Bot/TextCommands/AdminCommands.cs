@@ -2379,17 +2379,11 @@ public class AdminCommands : BaseCommandModule
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 var components = new ComponentBuilder()
-                    .WithButton("Get monthly",
-                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly")
-                    .WithButton("Get yearly", customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly")
-                    .WithButton("View perks", customId: InteractionConstants.SupporterLinks.ViewPerks);
+                    .WithButton("Get .fmbot supporter",
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}");
 
                 var embed = new EmbedBuilder();
-                embed.WithDescription("⭐ Support .fmbot with .fmbot supporter and unlock extra perks");
-                embed.AddField("Monthly - $3.99",
-                    "-# $3.99 per month", true);
-                embed.AddField("Yearly - $23.99",
-                    "-# $1.99 per month - Saves 50%", true);
+                embed.WithDescription("Start the new purchase flow below");
                 embed.WithColor(DiscordConstants.InformationColorBlue);
 
                 await ReplyAsync(embed: embed.Build(), components: components.Build());

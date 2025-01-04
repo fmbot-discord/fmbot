@@ -108,6 +108,7 @@ public static class InteractionConstants
 
     public static class SupporterLinks
     {
+        public const string GetPurchaseButtons = "supporter-purchase-buttons";
         public const string GetPurchaseLink = "supporter-purchase-link";
         public const string GetManageLink = "supporter-manage-link";
         public const string ViewPerks = "supporter-view-perks";
