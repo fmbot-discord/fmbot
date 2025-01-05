@@ -132,7 +132,7 @@ public class IndexCommands : BaseCommandModule
 
             var updatePromo =
                 await this._supporterService.GetPromotionalUpdateMessage(contextUser, prfx, this.Context.Guild?.Id);
-            var upgradeButton = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+            var upgradeButton = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Secondary,
                 customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
 
             await message.ModifyAsync(m =>
@@ -316,7 +316,7 @@ public class IndexCommands : BaseCommandModule
                     .Build();
                 m.Components = description.promo
                     ? new ComponentBuilder()
-                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                        .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Secondary,
                             customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault)
                         .Build()
                     : null;
