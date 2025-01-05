@@ -255,8 +255,9 @@ public class FriendBuilders
             {
                 response.Embed.AddField("Friend limit reached",
                     $"Sorry, but you can't have more than {Constants.MaxFriends} friends. \n\n" +
-                    $".fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends. [Get supporter here]({Constants.GetSupporterDiscordLink}).");
-                response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+                    $".fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends.");
+                response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
             }
             else
             {
@@ -432,7 +433,7 @@ public class FriendBuilders
                 friendedPageString.AppendLine($"{counter}. **[{friend.User.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(friend.User.UserNameLastFM)})**");
                 counter++;
             }
-            
+
             pages.Add(new PageBuilder()
                 .WithDescription(friendedPageString.ToString())
                 .WithAuthor(response.EmbedAuthor)

@@ -1636,6 +1636,18 @@ public class AdminCommands : BaseCommandModule
 
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
+        if (type == "buysupporter")
+        {
+            var description = new StringBuilder();
+            description.AppendLine(
+                "Use the button below to get started.");
+            this._embed.WithDescription(description.ToString());
+
+            var components = new ComponentBuilder().WithButton("Get .fmbot supporter", style: ButtonStyle.Primary,
+                customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault}-true-false-false");
+            await ReplyAsync(embed: this._embed.Build(), components: components.Build());
+        }
+
         if (type == "gwkreporter")
         {
             this._embed.WithTitle("GlobalWhoKnows report form");

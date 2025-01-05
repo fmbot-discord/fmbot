@@ -177,7 +177,8 @@ public class UserBuilder
         if (this._timer.CurrentFeatured.SupporterDay && context.ContextUser.UserType == UserType.User)
         {
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
-                style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+                style: ButtonStyle.Primary,
+                customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
         }
 
         response.Embed.WithFooter($"View your featured history with '{context.Prefix}featuredlog'");
@@ -269,6 +270,7 @@ public class UserBuilder
         response.Embed.WithDescription(description);
         return response;
     }
+
     public static ResponseModel LoginFailure()
     {
         var response = new ResponseModel
@@ -567,7 +569,9 @@ public class UserBuilder
             }
             case FeaturedView.User:
             {
-                featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId, userSettings.UserNameLastFm);
+                featuredHistory =
+                    await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId,
+                        userSettings.UserNameLastFm);
                 response.Embed.WithTitle(
                     $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}'s featured history");
 
@@ -652,7 +656,8 @@ public class UserBuilder
                             description.AppendLine(
                                 $"Become an [.fmbot supporter]({Constants.GetSupporterDiscordLink}) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
                             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
-                                style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+                                style: ButtonStyle.Primary,
+                                customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
                         }
                     }
                     else
@@ -724,7 +729,7 @@ public class UserBuilder
 
             var active = option == view;
 
-            if (option == FeaturedView.Server && context.DiscordGuild ==  null)
+            if (option == FeaturedView.Server && context.DiscordGuild == null)
             {
                 continue;
             }
@@ -905,7 +910,8 @@ public class UserBuilder
             }
         }
 
-        var featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId, userSettings.UserNameLastFm);
+        var featuredHistory =
+            await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId, userSettings.UserNameLastFm);
 
         var footer = new StringBuilder();
         if (user.Friends?.Count > 0)
@@ -1176,8 +1182,8 @@ public class UserBuilder
                     $"[Become a supporter]({Constants.GetSupporterDiscordLink}) to raise your daily limit, get access to better responses and the possibility to use the command on others.");
 
                 response.Components = new ComponentBuilder()
-                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
-                        url: Constants.GetSupporterDiscordLink);
+                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                        customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
             }
         }
         else
@@ -1428,8 +1434,9 @@ public class UserBuilder
             description.AppendLine($"- `{context.ContextUser.UserType}` account status");
             if (context.ContextUser.UserType == UserType.Supporter)
             {
-                description.AppendLine("-# *If you have supporter purchased through Discord and plan to create a new .fmbot account with the same Discord account, your status will re-apply in a few minutes. Supporter purchased through Discord can't be moved to different Discord accounts." +
-                                       "If you are a supporter purchased though OpenCollective, please open a help thread on [our server](https://discord.gg/fmbot) for account transfers.*");
+                description.AppendLine(
+                    "-# *If you have supporter purchased through Discord and plan to create a new .fmbot account with the same Discord account, your status will re-apply in a few minutes. Supporter purchased through Discord can't be moved to different Discord accounts." +
+                    "If you are a supporter purchased though OpenCollective, please open a help thread on [our server](https://discord.gg/fmbot) for account transfers.*");
             }
             else
             {
@@ -1470,8 +1477,9 @@ public class UserBuilder
         response.Embed.WithDescription($"Only supporters can set their own automatic emoji reactions.\n\n" +
                                        $"[Get supporter here]({Constants.GetSupporterDiscordLink}), or alternatively use the `{prfx}serverreactions` command to set server-wide automatic emoji reactions.");
 
-        response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
-            url: Constants.GetSupporterDiscordLink);
+        response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+            style: ButtonStyle.Primary,
+            customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.CommandResponse = CommandResponse.SupporterRequired;

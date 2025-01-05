@@ -5,6 +5,7 @@ using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
@@ -205,7 +206,7 @@ public class ChartBuilders
         if (supporter != null)
         {
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
-                style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+                style: ButtonStyle.Secondary, customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
@@ -356,7 +357,7 @@ public class ChartBuilders
         if (supporter != null)
         {
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
-                style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+                style: ButtonStyle.Secondary, customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;

@@ -1186,8 +1186,8 @@ public class ArtistBuilders
                 $"To see what artists you've recently discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
 
             response.Components = new ComponentBuilder()
-                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
-                    url: Constants.GetSupporterDiscordLink);
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
 
@@ -1200,7 +1200,8 @@ public class ArtistBuilders
                 $"Sorry, artist discoveries uses someone their lifetime listening history. You can only use this command on other supporters.");
 
             response.Components = new ComponentBuilder()
-                .WithButton(".fmbot supporter", style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink);
+                .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
+                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
 
@@ -2385,7 +2386,8 @@ public class ArtistBuilders
             await ChartService.SaveImageToCache(bitmap, path);
         }
 
-        this._puppeteerService.CreatePopularityIcebergImage(bitmap, StringExtensions.TruncateLongString(userSettings.DisplayName, 16),
+        this._puppeteerService.CreatePopularityIcebergImage(bitmap,
+            StringExtensions.TruncateLongString(userSettings.DisplayName, 16),
             timeSettings.Description, artists);
 
         var encoded = bitmap.Encode(SKEncodedImageFormat.Png, 100);

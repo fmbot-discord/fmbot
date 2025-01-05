@@ -420,10 +420,10 @@ public class RecapBuilders
                     response.Embed.Description = ArtistBuilders.DiscoverySupporterRequired(context, userSettings).Embed
                         .Description;
                     response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                    response.Components.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
-                        url: Constants.GetSupporterDiscordLink);
+                    response.Components.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                        customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
                 }
-  
+
                 break;
             }
             case RecapPage.ListeningTime:
@@ -486,8 +486,8 @@ public class RecapBuilders
                     response.Embed.WithDescription(
                         $"To accurately calculate listening time we need to store your full Last.fm history. Your lifetime history and more are only available for supporters.");
                     response.Embed.WithColor(DiscordConstants.InformationColorBlue);
-                    response.Components.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
-                        url: Constants.GetSupporterDiscordLink);
+                    response.Components.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                        customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
                 }
 
                 break;

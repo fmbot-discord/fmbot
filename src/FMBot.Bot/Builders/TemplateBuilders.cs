@@ -181,8 +181,8 @@ public class TemplateBuilders
         response.Embed.WithDescription($"Only supporters can configure templates and fully customize their fm commands.\n\n" +
                                        $"[Get supporter here]({Constants.GetSupporterDiscordLink}).");
 
-        response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
-            url: Constants.GetSupporterDiscordLink);
+        response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+            customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.CommandResponse = CommandResponse.SupporterRequired;

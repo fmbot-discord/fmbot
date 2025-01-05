@@ -81,10 +81,10 @@ public class GameBuilders
         {
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.Embed.WithDescription(
-                $"You've used up all your {jumbleLimit} jumbles of today. [Get supporter]({Constants.GetSupporterDiscordLink}) to play unlimited jumble games and much more.");
+                $"You've used up all your {jumbleLimit} jumbles of today. Get supporter to play unlimited jumble games and much more.");
             response.Components = new ComponentBuilder()
-                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
-                    url: Constants.GetSupporterDiscordLink);
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
             response.CommandResponse = CommandResponse.SupporterRequired;
             return response;
         }

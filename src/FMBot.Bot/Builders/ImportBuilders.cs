@@ -35,7 +35,8 @@ public class ImportBuilders
             response.Embed.WithDescription($"Only supporters can import and use their Spotify or Apple Music history.");
 
             response.Components = new ComponentBuilder()
-                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary, customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault)
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault)
                 .WithButton("Import info", style: ButtonStyle.Link, url: "https://fmbot.xyz/importing/");
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
@@ -85,7 +86,8 @@ public class ImportBuilders
         var description = new StringBuilder();
 
         description.AppendLine("### Requesting your data from Spotify");
-        description.AppendLine("1. Go to your **[Spotify privacy settings](https://www.spotify.com/us/account/privacy/)**");
+        description.AppendLine(
+            "1. Go to your **[Spotify privacy settings](https://www.spotify.com/us/account/privacy/)**");
         description.AppendLine("2. Scroll down to \"Download your data\"");
         description.AppendLine("3. Select **Extended streaming history**");
         description.AppendLine("4. De-select the other options");
@@ -102,13 +104,15 @@ public class ImportBuilders
         }
         else
         {
-            description.AppendLine($"2. Use `/import Spotify` and add the `.zip` file as an attachment through the options");
+            description.AppendLine(
+                $"2. Use `/import Spotify` and add the `.zip` file as an attachment through the options");
         }
 
         description.AppendLine("3. Having issues? You can also attach each `.json` file separately");
 
         description.AppendLine("### Notes");
-        description.AppendLine("- We filter out duplicates and skips, so don't worry about submitting the same file twice");
+        description.AppendLine(
+            "- We filter out duplicates and skips, so don't worry about submitting the same file twice");
         description.AppendLine("- You can select what from your import you want to use with `/import manage`");
         description.AppendLine("- The importing service is only available with an active supporter subscription");
 
@@ -133,7 +137,8 @@ public class ImportBuilders
         response.Embed.WithDescription(description.ToString());
 
         response.Components = new ComponentBuilder()
-            .WithButton("Spotify privacy page", style: ButtonStyle.Link, url: "https://www.spotify.com/us/account/privacy/");
+            .WithButton("Spotify privacy page", style: ButtonStyle.Link,
+                url: "https://www.spotify.com/us/account/privacy/");
 
         return response;
     }
@@ -170,13 +175,16 @@ public class ImportBuilders
         }
         else
         {
-            description.AppendLine($"2. Use `/import applemusic` and add the `.zip` file as an attachment through the options");
+            description.AppendLine(
+                $"2. Use `/import applemusic` and add the `.zip` file as an attachment through the options");
         }
 
-        description.AppendLine("3. Having issues? You can also attach the `Apple Music Play Activity.csv` file separately");
+        description.AppendLine(
+            "3. Having issues? You can also attach the `Apple Music Play Activity.csv` file separately");
 
         description.AppendLine("### Notes");
-        description.AppendLine("- Apple provides their history data without artist names. We try to find these as best as possible based on the album and track name.");
+        description.AppendLine(
+            "- Apple provides their history data without artist names. We try to find these as best as possible based on the album and track name.");
         description.AppendLine("- You can select what from your import you want to use with `/import manage`");
         description.AppendLine("- The importing service is only available with an active supporter subscription");
 
@@ -228,7 +236,7 @@ public class ImportBuilders
         return years.Length > 0 ? years.ToString() : null;
     }
 
-      public async Task<ResponseModel> ImportModify(ContextModel context, int userId)
+    public async Task<ResponseModel> ImportModify(ContextModel context, int userId)
     {
         var response = new ResponseModel
         {
@@ -282,7 +290,8 @@ public class ImportBuilders
 
         embedDescription.AppendLine("Modify your imported .fmbot data with the options below.");
         embedDescription.AppendLine();
-        embedDescription.AppendLine("Please keep in mind that this only modifies imports that are stored in .fmbot. Importing in .fmbot works by combining imported plays together with Last.fm scrobbles.");
+        embedDescription.AppendLine(
+            "Please keep in mind that this only modifies imports that are stored in .fmbot. Importing in .fmbot works by combining imported plays together with Last.fm scrobbles.");
         embedDescription.AppendLine();
         embedDescription.AppendLine("No Last.fm data can be changed or removed with this command.");
         embedDescription.AppendLine();
