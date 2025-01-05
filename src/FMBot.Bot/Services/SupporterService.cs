@@ -1281,46 +1281,37 @@ public class SupporterService
 
     private async Task<Supporter> ReActivateSupporter(Supporter existingSupporter, DiscordEntitlement entitlement)
     {
-        var type = entitlement.StartsAt == null ? SubscriptionType.Stripe : SubscriptionType.Discord;
-
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
             .AsQueryable()
             .FirstOrDefaultAsync(f => f.DiscordUserId == existingSupporter.DiscordUserId.Value);
 
-        if (type != existingSupporter.SubscriptionType)
+        if (user == null)
         {
-            return await AddDiscordSupporter(existingSupporter.DiscordUserId.Value, entitlement);
+            Log.Warning(
+                "Someone who isn't registered in .fmbot just re-activated their Discord subscription - ID {discordUserId}",
+                existingSupporter.DiscordUserId);
         }
         else
         {
-            if (user == null)
+            if (user.UserType == UserType.User)
             {
-                Log.Warning(
-                    "Someone who isn't registered in .fmbot just re-activated their Discord subscription - ID {discordUserId}",
-                    existingSupporter.DiscordUserId);
-            }
-            else
-            {
-                if (user.UserType == UserType.User)
-                {
-                    user.UserType = UserType.Supporter;
-                }
-
-                db.Update(user);
+                user.UserType = UserType.Supporter;
             }
 
-            existingSupporter.Expired = null;
-            existingSupporter.SupporterMessagesEnabled = true;
-            existingSupporter.VisibleInOverview = true;
-            existingSupporter.LastPayment = entitlement.EndsAt;
-            existingSupporter.Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-
-            db.Update(existingSupporter);
-            await db.SaveChangesAsync();
-
-            return existingSupporter;
+            db.Update(user);
         }
+
+        existingSupporter.Expired = null;
+        existingSupporter.SupporterMessagesEnabled = true;
+        existingSupporter.VisibleInOverview = true;
+        existingSupporter.LastPayment = entitlement.EndsAt;
+        existingSupporter.Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+        db.Update(existingSupporter);
+        await db.SaveChangesAsync();
+
+        return existingSupporter;
     }
 
     private async Task<Supporter> ReActivateSupporterUser(Supporter supporter)
@@ -1442,7 +1433,8 @@ public class SupporterService
             .ToListAsync();
     }
 
-    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string lastFmUserName, string type, StripeSupporter existingStripeSupporter = null)
+    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string lastFmUserName, string type,
+        StripeSupporter existingStripeSupporter = null)
     {
         var existingStripeCustomerId = "";
         if (existingStripeSupporter != null)
