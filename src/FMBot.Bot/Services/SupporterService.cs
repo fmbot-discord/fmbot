@@ -236,7 +236,8 @@ public class SupporterService
             "Thanks for having supported the bot! If you have any feedback about the bot or the supporter program feel free to open a thread in #help on [our server](https://discord.gg/fmbot). You can also DM the developer who is identified on the server if preferable.");
 
         var buttons = new ComponentBuilder()
-            .WithButton("Resubscribe", style: ButtonStyle.Link, url: Constants.GetSupporterDiscordLink)
+            .WithButton("Resubscribe", style: ButtonStyle.Secondary,
+                customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault)
             .WithButton("Support server", style: ButtonStyle.Link, url: "https://discord.gg/fmbot");
 
         goodbyeEmbed.WithDescription(goodbyeMessage.ToString());
@@ -258,7 +259,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*⭐ [.fmbot supporters]({Constants.GetSupporterDiscordLink}) get extra stats and insights into their music history.*";
+                        $"*⭐ .fmbot supporters get extra stats and insights into their music history.*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -279,7 +280,7 @@ public class SupporterService
 
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*⚙️ Set up to 9 options in your {prfx}fm footer as [a supporter]({Constants.GetSupporterDiscordLink}).*";
+                        $"*⚙️ Set up to 10 options in your {prfx}fm footer as an .fmbot supporter.*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -287,7 +288,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*🔥 [Supporters]({Constants.GetSupporterDiscordLink}) get an improved GPT-4o powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others.*";
+                        $"*🔥 Supporters get an improved GPT-4o powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others.*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -296,7 +297,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*<:spotify:882221219334725662> [Supporters]({Constants.GetSupporterDiscordLink}) can import and use their full Spotify history in the bot.*";
+                        $"*<:spotify:882221219334725662> Supporters can import and use their full Spotify history in the bot.*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -305,7 +306,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*<:apple_music:1218182727149420544> [Supporters]({Constants.GetSupporterDiscordLink}) can import and use their Apple Music history in the bot.*";
+                        $"*<:apple_music:1218182727149420544> Supporters can import and use their Apple Music history in the bot.*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -313,7 +314,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*<:fmbot_discoveries:1145740579284713512> View recent artist discoveries with [.fmbot supporter]({Constants.GetSupporterDiscordLink}).*";
+                        $"*<:fmbot_discoveries:1145740579284713512> View recent artist discoveries with .fmbot supporter.*";
                     showUpgradeButton = true;
                     break;
                 }
