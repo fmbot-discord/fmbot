@@ -132,13 +132,14 @@ public class StaticBuilders
         if (publicResponse)
         {
             response.Components.WithButton(
-                SupporterService.IsSupporter(context.ContextUser.UserType) ? "Manage your supporter" : "Get supporter",
+                SupporterService.IsSupporter(context.ContextUser.UserType) ? "Manage your supporter" : "Get .fmbot supporter",
                 style: ButtonStyle.Secondary,
                 customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-true-false-false");
         }
         else
         {
-            if (existingSupporter != null && existingSupporter.Expired != true)
+            if (SupporterService.IsSupporter(context.ContextUser.UserType) &&
+                existingSupporter != null && existingSupporter.Expired != true)
             {
                 if (stripeSupporter == null)
                 {

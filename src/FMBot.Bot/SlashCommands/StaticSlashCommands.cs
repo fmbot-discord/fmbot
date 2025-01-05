@@ -98,8 +98,7 @@ public class StaticSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            await this.Context.HandleCommandException(e);
         }
     }
 
