@@ -20,6 +20,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Supporter> Supporters { get; set; }
 
         public virtual DbSet<StripeSupporter> StripeSupporters { get; set; }
+        public virtual DbSet<StripePricing> StripePricing { get; set; }
 
         public virtual DbSet<DiscogsRelease> DiscogsReleases { get; set; }
         public virtual DbSet<UserDiscogsReleases> UserDiscogsReleases { get; set; }
@@ -184,6 +185,16 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<StripeSupporter>(entity =>
             {
                 entity.HasKey(e => e.Id);
+            });
+
+            modelBuilder.Entity<StripePricing>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Locales)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
             modelBuilder.Entity<BottedUser>(entity =>

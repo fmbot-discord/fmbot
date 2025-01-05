@@ -85,7 +85,8 @@ public class StaticBuilders
         ContextModel context,
         bool expandWithPerks,
         bool showExpandButton,
-        bool publicResponse = false)
+        bool publicResponse = false,
+        string userLocale = null)
     {
         var response = new ResponseModel
         {
@@ -162,10 +163,11 @@ public class StaticBuilders
             }
             else
             {
-                response.Embed.AddField("Monthly - $3.99",
-                    "-# $3.99 per month", true);
-                response.Embed.AddField("Yearly - $23.99",
-                    "-# $1.99 per month - Saves 50%", true);
+                var pricing = await this._supporterService.GetPricing(userLocale);
+                response.Embed.AddField($"Monthly - {pricing.MonthlyPriceString}",
+                    $"-# {pricing.MonthlySubText}", true);
+                response.Embed.AddField($"Yearly - {pricing.YearlyPriceString}",
+                    $"-# {pricing.YearlySubText}", true);
 
                 response.Components = new ComponentBuilder()
                     .WithButton("Get monthly",

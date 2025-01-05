@@ -259,6 +259,7 @@ public class TimerService
 
         Statistics.ActiveSupporterCount.Set(await this._supporterService.GetActiveSupporterCountAsync());
         Statistics.ActiveDiscordSupporterCount.Set(await this._supporterService.GetActiveDiscordSupporterCountAsync());
+        Statistics.ActiveStripeSupporterCount.Set(await this._supporterService.GetActiveStripeSupporterCountAsync());
 
         Statistics.OneDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(1));
         Statistics.SevenDayActiveUserCount.Set(await this._userService.GetTotalActiveUserCountAsync(7));

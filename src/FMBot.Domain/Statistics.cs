@@ -18,7 +18,7 @@ public static class Statistics
                 LabelNames = new[] { "method" }
             });
 
-    public static readonly Counter LastfmAuthorizedApiCalls = Metrics 
+    public static readonly Counter LastfmAuthorizedApiCalls = Metrics
         .CreateCounter("lastfm_authorized_api_calls", "Amount of authorized last.fm API calls",
             new CounterConfiguration
             {
@@ -144,6 +144,9 @@ public static class Statistics
 
     public static readonly Gauge ActiveDiscordSupporterCount = Metrics
         .CreateGauge("bot_active_discord_supporter_count", "Total count of all active Discord supporters in the database");
+
+    public static readonly Gauge ActiveStripeSupporterCount = Metrics
+        .CreateGauge("bot_active_stripe_supporter_count", "Total count of all active Stripe supporters in the database");
 
 
     public static readonly Gauge OneDayActiveUserCount = Metrics

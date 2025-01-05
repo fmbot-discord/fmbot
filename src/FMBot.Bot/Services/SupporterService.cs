@@ -19,6 +19,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Shared.Domain.Enums;
 using Shared.Domain.Models;
 using Web.InternalApi;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -469,6 +470,18 @@ public class SupporterService
 
         return await db.StripeSupporters
             .FirstOrDefaultAsync(f => f.PurchaserDiscordUserId == discordUserId);
+    }
+
+    public async Task<StripePricing> GetPricing(string userLocale)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var prices = await db.StripePricing
+            .Where(w => w.Type == StripeSupporterType.Supporter)
+            .ToListAsync();
+
+        return prices.FirstOrDefault(f => userLocale != null && f.Locales.Any(a => a == userLocale)) ??
+               prices.First(p => p.Default);
     }
 
     public async Task<OpenCollectiveUser> GetOpenCollectiveSupporter(string openCollectiveId)
@@ -1423,6 +1436,14 @@ public class SupporterService
             .CountAsync(c => c.Expired != true && c.SubscriptionType == SubscriptionType.Discord);
     }
 
+    public async Task<int> GetActiveStripeSupporterCountAsync()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        return await db.Supporters
+            .AsQueryable()
+            .CountAsync(c => c.Expired != true && c.SubscriptionType == SubscriptionType.Stripe);
+    }
+
     public async Task<IReadOnlyList<Supporter>> GetAllSupporters()
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -1434,7 +1455,7 @@ public class SupporterService
     }
 
     public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string lastFmUserName, string type,
-        StripeSupporter existingStripeSupporter = null)
+        StripePricing pricing, StripeSupporter existingStripeSupporter = null)
     {
         var existingStripeCustomerId = "";
         if (existingStripeSupporter != null)
@@ -1442,12 +1463,19 @@ public class SupporterService
             existingStripeCustomerId = existingStripeSupporter.StripeCustomerId;
         }
 
+        var priceId = pricing.MonthlyPriceId;
+        if (type.Equals("yearly", StringComparison.OrdinalIgnoreCase))
+        {
+            priceId = pricing.YearlyPriceId;
+        }
+
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
             DiscordUserId = (long)discordUserId,
             LastFmUserName = lastFmUserName,
             Type = type,
-            ExistingCustomerId = existingStripeCustomerId
+            ExistingCustomerId = existingStripeCustomerId,
+            PriceId = priceId
         });
 
         return url?.CheckoutLink;

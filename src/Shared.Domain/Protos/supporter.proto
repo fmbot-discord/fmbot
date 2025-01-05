@@ -20,6 +20,7 @@ message CreateLinkOptions {
   string type = 2;
   string lastFmUserName = 3;
   string existingCustomerId = 4;
+  string priceId = 5;
 }
 
 message CreateLinkReply {

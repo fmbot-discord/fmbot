@@ -11,6 +11,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
+using Humanizer.DateTimeHumanizeStrategy;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -53,7 +54,7 @@ public class StaticSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
-            false, true);
+            false, true, userLocale: this.Context.Interaction.UserLocale);
 
         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -77,7 +78,7 @@ public class StaticSlashCommands : InteractionModuleBase
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
-                expandWithPerks == "true", showExpandButton == "true");
+                expandWithPerks == "true", showExpandButton == "true", userLocale: this.Context.Interaction.UserLocale);
 
             if (newResponse == "true")
             {
@@ -109,8 +110,10 @@ public class StaticSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var existingStripeSupporter = await this._supporterService.GetStripeSupporter(contextUser.DiscordUserId);
 
+        var pricing = await this._supporterService.GetPricing(this.Context.Interaction.UserLocale);
+
         var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
-            contextUser.UserNameLastFM, type, existingStripeSupporter);
+            contextUser.UserNameLastFM, type, pricing, existingStripeSupporter);
 
         var components = new ComponentBuilder().WithButton($"Complete purchase", style: ButtonStyle.Link, url: link,
             emote: Emoji.Parse("⭐"));
@@ -121,11 +124,11 @@ public class StaticSlashCommands : InteractionModuleBase
         description.AppendLine($"**Click the unique link below to purchase supporter!**");
         if (type == "yearly")
         {
-            description.AppendLine("-# $23.99 — Yearly");
+            description.AppendLine($"-# {pricing.YearlySummary}");
         }
         else
         {
-            description.AppendLine("-# $3.99 — Monthly");
+            description.AppendLine($"-# {pricing.MonthlySummary}");
         }
 
         if (SupporterService.IsSupporter(contextUser.UserType))
