@@ -818,8 +818,10 @@ public class SupporterService
 
         foreach (var userEntitlements in groupedEntitlements)
         {
+            var type = userEntitlements.StartsAt == null ? SubscriptionType.Stripe : SubscriptionType.Discord;
             var existingSupporter =
-                existingSupporters.FirstOrDefault(f => f.DiscordUserId == userEntitlements.DiscordUserId);
+                existingSupporters.FirstOrDefault(f => f.DiscordUserId == userEntitlements.DiscordUserId &&
+                                                       f.SubscriptionType == type);
 
             if (existingSupporter == null && userEntitlements.Active)
             {
