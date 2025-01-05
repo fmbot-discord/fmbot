@@ -111,7 +111,6 @@ public static class InteractionConstants
         public const string GetPurchaseButtons = "supporter-purchase-buttons";
         public const string GetPurchaseLink = "supporter-purchase-link";
         public const string GetManageLink = "supporter-manage-link";
-        public const string ViewPerks = "supporter-view-perks";
         public const string ManageOverview = "supporter-manage-overview";
     }
 

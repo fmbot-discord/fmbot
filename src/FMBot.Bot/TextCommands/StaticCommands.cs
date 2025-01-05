@@ -185,16 +185,17 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("donate", RunMode = RunMode.Async)]
-    [Summary("Please donate if you like this bot!")]
-    [Alias("support", "patreon", "opencollective", "donations", "support", "getsupporter")]
+    [Command("getsupporter", RunMode = RunMode.Async)]
+    [Summary("Get the best .fmbot experience with Supporter")]
+    [Alias("support", "patreon", "opencollective", "donations", "supporter", "donate")]
     [CommandCategories(CommandCategory.Other)]
     public async Task DonateAsync()
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        var response = await this._staticBuilders.DonateAsync(new ContextModel(this.Context, prfx, userSettings));
+        var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, prfx, contextUser),
+            true, false, true);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

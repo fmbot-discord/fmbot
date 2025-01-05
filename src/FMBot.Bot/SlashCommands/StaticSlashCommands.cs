@@ -52,9 +52,10 @@ public class StaticSlashCommands : InteractionModuleBase
     public async Task GetSupporterAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var response = await this._staticBuilders.DonateAsync(new ContextModel(this.Context, contextUser));
+        var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
+            false, true);
 
-        await this.Context.SendResponse(this.Interactivity, response);
+        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -68,26 +69,38 @@ public class StaticSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction(InteractionConstants.SupporterLinks.GetPurchaseButtons)]
+    [ComponentInteraction($"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-*-*-*")]
     [UserSessionRequired]
-    public async Task SupporterButtons()
+    public async Task SupporterButtons(string newResponse, string expandWithPerks, string showExpandButton)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser));
+        try
+        {
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
+                expandWithPerks == "true", showExpandButton == "true");
 
-        await this.Context.SendResponse(this.Interactivity, response, true);
-        this.Context.LogCommandUsed(response.CommandResponse);
-    }
+            if (newResponse == "true")
+            {
+                await this.Context.SendResponse(this.Interactivity, response, true);
+            }
+            else
+            {
+                await Context.Interaction.DeferAsync(ephemeral: true);
 
-    [ComponentInteraction(InteractionConstants.SupporterLinks.ViewPerks)]
-    [UserSessionRequired]
-    public async Task SupporterPerks()
-    {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var response = await this._staticBuilders.DonateAsync(new ContextModel(this.Context, contextUser));
+                await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
+                {
+                    m.Components = response.Components?.Build();
+                    m.Embed = response.Embed?.Build();
+                });
+            }
 
-        await this.Context.SendResponse(this.Interactivity, response, true);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [ComponentInteraction($"{InteractionConstants.SupporterLinks.GetPurchaseLink}-*")]
@@ -100,23 +113,25 @@ public class StaticSlashCommands : InteractionModuleBase
         var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
             contextUser.UserNameLastFM, type, existingStripeSupporter);
 
-        var components = new ComponentBuilder().WithButton($"Get {type} supporter", style: ButtonStyle.Link, url: link,
+        var components = new ComponentBuilder().WithButton($"Complete purchase", style: ButtonStyle.Link, url: link,
             emote: Emoji.Parse("⭐"));
 
         var embed = new EmbedBuilder();
         embed.WithColor(DiscordConstants.InformationColorBlue);
         var description = new StringBuilder();
         description.AppendLine($"**Click the unique link below to purchase supporter!**");
-        description.AppendLine();
-
-        if (SupporterService.IsSupporter(contextUser.UserType))
+        if (type == "yearly")
         {
-            description.AppendLine("⚠️ Note: You currently already have supporter activated on your .fmbot account. ");
+            description.AppendLine("-# $23.99 — Yearly");
         }
         else
         {
-            description.AppendLine(
-                "Take your .fmbot experience to the next level with these new features and benefits. Import and use your history, access extra statistics, play unlimited games, support development and much more. Please note that .fmbot is not affiliated with Last.fm.");
+            description.AppendLine("-# $3.99 — Monthly");
+        }
+
+        if (SupporterService.IsSupporter(contextUser.UserType))
+        {
+            embed.AddField("⚠️ Note", ": You currently already have supporter activated on your .fmbot account. ");
         }
 
         embed.WithDescription(description.ToString());
@@ -154,7 +169,7 @@ public class StaticSlashCommands : InteractionModuleBase
                 else if (existingSupporter.SubscriptionType == SubscriptionType.Stripe)
                 {
                     manageDescription.AppendLine(
-                        "Todo add stripe stuff");
+                        "To manage your subscription, go to the [Stripe customer portal](https://billing.stripe.com/p/login/3cs7ww1tR6ay6t28ww) and authenticate with the email you used during purchase.");
                 }
                 else
                 {

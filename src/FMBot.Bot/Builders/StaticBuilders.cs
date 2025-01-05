@@ -81,8 +81,11 @@ public class StaticBuilders
         return response;
     }
 
-    public async Task<ResponseModel> DonateAsync(
-        ContextModel context)
+    public async Task<ResponseModel> SupporterButtons(
+        ContextModel context,
+        bool expandWithPerks,
+        bool showExpandButton,
+        bool publicResponse = false)
     {
         var response = new ResponseModel
         {
@@ -90,96 +93,99 @@ public class StaticBuilders
         };
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        response.Components = new ComponentBuilder();
 
-        var embedDescription = new StringBuilder();
-
-        var existingSupporter = await this._supporterService.GetSupporter(context.DiscordUser.Id);
-
-        if (context.ContextUser.UserType == UserType.Supporter ||
-            (existingSupporter != null && existingSupporter.Expired != true))
+        if (expandWithPerks)
         {
-            embedDescription.AppendLine("Thank you for being a supporter! See a list of all your perks below:");
+            response.Embed.AddField("📊 More stats, more insights",
+                "-# Unlock lifetime Last.fm data for deeper analysis. Track first listens, get expanded profiles, expanded commands, your full Discogs collection and more.");
+
+            response.Embed.AddField("<:history:1131511469096312914> Import your history",
+                "-# Import and use your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
+
+            response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
+                "-# See exactly when you discovered artists, albums, and tracks in commands and the exclusive Discovery command.");
+
+            response.Embed.AddField("🎮 Play unlimited games",
+                "-# Remove the daily limit on Jumble and Pixel Jumble and play as much as you want.");
+
+            response.Embed.AddField("⚙️ Customize your commands",
+                "-# Expand your .fm footer, add more friends, set automatic emoji reactions, and personalize your experience.");
+
+            response.Embed.AddField("🔥 Enhanced judge command",
+                "-# Get a GPT-4o-powered .judge with higher limits, sharper roasts, and the ability to use it on others.");
+
+            response.Embed.AddField("⭐ Exclusive supporter perks",
+                $"-# Show your support with a badge, gain access to a private [Discord role and channel](https://discord.gg/fmbot), and a higher chance to be featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}).");
         }
         else
         {
-            embedDescription.AppendLine("Support .fmbot and unlock extra perks:");
+            response.Embed.WithDescription(
+                "⭐ Take your .fmbot experience to the next level with new features and benefits. " +
+                "Import and use your history, access extra statistics, play unlimited games, support development and much more. " +
+                "Please note that .fmbot is not affiliated with Last.fm.");
         }
-
-        response.Embed.AddField("📊 More stats, more insights",
-            "-# Unlock lifetime Last.fm data for deeper analysis. Track first listens, get expanded profiles, expanded commands, your full Discogs collection and more.");
-
-        response.Embed.AddField("<:history:1131511469096312914> Import your history",
-            "-# Import and use your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
-
-        response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
-            "-# See exactly when you discovered artists, albums, and tracks in commands and the exclusive Discovery command.");
-
-        response.Embed.AddField("🎮 Play unlimited games",
-            "-# Remove the daily limit on Jumble and Pixel Jumble and play as much as you want.");
-
-        response.Embed.AddField("⚙️ Customize your commands",
-            "-# Expand your .fm footer, add more friends, set automatic emoji reactions, and personalize your experience.");
-
-        response.Embed.AddField("🔥 Enhanced judge command",
-            "-# Get a GPT-4o-powered .judge with higher limits, sharper roasts, and the ability to use it on others.");
-
-        response.Embed.AddField("⭐ Exclusive supporter perks",
-            $"-# Show your support with a badge, gain access to a private [Discord role and channel](https://discord.gg/fmbot), and a higher chance to be featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}).");
-
-        var buttons = new ComponentBuilder();
-
-        if (existingSupporter != null)
-        {
-            buttons.WithButton("View current supporter status", style: ButtonStyle.Secondary,
-                customId: InteractionConstants.SupporterLinks.ManageOverview);
-        }
-
-        buttons.WithButton(Constants.GetSupporterButton, style: ButtonStyle.Link,
-            url: Constants.GetSupporterDiscordLink);
-
-        response.Embed.WithDescription(embedDescription.ToString());
-
-        response.Components = buttons;
-
-        return response;
-    }
-
-    public async Task<ResponseModel> SupporterButtons(
-        ContextModel context)
-    {
-        var response = new ResponseModel
-        {
-            ResponseType = ResponseType.Embed,
-        };
-
-        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var existingSupporter = await this._supporterService.GetSupporter(context.ContextUser.DiscordUserId);
         var stripeSupporter = await this._supporterService.GetStripeSupporter(context.ContextUser.DiscordUserId);
-        if (stripeSupporter != null && existingSupporter.Expired != true)
+
+        if (publicResponse)
         {
-            response.Embed.AddField("Thank you for being a supporter",
-                "Manage your subscription with the link below.");
-
-            var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
-
-            response.Components = new ComponentBuilder()
-                .WithButton("Manage subscription", style: ButtonStyle.Link, url: stripeManageLink);
+            response.Components.WithButton(
+                SupporterService.IsSupporter(context.ContextUser.UserType) ? "Manage your supporter" : "Get supporter",
+                style: ButtonStyle.Secondary,
+                customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-true-false-false");
         }
         else
         {
-            response.Embed.WithDescription("⭐ Support .fmbot with .fmbot supporter and unlock extra perks");
+            if (existingSupporter != null && existingSupporter.Expired != true)
+            {
+                if (stripeSupporter == null)
+                {
+                    response.Embed.AddField("Thank you for being a supporter",
+                        "Manage your subscription with the button below.");
 
-            response.Embed.AddField("Monthly - $3.99",
-                "-# $3.99 per month", true);
-            response.Embed.AddField("Yearly - $23.99",
-                "-# $1.99 per month - Saves 50%", true);
+                    response.Components.WithButton("View current supporter status", style: ButtonStyle.Secondary,
+                        customId: InteractionConstants.SupporterLinks.ManageOverview);
+                }
+                else
+                {
+                    response.Embed.AddField("Thank you for being a supporter",
+                        "Manage your subscription with the link below.");
 
-            response.Components = new ComponentBuilder()
-                .WithButton("Get monthly",
-                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly")
-                .WithButton("Get yearly", customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly")
-                .WithButton("View perks", customId: InteractionConstants.SupporterLinks.ViewPerks);
+                    var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
+
+                    response.Components.WithButton("Manage subscription", style: ButtonStyle.Link,
+                        url: stripeManageLink);
+                }
+            }
+            else
+            {
+                response.Embed.AddField("Monthly - $3.99",
+                    "-# $3.99 per month", true);
+                response.Embed.AddField("Yearly - $23.99",
+                    "-# $1.99 per month - Saves 50%", true);
+
+                response.Components = new ComponentBuilder()
+                    .WithButton("Get monthly",
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly")
+                    .WithButton("Get yearly",
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly");
+            }
+        }
+
+        if (showExpandButton)
+        {
+            if (expandWithPerks)
+            {
+                response.Components.WithButton("Hide all perks", style: ButtonStyle.Secondary,
+                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-false-true");
+            }
+            else
+            {
+                response.Components.WithButton("View all perks", style: ButtonStyle.Secondary,
+                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-true-true");
+            }
         }
 
         return response;

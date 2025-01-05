@@ -2380,7 +2380,7 @@ public class AdminCommands : BaseCommandModule
             {
                 var components = new ComponentBuilder()
                     .WithButton("Get .fmbot supporter",
-                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}");
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-true-false-true");
 
                 var embed = new EmbedBuilder();
                 embed.WithDescription("Start the new purchase flow below");
