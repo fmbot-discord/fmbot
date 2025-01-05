@@ -130,7 +130,7 @@ public class StaticSlashCommands : InteractionModuleBase
 
         if (SupporterService.IsSupporter(contextUser.UserType))
         {
-            embed.AddField("⚠️ Note", ": You currently already have supporter activated on your .fmbot account. ");
+            embed.AddField("⚠️ Note", "You currently already have supporter activated on your .fmbot account. ");
         }
 
         embed.WithDescription(description.ToString());

@@ -15,13 +15,21 @@ internal class BettyMusicBot : MusicBot
 
     public override bool ShouldIgnoreMessage(IUserMessage msg)
     {
-        if (msg.Embeds.Count != 1)
+        if (!msg.Embeds.Any())
         {
             return true;
         }
 
-        var description = msg.Embeds.First().Description;
-        return string.IsNullOrEmpty(description) || !description.Contains(NowPlaying);
+        foreach (var embed in msg.Embeds)
+        {
+            if (!string.IsNullOrEmpty(embed.Description) &&
+                embed.Description.Contains(NowPlaying, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -32,7 +40,7 @@ internal class BettyMusicBot : MusicBot
     {
         foreach (var embed in msg.Embeds)
         {
-            if (embed.Description == null ||
+            if (string.IsNullOrEmpty(embed.Description) ||
                 !embed.Description.Contains(NowPlaying, StringComparison.OrdinalIgnoreCase))
             {
                 continue;
