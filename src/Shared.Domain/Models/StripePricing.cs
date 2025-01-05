@@ -13,6 +13,7 @@ public class StripePricing
 
     public StripeSupporterType Type { get; set; }
 
+    public string Currency { get; set; }
 
     public string MonthlyPriceId { get; set; }
 
@@ -30,4 +31,5 @@ public class StripePricing
     public string YearlySubText { get; set; }
 
     public string YearlySummary { get; set; }
+
 }

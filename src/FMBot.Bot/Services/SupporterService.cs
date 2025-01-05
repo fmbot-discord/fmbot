@@ -472,13 +472,18 @@ public class SupporterService
             .FirstOrDefaultAsync(f => f.PurchaserDiscordUserId == discordUserId);
     }
 
-    public async Task<StripePricing> GetPricing(string userLocale)
+    public async Task<StripePricing> GetPricing(string userLocale, string existingUserCurrency)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var prices = await db.StripePricing
             .Where(w => w.Type == StripeSupporterType.Supporter)
             .ToListAsync();
+
+        if (existingUserCurrency != null)
+        {
+            return prices.First(f => f.Currency.Equals(existingUserCurrency, StringComparison.OrdinalIgnoreCase));
+        }
 
         return prices.FirstOrDefault(f => userLocale != null && f.Locales.Any(a => a == userLocale)) ??
                prices.First(p => p.Default);

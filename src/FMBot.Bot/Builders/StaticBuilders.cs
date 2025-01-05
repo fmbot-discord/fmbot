@@ -163,7 +163,7 @@ public class StaticBuilders
             }
             else
             {
-                var pricing = await this._supporterService.GetPricing(userLocale);
+                var pricing = await this._supporterService.GetPricing(userLocale, stripeSupporter?.Currency);
                 response.Embed.AddField($"Monthly - {pricing.MonthlyPriceString}",
                     $"-# {pricing.MonthlySubText}", true);
                 response.Embed.AddField($"Yearly - {pricing.YearlyPriceString}",

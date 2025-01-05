@@ -43,6 +43,7 @@ message AddOrUpdateStripeSupporterRequest {
   google.protobuf.Timestamp created = 5;
   google.protobuf.Timestamp endsAt = 6;
   bool active = 7;
+  string currency = 8;
 }
 
 message AddOrUpdateStripeSupporterReply {

@@ -110,7 +110,8 @@ public class StaticSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var existingStripeSupporter = await this._supporterService.GetStripeSupporter(contextUser.DiscordUserId);
 
-        var pricing = await this._supporterService.GetPricing(this.Context.Interaction.UserLocale);
+        var pricing =
+            await this._supporterService.GetPricing(this.Context.Interaction.UserLocale, existingStripeSupporter?.Currency);
 
         var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
             contextUser.UserNameLastFM, type, pricing, existingStripeSupporter);

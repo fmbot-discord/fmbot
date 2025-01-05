@@ -29,5 +29,7 @@ public class StripeSupporter
 
     public DateTime? LastTimeTransferred { get; set; }
 
+    public string Currency { get; set; }
+
     public StripeSupporterType Type { get; set; }
 }
