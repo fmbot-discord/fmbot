@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,6 +44,7 @@ public class UserService
     private readonly FriendsService _friendsService;
     private readonly AdminService _adminService;
     private readonly TemplateService _templateService;
+    private readonly DiscordShardedClient _client;
 
     public UserService(IMemoryCache cache,
         IDbContextFactory<FMBotDbContext> contextFactory,
@@ -55,7 +57,8 @@ public class UserService
         WhoKnowsTrackService whoKnowsTrackService,
         FriendsService friendsService,
         AdminService adminService,
-        TemplateService templateService)
+        TemplateService templateService,
+        DiscordShardedClient client)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
@@ -68,6 +71,7 @@ public class UserService
         this._friendsService = friendsService;
         this._adminService = adminService;
         this._templateService = templateService;
+        this._client = client;
         this._botSettings = botSettings.Value;
     }
 
@@ -153,6 +157,18 @@ public class UserService
         var user = await GetUserAsync(discordUserId);
 
         return user?.Blocked == true;
+    }
+
+    public async Task<IUser> GetUserFromDiscord(ulong discordUserId)
+    {
+        var user = this._client.GetUser(discordUserId);
+
+        if (user == null)
+        {
+            return await this._client.Rest.GetUserAsync(discordUserId);
+        }
+
+        return user;
     }
 
     public async Task<bool> UserHasSessionAsync(IUser discordUser)

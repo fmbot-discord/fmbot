@@ -41,6 +41,7 @@ public class UserBuilder
     private readonly SupporterService _supporterService;
     private readonly DiscogsService _discogsService;
     private readonly OpenAiService _openAiService;
+    private readonly AdminService _adminService;
 
     public UserBuilder(UserService userService,
         GuildService guildService,
@@ -54,7 +55,8 @@ public class UserBuilder
         ArtistsService artistsService,
         SupporterService supporterService,
         DiscogsService discogsService,
-        OpenAiService openAiService)
+        OpenAiService openAiService,
+        AdminService adminService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -68,6 +70,7 @@ public class UserBuilder
         this._supporterService = supporterService;
         this._discogsService = discogsService;
         this._openAiService = openAiService;
+        this._adminService = adminService;
         this._botSettings = botSettings.Value;
     }
 
@@ -1647,6 +1650,85 @@ public class UserBuilder
             embedDescription.AppendLine(
                 $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
         }
+
+        response.Embed.WithDescription(embedDescription.ToString());
+
+        return response;
+    }
+
+    public async Task<ResponseModel> ManageAlts(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+        var alts = await this._adminService.GetUsersWithLfmUsernameAsync(context.ContextUser.UserNameLastFM);
+
+        SelectMenuBuilder altSelector;
+        if (alts.Count > 1)
+        {
+            altSelector = new SelectMenuBuilder()
+                .WithPlaceholder("Select alt to manage")
+                .WithCustomId(InteractionConstants.ImportSetting)
+                .WithMinValues(1)
+                .WithMaxValues(1);
+        }
+        else
+        {
+            altSelector = new SelectMenuBuilder()
+                .WithPlaceholder("No alts with same Last.fm username")
+                .WithDisabled(true);
+        }
+
+        var amount = 0;
+        foreach (var alt in alts
+                     .OrderByDescending(o => o.LastUsed)
+                     .ThenByDescending(o => o.UserId)
+                     .Where(w => w.UserId != context.ContextUser.UserId))
+        {
+            var description = new StringBuilder();
+
+            var displayName = alt.DiscordUserId.ToString();
+            if (amount < 6)
+            {
+                var user = await this._userService.GetUserFromDiscord(alt.DiscordUserId);
+                if (user != null)
+                {
+                    displayName = user.Username;
+                    if (user.GlobalName != null)
+                    {
+                        description.Append($"{user.GlobalName}");
+                    }
+                }
+            }
+
+            if (alt.LastUsed.HasValue)
+            {
+                if (description.Length > 0)
+                {
+                    description.Append($" - ");
+                }
+
+                description.Append($"Last used {StringExtensions.GetTimeAgoShortString(alt.LastUsed.Value)} ago");
+            }
+
+            altSelector.AddOption(description.Length > 0
+                ? new SelectMenuOptionBuilder(displayName, alt.UserId.ToString(), description.ToString())
+                : new SelectMenuOptionBuilder(displayName, alt.UserId.ToString()));
+
+            amount++;
+        }
+
+        response.Components = new ComponentBuilder().WithSelectMenu(altSelector);
+
+        var embedDescription = new StringBuilder();
+        embedDescription.AppendLine("Manage other .fmbot accounts with the same Last.fm username.");
+        embedDescription.AppendLine();
+        embedDescription.AppendLine("When you select an account you have the following options:");
+        embedDescription.AppendLine("- Transfer data (streaks, featuredlog and imports)");
+        embedDescription.AppendLine("- Delete account");
 
         response.Embed.WithDescription(embedDescription.ToString());
 

@@ -57,6 +57,8 @@ public static class InteractionConstants
 
     public const string TrackPreview = "track-preview";
 
+    public const string ManageAlts = "manage-alts";
+
     public static class Artist
     {
         public const string Info = "artist-info";
