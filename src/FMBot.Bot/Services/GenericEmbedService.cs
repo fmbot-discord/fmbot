@@ -55,10 +55,9 @@ public static class GenericEmbedService
     {
         var loginCommand = PublicProperties.SlashCommands.ContainsKey("login") ? $"</login:{PublicProperties.SlashCommands["login"]}>" : "`/login`";
         embed.WithDescription("While you have set your username, you haven't connected .fmbot to your Last.fm account yet, which is required for the command you're trying to use.\n" +
-                              $"Please use the {loginCommand} command to receive a link to connect your Last.fm account.");
+                              $"Please use the {loginCommand} command to reconnect your Last.fm account.");
 
         embed.WithUrl($"{Constants.DocsUrl}/commands/");
-
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 

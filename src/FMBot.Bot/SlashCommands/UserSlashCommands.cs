@@ -46,6 +46,7 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly AdminService _adminService;
     private readonly ImportBuilders _importBuilders;
     private readonly TimerService _timerService;
+    private readonly PlayService _playService;
 
     private readonly BotSettings _botSettings;
 
@@ -66,7 +67,8 @@ public class UserSlashCommands : InteractionModuleBase
         IPrefixService prefixService,
         AdminService adminService,
         ImportBuilders importBuilders,
-        TimerService timerService)
+        TimerService timerService,
+        PlayService playService)
     {
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
@@ -83,6 +85,7 @@ public class UserSlashCommands : InteractionModuleBase
         this._adminService = adminService;
         this._importBuilders = importBuilders;
         this._timerService = timerService;
+        this._playService = playService;
         this._botSettings = botSettings.Value;
     }
 
@@ -1185,6 +1188,178 @@ public class UserSlashCommands : InteractionModuleBase
 
         await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
         this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsPicker)]
+    [UserSessionRequired]
+    public async Task ManageAltsPicker(string[] inputs)
+    {
+        try
+        {
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var targetUser = await this._userService.GetUserForIdAsync(int.Parse(inputs.First()));
+
+            if (targetUser == null)
+            {
+                await RespondAsync("The .fmbot account you want to manage doesn't exist (anymore).", ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            if (!targetUser.UserNameLastFM.Equals(contextUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var embed = new EmbedBuilder();
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+
+            var targetUserDiscord = await this._userService.GetUserFromDiscord(targetUser.DiscordUserId);
+            embed.WithTitle("Manage .fmbot account");
+
+            var description = new StringBuilder();
+            if (targetUserDiscord != null)
+            {
+                description.AppendLine($"`    Username:` **{targetUserDiscord.Username}**");
+                if (!string.IsNullOrWhiteSpace(targetUserDiscord.GlobalName))
+                {
+                    description.AppendLine(
+                        $"`Display name:` **{StringExtensions.Sanitize(targetUserDiscord.GlobalName)}**");
+                }
+            }
+
+            description.AppendLine($"`  Discord ID:` `{targetUser.DiscordUserId}`");
+            if (targetUser.LastUsed.HasValue)
+            {
+                var lastUsed = ((DateTimeOffset)targetUser.LastUsed).ToUnixTimeSeconds();
+                description.AppendLine($"`   Last used:` <t:{lastUsed}:R>");
+            }
+            else
+            {
+                description.AppendLine($"`   Last used:` Unknown");
+            }
+
+            description.AppendLine();
+            description.AppendLine(
+                "Transferring data only transfers .fmbot streaks, imports and featured history to your current .fmbot account.");
+            description.AppendLine();
+            description.AppendLine(
+                ".fmbot is not affiliated with Last.fm. No Last.fm data can be modified, transferred or deleted with this command.");
+
+            var components = new ComponentBuilder()
+                .WithButton("Delete account",
+                    $"{InteractionConstants.ManageAlts.ManageAltsDeleteAlt}-false-{targetUser.UserId}",
+                    style: ButtonStyle.Danger)
+                .WithButton("Transfer data and delete account",
+                    $"{InteractionConstants.ManageAlts.ManageAltsDeleteAlt}-true-{targetUser.UserId}",
+                    style: ButtonStyle.Danger);
+
+            embed.WithDescription(description.ToString());
+
+            await RespondAsync(null, [embed.Build()], ephemeral: true, components: components?.Build());
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [UserSessionRequired]
+    [ComponentInteraction($"{InteractionConstants.ManageAlts.ManageAltsDeleteAlt}-*-*")]
+    public async Task DeleteAlt(string transferData, string targetUserId)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userToDelete = await this._userService.GetUserForIdAsync(int.Parse(targetUserId));
+
+        if (userToDelete == null)
+        {
+            await RespondAsync("The .fmbot account you want to manage doesn't exist (anymore).", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            return;
+        }
+
+        if (!userToDelete.UserNameLastFM.Equals(contextUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var embed = new EmbedBuilder();
+        embed.WithColor(DiscordConstants.WarningColorOrange);
+        var description = new StringBuilder();
+        description.AppendLine("⚠️ Are you sure you want to delete this .fmbot alt account? This cannot be reversed.");
+        description.AppendLine();
+        description.AppendLine(transferData == "true"
+            ? "Streaks, imports and featured history will be transferred to your current .fmbot account if they exist."
+            : "Streaks, imports and featured history will be permanently deleted.");
+        embed.WithDescription(description.ToString());
+        embed.WithFooter($"Deleting {userToDelete.DiscordUserId.ToString()}");
+
+        var contextUserHasImported = await this._importService.HasImported(contextUser.UserId);
+        var targetUserHasImported = await this._importService.HasImported(userToDelete.UserId);
+
+        if (contextUserHasImported && targetUserHasImported && transferData == "true")
+        {
+            embed.AddField("Imports will not be transferred",
+                "Because your current account already has imported plays, imports from the account you're deleting will not be transferred.");
+        }
+
+        var components = new ComponentBuilder()
+            .WithButton(transferData == "true"
+                    ? "Confirm data transfer and deletion"
+                    : "Confirm deletion",
+                $"{InteractionConstants.ManageAlts.ManageAltsDeleteAltConfirm}-{transferData}-{userToDelete.UserId}",
+                style: ButtonStyle.Danger);
+
+        await RespondAsync(null, [embed.Build()], ephemeral: true, components: components?.Build());
+        this.Context.LogCommandUsed();
+    }
+
+    [UserSessionRequired]
+    [ComponentInteraction($"{InteractionConstants.ManageAlts.ManageAltsDeleteAltConfirm}-*-*")]
+    public async Task DeleteAltConfirmed(string transferData, string targetUserId)
+    {
+        try
+        {
+            _ = DeferAsync(true);
+            await this.Context.DisableInteractionButtons(interactionEdit: true);
+
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var userToDelete = await this._userService.GetUserForIdAsync(int.Parse(targetUserId));
+
+            if (userToDelete == null)
+            {
+                await RespondAsync("The .fmbot account you want to delete doesn't exist (anymore).", ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            if (!userToDelete.UserNameLastFM.Equals(contextUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (transferData == "true")
+            {
+                var contextUserHasImported = await this._importService.HasImported(contextUser.UserId);
+
+                await this._playService.MoveData(userToDelete.UserId, contextUser.UserId, !contextUserHasImported);
+            }
+
+            await this._userService.DeleteUser(userToDelete.UserId);
+
+            var components =
+                new ComponentBuilder().WithButton(
+                    transferData == "true" ? "Successfully transferred data and deleted alt" : "Successfully deleted alt",
+                    customId: "0", disabled: true, style: ButtonStyle.Success);
+            await this.Context.Interaction.ModifyOriginalResponseAsync(m => { m.Components = components.Build(); });
+
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 
     [ComponentInteraction(InteractionConstants.ImportSetting)]

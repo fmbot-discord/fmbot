@@ -33,7 +33,9 @@ public class PlayService
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly IMemoryCache _cache;
 
-    public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService, TimeService timeService, IOptions<BotSettings> botSettings, IDataSourceFactory dataSourceFactory, IMemoryCache cache)
+    public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService,
+        TimeService timeService, IOptions<BotSettings> botSettings, IDataSourceFactory dataSourceFactory,
+        IMemoryCache cache)
     {
         this._contextFactory = contextFactory;
         this._genreService = genreService;
@@ -52,7 +54,8 @@ public class PlayService
 
             var start = DateTime.UtcNow.AddDays(-amountOfDays);
             var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
-            var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm, start: start);
+            var plays = await PlayRepository.GetUserPlays(userId, connection,
+                importUser?.DataSource ?? DataSource.LastFm, start: start);
 
             if (!plays.Any())
             {
@@ -85,6 +88,7 @@ public class PlayService
             {
                 day.TopGenres = await this._genreService.GetTopGenresForPlays(day.Plays);
             }
+
             foreach (var day in overview.Days.Where(w => w.Plays.Any()))
             {
                 day.ListeningTime = TimeService.GetPlayTimeForEnrichedPlays(day.Plays);
@@ -124,7 +128,8 @@ public class PlayService
         };
 
         var currentTopTracks =
-            await this._dataSourceFactory.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime, endDateTime, 500);
+            await this._dataSourceFactory.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime,
+                endDateTime, 500);
 
         if (!currentTopTracks.Success)
         {
@@ -135,7 +140,8 @@ public class PlayService
         yearOverview.TopTracks = currentTopTracks.Content;
 
         var currentTopAlbums =
-            await this._dataSourceFactory.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime, endDateTime, 500);
+            await this._dataSourceFactory.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime,
+                endDateTime, 500);
 
         if (!currentTopAlbums.Success)
         {
@@ -146,7 +152,8 @@ public class PlayService
         yearOverview.TopAlbums = currentTopAlbums.Content;
 
         var currentTopArtists =
-            await this._dataSourceFactory.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime, endDateTime, 500);
+            await this._dataSourceFactory.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime,
+                endDateTime, 500);
 
         if (!currentTopArtists.Success)
         {
@@ -159,7 +166,8 @@ public class PlayService
         if (user.RegisteredLastFm < endDateTime.AddYears(-1))
         {
             var previousTopTracks =
-                await this._dataSourceFactory.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
+                await this._dataSourceFactory.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM,
+                    startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
 
             if (previousTopTracks.Success)
             {
@@ -171,7 +179,8 @@ public class PlayService
             }
 
             var previousTopAlbums =
-                await this._dataSourceFactory.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
+                await this._dataSourceFactory.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM,
+                    startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
 
             if (previousTopAlbums.Success)
             {
@@ -183,7 +192,8 @@ public class PlayService
             }
 
             var previousTopArtists =
-                await this._dataSourceFactory.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
+                await this._dataSourceFactory.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM,
+                    startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800);
 
             if (previousTopArtists.Success)
             {
@@ -228,7 +238,8 @@ public class PlayService
             return "No top track for this day";
         }
 
-        return $"{StringExtensions.Sanitize(topTrack.Key.ArtistName)} - {StringExtensions.Sanitize(topTrack.Key.TrackName)} · *{topTrack.Count()} {StringExtensions.GetPlaysString(topTrack.Count())}*";
+        return
+            $"{StringExtensions.Sanitize(topTrack.Key.ArtistName)} - {StringExtensions.Sanitize(topTrack.Key.TrackName)} · *{topTrack.Count()} {StringExtensions.GetPlaysString(topTrack.Count())}*";
     }
 
     private static string GetTopAlbumForPlays(IEnumerable<UserPlay> plays)
@@ -242,7 +253,8 @@ public class PlayService
             return "No top album for this day";
         }
 
-        return $"{StringExtensions.Sanitize(topAlbum.Key.ArtistName)} - {StringExtensions.Sanitize(topAlbum.Key.AlbumName)} · *{topAlbum.Count()} {StringExtensions.GetPlaysString(topAlbum.Count())}*";
+        return
+            $"{StringExtensions.Sanitize(topAlbum.Key.ArtistName)} - {StringExtensions.Sanitize(topAlbum.Key.AlbumName)} · *{topAlbum.Count()} {StringExtensions.GetPlaysString(topAlbum.Count())}*";
     }
 
     private static string GetTopArtistForPlays(IEnumerable<UserPlay> plays)
@@ -256,7 +268,8 @@ public class PlayService
             return "No top artist for this day";
         }
 
-        return $"{StringExtensions.Sanitize(topArtist.Key)} · *{topArtist.Count()} {StringExtensions.GetPlaysString(topArtist.Count())}*";
+        return
+            $"{StringExtensions.Sanitize(topArtist.Key)} · *{topArtist.Count()} {StringExtensions.GetPlaysString(topArtist.Count())}*";
     }
 
     private async Task<ICollection<UserPlay>> GetWeekPlays(int userId)
@@ -277,8 +290,15 @@ public class PlayService
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
         var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, monthAgo);
 
-        return (plays.Count(c => c.TimePlayed >= weekAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) && string.Equals(c.TrackName, trackName, StringComparison.OrdinalIgnoreCase)),
-                plays.Count(c => c.TimePlayed >= monthAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) && string.Equals(c.TrackName, trackName, StringComparison.OrdinalIgnoreCase)));
+        return (
+            plays.Count(c =>
+                c.TimePlayed >= weekAgo &&
+                string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(c.TrackName, trackName, StringComparison.OrdinalIgnoreCase)),
+            plays.Count(c =>
+                c.TimePlayed >= monthAgo &&
+                string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(c.TrackName, trackName, StringComparison.OrdinalIgnoreCase)));
     }
 
     public async Task<int> GetWeekAlbumPlaycountAsync(int userId, string albumName, string artistName)
@@ -298,8 +318,15 @@ public class PlayService
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
         var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, monthAgo);
 
-        return (plays.Count(c => c.TimePlayed >= weekAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) && string.Equals(c.AlbumName, albumName, StringComparison.OrdinalIgnoreCase)),
-                plays.Count(c => c.TimePlayed >= monthAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) && string.Equals(c.AlbumName, albumName, StringComparison.OrdinalIgnoreCase)));
+        return (
+            plays.Count(c =>
+                c.TimePlayed >= weekAgo &&
+                string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(c.AlbumName, albumName, StringComparison.OrdinalIgnoreCase)),
+            plays.Count(c =>
+                c.TimePlayed >= monthAgo &&
+                string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(c.AlbumName, albumName, StringComparison.OrdinalIgnoreCase)));
     }
 
     public async Task<int> GetArtistPlaycountForTimePeriodAsync(int userId, string artistName, int daysToGoBack = 7)
@@ -322,8 +349,12 @@ public class PlayService
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
         var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, monthAgo);
 
-        return (plays.Count(c => c.TimePlayed >= weekAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase)),
-                plays.Count(c => c.TimePlayed >= monthAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase)));
+        return (
+            plays.Count(c =>
+                c.TimePlayed >= weekAgo && string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase)),
+            plays.Count(c =>
+                c.TimePlayed >= monthAgo &&
+                string.Equals(c.ArtistName, artistName, StringComparison.OrdinalIgnoreCase)));
     }
 
     public async Task<List<UserStreak>> GetStreaks(int userId)
@@ -468,18 +499,23 @@ public class PlayService
         var description = new StringBuilder();
         if (streak.ArtistName != null && streak.ArtistPlaycount.HasValue)
         {
-            description.AppendLine($"`Artist:` **[{streak.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(streak.ArtistName)})** - " +
-                                   $"{GetEmojiForStreakCount(streak.ArtistPlaycount.Value)} {streak.ArtistPlaycount} {StringExtensions.GetPlaysString(streak.ArtistPlaycount)}");
+            description.AppendLine(
+                $"`Artist:` **[{streak.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(streak.ArtistName)})** - " +
+                $"{GetEmojiForStreakCount(streak.ArtistPlaycount.Value)} {streak.ArtistPlaycount} {StringExtensions.GetPlaysString(streak.ArtistPlaycount)}");
         }
+
         if (streak.AlbumName != null && streak.AlbumPlaycount.HasValue)
         {
-            description.AppendLine($"` Album:` **[{streak.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/{HttpUtility.UrlEncode(streak.AlbumName)})** - " +
-                                   $"{GetEmojiForStreakCount(streak.AlbumPlaycount.Value)} {streak.AlbumPlaycount} {StringExtensions.GetPlaysString(streak.AlbumPlaycount)}");
+            description.AppendLine(
+                $"` Album:` **[{streak.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/{HttpUtility.UrlEncode(streak.AlbumName)})** - " +
+                $"{GetEmojiForStreakCount(streak.AlbumPlaycount.Value)} {streak.AlbumPlaycount} {StringExtensions.GetPlaysString(streak.AlbumPlaycount)}");
         }
+
         if (streak.TrackName != null && streak.TrackPlaycount.HasValue)
         {
-            description.AppendLine($"` Track:` **[{streak.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/_/{HttpUtility.UrlEncode(streak.TrackName)})** - " +
-                                   $"{GetEmojiForStreakCount(streak.TrackPlaycount.Value)} {streak.TrackPlaycount} {StringExtensions.GetPlaysString(streak.TrackPlaycount)}");
+            description.AppendLine(
+                $"` Track:` **[{streak.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/_/{HttpUtility.UrlEncode(streak.TrackName)})** - " +
+                $"{GetEmojiForStreakCount(streak.TrackPlaycount.Value)} {streak.TrackPlaycount} {StringExtensions.GetPlaysString(streak.TrackPlaycount)}");
         }
 
         if (description.Length == 0)
@@ -598,7 +634,8 @@ public class PlayService
             .ToList();
     }
 
-    public static List<GuildTrack> GetGuildTopTracks(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
+    public static List<GuildTrack> GetGuildTopTracks(IEnumerable<UserPlay> plays, DateTime startDateTime,
+        OrderType orderType, string artistName)
     {
         return plays
             .Where(w => w.TimePlayed > startDateTime)
@@ -621,7 +658,8 @@ public class PlayService
             .ToList();
     }
 
-    public static List<GuildAlbum> GetGuildTopAlbums(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
+    public static List<GuildAlbum> GetGuildTopAlbums(IEnumerable<UserPlay> plays, DateTime startDateTime,
+        OrderType orderType, string artistName)
     {
         return plays
             .Where(w => w.TimePlayed > startDateTime && w.AlbumName != null)
@@ -643,7 +681,8 @@ public class PlayService
             .ToList();
     }
 
-    public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, int limit = 120, bool includeListeners = false)
+    public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime,
+        OrderType orderType, int limit = 120, bool includeListeners = false)
     {
         return plays
             .Where(w => w.TimePlayed > startDateTime)
@@ -755,7 +794,6 @@ public class PlayService
 
     public async Task<DateTime?> GetAlbumFirstPlayDate(int userId, string artistName, string albumName)
     {
-
         var plays = await this.GetAllUserPlays(userId);
         return plays
             .OrderBy(o => o.TimePlayed)
@@ -813,14 +851,15 @@ public class PlayService
 
     public async Task<List<UserPlay>> GetGuildUsersPlaysForTimeLeaderBoard(int guildId)
     {
-        const string sql = "SELECT up.user_play_id, up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
-                           "FROM public.user_plays AS up " +
-                           "INNER JOIN users AS u ON up.user_id = u.user_id " +
-                           "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                           "WHERE gu.guild_id = @guildId " +
-                           "AND time_played > current_date - interval '9' day  AND time_played < current_date - interval '2' day AND artist_name IS NOT NULL " +
-                           "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                           "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
+        const string sql =
+            "SELECT up.user_play_id, up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
+            "FROM public.user_plays AS up " +
+            "INNER JOIN users AS u ON up.user_id = u.user_id " +
+            "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+            "WHERE gu.guild_id = @guildId " +
+            "AND time_played > current_date - interval '9' day  AND time_played < current_date - interval '2' day AND artist_name IS NOT NULL " +
+            "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+            "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -895,13 +934,15 @@ public class PlayService
         return await PlayRepository.GetUserPlays(userId, connection, dataSource);
     }
 
-    public async Task<RecentTrackList> AddUserPlaysToRecentTracks(int userId, RecentTrackList recentTracks, int limit = int.MaxValue)
+    public async Task<RecentTrackList> AddUserPlaysToRecentTracks(int userId, RecentTrackList recentTracks,
+        int limit = int.MaxValue)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
         var importUser = await UserRepository.GetImportUserForUserId(userId, connection, true);
-        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm, limit);
+        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm,
+            limit);
 
         var firstRecentTrack = recentTracks.RecentTracks
             .Where(w => w.TimePlayed != null)
@@ -942,12 +983,16 @@ public class PlayService
         };
     }
 
-    public async Task MoveData(int oldUserId, int newUserId)
+    public async Task MoveData(int oldUserId, int newUserId, bool moveImports = true)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
 
-        await PlayRepository.MoveImports(oldUserId, newUserId, connection);
+        if (moveImports)
+        {
+            await PlayRepository.MoveImports(oldUserId, newUserId, connection);
+        }
+
         await PlayRepository.MoveStreaks(oldUserId, newUserId, connection);
         await PlayRepository.MoveFeaturedLogs(oldUserId, newUserId, connection);
         await PlayRepository.MoveFriends(oldUserId, newUserId, connection);

@@ -20,7 +20,7 @@ public enum UserSetting
     Localization = 15,
     [Option("Music bot scrobbling", "Toggle automatically scrobbling other music bots")]
     BotScrobbling = 20,
-    [Option("Manage alts", "Manage other .fmbot accounts connected to the same Last.fm user")]
+    [Option("Manage alts", "Manage your other .fmbot accounts")]
     ManageAlts = 25,
     [Option("Delete account", "Delete your .fmbot data and account")]
     DeleteAccount = 30

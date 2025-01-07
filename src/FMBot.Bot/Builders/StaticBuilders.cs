@@ -210,8 +210,7 @@ public class StaticBuilders
 
         var description = new StringBuilder();
         description.AppendLine(
-            "Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot/contribute). \n" +
-            $"To get a complete list of all supporter advantages, run `{context.Prefix}getsupporter`.");
+            $"Thank you to all our supporters that help keep .fmbot running. To view all supporter perks and join this list, run `{context.Prefix}getsupporter`.");
         description.AppendLine();
 
         var pages = new List<PageBuilder>();

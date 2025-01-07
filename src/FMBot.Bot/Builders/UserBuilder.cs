@@ -1663,6 +1663,13 @@ public class UserBuilder
             ResponseType = ResponseType.Embed,
         };
 
+        if (context.ContextUser.SessionKeyLastFm == null)
+        {
+            response.Embed.SessionRequiredResponse(context.Prefix);
+            response.CommandResponse = CommandResponse.UsernameNotSet;
+            return response;
+        }
+
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         var alts = await this._adminService.GetUsersWithLfmUsernameAsync(context.ContextUser.UserNameLastFM);
 
@@ -1671,27 +1678,28 @@ public class UserBuilder
         {
             altSelector = new SelectMenuBuilder()
                 .WithPlaceholder("Select alt to manage")
-                .WithCustomId(InteractionConstants.ImportSetting)
+                .WithCustomId(InteractionConstants.ManageAlts.ManageAltsPicker)
                 .WithMinValues(1)
                 .WithMaxValues(1);
         }
         else
         {
             altSelector = new SelectMenuBuilder()
-                .WithPlaceholder("No alts with same Last.fm username")
+                .WithPlaceholder("No alts found")
                 .WithDisabled(true);
         }
 
-        var amount = 0;
+        var amount = 1;
         foreach (var alt in alts
                      .OrderByDescending(o => o.LastUsed)
                      .ThenByDescending(o => o.UserId)
-                     .Where(w => w.UserId != context.ContextUser.UserId))
+                     .Where(w => w.UserId != context.ContextUser.UserId)
+                     .Take(25))
         {
             var description = new StringBuilder();
 
             var displayName = alt.DiscordUserId.ToString();
-            if (amount < 6)
+            if (amount <= 5)
             {
                 var user = await this._userService.GetUserFromDiscord(alt.DiscordUserId);
                 if (user != null)
@@ -1723,12 +1731,16 @@ public class UserBuilder
 
         response.Components = new ComponentBuilder().WithSelectMenu(altSelector);
 
+        response.Embed.WithTitle("Manage other .fmbot accounts");
+
         var embedDescription = new StringBuilder();
-        embedDescription.AppendLine("Manage other .fmbot accounts with the same Last.fm username.");
+        embedDescription.AppendLine("Manage your other .fmbot accounts that are connected to the same Last.fm user.");
         embedDescription.AppendLine();
         embedDescription.AppendLine("When you select an account you have the following options:");
-        embedDescription.AppendLine("- Transfer data (streaks, featuredlog and imports)");
-        embedDescription.AppendLine("- Delete account");
+        embedDescription.AppendLine("- Transfer data (streaks, featured history and imports) and delete account");
+        embedDescription.AppendLine("- Only delete account");
+        embedDescription.AppendLine();
+        embedDescription.AppendLine(".fmbot is not affiliated with Last.fm. No Last.fm data can be modified, transferred or deleted with this command.");
 
         response.Embed.WithDescription(embedDescription.ToString());
 

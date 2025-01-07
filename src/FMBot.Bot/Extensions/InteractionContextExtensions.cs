@@ -318,7 +318,7 @@ public static class InteractionContextExtensions
         await context.ModifyMessage(message, response, defer);
     }
 
-    public static async Task DisableInteractionButtons(this IInteractionContext context, ButtonBuilder extraButtonBuilder = null)
+    public static async Task DisableInteractionButtons(this IInteractionContext context, bool interactionEdit = false)
     {
         var message = (context.Interaction as SocketMessageComponent)?.Message;
 
@@ -340,7 +340,7 @@ public static class InteractionContextExtensions
             }
         }
 
-        await ModifyComponents(context, message, newComponents);
+        await ModifyComponents(context, message, newComponents, interactionEdit);
     }
 
     public static async Task AddButton(this IInteractionContext context, ButtonBuilder extraButtonBuilder = null)
@@ -396,7 +396,7 @@ public static class InteractionContextExtensions
     }
 
     public static async Task UpdateMessageEmbed(this IInteractionContext context, ResponseModel response,
-        string messageId)
+        string messageId, bool interactionEdit = false)
     {
         var parsedMessageId = ulong.Parse(messageId);
         var msg = await context.Channel.GetMessageAsync(parsedMessageId);
@@ -409,10 +409,12 @@ public static class InteractionContextExtensions
         await context.ModifyMessage(message, response);
     }
 
-    public static async Task ModifyComponents(this IInteractionContext context, IUserMessage message, ComponentBuilder newComponents)
+    public static async Task ModifyComponents(this IInteractionContext context, IUserMessage message,
+        ComponentBuilder newComponents, bool interactionEdit = false)
     {
-        if (context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-            !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+        if ((context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+             !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)) ||
+            interactionEdit)
         {
             await context.Interaction.ModifyOriginalResponseAsync(m => m.Components = newComponents.Build());
         }
@@ -423,10 +425,11 @@ public static class InteractionContextExtensions
     }
 
     public static async Task ModifyMessage(this IInteractionContext context, IUserMessage message,
-        ResponseModel response, bool defer = true)
+        ResponseModel response, bool defer = true, bool interactionEdit = false)
     {
-        if (context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-            !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+        if ((context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+             !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)) ||
+            interactionEdit)
         {
             await context.Interaction.ModifyOriginalResponseAsync(m =>
             {
@@ -479,10 +482,7 @@ public static class InteractionContextExtensions
         {
             if (message.Attachments != null && message.Attachments.Any())
             {
-                await message.ModifyAsync(m =>
-                {
-                    m.Attachments = null;
-                });
+                await message.ModifyAsync(m => { m.Attachments = null; });
             }
 
             _ = interactiveService.SendPaginatorAsync(

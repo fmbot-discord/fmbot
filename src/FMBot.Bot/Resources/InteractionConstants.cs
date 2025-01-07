@@ -57,7 +57,12 @@ public static class InteractionConstants
 
     public const string TrackPreview = "track-preview";
 
-    public const string ManageAlts = "manage-alts";
+    public static class ManageAlts
+    {
+        public const string ManageAltsPicker = "managealts-picker";
+        public const string ManageAltsDeleteAlt = "managealts-delete";
+        public const string ManageAltsDeleteAltConfirm = "managealts-deleteconfirmed";
+    }
 
     public static class Artist
     {
