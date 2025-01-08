@@ -83,44 +83,40 @@ public class ImportBuilders
 
         response.Embed.WithTitle("Spotify import instructions");
 
-        var description = new StringBuilder();
+        var requestDescription = new StringBuilder();
 
-        description.AppendLine("### Requesting your data from Spotify");
-        description.AppendLine(
+        requestDescription.AppendLine(
             "1. Go to your **[Spotify privacy settings](https://www.spotify.com/us/account/privacy/)**");
-        description.AppendLine("2. Scroll down to \"Download your data\"");
-        description.AppendLine("3. Select **Extended streaming history**");
-        description.AppendLine("4. De-select the other options");
-        description.AppendLine("5. Press request data");
-        description.AppendLine("6. Confirm your data request through your email");
-        description.AppendLine("7. Wait up to 30 days for Spotify to deliver your files");
+        requestDescription.AppendLine("2. Scroll down to \"Download your data\"");
+        requestDescription.AppendLine("3. Select **Extended streaming history**");
+        requestDescription.AppendLine("4. De-select the other options");
+        requestDescription.AppendLine("5. Press request data");
+        requestDescription.AppendLine("6. Confirm your data request through your email");
+        requestDescription.AppendLine("7. Wait up to 30 days for Spotify to deliver your files");
+        response.Embed.AddField($"{DiscordConstants.Spotify} Requesting your data from Spotify",
+            requestDescription.ToString());
 
-        description.AppendLine("### Importing your data into .fmbot");
-        description.AppendLine("1. Download the file Spotify provided");
+        var importDescription = new StringBuilder();
 
-        if (context.SlashCommand)
+        importDescription.AppendLine("1. Download the file Spotify provided");
+        importDescription.AppendLine(context.SlashCommand
+            ? "2. Use this command and add the `.zip` file as an attachment through the options"
+            : $"2. Use `/import Spotify` and add the `.zip` file as an attachment through the options");
+        importDescription.AppendLine("3. Having issues? You can also attach each `.json` file separately");
+        response.Embed.AddField($"{DiscordConstants.Imports} Importing your data into .fmbot",
+            importDescription.ToString());
+
+        var notesDescription = new StringBuilder();
+        notesDescription.AppendLine("- We filter out duplicates and skips, so don't worry about submitting the same file twice");
+        notesDescription.AppendLine("- The importing service is only available with an active supporter subscription");
+        response.Embed.AddField("📝 Notes", notesDescription.ToString());
+
+        var allPlays = await this._playService.GetAllUserPlays(context.ContextUser.UserId, false);
+        var count = allPlays.Count(w => w.PlaySource == PlaySource.SpotifyImport);
+        if (count > 0)
         {
-            description.AppendLine("2. Use this command and add the `.zip` file as an attachment through the options");
-        }
-        else
-        {
-            description.AppendLine(
-                $"2. Use `/import Spotify` and add the `.zip` file as an attachment through the options");
-        }
-
-        description.AppendLine("3. Having issues? You can also attach each `.json` file separately");
-
-        description.AppendLine("### Notes");
-        description.AppendLine(
-            "- We filter out duplicates and skips, so don't worry about submitting the same file twice");
-        description.AppendLine("- You can select what from your import you want to use with `/import manage`");
-        description.AppendLine("- The importing service is only available with an active supporter subscription");
-
-        var importedYears = await this.GetImportedYears(context.ContextUser.UserId, PlaySource.SpotifyImport);
-        if (importedYears != null)
-        {
-            description.AppendLine("### Total imported Spotify plays");
-            description.AppendLine(importedYears);
+            response.Embed.AddField($"⚙️ Your imported Spotify plays",
+                $"You have already imported **{count}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the button below.");
         }
 
         var footer = new StringBuilder();
@@ -133,12 +129,15 @@ public class ImportBuilders
         footer.AppendLine("Having issues with importing? Please open a help thread on discord.gg/fmbot");
 
         response.Embed.WithFooter(footer.ToString());
-
-        response.Embed.WithDescription(description.ToString());
-
         response.Components = new ComponentBuilder()
             .WithButton("Spotify privacy page", style: ButtonStyle.Link,
                 url: "https://www.spotify.com/us/account/privacy/");
+
+        if (count > 0)
+        {
+            response.Components.WithButton("Manage import settings", InteractionConstants.ImportManage,
+                style: ButtonStyle.Secondary);
+        }
 
         return response;
     }
@@ -154,45 +153,49 @@ public class ImportBuilders
 
         response.Embed.WithTitle("Apple Music import instructions");
 
-        var description = new StringBuilder();
+        var requestDescription = new StringBuilder();
+        requestDescription.AppendLine("1. Go to your **[Apple privacy settings](https://privacy.apple.com/)**");
+        requestDescription.AppendLine("2. Sign in to your account");
+        requestDescription.AppendLine("3. Click on **Request a copy of your data**");
+        requestDescription.AppendLine("4. Select **Apple Media Services Information**");
+        requestDescription.AppendLine("5. De-select the other options");
+        requestDescription.AppendLine("6. Press **Continue**");
+        requestDescription.AppendLine("7. Press **Complete request**");
+        requestDescription.AppendLine("8. Wait up to 7 days for Apple to deliver your files");
+        response.Embed.AddField($"{DiscordConstants.AppleMusic} Requesting your data from Apple",
+            requestDescription.ToString());
 
-        description.AppendLine("### Requesting your data from Apple");
-        description.AppendLine("1. Go to your **[Apple privacy settings](https://privacy.apple.com/)**");
-        description.AppendLine("2. Sign in to your account");
-        description.AppendLine("3. Click on **Request a copy of your data**");
-        description.AppendLine("4. Select **Apple Media Services Information**");
-        description.AppendLine("5. De-select the other options");
-        description.AppendLine("6. Press **Continue**");
-        description.AppendLine("7. Press **Complete request**");
-        description.AppendLine("8. Wait up to 7 days for Apple to deliver your files");
-
-        description.AppendLine("### Importing your data into .fmbot");
-        description.AppendLine("1. Download the file Apple provided");
-
+        var importDescription = new StringBuilder();
+        importDescription.AppendLine("1. Download the file Apple provided");
         if (context.SlashCommand)
         {
-            description.AppendLine("2. Use this command and add the `.zip` file as an attachment through the options");
+            importDescription.AppendLine("2. Use this command and add the `.zip` file as an attachment through the options");
         }
         else
         {
-            description.AppendLine(
+            importDescription.AppendLine(
                 $"2. Use `/import applemusic` and add the `.zip` file as an attachment through the options");
         }
+        importDescription.AppendLine(
+            "3. Got multiple zip files? You can try them all until one succeeds. Only one of them contains your play history.");
+        importDescription.AppendLine(
+            "4. Having issues? You can also attach the `Apple Music Play Activity.csv` file separately");
 
-        description.AppendLine(
-            "3. Having issues? You can also attach the `Apple Music Play Activity.csv` file separately");
+        response.Embed.AddField($"{DiscordConstants.Imports} Importing your data into .fmbot",
+            importDescription.ToString());
 
-        description.AppendLine("### Notes");
-        description.AppendLine(
-            "- Apple provides their history data without artist names. We try to find these as best as possible based on the album and track name.");
-        description.AppendLine("- You can select what from your import you want to use with `/import manage`");
-        description.AppendLine("- The importing service is only available with an active supporter subscription");
+        var notes = new StringBuilder();
+        notes.AppendLine("- Apple provides their history data without artist names. We try to find these as best as possible based on the album and track name.");
+        notes.AppendLine("- Exceeding Discord file limits? Try on [our server](https://discord.gg/fmbot) in #commands.");
+        notes.AppendLine("- The importing service is only available with an active supporter subscription");
+        response.Embed.AddField("📝 Notes", notes.ToString());
 
-        var importedYears = await this.GetImportedYears(context.ContextUser.UserId, PlaySource.AppleMusicImport);
-        if (importedYears != null)
+        var allPlays = await this._playService.GetAllUserPlays(context.ContextUser.UserId, false);
+        var count = allPlays.Count(w => w.PlaySource == PlaySource.AppleMusicImport);
+        if (count > 0)
         {
-            description.AppendLine("### Total imported Apple Music plays");
-            description.AppendLine(importedYears);
+            response.Embed.AddField($"⚙️ Your imported Apple Music plays",
+                $"You have already imported **{count}** {StringExtensions.GetPlaysString(count)}. To configure how these are used and combined with your Last.fm scrobbles, use the button below.");
         }
 
         var footer = new StringBuilder();
@@ -206,10 +209,14 @@ public class ImportBuilders
 
         response.Embed.WithFooter(footer.ToString());
 
-        response.Embed.WithDescription(description.ToString());
-
         response.Components = new ComponentBuilder()
             .WithButton("Apple Data and Privacy", style: ButtonStyle.Link, url: "https://privacy.apple.com/");
+
+        if (count > 0)
+        {
+            response.Components.WithButton("Manage import settings", InteractionConstants.ImportManage,
+                style: ButtonStyle.Secondary);
+        }
 
         return response;
     }

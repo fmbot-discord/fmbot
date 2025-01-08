@@ -16,7 +16,7 @@ public static class DiscordConstants
     public static Color InformationColorBlue = new(68, 138, 255);
 
     public static Color SpotifyColorGreen = new(30, 215, 97);
-    
+
     public static Color AppleMusicRed = new(249, 87, 107);
 
     public static readonly IDictionary<IEmote, PaginatorAction> PaginationEmotes = new Dictionary<IEmote, PaginatorAction>
@@ -48,6 +48,7 @@ public static class DiscordConstants
     public const string RateYourMusic = "<:rym:1183851241151930399>";
     public const string YouTube = "<:youtube:1230496939355934730>";
     public const string AppleMusic = "<:apple_music:1218182727149420544>";
-    
+
     public const string Loading = "<a:loading:821676038102056991>";
+    public const string Imports = "<:fmbot_importing:1131511469096312914>";
 }
