@@ -58,11 +58,11 @@ public class ImportCommands : BaseCommandModule
         ResponseModel response;
         if (this.Context.Message.Content.Contains("spotify", StringComparison.OrdinalIgnoreCase))
         {
-            response = await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, userSettings));
+            response = await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, userSettings), true);
         }
         else if (this.Context.Message.Content.Contains("apple", StringComparison.OrdinalIgnoreCase))
         {
-            response = await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, prfx, userSettings));
+            response = await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, prfx, userSettings), true);
         }
         else
         {

@@ -1462,8 +1462,7 @@ public class UserSlashCommands : InteractionModuleBase
         try
         {
             var response =
-                await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser),
-                    true);
+                await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser), true);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -1483,8 +1482,7 @@ public class UserSlashCommands : InteractionModuleBase
         try
         {
             var response =
-                await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser),
-                    true);
+                await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser), true);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);

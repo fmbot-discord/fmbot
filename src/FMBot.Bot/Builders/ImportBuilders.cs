@@ -72,7 +72,7 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> GetSpotifyImportInstructions(ContextModel context, bool directToSlash = false)
+    public async Task<ResponseModel> GetSpotifyImportInstructions(ContextModel context, bool warnAgainstPublicFiles = false)
     {
         var response = new ResponseModel
         {
@@ -99,15 +99,14 @@ public class ImportBuilders
         var importDescription = new StringBuilder();
 
         importDescription.AppendLine("1. Download the file Spotify provided");
-        importDescription.AppendLine(context.SlashCommand
-            ? "2. Use this command and add the `.zip` file as an attachment through the options"
-            : $"2. Use `/import Spotify` and add the `.zip` file as an attachment through the options");
+        importDescription.AppendLine($"2. Use `/import spotify` slash command and add the `.zip` file as an attachment through the options");
         importDescription.AppendLine("3. Having issues? You can also attach each `.json` file separately");
         response.Embed.AddField($"{DiscordConstants.Imports} Importing your data into .fmbot",
             importDescription.ToString());
 
         var notesDescription = new StringBuilder();
-        notesDescription.AppendLine("- We filter out duplicates and skips, so don't worry about submitting the same file twice");
+        notesDescription.AppendLine(
+            "- We filter out duplicates and skips, so don't worry about submitting the same file twice");
         notesDescription.AppendLine("- The importing service is only available with an active supporter subscription");
         response.Embed.AddField("📝 Notes", notesDescription.ToString());
 
@@ -120,10 +119,9 @@ public class ImportBuilders
         }
 
         var footer = new StringBuilder();
-        if (!context.SlashCommand || directToSlash)
+        if (warnAgainstPublicFiles)
         {
             footer.AppendLine("Do not share your import files publicly");
-            footer.AppendLine("To start your import, use the slash command version of this command instead");
         }
 
         footer.AppendLine("Having issues with importing? Please open a help thread on discord.gg/fmbot");
@@ -142,7 +140,7 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> GetAppleMusicImportInstructions(ContextModel context, bool directToSlash = false)
+    public async Task<ResponseModel> GetAppleMusicImportInstructions(ContextModel context, bool warnAgainstPublicFiles = false)
     {
         var response = new ResponseModel
         {
@@ -167,17 +165,10 @@ public class ImportBuilders
 
         var importDescription = new StringBuilder();
         importDescription.AppendLine("1. Download the file Apple provided");
-        if (context.SlashCommand)
-        {
-            importDescription.AppendLine("2. Use this command and add the `.zip` file as an attachment through the options");
-        }
-        else
-        {
-            importDescription.AppendLine(
-                $"2. Use `/import applemusic` and add the `.zip` file as an attachment through the options");
-        }
         importDescription.AppendLine(
-            "3. Got multiple zip files? You can try them all until one succeeds. Only one of them contains your play history.");
+            "2. Use `/import applemusic` slash command and add the `.zip` file as an attachment through the options");
+        importDescription.AppendLine(
+            "3. Got multiple zip files? You can try them all until one succeeds. Only one of them contains your play history");
         importDescription.AppendLine(
             "4. Having issues? You can also attach the `Apple Music Play Activity.csv` file separately");
 
@@ -185,8 +176,10 @@ public class ImportBuilders
             importDescription.ToString());
 
         var notes = new StringBuilder();
-        notes.AppendLine("- Apple provides their history data without artist names. We try to find these as best as possible based on the album and track name.");
-        notes.AppendLine("- Exceeding Discord file limits? Try on [our server](https://discord.gg/fmbot) in #commands.");
+        notes.AppendLine(
+            "- Apple provides their history data without artist names. We try to find these as best as possible based on the album and track name.");
+        notes.AppendLine(
+            "- Exceeding Discord file limits? Try on [our server](https://discord.gg/fmbot) in #commands.");
         notes.AppendLine("- The importing service is only available with an active supporter subscription");
         response.Embed.AddField("📝 Notes", notes.ToString());
 
@@ -199,10 +192,9 @@ public class ImportBuilders
         }
 
         var footer = new StringBuilder();
-        if (!context.SlashCommand || directToSlash)
+        if (warnAgainstPublicFiles)
         {
             footer.AppendLine("Do not share your import files publicly");
-            footer.AppendLine("To start your import, use the slash command version of this command instead");
         }
 
         footer.AppendLine("Having issues with importing? Please open a help thread on discord.gg/fmbot");
