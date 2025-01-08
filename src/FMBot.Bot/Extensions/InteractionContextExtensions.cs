@@ -318,7 +318,8 @@ public static class InteractionContextExtensions
         await context.ModifyMessage(message, response, defer);
     }
 
-    public static async Task DisableInteractionButtons(this IInteractionContext context, bool interactionEdit = false)
+    public static async Task DisableInteractionButtons(this IInteractionContext context, bool interactionEdit = false,
+        string specificButtonOnly = null, bool addLoaderToSpecificButton = false)
     {
         var message = (context.Interaction as SocketMessageComponent)?.Message;
 
@@ -334,8 +335,30 @@ public static class InteractionContextExtensions
             {
                 if (component is ButtonComponent buttonComponent)
                 {
-                    newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
-                        buttonComponent.Emote, buttonComponent.Url, true);
+                    if (specificButtonOnly != null && specificButtonOnly == buttonComponent.CustomId)
+                    {
+                        if (addLoaderToSpecificButton)
+                        {
+                            newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                                Emote.Parse(DiscordConstants.Loading), buttonComponent.Url, true);
+                        }
+                        else
+                        {
+                            newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                                null, buttonComponent.Url, true);
+                        }
+
+                    }
+                    else if(specificButtonOnly == null)
+                    {
+                        newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                            buttonComponent.Emote, buttonComponent.Url, true);
+                    }
+                    else
+                    {
+                        newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                            buttonComponent.Emote, buttonComponent.Url, false);
+                    }
                 }
             }
         }

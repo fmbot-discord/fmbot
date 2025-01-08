@@ -455,7 +455,35 @@ public class PlaySlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction(InteractionConstants.Recap)]
+    [ComponentInteraction($"{InteractionConstants.RecapAlltime}-*")]
+    [UsernameSetRequired]
+    public async Task RecapAllTime(string userId)
+    {
+        _ = DeferAsync();
+        _ = this.Context.DisableInteractionButtons(specificButtonOnly: InteractionConstants.RecapAlltime, addLoaderToSpecificButton: true);
+
+        var contextUser = await this._userService.GetUserForIdAsync(int.Parse(userId));
+        var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+
+            var timeSettings = SettingService.GetTimePeriod("alltime", TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+
+            var response = await this._recapBuilders.RecapAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings, RecapPage.Overview);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+
+            _ = this.Context.DisableInteractionButtons(specificButtonOnly: InteractionConstants.RecapAlltime);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.RecapPicker)]
     [RequiresIndex]
     [GuildOnly]
     public async Task RecapAsync(string[] inputs)

@@ -371,7 +371,7 @@ public class ImportService
         return playsToReturn;
     }
 
-    public async Task UpdateExistingPlays(User user)
+    public async Task UpdateExistingScrobbleSource(User user)
     {
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();

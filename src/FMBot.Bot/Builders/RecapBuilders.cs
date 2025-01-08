@@ -94,7 +94,7 @@ public class RecapBuilders
 
         var viewType = new SelectMenuBuilder()
             .WithPlaceholder("Select recap page")
-            .WithCustomId(InteractionConstants.Recap)
+            .WithCustomId(InteractionConstants.RecapPicker)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -175,7 +175,7 @@ public class RecapBuilders
                 {
                     var enrichedPlays = await this._timeService.EnrichPlaysWithPlayTime(filteredPlays);
                     response.Embed.AddField("Scrobbles",
-                        $"You got **{filteredPlays.Count}** {StringExtensions.GetScrobblesString(filteredPlays.Count)} with around **{StringExtensions.GetLongListeningTimeString(enrichedPlays.totalPlayTime)}** of listening time.");
+                        $"You got **{filteredPlays.Count}** {StringExtensions.GetScrobblesString(filteredPlays.Count)} in **{enrichedPlays.totalPlayTime.TotalMinutes:0}** minutes of listening time.");
                 }
                 else
                 {
