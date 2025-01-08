@@ -460,7 +460,7 @@ public class PlaySlashCommands : InteractionModuleBase
     public async Task RecapAllTime(string userId)
     {
         _ = DeferAsync();
-        _ = this.Context.DisableInteractionButtons(specificButtonOnly: InteractionConstants.RecapAlltime, addLoaderToSpecificButton: true);
+        _ = this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.RecapAlltime}-{userId}", addLoaderToSpecificButton: true);
 
         var contextUser = await this._userService.GetUserForIdAsync(int.Parse(userId));
         var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
@@ -475,7 +475,7 @@ public class PlaySlashCommands : InteractionModuleBase
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
 
-            _ = this.Context.DisableInteractionButtons(specificButtonOnly: InteractionConstants.RecapAlltime);
+            _ = this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.RecapAlltime}-{userId}");
         }
         catch (Exception e)
         {
