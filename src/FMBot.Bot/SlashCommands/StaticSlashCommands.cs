@@ -177,7 +177,7 @@ public class StaticSlashCommands : InteractionModuleBase
                 else
                 {
                     manageDescription.AppendLine(
-                        "You have lifetime supporter, so there is nothing to manage. Enjoy your supporter!");
+                        "You have lifetime supporter, so there is nothing to manage. Enjoy your supporter! <a:msn_dancing_banana:887595947025133569>");
                 }
             }
         }

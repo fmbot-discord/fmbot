@@ -290,50 +290,48 @@ public class ImportBuilders
         embedDescription.AppendLine("Modify your imported .fmbot data with the options below.");
         embedDescription.AppendLine();
         embedDescription.AppendLine(
-            "Please keep in mind that this only modifies imports that are stored in .fmbot. Importing in .fmbot works by combining imported plays together with Last.fm scrobbles.");
+            "Please keep in mind that this only modifies imports that are stored in .fmbot. It doesn't modify any of your Last.fm scrobbles or data.");
         embedDescription.AppendLine();
-        embedDescription.AppendLine("No Last.fm data can be changed or removed with this command.");
-        embedDescription.AppendLine();
-
-        embedDescription.AppendLine($"**Full Imports, then Last.fm**");
-        embedDescription.AppendLine($"- Uses your full {importSource} history and adds Last.fm afterwards");
-        embedDescription.AppendLine("- Plays from other music apps you scrobbled to Last.fm will not be included");
 
         if (!hasImported)
         {
             embedDescription.AppendLine();
             embedDescription.AppendLine(
-                "Run the `/import spotify` command to see how to request your data and to get started with imports. " +
+                "Run the `.import` command to see how to request your data and to get started with imports. " +
                 "After importing you'll be able to change these settings.");
         }
         else
         {
-            embedDescription.AppendLine();
-            embedDescription.AppendLine($"**Total counts**");
+            var storedDescription = new StringBuilder();
             if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport))
             {
-                embedDescription.AppendLine(
+                storedDescription.AppendLine(
                     $"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} imported Apple Music plays");
             }
 
             if (allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
             {
-                embedDescription.AppendLine(
+                storedDescription.AppendLine(
                     $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} imported Spotify plays");
             }
 
-            embedDescription.AppendLine(
-                $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
+            response.Embed.AddField($"{DiscordConstants.Imports} Your stored imports", storedDescription.ToString());
 
-            var playResult =
-                await this._playService.GetPlaysWithDataSource(userId, context.ContextUser.DataSource);
-            embedDescription.AppendLine();
-            embedDescription.AppendLine($"**Data in use with your selected mode**");
-            embedDescription.Append(
-                $"- {playResult.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport)} imports + ");
-            embedDescription.Append(
-                $"{playResult.Count(c => c.PlaySource == PlaySource.LastFm)} scrobbles = ");
-            embedDescription.Append($"{playResult.Count} plays");
+            var noteDescription = new StringBuilder();
+            if (context.ContextUser.DataSource == DataSource.ImportThenFullLastFm)
+            {
+                noteDescription.AppendLine(
+                    "Because you have selected the mode **Imports, then full Last.fm** not all imports might be used. This mode only uses your imports up until you started scrobbling on Last.fm.");
+            }
+            else
+            {
+
+            }
+
+            if (noteDescription.Length > 0)
+            {
+                response.Embed.AddField($"📝 How your imports are used", noteDescription.ToString());
+            }
         }
 
         response.Embed.WithDescription(embedDescription.ToString());
