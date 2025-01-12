@@ -204,14 +204,13 @@ public class UserBuilder
 
         response.Embed.WithDescription(
             "Bot scrobbling allows you to automatically scrobble music from Discord music bots to your Last.fm account. " +
-            "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
+            "For this to work properly fmbot needs to be in the server, you need to make sure it can see the voice channel and you must use a supported music bot.\n\n" +
             "Only tracks that already exist on Last.fm will be scrobbled. The bot reads the 'Now Playing' message a bot sends and tries to retrieve the artist and track name from there.");
 
         response.Components = new ComponentBuilder()
-            .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Success, new Emoji("✅"))
-            .WithButton("Disable", InteractionConstants.BotScrobblingDisable, style: ButtonStyle.Danger,
-                new Emoji("✖️"))
-            .WithButton("Supported music bots", style: ButtonStyle.Link, url: "https://fmbot.xyz/botscrobbling/");
+            .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Primary)
+            .WithButton("Disable", InteractionConstants.BotScrobblingDisable, style: ButtonStyle.Secondary)
+            .WithButton("Supported music bots", style: ButtonStyle.Link, url: "https://fmbot.xyz/botscrobbling/#currently-supported-bots");
 
         return response;
     }
@@ -251,7 +250,14 @@ public class UserBuilder
         return response;
     }
 
-    public static ResponseModel LoginSuccess(User newContextUser)
+    public enum LoginState
+    {
+        SuccessNoIndex,
+        SuccessPendingIndex,
+        SuccessIndexComplete
+    }
+
+    public static ResponseModel LoginSuccess(User newContextUser, LoginState loginState)
     {
         var response = new ResponseModel
         {
@@ -259,10 +265,29 @@ public class UserBuilder
         };
 
         response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
-        var description =
-            $"✅ You have been logged in to .fmbot with the username [{newContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM)})!\n\n" +
-            $"Use the button below to configure your settings and to customize your .fmbot experience.\n\n" +
-            $"Please note that .fmbot is not affiliated with Last.fm.";
+        var description = new StringBuilder();
+        switch (loginState)
+        {
+            case LoginState.SuccessNoIndex:
+                description.AppendLine(
+                    $"✅ You have been logged in to .fmbot with the username [{newContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM)})!");
+                break;
+            case LoginState.SuccessPendingIndex:
+                description.AppendLine(
+                    $"{DiscordConstants.Loading} Fetching Last.fm data for [{newContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM)})...");
+                break;
+            case LoginState.SuccessIndexComplete:
+                description.AppendLine(
+                    $"✅ You have been logged in to .fmbot with the username [{newContextUser.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(newContextUser.UserNameLastFM)})!");
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(loginState), loginState, null);
+        }
+
+        description.AppendLine();
+        description.AppendLine($"Use the button below to start configuring your settings and to customize your .fmbot experience.");
+        description.AppendLine();
+        description.AppendLine($"Please note that .fmbot is not affiliated with Last.fm.");
 
         response.Components = new ComponentBuilder()
             .WithButton("Settings", style: ButtonStyle.Secondary, customId: InteractionConstants.User.Settings,
@@ -270,7 +295,7 @@ public class UserBuilder
             .WithButton("Add .fmbot", style: ButtonStyle.Link,
                 url: "https://discord.com/oauth2/authorize?client_id=356268235697553409");
 
-        response.Embed.WithDescription(description);
+        response.Embed.WithDescription(description.ToString());
         return response;
     }
 
@@ -1740,7 +1765,8 @@ public class UserBuilder
         embedDescription.AppendLine("- Transfer data (streaks, featured history and imports) and delete account");
         embedDescription.AppendLine("- Only delete account");
         embedDescription.AppendLine();
-        embedDescription.AppendLine(".fmbot is not affiliated with Last.fm. No Last.fm data can be modified, transferred or deleted with this command.");
+        embedDescription.AppendLine(
+            ".fmbot is not affiliated with Last.fm. No Last.fm data can be modified, transferred or deleted with this command.");
 
         response.Embed.WithDescription(embedDescription.ToString());
 

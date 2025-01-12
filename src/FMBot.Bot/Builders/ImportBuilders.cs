@@ -99,7 +99,7 @@ public class ImportBuilders
         var importDescription = new StringBuilder();
 
         importDescription.AppendLine("1. Download the file Spotify provided");
-        importDescription.AppendLine($"2. Use `/import spotify` slash command and add the `.zip` file as an attachment through the options");
+        importDescription.AppendLine($"2. Use the `/import spotify` slash command and add the `.zip` file as an attachment through the options");
         importDescription.AppendLine("3. Having issues? You can also attach each `.json` file separately");
         response.Embed.AddField($"{DiscordConstants.Imports} Importing your data into .fmbot",
             importDescription.ToString());
@@ -166,7 +166,7 @@ public class ImportBuilders
         var importDescription = new StringBuilder();
         importDescription.AppendLine("1. Download the file Apple provided");
         importDescription.AppendLine(
-            "2. Use `/import applemusic` slash command and add the `.zip` file as an attachment through the options");
+            "2. Use the `/import applemusic` slash command and add the `.zip` file as an attachment through the options");
         importDescription.AppendLine(
             "3. Got multiple zip files? You can try them all until one succeeds. Only one of them contains your play history");
         importDescription.AppendLine(
@@ -322,10 +322,6 @@ public class ImportBuilders
             {
                 noteDescription.AppendLine(
                     "Because you have selected the mode **Imports, then full Last.fm** not all imports might be used. This mode only uses your imports up until you started scrobbling on Last.fm.");
-            }
-            else
-            {
-
             }
 
             if (noteDescription.Length > 0)

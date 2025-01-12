@@ -288,17 +288,35 @@ public class UserSlashCommands : InteractionModuleBase
             if (loginSuccess)
             {
                 var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-                var loginSuccessResponse =
-                    UserBuilder.LoginSuccess(newUserSettings);
 
-                await FollowupAsync(null, [loginSuccessResponse.Embed.Build()], ephemeral: true,
-                    components: loginSuccessResponse.Components.Build());
+                var indexUser = contextUser == null ||
+                                !string.Equals(contextUser.UserNameLastFM, newUserSettings.UserNameLastFM,
+                                    StringComparison.CurrentCultureIgnoreCase);
+
+                var loginSuccessResponse =
+                    UserBuilder.LoginSuccess(newUserSettings,
+                        indexUser ? UserBuilder.LoginState.SuccessPendingIndex : UserBuilder.LoginState.SuccessNoIndex);
+
+                await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
+                {
+                    m.Components = loginSuccessResponse.Components.Build();
+                    m.Embed = loginSuccessResponse.Embed.Build();
+                });
                 this.Context.LogCommandUsed();
 
-                if (contextUser == null || !string.Equals(contextUser.UserNameLastFM, newUserSettings.UserNameLastFM,
-                        StringComparison.CurrentCultureIgnoreCase))
+
+                if (indexUser)
                 {
                     await this._indexService.IndexUser(newUserSettings);
+
+                    loginSuccessResponse =
+                        UserBuilder.LoginSuccess(newUserSettings, UserBuilder.LoginState.SuccessIndexComplete);
+
+                    await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
+                    {
+                        m.Components = loginSuccessResponse.Components.Build();
+                        m.Embed = loginSuccessResponse.Embed.Build();
+                    });
                 }
 
                 if (this.Context.Guild != null)
@@ -1350,7 +1368,9 @@ public class UserSlashCommands : InteractionModuleBase
 
             var components =
                 new ComponentBuilder().WithButton(
-                    transferData == "true" ? "Successfully transferred data and deleted alt" : "Successfully deleted alt",
+                    transferData == "true"
+                        ? "Successfully transferred data and deleted alt"
+                        : "Successfully deleted alt",
                     customId: "0", disabled: true, style: ButtonStyle.Success);
             await this.Context.Interaction.ModifyOriginalResponseAsync(m => { m.Components = components.Build(); });
 
@@ -1462,7 +1482,8 @@ public class UserSlashCommands : InteractionModuleBase
         try
         {
             var response =
-                await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser), true);
+                await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, contextUser),
+                    true);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -1482,7 +1503,8 @@ public class UserSlashCommands : InteractionModuleBase
         try
         {
             var response =
-                await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser), true);
+                await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, contextUser),
+                    true);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
