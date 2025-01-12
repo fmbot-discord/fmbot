@@ -73,10 +73,10 @@ public class ImportCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("importmodify", RunMode = RunMode.Async)]
-    [Summary("Allows you to modify your .fmbot imports")]
-    [Alias("modifyimport", "importsmodify", "modifyimports", "import modify")]
-    [CommandCategories(CommandCategory.UserSettings)]
+    // [Command("importmodify", RunMode = RunMode.Async)]
+    // [Summary("Allows you to modify your .fmbot imports")]
+    // [Alias("modifyimport", "importsmodify", "modifyimports", "import modify")]
+    // [CommandCategories(CommandCategory.UserSettings)]
     [UsernameSetRequired]
     public async Task ModifyImportAsync([Remainder] string confirmation = null)
     {
