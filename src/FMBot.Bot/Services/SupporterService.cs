@@ -155,6 +155,7 @@ public class SupporterService
         thankYouMessage.AppendLine("- `.profile` — Expanded profile with more insights and a yearly overview");
         thankYouMessage.AppendLine("- `.year` — Extra page with discoveries and months");
         thankYouMessage.AppendLine("- `.recent` — See your lifetime listening history and filter to specific artists");
+        thankYouMessage.AppendLine("- `.overview` — See your lifetime listening history day to day");
         thankYouMessage.AppendLine("- `.artisttracks` — See all tracks, even those outside of your top 6000");
         thankYouMessage.AppendLine("- `.artistalbums` — See all albums, even those outside of your top 5000");
         thankYouMessage.AppendLine();
@@ -247,7 +248,7 @@ public class SupporterService
     public async Task<(string message, bool showUpgradeButton)> GetPromotionalUpdateMessage(User user, string prfx,
         ulong? guildId = null)
     {
-        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 48);
+        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 60);
         string message = null;
         var showUpgradeButton = false;
 
@@ -259,7 +260,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*⭐ .fmbot supporters get extra stats and insights into their music history.*";
+                        $"*⭐ .fmbot supporters get extra stats and insights into their music history*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -274,13 +275,13 @@ public class SupporterService
                     if (user.FmFooterOptions == FmFooterOption.TotalScrobbles)
                     {
                         message =
-                            $"*⚙️ Customize your `{prfx}fm` with the custom footer options. Get started by using `/fmmode`.*";
+                            $"*⚙️ Customize your `{prfx}fm` with the custom footer options. Get started by using `/fmmode`*";
                         break;
                     }
 
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*⚙️ Set up to 10 options in your {prfx}fm footer as an .fmbot supporter.*";
+                        $"*⚙️ Set up to 10 options in your `{prfx}fm` footer as an .fmbot supporter*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -288,7 +289,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*🔥 Supporters get an improved GPT-4o powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others.*";
+                        $"*🔥 Supporters get an improved GPT-4o powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -297,7 +298,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*<:spotify:882221219334725662> Supporters can import and use their full Spotify history in the bot.*";
+                        $"*<:spotify:882221219334725662> Supporters can import and use their full Spotify history in the bot*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -306,7 +307,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*<:apple_music:1218182727149420544> Supporters can import and use their Apple Music history in the bot.*";
+                        $"*<:apple_music:1218182727149420544> Supporters can import and use their full Apple Music history in the bot*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -314,26 +315,40 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*<:fmbot_discoveries:1145740579284713512> View recent artist discoveries with .fmbot supporter.*";
+                        $"*<:fmbot_discoveries:1145740579284713512> View which artists you recently discovered with .fmbot supporter*";
                     showUpgradeButton = true;
                     break;
                 }
                 case 11:
                 {
+                    SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*🎮 Play the new `.jumble` game and guess the artist together with your friends.*";
+                        $"*<:1_to_5_up:912085138232442920> Set your own `{prfx}fm` emote reactions to be used everywhere with .fmbot supporter*";
+                    showUpgradeButton = true;
                     break;
                 }
                 case 12:
                 {
                     message =
-                        $"*🎮 Play the new `.pixel` game and guess the album together with your friends.*";
+                        $"*🎮 Play the new `.jumble` game and guess the artist together with your friends*";
                     break;
                 }
                 case 13:
                 {
                     message =
-                        $"*🤖 Use .fmbot slash commands everywhere by [adding it to your Discord account](https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1).*";
+                        $"*🎮 Play the new `.pixel` game and guess the album together with your friends*";
+                    break;
+                }
+                case 14:
+                {
+                    message =
+                        $"*🤖 Use .fmbot slash commands everywhere by [adding it to your Discord account](https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1)*";
+                    break;
+                }
+                case 15:
+                {
+                    message =
+                        $"*🗒️ Check out the new `.recap` command that shows all commands in one place. Supports timeframes like `monthly`*";
                     break;
                 }
             }
@@ -353,7 +368,7 @@ public class SupporterService
                     if (user.FmFooterOptions == FmFooterOption.TotalScrobbles)
                     {
                         message =
-                            $"*Customize your `{prfx}fm` with the custom footer options. Get started by using `/fmmode`.*";
+                            $"*⭐ Customize your `{prfx}fm` with the custom footer options. Get started by using `/fmmode`.*";
                     }
 
                     break;
@@ -378,7 +393,57 @@ public class SupporterService
 
                     break;
                 }
+                case 7:
+                {
+                    if (user.EmoteReactions == null || !user.EmoteReactions.Any())
+                    {
+                        message =
+                            $"*⭐ Set your own emote reactions that will be used globally with `{prfx}userreactions`*";
+                    }
+
+                    break;
+                }
             }
+        }
+
+        switch (randomHintNumber)
+        {
+            case 20:
+            {
+                message =
+                    $"*🌞 Tip: look up what's `.featured` in other commands. For example, `.wk featured`*";
+                break;
+            }
+            case 21:
+            {
+                message =
+                    $"*🌞 Tip: Reply to a command to use that artist, album or track as context for your next command*";
+                break;
+            }
+            case 22:
+            {
+                message =
+                    $"*🌞 Tip: Album commands support the `random` parameter. For example, `.cover random`*";
+                break;
+            }
+            case 23:
+            {
+                message =
+                    $"*🌞 Tip: Milestone commands support the `random` parameter. For example, `.milestone random`*";
+                break;
+            }
+            case 24:
+            {
+                message =
+                    $"*🌞 Tip: All commands that support time periods also support timeframes like `december` or `2025`*";
+                break;
+            }
+            // case 25:
+            // {
+            //     message =
+            //         $"*🌞 Tip: Delete an unwanted bot response yourself by opening the message options > Apps > 'Delete response'*";
+            //     break;
+            // }
         }
 
         return (message, showUpgradeButton);
