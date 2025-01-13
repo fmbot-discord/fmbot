@@ -53,11 +53,15 @@ public class DataSourceFactory : IDataSourceFactory
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var userNameParameter = new NpgsqlParameter("userNameLastFm", userNameLastFm);
 
-        user = await db.Users
+        var users = await db.Users
             .FromSql(
-                $"SELECT * FROM users WHERE UPPER(user_name_last_fm) = UPPER({userNameParameter}) AND last_used IS NOT NULL AND data_source != 1 ORDER BY last_used DESC LIMIT 1")
+                $"SELECT * FROM users WHERE UPPER(user_name_last_fm) = UPPER({userNameParameter}) AND last_used IS NOT NULL ORDER BY last_used DESC LIMIT 3")
             .AsNoTracking()
-            .FirstOrDefaultAsync();
+            .ToListAsync();
+
+        var importUser = users.FirstOrDefault(a =>
+            a.DataSource != DataSource.LastFm && a.LastUsed >= DateTime.UtcNow.AddDays(-7));
+        user = importUser ?? users.OrderByDescending(o => o.LastUsed).FirstOrDefault();
 
         if (user != null)
         {
@@ -264,7 +268,8 @@ public class DataSourceFactory : IDataSourceFactory
             return topAlbums;
         }
 
-        topAlbums = await this._lastfmRepository.GetTopAlbumsAsync(lastFmUserName, timeSettings, count, amountOfPages, useCache);
+        topAlbums = await this._lastfmRepository.GetTopAlbumsAsync(lastFmUserName, timeSettings, count, amountOfPages,
+            useCache);
 
         await CorrectTopAlbumNamesInternally(topAlbums);
         AddAlbumTopList(topAlbums, lastFmUserName);
@@ -336,7 +341,8 @@ public class DataSourceFactory : IDataSourceFactory
         }
 
         topArtists =
-            await this._lastfmRepository.GetTopArtistsAsync(lastFmUserName, timeSettings, count, amountOfPages, useCache);
+            await this._lastfmRepository.GetTopArtistsAsync(lastFmUserName, timeSettings, count, amountOfPages,
+                useCache);
 
         await CorrectTopArtistNamesInternally(topArtists);
         AddArtistTopList(topArtists, lastFmUserName);
