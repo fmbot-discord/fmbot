@@ -41,7 +41,7 @@ public class DataSourceFactory : IDataSourceFactory
         this._aliasService = aliasService;
     }
 
-    public async Task<User> GetUserAsync(string userNameLastFm)
+    public async Task<User> GetCachedImportUserAsync(string userNameLastFm)
     {
         var lastFmCacheKey = UserService.UserLastFmCacheKey(userNameLastFm);
 
@@ -55,7 +55,7 @@ public class DataSourceFactory : IDataSourceFactory
 
         user = await db.Users
             .FromSql(
-                $"SELECT * FROM users WHERE UPPER(user_name_last_fm) = UPPER({userNameParameter}) AND last_used IS NOT NULL ORDER BY last_used DESC LIMIT 1")
+                $"SELECT * FROM users WHERE UPPER(user_name_last_fm) = UPPER({userNameParameter}) AND last_used IS NOT NULL AND data_source != 1 ORDER BY last_used DESC LIMIT 1")
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
@@ -77,7 +77,7 @@ public class DataSourceFactory : IDataSourceFactory
             return null;
         }
 
-        var user = await GetUserAsync(lastFmUserName);
+        var user = await GetCachedImportUserAsync(lastFmUserName);
 
         if (user != null &&
             user.DataSource != DataSource.LastFm &&

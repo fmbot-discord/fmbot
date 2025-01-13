@@ -845,7 +845,9 @@ public class PlayBuilder
 
             var pageFooter = new StringBuilder();
 
-            pageFooter.Append($"Page {pageCounter}/{dayPages.Count}");
+            pageFooter.Append(amount == 1 ? $"Day" : $"Page");
+            pageFooter.Append($" {pageCounter}/{dayPages.Count}");
+
             if (amount == 7)
             {
                 pageFooter.Append($" - 🫡");
