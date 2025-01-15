@@ -230,6 +230,12 @@ public class GuildSettingSlashCommands : InteractionModuleBase
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
                     }
                     break;
+                case GuildSetting.CrownsDisabled:
+                    {
+                        response = await this._guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context));
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                    }
+                    break;
                 case GuildSetting.DisabledCommands:
                     {
                         response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), this.Context.Channel.Id);
@@ -787,6 +793,22 @@ public class GuildSettingSlashCommands : InteractionModuleBase
 
         var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
 
+        await this.Context.UpdateInteractionEmbed(response);
+    }
+
+    [ComponentInteraction(InteractionConstants.ToggleCrowns.Enable)]
+    [ServerStaffOnly]
+    public async Task EnableCrowns()
+    {
+        var response = await this._guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context), false);
+        await this.Context.UpdateInteractionEmbed(response);
+    }
+
+    [ComponentInteraction(InteractionConstants.ToggleCrowns.Disable)]
+    [ServerStaffOnly]
+    public async Task DisableCrowns()
+    {
+        var response = await this._guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context), true);
         await this.Context.UpdateInteractionEmbed(response);
     }
 }

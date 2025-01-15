@@ -143,6 +143,12 @@ public static class InteractionConstants
 
     public const string RunCrownseeder = "run-crownseeder";
 
+    public static class ToggleCrowns
+    {
+        public const string Enable = "enable-crowns";
+        public const string Disable = "disable-crowns";
+    }
+
     public static class ToggleCommand
     {
         public const string ToggleCommandMove = "toggle-command-move";

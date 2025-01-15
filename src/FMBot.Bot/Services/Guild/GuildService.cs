@@ -25,7 +25,8 @@ public class GuildService
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
 
-    public GuildService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings)
+    public GuildService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache,
+        IOptions<BotSettings> botSettings)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
@@ -51,7 +52,8 @@ public class GuildService
             .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
     }
 
-    public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong? discordGuildId = null, bool filterBots = true)
+    public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong? discordGuildId = null,
+        bool filterBots = true)
     {
         if (discordGuildId == null)
         {
@@ -211,6 +213,7 @@ public class GuildService
 
             stats.ActivityThresholdFiltered = preFilterCount - users.Count;
         }
+
         if (guild.UserActivityThresholdDays.HasValue)
         {
             var preFilterCount = users.Count;
@@ -222,6 +225,7 @@ public class GuildService
 
             stats.GuildActivityThresholdFiltered = preFilterCount - users.Count;
         }
+
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
         {
             var preFilterCount = users.Count;
@@ -238,6 +242,7 @@ public class GuildService
 
             stats.BlockedFiltered = preFilterCount - users.Count;
         }
+
         if (guild.AllowedRoles != null && guild.AllowedRoles.Any())
         {
             var preFilterCount = users.Count;
@@ -248,6 +253,7 @@ public class GuildService
 
             stats.AllowedRolesFiltered = preFilterCount - users.Count;
         }
+
         if (guild.BlockedRoles != null && guild.BlockedRoles.Any())
         {
             var preFilterCount = users.Count;
@@ -258,13 +264,15 @@ public class GuildService
 
             stats.BlockedRolesFiltered = preFilterCount - users.Count;
         }
+
         if (roles != null && roles.Any())
         {
             var preFilterCount = users.Count;
 
             users = users
                 .Where(w => w.Value.Roles != null && roles.Any(a => w.Value.Roles.Contains(a)))
-                .ToDictionary(i => i.Key, i => i.Value); ;
+                .ToDictionary(i => i.Key, i => i.Value);
+            ;
 
             stats.ManualRoleFilter = preFilterCount - users.Count;
         }
@@ -426,7 +434,7 @@ public class GuildService
         await RemoveGuildFromCache(discordGuild.Id);
     }
 
-    public async Task<bool?> ToggleCrownsAsync(IGuild discordGuild)
+    public async Task<bool?> ToggleCrownsAsync(IGuild discordGuild, bool disabled)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds
@@ -434,15 +442,7 @@ public class GuildService
             .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
 
         existingGuild.Name = discordGuild.Name;
-
-        if (existingGuild.CrownsDisabled == true)
-        {
-            existingGuild.CrownsDisabled = false;
-        }
-        else
-        {
-            existingGuild.CrownsDisabled = true;
-        }
+        existingGuild.CrownsDisabled = disabled;
 
         db.Entry(existingGuild).State = EntityState.Modified;
 
@@ -860,7 +860,8 @@ public class GuildService
         return existingChannel;
     }
 
-    public async Task DisableChannelCommandsAsync(IChannel discordChannel, int guildId, List<string> commands, ulong discordGuildId)
+    public async Task DisableChannelCommandsAsync(IChannel discordChannel, int guildId, List<string> commands,
+        ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -911,7 +912,8 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task SetChannelEmbedType(IChannel discordChannel, int guildId, FmEmbedType? embedType, ulong discordGuildId)
+    public async Task SetChannelEmbedType(IChannel discordChannel, int guildId, FmEmbedType? embedType,
+        ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -946,7 +948,8 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task<string[]> EnableChannelCommandsAsync(IChannel discordChannel, List<string> commands, ulong discordGuildId)
+    public async Task<string[]> EnableChannelCommandsAsync(IChannel discordChannel, List<string> commands,
+        ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -1056,7 +1059,8 @@ public class GuildService
         return existingChannel?.FmCooldown;
     }
 
-    public async Task<int?> SetChannelCooldownAsync(IChannel discordChannel, int guildId, int? cooldown, ulong discordGuildId)
+    public async Task<int?> SetChannelCooldownAsync(IChannel discordChannel, int guildId, int? cooldown,
+        ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels

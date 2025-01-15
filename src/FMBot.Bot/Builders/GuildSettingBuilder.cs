@@ -963,4 +963,46 @@ public class GuildSettingBuilder
 
         return response;
     }
+
+    public async Task<ResponseModel> ToggleCrowns(ContextModel context, bool? disabled = null)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        if (disabled.HasValue)
+        {
+            await this._guildService.ToggleCrownsAsync(context.DiscordGuild, disabled.Value);
+        }
+
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var crownsDisabled = guild.CrownsDisabled == true;
+
+        var description = new StringBuilder();
+        if (crownsDisabled)
+        {
+            response.Embed.WithTitle("Enabling crowns on this server");
+            description.AppendLine($"Crown functionality is disabled on this server. ");
+            description.AppendLine();
+            description.AppendLine("Use the button below to re-enable crowns.");
+
+            response.Components = new ComponentBuilder().WithButton("Enable crowns", $"{InteractionConstants.ToggleCrowns.Enable}", style: ButtonStyle.Secondary);
+        }
+        else
+        {
+            response.Embed.WithTitle("Disabling crowns on this server");
+            description.AppendLine($"Crowns can be earned when someone is the #1 listener for an artist and has {guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown} plays or more. ");
+            description.AppendLine();
+            description.AppendLine("Use the button below to disable crown functionality server-wide. Crown history will be preserved, but it will no longer be visible.");
+
+            response.Components = new ComponentBuilder().WithButton("Disable crowns", $"{InteractionConstants.ToggleCrowns.Disable}", style: ButtonStyle.Secondary);
+        }
+
+        response.Embed.WithDescription(description.ToString());
+
+        return response;
+    }
 }

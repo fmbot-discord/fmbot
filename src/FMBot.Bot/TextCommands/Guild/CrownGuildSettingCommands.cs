@@ -306,11 +306,10 @@ public class CrownGuildSettingCommands : BaseCommandModule
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
-    public async Task ToggleCrownsAsync([Remainder] string confirmation = null)
+    public async Task ToggleCrownsAsync([Remainder] string unused = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         _ = this.Context.Channel.TriggerTypingAsync();
-        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
         if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
@@ -319,27 +318,10 @@ public class CrownGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        if (guild.CrownsDisabled != true && (confirmation == null || confirmation.ToLower() != "confirm"))
-        {
-            await ReplyAsync($"Disabling crowns will remove all existing crowns and crown history for this server.\n" +
-                             $"Type `{prfx}togglecrowns confirm` to confirm.");
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
+        var response = await this._guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context, prfx));
 
-        var crownsDisabled = await this._guildService.ToggleCrownsAsync(this.Context.Guild);
-
-        if (crownsDisabled == true)
-        {
-            await this._crownService.RemoveAllCrownsFromGuild(guild.GuildId);
-            await ReplyAsync("All crowns have been removed and crowns have been disabled for this server.");
-        }
-        else
-        {
-            await ReplyAsync($"Crowns have been enabled for this server.");
-        }
-
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("killcrown", RunMode = RunMode.Async)]
