@@ -26,7 +26,8 @@ public class WhoKnowsFilterService
     private const int MaxAmountOfHoursPerPeriod = 144;
     public const int PeriodAmountOfDays = 8;
 
-    public WhoKnowsFilterService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, TimeService timeService)
+    public WhoKnowsFilterService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings,
+        TimeService timeService)
     {
         this._contextFactory = contextFactory;
         this._timeService = timeService;
@@ -54,7 +55,8 @@ public class WhoKnowsFilterService
 
                     if (timeListened.totalPlayTime.TotalHours >= MaxAmountOfHoursPerPeriod)
                     {
-                        Log.Information("GWKFilter: Found user {userId} with too much playtime - {totalHours}", user.Key, (int)timeListened.totalPlayTime.TotalHours);
+                        Log.Information("GWKFilter: Found user {userId} with too much playtime - {totalHours}",
+                            user.Key, (int)timeListened.totalPlayTime.TotalHours);
 
                         newFilteredUsers.Add(new GlobalFilteredUser
                         {
@@ -63,12 +65,15 @@ public class WhoKnowsFilterService
                             OccurrenceEnd = user.Value.MaxBy(b => b.TimePlayed).TimePlayed,
                             Reason = GlobalFilterReason.PlayTimeInPeriod,
                             ReasonAmount = (int)timeListened.totalPlayTime.TotalHours,
-                            UserId = user.Key
+                            UserId = user.Key,
+                            MonthLength = 3
                         });
                     }
                     else if ((user.Value.Count / PeriodAmountOfDays) >= MaxAmountOfPlaysPerDay)
                     {
-                        Log.Information("GWKFilter: Found user {userId} with too much plays - {totalPlays} in {totalDays}", user.Key, user.Value.Count, MaxAmountOfPlaysPerDay);
+                        Log.Information(
+                            "GWKFilter: Found user {userId} with too much plays - {totalPlays} in {totalDays}",
+                            user.Key, user.Value.Count, MaxAmountOfPlaysPerDay);
 
                         newFilteredUsers.Add(new GlobalFilteredUser
                         {
@@ -77,7 +82,8 @@ public class WhoKnowsFilterService
                             OccurrenceEnd = user.Value.MaxBy(b => b.TimePlayed).TimePlayed,
                             Reason = GlobalFilterReason.AmountPerPeriod,
                             ReasonAmount = user.Value.Count,
-                            UserId = user.Key
+                            UserId = user.Key,
+                            MonthLength = 3
                         });
                     }
                 }
@@ -109,13 +115,56 @@ public class WhoKnowsFilterService
                 .Select(s => s.Key)
                 .ToHashSet();
 
-            Log.Information("GWKFilter: Found {filterCount} existing filtered users to skip", existingFilteredUsersHash.Count);
+            Log.Information("GWKFilter: Found {filterCount} existing filtered users to skip",
+                existingFilteredUsersHash.Count);
 
             newFilteredUsers = newFilteredUsers
                 .Where(w => !existingFilteredUsersHash.Contains(w.UserId.GetValueOrDefault()))
                 .ToList();
 
-            Log.Information("GWKFilter: Found {filterCount} users to filter after removing existing users", newFilteredUsers.Count);
+            Log.Information("GWKFilter: Found {filterCount} users to filter after removing existing users",
+                newFilteredUsers.Count);
+
+            var newFilteredUsersHash = newFilteredUsers.Select(s => s.UserId).ToHashSet();
+            var userFilterHistory = await db.GlobalFilteredUsers
+                .Where(w =>  w.UserId != null && newFilteredUsersHash.Contains(w.UserId))
+                .OrderBy(o => o.Created)
+                .GroupBy(g => g.UserId)
+                .ToDictionaryAsync(d => d.Key, d => d.ToList());
+
+            foreach (var filteredUser in newFilteredUsers)
+            {
+                if (!userFilterHistory.TryGetValue(filteredUser.UserId, out var userHistory))
+                {
+                    filteredUser.MonthLength = 3;
+                    continue;
+                }
+
+                var allViolations = userHistory.OrderBy(o => o.Created).ToList();
+
+                var consecutiveViolations = 1;
+                var lastViolationDate = allViolations[0].Created;
+
+                // Check if at least 3 violations occured with at least 4 weeks between each violation
+                for (var i = 1; i < allViolations.Count; i++)
+                {
+                    var currentViolation = allViolations[i];
+                    var weeksBetween = (currentViolation.Created - lastViolationDate).TotalDays / 7;
+
+                    if (weeksBetween >= 4)
+                    {
+                        consecutiveViolations++;
+                        lastViolationDate = currentViolation.Created;
+                    }
+                }
+
+                if (consecutiveViolations >= 3)
+                {
+                    Log.Information("GWKFilter: Found repeat offender {userId} - {userNameLastFm} - {consecutiveViolations} prior violations",
+                        filteredUser.UserId, filteredUser.UserNameLastFm, consecutiveViolations);
+                    filteredUser.MonthLength = 6;
+                }
+            }
 
             return newFilteredUsers;
         }
@@ -144,7 +193,8 @@ public class WhoKnowsFilterService
         {
             case GlobalFilterReason.PlayTimeInPeriod:
                 var avgPerDay = filteredUser.ReasonAmount.Value / PeriodAmountOfDays;
-                filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` hours of listening time - Around `{avgPerDay}`hr per day");
+                filterInfo.AppendLine(
+                    $"Had `{filteredUser.ReasonAmount}` hours of listening time - Around `{avgPerDay}`hr per day");
                 break;
             case GlobalFilterReason.AmountPerPeriod:
                 filterInfo.AppendLine($"Had `{filteredUser.ReasonAmount}` scrobbles ");
@@ -157,7 +207,8 @@ public class WhoKnowsFilterService
 
         if (filteredUser.OccurrenceStart.HasValue && filteredUser.OccurrenceEnd.HasValue)
         {
-            filterInfo.AppendLine($"From <t:{filteredUser.OccurrenceStart.Value.ToUnixEpochDate()}:f> to <t:{filteredUser.OccurrenceEnd.Value.ToUnixEpochDate()}:f>");
+            filterInfo.AppendLine(
+                $"From <t:{filteredUser.OccurrenceStart.Value.ToUnixEpochDate()}:f> to <t:{filteredUser.OccurrenceEnd.Value.ToUnixEpochDate()}:f>");
         }
 
         return filterInfo.ToString();

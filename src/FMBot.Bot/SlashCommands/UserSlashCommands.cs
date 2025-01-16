@@ -408,8 +408,10 @@ public class UserSlashCommands : InteractionModuleBase
                         "We moderate global leaderboards to keep them fun and fair for everybody. Remember, it's just a few numbers on a list.");
                 }
                 else if (filteredUser != null &&
-                         (filteredUser.OccurrenceEnd ?? filteredUser.Created) > DateTime.UtcNow.AddMonths(-3))
+                         (filteredUser.OccurrenceEnd ?? filteredUser.Created) >
+                         DateTime.UtcNow.AddMonths(-filteredUser.MonthLength ?? -3))
                 {
+                    var length = filteredUser.MonthLength ?? 3;
                     switch (filteredUser.Reason)
                     {
                         case GlobalFilterReason.PlayTimeInPeriod:
@@ -420,7 +422,7 @@ public class UserSlashCommands : InteractionModuleBase
                                 "For example, this can be caused by scrobbling overnight (sleep scrobbling) or because you've added scrobbles with external tools.");
                             globalStatus.AppendLine();
                             globalStatus.AppendLine(
-                                ".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the listening time threshold again and wait 3 months for the filter to expire. " +
+                                $".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the listening time threshold again and wait {length} months for the filter to expire. " +
                                 "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
 
                             infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));
@@ -434,7 +436,7 @@ public class UserSlashCommands : InteractionModuleBase
                                 "For example, this can be caused by scrobbling very short songs repeatedly or because you've added scrobbles with external tools.");
                             globalStatus.AppendLine();
                             globalStatus.AppendLine(
-                                ".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the scrobble count threshold again and wait 3 months for the filter to expire. " +
+                                $".fmbot staff is unable to remove this block. The only way to remove it is to make sure you don't go over the scrobble count threshold again and wait {length} months for the filter to expire. " +
                                 "Note that if we think you've intentionally added fake scrobbles this block can become permanent.");
 
                             infractionDetails.AppendLine(WhoKnowsFilterService.FilteredUserReason(filteredUser));

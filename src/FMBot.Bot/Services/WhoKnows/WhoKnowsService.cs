@@ -23,7 +23,9 @@ public class WhoKnowsService
         this._contextFactory = contextFactory;
     }
 
-    public static async Task<IList<WhoKnowsObjectWithUser>> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, User contextUser, string name, IGuild discordGuild = null, long? playcount = null)
+    public static async Task<IList<WhoKnowsObjectWithUser>> AddOrReplaceUserToIndexList(
+        IList<WhoKnowsObjectWithUser> users, User contextUser, string name, IGuild discordGuild = null,
+        long? playcount = null)
     {
         if (!playcount.HasValue)
         {
@@ -122,6 +124,7 @@ public class WhoKnowsService
 
             stats.ActivityThresholdFiltered = preFilterCount - users.Count;
         }
+
         if (guild.UserActivityThresholdDays.HasValue)
         {
             var preFilterCount = users.Count;
@@ -133,6 +136,7 @@ public class WhoKnowsService
 
             stats.GuildActivityThresholdFiltered = preFilterCount - users.Count;
         }
+
         if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
         {
             var preFilterCount = users.Count;
@@ -149,6 +153,7 @@ public class WhoKnowsService
 
             stats.BlockedFiltered = preFilterCount - users.Count;
         }
+
         if (guild.AllowedRoles != null && guild.AllowedRoles.Any())
         {
             var preFilterCount = users.Count;
@@ -159,6 +164,7 @@ public class WhoKnowsService
 
             stats.AllowedRolesFiltered = preFilterCount - users.Count;
         }
+
         if (guild.BlockedRoles != null && guild.BlockedRoles.Any())
         {
             var preFilterCount = users.Count;
@@ -169,6 +175,7 @@ public class WhoKnowsService
 
             stats.BlockedRolesFiltered = preFilterCount - users.Count;
         }
+
         if (roles != null && roles.Any())
         {
             var preFilterCount = users.Count;
@@ -185,7 +192,8 @@ public class WhoKnowsService
         return (stats, users.ToList());
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IEnumerable<WhoKnowsObjectWithUser> users, bool qualityFilterDisabled = false)
+    public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IEnumerable<WhoKnowsObjectWithUser> users,
+        bool qualityFilterDisabled = false)
     {
         if (qualityFilterDisabled)
         {
@@ -213,9 +221,12 @@ public class WhoKnowsService
             .ToHashSet();
 
         var existingFilterDate = DateTime.UtcNow.AddMonths(-3);
+        var existingRepeatOffenderFilterDate = DateTime.UtcNow.AddMonths(-6);
         var filteredUsers = await db.GlobalFilteredUsers
             .AsQueryable()
-            .Where(w => w.OccurrenceEnd.HasValue ? w.OccurrenceEnd.Value > existingFilterDate : w.Created > existingFilterDate)
+            .Where(w => w.OccurrenceEnd.HasValue
+                ? w.OccurrenceEnd.Value > (w.MonthLength == null || w.MonthLength == 3 ? existingFilterDate : existingRepeatOffenderFilterDate)
+                : w.Created > (w.MonthLength == null || w.MonthLength == 3 ? existingFilterDate : existingRepeatOffenderFilterDate))
             .ToListAsync();
 
         foreach (var filteredUser in filteredUsers)
@@ -237,20 +248,24 @@ public class WhoKnowsService
             .ToList();
     }
 
-    public static StringBuilder GetGlobalWhoKnowsFooter(StringBuilder footer, WhoKnowsSettings settings, ContextModel context)
+    public static StringBuilder GetGlobalWhoKnowsFooter(StringBuilder footer, WhoKnowsSettings settings,
+        ContextModel context)
     {
         if (settings.AdminView)
         {
             footer.AppendLine("Admin view enabled - not for public channels");
         }
+
         if (settings.QualityFilterDisabled)
         {
             footer.AppendLine("Globally botted and filtered users are visible");
         }
+
         if (context.ContextUser.PrivacyLevel != PrivacyLevel.Global)
         {
             footer.AppendLine($"You're currently not globally visible - use '{context.Prefix}privacy' to enable.");
         }
+
         if (settings.HidePrivateUsers)
         {
             footer.AppendLine("All private users are hidden from results");
@@ -259,7 +274,8 @@ public class WhoKnowsService
         return footer;
     }
 
-    public static IList<WhoKnowsObjectWithUser> ShowGuildMembersInGlobalWhoKnowsAsync(IList<WhoKnowsObjectWithUser> users, IDictionary<int, FullGuildUser> guildUsers)
+    public static IList<WhoKnowsObjectWithUser> ShowGuildMembersInGlobalWhoKnowsAsync(
+        IList<WhoKnowsObjectWithUser> users, IDictionary<int, FullGuildUser> guildUsers)
     {
         foreach (var user in users.Where(w => guildUsers.ContainsKey(w.UserId)))
         {
@@ -330,9 +346,13 @@ public class WhoKnowsService
             var playString = StringExtensions.GetPlaysString(user.Playcount);
 
             var positionCounter = $"{spacer}{indexNumber}.";
-            positionCounter = user.UserId == requestedUserId ?
-                user.SameServer == true ? $"__**{positionCounter}** __" : $"**{positionCounter}** " :
-                user.SameServer == true ? $"__{positionCounter}__ " : $"{positionCounter} ";
+            positionCounter = user.UserId == requestedUserId
+                ?
+                user.SameServer == true ? $"__**{positionCounter}** __" : $"**{positionCounter}** "
+                :
+                user.SameServer == true
+                    ? $"__{positionCounter}__ "
+                    : $"{positionCounter} ";
 
             if (crownModel?.Crown != null && crownModel.Crown.UserId == user.UserId)
             {
@@ -346,7 +366,6 @@ public class WhoKnowsService
             if (user.UserId == requestedUserId)
             {
                 reply.Append($" - {user.Playcount} {playString}**\n");
-
             }
             else
             {
@@ -388,7 +407,9 @@ public class WhoKnowsService
 
     public static string NameWithLink(WhoKnowsObjectWithUser user)
     {
-        var discordName = user.DiscordName != null ? StringExtensions.Sanitize(user.DiscordName.Replace("[", "").Replace("]", "")) : null;
+        var discordName = user.DiscordName != null
+            ? StringExtensions.Sanitize(user.DiscordName.Replace("[", "").Replace("]", ""))
+            : null;
 
         if (string.IsNullOrWhiteSpace(discordName))
         {

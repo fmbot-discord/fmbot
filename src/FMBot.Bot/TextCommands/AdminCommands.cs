@@ -904,15 +904,24 @@ public class AdminCommands : BaseCommandModule
             if (filteredUser != null)
             {
                 var startDate = filteredUser.OccurrenceEnd ?? filteredUser.Created;
-                if (startDate > DateTime.UtcNow.AddMonths(-3))
+
+                var length = filteredUser.MonthLength ?? 3;
+
+                if (startDate > DateTime.UtcNow.AddMonths(-length))
                 {
                     this._embed.AddField("Globally filtered", "Yes");
                     this._embed.AddField("Filter reason", WhoKnowsFilterService.FilteredUserReason(filteredUser));
 
-                    var specifiedDateTime = DateTime.SpecifyKind(startDate.AddMonths(3), DateTimeKind.Utc);
+                    var specifiedDateTime = DateTime.SpecifyKind(startDate.AddMonths(length), DateTimeKind.Utc);
                     var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
 
                     this._embed.AddField("Filter expires", $"<t:{dateValue}:R> - <t:{dateValue}:F>");
+
+                    if (filteredUser.MonthLength is > 3)
+                    {
+                        this._embed.AddField("Repeat offender", $"Yes, has been filtered at least 3 times with 3 weeks in between each filter. This filter plus all future filters will last 6 months.");
+                    }
+
                     isBannedSomewhere = true;
                 }
                 else

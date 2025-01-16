@@ -18,6 +18,8 @@ public class GlobalFilteredUser
     public DateTime? OccurrenceStart { get; set; }
     public DateTime? OccurrenceEnd { get; set; }
 
+    public int? MonthLength { get; set; }
+
     public DateTime Created { get; set; }
     public DateTime Updated { get; set; }
 }
