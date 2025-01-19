@@ -349,4 +349,23 @@ public class TrackSlashCommands : InteractionModuleBase
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
+
+    [SlashCommand("loved", "Shows your Last.fm loved tracks")]
+    [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task LovedTracksAsync(
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        _ = DeferAsync(privateResponse);
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        var response = await this._trackBuilders.LovedTracksAsync(new ContextModel(this.Context, contextUser), userSettings);
+
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
 }

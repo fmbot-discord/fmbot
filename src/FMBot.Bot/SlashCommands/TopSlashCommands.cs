@@ -94,7 +94,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         _ = DeferAsync(privateResponse);
-        
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
@@ -121,7 +121,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         _ = DeferAsync(privateResponse);
-        
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
@@ -148,7 +148,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         _ = DeferAsync(privateResponse);
-        
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;
@@ -175,7 +175,7 @@ public class TopSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         _ = DeferAsync(privateResponse);
-        
+
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         mode ??= contextUser.Mode ?? ResponseMode.Embed;

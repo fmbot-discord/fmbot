@@ -948,6 +948,105 @@ public class TrackBuilders
         return response;
     }
 
+    public async Task<ResponseModel> LovedTracksAsync(
+        ContextModel context,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var pages = new List<PageBuilder>();
+        string sessionKey = null;
+        if (!userSettings.DifferentUser && !string.IsNullOrEmpty(context.ContextUser.SessionKeyLastFm))
+        {
+            sessionKey = context.ContextUser.SessionKeyLastFm;
+        }
+
+        const int amount = 200;
+
+        var lovedTracks =
+            await this._dataSourceFactory.GetLovedTracksAsync(userSettings.UserNameLastFm, amount,
+                sessionKey: sessionKey);
+
+        if (!lovedTracks.Content.RecentTracks.Any())
+        {
+            response.Embed.WithDescription(
+                $"The Last.fm user `{userSettings.UserNameLastFm}` has no loved tracks yet! \n" +
+                $"Use `{context.Prefix}love` to add tracks to your list.");
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        if (GenericEmbedService.RecentScrobbleCallFailed(lovedTracks))
+        {
+            var errorResponse =
+                GenericEmbedService.RecentScrobbleCallFailedResponse(lovedTracks, userSettings.UserNameLastFm);
+            return errorResponse;
+        }
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var title = !userSettings.DifferentUser
+            ? userTitle
+            : $"{userSettings.UserNameLastFm}, requested by {userTitle}";
+
+        response.EmbedAuthor.WithName($"Last loved tracks for {title}");
+        response.EmbedAuthor.WithUrl(lovedTracks.Content.UserRecentTracksUrl);
+
+        if (!userSettings.DifferentUser)
+        {
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+        }
+
+        var firstTrack = lovedTracks.Content.RecentTracks[0];
+
+        var footer = $"{userSettings.UserNameLastFm} has {lovedTracks.Content.TotalAmount} loved tracks";
+        DateTime? timePlaying = null;
+
+        if (!firstTrack.NowPlaying && firstTrack.TimePlayed.HasValue)
+        {
+            timePlaying = firstTrack.TimePlayed.Value;
+        }
+
+        if (timePlaying.HasValue)
+        {
+            footer += " | Last loved track:";
+        }
+
+        var lovedTrackPages = lovedTracks.Content.RecentTracks.ChunkBy(10);
+
+        var counter = lovedTracks.Content.TotalAmount;
+        foreach (var lovedTrackPage in lovedTrackPages)
+        {
+            var lovedPageString = new StringBuilder();
+            foreach (var lovedTrack in lovedTrackPage)
+            {
+                var trackString = LastFmRepository.TrackToOneLinedLinkedString(lovedTrack);
+
+                lovedPageString.AppendLine($"`{counter}` - {trackString}");
+                counter--;
+            }
+
+            var page = new PageBuilder()
+                .WithDescription(lovedPageString.ToString())
+                .WithColor(DiscordConstants.LastFmColorRed)
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer);
+
+            if (timePlaying.HasValue)
+            {
+                page.WithTimestamp(timePlaying);
+            }
+
+            pages.Add(page);
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        return response;
+    }
+
     public async Task<ResponseModel> GuildTracksAsync(
         ContextModel context,
         Guild guild,
