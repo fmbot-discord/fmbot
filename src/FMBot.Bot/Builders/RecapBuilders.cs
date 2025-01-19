@@ -430,6 +430,11 @@ public class RecapBuilders
             {
                 if (SupporterService.IsSupporter(userSettings.UserType))
                 {
+                    response.Embed.WithAuthor(
+                        $"Listening time for {userSettings.DisplayName} - {timeSettings.Description}");
+                    var timeZone =
+                        TimeZoneInfo.FindSystemTimeZoneById(userSettings.TimeZone ?? "Eastern Standard Time");
+
                     var plays = await this._playService.GetAllUserPlays(userSettings.UserId);
                     var filteredPlays = plays
                         .Where(w =>
@@ -438,47 +443,115 @@ public class RecapBuilders
 
                     var enrichedPlays = await this._timeService.EnrichPlaysWithPlayTime(filteredPlays);
 
-                    var monthDescription = new StringBuilder();
-                    var monthGroups = enrichedPlays.enrichedPlays
-                        .OrderBy(o => o.TimePlayed)
-                        .GroupBy(g => new { g.TimePlayed.Month, g.TimePlayed.Year });
+                    var coveredTimePeriod = filteredPlays.OrderByDescending(o => o.TimePlayed).First().TimePlayed -
+                                            filteredPlays.OrderBy(o => o.TimePlayed).First().TimePlayed;
+                    var listeningTimeDescription = new StringBuilder();
 
-                    monthDescription.AppendLine(
+                    listeningTimeDescription.AppendLine(
                         $"- **`All`** " +
                         $"— **{enrichedPlays.enrichedPlays.Count}** plays " +
                         $"— **{StringExtensions.GetLongListeningTimeString(enrichedPlays.totalPlayTime)}**");
 
-                    var numberOfMonths = monthGroups.Count();
-                    if (numberOfMonths > 0)
+                    if (coveredTimePeriod.Days <= 32)
                     {
-                        var averagePlays = enrichedPlays.enrichedPlays.Count / numberOfMonths;
-                        var averageTime =
-                            TimeSpan.FromMilliseconds(enrichedPlays.totalPlayTime.TotalMilliseconds / numberOfMonths);
+                        var dayGroups = enrichedPlays.enrichedPlays
+                            .OrderBy(o => o.TimePlayed)
+                            .GroupBy(g => new
+                            {
+                                TimeZoneInfo.ConvertTime(g.TimePlayed, timeZone).Day,
+                                TimeZoneInfo.ConvertTime(g.TimePlayed, timeZone).Month,
+                                TimeZoneInfo.ConvertTime(g.TimePlayed, timeZone).Year
+                            });
 
-                        monthDescription.AppendLine(
-                            $"- **`Avg`** " +
-                            $"— **{averagePlays}** plays " +
-                            $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
-                    }
-
-                    foreach (var month in monthGroups.Take(15))
-                    {
-                        if (!enrichedPlays.enrichedPlays.Any(a =>
-                                a.TimePlayed < DateTime.UtcNow.AddMonths(-month.Key.Month)))
+                        var numberOfDays = dayGroups.Count();
+                        if (numberOfDays > 0)
                         {
-                            break;
+                            var averagePlays = enrichedPlays.enrichedPlays.Count / numberOfDays;
+                            var averageTime =
+                                TimeSpan.FromMilliseconds(enrichedPlays.totalPlayTime.TotalMilliseconds / numberOfDays);
+
+                            listeningTimeDescription.AppendLine(
+                                $"- **`Avg`** " +
+                                $"— **{averagePlays}** plays " +
+                                $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
                         }
 
-                        var time = TimeService.GetPlayTimeForEnrichedPlays(month);
-                        monthDescription.AppendLine(
-                            $"- **`{CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month.Key.Month)}`** " +
-                            $"— **{month.Count()}** plays " +
-                            $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
+                        foreach (var day in dayGroups)
+                        {
+                            var time = TimeService.GetPlayTimeForEnrichedPlays(day);
+                            listeningTimeDescription.AppendLine(
+                                $"- **`{day.Key.Day}`** " +
+                                $"— **{day.Count()}** plays " +
+                                $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
+                        }
+                    }
+                    else if (coveredTimePeriod.Days <= 800)
+                    {
+                        var monthGroups = enrichedPlays.enrichedPlays
+                            .OrderBy(o => o.TimePlayed)
+                            .GroupBy(g => new
+                            {
+                                TimeZoneInfo.ConvertTime(g.TimePlayed, timeZone).Month,
+                                TimeZoneInfo.ConvertTime(g.TimePlayed, timeZone).Year
+                            });
+
+                        var numberOfMonths = monthGroups.Count();
+                        if (numberOfMonths > 0)
+                        {
+                            var averagePlays = enrichedPlays.enrichedPlays.Count / numberOfMonths;
+                            var averageTime =
+                                TimeSpan.FromMilliseconds(
+                                    enrichedPlays.totalPlayTime.TotalMilliseconds / numberOfMonths);
+
+                            listeningTimeDescription.AppendLine(
+                                $"- **`Avg`** " +
+                                $"— **{averagePlays}** plays " +
+                                $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
+                        }
+
+                        foreach (var month in monthGroups)
+                        {
+                            var time = TimeService.GetPlayTimeForEnrichedPlays(month);
+                            listeningTimeDescription.AppendLine(
+                                $"- **`{CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month.Key.Month)}`** " +
+                                $"— **{month.Count()}** plays " +
+                                $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
+                        }
+                    }
+                    else
+                    {
+                        var yearGroups = enrichedPlays.enrichedPlays
+                            .OrderBy(o => o.TimePlayed)
+                            .GroupBy(g => new { TimeZoneInfo.ConvertTime(g.TimePlayed, timeZone).Year });
+
+                        var numberOfYears = yearGroups.Count();
+                        if (numberOfYears > 0)
+                        {
+                            var averagePlays = enrichedPlays.enrichedPlays.Count / numberOfYears;
+                            var averageTime =
+                                TimeSpan.FromMilliseconds(enrichedPlays.totalPlayTime.TotalMilliseconds /
+                                                          numberOfYears);
+
+                            listeningTimeDescription.AppendLine(
+                                $"- **`Avg`** " +
+                                $"— **{averagePlays}** plays " +
+                                $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
+                        }
+
+                        foreach (var year in yearGroups)
+                        {
+                            var time = TimeService.GetPlayTimeForEnrichedPlays(year);
+                            listeningTimeDescription.AppendLine(
+                                $"- **`{year.Key.Year}`** " +
+                                $"— **{year.Count()}** plays " +
+                                $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
+                        }
                     }
 
-                    if (monthDescription.Length > 0)
+
+                    if (listeningTimeDescription.Length > 0)
                     {
-                        response.Embed.WithDescription(monthDescription.ToString());
+                        response.Embed.WithDescription(listeningTimeDescription.ToString());
                     }
                 }
                 else
