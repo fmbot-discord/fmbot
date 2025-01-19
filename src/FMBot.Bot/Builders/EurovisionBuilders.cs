@@ -35,6 +35,14 @@ public class EurovisionBuilders
 
         PublicProperties.EurovisionYears.TryGetValue(year, out var contestants);
 
+        if (contestants == null || !contestants.Any())
+        {
+            response.ResponseType = ResponseType.Embed;
+            response.CommandResponse = CommandResponse.NotFound;
+            response.Embed.WithDescription($"No known Eurovision contestants for {year} (yet).");
+            return response;
+        }
+
         var pages = new List<PageBuilder>();
         var pageCounter = 1;
         var eurovisionPages = contestants.OrderByDescending(o => o.PointsFinal).ThenByDescending(o => o.SfNum.HasValue).ThenBy(o => o.SfNum).Chunk(8);
