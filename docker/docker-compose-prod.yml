@@ -1,102 +1,141 @@
 name: 'fmbot-prod'
+
+x-instance-defaults: &instance-defaults
+  image: ghcr.io/fmbot-discord/fmbot:main
+  restart: always
+  network_mode: host
+  volumes:
+    - /fmbot/prod/:/app/configs/
+    - /fmbot/cache/:/app/cache/
+  command: "--memory=24g"
+
 services:
   prod-1:
-    image: ghcr.io/fmbot-discord/fmbot:main
-    restart: always
-    network_mode: host
-    volumes:
-      - /fmbot/prod/:/app/configs/
-      - /fmbot/cache/:/app/cache/
-    command: "--memory=22g"
+    <<: *instance-defaults
     environment:
       - INSTANCE_NAME=prod-1
       - SHARDS_MAIN_INSTANCE=true
-      - SHARDS_JOB_MASTER=true
-      - SHARDS_TOTAL_SHARDS=384
+      - SHARDS_TOTAL_SHARDS=504
       - SHARDS_FIRST_SHARD=0
-      - SHARDS_LAST_SHARD=63
+      - SHARDS_LAST_SHARD=41
 
   prod-2:
-    image: ghcr.io/fmbot-discord/fmbot:main
-    restart: always
-    network_mode: host
-    volumes:
-      - /fmbot/prod/:/app/configs/
-      - /fmbot/cache/:/app/cache/
-    command: "--memory=22g"
+    <<: *instance-defaults
     depends_on:
       prod-1:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-2
-      - SHARDS_TOTAL_SHARDS=384
-      - SHARDS_FIRST_SHARD=64
-      - SHARDS_LAST_SHARD=127
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=42
+      - SHARDS_LAST_SHARD=83
 
   prod-3:
-    image: ghcr.io/fmbot-discord/fmbot:main
-    restart: always
-    network_mode: host
-    volumes:
-      - /fmbot/prod/:/app/configs/
-      - /fmbot/cache/:/app/cache/
-    command: "--memory=22g"
+    <<: *instance-defaults
     depends_on:
       prod-2:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-3
-      - SHARDS_TOTAL_SHARDS=384
-      - SHARDS_FIRST_SHARD=128
-      - SHARDS_LAST_SHARD=191
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=84
+      - SHARDS_LAST_SHARD=125
 
   prod-4:
-    image: ghcr.io/fmbot-discord/fmbot:main
-    restart: always
-    network_mode: host
-    volumes:
-      - /fmbot/prod/:/app/configs/
-      - /fmbot/cache/:/app/cache/
-    command: "--memory=22g"
+    <<: *instance-defaults
     depends_on:
       prod-3:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-4
-      - SHARDS_TOTAL_SHARDS=384
-      - SHARDS_FIRST_SHARD=192
-      - SHARDS_LAST_SHARD=255
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=126
+      - SHARDS_LAST_SHARD=167
 
   prod-5:
-    image: ghcr.io/fmbot-discord/fmbot:main
-    restart: always
-    network_mode: host
-    volumes:
-      - /fmbot/prod/:/app/configs/
-      - /fmbot/cache/:/app/cache/
-    command: "--memory=22g"
+    <<: *instance-defaults
     depends_on:
       prod-4:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-5
-      - SHARDS_TOTAL_SHARDS=384
-      - SHARDS_FIRST_SHARD=256
-      - SHARDS_LAST_SHARD=319
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=168
+      - SHARDS_LAST_SHARD=209
 
   prod-6:
-    image: ghcr.io/fmbot-discord/fmbot:main
-    restart: always
-    network_mode: host
-    volumes:
-      - /fmbot/prod/:/app/configs/
-      - /fmbot/cache/:/app/cache/
-    command: "--memory=22g"
+    <<: *instance-defaults
     depends_on:
       prod-5:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-6
-      - SHARDS_TOTAL_SHARDS=384
-      - SHARDS_FIRST_SHARD=320
-      - SHARDS_LAST_SHARD=383
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=210
+      - SHARDS_LAST_SHARD=251
+
+  prod-7:
+    <<: *instance-defaults
+    depends_on:
+      prod-6:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod-7
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=252
+      - SHARDS_LAST_SHARD=293
+
+  prod-8:
+    <<: *instance-defaults
+    depends_on:
+      prod-7:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod-8
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=294
+      - SHARDS_LAST_SHARD=335
+
+  prod-9:
+    <<: *instance-defaults
+    depends_on:
+      prod-8:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod-9
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=336
+      - SHARDS_LAST_SHARD=377
+
+  prod-10:
+    <<: *instance-defaults
+    depends_on:
+      prod-9:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod-10
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=378
+      - SHARDS_LAST_SHARD=419
+
+  prod-11:
+    <<: *instance-defaults
+    depends_on:
+      prod-10:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod-11
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=420
+      - SHARDS_LAST_SHARD=461
+
+  prod-12:
+    <<: *instance-defaults
+    depends_on:
+      prod-11:
+        condition: service_healthy
+    environment:
+      - INSTANCE_NAME=prod-12
+      - SHARDS_TOTAL_SHARDS=504
+      - SHARDS_FIRST_SHARD=462
+      - SHARDS_LAST_SHARD=503
