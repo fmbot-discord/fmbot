@@ -675,9 +675,13 @@ public class GameService
             .Replace("!", "")
             .Replace("’", "")
             .Replace("‘", "")
-            .Replace("…", "")
+            .Replace("…", "...")
             .Replace(":", "")
             .Replace("-", "")
+            .Replace("(", "")
+            .Replace(")", "")
+            .Replace("/", "")
+            .Replace("&", "and")
             .Replace(" ", "")
             .Replace("\"", "");
 
