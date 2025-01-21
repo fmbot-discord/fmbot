@@ -247,7 +247,7 @@ public class StaticCommands : BaseCommandModule
                 if (instance.LastHeartbeat.ToDateTime() >= DateTime.UtcNow.AddSeconds(-30))
                 {
                     instanceOverviewDescription.Append(
-                        $"{DiscordConstants.OneToFiveUp}");
+                        $"✅ ");
                 }
                 else if (instance.LastHeartbeat.ToDateTime() >= DateTime.UtcNow.AddMinutes(-1))
                 {
@@ -262,8 +262,6 @@ public class StaticCommands : BaseCommandModule
 
                 instanceOverviewDescription.Append(
                     $" `{instance.InstanceName}`");
-                instanceOverviewDescription.Append(
-                    $" - {instance.ConnectedGuilds}/{instance.TotalGuilds} guilds");
                 instanceOverviewDescription.Append(
                     $" - {instance.ConnectedShards}/{instance.TotalShards} shards");
                 instanceOverviewDescription.Append(
