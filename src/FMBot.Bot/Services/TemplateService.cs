@@ -37,15 +37,11 @@ public partial class TemplateService
         if (batch.BatchCommands.Count > 0)
         {
             await using var reader = await batch.ExecuteReaderAsync();
-            var sqlTasks = new List<Task>();
 
             foreach (var option in sqlOptions)
             {
-                var task = ProcessSqlOptionAsync(option, context, reader, options);
-                sqlTasks.Add(task);
+                await ProcessSqlOptionAsync(option, context, reader, options);
             }
-
-            await Task.WhenAll(sqlTasks);
         }
 
         var complexTasks = complexOptions.Select(o => ProcessComplexOptionAsync(o, context, options));
