@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +21,6 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using Google.Apis.YouTube.v3.Data;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -242,7 +240,7 @@ public class StaticCommands : BaseCommandModule
         {
             var instanceOverview = await this._statusHandler.GetOverviewAsync(new Empty());
 
-            foreach (var instance in instanceOverview.Instances.OrderBy(o => o.InstanceName))
+            foreach (var instance in instanceOverview.Instances.OrderBy(o => o.InstanceName.Length).ThenBy(o => o.InstanceName))
             {
                 if (instance.LastHeartbeat.ToDateTime() >= DateTime.UtcNow.AddSeconds(-30))
                 {
