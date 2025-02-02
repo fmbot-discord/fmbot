@@ -251,7 +251,7 @@ public class PlayCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-        var year = SettingService.GetYear(extraOptions).GetValueOrDefault(DateTime.UtcNow.AddDays(-90).Year);
+        var year = SettingService.GetYear(extraOptions).GetValueOrDefault(DateTime.UtcNow.AddDays(-30).Year);
 
         try
         {
