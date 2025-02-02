@@ -219,22 +219,15 @@ public class SupporterService
         goodbyeMessage.AppendLine("Your .fmbot supporter subscription has expired. Sorry to see you go!");
         goodbyeMessage.AppendLine();
 
-        if (openCollective)
-        {
-            goodbyeMessage.AppendLine(
-                "If you wish to resubscribe, use the same OpenCollective account or subscribe through Discord instead. Your supporter will then be automatically re-activated.");
-            goodbyeMessage.AppendLine();
-        }
-
         if (hadImported)
         {
             goodbyeMessage.AppendLine(
-                "The import service is no longer active, so the bot will now only use your Last.fm stats. Your imports are however saved and will be available again if you resubscribe in the future.");
+                "The import service is no longer active, so the bot will now only use your Last.fm stats without imported .fmbot data. Your imports are however saved and will be available again if you resubscribe in the future.");
             goodbyeMessage.AppendLine();
         }
 
         goodbyeMessage.AppendLine(
-            "Thanks for having supported the bot! If you have any feedback about the bot or the supporter program feel free to open a thread in #help on [our server](https://discord.gg/fmbot). You can also DM the developer who is identified on the server if preferable.");
+            "Thanks for having supported the bot! Feel free to open a thread in #help on [our server](https://discord.gg/fmbot) if you have any feedback.");
 
         var buttons = new ComponentBuilder()
             .WithButton("Resubscribe", style: ButtonStyle.Secondary,
@@ -242,6 +235,10 @@ public class SupporterService
             .WithButton("Support server", style: ButtonStyle.Link, url: "https://discord.gg/fmbot");
 
         goodbyeEmbed.WithDescription(goodbyeMessage.ToString());
+
+        goodbyeEmbed.AddField("⭐ Annual deal",
+            "Resubscribe and save 50% on .fmbot supporter with our new yearly option.");
+
         await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons.Build());
     }
 
