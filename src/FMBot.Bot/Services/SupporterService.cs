@@ -1231,7 +1231,7 @@ public class SupporterService
         {
             var discordSupporter = activeSupporters.First(f => f.DiscordUserId == dbUser.DiscordUserId);
 
-            Log.Information("Re-activating Discord supporter (user was missing type) {discordUserId}",
+            Log.Information("Re-activating supporter (user was missing type) {discordUserId}",
                 discordSupporter.DiscordUserId);
 
             await ReActivateSupporterUser(discordSupporter);
@@ -1240,12 +1240,35 @@ public class SupporterService
 
             var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
             var embed = new EmbedBuilder().WithDescription(
-                $"Re-activated Discord supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
+                $"Re-activated supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
                 $"*User had an active subscription, but their .fmbot account didn't have supporter*");
             await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
 
-            Log.Information("Re-activated Discord supporter (user was missing type) {discordUserId}",
+            Log.Information("Re-activated supporter (user was missing type) {discordUserId}",
                 discordSupporter.DiscordUserId);
+        }
+    }
+
+    public async Task CheckExpiredStripeSupporters()
+    {
+        var expiredDate = DateTime.UtcNow.AddDays(-10);
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var possiblyExpiredSupporters = await db.StripeSupporters
+            .Where(w =>
+                w.DateEnding.HasValue &&
+                w.DateEnding < expiredDate &&
+                !w.EntitlementDeleted)
+            .ToListAsync();
+
+        Log.Information("Checking expired Stripe supporters - {count} possibly expired", possiblyExpiredSupporters.Count);
+
+        foreach (var existingSupporter in possiblyExpiredSupporters)
+        {
+            var userEntitlements =
+                 this._client.Rest.GetEntitlementsAsync(userId: existingSupporter.PurchaserDiscordUserId);
+
+            await Task.Delay(500);
         }
     }
 
