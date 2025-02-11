@@ -1655,7 +1655,8 @@
     "Code": "TR",
     "Emoji": "🇹🇷",
     "Unicode": "U+1F1F9 U+1F1F7",
-    "Image": "https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/TR.svg"
+    "Image": "https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/TR.svg",
+    "Aliases": [ "Türkiye", "Turkiye" ]
   },
   {
     "Name": "Trinidad & Tobago",
