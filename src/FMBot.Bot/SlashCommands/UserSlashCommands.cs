@@ -886,13 +886,12 @@ public class UserSlashCommands : InteractionModuleBase
         string user = null)
     {
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
-
-        var differentUserButNotAllowed = false;
+        var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
 
         var userSettings =
             await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
+        var differentUserButNotAllowed = false;
         if (userSettings.DifferentUser && contextUser.UserType == UserType.User)
         {
             userSettings =
@@ -900,6 +899,56 @@ public class UserSlashCommands : InteractionModuleBase
 
             differentUserButNotAllowed = true;
         }
+
+        var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(contextUser);
+
+        var response =
+            UserBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings,
+                contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
+
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [UsernameSetRequired]
+    [ComponentInteraction($"{InteractionConstants.Judge}-*-*-*-*")]
+    public async Task JudgeResultAsync(string timeOption, string result, string discordUser,
+        string requesterDiscordUser)
+    {
+        _ = DeferAsync();
+        await this.Context.DisableInteractionButtons();
+
+        var discordUserId = ulong.Parse(discordUser);
+        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+
+        var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
+        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+        var userSettings = await this._settingService.GetOriginalContextUser(
+            discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+        var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
+        EmbedBuilder loaderEmbed;
+        if (result == "compliment")
+        {
+            loaderEmbed = new EmbedBuilder()
+                .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} compliment...")
+                .WithColor(new Color(186, 237, 169));
+        }
+        else
+        {
+            loaderEmbed = new EmbedBuilder()
+                .WithDescription(
+                    $"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...")
+                .WithColor(new Color(255, 122, 1));
+        }
+
+        await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+        {
+            e.Embed = loaderEmbed.Build();
+            e.Components = null;
+        });
+
+        var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime);
 
         List<string> topArtists;
         const int artistLimit = 15;
@@ -928,53 +977,17 @@ public class UserSlashCommands : InteractionModuleBase
 
         topArtists = topArtists.Take(artistLimit).ToList();
 
-        var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(contextUser);
+        var response = await this._userBuilder.JudgeHandleAsync(
+            new ContextModel(this.Context, contextUser, discordContextUser),
+            userSettings, result, topArtists);
 
-        try
+        await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
         {
-            var response =
-                UserBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings,
-                    contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
+            e.Embed = response.Embed.Build();
+            e.Components = null;
+        });
 
-            if (commandUsesLeft <= 0)
-            {
-                await this.Context.SendResponse(this.Interactivity, response);
-                this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                return;
-            }
-
-            var pageBuilder = new PageBuilder()
-                .WithDescription(response.Embed.Description)
-                .WithFooter(response.Embed.Footer)
-                .WithColor(DiscordConstants.InformationColorBlue);
-
-            var items = new Item[]
-            {
-                new("Compliment", new Emoji("🙂")),
-                new("Roast", new Emoji("🔥")),
-            };
-
-            var selection = new SelectionBuilder<Item>()
-                .WithOptions(items)
-                .WithStringConverter(item => item.Name)
-                .WithEmoteConverter(item => item.Emote)
-                .WithSelectionPage(pageBuilder)
-                .AddUser(this.Context.User)
-                .Build();
-
-            var result =
-                await this.Interactivity.SendSelectionAsync(selection, this.Context.Interaction,
-                    TimeSpan.FromMinutes(10));
-
-            var handledResponse = await this._userBuilder.JudgeHandleAsync(new ContextModel(this.Context, contextUser),
-                userSettings, result, topArtists);
-
-            this.Context.LogCommandUsed(handledResponse.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)")]

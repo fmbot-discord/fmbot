@@ -189,78 +189,14 @@ public class UserCommands : BaseCommandModule
             differentUserButNotAllowed = true;
         }
 
-        List<string> topArtists;
-        const int artistLimit = 15;
-        if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
-        {
-            topArtists = await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 90);
-        }
-        else
-        {
-            var lfmTopArtists =
-                await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings,
-                    artistLimit);
-            topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
-        }
-
-        if (topArtists == null || !topArtists.Any())
-        {
-            this._embed.WithDescription(
-                $"Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
-            this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-            await ReplyAsync(embed: this._embed.Build());
-            return;
-        }
-
-        topArtists = topArtists.Take(artistLimit).ToList();
-
         var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(contextUser);
 
-        try
-        {
-            var response =
-                UserBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings,
-                    contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
+        var response =
+            UserBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings,
+                contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
 
-            if (commandUsesLeft <= 0)
-            {
-                await this.Context.SendResponse(this.Interactivity, response);
-                this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                return;
-            }
-
-            var pageBuilder = new PageBuilder()
-                .WithDescription(response.Embed.Description)
-                .WithFooter(response.Embed.Footer)
-                .WithColor(DiscordConstants.InformationColorBlue);
-
-            var items = new Item[]
-            {
-                new("Compliment", new Emoji("🙂")),
-                new("Roast", new Emoji("🔥")),
-            };
-
-            var selection = new SelectionBuilder<Item>()
-                .WithOptions(items)
-                .WithStringConverter(item => item.Name)
-                .WithEmoteConverter(item => item.Emote)
-                .WithSelectionPage(pageBuilder)
-                .AddUser(this.Context.User)
-                .Build();
-
-            var result =
-                await this.Interactivity.SendSelectionAsync(selection, this.Context.Channel, TimeSpan.FromMinutes(10));
-
-            var handledResponse = await this._userBuilder.JudgeHandleAsync(
-                new ContextModel(this.Context, prfx, contextUser),
-                userSettings, result, topArtists);
-
-            this.Context.LogCommandUsed(handledResponse.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("userreactions", RunMode = RunMode.Async)]
@@ -706,7 +642,8 @@ public class UserCommands : BaseCommandModule
         }
 
         var response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, prfx, contextUser));
-        await this.Context.User.SendMessageAsync("", false, response.Embed.Build(), components: response.Components.Build());
+        await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
+            components: response.Components.Build());
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 }

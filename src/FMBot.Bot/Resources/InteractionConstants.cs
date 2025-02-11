@@ -93,6 +93,8 @@ public static class InteractionConstants
         public const string RandomCover = "randomalbum-cover";
     }
 
+    public const string Judge = "judge-picked";
+
     public const string RandomMilestone = "random-milestone";
 
     public static class ModerationCommands
