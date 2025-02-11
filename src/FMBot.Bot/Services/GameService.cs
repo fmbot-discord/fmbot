@@ -146,7 +146,6 @@ public class GameService
 
         topAlbums = topAlbums
             .Where(w => w.AlbumCoverUrl != null &&
-                        !recentJumblesHashset.Contains(w.AlbumName) &&
                         w.AlbumName.Length is > 2 and < 50 &&
                         !w.AlbumName.StartsWith(ConfigData.Data.Bot.Prefix, StringComparison.OrdinalIgnoreCase) &&
                         !w.AlbumName.StartsWith("…"))
@@ -178,7 +177,9 @@ public class GameService
         }
 
         var eligibleAlbums = topAlbums
-            .Where(w => w.UserPlaycount >= finalMinPlaycount)
+            .Where(w =>
+                !recentJumblesHashset.Contains(w.AlbumName) &&
+                w.UserPlaycount >= finalMinPlaycount)
             .ToList();
 
         Log.Information("PickAlbumForPixelation: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
