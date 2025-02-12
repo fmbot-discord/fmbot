@@ -418,8 +418,10 @@ public class ArtistBuilders
                     emote: Emote.Parse(DiscordConstants.Bandcamp), url: bandcamp.Url);
             }
         }
-
         response.Embed.WithFooter(footer.ToString());
+        
+        footer.AppendLine("Also checkout: /fwktrack and /fwkalbum");
+        
         return response;
     }
 
@@ -614,6 +616,9 @@ public class ArtistBuilders
         response.Components = components;
 
         response.Embed.WithFooter(footer.ToString());
+
+        footer.AppendLine("👯 Looking for more friend stats? Try /fwktrack and /fwkalbum!");
+
         return response;
     }
 
@@ -769,6 +774,8 @@ public class ArtistBuilders
         {
             response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
         }
+        
+        footer.AppendLine("🤝 Compare with friends using /fwktrack and /fwkalbum!");
 
         return response;
     }
@@ -902,6 +909,8 @@ public class ArtistBuilders
             response.StaticPaginator = StringService.BuildStaticPaginator(pages, optionId, optionEmote);
         }
 
+        footer.AppendLine("✨ Want to dive deeper? /fwktrack and /fwkalbum await!");
+        
         return response;
     }
 
@@ -1003,6 +1012,9 @@ public class ArtistBuilders
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
+        
+        footer.AppendLine("🎹 Looking for more stats? Try /fwktrack and /fwkalbum!");
+        
         return response;
     }
 
@@ -1170,6 +1182,9 @@ public class ArtistBuilders
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
+        
+        footer.AppendLine("🎵 Rock on! For more musical stats, try /fwktrack and /fwkalbum!");
+        
         return response;
     }
 
@@ -1347,6 +1362,9 @@ public class ArtistBuilders
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
         response.ResponseType = ResponseType.Paginator;
+
+        footer.AppendLine("🎵 Rock on! For more musical stats, try /fwktrack and /fwkalbum!");
+
         return response;
     }
 
@@ -1495,6 +1513,9 @@ public class ArtistBuilders
             $"-# *Based on {determiner} average of {Math.Round(avgPerDay, 2)} plays per day in the last {Math.Round(totalDays, 0)} days — {artistPlayCount} plays in this time period — {artistSearch.Artist.UserPlaycount} alltime*");
 
         response.Text = reply.ToString();
+
+        footer.AppendLine("✨ Ready to dive deeper into your musical universe? Try /fwktrack and /fwkalbum!");
+
         return response;
     }
 
@@ -1685,7 +1706,7 @@ public class ArtistBuilders
                 //response.Components = new ComponentBuilder().WithButton(Constants.GetPremiumServer, disabled: true, customId: "1");
             }
         }
-
+        footer.AppendLine("🎵 Ready for more stats? Try /artisttracks and /artistalbums!");
         return response;
     }
 
@@ -1846,6 +1867,8 @@ public class ArtistBuilders
             response.Embed.WithThumbnailUrl(imgUrl);
         }
 
+        footer.AppendLine("🌐 Want more global stats? Try /gwktrack and /gwkalbum!");
+
         return response;
     }
 
@@ -1971,7 +1994,9 @@ public class ArtistBuilders
         {
             response.Embed.WithThumbnailUrl(imgUrl);
         }
-
+    
+        footer.AppendLine("🎵 Want more stats? Try /fwktrack and /fwkalbum!");
+    
         return response;
     }
 
@@ -2208,6 +2233,9 @@ public class ArtistBuilders
         }
 
         response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+
+        footer.AppendLine("✨ Dive deeper with /fwktrack and /fwkalbum!");
+
         return response;
     }
 
@@ -2311,6 +2339,8 @@ public class ArtistBuilders
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
 
+        footer.AppendLine("🎵 Ready to explore more musical connections? Try /taste and /judge for more stats fun!");
+
         return response;
     }
 
@@ -2393,6 +2423,8 @@ public class ArtistBuilders
         var encoded = bitmap.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream();
         response.FileName = "iceberg.png";
+
+        footer.AppendLine("You travelled to the bottom of the iceberg. You don't need to checkout /taste anymore.");
 
         return response;
     }
