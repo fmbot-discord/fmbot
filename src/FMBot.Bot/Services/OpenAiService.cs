@@ -123,7 +123,7 @@ public class OpenAiService
         return generation;
     }
 
-    public async Task<int> GetJudgeUsesLeft(User user)
+    public async Task<(int amount, bool show)> GetJudgeUsesLeft(User user)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -131,8 +131,8 @@ public class OpenAiService
         var generatedToday =
             await db.AiGenerations.CountAsync(c => c.UserId == user.UserId && c.DateGenerated >= filterDate);
 
-        var dailyAmount = user.UserType != UserType.User ? 15 : 3;
-        return dailyAmount - generatedToday;
+        var maxDailyUses = SupporterService.IsSupporter(user.UserType) ? 25 : 4;
+        return (maxDailyUses - generatedToday, generatedToday >= maxDailyUses / 2);
     }
 
     public async Task<bool> CheckIfUsernameOffensive(string username)

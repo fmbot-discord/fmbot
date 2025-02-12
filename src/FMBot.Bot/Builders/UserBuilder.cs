@@ -210,7 +210,8 @@ public class UserBuilder
         response.Components = new ComponentBuilder()
             .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Primary)
             .WithButton("Disable", InteractionConstants.BotScrobblingDisable, style: ButtonStyle.Secondary)
-            .WithButton("Supported music bots", style: ButtonStyle.Link, url: "https://fmbot.xyz/botscrobbling/#currently-supported-bots");
+            .WithButton("Supported music bots", style: ButtonStyle.Link,
+                url: "https://fmbot.xyz/botscrobbling/#currently-supported-bots");
 
         return response;
     }
@@ -285,7 +286,8 @@ public class UserBuilder
         }
 
         description.AppendLine();
-        description.AppendLine($"Use the button below to start configuring your settings and to customize your .fmbot experience.");
+        description.AppendLine(
+            $"Use the button below to start configuring your settings and to customize your .fmbot experience.");
         description.AppendLine();
         description.AppendLine($"Please note that .fmbot is not affiliated with Last.fm.");
 
@@ -1169,7 +1171,7 @@ public class UserBuilder
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         UserType userType,
-        int usesLeftToday,
+        (int amount, bool show) usesLeftToday,
         bool differentUserButNotAllowed)
     {
         var response = new ResponseModel
@@ -1177,7 +1179,7 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
-        var hasUsesLeft = usesLeftToday > 0;
+        var hasUsesLeft = usesLeftToday.amount > 0;
 
         var description = new StringBuilder();
 
@@ -1195,15 +1197,19 @@ public class UserBuilder
             description.AppendLine("Pick using the buttons below..");
         }
 
-        description.AppendLine();
-        if (userType == UserType.User)
+        if (!SupporterService.IsSupporter(userType))
         {
             if (hasUsesLeft)
             {
-                description.AppendLine($"You can use this command `{usesLeftToday}` more times today.");
+                if (usesLeftToday.show)
+                {
+                    description.AppendLine();
+                    description.AppendLine($"You can use this command `{usesLeftToday.amount}` more times today.");
+                }
             }
             else
             {
+                description.AppendLine();
                 description.Append(
                     $"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
                 description.AppendLine(
@@ -1216,11 +1222,14 @@ public class UserBuilder
         }
         else
         {
-            if (usesLeftToday is <= 30 and > 0)
+            description.AppendLine();
+
+            if (usesLeftToday.amount is <= 30 and > 0 && usesLeftToday.show)
             {
-                description.AppendLine($"You can use this command `{usesLeftToday}` more times today.");
-                description.AppendLine($"Improved AI model has been enabled.");
+                description.AppendLine($"You can use this command `{usesLeftToday.amount}` more times today.");
             }
+
+            description.AppendLine($"⭐ Improved AI model has been enabled.");
 
             if (!hasUsesLeft)
             {
@@ -1230,28 +1239,39 @@ public class UserBuilder
 
         if (differentUserButNotAllowed)
         {
+            description.AppendLine();
             description.AppendLine(
                 $"*Sorry, only [.fmbot supporters]({Constants.GetSupporterDiscordLink}) can use this command on others.*");
         }
-
-        description.AppendLine();
-        description.AppendLine("Some top artists might be sent to OpenAI. No other data is sent.");
-        description.AppendLine(
-            "Keep in mind that music taste is subjective, and that no matter what this command or anyone else says you're free to like whatever artist you want.");
 
         if (!timeSettings.DefaultPicked)
         {
             response.Embed.WithFooter($"Time period: {timeSettings.Description}");
         }
 
+        description.AppendLine();
+        description.AppendLine(
+            "-# Keep in mind that music taste is subjective, and that no matter what this command or anyone else says you're free to like whatever artist you want.");
+
         response.Embed.WithDescription(description.ToString());
+
+        if (hasUsesLeft)
+        {
+            response.Components = new ComponentBuilder()
+                .WithButton("Compliment", emote: new Emoji("🙂"), style: ButtonStyle.Primary,
+                    customId:
+                    $"{InteractionConstants.Judge}-{timeSettings.Description}-compliment-{userSettings.DiscordUserId}-{context.DiscordUser.Id}")
+                .WithButton("Roast", emote: new Emoji("🔥"), style: ButtonStyle.Primary,
+                    customId:
+                    $"{InteractionConstants.Judge}-{timeSettings.Description}-roast-{userSettings.DiscordUserId}-{context.DiscordUser.Id}");
+        }
 
         return response;
     }
 
     public async Task<ResponseModel> JudgeHandleAsync(ContextModel context,
         UserSettingsModel userSettings,
-        InteractiveMessageResult<Item> result,
+        string selected,
         List<string> topArtists)
     {
         var response = new ResponseModel
@@ -1259,25 +1279,9 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
-        if (result.IsTimeout || !result.IsSuccess)
-        {
-            var embed = new EmbedBuilder()
-                .WithDescription("Judgement command timed out. Try again.")
-                .WithColor(DiscordConstants.InformationColorBlue);
-
-            await result.Message.ModifyAsync(x =>
-            {
-                x.Embed = embed.Build();
-                x.Components = new ComponentBuilder().Build();
-            });
-
-            response.CommandResponse = CommandResponse.WrongInput;
-            return response;
-        }
-
         var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(context.ContextUser);
 
-        if (commandUsesLeft <= 0)
+        if (commandUsesLeft.amount <= 0)
         {
             var description = new StringBuilder();
             if (context.ContextUser.UserType == UserType.User)
@@ -1292,61 +1296,16 @@ public class UserBuilder
                 description.Append($"You've ran out of command uses for today. ");
             }
 
-            await result.Message.ModifyAsync(x =>
-            {
-                x.Embed = new EmbedBuilder().WithDescription(description.ToString()).Build();
-                x.Components = new ComponentBuilder().Build();
-            });
-
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }
 
-        var selected = result.Value.Name;
-        var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
-
-        if (selected == "Compliment")
+        response = selected switch
         {
-            var embed = new EmbedBuilder()
-                .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} compliment...")
-                .WithColor(new Color(186, 237, 169));
-
-            await result.Message.ModifyAsync(x =>
-            {
-                x.Embed = embed.Build();
-                x.Components = new ComponentBuilder().Build();
-            });
-
-            var complimentResponse = await this.JudgeComplimentAsync(context, userSettings, topArtists);
-
-            await result.Message.ModifyAsync(x =>
-            {
-                x.Embed = complimentResponse.Embed.Build();
-                x.Components = new ComponentBuilder().Build();
-            });
-        }
-
-        if (selected == "Roast")
-        {
-            var embed = new EmbedBuilder()
-                .WithDescription(
-                    $"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...")
-                .WithColor(new Color(255, 122, 1));
-
-            await result.Message.ModifyAsync(x =>
-            {
-                x.Embed = embed.Build();
-                x.Components = new ComponentBuilder().Build();
-            });
-
-            var complimentResponse = await this.JudgeRoastAsync(context, userSettings, topArtists);
-
-            await result.Message.ModifyAsync(x =>
-            {
-                x.Embed = complimentResponse.Embed.Build();
-                x.Components = new ComponentBuilder().Build();
-            });
-        }
+            "compliment" => await this.JudgeComplimentAsync(context, userSettings, topArtists),
+            "roast" => await this.JudgeRoastAsync(context, userSettings, topArtists),
+            _ => response
+        };
 
         return response;
     }
