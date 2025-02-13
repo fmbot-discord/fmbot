@@ -1284,6 +1284,9 @@ public class SupporterService
         supporter.DiscordUserId = newDiscordUserId;
         db.Update(supporter);
 
+        await db.SaveChangesAsync();
+        await Task.Delay(200);
+
         var oldUser = await db.Users.FirstAsync(f => f.DiscordUserId == oldDiscordUserId);
         if (oldUser.UserType == UserType.Supporter)
         {
@@ -1300,6 +1303,9 @@ public class SupporterService
         }
         db.Update(newUser);
         await ModifyGuildRole(newDiscordUserId);
+
+        await db.SaveChangesAsync();
+        await Task.Delay(200);
 
         if (supporter.SubscriptionType == SubscriptionType.Stripe)
         {
@@ -1350,7 +1356,6 @@ public class SupporterService
         }
 
         await db.SaveChangesAsync();
-
         await Task.Delay(200);
 
         await RunFullUpdate(oldDiscordUserId);
