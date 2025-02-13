@@ -911,83 +911,91 @@ public class UserSlashCommands : InteractionModuleBase
     }
 
     [UsernameSetRequired]
-    [ComponentInteraction($"{InteractionConstants.Judge}-*-*-*-*")]
+    [ComponentInteraction($"{InteractionConstants.Judge}~*~*~*~*")]
     public async Task JudgeResultAsync(string timeOption, string result, string discordUser,
         string requesterDiscordUser)
     {
-        _ = DeferAsync();
-        await this.Context.DisableInteractionButtons();
-
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
-
-        var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
-        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(
-            discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
-
-        var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
-        EmbedBuilder loaderEmbed;
-        if (result == "compliment")
+        try
         {
-            loaderEmbed = new EmbedBuilder()
-                .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} compliment...")
-                .WithColor(new Color(186, 237, 169));
+            _ = DeferAsync();
+            await this.Context.DisableInteractionButtons();
+
+            var discordUserId = ulong.Parse(discordUser);
+            var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+
+            var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
+            var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+            var userSettings = await this._settingService.GetOriginalContextUser(
+                discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+
+            var descriptor = userSettings.DifferentUser ? $"**{userSettings.DisplayName}**'s" : "your";
+            EmbedBuilder loaderEmbed;
+            if (result == "compliment")
+            {
+                loaderEmbed = new EmbedBuilder()
+                    .WithDescription($"<a:loading:821676038102056991> Loading {descriptor} compliment...")
+                    .WithColor(new Color(186, 237, 169));
+            }
+            else
+            {
+                loaderEmbed = new EmbedBuilder()
+                    .WithDescription(
+                        $"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...")
+                    .WithColor(new Color(255, 122, 1));
+            }
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = loaderEmbed.Build();
+                e.Components = null;
+            });
+
+            var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime);
+
+            List<string> topArtists;
+            const int artistLimit = 15;
+            if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
+            {
+                topArtists =
+                    await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 90);
+            }
+            else
+            {
+                var lfmTopArtists =
+                    await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings,
+                        artistLimit);
+                topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
+            }
+
+            if (topArtists == null || !topArtists.Any())
+            {
+                var embed = new EmbedBuilder();
+                embed.WithColor(DiscordConstants.LastFmColorRed);
+                embed.WithDescription(
+                    $"Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
+                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                await RespondAsync(embed: embed.Build());
+                return;
+            }
+
+            topArtists = topArtists.Take(artistLimit).ToList();
+
+            var response = await this._userBuilder.JudgeHandleAsync(
+                new ContextModel(this.Context, contextUser, discordContextUser),
+                userSettings, result, topArtists);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = null;
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
-        else
+        catch (Exception e)
         {
-            loaderEmbed = new EmbedBuilder()
-                .WithDescription(
-                    $"<a:loading:821676038102056991> Loading {descriptor} roast (don't take it personally)...")
-                .WithColor(new Color(255, 122, 1));
+            await this.Context.HandleCommandException(e);
         }
-
-        await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
-        {
-            e.Embed = loaderEmbed.Build();
-            e.Components = null;
-        });
-
-        var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime);
-
-        List<string> topArtists;
-        const int artistLimit = 15;
-        if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
-        {
-            topArtists = await this._artistsService.GetRecentTopArtists(userSettings.DiscordUserId, daysToGoBack: 90);
-        }
-        else
-        {
-            var lfmTopArtists =
-                await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings,
-                    artistLimit);
-            topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
-        }
-
-        if (topArtists == null || !topArtists.Any())
-        {
-            var embed = new EmbedBuilder();
-            embed.WithColor(DiscordConstants.LastFmColorRed);
-            embed.WithDescription(
-                $"Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
-            this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-            await RespondAsync(embed: embed.Build());
-            return;
-        }
-
-        topArtists = topArtists.Take(artistLimit).ToList();
-
-        var response = await this._userBuilder.JudgeHandleAsync(
-            new ContextModel(this.Context, contextUser, discordContextUser),
-            userSettings, result, topArtists);
-
-        await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
-        {
-            e.Embed = response.Embed.Build();
-            e.Components = null;
-        });
-
-        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)")]
