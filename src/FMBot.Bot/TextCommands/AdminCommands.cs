@@ -919,7 +919,8 @@ public class AdminCommands : BaseCommandModule
 
                     if (filteredUser.MonthLength is > 3)
                     {
-                        this._embed.AddField("Repeat offender", $"Yes, has been filtered at least 3 times with 4 weeks in between each filter. This filter plus all future filters will last 6 months.");
+                        this._embed.AddField("Repeat offender",
+                            $"Yes, has been filtered at least 3 times with 4 weeks in between each filter. This filter plus all future filters will last 6 months.");
                     }
 
                     isBannedSomewhere = true;
@@ -2764,6 +2765,11 @@ public class AdminCommands : BaseCommandModule
                 }
 
                 var embed = new EmbedBuilder();
+
+                var stripeDescription = new StringBuilder();
+                stripeDescription.AppendLine($"Customer ID: `{stripeSupporter.StripeCustomerId}`");
+                stripeDescription.AppendLine($"Subscription ID: `{stripeSupporter.StripeSubscriptionId}`");
+                embed.AddField("Stripe details", stripeDescription.ToString());
 
                 var oldUserDescription = new StringBuilder();
                 oldUserDescription.AppendLine($"`{oldUser.DiscordUserId}` - <@{oldUser.DiscordUserId}>");
