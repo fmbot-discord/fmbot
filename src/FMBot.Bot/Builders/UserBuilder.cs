@@ -1260,10 +1260,10 @@ public class UserBuilder
             response.Components = new ComponentBuilder()
                 .WithButton("Compliment", emote: new Emoji("🙂"), style: ButtonStyle.Primary,
                     customId:
-                    $"{InteractionConstants.Judge}-{timeSettings.Description}-compliment-{userSettings.DiscordUserId}-{context.DiscordUser.Id}")
+                    $"{InteractionConstants.Judge}~{timeSettings.Description}~compliment~{userSettings.DiscordUserId}~{context.DiscordUser.Id}")
                 .WithButton("Roast", emote: new Emoji("🔥"), style: ButtonStyle.Primary,
                     customId:
-                    $"{InteractionConstants.Judge}-{timeSettings.Description}-roast-{userSettings.DiscordUserId}-{context.DiscordUser.Id}");
+                    $"{InteractionConstants.Judge}~{timeSettings.Description}~roast~{userSettings.DiscordUserId}~{context.DiscordUser.Id}");
         }
 
         return response;

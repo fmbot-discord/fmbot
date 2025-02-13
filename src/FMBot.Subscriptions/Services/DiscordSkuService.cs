@@ -29,7 +29,7 @@ public class DiscordSkuService
         this._client = client;
     }
 
-    public async Task<List<DiscordEntitlementResponseModel>> GetEntitlementsFromDiscord(ulong? discordUserId = null,
+    public async Task<List<DiscordEntitlementResponseModel>> GetRawEntitlementsFromDiscord(ulong? discordUserId = null,
         ulong? after = null, ulong? before = null)
     {
         var fetchEntitlements = this._baseUrl + $"applications/{this._appId}/entitlements";
@@ -78,10 +78,10 @@ public class DiscordSkuService
         }
     }
 
-    public async Task<List<DiscordEntitlement>> GetEntitlements(ulong? discordUserId = null, ulong? after = null,
+    public async Task<List<DiscordEntitlement>> GetGroupedEntitlements(ulong? discordUserId = null, ulong? after = null,
         ulong? before = null)
     {
-        var discordEntitlements = await GetEntitlementsFromDiscord(discordUserId, after, before);
+        var discordEntitlements = await GetRawEntitlementsFromDiscord(discordUserId, after, before);
 
         return DiscordEntitlementsToGrouped(discordEntitlements);
     }
@@ -146,6 +146,57 @@ public class DiscordSkuService
         var result =
             JsonSerializer.Deserialize<List<DiscordEntitlementResponseModel>>(requestBody, jsonSerializerOptions);
         return result;
+    }
+
+    public async Task<bool> RemoveEntitlement(ulong entitlementId)
+    {
+        var request = new HttpRequestMessage
+        {
+            RequestUri = new Uri($"{_baseUrl}applications/{this._appId}/entitlements/{entitlementId}"),
+            Method = HttpMethod.Delete,
+        };
+        request.Headers.Add("Authorization", $"Bot {_token}");
+
+        using var httpResponse = await this._client.SendAsync(request);
+
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            Log.Error("DiscordEntitlements: HTTP status code {statusCode} - {reason}", httpResponse.StatusCode,
+                httpResponse.ReasonPhrase);
+            return false;
+        }
+
+        return true;
+    }
+
+    public async Task<bool> AddStripeEntitlement(ulong discordUserId)
+    {
+        var request = new HttpRequestMessage
+        {
+            RequestUri = new Uri($"{_baseUrl}applications/{this._appId}/entitlements/"),
+            Method = HttpMethod.Post,
+            Content = new StringContent(
+                JsonSerializer.Serialize(new
+                {
+                    sku_id = 1120720816154345532,
+                    owner_id = discordUserId.ToString(),
+                    owner_type = 2
+                }),
+                Encoding.UTF8,
+                "application/json")
+        };
+        request.Headers.Add("Authorization", $"Bot {_token}");
+
+        using var httpResponse = await this._client.SendAsync(request);
+
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            Log.Error("DiscordEntitlements: HTTP status code {statusCode} - {reason}", httpResponse.StatusCode,
+                httpResponse.ReasonPhrase);
+            return false;
+        }
+
+        return true;
     }
 
     public async Task SendVoiceMessage(string audioUrl, string interactionToken)

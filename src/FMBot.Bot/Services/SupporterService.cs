@@ -874,7 +874,7 @@ public class SupporterService
 
     public async Task UpdateSingleDiscordSupporter(ulong discordUserId)
     {
-        var discordSupporters = await this._discordSkuService.GetEntitlements(discordUserId);
+        var discordSupporters = await this._discordSkuService.GetGroupedEntitlements(discordUserId);
 
         await UpdateDiscordSupporters(discordSupporters);
     }
@@ -882,7 +882,7 @@ public class SupporterService
     public async Task AddLatestDiscordSupporters()
     {
         var discordSupporters =
-            await this._discordSkuService.GetEntitlements(
+            await this._discordSkuService.GetGroupedEntitlements(
                 after: SnowflakeUtils.ToSnowflake(DateTime.UtcNow.AddDays(-1)));
 
         await UpdateDiscordSupporters(discordSupporters);
@@ -1054,7 +1054,7 @@ public class SupporterService
         foreach (var existingSupporter in possiblyExpiredSupporters)
         {
             var userEntitlements =
-                await this._discordSkuService.GetEntitlements(existingSupporter.DiscordUserId.Value);
+                await this._discordSkuService.GetGroupedEntitlements(existingSupporter.DiscordUserId.Value);
 
             var discordSupporter = userEntitlements.FirstOrDefault();
 
@@ -1261,15 +1261,80 @@ public class SupporterService
                 !w.EntitlementDeleted)
             .ToListAsync();
 
-        Log.Information("Checking expired Stripe supporters - {count} possibly expired", possiblyExpiredSupporters.Count);
+        Log.Information("Checking expired Stripe supporters - {count} possibly expired",
+            possiblyExpiredSupporters.Count);
 
         foreach (var existingSupporter in possiblyExpiredSupporters)
         {
             var userEntitlements =
-                 this._client.Rest.GetEntitlementsAsync(userId: existingSupporter.PurchaserDiscordUserId);
+                this._client.Rest.GetEntitlementsAsync(userId: existingSupporter.PurchaserDiscordUserId);
 
             await Task.Delay(500);
         }
+    }
+
+    public async Task MigrateDiscordForSupporter(ulong oldDiscordUserId, ulong newDiscordUserId)
+    {
+        Log.Information("Migrating supporter from {oldDiscordUserId} to {newDiscordUserId}", oldDiscordUserId, newDiscordUserId);
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var oldUser = await db.Users.FirstAsync(f => f.DiscordUserId == oldDiscordUserId);
+        var newUser = await db.Users.FirstAsync(f => f.DiscordUserId == newDiscordUserId);
+
+        var supporter = await db.Supporters.FirstAsync(f => f.DiscordUserId == oldDiscordUserId);
+        supporter.Notes = $"Migrated from {oldDiscordUserId} to {newDiscordUserId}";
+        db.Update(supporter);
+
+        if (supporter.SubscriptionType == SubscriptionType.Stripe)
+        {
+            var entitlements = await this._discordSkuService.GetRawEntitlementsFromDiscord(discordUserId: oldDiscordUserId);
+            var entitlementToRemove = entitlements.FirstOrDefault(w => !w.EndsAt.HasValue && w.Deleted != true);
+            if (entitlementToRemove != null)
+            {
+                Log.Information("Removing entitlement {entitlementId} from {oldDiscordUserId}", entitlementToRemove.Id,
+                    oldDiscordUserId);
+                await this._discordSkuService.RemoveEntitlement(entitlementId: entitlementToRemove.Id);
+            }
+
+            await this._discordSkuService.AddStripeEntitlement(newDiscordUserId);
+
+            var stripeSupporter =
+                await db.StripeSupporters.FirstOrDefaultAsync(f => f.PurchaserDiscordUserId == oldDiscordUserId);
+            if (stripeSupporter != null)
+            {
+                stripeSupporter.PurchaserDiscordUserId = newDiscordUserId;
+
+                if (!stripeSupporter.TimesTransferred.HasValue)
+                {
+                    stripeSupporter.TimesTransferred = 1;
+                }
+                else
+                {
+                    stripeSupporter.TimesTransferred++;
+                }
+
+                db.Update(stripeSupporter);
+
+                await this._supporterLinkService.MigrateDiscordForStripeSupporterAsync(
+                    new MigrateDiscordForStripeSupporterRequest
+                    {
+                        StripeCustomerId = stripeSupporter.StripeCustomerId,
+                        StripeSubscriptionId = stripeSupporter.StripeSubscriptionId,
+                        OldDiscordUserId = (long)oldDiscordUserId,
+                        NewDiscordUserId = (long)newDiscordUserId,
+                        OldLastFmUserName = oldUser.UserNameLastFM,
+                        NewLastFmUserName = newUser.UserNameLastFM
+                    });
+            }
+            else
+            {
+                Log.Warning("Stripe supporter doesnt have a stripe supporter in database - {discordUserId}",
+                    oldDiscordUserId);
+            }
+        }
+
+        await db.SaveChangesAsync();
     }
 
     public async Task AddRoleToNewSupporters()

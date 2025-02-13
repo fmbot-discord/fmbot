@@ -12,6 +12,8 @@ service SupporterLinkService {
   rpc GetManageLink (GetManageLinkOptions) returns (GetManageLinkReply);
 
   rpc AddOrUpdateStripeSupporter (AddOrUpdateStripeSupporterRequest) returns (AddOrUpdateStripeSupporterReply);
+
+  rpc MigrateDiscordForStripeSupporter (MigrateDiscordForStripeSupporterRequest) returns (MigrateDiscordForStripeSupporterReply);
 }
 
 
@@ -47,5 +49,18 @@ message AddOrUpdateStripeSupporterRequest {
 }
 
 message AddOrUpdateStripeSupporterReply {
+  bool success = 1;
+}
+
+message MigrateDiscordForStripeSupporterRequest {
+  string stripeCustomerId = 1;
+  string stripeSubscriptionId = 2;
+  int64 oldDiscordUserId = 3;
+  int64 newDiscordUserId = 4;
+  string oldLastFmUserName = 5;
+  string newLastFmUserName = 6;
+}
+
+message MigrateDiscordForStripeSupporterReply {
   bool success = 1;
 }

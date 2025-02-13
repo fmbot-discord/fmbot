@@ -634,6 +634,44 @@ public class AdminSlashCommands : InteractionModuleBase
         }
     }
 
+    [ComponentInteraction(InteractionConstants.ModerationCommands.MoveSupporter)]
+    public async Task MoveSupporter(string oldUserId, string newUserId)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        await RespondAsync("Moving supporter...", ephemeral: true);
+        await this.Context.DisableInteractionButtons();
+
+        try
+        {
+            await this._supporterService.MigrateDiscordForSupporter(ulong.Parse(oldUserId), ulong.Parse(newUserId));
+
+            await this._supporterService.UpdateSingleDiscordSupporter(ulong.Parse(oldUserId));
+            await this._supporterService.UpdateSingleDiscordSupporter(ulong.Parse(newUserId));
+
+            await FollowupAsync("Moving supporter completed.", ephemeral: true);
+
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+            if (message == null)
+            {
+                return;
+            }
+
+            var components =
+                new ComponentBuilder().WithButton($"Moved by {this.Context.Interaction.User.Username}", customId: "1",
+                    url: null, disabled: true, style: ButtonStyle.Danger);
+            await message.ModifyAsync(m => m.Components = components.Build());
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [ComponentInteraction($"admin-delete-user-*")]
     public async Task DeleteUser(string userId)
     {
