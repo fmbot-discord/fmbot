@@ -33,6 +33,6 @@ internal class MakiMusicBot : MusicBot
      */
     public override string GetTrackQuery(IUserMessage msg)
     {
-        return msg.Embeds.First().Description;
+        return msg.Embeds.First().Description.Replace("**", "");
     }
 }
