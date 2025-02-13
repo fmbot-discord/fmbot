@@ -2718,6 +2718,108 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
+    [Command("movesupporter")]
+    [Summary("Move stripe supporter from one account to another")]
+    public async Task MoveSupporter(string oldUserId = null, string newUserId = null)
+    {
+        try
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (oldUserId == null || newUserId == null)
+                {
+                    await ReplyAsync(
+                        "Enter the old and new id. For example, `.movesupporter 125740103539621888 356268235697553409`");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var oldUser = await this._settingService.GetDifferentUser(oldUserId);
+                var newUser = await this._settingService.GetDifferentUser(newUserId);
+
+                if (oldUser == null || newUser == null)
+                {
+                    await ReplyAsync(
+                        "One or both users could not be found. Are you sure they are registered in .fmbot?");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                if (oldUser.UserType != UserType.Supporter)
+                {
+                    await ReplyAsync(
+                        "Old user is not a supporter");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                var stripeSupporter = await this._supporterService.GetStripeSupporter(oldUser.DiscordUserId);
+
+                if (stripeSupporter == null)
+                {
+                    await ReplyAsync(
+                        "Old user is not a Stripe supporter. At the moment only transferring Stripe supporters is supported.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var embed = new EmbedBuilder();
+
+                var oldUserDescription = new StringBuilder();
+                oldUserDescription.AppendLine($"`{oldUser.DiscordUserId}` - <@{oldUser.DiscordUserId}>");
+                oldUserDescription.AppendLine($"Last.fm: `{oldUser.UserNameLastFM}`");
+                if (oldUser.LastUsed.HasValue)
+                {
+                    var specifiedDateTime = DateTime.SpecifyKind(oldUser.LastUsed.Value, DateTimeKind.Utc);
+                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                    oldUserDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
+                }
+
+                embed.AddField($"Old user - {oldUser.UserId} {oldUser.UserType.UserTypeToIcon()}",
+                    oldUserDescription.ToString());
+
+                var newUserDescription = new StringBuilder();
+                newUserDescription.AppendLine($"`{newUser.DiscordUserId}` - <@{newUser.DiscordUserId}>");
+                newUserDescription.AppendLine($"Last.fm: `{newUser.UserNameLastFM}`");
+                if (newUser.LastUsed.HasValue)
+                {
+                    var specifiedDateTime = DateTime.SpecifyKind(newUser.LastUsed.Value, DateTimeKind.Utc);
+                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                    newUserDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
+                }
+
+                embed.AddField($"New user - {newUser.UserId} {newUser.UserType.UserTypeToIcon()}",
+                    newUserDescription.ToString());
+
+                if (!string.Equals(oldUser.UserNameLastFM, newUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
+                {
+                    embed.AddField("⚠️ Warning ⚠️", "Last.fm usernames are different, are you sure?");
+                }
+
+                embed.WithDescription(
+                    "This will move over Stripe supporter from one user to another and update their details within the Stripe dashboard. This can take a few seconds to complete.");
+
+                var components = new ComponentBuilder().WithButton("Move supporter",
+                    customId: $"move-supporter-{oldUser.DiscordUserId}-{newUser.DiscordUserId}", ButtonStyle.Danger);
+
+                await ReplyAsync(null, embed: embed.Build(), allowedMentions: AllowedMentions.None,
+                    components: components.Build());
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("You are not authorized to use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [Command("deleteuser")]
     [Summary("Remove a user")]
     [Alias("removeuser")]
