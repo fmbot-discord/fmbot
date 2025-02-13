@@ -649,9 +649,6 @@ public class AdminSlashCommands : InteractionModuleBase
         {
             await this._supporterService.MigrateDiscordForSupporter(ulong.Parse(oldUserId), ulong.Parse(newUserId));
 
-            await this._supporterService.UpdateSingleDiscordSupporter(ulong.Parse(oldUserId));
-            await this._supporterService.UpdateSingleDiscordSupporter(ulong.Parse(newUserId));
-
             await FollowupAsync("Moving supporter completed.", ephemeral: true);
 
             var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
