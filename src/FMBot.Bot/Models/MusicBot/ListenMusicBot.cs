@@ -20,9 +20,9 @@ internal partial class ListenMusicBot : MusicBot
         }
 
         var embed = msg.Embeds.First();
-        
+
         // Check if it's a Listen bot embed based on the constant URL and image
-        return embed.Url != ListenBotUrl || 
+        return embed.Url != ListenBotUrl ||
                embed.Image?.Url != ListenBotImageUrl;
     }
 
@@ -35,8 +35,8 @@ internal partial class ListenMusicBot : MusicBot
     public override string GetTrackQuery(IUserMessage msg)
     {
         var embed = msg.Embeds.First();
-        
-        if (string.IsNullOrWhiteSpace(embed.Title) || 
+
+        if (string.IsNullOrWhiteSpace(embed.Title) ||
             string.IsNullOrWhiteSpace(embed.Description))
         {
             return string.Empty;
@@ -44,7 +44,7 @@ internal partial class ListenMusicBot : MusicBot
 
         // Remove the "-# " prefix from the description to get the artist name
         var artist = embed.Description.Replace("-# ", "").Trim();
-        
-        return $"{embed.Title} {artist}";
+
+        return $"{artist} - {embed.Title}";
     }
 }
