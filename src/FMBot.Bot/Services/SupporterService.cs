@@ -1279,12 +1279,33 @@ public class SupporterService
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var oldUser = await db.Users.FirstAsync(f => f.DiscordUserId == oldDiscordUserId);
-        var newUser = await db.Users.FirstAsync(f => f.DiscordUserId == newDiscordUserId);
-
         var supporter = await db.Supporters.FirstAsync(f => f.DiscordUserId == oldDiscordUserId);
         supporter.Notes = $"Migrated from {oldDiscordUserId} to {newDiscordUserId}";
+        supporter.DiscordUserId = newDiscordUserId;
         db.Update(supporter);
+
+        await db.SaveChangesAsync();
+        await Task.Delay(200);
+
+        var oldUser = await db.Users.FirstAsync(f => f.DiscordUserId == oldDiscordUserId);
+        if (oldUser.UserType == UserType.Supporter)
+        {
+            oldUser.UserType = UserType.User;
+        }
+        oldUser.DataSource = DataSource.LastFm;
+        db.Update(oldUser);
+        await ModifyGuildRole(oldDiscordUserId, false);
+
+        var newUser = await db.Users.FirstAsync(f => f.DiscordUserId == newDiscordUserId);
+        if (newUser.UserType == UserType.User)
+        {
+            newUser.UserType = UserType.Supporter;
+        }
+        db.Update(newUser);
+        await ModifyGuildRole(newDiscordUserId);
+
+        await db.SaveChangesAsync();
+        await Task.Delay(200);
 
         if (supporter.SubscriptionType == SubscriptionType.Stripe)
         {
@@ -1335,6 +1356,17 @@ public class SupporterService
         }
 
         await db.SaveChangesAsync();
+        await Task.Delay(200);
+
+        await RunFullUpdate(oldDiscordUserId);
+        await RunFullUpdate(newDiscordUserId);
+
+        var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+        var embed = new EmbedBuilder().WithDescription(
+            $"Moved supporter:\n" +
+            $"- Old: {oldDiscordUserId} - <@{oldDiscordUserId}>\n" +
+            $"- New: {newDiscordUserId} - <@{newDiscordUserId}>");
+        await supporterAuditLogChannel.SendMessageAsync(embeds: [embed.Build()]);
     }
 
     public async Task AddRoleToNewSupporters()

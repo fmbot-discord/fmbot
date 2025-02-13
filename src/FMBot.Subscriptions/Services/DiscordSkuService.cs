@@ -161,7 +161,7 @@ public class DiscordSkuService
 
         if (!httpResponse.IsSuccessStatusCode)
         {
-            Log.Error("DiscordEntitlements: HTTP status code {statusCode} - {reason}", httpResponse.StatusCode,
+            Log.Error("DiscordEntitlements - Remove entitlement - HTTP status code {statusCode} - {reason}", httpResponse.StatusCode,
                 httpResponse.ReasonPhrase);
             return false;
         }
@@ -173,7 +173,7 @@ public class DiscordSkuService
     {
         var request = new HttpRequestMessage
         {
-            RequestUri = new Uri($"{_baseUrl}applications/{this._appId}/entitlements/"),
+            RequestUri = new Uri($"{_baseUrl}applications/{this._appId}/entitlements"),
             Method = HttpMethod.Post,
             Content = new StringContent(
                 JsonSerializer.Serialize(new
@@ -191,7 +191,7 @@ public class DiscordSkuService
 
         if (!httpResponse.IsSuccessStatusCode)
         {
-            Log.Error("DiscordEntitlements: HTTP status code {statusCode} - {reason}", httpResponse.StatusCode,
+            Log.Error("DiscordEntitlements - Add entitlement - HTTP status code {statusCode} - {reason}", httpResponse.StatusCode,
                 httpResponse.ReasonPhrase);
             return false;
         }
