@@ -1,11 +1,13 @@
-using System.Linq;
 using Discord;
+using System.Linq;
 
 namespace FMBot.Bot.Models.MusicBot;
 
 internal partial class ListenMusicBot : MusicBot
 {
-    private const string NowPlaying = "Now Playing";
+    private const string ListenBotUrl = "https://listenbot.site";
+    private const string ListenBotImageUrl = "https://i.imgur.com/Bes7wpk.png";
+
     public ListenMusicBot() : base("Listen")
     {
     }
@@ -17,26 +19,32 @@ internal partial class ListenMusicBot : MusicBot
             return true;
         }
 
-        var title = msg.Embeds.First().Title;
-        return string.IsNullOrEmpty(title) || !title.Contains(NowPlaying);
+        var embed = msg.Embeds.First();
+
+        // Check if it's a Listen bot embed based on the constant URL and image
+        return embed.Url != ListenBotUrl ||
+               embed.Image?.Url != ListenBotImageUrl;
     }
 
     /**
      * Example:
-     * Mall Grab - [Menace II Society](https://help.soundcloud.com/hc/en-us/articles/4402636813979-What-are-SoundCloud-s-copyright-policies)
+     * Title: "I Feel It Coming (feat. Daft Punk)"
+     * Description: "-# The Weeknd"
+     * Returns: "I Feel It Coming The Weeknd"
      */
     public override string GetTrackQuery(IUserMessage msg)
     {
-        var content = msg.Embeds.First().Description;
+        var embed = msg.Embeds.First();
 
-        if (string.IsNullOrWhiteSpace(content))
+        if (string.IsNullOrWhiteSpace(embed.Title) ||
+            string.IsNullOrWhiteSpace(embed.Description))
         {
             return string.Empty;
         }
 
-        return ListenMusicBotRegex().Replace(msg.Embeds.First().Description, "$1");
-    }
+        // Remove the "-# " prefix from the description to get the artist name
+        var artist = embed.Description.Replace("-# ", "").Trim();
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"\[(.*?)\]\(.*?\)")]
-    private static partial System.Text.RegularExpressions.Regex ListenMusicBotRegex();
+        return $"{artist} - {embed.Title}";
+    }
 }
