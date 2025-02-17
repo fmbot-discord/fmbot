@@ -11,8 +11,6 @@
     <Compile Remove="Properties\**" />
     <EmbeddedResource Remove="Properties\**" />
     <None Remove="Properties\**" />
-    <Compile Remove="Migrations\20250105161525_AddStripeLocalPricing.cs" />
-    <Compile Remove="Migrations\20250105161525_AddStripeLocalPricing.Designer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Migrations\" />
