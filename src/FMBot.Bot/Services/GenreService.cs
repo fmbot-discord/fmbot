@@ -348,7 +348,7 @@ public class GenreService
             }
             else
             {
-                if (guildUsers.TryGetValue(user.UserId, out var guildUser))
+                if (guildUsers != null && guildUsers.TryGetValue(user.UserId, out var guildUser))
                 {
                     list.Add(new WhoKnowsObjectWithUser
                     {
