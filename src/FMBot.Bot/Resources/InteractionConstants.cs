@@ -45,9 +45,28 @@ public static class InteractionConstants
 
     public const string ImportManage = "user-import-manage";
     public const string ImportSetting = "user-import-setting";
-    public const string ImportModify = "user-import-modify";
     public const string ImportClearSpotify = "user-import-clear-spotify";
     public const string ImportClearAppleMusic = "user-import-clear-applemusic";
+
+    public static class ImportModify
+    {
+        public const string Modify = "user-import-modify";
+
+        public const string PickArtistModal = "import-pickartist";
+        public const string PickAlbumModal = "import-pickalbum";
+        public const string PickTrackModal = "import-picktrack";
+
+        public const string ArtistRename = "import-artistrename";
+        public const string ArtistRenameModal = "import-artistrename-modal";
+        public const string ArtistDelete = "import-artistdelete";
+
+        public const string AlbumRename = "import-albumrename";
+        public const string AlbumDelete = "import-albumdelete";
+
+        public const string TrackRename = "import-trackrename";
+        public const string TrackDelete = "import-trackdelete";
+
+    }
 
     public const string ImportInstructionsSpotify = "import-spotify-instructions";
     public const string ImportInstructionsAppleMusic = "import-applemusic-instructions";

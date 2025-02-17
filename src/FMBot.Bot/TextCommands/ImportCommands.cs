@@ -77,7 +77,7 @@ public class ImportCommands : BaseCommandModule
     // [Summary("Allows you to modify your .fmbot imports")]
     // [Alias("modifyimport", "importsmodify", "modifyimports", "import modify")]
     // [CommandCategories(CommandCategory.UserSettings)]
-    [UsernameSetRequired]
+    // [UsernameSetRequired]
     public async Task ModifyImportAsync([Remainder] string confirmation = null)
     {
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
