@@ -1375,16 +1375,18 @@ public class ArtistBuilders
             $"**{artistSearch.Artist.UserPlaycount}** {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} for " +
             $"**{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}**";
 
-        if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
+        if (userSettings.DifferentUser)
         {
-            var recentArtistPlaycounts =
-                await this._playService.GetRecentArtistPlaycounts(userSettings.UserId, artistSearch.Artist.ArtistName);
-            if (recentArtistPlaycounts.month != 0)
-            {
-                reply +=
-                    $"\n-# *{recentArtistPlaycounts.week} {StringExtensions.GetPlaysString(recentArtistPlaycounts.week)} last week — " +
-                    $"{recentArtistPlaycounts.month} {StringExtensions.GetPlaysString(recentArtistPlaycounts.month)} last month*";
-            }
+            await this._updateService.UpdateUser(new UpdateUserQueueItem(userSettings.UserId));
+        }
+
+        var recentArtistPlaycounts =
+            await this._playService.GetRecentArtistPlaycounts(userSettings.UserId, artistSearch.Artist.ArtistName);
+        if (recentArtistPlaycounts.month != 0)
+        {
+            reply +=
+                $"\n-# *{recentArtistPlaycounts.week} {StringExtensions.GetPlaysString(recentArtistPlaycounts.week)} last week — " +
+                $"{recentArtistPlaycounts.month} {StringExtensions.GetPlaysString(recentArtistPlaycounts.month)} last month*";
         }
 
         response.Text = reply;
@@ -1632,7 +1634,7 @@ public class ArtistBuilders
 
         if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)
         {
-            var serverListeners = filteredUsersWithArtist.Count(c => c.Playcount > 0);
+            var serverListeners = filteredUsersWithArtist.DistinctBy(d => d.UserId).Count(c => c.Playcount > 0);
             var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
             var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
 
