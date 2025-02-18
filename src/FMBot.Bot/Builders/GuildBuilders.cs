@@ -159,7 +159,7 @@ public class GuildBuilders
                     var userListeningTime =
                         await this._timeService.UserPlaysToGuildLeaderboard(context.DiscordGuild, userPlays, guildUsers);
 
-                    var (filterStats, filteredTopListeningTimeUsers) = WhoKnowsService.FilterWhoKnowsObjects(userListeningTime, guild);
+                    var (filterStats, filteredTopListeningTimeUsers) = WhoKnowsService.FilterWhoKnowsObjects(userListeningTime, guildUsers,guild);
 
                     var ltPages = filteredTopListeningTimeUsers.Chunk(10).ToList();
 
@@ -209,7 +209,7 @@ public class GuildBuilders
 
                     var topPlaycountUsers = await this._playService.GetGuildUsersTotalPlaycount(context.DiscordGuild, guildUsers, guild.GuildId);
 
-                    var (filterStats, filteredPlaycountUsers) = WhoKnowsService.FilterWhoKnowsObjects(topPlaycountUsers, guild);
+                    var (filterStats, filteredPlaycountUsers) = WhoKnowsService.FilterWhoKnowsObjects(topPlaycountUsers, guildUsers,guild);
 
                     var playcountPages = filteredPlaycountUsers.Chunk(10).ToList();
 

@@ -192,7 +192,7 @@ public class AlbumBuilders
                 var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild,
                     guildUsers, guild.GuildId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
                 var (filterStats, filteredUsersWithAlbum) =
-                    WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guild);
+                    WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild);
 
                 if (filteredUsersWithAlbum.Count != 0)
                 {
@@ -364,7 +364,7 @@ public class AlbumBuilders
         usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser,
             fullAlbumName, context.DiscordGuild, album.Album.UserPlaycount);
 
-        var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guild, roles);
+        var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum,guildUsers,  guild, roles);
 
         var albumCoverUrl = album.Album.AlbumCoverUrl;
         if (cachedAlbum.SpotifyImageUrl != null)
@@ -842,7 +842,8 @@ public class AlbumBuilders
     public async Task<ResponseModel> AlbumTracksAsync(
         ContextModel context,
         UserSettingsModel userSettings,
-        string searchValue)
+        string searchValue,
+        bool orderByPlaycount = false)
     {
         var response = new ResponseModel
         {
@@ -926,66 +927,70 @@ public class AlbumBuilders
         var tracksDisplayed = 0;
         var pageNumber = 1;
 
-        for (var disc = 1; disc < amountOfDiscs + 1; disc++)
+        if (orderByPlaycount)
         {
-            if (amountOfDiscs > 1)
+        }
+        else
+        {
+            for (var disc = 1; disc < amountOfDiscs + 1; disc++)
             {
-                description.AppendLine($"`Disc {disc}`");
-            }
-
-            for (; i < albumTracks.Count; i++)
-            {
-                var albumTrack = albumTracks[i];
-
-                var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
-                    StringExtensions.SanitizeTrackNameForComparison(albumTrack.TrackName)
-                        .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
-
-                description.Append(
-                    $"{i + 1}.");
-
-                description.Append(
-                    $" **{albumTrack.TrackName}**");
-
-                if (albumTrackWithPlaycount != null)
+                if (amountOfDiscs > 1)
                 {
-                    description.Append(
-                        $" - *{albumTrackWithPlaycount.Playcount} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}*");
+                    description.AppendLine($"`Disc {disc}`");
                 }
 
-                if (albumTrack.DurationSeconds.HasValue)
+                for (; i < albumTracks.Count; i++)
                 {
-                    description.Append(albumTrackWithPlaycount == null ? " — " : " - ");
+                    var albumTrack = albumTracks[i];
 
-                    var duration = TimeSpan.FromSeconds(albumTrack.DurationSeconds.Value);
-                    var formattedTrackLength =
-                        $"{(duration.Hours == 0 ? "" : $"{duration.Hours}:")}{duration.Minutes}:{duration.Seconds:D2}";
-                    description.Append($"`{formattedTrackLength}`");
-                }
+                    var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
+                        StringExtensions.SanitizeTrackNameForComparison(albumTrack.TrackName)
+                            .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
 
-                description.AppendLine();
+                    description.Append($"{i + 1}.");
+                    description.Append($" **{albumTrack.TrackName}**");
 
-                var pageNumberDesc = $"Page {pageNumber}/{albumTracks.ChunkBy(12).Count} — ";
-
-                tracksDisplayed++;
-                if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
-                {
-                    var page = new PageBuilder()
-                        .WithDescription(description.ToString())
-                        .WithTitle($"Track playcounts for {albumName}")
-                        .WithFooter(pageNumberDesc + footer);
-
-                    if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                    if (albumTrackWithPlaycount != null)
                     {
-                        page.WithUrl(url);
+                        description.Append(
+                            $" - *{albumTrackWithPlaycount.Playcount} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}*");
                     }
 
-                    pages.Add(page);
-                    description = new StringBuilder();
-                    pageNumber++;
+                    if (albumTrack.DurationSeconds.HasValue)
+                    {
+                        description.Append(albumTrackWithPlaycount == null ? " — " : " - ");
+
+                        var duration = TimeSpan.FromSeconds(albumTrack.DurationSeconds.Value);
+                        var formattedTrackLength =
+                            $"{(duration.Hours == 0 ? "" : $"{duration.Hours}:")}{duration.Minutes}:{duration.Seconds:D2}";
+                        description.Append($"`{formattedTrackLength}`");
+                    }
+
+                    description.AppendLine();
+
+                    var pageNumberDesc = $"Page {pageNumber}/{albumTracks.ChunkBy(12).Count} — ";
+
+                    tracksDisplayed++;
+                    if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
+                    {
+                        var page = new PageBuilder()
+                            .WithDescription(description.ToString())
+                            .WithTitle($"Track playcounts for {albumName}")
+                            .WithFooter(pageNumberDesc + footer);
+
+                        if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                        {
+                            page.WithUrl(url);
+                        }
+
+                        pages.Add(page);
+                        description = new StringBuilder();
+                        pageNumber++;
+                    }
                 }
             }
         }
+
 
         dbAlbum ??= await this._albumService.GetAlbumFromDatabase(albumSearch.Album.ArtistName,
             albumSearch.Album.AlbumName);

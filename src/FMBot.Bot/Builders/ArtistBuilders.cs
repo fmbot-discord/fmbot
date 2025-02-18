@@ -280,7 +280,7 @@ public class ArtistBuilders
                 var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild,
                     guildUsers, contextGuild.GuildId, artistSearch.Artist.ArtistName);
                 var (filterStats, filteredUsersWithArtist) =
-                    WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, contextGuild);
+                    WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild);
 
                 if (filteredUsersWithArtist.Count != 0)
                 {
@@ -1550,7 +1550,7 @@ public class ArtistBuilders
             artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
         var (filterStats, filteredUsersWithArtist) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, contextGuild, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, roles);
 
         CrownModel crownModel = null;
         if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector &&
@@ -1635,8 +1635,8 @@ public class ArtistBuilders
         if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)
         {
             var serverListeners = filteredUsersWithArtist.DistinctBy(d => d.UserId).Count(c => c.Playcount > 0);
-            var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
-            var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
+            var serverPlaycount = filteredUsersWithArtist.DistinctBy(d => d.UserId).Sum(a => a.Playcount);
+            var avgServerPlaycount = filteredUsersWithArtist.DistinctBy(d => d.UserId).Average(a => a.Playcount);
 
             footer.Append("Artist - ");
             footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");

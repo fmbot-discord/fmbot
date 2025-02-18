@@ -108,7 +108,7 @@ public class WhoKnowsArtistService
                            "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
                            "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ua " +
-                           "ORDER BY playcount DESC";
+                           "ORDER BY u.last_used DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -151,32 +151,6 @@ public class WhoKnowsArtistService
         }
 
         return whoKnowsArtistList;
-    }
-
-    public static async Task<IList<WhoKnowsObjectWithUser>> GetBasicGlobalUsersForArtists(NpgsqlConnection connection, string artistName)
-    {
-        const string sql = "SELECT * " +
-                           "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
-                           "ua.user_id, " +
-                           "ua.playcount " +
-                           "FROM user_artists AS ua " +
-                           "FULL OUTER JOIN users AS u ON ua.user_id = u.user_id " +
-                           "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                           "AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM botted_users WHERE ban_active = true) " +
-                           "AND NOT UPPER(u.user_name_last_fm) = ANY(SELECT UPPER(user_name_last_fm) FROM global_filtered_users WHERE created >= NOW() - INTERVAL '3 months') " +
-                           "ORDER BY UPPER(u.user_name_last_fm) DESC, ua.playcount DESC) ua " +
-                           "ORDER BY playcount DESC";
-
-        var userArtists = (await connection.QueryAsync<WhoKnowsGlobalArtistDto>(sql, new
-        {
-            artistName
-        })).ToList();
-
-        return userArtists.Select(s => new WhoKnowsObjectWithUser
-        {
-            UserId = s.UserId,
-            Playcount = s.Playcount
-        }).ToList();
     }
 
     public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForArtists(IGuild discordGuild,

@@ -876,7 +876,8 @@ public static class TemplateOptions
 
                 var artistListeners = await context.WhoKnowsArtistService.GetIndexedUsersForArtist(null,
                     context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName);
-                artistListeners = WhoKnowsService.FilterWhoKnowsObjects(artistListeners, context.Guild)
+                artistListeners = WhoKnowsService
+                    .FilterWhoKnowsObjects(artistListeners, context.GuildUsers, context.Guild)
                     .filteredUsers;
 
                 if (artistListeners.Any())
@@ -909,7 +910,8 @@ public static class TemplateOptions
 
                 var artistListeners = await context.WhoKnowsArtistService.GetIndexedUsersForArtist(null,
                     context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName);
-                artistListeners = WhoKnowsService.FilterWhoKnowsObjects(artistListeners, context.Guild)
+                artistListeners = WhoKnowsService
+                    .FilterWhoKnowsObjects(artistListeners, context.GuildUsers, context.Guild)
                     .filteredUsers;
 
                 return artistListeners.Any()
@@ -934,7 +936,8 @@ public static class TemplateOptions
                 var albumListeners = await context.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
                     context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName,
                     context.CurrentTrack.AlbumName);
-                albumListeners = WhoKnowsService.FilterWhoKnowsObjects(albumListeners, context.Guild).filteredUsers;
+                albumListeners = WhoKnowsService
+                    .FilterWhoKnowsObjects(albumListeners, context.GuildUsers, context.Guild).filteredUsers;
 
                 if (albumListeners.Any())
                 {
@@ -966,7 +969,8 @@ public static class TemplateOptions
                 var albumListeners = await context.WhoKnowsAlbumService.GetIndexedUsersForAlbum(null,
                     context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName,
                     context.CurrentTrack.AlbumName);
-                albumListeners = WhoKnowsService.FilterWhoKnowsObjects(albumListeners, context.Guild).filteredUsers;
+                albumListeners = WhoKnowsService
+                    .FilterWhoKnowsObjects(albumListeners, context.GuildUsers, context.Guild).filteredUsers;
 
                 return albumListeners.Any()
                     ? new VariableResult($"{albumListeners.Count} album listeners", albumListeners.Count.ToString())
@@ -990,7 +994,8 @@ public static class TemplateOptions
                 var trackListeners = await context.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
                     context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName,
                     context.CurrentTrack.TrackName);
-                trackListeners = WhoKnowsService.FilterWhoKnowsObjects(trackListeners, context.Guild).filteredUsers;
+                trackListeners = WhoKnowsService
+                    .FilterWhoKnowsObjects(trackListeners, context.GuildUsers, context.Guild).filteredUsers;
 
                 if (trackListeners.Any())
                 {
@@ -1022,7 +1027,8 @@ public static class TemplateOptions
                 var trackListeners = await context.WhoKnowsTrackService.GetIndexedUsersForTrack(null,
                     context.GuildUsers, context.Guild.GuildId, context.CurrentTrack.ArtistName,
                     context.CurrentTrack.TrackName);
-                trackListeners = WhoKnowsService.FilterWhoKnowsObjects(trackListeners, context.Guild).filteredUsers;
+                trackListeners = WhoKnowsService
+                    .FilterWhoKnowsObjects(trackListeners, context.GuildUsers, context.Guild).filteredUsers;
 
                 return trackListeners.Any()
                     ? new VariableResult($"{trackListeners.Count} track listeners", trackListeners.Count.ToString())
