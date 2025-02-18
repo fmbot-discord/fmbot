@@ -1650,7 +1650,7 @@ public class AdminCommands : BaseCommandModule
         if (string.IsNullOrWhiteSpace("type"))
         {
             await ReplyAsync(
-                "Pick an embed type that you want to post. Currently available: `gwkreporter` or `nsfwreporter`");
+                "Pick an embed type that you want to post. Currently available: `gwkreporter`, `nsfwreporter` and `buysupporter`");
             return;
         }
 
@@ -1674,7 +1674,7 @@ public class AdminCommands : BaseCommandModule
 
             var description = new StringBuilder();
             description.AppendLine(
-                "Want staff to take a look at someone that might be adding artificial or fake scrobbles? Report their profile here.");
+                "Want staff to take a look at someone that might be adding artificial or fake scrobbles? Or someone that is spamming short tracks? Report their profile here.");
             description.AppendLine();
             description.AppendLine(
                 "Optionally you can add a note to your report. Keep in mind that everyone is kept to the same standard regardless of the added note.");
@@ -2965,7 +2965,7 @@ public class AdminCommands : BaseCommandModule
                 var bannedUserCount = 0;
                 var manualCheckUsers = new StringBuilder();
 
-                const int playThreshold = 6000;
+                const int playThreshold = 5000;
 
                 usersWithTrack = usersWithTrack.Where(w => w.Playcount >= playThreshold).ToList();
                 await ReplyAsync(

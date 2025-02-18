@@ -647,8 +647,9 @@ public class TrackBuilders
                     "Consider not spamming scrobbles and/or removing your scrobbles on this track if you don't want to be removed.");
 
                 Log.Information(
-                    "Displayed GlobalWhoKnows short track warning for {userId} - {discordUserId} - {userNameLastFm}",
-                    context.ContextUser.UserId, context.ContextUser.DiscordUserId, context.ContextUser.UserNameLastFM);
+                    "Displayed GlobalWhoKnows short track warning for {userId} - {discordUserId} - {userNameLastFm} - {artistName} | {trackName}",
+                    context.ContextUser.UserId, context.ContextUser.DiscordUserId, context.ContextUser.UserNameLastFM,
+                    track.Track.ArtistName, track.Track.TrackName);
             }
         }
 
