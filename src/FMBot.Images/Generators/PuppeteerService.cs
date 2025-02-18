@@ -1,5 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Ganss.Xss;
@@ -86,7 +88,7 @@ public class PuppeteerService
 
     public async Task<SKBitmap> GetWhoKnows(string type, string location, string imageUrl, string title,
         IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
-        PrivacyLevel minPrivacyLevel, UserCrown userCrown = null, string crownText = null,
+        PrivacyLevel minPrivacyLevel, NumberFormat numberFormat, UserCrown userCrown = null, string crownText = null,
         bool hidePrivateUsers = false)
     {
         await this._initializationTask;
@@ -191,7 +193,7 @@ public class PuppeteerService
             }
 
             userList.Append(GetWhoKnowsLine(positionCounter,
-                name, user.Playcount, user.UserId == requestedUserId));
+                name, user.Playcount, numberFormat, user.UserId == requestedUserId));
 
             indexNumber += 1;
             timesNameAdded += 1;
@@ -225,7 +227,7 @@ public class PuppeteerService
                 };
 
                 userList.Append(GetWhoKnowsLine($"{position}.",
-                    name, requestedUser.Playcount, true));
+                    name, requestedUser.Playcount, numberFormat, true));
             }
         }
 
@@ -233,9 +235,9 @@ public class PuppeteerService
         {
             content = content.Replace("{{users}}", userList.ToString());
 
-            content = content.Replace("{{listeners}}", whoKnowsObjects.Count(w => w.Playcount > 0).ToString());
-            content = content.Replace("{{plays}}", whoKnowsObjects.Sum(a => a.Playcount).ToString());
-            content = content.Replace("{{average}}", ((int)whoKnowsObjects.Average(a => a.Playcount)).ToString());
+            content = content.Replace("{{listeners}}", whoKnowsObjects.Count(w => w.Playcount > 0).Format(numberFormat).ToString());
+            content = content.Replace("{{plays}}", whoKnowsObjects.Sum(a => a.Playcount).Format(numberFormat).ToString());
+            content = content.Replace("{{average}}", ((int)whoKnowsObjects.Average(a => a.Playcount)).Format(numberFormat).ToString());
         }
         else
         {
@@ -254,7 +256,7 @@ public class PuppeteerService
         return SKBitmap.FromImage(SKImage.FromEncodedData(img));
     }
 
-    private static string GetWhoKnowsLine(string position, string name, int plays, bool self = false)
+    private static string GetWhoKnowsLine(string position, string name, int plays, NumberFormat numberFormat, bool self = false)
     {
         name = name.Length > 18 ? $"{name[..17]}.." : name;
         var cssClass = self ? "num own-num" : "num";
@@ -263,7 +265,7 @@ public class PuppeteerService
 
         return $"""
                 <li>
-                    <div class="{cssClass}">{position}</div> {name} <span class="float-right">{plays}</span>
+                    <div class="{cssClass}">{position}</div> {name} <span class="float-right">{plays.Format(numberFormat)}</span>
                 </li>
                 """;
     }
@@ -283,7 +285,7 @@ public class PuppeteerService
     }
 
     public async Task<SKBitmap> GetTopList(string name, string title, string type, string time, long totalDifferent,
-        long totalPlays, string imageUrl, IList<TopListObject> topListObjects)
+        long totalPlays, string imageUrl, IList<TopListObject> topListObjects, NumberFormat numberFormat)
     {
         await this._initializationTask;
 
@@ -317,8 +319,8 @@ public class PuppeteerService
         content = content.Replace("{{time}}", $"{sanitizer.Sanitize(time)} · Playcounts");
         content = content.Replace("{{type}}", sanitizer.Sanitize(type));
 
-        content = content.Replace("{{totalDifferent}}", totalDifferent.ToString());
-        content = content.Replace("{{totalPlays}}", totalPlays.ToString());
+        content = content.Replace("{{totalDifferent}}", totalDifferent.Format(numberFormat));
+        content = content.Replace("{{totalPlays}}", totalPlays.Format(numberFormat));
 
         content = imageUrl != null
             ? content.Replace("{{image-url}}", imageUrl)
@@ -353,11 +355,11 @@ public class PuppeteerService
             if (subNamesEnabled)
             {
                 userList.Append(GetTopLineWithSub(positionCounter, topItem.Name, topItem.SubName, topItem.Playcount,
-                    sanitizer));
+                    sanitizer, numberFormat));
             }
             else
             {
-                userList.Append(GetTopLine(positionCounter, topItem.Name, topItem.Playcount, sanitizer));
+                userList.Append(GetTopLine(positionCounter, topItem.Name, topItem.Playcount, sanitizer, numberFormat));
             }
 
             indexNumber += 1;
@@ -389,20 +391,20 @@ public class PuppeteerService
         return SKBitmap.FromImage(SKImage.FromEncodedData(img));
     }
 
-    private static string GetTopLine(string position, string name, long plays, HtmlSanitizer htmlSanitizer)
+    private static string GetTopLine(string position, string name, long plays, HtmlSanitizer htmlSanitizer, NumberFormat numberFormat)
     {
         name = htmlSanitizer.Sanitize(name);
         name = name.Length > 28 ? $"{name[..27]}.." : name;
 
         return $"""
                 <li>
-                    <div class="num">{position}</div> {name} <span class="float-right">{plays}</span>
+                    <div class="num">{position}</div> {name} <span class="float-right">{plays.Format(numberFormat)}</span>
                 </li>
                 """;
     }
 
     private static string GetTopLineWithSub(string position, string name, string sub, long plays,
-        HtmlSanitizer htmlSanitizer)
+        HtmlSanitizer htmlSanitizer, NumberFormat numberFormat)
     {
         name = htmlSanitizer.Sanitize(name);
         name = name.Length > 28 ? $"{name[..27]}.." : name;
@@ -414,7 +416,7 @@ public class PuppeteerService
                 <li class="flex-wrap">
                     <div class="num" style="padding-top:12px;margin-left:-8px !important;">{position}</div>
                     <div>
-                        <div>{name} <span class="float-right" style="padding-top:12px;">{plays}</span></div>
+                        <div>{name} <span class="float-right" style="padding-top:12px;">{plays.Format(numberFormat)}</span></div>
                         <div class="sub">{sub}</div>
                     </div>
                 </li>

@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Commands;
+using FMBot.Domain.Enums;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Models;
@@ -9,6 +10,7 @@ public class ContextModel
     public ContextModel(ICommandContext context, string prefix, User contextUser = null)
     {
         this.Prefix = prefix;
+        this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
         this.DiscordGuild = context.Guild;
         this.DiscordChannel = context.Channel;
         this.DiscordUser = context.User;
@@ -21,6 +23,7 @@ public class ContextModel
     public ContextModel(IInteractionContext context, User contextUser = null, IUser discordContextUser = null)
     {
         this.Prefix = "/";
+        this.NumberFormat = contextUser?.NumberFormat ?? NumberFormat.NoSeparator;
         this.DiscordGuild = context.Guild;
         this.DiscordChannel = context.Channel;
         this.DiscordUser = discordContextUser ?? context.User;
@@ -44,4 +47,6 @@ public class ContextModel
     public SelectMenuBuilder SelectMenu { get; set; }
 
     public User ContextUser { get; set; }
+
+    public NumberFormat NumberFormat { get; set; }
 }

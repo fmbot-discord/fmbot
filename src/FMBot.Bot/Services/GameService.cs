@@ -13,6 +13,8 @@ using Dapper;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -341,10 +343,11 @@ public class GameService
         await token.CancelAsync();
     }
 
-    public static List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount, CountryInfo country = null)
+    public static List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount, NumberFormat numberFormat,
+        CountryInfo country = null)
     {
         var hints = GetRandomArtistHints(artist, country);
-        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
+        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 
@@ -357,10 +360,10 @@ public class GameService
         return hints;
     }
 
-    public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount, CountryInfo country = null)
+    public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount, NumberFormat numberFormat, CountryInfo country = null)
     {
         var hints = GetRandomAlbumHints(album, artist, country);
-        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this album"));
+        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this album"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 

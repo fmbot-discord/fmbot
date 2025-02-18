@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -302,7 +303,8 @@ public class WhoKnowsService
     }
 
     public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
-        PrivacyLevel minPrivacyLevel, CrownModel crownModel = null, bool hidePrivateUsers = false)
+        PrivacyLevel minPrivacyLevel, NumberFormat numberFormat, CrownModel crownModel = null,
+        bool hidePrivateUsers = false)
     {
         var reply = new StringBuilder();
 
@@ -380,11 +382,11 @@ public class WhoKnowsService
 
             if (user.UserId == requestedUserId)
             {
-                reply.Append($" - {user.Playcount} {playString}**\n");
+                reply.Append($" - {user.Playcount.Format(numberFormat)} {playString}**\n");
             }
             else
             {
-                reply.Append($" - **{user.Playcount}** {playString}\n");
+                reply.Append($" - **{user.Playcount.Format(numberFormat)}** {playString}\n");
             }
 
             indexNumber += 1;

@@ -19,6 +19,7 @@ using FMBot.Bot.Resources;
 using Discord.Interactions;
 using FMBot.Bot.Factories;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 
 namespace FMBot.Bot.Builders;
 
@@ -116,7 +117,7 @@ public class CrownBuilders
             $"{LastfmUrlExtensions.GetUserUrl(users[currentCrown.UserId].UserNameLastFM)}/library/music/{HttpUtility.UrlEncode(artistSearch.Artist.ArtistName)}";
 
         guildUsers.TryGetValue(currentCrown.UserId, out var currentGuildUser);
-        response.Embed.AddField("Current crown holder", CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, userArtistUrl));
+        response.Embed.AddField("Current crown holder", CrownToString(currentGuildUser, users[currentCrown.UserId], currentCrown, context.NumberFormat, userArtistUrl));
 
         if (artistCrowns.Count > 1)
         {
@@ -129,7 +130,7 @@ public class CrownBuilders
             {
                 guildUsers.TryGetValue(artistCrown.UserId, out var guildUser);
 
-                crownHistory.AppendLine(CrownToString(guildUser, users[artistCrown.UserId], artistCrown));
+                crownHistory.AppendLine(CrownToString(guildUser, users[artistCrown.UserId], artistCrown, context.NumberFormat));
             }
 
             response.Embed.AddField("Crown history", crownHistory.ToString());
@@ -142,7 +143,7 @@ public class CrownBuilders
 
                 guildUsers.TryGetValue(firstCrown.UserId, out var firstGuildUser);
 
-                response.Embed.AddField("First crownholder", CrownToString(firstGuildUser, users[firstCrown.UserId], firstCrown));
+                response.Embed.AddField("First crownholder", CrownToString(firstGuildUser, users[firstCrown.UserId], firstCrown, context.NumberFormat));
             }
         }
 
@@ -155,7 +156,7 @@ public class CrownBuilders
         return response;
     }
 
-    private static string CrownToString(FullGuildUser guildUser, User user, UserCrown crown, string url = null)
+    private static string CrownToString(FullGuildUser guildUser, User user, UserCrown crown, NumberFormat numberFormat, string url = null)
     {
         var description = new StringBuilder();
 
@@ -170,7 +171,7 @@ public class CrownBuilders
             description.Append($"**{guildUser?.UserName ?? user.UserNameLastFM}** — ");
         }
 
-        description.Append($"*{crown.StartPlaycount} to {crown.CurrentPlaycount} plays*");
+        description.Append($"*{crown.StartPlaycount.Format(numberFormat)} to {crown.CurrentPlaycount.Format(numberFormat)} plays*");
 
         return description.ToString();
     }
@@ -231,7 +232,7 @@ public class CrownBuilders
             var crownPageString = new StringBuilder();
             foreach (var userCrown in crownPage)
             {
-                crownPageString.Append($"{counter}. **{userCrown.ArtistName}** — *{userCrown.CurrentPlaycount} plays*");
+                crownPageString.Append($"{counter}. **{userCrown.ArtistName}** — *{userCrown.CurrentPlaycount.Format(context.NumberFormat)} plays*");
 
                 if (crownViewType != CrownViewType.Stolen)
                 {
@@ -249,7 +250,7 @@ public class CrownBuilders
 
             var footer = new StringBuilder();
 
-            footer.AppendLine($"Page {pageCounter}/{crownPages.Count} - {userCrowns.Count} total crowns");
+            footer.AppendLine($"Page {pageCounter}/{crownPages.Count} - {userCrowns.Count.Format(context.NumberFormat)} total crowns");
 
             pages.Add(new PageBuilder()
                 .WithDescription(crownPageString.ToString())

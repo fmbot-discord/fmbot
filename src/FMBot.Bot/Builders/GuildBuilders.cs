@@ -86,7 +86,7 @@ public class GuildBuilders
 
                         var footer = new StringBuilder();
                         footer.AppendLine(
-                            $"Page {pageCounter}/{userPages.Count} - {guildUsers.Count} total .fmbot users in this server");
+                            $"Page {pageCounter}/{userPages.Count} - {guildUsers.Count.Format(context.NumberFormat)} total .fmbot users in this server");
 
                         if (filterStats.FullDescription != null)
                         {
@@ -127,7 +127,7 @@ public class GuildBuilders
                             }
 
                             crownPageString.Append($"{counter}. **{name ?? crownUser.First().User.UserNameLastFM}**");
-                            crownPageString.Append($" - *{crownUser.Count()} {StringExtensions.GetCrownsString(crownUser.Count())}*");
+                            crownPageString.Append($" - *{crownUser.Count().Format(context.NumberFormat)} {StringExtensions.GetCrownsString(crownUser.Count())}*");
                             crownPageString.AppendLine();
                             counter++;
                         }
@@ -139,7 +139,7 @@ public class GuildBuilders
                         }
 
                         footer.AppendLine(
-                            $"Page {pageCounter}/{crownPages.Count} - {guildCrownCount} total active crowns in this server");
+                            $"Page {pageCounter}/{crownPages.Count} - {guildCrownCount.Format(context.NumberFormat)} total active crowns in this server");
 
                         pages.Add(new PageBuilder()
                             .WithDescription(crownPageString.ToString())
@@ -185,8 +185,8 @@ public class GuildBuilders
                             $"7 days - From {DateTime.UtcNow.AddDays(-9):MMM dd} to {DateTime.UtcNow.AddDays(-2):MMM dd}");
 
                         footer.Append($"Page {pageCounter}/{ltPages.Count} - ");
-                        footer.Append($"{filteredTopListeningTimeUsers.Count} users - ");
-                        footer.Append($"{filteredTopListeningTimeUsers.Sum(s => s.Playcount)} total minutes");
+                        footer.Append($"{filteredTopListeningTimeUsers.Count.Format(context.NumberFormat)} users - ");
+                        footer.Append($"{filteredTopListeningTimeUsers.Sum(s => s.Playcount).Format(context.NumberFormat)} total minutes");
 
                         if (filterStats.FullDescription != null)
                         {
@@ -221,7 +221,7 @@ public class GuildBuilders
                         var playcountPageString = new StringBuilder();
                         foreach (var user in playcountPage)
                         {
-                            playcountPageString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(user)}** - *{user.Playcount} {StringExtensions.GetPlaysString(user.Playcount)}*");
+                            playcountPageString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(user)}** - *{user.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(user.Playcount)}*");
                             counter++;
                         }
 
@@ -232,8 +232,8 @@ public class GuildBuilders
                         }
 
                         footer.Append($"Page {pageCounter}/{playcountPages.Count} - ");
-                        footer.Append($"{filteredPlaycountUsers.Count} users - ");
-                        footer.Append($"{filteredPlaycountUsers.Sum(s => s.Playcount)} total plays");
+                        footer.Append($"{filteredPlaycountUsers.Count.Format(context.NumberFormat)} users - ");
+                        footer.Append($"{filteredPlaycountUsers.Sum(s => s.Playcount).Format(context.NumberFormat)} total plays");
 
                         if (filterStats.FullDescription != null)
                         {

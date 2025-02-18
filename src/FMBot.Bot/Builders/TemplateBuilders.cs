@@ -113,7 +113,7 @@ public class TemplateBuilders
         var guildUsers = await this._guildService.GetGuildUsers(guild.DiscordGuildId);
 
         var fmEmbed = await this._userService.GetTemplateFmAsync(context.ContextUser.UserId, exampleUserSettings, recentTracks.Content.RecentTracks[0],
-            recentTracks.Content.RecentTracks[1], context.ContextUser.TotalPlaycount ?? 100, guild, guildUsers);
+            recentTracks.Content.RecentTracks[1], context.ContextUser.TotalPlaycount ?? 100, context.NumberFormat, guild, guildUsers);
 
         foreach (var option in ((EmbedOption[])Enum.GetValues(typeof(EmbedOption))))
         {

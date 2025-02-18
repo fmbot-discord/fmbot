@@ -17,6 +17,8 @@ using Serilog;
 using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
 using Fergun.Interactive;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
@@ -119,7 +121,7 @@ public class GameBuilders
             artistCountry = this._countryService.GetValidCountry(databaseArtist.CountryCode);
         }
 
-        var hints = GameService.GetJumbleArtistHints(databaseArtist, artist.userPlaycount, artistCountry);
+        var hints = GameService.GetJumbleArtistHints(databaseArtist, artist.userPlaycount, context.NumberFormat, artistCountry);
         await this._gameService.JumbleStoreShowedHints(game, hints);
 
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints);
@@ -213,7 +215,7 @@ public class GameBuilders
         }
 
         var hints = GameService.GetJumbleAlbumHints(databaseAlbum, databaseArtist,
-            album.UserPlaycount.GetValueOrDefault(), artistCountry);
+            album.UserPlaycount.GetValueOrDefault(), context.NumberFormat, artistCountry);
         await this._gameService.JumbleStoreShowedHints(game, hints);
 
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints, jumbleType: JumbleType.Pixelation);
@@ -303,15 +305,15 @@ public class GameBuilders
         else
         {
             var gameStats = new StringBuilder();
-            gameStats.AppendLine($"- **{userStats.TotalGamesPlayed}** total games played");
-            gameStats.AppendLine($"- **{userStats.GamesStarted}** games started");
-            gameStats.AppendLine($"- **{userStats.GamesAnswered}** games answered");
-            gameStats.AppendLine($"- **{userStats.GamesWon}** games won");
+            gameStats.AppendLine($"- **{userStats.TotalGamesPlayed.Format(context.NumberFormat)}** total games played");
+            gameStats.AppendLine($"- **{userStats.GamesStarted.Format(context.NumberFormat)}** games started");
+            gameStats.AppendLine($"- **{userStats.GamesAnswered.Format(context.NumberFormat)}** games answered");
+            gameStats.AppendLine($"- **{userStats.GamesWon.Format(context.NumberFormat)}** games won");
             gameStats.AppendLine($"- **{decimal.Round(userStats.AvgHintsShown, 1)}** average hints shown");
             userPage.AddField("Games", gameStats.ToString());
 
             var answerStats = new StringBuilder();
-            answerStats.AppendLine($"- **{userStats.TotalAnswers}** total answers");
+            answerStats.AppendLine($"- **{userStats.TotalAnswers.Format(context.NumberFormat)}** total answers");
             answerStats.AppendLine($"- **{decimal.Round(userStats.AvgAnsweringTime, 1)}s** average answer time");
             answerStats.AppendLine(
                 $"- **{decimal.Round(userStats.AvgCorrectAnsweringTime, 1)}s** average correct answer time");
@@ -343,14 +345,14 @@ public class GameBuilders
         else
         {
             var gameStats = new StringBuilder();
-            gameStats.AppendLine($"- **{guildStats.TotalGamesPlayed}** total games played");
-            gameStats.AppendLine($"- **{guildStats.GamesSolved}** games solved");
-            gameStats.AppendLine($"- **{guildStats.TotalReshuffles}** total reshuffles");
+            gameStats.AppendLine($"- **{guildStats.TotalGamesPlayed.Format(context.NumberFormat)}** total games played");
+            gameStats.AppendLine($"- **{guildStats.GamesSolved.Format(context.NumberFormat)}** games solved");
+            gameStats.AppendLine($"- **{guildStats.TotalReshuffles.Format(context.NumberFormat)}** total reshuffles");
             gameStats.AppendLine($"- **{decimal.Round(guildStats.AvgHintsShown, 1)}** average hints shown");
             guildPage.AddField("Games", gameStats.ToString());
 
             var answerStats = new StringBuilder();
-            answerStats.AppendLine($"- **{guildStats.TotalAnswers}** total answers");
+            answerStats.AppendLine($"- **{guildStats.TotalAnswers.Format(context.NumberFormat)}** total answers");
             answerStats.AppendLine($"- **{decimal.Round(guildStats.AvgAnsweringTime, 1)}s** average answer time");
             answerStats.AppendLine(
                 $"- **{decimal.Round(guildStats.AvgCorrectAnsweringTime, 1)}s** average correct answer time");
@@ -363,7 +365,7 @@ public class GameBuilders
             foreach (var channel in guildStats.Channels.Take(5))
             {
                 channels.AppendLine(
-                    $"{counter}. <#{channel.Id}> - {channel.Count} {StringExtensions.GetGamesString(channel.Count)}");
+                    $"{counter}. <#{channel.Id}> - {channel.Count.Format(context.NumberFormat)} {StringExtensions.GetGamesString(channel.Count)}");
                 counter++;
             }
 

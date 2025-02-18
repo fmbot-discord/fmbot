@@ -119,6 +119,7 @@ public class IndexCommands : BaseCommandModule
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var numberFormat = contextUser.NumberFormat ?? NumberFormat.NoSeparator;
 
         var updateType = SettingService.GetUpdateType(options);
 
@@ -195,11 +196,11 @@ public class IndexCommands : BaseCommandModule
                 {
                     if (update.Content.RemovedRecentTracksAmount == 0)
                     {
-                        updatedDescription.AppendLine($"✅ Cached playcounts have been updated for {contextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)}.");
+                        updatedDescription.AppendLine($"✅ Cached playcounts have been updated for {contextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount.Format(numberFormat)} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)}.");
                     }
                     else
                     {
-                        updatedDescription.AppendLine($"✅ Cached playcounts have been updated for {contextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)} " +
+                        updatedDescription.AppendLine($"✅ Cached playcounts have been updated for {contextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount.Format(numberFormat)} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)} " +
                                              $"and {update.Content.RemovedRecentTracksAmount} removed {StringExtensions.GetScrobblesString(update.Content.RemovedRecentTracksAmount)}.");
                     }
 
@@ -306,7 +307,7 @@ public class IndexCommands : BaseCommandModule
 
             var result = await this._indexService.ModularUpdate(contextUser, updateType.updateType);
 
-            var description = UserService.GetIndexCompletedUserStats(contextUser, result);
+            var description = UserService.GetIndexCompletedUserStats(contextUser, result, numberFormat);
 
             await message.ModifyAsync(m =>
             {

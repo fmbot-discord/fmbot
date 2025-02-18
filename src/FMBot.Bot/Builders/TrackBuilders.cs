@@ -132,11 +132,11 @@ public class TrackBuilders
         var info = new StringBuilder();
         var footer = new StringBuilder();
 
-        stats.AppendLine($"`{trackSearch.Track.TotalListeners}` listeners");
+        stats.AppendLine($"`{trackSearch.Track.TotalListeners.Format(context.NumberFormat)}` listeners");
         stats.AppendLine(
-            $"`{trackSearch.Track.TotalPlaycount}` global {StringExtensions.GetPlaysString(trackSearch.Track.TotalPlaycount)}");
+            $"`{trackSearch.Track.TotalPlaycount.Format(context.NumberFormat)}` global {StringExtensions.GetPlaysString(trackSearch.Track.TotalPlaycount)}");
         stats.AppendLine(
-            $"`{trackSearch.Track.UserPlaycount}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} by you");
+            $"`{trackSearch.Track.UserPlaycount.Format(context.NumberFormat)}` {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} by you");
 
         if (trackSearch.Track.UserPlaycount.HasValue)
         {
@@ -350,7 +350,7 @@ public class TrackBuilders
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track",
                 $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, trackName,
-                filteredUsersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
+                filteredUsersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -362,7 +362,7 @@ public class TrackBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId,
-                PrivacyLevel.Server);
+                PrivacyLevel.Server, context.NumberFormat);
         if (filteredUsersWithTrack.Count == 0)
         {
             serverUsers = "Nobody in this server (not even you) has listened to this track.";
@@ -391,9 +391,9 @@ public class TrackBuilders
             var avgServerPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
 
             footer.Append($"Track - ");
-            footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
-            footer.AppendLine($"{(int)avgServerPlaycount} avg");
+            footer.Append($"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
+            footer.Append($"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.AppendLine($"{((int)avgServerPlaycount).Format(context.NumberFormat)} avg");
         }
 
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
@@ -488,7 +488,7 @@ public class TrackBuilders
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"from <b>{userTitle}</b>'s friends",
                 albumCoverUrl, trackName,
-                usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
+                usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -499,7 +499,7 @@ public class TrackBuilders
         }
 
         var serverUsers =
-            WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server);
+            WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
         if (!usersWithTrack.Any())
         {
             serverUsers = "None of your friends have listened to this track.";
@@ -522,9 +522,9 @@ public class TrackBuilders
             var globalPlaycount = usersWithTrack.Sum(a => a.Playcount);
             var avgPlaycount = usersWithTrack.Average(a => a.Playcount);
 
-            footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
-            footer += $"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
-            footer += $"{(int)avgPlaycount} avg";
+            footer += $"\n{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ";
+            footer += $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+            footer += $"{((int)avgPlaycount).Format(context.NumberFormat)} avg";
         }
 
         footer += $"\nFriends WhoKnow track for {userTitle}";
@@ -614,7 +614,7 @@ public class TrackBuilders
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Track", $"in <b>.fmbot 🌐</b>",
                 albumCoverUrl, trackName,
-                filteredUsersWithTrack, context.ContextUser.UserId, privacyLevel,
+                filteredUsersWithTrack, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
                 hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -626,7 +626,7 @@ public class TrackBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, context.ContextUser.UserId,
-            privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers);
         if (!filteredUsersWithTrack.Any())
         {
             serverUsers = "Nobody that uses .fmbot has listened to this track.";
@@ -660,9 +660,9 @@ public class TrackBuilders
             var avgPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
 
             footer.Append($"Global track - ");
-            footer.Append($"{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
-            footer.AppendLine($"{(int)avgPlaycount} avg");
+            footer.Append($"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append($"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
         response.Embed.WithTitle(StringExtensions.TruncateLongString($"{trackName} globally", 255));
@@ -729,7 +729,7 @@ public class TrackBuilders
         }
 
         var reply =
-            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has **{trackSearch.Track.UserPlaycount}** {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} " +
+            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has **{trackSearch.Track.UserPlaycount.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(trackSearch.Track.UserPlaycount)} " +
             $"for **{StringExtensions.Sanitize(trackSearch.Track.TrackName)}** by **{StringExtensions.Sanitize(trackSearch.Track.ArtistName)}**";
 
         if (trackSearch.Track.UserPlaycount.HasValue && !userSettings.DifferentUser)
@@ -750,8 +750,8 @@ public class TrackBuilders
         if (recentTrackPlaycounts.month != 0)
         {
             reply +=
-                $"\n-# *{recentTrackPlaycounts.week} {StringExtensions.GetPlaysString(recentTrackPlaycounts.week)} last week — " +
-                $"{recentTrackPlaycounts.month} {StringExtensions.GetPlaysString(recentTrackPlaycounts.month)} last month*";
+                $"\n-# *{recentTrackPlaycounts.week.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(recentTrackPlaycounts.week)} last week — " +
+                $"{recentTrackPlaycounts.month.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(recentTrackPlaycounts.month)} last month*";
         }
 
         response.Text = reply;
@@ -1005,7 +1005,7 @@ public class TrackBuilders
 
         var firstTrack = lovedTracks.Content.RecentTracks[0];
 
-        var footer = $"{userSettings.UserNameLastFm} has {lovedTracks.Content.TotalAmount} loved tracks";
+        var footer = $"{userSettings.UserNameLastFm} has {lovedTracks.Content.TotalAmount.Format(context.NumberFormat)} loved tracks";
         DateTime? timePlaying = null;
 
         if (!firstTrack.NowPlaying && firstTrack.TimePlayed.HasValue)
@@ -1123,8 +1123,8 @@ public class TrackBuilders
             foreach (var track in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** - **{track.TrackName}** · *{track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
-                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** - **{track.TrackName}** · *{track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)}*";
+                    ? $"`{track.ListenerCount.Format(context.NumberFormat)}` · **{track.ArtistName}** - **{track.TrackName}** · *{track.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
+                    : $"`{track.TotalPlaycount.Format(context.NumberFormat)}` · **{track.ArtistName}** - **{track.TrackName}** · *{track.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(track.ListenerCount)}*";
 
                 if (previousTopGuildTracks != null && previousTopGuildTracks.Any())
                 {
@@ -1227,7 +1227,7 @@ public class TrackBuilders
             var image = await this._puppeteerService.GetTopList(userTitle, "Top Tracks", "tracks",
                 timeSettings.Description,
                 topTracks.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), backgroundImage,
-                topTracks.TopList);
+                topTracks.TopList, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -1292,7 +1292,7 @@ public class TrackBuilders
                 if (topListSettings.Type == TopListType.Plays)
                 {
                     name.Append(
-                        $"- *{track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)}*");
+                        $"- *{track.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(track.UserPlaycount)}*");
                 }
                 else
                 {
@@ -1326,7 +1326,7 @@ public class TrackBuilders
             footer.Append($"Page {pageCounter}/{trackPages.Count}");
             if (topTracks.Content.TotalAmount.HasValue)
             {
-                footer.Append($" - {topTracks.Content.TotalAmount.Value} total tracks in this time period");
+                footer.Append($" - {topTracks.Content.TotalAmount.Value.Format(context.NumberFormat)} total tracks in this time period");
             }
 
             if (topListSettings.Billboard)

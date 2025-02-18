@@ -95,12 +95,13 @@ public class WhoKnowsTrackService
                            "u.user_name_last_fm, " +
                            "u.discord_user_id, " +
                            "u.registered_last_fm, " +
-                           "u.privacy_level " +
+                           "u.privacy_level, " +
+                           "u.last_used " +
                            "FROM user_tracks AS ut " +
                            "FULL OUTER JOIN users AS u ON ut.user_id = u.user_id " +
                            "WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
                            "ORDER BY UPPER(u.user_name_last_fm) DESC, ut.playcount DESC) ut " +
-                           "ORDER BY u.last_used DESC";
+                           "ORDER BY last_used DESC";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

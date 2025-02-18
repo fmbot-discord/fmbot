@@ -500,28 +500,28 @@ public class PlayService
         return true;
     }
 
-    public static string StreakToText(UserStreak streak, bool includeStart = true)
+    public static string StreakToText(UserStreak streak, NumberFormat numberFormat, bool includeStart = true)
     {
         var description = new StringBuilder();
         if (streak.ArtistName != null && streak.ArtistPlaycount.HasValue)
         {
             description.AppendLine(
                 $"`Artist:` **[{streak.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(streak.ArtistName)})** - " +
-                $"{GetEmojiForStreakCount(streak.ArtistPlaycount.Value)} {streak.ArtistPlaycount} {StringExtensions.GetPlaysString(streak.ArtistPlaycount)}");
+                $"{GetEmojiForStreakCount(streak.ArtistPlaycount.Value)} {streak.ArtistPlaycount.Format(numberFormat)} {StringExtensions.GetPlaysString(streak.ArtistPlaycount)}");
         }
 
         if (streak.AlbumName != null && streak.AlbumPlaycount.HasValue)
         {
             description.AppendLine(
                 $"` Album:` **[{streak.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/{HttpUtility.UrlEncode(streak.AlbumName)})** - " +
-                $"{GetEmojiForStreakCount(streak.AlbumPlaycount.Value)} {streak.AlbumPlaycount} {StringExtensions.GetPlaysString(streak.AlbumPlaycount)}");
+                $"{GetEmojiForStreakCount(streak.AlbumPlaycount.Value)} {streak.AlbumPlaycount.Format(numberFormat)} {StringExtensions.GetPlaysString(streak.AlbumPlaycount)}");
         }
 
         if (streak.TrackName != null && streak.TrackPlaycount.HasValue)
         {
             description.AppendLine(
                 $"` Track:` **[{streak.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/_/{HttpUtility.UrlEncode(streak.TrackName)})** - " +
-                $"{GetEmojiForStreakCount(streak.TrackPlaycount.Value)} {streak.TrackPlaycount} {StringExtensions.GetPlaysString(streak.TrackPlaycount)}");
+                $"{GetEmojiForStreakCount(streak.TrackPlaycount.Value)} {streak.TrackPlaycount.Format(numberFormat)} {StringExtensions.GetPlaysString(streak.TrackPlaycount)}");
         }
 
         if (description.Length == 0)
