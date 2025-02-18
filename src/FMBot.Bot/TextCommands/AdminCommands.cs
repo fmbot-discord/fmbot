@@ -21,11 +21,14 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using Hangfire;
 using Hangfire.Storage;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -55,6 +58,9 @@ public class AdminCommands : BaseCommandModule
     private readonly PlayService _playService;
     private readonly DiscordShardedClient _client;
     private readonly WebhookService _webhookService;
+    private readonly TrackService _trackService;
+    private readonly WhoKnowsTrackService _whoKnowsTrackService;
+    private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
     private InteractiveService Interactivity { get; }
 
@@ -77,7 +83,8 @@ public class AdminCommands : BaseCommandModule
         ArtistsService artistsService,
         AliasService aliasService,
         WhoKnowsFilterService whoKnowsFilterService,
-        PlayService playService, DiscordShardedClient client, WebhookService webhookService) : base(botSettings)
+        PlayService playService, DiscordShardedClient client, WebhookService webhookService, TrackService trackService,
+        WhoKnowsTrackService whoKnowsTrackService, IDbContextFactory<FMBotDbContext> contextFactory) : base(botSettings)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -99,6 +106,9 @@ public class AdminCommands : BaseCommandModule
         this._playService = playService;
         this._client = client;
         this._webhookService = webhookService;
+        this._trackService = trackService;
+        this._whoKnowsTrackService = whoKnowsTrackService;
+        this._contextFactory = contextFactory;
     }
 
     //[Command("debug")]
@@ -2921,6 +2931,107 @@ public class AdminCommands : BaseCommandModule
                     await threadChannel.ModifyAsync(m => m.AppliedTags = new List<ulong> { tagToApply.Id });
                 }
             }
+        }
+    }
+
+    [Command("banshortlisteners")]
+    public async Task BanShortListeners([Remainder] string trackValues = null)
+    {
+        try
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var response = new ResponseModel
+                {
+                    ResponseType = ResponseType.Embed,
+                };
+
+                var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                var shortTrack = await this._trackService.SearchTrack(response, this.Context.User, trackValues,
+                    contextUser.UserNameLastFM);
+                if (shortTrack.Track == null)
+                {
+                    await ReplyAsync("Couldn't find track");
+                    return;
+                }
+
+                var usersWithTrack = await this._whoKnowsTrackService.GetGlobalUsersForTrack(this.Context.Guild,
+                    shortTrack.Track.ArtistName, shortTrack.Track.TrackName);
+
+                var bannedUsers = new StringBuilder();
+                var bannedUserCount = 0;
+                var manualCheckUsers = new StringBuilder();
+
+                const int playThreshold = 6000;
+
+                usersWithTrack = usersWithTrack.Where(w => w.Playcount >= playThreshold).ToList();
+                await ReplyAsync(
+                    $"Checking and banning {usersWithTrack.Count} users with over {playThreshold} plays on {shortTrack.Track.TrackName} by {shortTrack.Track.ArtistName}");
+
+                foreach (var userToCheck in usersWithTrack.Where(w => w.Playcount >= playThreshold))
+                {
+                    var bottedUser =
+                        await this._adminService.GetBottedUserAsync(userToCheck.LastFMUsername,
+                            userToCheck.RegisteredLastFm);
+                    if (bottedUser != null)
+                    {
+                        continue;
+                    }
+
+                    var currentPlaycount = await this._dataSourceFactory.GetTrackInfoAsync(shortTrack.Track.TrackName,
+                        shortTrack.Track.ArtistName,
+                        userToCheck.LastFMUsername);
+                    if (currentPlaycount.Success && currentPlaycount.Content.UserPlaycount >= playThreshold)
+                    {
+                        var reason = $"Semi-automated ban for short track spam\n" +
+                                     $"{shortTrack.Track.TrackName} by {shortTrack.Track.ArtistName}\n" +
+                                     $"{currentPlaycount.Content.UserPlaycount} plays";
+                        await this._adminService.AddBottedUserAsync(userToCheck.LastFMUsername, reason);
+                        Log.Information("Banning {userNameLastFm} from GW: {reason}", userToCheck.LastFMUsername,
+                            reason);
+
+                        bannedUsers.AppendLine(
+                            $"- [{userToCheck.LastFMUsername}]({LastfmUrlExtensions.GetUserUrl(userToCheck.LastFMUsername)}) - {currentPlaycount.Content.UserPlaycount}");
+                        bannedUserCount++;
+                    }
+                    else
+                    {
+                        manualCheckUsers.AppendLine(
+                            $"- [{userToCheck.LastFMUsername}]({LastfmUrlExtensions.GetUserUrl(userToCheck.LastFMUsername)}) - {currentPlaycount.Content?.UserPlaycount}");
+                    }
+
+                    await Task.Delay(400);
+                    if (bannedUserCount > 30)
+                    {
+                        break;
+                    }
+                }
+
+                response.Embed.WithTitle($"Banned {bannedUserCount} that spammed a short track");
+                response.Embed.WithDescription(bannedUsers.ToString());
+
+                if (manualCheckUsers.Length > 0)
+                {
+                    response.Embed.AddField("Check these users", manualCheckUsers.ToString());
+                }
+
+                response.Embed.WithFooter($"{shortTrack.Track.TrackName} by {shortTrack.Track.ArtistName}");
+
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
+            else
+            {
+                await ReplyAsync("Only bot owners can do this command");
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
         }
     }
 }
