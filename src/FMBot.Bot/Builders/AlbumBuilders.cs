@@ -1039,18 +1039,21 @@ public class AlbumBuilders
                 albumSearch.Album.AlbumName, albumSearch.Album.UserPlaycount.Value);
         }
 
-        if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
+        if (userSettings.DifferentUser)
         {
-            var recentAlbumPlaycounts =
-                await this._playService.GetRecentAlbumPlaycounts(userSettings.UserId, albumSearch.Album.AlbumName,
-                    albumSearch.Album.ArtistName);
-            if (recentAlbumPlaycounts.month != 0)
-            {
-                reply +=
-                    $"\n-# *{recentAlbumPlaycounts.week} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.week)} last week — " +
-                    $"{recentAlbumPlaycounts.month} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.month)} last month*";
-            }
+            await this._updateService.UpdateUser(new UpdateUserQueueItem(userSettings.UserId));
         }
+
+        var recentAlbumPlaycounts =
+            await this._playService.GetRecentAlbumPlaycounts(userSettings.UserId, albumSearch.Album.AlbumName,
+                albumSearch.Album.ArtistName);
+        if (recentAlbumPlaycounts.month != 0)
+        {
+            reply +=
+                $"\n-# *{recentAlbumPlaycounts.week} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.week)} last week — " +
+                $"{recentAlbumPlaycounts.month} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.month)} last month*";
+        }
+
 
         response.Text = reply;
 
@@ -1107,12 +1110,14 @@ public class AlbumBuilders
         {
             albumCoverUrl = albumImages.First(f => f.ImageType == ImageType.VideoSquare).Url;
             gifResult = true;
-            response.Components.WithButton("Still", $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-still",
+            response.Components.WithButton("Still",
+                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-still",
                 ButtonStyle.Secondary, new Emoji("🖼️"));
         }
         else if (albumImages.Any(a => a.ImageType == ImageType.VideoSquare))
         {
-            response.Components.WithButton("Motion", $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-motion",
+            response.Components.WithButton("Motion",
+                $"{InteractionConstants.Album.Cover}-{databaseAlbum.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-motion",
                 ButtonStyle.Secondary, new Emoji("▶️"));
         }
 
@@ -1180,7 +1185,8 @@ public class AlbumBuilders
         else
         {
             var cacheFilePath =
-                ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, ".webp");
+                ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumName, albumSearch.Album.ArtistName,
+                    ".webp");
             Stream gifStream;
 
             if (!File.Exists(cacheFilePath))
@@ -1238,7 +1244,9 @@ public class AlbumBuilders
         response.EmbedAuthor.WithUrl(userUrl);
 
         var amount = topListSettings.ReleaseYearFilter.HasValue ? 1000 : 200;
-        var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount, useCache: true);
+        var albums =
+            await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount,
+                useCache: true);
 
         if (!albums.Success || albums.Content == null)
         {

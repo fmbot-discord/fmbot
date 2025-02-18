@@ -59,13 +59,6 @@ public class UpdateService
         await this.UpdateUser(user);
     }
 
-    public void AddUsersToUpdateQueue(IReadOnlyList<User> users)
-    {
-        Log.Information($"Adding {users.Count} users to update queue");
-
-        this._userUpdateQueue.Publish(users.ToList());
-    }
-
     public async Task<int> UpdateUser(User user)
     {
         var updatedUser = await this.UpdateUser(new UpdateUserQueueItem(user.UserId));

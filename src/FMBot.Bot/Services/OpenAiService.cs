@@ -101,15 +101,12 @@ public class OpenAiService
         return await SendRequest($"{prompt.Prompt} {string.Join(", ", artistList)}", model);
     }
 
-    public async Task<AiGeneration> StoreAiGeneration(OpenAiResponse response, int userId, int? targetedUserId)
+    public async Task<AiGeneration> StoreAiGeneration(ulong contextId, int userId, int? targetedUserId)
     {
         var generation = new AiGeneration
         {
             DateGenerated = DateTime.UtcNow,
-            Model = response.Model,
-            Output = response.Choices?.FirstOrDefault()?.ChoiceMessage?.Content,
-            TotalTokens = response.Usage.TotalTokens,
-            Prompt = response.Prompt,
+            DiscordId = contextId,
             UserId = userId,
             TargetedUserId = targetedUserId
         };
@@ -121,6 +118,23 @@ public class OpenAiService
         await db.SaveChangesAsync();
 
         return generation;
+    }
+
+    public async Task<AiGeneration> UpdateAiGeneration (ulong contextId, OpenAiResponse response)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var existingGeneration = await db.AiGenerations.FirstAsync(f => f.DiscordId == contextId);
+
+        existingGeneration.Model = response.Model;
+        existingGeneration.Output = response.Choices?.FirstOrDefault()?.ChoiceMessage?.Content;
+        existingGeneration.TotalTokens = response.Usage.TotalTokens;
+        existingGeneration.Prompt = response.Prompt;
+
+        db.Update(existingGeneration);
+
+        await db.SaveChangesAsync();
+
+        return existingGeneration;
     }
 
     public async Task<(int amount, bool show)> GetJudgeUsesLeft(User user)

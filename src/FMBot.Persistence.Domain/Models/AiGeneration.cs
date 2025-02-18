@@ -6,6 +6,9 @@ public class AiGeneration
 {
     public int Id { get; set; }
 
+
+    public ulong? DiscordId { get; set; }
+
     public int UserId { get; set; }
 
     public User User { get; set; }

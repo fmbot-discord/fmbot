@@ -288,7 +288,9 @@ public class PlayService
 
         var weekAgo = DateTime.UtcNow.AddDays(-7);
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
-        var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, monthAgo);
+
+        var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
+        var plays = await PlayRepository.GetUserPlays(userId, connection,importUser?.DataSource ?? DataSource.LastFm, start: monthAgo);
 
         return (
             plays.Count(c =>
@@ -316,7 +318,9 @@ public class PlayService
 
         var weekAgo = DateTime.UtcNow.AddDays(-7);
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
-        var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, monthAgo);
+
+        var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
+        var plays = await PlayRepository.GetUserPlays(userId, connection,importUser?.DataSource ?? DataSource.LastFm, start: monthAgo);
 
         return (
             plays.Count(c =>
@@ -347,7 +351,9 @@ public class PlayService
 
         var weekAgo = DateTime.UtcNow.AddDays(-7);
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
-        var plays = await PlayRepository.GetUserPlaysWithinTimeRange(userId, connection, monthAgo);
+
+        var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
+        var plays = await PlayRepository.GetUserPlays(userId, connection,importUser?.DataSource ?? DataSource.LastFm, start: monthAgo);
 
         return (
             plays.Count(c =>

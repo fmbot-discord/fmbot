@@ -53,7 +53,7 @@ public class FriendSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
-    
+
     [SlashCommand("addfriend", "Add a friend to your .fmbot friends")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
@@ -77,6 +77,8 @@ public class FriendSlashCommands : InteractionModuleBase
 
     [UserCommand("Add as friend")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AddFriendUserCommandAsync(IUser user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -117,10 +119,12 @@ public class FriendSlashCommands : InteractionModuleBase
 
     [UserCommand("Remove friend")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task RemoveFriendUserCommandAsync(IUser user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        
+
         try
         {
             var response = await this._friendBuilders.RemoveFriendsAsync(new ContextModel(this.Context, contextUser), new []{ user.Id.ToString() }, true);

@@ -72,7 +72,8 @@ public class ImportSlashCommands : InteractionModuleBase
                         style: ButtonStyle.Danger, row: 0);
             }
 
-            await this.Context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true, components: components?.Build());
+            await this.Context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true,
+                components: components?.Build());
             this.Context.LogCommandUsed();
 
             await this._indexService.RecalculateTopLists(newUserSettings);
@@ -80,10 +81,7 @@ public class ImportSlashCommands : InteractionModuleBase
             embed.WithColor(DiscordConstants.SuccessColorGreen);
             embed.WithDescription(description +
                                   "✅ Your stored top artist/albums/tracks have successfully been recalculated.");
-            await this.Context.Interaction.ModifyOriginalResponseAsync(msg =>
-            {
-                msg.Embed = embed.Build();
-            });
+            await this.Context.Interaction.ModifyOriginalResponseAsync(msg => { msg.Embed = embed.Build(); });
         }
     }
 
@@ -175,6 +173,122 @@ public class ImportSlashCommands : InteractionModuleBase
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction(InteractionConstants.ImportModify.Modify)]
+    [UsernameSetRequired]
+    public async Task ModifyImport(string[] inputs)
+    {
+        try
+        {
+            this.Context.LogCommandUsed();
+            if (Enum.TryParse(inputs.FirstOrDefault(), out ImportModifyPick modifyPick))
+            {
+                switch (modifyPick)
+                {
+                    case ImportModifyPick.Artist:
+                        await this.Context.Interaction.RespondWithModalAsync<ModifyArtistModal>(InteractionConstants
+                            .ImportModify.PickArtistModal);
+                        break;
+                    case ImportModifyPick.Album:
+                        await this.Context.Interaction.RespondWithModalAsync<ModifyAlbumModal>(InteractionConstants
+                            .ImportModify.PickAlbumModal);
+                        break;
+                    case ImportModifyPick.Track:
+                        await this.Context.Interaction.RespondWithModalAsync<ModifyAlbumModal>(InteractionConstants
+                            .ImportModify.PickTrackModal);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ModalInteraction(InteractionConstants.ImportModify.PickArtistModal)]
+    public async Task PickArtist(ModifyArtistModal modal)
+    {
+        try
+        {
+            await DeferAsync();
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._importBuilders.PickArtist(contextUser.UserId, modal.ArtistName);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ModalInteraction(InteractionConstants.ImportModify.PickAlbumModal)]
+    public async Task PickAlbum(ModifyAlbumModal modal)
+    {
+        try
+        {
+            await DeferAsync();
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._importBuilders.PickAlbum(
+                contextUser.UserId,
+                modal.ArtistName,
+                modal.AlbumName);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ModalInteraction(InteractionConstants.ImportModify.PickTrackModal)]
+    public async Task PickTrack(ModifyTrackModal modal)
+    {
+        try
+        {
+            await DeferAsync();
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._importBuilders.PickTrack(
+                contextUser.UserId,
+                modal.ArtistName,
+                modal.TrackName);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.ArtistRename}——*")]
+    public async Task RenameArtistImportedPlays(string selectedArtistName)
+    {
+        try
+        {
+            var mb = new ModalBuilder()
+                .WithTitle($"Editing '{selectedArtistName}' imports")
+                .WithCustomId($"{InteractionConstants.ImportModify.ArtistRenameModal}——{selectedArtistName}")
+                .AddTextInput("New artist name", "The Beatles", value: selectedArtistName);
+
+            await Context.Interaction.RespondWithModalAsync(mb.Build());
+            this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {

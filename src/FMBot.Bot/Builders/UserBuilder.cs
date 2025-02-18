@@ -1296,6 +1296,7 @@ public class UserBuilder
                 description.Append($"You've ran out of command uses for today. ");
             }
 
+            response.Embed.WithDescription(description.ToString());
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }
@@ -1324,6 +1325,9 @@ public class UserBuilder
         response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Compliment 🙂{enhanced}");
         response.Embed.WithColor(new Color(186, 237, 169));
 
+        await this._openAiService.StoreAiGeneration(context.InteractionId, context.ContextUser.UserId,
+            userSettings.DifferentUser ? userSettings.UserId : null);
+
         var openAiResponse =
             await this._openAiService.GetJudgeResponse(topArtists, PromptType.Compliment, supporter);
 
@@ -1334,8 +1338,7 @@ public class UserBuilder
         }
 
         var aiGeneration =
-            await this._openAiService.StoreAiGeneration(openAiResponse, context.ContextUser.UserId,
-                userSettings.DifferentUser ? userSettings.UserId : null);
+            await this._openAiService.UpdateAiGeneration(context.InteractionId, openAiResponse);
 
         response.Embed.WithDescription(ImproveAiResponse(aiGeneration.Output, topArtists));
 
@@ -1355,6 +1358,9 @@ public class UserBuilder
         response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Roast 🔥{enhanced}");
         response.Embed.WithColor(new Color(255, 122, 1));
 
+        await this._openAiService.StoreAiGeneration(context.InteractionId, context.ContextUser.UserId,
+            userSettings.DifferentUser ? userSettings.UserId : null);
+
         var openAiResponse =
             await this._openAiService.GetJudgeResponse(topArtists, PromptType.Roast, supporter);
 
@@ -1365,8 +1371,7 @@ public class UserBuilder
         }
 
         var aiGeneration =
-            await this._openAiService.StoreAiGeneration(openAiResponse, context.ContextUser.UserId,
-                userSettings.DifferentUser ? userSettings.UserId : null);
+            await this._openAiService.UpdateAiGeneration(context.InteractionId, openAiResponse);
 
         response.Embed.WithDescription(ImproveAiResponse(aiGeneration.Output, topArtists));
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,16 +12,25 @@ using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Builders;
 
 public class ImportBuilders
 {
     private readonly PlayService _playService;
+    private readonly ArtistsService _artistsService;
+    private readonly AlbumService _albumService;
+    private readonly TrackService _trackService;
+    private readonly CensorService _censorService;
 
-    public ImportBuilders(PlayService playService)
+    public ImportBuilders(PlayService playService, ArtistsService artistsService, CensorService censorService, AlbumService albumService, TrackService trackService)
     {
         this._playService = playService;
+        this._artistsService = artistsService;
+        this._censorService = censorService;
+        this._albumService = albumService;
+        this._trackService = trackService;
     }
 
     public static ResponseModel ImportSupporterRequired(ContextModel context)
@@ -72,7 +82,8 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> GetSpotifyImportInstructions(ContextModel context, bool warnAgainstPublicFiles = false)
+    public async Task<ResponseModel> GetSpotifyImportInstructions(ContextModel context,
+        bool warnAgainstPublicFiles = false)
     {
         var response = new ResponseModel
         {
@@ -99,7 +110,8 @@ public class ImportBuilders
         var importDescription = new StringBuilder();
 
         importDescription.AppendLine("1. Download the file Spotify provided");
-        importDescription.AppendLine($"2. Use the `/import spotify` slash command and add the `.zip` file as an attachment through the options");
+        importDescription.AppendLine(
+            $"2. Use the `/import spotify` slash command and add the `.zip` file as an attachment through the options");
         importDescription.AppendLine("3. Having issues? You can also attach each `.json` file separately");
         response.Embed.AddField($"{DiscordConstants.Imports} Importing your data into .fmbot",
             importDescription.ToString());
@@ -140,7 +152,8 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> GetAppleMusicImportInstructions(ContextModel context, bool warnAgainstPublicFiles = false)
+    public async Task<ResponseModel> GetAppleMusicImportInstructions(ContextModel context,
+        bool warnAgainstPublicFiles = false)
     {
         var response = new ResponseModel
         {
@@ -243,8 +256,8 @@ public class ImportBuilders
         };
 
         var importModify = new SelectMenuBuilder()
-            .WithPlaceholder("Select modification")
-            .WithCustomId(InteractionConstants.ImportModify)
+            .WithPlaceholder("Select music")
+            .WithCustomId(InteractionConstants.ImportModify.Modify)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -287,7 +300,7 @@ public class ImportBuilders
 
         var embedDescription = new StringBuilder();
 
-        embedDescription.AppendLine("Modify your imported .fmbot data with the options below.");
+        embedDescription.AppendLine("Pick what you want to modify below.");
         embedDescription.AppendLine();
         embedDescription.AppendLine(
             "Please keep in mind that this only modifies imports that are stored in .fmbot. It doesn't modify any of your Last.fm scrobbles or data.");
@@ -333,5 +346,182 @@ public class ImportBuilders
         response.Embed.WithDescription(embedDescription.ToString());
 
         return response;
+    }
+
+    public async Task<ResponseModel> PickArtist(int userId, string artistName)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var artist = await this._artistsService.GetArtistFromDatabase(artistName, false);
+        var capitalizedArtistName = artist?.Name ?? artistName;
+        response.Embed.AddField("Modifying your imports", $"- Artist: **{capitalizedArtistName}**");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var allPlays = await this._playService
+            .GetAllUserPlays(userId, false);
+        allPlays = allPlays
+            .Where(w => w.ArtistName != null && w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var processedPlays = await this._playService
+            .GetAllUserPlays(userId);
+        processedPlays = processedPlays
+            .Where(w => w.ArtistName != null && w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        AddImportPickCounts(response.Embed, allPlays, processedPlays);
+
+        response.Components = new ComponentBuilder()
+            .WithButton("Edit artist imports", style: ButtonStyle.Secondary,
+                customId: $"{InteractionConstants.ImportModify.ArtistRename}——{capitalizedArtistName}")
+            .WithButton("Delete imports", style: ButtonStyle.Danger,
+                customId: $"{InteractionConstants.ImportModify.ArtistDelete}——{capitalizedArtistName}");
+
+        return response;
+    }
+
+    public async Task<ResponseModel> PickAlbum(int userId, string artistName, string albumName)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var album = await this._albumService.GetAlbumFromDatabase(artistName, albumName, false);
+        var capitalizedArtistName = album?.ArtistName ?? artistName;
+        var capitalizedAlbumName = album?.Name ?? albumName;
+
+        response.Embed.AddField("Modifying your imports",
+            $"- Artist: **{capitalizedArtistName}**\n" +
+            $"- Album: **{capitalizedAlbumName}**");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var allPlays = await this._playService
+            .GetAllUserPlays(userId, false);
+        allPlays = allPlays
+            .Where(w => w.ArtistName != null &&
+                        w.AlbumName != null &&
+                        w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
+                        w.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var processedPlays = await this._playService
+            .GetAllUserPlays(userId);
+        processedPlays = processedPlays
+            .Where(w => w.ArtistName != null &&
+                        w.AlbumName != null &&
+                        w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
+                        w.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        AddImportPickCounts(response.Embed, allPlays, processedPlays);
+
+        response.Components = new ComponentBuilder()
+            .WithButton("Edit album imports", style: ButtonStyle.Secondary,
+                customId:
+                $"{InteractionConstants.ImportModify.AlbumRename}-{capitalizedArtistName}——{capitalizedAlbumName}")
+            .WithButton("Delete imports", style: ButtonStyle.Danger,
+                customId:
+                $"{InteractionConstants.ImportModify.AlbumDelete}-{capitalizedArtistName}——{capitalizedAlbumName}");
+
+        return response;
+    }
+
+    public async Task<ResponseModel> PickTrack(int userId, string artistName, string trackName)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var track = await this._trackService.GetTrackFromDatabase(artistName, trackName);
+        var capitalizedArtistName = track?.ArtistName ?? artistName;
+        var capitalizedTrackName = track?.Name ?? trackName;
+
+        response.Embed.AddField("Modifying your imports",
+            $"- Artist: **{capitalizedArtistName}**\n" +
+            $"- Track: **{capitalizedTrackName}**");
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var allPlays = await this._playService
+            .GetAllUserPlays(userId, false);
+        allPlays = allPlays
+            .Where(w => w.ArtistName != null &&
+                        w.TrackName != null &&
+                        w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
+                        w.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var processedPlays = await this._playService
+            .GetAllUserPlays(userId);
+        processedPlays = processedPlays
+            .Where(w => w.ArtistName != null &&
+                        w.TrackName != null &&
+                        w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase) &&
+                        w.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        AddImportPickCounts(response.Embed, allPlays, processedPlays);
+
+        response.Components = new ComponentBuilder()
+            .WithButton("Edit track imports", style: ButtonStyle.Secondary,
+                customId:
+                $"{InteractionConstants.ImportModify.TrackRename}-{capitalizedArtistName}——{capitalizedTrackName}")
+            .WithButton("Delete imports", style: ButtonStyle.Danger,
+                customId:
+                $"{InteractionConstants.ImportModify.TrackDelete}-{capitalizedArtistName}——{capitalizedTrackName}");
+
+        return response;
+    }
+
+    private static void AddImportPickCounts(EmbedBuilder embed, ICollection<UserPlay> allPlays,
+        ICollection<UserPlay> processedPlays)
+    {
+        var totalDescription = new StringBuilder();
+        totalDescription.AppendLine($"- {allPlays.Count} total plays");
+        if (allPlays.Any(c => c.PlaySource == PlaySource.LastFm))
+        {
+            totalDescription.AppendLine(
+                $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
+        }
+
+        if (allPlays.Any(c => c.PlaySource == PlaySource.SpotifyImport))
+        {
+            totalDescription.AppendLine(
+                $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} Spotify plays");
+        }
+
+        if (allPlays.Any(c => c.PlaySource == PlaySource.AppleMusicImport))
+        {
+            totalDescription.AppendLine(
+                $"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} Apple Music plays");
+        }
+
+        embed.AddField("Total playcounts - Including overlapping/duplicate plays", totalDescription.ToString());
+
+        var processedDescription = new StringBuilder();
+        processedDescription.AppendLine($"- {allPlays.Count()} total plays");
+        if (processedPlays.Any(c => c.PlaySource == PlaySource.LastFm))
+        {
+            processedDescription.AppendLine(
+                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
+        }
+
+        if (processedPlays.Any(c => c.PlaySource == PlaySource.SpotifyImport))
+        {
+            processedDescription.AppendLine(
+                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} Spotify plays");
+        }
+
+        if (processedPlays.Any(c => c.PlaySource == PlaySource.AppleMusicImport))
+        {
+            processedDescription.AppendLine(
+                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} Apple Music plays");
+        }
+
+        embed.AddField("Final playcounts - Overlapping plays filtered", processedDescription.ToString());
     }
 }
