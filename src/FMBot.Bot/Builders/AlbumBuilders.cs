@@ -251,7 +251,7 @@ public class AlbumBuilders
         var description = new StringBuilder();
         if (cachedAlbum.ReleaseDate != null)
         {
-            description.AppendLine($"Release date: `{cachedAlbum.ReleaseDate}`");
+            description.AppendLine($"Release date: {AlbumService.GetAlbumReleaseDate(cachedAlbum)}");
         }
 
         if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)

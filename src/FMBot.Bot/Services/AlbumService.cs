@@ -638,4 +638,37 @@ public class AlbumService
             .Where(w => w.AlbumId == albumId)
             .ToListAsync();
     }
+
+    public static string GetAlbumReleaseDate(Album album)
+    {
+        if (album.ReleaseDate == null)
+        {
+            return null;
+        }
+
+        switch (album.ReleaseDatePrecision)
+        {
+            case null:
+            case "year":
+                return $"`{album.ReleaseDate}`";
+        }
+
+        var parsedDateTime = album.ReleaseDatePrecision switch
+        {
+            "year" => DateTime.Parse($"{album.ReleaseDate}-1-1"),
+            "month" => DateTime.Parse($"{album.ReleaseDate}-1"),
+            "day" => DateTime.Parse(album.ReleaseDate),
+            _ => throw new NotImplementedException()
+        };
+
+        if (album.ReleaseDatePrecision == "month")
+        {
+            return parsedDateTime.ToString("MMMM yyyy");
+        }
+
+        var specifiedDateTime = DateTime.SpecifyKind(parsedDateTime.AddHours(12), DateTimeKind.Utc);
+        var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+        return $"<t:{dateValue}:D>";
+    }
 }
