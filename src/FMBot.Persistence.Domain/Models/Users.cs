@@ -54,6 +54,10 @@ public class User
     public string TimeZone { get; set; }
     public NumberFormat? NumberFormat { get; set; }
 
+    public string DiscordAccessToken { get; set; }
+    public string DiscordRefreshToken { get; set; }
+    public DateTime? DiscordTokenExpiresAt  { get; set; }
+
     public UserDiscogs UserDiscogs { get; set; }
     public ICollection<UserDiscogsReleases> DiscogsReleases { get; set; }
 
