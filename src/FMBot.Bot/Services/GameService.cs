@@ -13,6 +13,8 @@ using Dapper;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -341,10 +343,11 @@ public class GameService
         await token.CancelAsync();
     }
 
-    public static List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount, CountryInfo country = null)
+    public static List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount, NumberFormat numberFormat,
+        CountryInfo country = null)
     {
         var hints = GetRandomArtistHints(artist, country);
-        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
+        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 
@@ -357,10 +360,10 @@ public class GameService
         return hints;
     }
 
-    public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount, CountryInfo country = null)
+    public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount, NumberFormat numberFormat, CountryInfo country = null)
     {
         var hints = GetRandomAlbumHints(album, artist, country);
-        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount}** {StringExtensions.GetPlaysString(userPlaycount)} on this album"));
+        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this album"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 
@@ -487,11 +490,11 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They were born <t:{dateValue}:D> {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They were born **<t:{dateValue}:D>** {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
             }
             else
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They started on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They started on **<t:{dateValue}:D>**"));
             }
         }
 
@@ -502,11 +505,11 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They passed away on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They passed away on **<t:{dateValue}:D>**"));
             }
             else
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They stopped on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They stopped on **<t:{dateValue}:D>**"));
             }
         }
 
@@ -544,9 +547,7 @@ public class GameService
 
         if (album is { ReleaseDate: not null })
         {
-            hints.Add(album.ReleaseDatePrecision == "year"
-                ? new JumbleSessionHint(JumbleHintType.Popularity, $"- Album was released in **{album.ReleaseDate}**")
-                : new JumbleSessionHint(JumbleHintType.Popularity, $"- Album was released on **{album.ReleaseDate}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.ReleaseDate, $"- Album was released on **{AlbumService.GetAlbumReleaseDate(album)}**"));
         }
 
         if (album is { AppleMusicShortDescription: not null } &&
@@ -571,11 +572,11 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- Artist was born <t:{dateValue}:D> {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- Artist was born **<t:{dateValue}:D>** {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
             }
             else
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- Artist started on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- Artist started on **<t:{dateValue}:D>**"));
             }
         }
 
@@ -586,11 +587,11 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- Artist passed away on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- Artist passed away on **<t:{dateValue}:D>**"));
             }
             else
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- Artist stopped on <t:{dateValue}:D>"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- Artist stopped on **<t:{dateValue}:D>**"));
             }
         }
 

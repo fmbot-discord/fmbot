@@ -17,6 +17,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -965,7 +966,8 @@ public class UserService
             UserSettings = userSettings,
             TotalScrobbles = totalScrobbles,
             DiscordContextGuild = contextModel.DiscordGuild,
-            DiscordContextUser = contextModel.DiscordUser
+            DiscordContextUser = contextModel.DiscordUser,
+            NumberFormat = contextModel.NumberFormat
         };
 
         var footer = await this._templateService.GetFooterAsync(footerOptions, footerContext);
@@ -978,6 +980,7 @@ public class UserService
         RecentTrack currentTrack,
         RecentTrack previousTrack,
         long totalScrobbles,
+        NumberFormat numberFormat,
         Persistence.Domain.Models.Guild guild = null,
         IDictionary<int, FullGuildUser> guildUsers = null)
     {
@@ -1000,6 +1003,7 @@ public class UserService
             PlayService = this._playService,
             UserSettings = userSettings,
             TotalScrobbles = totalScrobbles,
+            NumberFormat = numberFormat
         };
 
         return await this._templateService.GetTemplateFmAsync(userId, footerContext);
@@ -1073,7 +1077,8 @@ public class UserService
         return footer;
     }
 
-    public static (bool promo, string description) GetIndexCompletedUserStats(User user, IndexedUserStats stats)
+    public static (bool promo, string description) GetIndexCompletedUserStats(User user, IndexedUserStats stats,
+        NumberFormat numberFormat)
     {
         var description = new StringBuilder();
         var promo = false;
@@ -1119,44 +1124,44 @@ public class UserService
             {
                 if (stats.PlayCount.HasValue)
                 {
-                    description.AppendLine($"- Last **{stats.PlayCount}** plays");
+                    description.AppendLine($"- Last **{stats.PlayCount.Format(numberFormat)}** plays");
                 }
 
                 if (stats.ArtistCount.HasValue)
                 {
-                    description.AppendLine($"- Top **{stats.ArtistCount}** artists");
+                    description.AppendLine($"- Top **{stats.ArtistCount.Format(numberFormat)}** artists");
                 }
 
                 if (stats.AlbumCount.HasValue)
                 {
-                    description.AppendLine($"- Top **{stats.AlbumCount}** albums");
+                    description.AppendLine($"- Top **{stats.AlbumCount.Format(numberFormat)}** albums");
                 }
 
                 if (stats.TrackCount.HasValue)
                 {
-                    description.AppendLine($"- Top **{stats.TrackCount}** tracks");
+                    description.AppendLine($"- Top **{stats.TrackCount.Format(numberFormat)}** tracks");
                 }
             }
             else
             {
                 if (stats.PlayCount.HasValue)
                 {
-                    description.AppendLine($"- **{stats.PlayCount}** Last.fm plays");
+                    description.AppendLine($"- **{stats.PlayCount.Format(numberFormat)}** Last.fm plays");
                 }
 
                 if (stats.ArtistCount.HasValue)
                 {
-                    description.AppendLine($"- **{stats.ArtistCount}** top artists");
+                    description.AppendLine($"- **{stats.ArtistCount.Format(numberFormat)}** top artists");
                 }
 
                 if (stats.AlbumCount.HasValue)
                 {
-                    description.AppendLine($"- **{stats.AlbumCount}** top albums");
+                    description.AppendLine($"- **{stats.AlbumCount.Format(numberFormat)}** top albums");
                 }
 
                 if (stats.TrackCount.HasValue)
                 {
-                    description.AppendLine($"- **{stats.TrackCount}** top tracks");
+                    description.AppendLine($"- **{stats.TrackCount.Format(numberFormat)}** top tracks");
                 }
 
                 if (stats.ImportCount != null)
@@ -1166,7 +1171,7 @@ public class UserService
                     var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
                     description.AppendLine($"Import setting: {name}");
                     description.AppendLine(
-                        $"Combined with your **{stats.ImportCount}** imported plays you have a total of **{stats.TotalCount}** plays.");
+                        $"Combined with your **{stats.ImportCount.Format(numberFormat)}** imported plays you have a total of **{stats.TotalCount.Format(numberFormat)}** plays.");
                 }
             }
 
@@ -1326,6 +1331,24 @@ public class UserService
         RemoveUserFromCache(user);
 
         return user.TimeZone;
+    }
+
+    public async Task<NumberFormat> SetNumberFormat(int userId, NumberFormat numberFormat)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        var user = await db.Users.FirstAsync(f => f.UserId == userId);
+
+        user.NumberFormat = numberFormat;
+        db.Entry(user).State = EntityState.Modified;
+
+        db.Update(user);
+
+        await db.SaveChangesAsync();
+
+        RemoveUserFromCache(user);
+
+        return user.NumberFormat.Value;
     }
 
     public async Task<User> SetSettings(User userToUpdate, FmEmbedType embedType, FmCountType? countType)

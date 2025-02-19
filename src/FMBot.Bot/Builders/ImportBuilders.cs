@@ -11,6 +11,7 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
@@ -226,7 +227,7 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<string> GetImportedYears(int userId, PlaySource playSource)
+    public async Task<string> GetImportedYears(int userId, PlaySource playSource, NumberFormat numberFormat)
     {
         var years = new StringBuilder();
         var allPlays = await this._playService
@@ -242,7 +243,7 @@ public class ImportBuilders
             var playcount = year.Count();
             years.AppendLine(
                 $"**`{year.Key}`** " +
-                $"- **{playcount}** {StringExtensions.GetPlaysString(playcount)}");
+                $"- **{playcount.Format(numberFormat)}** {StringExtensions.GetPlaysString(playcount)}");
         }
 
         return years.Length > 0 ? years.ToString() : null;

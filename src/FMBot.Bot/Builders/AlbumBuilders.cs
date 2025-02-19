@@ -129,15 +129,15 @@ public class AlbumBuilders
 
         var globalStats = new StringBuilder();
         globalStats.AppendLine(
-            $"`{albumSearch.Album.TotalListeners}` {StringExtensions.GetListenersString(albumSearch.Album.TotalListeners)}");
+            $"`{albumSearch.Album.TotalListeners.Format(context.NumberFormat)}` {StringExtensions.GetListenersString(albumSearch.Album.TotalListeners)}");
         globalStats.AppendLine(
-            $"`{albumSearch.Album.TotalPlaycount}` global {StringExtensions.GetPlaysString(albumSearch.Album.TotalPlaycount)}");
+            $"`{albumSearch.Album.TotalPlaycount.Format(context.NumberFormat)}` global {StringExtensions.GetPlaysString(albumSearch.Album.TotalPlaycount)}");
         if (albumSearch.Album.UserPlaycount.HasValue)
         {
             globalStats.AppendLine(
-                $"`{albumSearch.Album.UserPlaycount}` {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} by you");
+                $"`{albumSearch.Album.UserPlaycount.Format(context.NumberFormat)}` {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} by you");
             globalStats.AppendLine(
-                $"`{await this._playService.GetWeekAlbumPlaycountAsync(context.ContextUser.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName)}` by you last week");
+                $"`{(await this._playService.GetWeekAlbumPlaycountAsync(context.ContextUser.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName)).Format(context.NumberFormat)}` by you last week");
             await this._updateService.CorrectUserAlbumPlaycount(context.ContextUser.UserId,
                 albumSearch.Album.ArtistName,
                 albumSearch.Album.AlbumName, albumSearch.Album.UserPlaycount.Value);
@@ -171,7 +171,7 @@ public class AlbumBuilders
         if (context.ContextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 10)
         {
             footer.AppendLine(
-                $"{(decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your plays are on this album");
+                $"{((decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).Format(context.NumberFormat)} of all your plays are on this album");
         }
 
         if (footer.Length > 0)
@@ -192,7 +192,7 @@ public class AlbumBuilders
                 var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild,
                     guildUsers, guild.GuildId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
                 var (filterStats, filteredUsersWithAlbum) =
-                    WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guild);
+                    WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild);
 
                 if (filteredUsersWithAlbum.Count != 0)
                 {
@@ -200,10 +200,12 @@ public class AlbumBuilders
                     var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
                     var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
-                    serverStats += $"`{serverListeners}` {StringExtensions.GetListenersString(serverListeners)}";
-                    serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
                     serverStats +=
-                        $"\n`{(int)avgServerPlaycount}` avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
+                        $"`{serverListeners.Format(context.NumberFormat)}` {StringExtensions.GetListenersString(serverListeners)}";
+                    serverStats +=
+                        $"\n`{serverPlaycount.Format(context.NumberFormat)}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
+                    serverStats +=
+                        $"\n`{((int)avgServerPlaycount).Format(context.NumberFormat)}` avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
                 }
                 else
                 {
@@ -251,7 +253,7 @@ public class AlbumBuilders
         var description = new StringBuilder();
         if (cachedAlbum.ReleaseDate != null)
         {
-            description.AppendLine($"Release date: `{cachedAlbum.ReleaseDate}`");
+            description.AppendLine($"Release date: {AlbumService.GetAlbumReleaseDate(cachedAlbum)}");
         }
 
         if (context.ContextUser.UserType != UserType.User && albumSearch.Album.UserPlaycount > 0)
@@ -364,7 +366,8 @@ public class AlbumBuilders
         usersWithAlbum = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, context.ContextUser,
             fullAlbumName, context.DiscordGuild, album.Album.UserPlaycount);
 
-        var (filterStats, filteredUsersWithAlbum) = WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guild, roles);
+        var (filterStats, filteredUsersWithAlbum) =
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild, roles);
 
         var albumCoverUrl = album.Album.AlbumCoverUrl;
         if (cachedAlbum.SpotifyImageUrl != null)
@@ -391,7 +394,7 @@ public class AlbumBuilders
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album",
                 $"in <b>{context.DiscordGuild.Name}</b>", albumCoverUrl, fullAlbumName,
-                filteredUsersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server);
+                filteredUsersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -403,7 +406,7 @@ public class AlbumBuilders
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId,
-                PrivacyLevel.Server);
+                PrivacyLevel.Server, context.NumberFormat);
         if (filteredUsersWithAlbum.Count == 0)
         {
             serverUsers = "Nobody in this server (not even you) has listened to this album.";
@@ -432,9 +435,9 @@ public class AlbumBuilders
             var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
             footer.Append($"Album - ");
-            footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
-            footer.AppendLine($"{(int)avgServerPlaycount} avg");
+            footer.Append($"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
+            footer.Append($"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.AppendLine($"{((int)avgServerPlaycount).Format(context.NumberFormat)} avg");
         }
 
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(context.ContextUser.UserId,
@@ -549,7 +552,7 @@ public class AlbumBuilders
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"from <b>{userTitle}</b>'s friends",
                 albumCoverUrl, albumName,
-                usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server);
+                usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -560,7 +563,8 @@ public class AlbumBuilders
         }
 
         var serverUsers =
-            WhoKnowsService.WhoKnowsListToString(usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server);
+            WhoKnowsService.WhoKnowsListToString(usersWithAlbum, context.ContextUser.UserId, PrivacyLevel.Server,
+                context.NumberFormat);
         if (usersWithAlbum.Count == 0)
         {
             serverUsers = "None of your friends have listened to this album.";
@@ -583,9 +587,9 @@ public class AlbumBuilders
             var globalPlaycount = usersWithAlbum.Sum(a => a.Playcount);
             var avgPlaycount = usersWithAlbum.Average(a => a.Playcount);
 
-            footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
-            footer += $"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
-            footer += $"{(int)avgPlaycount} avg";
+            footer += $"\n{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ";
+            footer += $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+            footer += $"{((int)avgPlaycount).Format(context.NumberFormat)} avg";
         }
 
         footer += $"\nFriends WhoKnow album for {userTitle}";
@@ -675,7 +679,7 @@ public class AlbumBuilders
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows Album", $"in <b>.fmbot 🌐</b>",
                 albumCoverUrl, albumName,
-                filteredUsersWithAlbum, context.ContextUser.UserId, privacyLevel,
+                filteredUsersWithAlbum, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
                 hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -687,7 +691,7 @@ public class AlbumBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, context.ContextUser.UserId,
-            privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers);
         if (filteredUsersWithAlbum.Count == 0)
         {
             serverUsers = "Nobody that uses .fmbot has listened to this album.";
@@ -706,9 +710,9 @@ public class AlbumBuilders
             var avgPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
             footer.Append($"Global album - ");
-            footer.Append($"{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
-            footer.AppendLine($"{(int)avgPlaycount} avg");
+            footer.Append($"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append($"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
         response.Embed.WithTitle($"{albumName} globally");
@@ -800,8 +804,8 @@ public class AlbumBuilders
             foreach (var album in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{album.ListenerCount}` · **{album.ArtistName}** - **{album.AlbumName}** · *{album.TotalPlaycount} {StringExtensions.GetPlaysString(album.TotalPlaycount)}*"
-                    : $"`{album.TotalPlaycount}` · **{album.ArtistName}** - **{album.AlbumName}** · *{album.ListenerCount} {StringExtensions.GetListenersString(album.ListenerCount)}*";
+                    ? $"`{album.ListenerCount.Format(context.NumberFormat)}` · **{album.ArtistName}** - **{album.AlbumName}** · *{album.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(album.TotalPlaycount)}*"
+                    : $"`{album.TotalPlaycount.Format(context.NumberFormat)}` · **{album.ArtistName}** - **{album.AlbumName}** · *{album.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(album.ListenerCount)}*";
 
                 if (previousTopGuildAlbums != null && previousTopGuildAlbums.Any())
                 {
@@ -842,7 +846,8 @@ public class AlbumBuilders
     public async Task<ResponseModel> AlbumTracksAsync(
         ContextModel context,
         UserSettingsModel userSettings,
-        string searchValue)
+        string searchValue,
+        bool orderByPlaycount = false)
     {
         var response = new ResponseModel
         {
@@ -926,66 +931,70 @@ public class AlbumBuilders
         var tracksDisplayed = 0;
         var pageNumber = 1;
 
-        for (var disc = 1; disc < amountOfDiscs + 1; disc++)
+        if (orderByPlaycount)
         {
-            if (amountOfDiscs > 1)
+        }
+        else
+        {
+            for (var disc = 1; disc < amountOfDiscs + 1; disc++)
             {
-                description.AppendLine($"`Disc {disc}`");
-            }
-
-            for (; i < albumTracks.Count; i++)
-            {
-                var albumTrack = albumTracks[i];
-
-                var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
-                    StringExtensions.SanitizeTrackNameForComparison(albumTrack.TrackName)
-                        .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
-
-                description.Append(
-                    $"{i + 1}.");
-
-                description.Append(
-                    $" **{albumTrack.TrackName}**");
-
-                if (albumTrackWithPlaycount != null)
+                if (amountOfDiscs > 1)
                 {
-                    description.Append(
-                        $" - *{albumTrackWithPlaycount.Playcount} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}*");
+                    description.AppendLine($"`Disc {disc}`");
                 }
 
-                if (albumTrack.DurationSeconds.HasValue)
+                for (; i < albumTracks.Count; i++)
                 {
-                    description.Append(albumTrackWithPlaycount == null ? " — " : " - ");
+                    var albumTrack = albumTracks[i];
 
-                    var duration = TimeSpan.FromSeconds(albumTrack.DurationSeconds.Value);
-                    var formattedTrackLength =
-                        $"{(duration.Hours == 0 ? "" : $"{duration.Hours}:")}{duration.Minutes}:{duration.Seconds:D2}";
-                    description.Append($"`{formattedTrackLength}`");
-                }
+                    var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
+                        StringExtensions.SanitizeTrackNameForComparison(albumTrack.TrackName)
+                            .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
 
-                description.AppendLine();
+                    description.Append($"{i + 1}.");
+                    description.Append($" **{albumTrack.TrackName}**");
 
-                var pageNumberDesc = $"Page {pageNumber}/{albumTracks.ChunkBy(12).Count} — ";
-
-                tracksDisplayed++;
-                if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
-                {
-                    var page = new PageBuilder()
-                        .WithDescription(description.ToString())
-                        .WithTitle($"Track playcounts for {albumName}")
-                        .WithFooter(pageNumberDesc + footer);
-
-                    if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                    if (albumTrackWithPlaycount != null)
                     {
-                        page.WithUrl(url);
+                        description.Append(
+                            $" - *{albumTrackWithPlaycount.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}*");
                     }
 
-                    pages.Add(page);
-                    description = new StringBuilder();
-                    pageNumber++;
+                    if (albumTrack.DurationSeconds.HasValue)
+                    {
+                        description.Append(albumTrackWithPlaycount == null ? " — " : " - ");
+
+                        var duration = TimeSpan.FromSeconds(albumTrack.DurationSeconds.Value);
+                        var formattedTrackLength =
+                            $"{(duration.Hours == 0 ? "" : $"{duration.Hours}:")}{duration.Minutes}:{duration.Seconds:D2}";
+                        description.Append($"`{formattedTrackLength}`");
+                    }
+
+                    description.AppendLine();
+
+                    var pageNumberDesc = $"Page {pageNumber}/{albumTracks.ChunkBy(12).Count} — ";
+
+                    tracksDisplayed++;
+                    if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
+                    {
+                        var page = new PageBuilder()
+                            .WithDescription(description.ToString())
+                            .WithTitle($"Track playcounts for {albumName}")
+                            .WithFooter(pageNumberDesc + footer);
+
+                        if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                        {
+                            page.WithUrl(url);
+                        }
+
+                        pages.Add(page);
+                        description = new StringBuilder();
+                        pageNumber++;
+                    }
                 }
             }
         }
+
 
         dbAlbum ??= await this._albumService.GetAlbumFromDatabase(albumSearch.Album.ArtistName,
             albumSearch.Album.AlbumName);
@@ -1029,7 +1038,7 @@ public class AlbumBuilders
         }
 
         var reply =
-            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has **{albumSearch.Album.UserPlaycount}** {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} " +
+            $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has **{albumSearch.Album.UserPlaycount.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} " +
             $"for **{StringExtensions.Sanitize(albumSearch.Album.AlbumName)}** by **{StringExtensions.Sanitize(albumSearch.Album.ArtistName)}**";
 
         if (albumSearch.Album.UserPlaycount.HasValue && !userSettings.DifferentUser)
@@ -1050,8 +1059,8 @@ public class AlbumBuilders
         if (recentAlbumPlaycounts.month != 0)
         {
             reply +=
-                $"\n-# *{recentAlbumPlaycounts.week} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.week)} last week — " +
-                $"{recentAlbumPlaycounts.month} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.month)} last month*";
+                $"\n-# *{recentAlbumPlaycounts.week.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.week)} last week — " +
+                $"{recentAlbumPlaycounts.month.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(recentAlbumPlaycounts.month)} last month*";
         }
 
 
@@ -1308,7 +1317,7 @@ public class AlbumBuilders
 
             var image = await this._puppeteerService.GetTopList(userTitle, title, "albums", timeSettings.Description,
                 albums.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), firstAlbumImage,
-                albums.TopList);
+                albums.TopList, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -1352,7 +1361,7 @@ public class AlbumBuilders
                 }
 
                 var name =
-                    $"**{album.ArtistName}** - **[{escapedAlbumName}]({url})** - *{album.UserPlaycount} {StringExtensions.GetPlaysString(album.UserPlaycount)}*";
+                    $"**{album.ArtistName}** - **[{escapedAlbumName}]({url})** - *{album.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(album.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopAlbums.Any())
                 {

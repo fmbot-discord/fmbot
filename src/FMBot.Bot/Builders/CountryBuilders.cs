@@ -252,7 +252,7 @@ public class CountryBuilders
             var countryPageString = new StringBuilder();
             foreach (var genreArtist in countryPage)
             {
-                countryPageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** - *{genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
+                countryPageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** - *{genreArtist.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
                 counter++;
             }
 
@@ -263,7 +263,7 @@ public class CountryBuilders
             }
 
             var footer = $"Country source: MusicBrainz\n" +
-                         $"Page {pageCounter}/{countryPages.Count} - {countryArtists.Count} total artists - {countryArtists.Sum(s => s.UserPlaycount)} total scrobbles";
+                         $"Page {pageCounter}/{countryPages.Count} - {countryArtists.Count.Format(context.NumberFormat)} total artists - {countryArtists.Sum(s => s.UserPlaycount).Format(context.NumberFormat)} total scrobbles";
 
             pages.Add(new PageBuilder()
                 .WithDescription(countryPageString.ToString())
@@ -384,7 +384,7 @@ public class CountryBuilders
 
             var image = await this._puppeteerService.GetTopList(userTitle, "Top Countries", "countries", timeSettings.Description,
                 countries.Count, totalPlays.GetValueOrDefault(), firstArtistImage,
-                this._countryService.GetTopListForTopCountries(countries));
+                this._countryService.GetTopListForTopCountries(countries), context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -406,7 +406,7 @@ public class CountryBuilders
             foreach (var country in countryPage)
             {
                 var name =
-                    $"**{country.CountryName ?? country.CountryCode}** - *{country.UserPlaycount} {StringExtensions.GetPlaysString(country.UserPlaycount)}*";
+                    $"**{country.CountryName ?? country.CountryCode}** - *{country.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(country.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopCountries.Any())
                 {

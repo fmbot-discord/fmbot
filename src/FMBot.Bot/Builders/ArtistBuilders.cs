@@ -280,7 +280,7 @@ public class ArtistBuilders
                 var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild,
                     guildUsers, contextGuild.GuildId, artistSearch.Artist.ArtistName);
                 var (filterStats, filteredUsersWithArtist) =
-                    WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, contextGuild);
+                    WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild);
 
                 if (filteredUsersWithArtist.Count != 0)
                 {
@@ -291,12 +291,14 @@ public class ArtistBuilders
                         await this._playService.GetWeekArtistPlaycountForGuildAsync(contextGuild.GuildId,
                             artistSearch.Artist.ArtistName);
 
-                    serverStats += $"`{serverListeners}` {StringExtensions.GetListenersString(serverListeners)}";
-                    serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
                     serverStats +=
-                        $"\n`{(int)avgServerPlaycount}` avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
+                        $"`{serverListeners.Format(context.NumberFormat)}` {StringExtensions.GetListenersString(serverListeners)}";
                     serverStats +=
-                        $"\n`{serverPlaycountLastWeek}` {StringExtensions.GetPlaysString(serverPlaycountLastWeek)} last week";
+                        $"\n`{serverPlaycount.Format(context.NumberFormat)}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
+                    serverStats +=
+                        $"\n`{((int)avgServerPlaycount).Format(context.NumberFormat)}` avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
+                    serverStats +=
+                        $"\n`{serverPlaycountLastWeek.Format(context.NumberFormat)}` {StringExtensions.GetPlaysString(serverPlaycountLastWeek)} last week";
 
                     if (filterStats.BasicDescription != null)
                     {
@@ -330,15 +332,15 @@ public class ArtistBuilders
 
         var globalStats = "";
         globalStats +=
-            $"`{artistSearch.Artist.TotalListeners}` {StringExtensions.GetListenersString(artistSearch.Artist.TotalListeners)}";
+            $"`{artistSearch.Artist.TotalListeners.Format(context.NumberFormat)}` {StringExtensions.GetListenersString(artistSearch.Artist.TotalListeners)}";
         globalStats +=
-            $"\n`{artistSearch.Artist.TotalPlaycount}` global {StringExtensions.GetPlaysString(artistSearch.Artist.TotalPlaycount)}";
+            $"\n`{artistSearch.Artist.TotalPlaycount.Format(context.NumberFormat)}` global {StringExtensions.GetPlaysString(artistSearch.Artist.TotalPlaycount)}";
         if (artistSearch.Artist.UserPlaycount.HasValue)
         {
             globalStats +=
-                $"\n`{artistSearch.Artist.UserPlaycount}` {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} by you";
+                $"\n`{artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)}` {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} by you";
             globalStats +=
-                $"\n`{await this._playService.GetArtistPlaycountForTimePeriodAsync(context.ContextUser.UserId, artistSearch.Artist.ArtistName)}` by you last week";
+                $"\n`{(await this._playService.GetArtistPlaycountForTimePeriodAsync(context.ContextUser.UserId, artistSearch.Artist.ArtistName)).Format(context.NumberFormat)}` by you last week";
             await this._updateService.CorrectUserArtistPlaycount(context.ContextUser.UserId,
                 artistSearch.Artist.ArtistName,
                 artistSearch.Artist.UserPlaycount.Value);
@@ -566,7 +568,7 @@ public class ArtistBuilders
                 {
                     topTracksDescription.AppendLine(
                         $"`{counter}` **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(track.Name, 40))}** - " +
-                        $"*{track.Playcount}x*");
+                        $"*{track.Playcount.Format(context.NumberFormat)}x*");
                     counter++;
                 }
 
@@ -585,7 +587,7 @@ public class ArtistBuilders
                 {
                     topAlbumsDescription.AppendLine(
                         $"`{counter}` **{StringExtensions.Sanitize(StringExtensions.TruncateLongString(album.Name, 40))}** - " +
-                        $"*{album.Playcount}x*");
+                        $"*{album.Playcount.Format(context.NumberFormat)}x*");
                     counter++;
                 }
 
@@ -711,7 +713,7 @@ public class ArtistBuilders
             foreach (var track in topTrackPage)
             {
                 albumPageString.AppendLine(
-                    $"{counter}. **{StringExtensions.Sanitize(track.Name)}** - *{track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}*");
+                    $"{counter}. **{StringExtensions.Sanitize(track.Name)}** - *{track.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(track.Playcount)}*");
                 counter++;
             }
 
@@ -720,22 +722,24 @@ public class ArtistBuilders
             if (artistSearch.IsRandom)
             {
                 footer.AppendLine(
-                    $"Artist #{artistSearch.RandomArtistPosition} ({artistSearch.RandomArtistPlaycount} {StringExtensions.GetPlaysString(artistSearch.RandomArtistPlaycount)})");
+                    $"Artist #{artistSearch.RandomArtistPosition} ({artistSearch.RandomArtistPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(artistSearch.RandomArtistPlaycount)})");
             }
 
-            footer.AppendLine($"Page {pageCounter}/{topTrackPages.Count} - {topTracks.Count} different tracks");
+            footer.AppendLine(
+                $"Page {pageCounter}/{topTrackPages.Count} - {topTracks.Count.Format(context.NumberFormat)} different tracks");
             var title = new StringBuilder();
 
             if (userSettings.DifferentUser)
             {
                 footer.AppendLine(
-                    $"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount} total scrobbles on this artist");
+                    $"{userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
                 title.Append($"{userSettings.DisplayName}'s top tracks for '{artistSearch.Artist.ArtistName}'");
             }
             else
             {
-                footer.Append($"{userTitle} has {artistSearch.Artist.UserPlaycount} total scrobbles on this artist");
+                footer.Append(
+                    $"{userTitle} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total scrobbles on this artist");
                 title.Append($"Your top tracks for '{artistSearch.Artist.ArtistName}'");
 
                 response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
@@ -847,7 +851,7 @@ public class ArtistBuilders
             foreach (var artistAlbum in albumPage)
             {
                 albumPageString.AppendLine(
-                    $"{counter}. **{artistAlbum.Name}** - *{artistAlbum.Playcount} {StringExtensions.GetPlaysString(artistAlbum.Playcount)}*");
+                    $"{counter}. **{artistAlbum.Name}** - *{artistAlbum.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(artistAlbum.Playcount)}*");
                 counter++;
             }
 
@@ -865,13 +869,14 @@ public class ArtistBuilders
             if (userSettings.DifferentUser)
             {
                 footer.AppendLine(
-                    $" - {userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount} total scrobbles on this artist");
+                    $" - {userSettings.UserNameLastFm} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
                 title.Append($"{userSettings.DisplayName}'s top albums for '{artistSearch.Artist.ArtistName}'");
             }
             else
             {
-                footer.Append($" - {userTitle} has {artistSearch.Artist.UserPlaycount} total scrobbles on this artist");
+                footer.Append(
+                    $" - {userTitle} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total scrobbles on this artist");
                 title.Append($"Your top albums for '{artistSearch.Artist.ArtistName}'");
 
                 response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
@@ -967,8 +972,8 @@ public class ArtistBuilders
             foreach (var track in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** · *{track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
-                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** · *{track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)}*";
+                    ? $"`{track.ListenerCount.Format(context.NumberFormat)}` · **{track.ArtistName}** · *{track.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
+                    : $"`{track.TotalPlaycount.Format(context.NumberFormat)}` · **{track.ArtistName}** · *{track.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(track.ListenerCount)}*";
 
                 if (previousTopGuildArtists != null && previousTopGuildArtists.Any())
                 {
@@ -1081,7 +1086,7 @@ public class ArtistBuilders
             var image = await this._puppeteerService.GetTopList(userTitle, "Top Artists", "artists",
                 timeSettings.Description,
                 artists.Content.TotalAmount.GetValueOrDefault(), totalPlays.GetValueOrDefault(), firstArtistImage,
-                artists.TopList);
+                artists.TopList, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -1117,7 +1122,7 @@ public class ArtistBuilders
             foreach (var artist in artistPage)
             {
                 var name =
-                    $"**[{artist.ArtistName}]({artist.ArtistUrl})** - *{artist.UserPlaycount} {StringExtensions.GetPlaysString(artist.UserPlaycount)}*";
+                    $"**[{artist.ArtistName}]({artist.ArtistUrl})** - *{artist.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(artist.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopArtists.Any())
                 {
@@ -1145,7 +1150,8 @@ public class ArtistBuilders
 
             if (artists.Content.TotalAmount.HasValue)
             {
-                footer.Append($" - {artists.Content.TotalAmount} different artists in this time period");
+                footer.Append(
+                    $" - {artists.Content.TotalAmount.Format(context.NumberFormat)} different artists in this time period");
             }
 
             if (topListSettings.Billboard)
@@ -1294,7 +1300,7 @@ public class ArtistBuilders
 
             var image = await this._puppeteerService.GetTopList(userTitle, "Newly discovered artists", "new artists",
                 timeSettings.Description,
-                topNewArtists.Count, totalPlays, backgroundImage, topList);
+                topNewArtists.Count, totalPlays, backgroundImage, topList, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -1319,7 +1325,7 @@ public class ArtistBuilders
                 artistPageString.Append($"{counter}. ");
                 artistPageString.AppendLine(
                     $"**[{StringExtensions.TruncateLongString(newArtist.ArtistName, 28)}]({LastfmUrlExtensions.GetArtistUrl(newArtist.ArtistName)})** " +
-                    $"— *{newArtist.UserPlaycount} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
+                    $"— *{newArtist.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(newArtist.UserPlaycount)}* " +
                     $"— on **<t:{newArtist.FirstPlay.Value.ToUnixEpochDate()}:D>**");
 
                 counter++;
@@ -1329,7 +1335,7 @@ public class ArtistBuilders
 
             footer.Append($"Page {pageCounter}/{artistPages.Count}");
 
-            footer.Append($" - {topNewArtists.Count} newly discovered artists");
+            footer.Append($" - {topNewArtists.Count.Format(context.NumberFormat)} newly discovered artists");
 
             pages.Add(new PageBuilder()
                 .WithDescription(artistPageString.ToString())
@@ -1372,7 +1378,7 @@ public class ArtistBuilders
 
         var reply =
             $"**{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}** has " +
-            $"**{artistSearch.Artist.UserPlaycount}** {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} for " +
+            $"**{artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)}** {StringExtensions.GetPlaysString(artistSearch.Artist.UserPlaycount)} for " +
             $"**{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}**";
 
         if (userSettings.DifferentUser)
@@ -1385,8 +1391,8 @@ public class ArtistBuilders
         if (recentArtistPlaycounts.month != 0)
         {
             reply +=
-                $"\n-# *{recentArtistPlaycounts.week} {StringExtensions.GetPlaysString(recentArtistPlaycounts.week)} last week — " +
-                $"{recentArtistPlaycounts.month} {StringExtensions.GetPlaysString(recentArtistPlaycounts.month)} last month*";
+                $"\n-# *{recentArtistPlaycounts.week.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(recentArtistPlaycounts.week)} last week — " +
+                $"{recentArtistPlaycounts.month.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(recentArtistPlaycounts.month)} last month*";
         }
 
         response.Text = reply;
@@ -1491,10 +1497,11 @@ public class ArtistBuilders
         }
 
         reply.AppendLine(
-            $" will reach **{goalAmount}** plays on **{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}** {goalDateString}");
+            $" will reach **{goalAmount.Format(context.NumberFormat)}** plays on **{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}** {goalDateString}");
 
         reply.AppendLine(
-            $"-# *Based on {determiner} average of {Math.Round(avgPerDay, 2)} plays per day in the last {Math.Round(totalDays, 0)} days — {artistPlayCount} plays in this time period — {artistSearch.Artist.UserPlaycount} alltime*");
+            $"-# *Based on {determiner} average of {Math.Round(avgPerDay, 2).Format(context.NumberFormat)} plays per day in the last {Math.Round(totalDays, 0).Format(context.NumberFormat)} days — " +
+            $"{artistPlayCount.Format(context.NumberFormat)} plays in this time period — {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} alltime*");
 
         response.Text = reply.ToString();
         return response;
@@ -1550,7 +1557,7 @@ public class ArtistBuilders
             artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
         var (filterStats, filteredUsersWithArtist) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, contextGuild, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, roles);
 
         CrownModel crownModel = null;
         if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector &&
@@ -1577,7 +1584,8 @@ public class ArtistBuilders
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>{context.DiscordGuild.Name}</b>",
                 imgUrl, artistSearch.Artist.ArtistName,
-                filteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, crownModel?.Crown,
+                filteredUsersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat,
+                crownModel?.Crown,
                 crownModel?.CrownHtmlResult);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -1600,7 +1608,7 @@ public class ArtistBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
-            PrivacyLevel.Server, crownModel);
+            PrivacyLevel.Server, context.NumberFormat, crownModel);
         if (filteredUsersWithArtist.Count == 0)
         {
             serverUsers = "Nobody in this server (not even you) has listened to this artist.";
@@ -1612,7 +1620,7 @@ public class ArtistBuilders
         if (artistSearch.IsRandom)
         {
             footer.AppendLine(
-                $"Artist #{artistSearch.RandomArtistPosition} ({artistSearch.RandomArtistPlaycount} {StringExtensions.GetPlaysString(artistSearch.RandomArtistPlaycount)})");
+                $"Artist #{artistSearch.RandomArtistPosition} ({artistSearch.RandomArtistPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(artistSearch.RandomArtistPlaycount)})");
         }
 
         if (cachedArtist?.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
@@ -1635,13 +1643,15 @@ public class ArtistBuilders
         if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)
         {
             var serverListeners = filteredUsersWithArtist.DistinctBy(d => d.UserId).Count(c => c.Playcount > 0);
-            var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
-            var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
+            var serverPlaycount = filteredUsersWithArtist.DistinctBy(d => d.UserId).Sum(a => a.Playcount);
+            var avgServerPlaycount = filteredUsersWithArtist.DistinctBy(d => d.UserId).Average(a => a.Playcount);
 
             footer.Append("Artist - ");
-            footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
-            footer.AppendLine($"{(int)avgServerPlaycount} avg");
+            footer.Append(
+                $"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
+            footer.Append(
+                $"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.AppendLine($"{((int)avgServerPlaycount).Format(context.NumberFormat)} avg");
         }
 
         var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
@@ -1771,7 +1781,7 @@ public class ArtistBuilders
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"in <b>.fmbot 🌐</b>", imgUrl,
                 artistSearch.Artist.ArtistName,
-                filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel,
+                filteredUsersWithArtist, context.ContextUser.UserId, privacyLevel, context.NumberFormat,
                 hidePrivateUsers: settings.HidePrivateUsers);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -1790,7 +1800,7 @@ public class ArtistBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, context.ContextUser.UserId,
-            privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+            privacyLevel, context.NumberFormat, hidePrivateUsers: settings.HidePrivateUsers);
         if (filteredUsersWithArtist.Count == 0)
         {
             serverUsers = "Nobody that uses .fmbot has listened to this artist.";
@@ -1802,7 +1812,7 @@ public class ArtistBuilders
         if (artistSearch.IsRandom)
         {
             footer.AppendLine(
-                $"Artist #{artistSearch.RandomArtistPosition} ({artistSearch.RandomArtistPlaycount} {StringExtensions.GetPlaysString(artistSearch.RandomArtistPlaycount)})");
+                $"Artist #{artistSearch.RandomArtistPosition} ({artistSearch.RandomArtistPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(artistSearch.RandomArtistPlaycount)})");
         }
 
         if (cachedArtist?.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
@@ -1819,9 +1829,11 @@ public class ArtistBuilders
             var avgPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
 
             footer.Append($"Global artist - ");
-            footer.Append($"{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
-            footer.AppendLine($"{(int)avgPlaycount} avg");
+            footer.Append(
+                $"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append(
+                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
         //var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingArtist(context.ContextUser.UserId,
@@ -1906,7 +1918,7 @@ public class ArtistBuilders
         {
             var image = await this._puppeteerService.GetWhoKnows("WhoKnows", $"from <b>{userTitle}</b>'s friends",
                 imgUrl, artistSearch.Artist.ArtistName,
-                usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server);
+                usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -1924,7 +1936,8 @@ public class ArtistBuilders
         }
 
         var serverUsers =
-            WhoKnowsService.WhoKnowsListToString(usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server);
+            WhoKnowsService.WhoKnowsListToString(usersWithArtist, context.ContextUser.UserId, PrivacyLevel.Server,
+                context.NumberFormat);
         if (usersWithArtist.Count == 0)
         {
             serverUsers = "None of your friends has listened to this artist.";
@@ -1952,9 +1965,9 @@ public class ArtistBuilders
             var globalPlaycount = usersWithArtist.Sum(a => a.Playcount);
             var avgPlaycount = usersWithArtist.Average(a => a.Playcount);
 
-            footer.Append($"{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
-            footer.AppendLine($"{(int)avgPlaycount} avg");
+            footer.Append($"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append($"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
         footer.AppendLine($"Friends WhoKnow artist for {userTitle}");

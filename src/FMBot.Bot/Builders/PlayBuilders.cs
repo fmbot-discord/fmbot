@@ -437,8 +437,8 @@ public class PlayBuilder
 
             ImportService.AddImportDescription(footer, [trackPage.Last().PlaySource ?? PlaySource.LastFm]);
 
-            footer.Append($"Page {pageCounter}/{trackPages.Count}");
-            footer.Append($" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles");
+            footer.Append($"Page {pageCounter}/{trackPages.Count.Format(context.NumberFormat)}");
+            footer.Append($" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount.Format(context.NumberFormat)} scrobbles");
 
             if (!string.IsNullOrWhiteSpace(artistToFilter))
             {
@@ -513,8 +513,8 @@ public class PlayBuilder
             $"{StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}";
 
         response.Text = timeSettings.TimePeriod == TimePeriod.AllTime
-            ? $"**{userTitle}** has `{count}` total scrobbles"
-            : $"**{userTitle}** has `{count}` scrobbles in the {timeSettings.AltDescription}";
+            ? $"**{userTitle}** has `{count.Format(context.NumberFormat)}` total scrobbles"
+            : $"**{userTitle}** has `{count.Format(context.NumberFormat)}` scrobbles in the {timeSettings.AltDescription}";
 
         return response;
     }
@@ -546,7 +546,7 @@ public class PlayBuilder
         string emoji = null;
         if (PlayService.StreakExists(streak))
         {
-            var streakText = PlayService.StreakToText(streak);
+            var streakText = PlayService.StreakToText(streak, context.NumberFormat);
             response.Embed.WithDescription(streakText);
 
             if (!userSettings.DifferentUser)
@@ -680,7 +680,7 @@ public class PlayBuilder
 
                 pageString.AppendLine();
 
-                var streakText = PlayService.StreakToText(streak, false);
+                var streakText = PlayService.StreakToText(streak, context.NumberFormat, false);
                 pageString.AppendLine(streakText);
 
                 counter++;
@@ -763,7 +763,7 @@ public class PlayBuilder
 
         response.Embed.WithTitle("🗑 Streak deleted");
         response.Embed.WithDescription("Successfully deleted the following streak:\n" +
-                                       PlayService.StreakToText(streak, false));
+                                       PlayService.StreakToText(streak, context.NumberFormat, false));
         response.ResponseType = ResponseType.Embed;
         return response;
     }
@@ -836,7 +836,7 @@ public class PlayBuilder
                 response.Embed.AddField(
                     $"<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D> - " +
                     $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} - " +
-                    $"{day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)}",
+                    $"{day.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(day.Playcount)}",
                     fieldContent.ToString()
                 );
 
@@ -854,9 +854,9 @@ public class PlayBuilder
             }
 
             pageFooter.AppendLine();
-            pageFooter.AppendLine($"Top genres, artist, album and track per {amount} days");
+            pageFooter.AppendLine($"Top genres, artist, album and track per {amount.Format(context.NumberFormat)} days");
             pageFooter.AppendLine(
-                $"{PlayService.GetUniqueCount(plays)} unique tracks - {plays.Count} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(plays), 1)} per day");
+                $"{PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(plays), 1).Format(context.NumberFormat)} per day");
 
             if (days.Count() < amount)
             {
@@ -940,17 +940,17 @@ public class PlayBuilder
             reply.Append($"<@{context.DiscordUser.Id}> My estimate is that you");
         }
 
-        reply.AppendLine($" will reach **{goalAmount}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
+        reply.AppendLine($" will reach **{goalAmount.Format(context.NumberFormat)}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {
             reply.AppendLine(
-                $"-# *Based on {determiner} alltime average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} scrobbles per day — {count} total in {Math.Round(totalDays, 0)} days*");
+                $"-# *Based on {determiner} alltime average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1).Format(context.NumberFormat)} scrobbles per day — {count.Format(context.NumberFormat)} total in {Math.Round(totalDays, 0)} days*");
         }
         else
         {
             reply.AppendLine(
-                $"-# *Based on {determiner} average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} scrobbles per day in the last {Math.Round(totalDays, 0)} days — {count} total*");
+                $"-# *Based on {determiner} average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1).Format(context.NumberFormat)} scrobbles per day in the last {Math.Round(totalDays, 0)} days — {count.Format(context.NumberFormat)} total*");
         }
 
         response.Text = reply.ToString();
@@ -986,7 +986,7 @@ public class PlayBuilder
         var userTitle = $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}";
 
         response.Embed.WithTitle(
-            $"{mileStoneAmount}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
+            $"{mileStoneAmount.Format(context.NumberFormat)}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
 
         if (mileStonePlay.Content.AlbumCoverUrl != null)
         {
@@ -1340,7 +1340,7 @@ public class PlayBuilder
                     w.TimePlayed >= filter && w.TimePlayed <= endFilter));
             monthDescription.AppendLine(
                 $"**`All`** " +
-                $"- **{allPlays.Count(w => w.TimePlayed >= filter && w.TimePlayed <= endFilter)}** plays " +
+                $"- **{allPlays.Count(w => w.TimePlayed >= filter && w.TimePlayed <= endFilter).Format(context.NumberFormat)}** plays " +
                 $"- **{StringExtensions.GetLongListeningTimeString(totalPlayTime)}**");
 
             foreach (var month in monthGroups)
@@ -1353,7 +1353,7 @@ public class PlayBuilder
                 var time = TimeService.GetPlayTimeForEnrichedPlays(month);
                 monthDescription.AppendLine(
                     $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month.Key.Month)}`** " +
-                    $"- **{month.Count()}** plays " +
+                    $"- **{month.Count().Format(context.NumberFormat)}** plays " +
                     $"- **{StringExtensions.GetLongListeningTimeString(time)}**");
             }
 

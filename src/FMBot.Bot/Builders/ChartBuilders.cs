@@ -195,7 +195,7 @@ public class ChartBuilders
         if (!userSettings.DifferentUser)
         {
             response.EmbedFooter.Text =
-                $"{userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount} scrobbles";
+                $"{userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles";
             response.Embed.WithFooter(response.EmbedFooter);
         }
 
@@ -345,7 +345,7 @@ public class ChartBuilders
 
         if (!userSettings.DifferentUser)
         {
-            footer.AppendLine($"{userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount} scrobbles");
+            footer.AppendLine($"{userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles");
         }
 
         response.Embed.WithFooter(footer.ToString());

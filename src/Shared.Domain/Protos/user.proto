@@ -1,0 +1,22 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+import "google/protobuf/timestamp.proto";
+
+package user;
+
+service UserOAuthService {
+  rpc StoreDiscordOAuthToken (StoreDiscordOAuthTokenRequest) returns (StoreDiscordOAuthTokenReply);
+}
+
+message StoreDiscordOAuthTokenRequest {
+  int64 discordUserId = 1;
+  string accessToken = 2;
+  string refreshToken = 3;
+  google.protobuf.Timestamp expiresAt = 4;
+}
+
+message StoreDiscordOAuthTokenReply {
+  bool success = 1;
+}

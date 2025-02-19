@@ -15,6 +15,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using Fergun.Interactive;
+using FMBot.Domain.Extensions;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -92,6 +93,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
         IAttachment attachment15 = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var numberFormat = contextUser.NumberFormat ?? NumberFormat.NoSeparator;
 
         if (this.Context.Interaction.Entitlements.Any() && !SupporterService.IsSupporter(contextUser.UserType))
         {
@@ -192,15 +194,15 @@ public class ImportGroupSlashCommands : InteractionModuleBase
             }
 
             await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
-                $"- **{imports.result.Count}** Spotify imports found");
+                $"- **{imports.result.Count.Format(numberFormat)}** Spotify imports found");
 
             var plays = await this._importService.SpotifyImportToUserPlays(contextUser, imports.result);
-            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description, $"- **{plays.Count}** actual plays found");
+            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description, $"- **{plays.Count.Format(numberFormat)}** actual plays found");
 
             var playsWithoutDuplicates =
                 await this._importService.RemoveDuplicateImports(contextUser.UserId, plays);
             await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
-                $"- **{playsWithoutDuplicates.Count}** new plays found");
+                $"- **{playsWithoutDuplicates.Count.Format(numberFormat)}** new plays found");
 
             if (playsWithoutDuplicates.Count > 0)
             {
@@ -232,7 +234,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
 
             await this._importService.UpdateExistingScrobbleSource(contextUser);
 
-            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.SpotifyImport);
+            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.SpotifyImport, numberFormat);
             if (years.Length > 0)
             {
                 embed.AddField("<:fmbot_importing:1131511469096312914> All imported Spotify plays", years, true);
@@ -306,6 +308,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
         IAttachment attachment = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var numberFormat = contextUser.NumberFormat ?? NumberFormat.NoSeparator;
 
         if (this.Context.Interaction.Entitlements.Any() && !SupporterService.IsSupporter(contextUser.UserType))
         {
@@ -371,7 +374,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
             }
 
             await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
-                $"- **{imports.result.Count}** Apple Music imports found");
+                $"- **{imports.result.Count.Format(numberFormat)}** Apple Music imports found");
 
             var importsWithArtist = await this._importService.AppleMusicImportAddArtists(contextUser, imports.result);
             await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
@@ -380,12 +383,12 @@ public class ImportGroupSlashCommands : InteractionModuleBase
                 $"- **{importsWithArtist.userPlays.Count(c => !string.IsNullOrWhiteSpace(c.ArtistName))}** with artist names");
 
             var plays = ImportService.AppleMusicImportsToValidUserPlays(contextUser, importsWithArtist.userPlays);
-            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description, $"- **{plays.Count}** actual plays found");
+            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description, $"- **{plays.Count.Format(numberFormat)}** actual plays found");
 
             var playsWithoutDuplicates =
                 await this._importService.RemoveDuplicateImports(contextUser.UserId, plays);
             await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
-                $"- **{playsWithoutDuplicates.Count}** new plays found");
+                $"- **{playsWithoutDuplicates.Count.Format(numberFormat)}** new plays found");
 
             if (playsWithoutDuplicates.Count > 0)
             {
@@ -417,7 +420,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
 
             await this._importService.UpdateExistingScrobbleSource(contextUser);
 
-            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.AppleMusicImport);
+            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.AppleMusicImport, numberFormat);
             if (years.Length > 0)
             {
                 embed.AddField("<:fmbot_importing:1131511469096312914> All imported Apple Music plays", years, true);

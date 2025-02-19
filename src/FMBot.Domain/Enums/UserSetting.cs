@@ -16,7 +16,7 @@ public enum UserSetting
     SpotifyImport = 10,
     [Option("User reactions ⭐", "Set personal automated emoji reactions")]
     UserReactions = 11,
-    [Option("Localization", "Set your timezone")]
+    [Option("Localization", "Set your timezone and number formatting")]
     Localization = 15,
     [Option("Music bot scrobbling", "Toggle automatically scrobbling other music bots")]
     BotScrobbling = 20,

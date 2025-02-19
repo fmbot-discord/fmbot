@@ -22,6 +22,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -678,40 +679,75 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("localization", "Configure your timezone in .fmbot")]
+    [SlashCommand("localization", "Configure your timezone and number format in .fmbot")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task SetLocalization(
         [Summary("Timezone", "Timezone you want to set")] [Autocomplete(typeof(TimeZoneAutoComplete))]
-        string timezone)
+        string timezone = null,
+        [Summary("Numberformat", "Number formatting you want to use")]
+        NumberFormat? numberFormat = null)
     {
         try
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
+            var embeds = new List<Embed>();
+            EmbedBuilder timezoneEmbed = null;
+            EmbedBuilder numberFormatEmbed = null;
+            if (timezone != null)
+            {
+                timezoneEmbed = new EmbedBuilder();
 
-            await this._userService.SetTimeZone(userSettings.UserId, timezone);
+                var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
 
-            var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
-            var nextMidnight = localTime.Date.AddDays(1);
-            var dateValue = ((DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(nextMidnight, timeZoneInfo))
-                .ToUnixTimeSeconds();
+                await this._userService.SetTimeZone(userSettings.UserId, timezone);
 
-            var reply = new StringBuilder();
-            reply.AppendLine($"Your timezone has successfully been updated.");
-            reply.AppendLine();
-            reply.AppendLine($"- ID: `{timeZoneInfo.Id}`");
-            reply.AppendLine($"- Zone: `{timeZoneInfo.DisplayName}`");
-            reply.AppendLine($"- Midnight: <t:{dateValue}:t>");
+                var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
+                var nextMidnight = localTime.Date.AddDays(1);
+                var dateValue = ((DateTimeOffset)TimeZoneInfo.ConvertTimeToUtc(nextMidnight, timeZoneInfo))
+                    .ToUnixTimeSeconds();
 
-            var embed = new EmbedBuilder();
-            embed.WithColor(DiscordConstants.InformationColorBlue);
-            embed.WithDescription(reply.ToString());
+                var reply = new StringBuilder();
+                reply.AppendLine($"Your timezone has successfully been updated.");
+                reply.AppendLine();
+                reply.AppendLine($"- ID: `{timeZoneInfo.Id}`");
+                reply.AppendLine($"- Zone: `{timeZoneInfo.DisplayName}`");
+                reply.AppendLine($"- Midnight: <t:{dateValue}:t>");
 
-            await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+                timezoneEmbed.WithColor(DiscordConstants.InformationColorBlue);
+                timezoneEmbed.WithDescription(reply.ToString());
+                embeds.Add(timezoneEmbed.Build());
+            }
+
+            if (numberFormat.HasValue)
+            {
+                numberFormatEmbed = new EmbedBuilder();
+
+                var setValue = await this._userService.SetNumberFormat(userSettings.UserId, numberFormat.Value);
+
+                var reply = new StringBuilder();
+                reply.AppendLine($"Your number format has successfully been updated.");
+                reply.AppendLine();
+                reply.AppendLine($"- Format: **{numberFormat}**");
+                reply.AppendLine($"- **{231737456.Format(setValue)}** plays");
+                reply.AppendLine($"- **{((decimal)42.3).Format(setValue)}** average");
+
+                numberFormatEmbed.WithColor(DiscordConstants.InformationColorBlue);
+                numberFormatEmbed.WithDescription(reply.ToString());
+                embeds.Add(numberFormatEmbed.Build());
+            }
+
+            if (!embeds.Any())
+            {
+                await RespondAsync("No options set. Select one of the slash command options to configure your localization settings.", ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            await RespondAsync(null, embeds.ToArray(), ephemeral: true);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)

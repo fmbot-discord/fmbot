@@ -665,7 +665,7 @@ public class UserBuilder
                         description.AppendLine("Sorry, you haven't been featured yet... <:404:882220605783560222>");
                         description.AppendLine();
                         description.AppendLine($"But don't give up hope just yet!");
-                        description.AppendLine($"Every hour there is a 1 in {odds} chance that you might be picked.");
+                        description.AppendLine($"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that you might be picked.");
 
                         if (context.DiscordGuild?.Id != this._botSettings.Bot.BaseServerId)
                         {
@@ -695,7 +695,7 @@ public class UserBuilder
                         description.AppendLine("Hmm, they haven't been featured yet... <:404:882220605783560222>");
                         description.AppendLine();
                         description.AppendLine($"But don't let them give up hope just yet!");
-                        description.AppendLine($"Every hour there is a 1 in {odds} chance that they might be picked.");
+                        description.AppendLine($"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that they might be picked.");
                     }
 
                     break;
@@ -729,8 +729,8 @@ public class UserBuilder
                 }
 
                 var pageFooter = new StringBuilder();
-                pageFooter.Append($"Page {pageCounter}/{featuredPages.Count}");
-                pageFooter.Append($" - {featuredHistory.Count} total");
+                pageFooter.Append($"Page {pageCounter}/{featuredPages.Count.Format(context.NumberFormat)}");
+                pageFooter.Append($" - {featuredHistory.Count.Format(context.NumberFormat)} total");
 
                 var page = new PageBuilder()
                     .WithDescription(description.ToString())
@@ -868,10 +868,10 @@ public class UserBuilder
         var avgPerDay = userInfo.Playcount / totalDays;
 
         var playcounts = new StringBuilder();
-        playcounts.AppendLine($"**{userInfo.Playcount}** scrobbles");
-        playcounts.AppendLine($"**{userInfo.TrackCount}** different tracks");
-        playcounts.AppendLine($"**{userInfo.AlbumCount}** different albums");
-        playcounts.AppendLine($"**{userInfo.ArtistCount}** different artists");
+        playcounts.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
+        playcounts.AppendLine($"**{userInfo.TrackCount.Format(context.NumberFormat)}** different tracks");
+        playcounts.AppendLine($"**{userInfo.AlbumCount.Format(context.NumberFormat)}** different albums");
+        playcounts.AppendLine($"**{userInfo.ArtistCount.Format(context.NumberFormat)}** different artists");
         response.Embed.AddField("Counts", playcounts.ToString(), true);
 
         var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
@@ -886,10 +886,10 @@ public class UserBuilder
             }
         }
 
-        stats.AppendLine($"Average of **{Math.Round(avgPerDay, 1)}** scrobbles per day");
+        stats.AppendLine($"Average of **{Math.Round(avgPerDay, 1).Format(context.NumberFormat)}** scrobbles per day");
 
         stats.AppendLine(
-            $"Average of **{Math.Round((double)userInfo.AlbumCount / userInfo.ArtistCount, 1)}** albums and **{Math.Round((double)userInfo.TrackCount / userInfo.ArtistCount, 1)}** tracks per artist");
+            $"Average of **{Math.Round((double)userInfo.AlbumCount / userInfo.ArtistCount, 1).Format(context.NumberFormat)}** albums and **{Math.Round((double)userInfo.TrackCount / userInfo.ArtistCount, 1).Format(context.NumberFormat)}** tracks per artist");
 
         var topArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true);
 
@@ -897,7 +897,7 @@ public class UserBuilder
         {
             var amount = topArtists.OrderByDescending(o => o.UserPlaycount).Take(10).Sum(s => s.UserPlaycount);
             stats.AppendLine(
-                $"Top **10** artists make up **{Math.Round((double)amount / userInfo.Playcount * 100, 1)}%** of scrobbles");
+                $"Top **10** artists make up **{Math.Round((double)amount / userInfo.Playcount * 100, 1).Format(context.NumberFormat)}%** of scrobbles");
         }
 
         var topDay = allPlays.GroupBy(g => g.TimePlayed.DayOfWeek).MaxBy(o => o.Count());
@@ -1079,7 +1079,7 @@ public class UserBuilder
             var time = TimeService.GetPlayTimeForEnrichedPlays(month);
             monthDescription.AppendLine(
                 $"**`{CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month.Key.Month)}`** " +
-                $"- **{month.Count()}** plays " +
+                $"- **{month.Count().Format(context.NumberFormat)}** plays " +
                 $"- **{StringExtensions.GetLongListeningTimeString(time)}**");
             processedPlays += month.Count();
         }
@@ -1102,7 +1102,7 @@ public class UserBuilder
             {
                 yearDescription.AppendLine(
                     $"` All`** " +
-                    $"- **{allPlays.Count}** plays " +
+                    $"- **{allPlays.Count.Format(context.NumberFormat)}** plays " +
                     $"- **{StringExtensions.GetLongListeningTimeString(totalTime)}");
             }
 
@@ -1427,7 +1427,7 @@ public class UserBuilder
             if (context.ContextUser.UserType == UserType.Supporter)
             {
                 description.AppendLine(
-                    "-# *If you have supporter purchased through Discord and plan to create a new .fmbot account with the same Discord account, your status will re-apply in a few minutes. Supporter purchased through Discord can't be moved to different Discord accounts." +
+                    "-# *If you have supporter purchased through Discord or Stripe and plan to create a new .fmbot account with the same Discord account, your status will re-apply in a few minutes. Supporter purchased through Discord can't be moved to different Discord accounts." +
                     "If you are a supporter purchased though OpenCollective, please open a help thread on [our server](https://discord.gg/fmbot) for account transfers.*");
             }
             else
@@ -1511,9 +1511,9 @@ public class UserBuilder
         };
 
         var description = new StringBuilder();
-        description.AppendLine("Use the `/localization` command to set your timezone for .fmbot commands. ");
+        description.AppendLine("Use the `/localization` command to set your timezone and number formatting for .fmbot commands. ");
         description.AppendLine();
-        description.AppendLine("Pick your timezone through the option in the slash command.");
+        description.AppendLine("Pick your timezone and format through the option in the slash command.");
         description.AppendLine();
         description.Append(
             "*Note: This does not update the localization setting on the Last.fm website. You can do that [here](https://www.last.fm/settings/website). ");
@@ -1582,7 +1582,7 @@ public class UserBuilder
 
         embedDescription.AppendLine("**Last.fm**");
         embedDescription.AppendLine("- Use only your Last.fm for stats and ignore imports");
-        embedDescription.AppendLine($"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
+        embedDescription.AppendLine($"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} Last.fm scrobbles");
         embedDescription.AppendLine();
 
         embedDescription.AppendLine($"**Full Imports, then Last.fm**");
@@ -1592,10 +1592,10 @@ public class UserBuilder
         var playsWithFullImportThenLastFm =
             await this._playService.GetPlaysWithDataSource(userId, DataSource.FullImportThenLastFm);
         embedDescription.Append(
-            $"- {playsWithFullImportThenLastFm.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport)} imports + ");
+            $"- {playsWithFullImportThenLastFm.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport).Format(context.NumberFormat)} imports + ");
         embedDescription.Append(
-            $"{playsWithFullImportThenLastFm.Count(c => c.PlaySource == PlaySource.LastFm)} scrobbles = ");
-        embedDescription.Append($"{playsWithFullImportThenLastFm.Count()} plays");
+            $"{playsWithFullImportThenLastFm.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} scrobbles = ");
+        embedDescription.Append($"{playsWithFullImportThenLastFm.Count().Format(context.NumberFormat)} plays");
         embedDescription.AppendLine();
         embedDescription.AppendLine();
 
@@ -1607,10 +1607,10 @@ public class UserBuilder
         var playsWithImportUntilFullLastFm =
             await this._playService.GetPlaysWithDataSource(userId, DataSource.ImportThenFullLastFm);
         embedDescription.Append(
-            $"- {playsWithImportUntilFullLastFm.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport)} imports + ");
+            $"- {playsWithImportUntilFullLastFm.Count(c => c.PlaySource == PlaySource.SpotifyImport || c.PlaySource == PlaySource.AppleMusicImport).Format(context.NumberFormat)} imports + ");
         embedDescription.Append(
-            $"{playsWithImportUntilFullLastFm.Count(c => c.PlaySource == PlaySource.LastFm)} scrobbles = ");
-        embedDescription.Append($"{playsWithImportUntilFullLastFm.Count()} plays");
+            $"{playsWithImportUntilFullLastFm.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} scrobbles = ");
+        embedDescription.Append($"{playsWithImportUntilFullLastFm.Count().Format(context.NumberFormat)} plays");
         embedDescription.AppendLine();
 
         if (!hasImported)
@@ -1627,17 +1627,17 @@ public class UserBuilder
             if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport))
             {
                 embedDescription.AppendLine(
-                    $"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} imported Apple Music plays");
+                    $"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport).Format(context.NumberFormat)} imported Apple Music plays");
             }
 
             if (allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
             {
                 embedDescription.AppendLine(
-                    $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} imported Spotify plays");
+                    $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport).Format(context.NumberFormat)} imported Spotify plays");
             }
 
             embedDescription.AppendLine(
-                $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
+                $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} Last.fm scrobbles");
         }
 
         response.Embed.WithDescription(embedDescription.ToString());

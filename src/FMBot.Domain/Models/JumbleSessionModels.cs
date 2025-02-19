@@ -19,5 +19,6 @@ public enum JumbleHintType
     Type = 7,
     Country = 8,
     AppleMusicDescription = 9,
-    Label = 10
+    Label = 10,
+    ReleaseDate = 11
 }

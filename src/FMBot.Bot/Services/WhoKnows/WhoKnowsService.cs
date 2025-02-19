@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -88,7 +89,7 @@ public class WhoKnowsService
             UserId = s.Key
         }).ToList();
 
-        var (stats, filteredUsers) = FilterWhoKnowsObjects(wkObjects, guild, roles);
+        var (stats, filteredUsers) = FilterWhoKnowsObjects(wkObjects, guildUsers, guild, roles);
 
         var userIdsLeft = filteredUsers
             .Select(s => s.UserId)
@@ -103,6 +104,7 @@ public class WhoKnowsService
 
     public static (FilterStats stats, List<WhoKnowsObjectWithUser> filteredUsers) FilterWhoKnowsObjects(
         ICollection<WhoKnowsObjectWithUser> users,
+        IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,
         List<ulong> roles = null)
     {
@@ -137,18 +139,28 @@ public class WhoKnowsService
             stats.GuildActivityThresholdFiltered = preFilterCount - users.Count;
         }
 
-        if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
+        if (guildUsers.Any(w => w.Value is { BlockedFromWhoKnows: true }))
         {
             var preFilterCount = users.Count;
 
-            var usersToFilter = guild.GuildBlockedUsers
-                .DistinctBy(d => d.UserId)
-                .Where(w => w.BlockedFromWhoKnows)
-                .Select(s => s.UserId)
+            var usersToFilter = guildUsers
+                .DistinctBy(d => d.Value.UserId)
+                .Where(w => w.Value.BlockedFromWhoKnows)
+                .Select(s => s.Value.UserId)
                 .ToHashSet();
 
+            var lastFmUsersToFilter = guildUsers
+                .DistinctBy(d => d.Value.UserNameLastFM, comparer: StringComparer.OrdinalIgnoreCase)
+                .Where(w => w.Value.BlockedFromWhoKnows)
+                .Select(s => s.Value.UserNameLastFM)
+                .ToHashSet();
+
+            var insensitiveLastFmUsersToFilter = new HashSet<string>(
+                lastFmUsersToFilter, StringComparer.OrdinalIgnoreCase);
+
             users = users
-                .Where(w => !usersToFilter.Contains(w.UserId))
+                .Where(w => !usersToFilter.Contains(w.UserId) &&
+                            !insensitiveLastFmUsersToFilter.Contains(w.LastFMUsername))
                 .ToList();
 
             stats.BlockedFiltered = preFilterCount - users.Count;
@@ -225,8 +237,12 @@ public class WhoKnowsService
         var filteredUsers = await db.GlobalFilteredUsers
             .AsQueryable()
             .Where(w => w.OccurrenceEnd.HasValue
-                ? w.OccurrenceEnd.Value > (w.MonthLength == null || w.MonthLength == 3 ? existingFilterDate : existingRepeatOffenderFilterDate)
-                : w.Created > (w.MonthLength == null || w.MonthLength == 3 ? existingFilterDate : existingRepeatOffenderFilterDate))
+                ? w.OccurrenceEnd.Value > (w.MonthLength == null || w.MonthLength == 3
+                    ? existingFilterDate
+                    : existingRepeatOffenderFilterDate)
+                : w.Created > (w.MonthLength == null || w.MonthLength == 3
+                    ? existingFilterDate
+                    : existingRepeatOffenderFilterDate))
             .ToListAsync();
 
         foreach (var filteredUser in filteredUsers)
@@ -287,7 +303,8 @@ public class WhoKnowsService
     }
 
     public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
-        PrivacyLevel minPrivacyLevel, CrownModel crownModel = null, bool hidePrivateUsers = false)
+        PrivacyLevel minPrivacyLevel, NumberFormat numberFormat, CrownModel crownModel = null,
+        bool hidePrivateUsers = false)
     {
         var reply = new StringBuilder();
 
@@ -306,7 +323,8 @@ public class WhoKnowsService
         var indexNumber = 1;
         var timesNameAdded = 0;
         var requestedUserAdded = false;
-        var addedUsers = new List<int>();
+        var addedUsers = new HashSet<int>();
+        var addedLastFmUsers = new HashSet<string>();
 
         // Note: You might not be able to see them, but this code contains specific spacers
         // https://www.compart.com/en/unicode/category/Zs
@@ -319,7 +337,8 @@ public class WhoKnowsService
 
             var user = usersToShow[index];
 
-            if (addedUsers.Any(a => a.Equals(user.UserId)))
+            if (addedUsers.Any(a => a.Equals(user.UserId)) ||
+                addedLastFmUsers.Any(a => a.Equals(user.LastFMUsername)))
             {
                 continue;
             }
@@ -347,10 +366,8 @@ public class WhoKnowsService
 
             var positionCounter = $"{spacer}{indexNumber}.";
             positionCounter = user.UserId == requestedUserId
-                ?
-                user.SameServer == true ? $"__**{positionCounter}** __" : $"**{positionCounter}** "
-                :
-                user.SameServer == true
+                ? user.SameServer == true ? $"__**{positionCounter}** __" : $"**{positionCounter}** "
+                : user.SameServer == true
                     ? $"__{positionCounter}__ "
                     : $"{positionCounter} ";
 
@@ -365,17 +382,18 @@ public class WhoKnowsService
 
             if (user.UserId == requestedUserId)
             {
-                reply.Append($" - {user.Playcount} {playString}**\n");
+                reply.Append($" - {user.Playcount.Format(numberFormat)} {playString}**\n");
             }
             else
             {
-                reply.Append($" - **{user.Playcount}** {playString}\n");
+                reply.Append($" - **{user.Playcount.Format(numberFormat)}** {playString}\n");
             }
 
             indexNumber += 1;
             timesNameAdded += 1;
 
             addedUsers.Add(user.UserId);
+            addedLastFmUsers.Add(user.LastFMUsername);
 
             if (user.UserId == requestedUserId)
             {

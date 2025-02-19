@@ -14,6 +14,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -133,8 +134,8 @@ public class GenreBuilders
             foreach (var genre in page)
             {
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{genre.ListenerCount}` · **{genre.GenreName.Transform(To.TitleCase)}** - *{genre.TotalPlaycount} {StringExtensions.GetPlaysString(genre.TotalPlaycount)}*"
-                    : $"`{genre.TotalPlaycount}` · **{genre.GenreName.Transform(To.TitleCase)}** - *{genre.ListenerCount} {StringExtensions.GetListenersString(genre.ListenerCount)}*";
+                    ? $"`{genre.ListenerCount.Format(context.NumberFormat)}` · **{genre.GenreName.Transform(To.TitleCase)}** - *{genre.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(genre.TotalPlaycount)}*"
+                    : $"`{genre.TotalPlaycount.Format(context.NumberFormat)}` · **{genre.GenreName.Transform(To.TitleCase)}** - *{genre.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(genre.ListenerCount)}*";
 
                 if (previousTopGuildGenres != null && previousTopGuildGenres.Any())
                 {
@@ -283,7 +284,7 @@ public class GenreBuilders
             var image = await this._puppeteerService.GetTopList(userTitle, "Top Genres", "genres",
                 timeSettings.Description,
                 genres.Count, totalPlays.GetValueOrDefault(), firstArtistImage,
-                this._genreService.GetTopListForTopGenres(genres));
+                this._genreService.GetTopListForTopGenres(genres), context.NumberFormat);
 
             var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
             response.Stream = encoded.AsStream();
@@ -305,7 +306,7 @@ public class GenreBuilders
             foreach (var genre in genrePage)
             {
                 var name =
-                    $"**{genre.GenreName.Transform(To.TitleCase)}** - *{genre.UserPlaycount} {StringExtensions.GetPlaysString(genre.UserPlaycount)}*";
+                    $"**{genre.GenreName.Transform(To.TitleCase)}** - *{genre.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(genre.UserPlaycount)}*";
 
                 if (topListSettings.Billboard && previousTopGenres.Any())
                 {
@@ -327,7 +328,7 @@ public class GenreBuilders
 
             var footer = new StringBuilder();
             footer.AppendLine("Genre source: Spotify");
-            footer.AppendLine($"Page {pageCounter}/{genrePages.Count} - {genres.Count} total genres");
+            footer.AppendLine($"Page {pageCounter}/{genrePages.Count} - {genres.Count.Format(context.NumberFormat)} total genres");
 
             if (topListSettings.Billboard)
             {
@@ -562,7 +563,7 @@ public class GenreBuilders
                 $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{genreResults.First()}~{genreOptions}",
                 description: firstResult == null
                     ? null
-                    : $"{firstResult.UserPlaycount} {StringExtensions.GetPlaysString(firstResult.UserPlaycount)}");
+                    : $"{firstResult.UserPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(firstResult.UserPlaycount)}");
 
             foreach (var genre in topGenresList.Where(w =>
                          resultSet.Contains(w.GenreName) && !w.GenreName.Equals(genreResults.First(),
@@ -677,7 +678,7 @@ public class GenreBuilders
                     $"{userSettings.DisplayName}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
             }
 
-            pages = CreateGenrePageBuilder(userGenreArtistPages, response.EmbedAuthor, userGenre, "User view");
+            pages = CreateGenrePageBuilder(userGenreArtistPages, response.EmbedAuthor, userGenre, "User view" ,context.NumberFormat);
 
             response.EmbedAuthor.WithName(
                 $"Top '{userGenre.GenreName.Transform(To.TitleCase)}' artists for {userTitle}");
@@ -707,7 +708,7 @@ public class GenreBuilders
             }
 
             var guildGenreArtistPages = guildGenre.Artists.ChunkBy(10);
-            pages = CreateGenrePageBuilder(guildGenreArtistPages, response.EmbedAuthor, guildGenre, "Server view",
+            pages = CreateGenrePageBuilder(guildGenreArtistPages, response.EmbedAuthor, guildGenre, "Server view", context.NumberFormat,
                 userSettings.DisplayName, userGenre?.Artists);
 
             response.EmbedAuthor.WithName(
@@ -762,6 +763,7 @@ public class GenreBuilders
         EmbedAuthorBuilder author,
         TopGenre topGenre,
         string view,
+        NumberFormat numberFormat,
         string userTitle = null,
         IReadOnlyCollection<TopArtist> allUserTopArtists = null)
     {
@@ -809,7 +811,7 @@ public class GenreBuilders
                 }
 
                 genrePageString.Append(
-                    $" - *{genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
+                    $" - *{genreArtist.UserPlaycount.Format(numberFormat)} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}*");
                 genrePageString.AppendLine();
 
                 counter++;
@@ -874,11 +876,11 @@ public class GenreBuilders
             await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
         await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, currentUser.UserId, guild);
 
-        var (filterStats, filteredUsersWithGenre) = WhoKnowsService.FilterWhoKnowsObjects(usersWithGenre, guild);
+        var (filterStats, filteredUsersWithGenre) = WhoKnowsService.FilterWhoKnowsObjects(usersWithGenre, guildUsers,guild);
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, context.ContextUser.UserId,
-                PrivacyLevel.Server);
+                PrivacyLevel.Server, context.NumberFormat);
         if (filteredUsersWithGenre.Count == 0)
         {
             serverUsers = "Nobody in this server (not even you) has listened to this genre.";
@@ -902,9 +904,9 @@ public class GenreBuilders
             var avgServerPlaycount = filteredUsersWithGenre.Average(a => a.Playcount);
 
             footer.Append($"Genre - ");
-            footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
-            footer.Append($"{(int)avgServerPlaycount} avg");
+            footer.Append($"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
+            footer.Append($"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.Append($"{((int)avgServerPlaycount).Format(context.NumberFormat)} avg");
             footer.AppendLine();
         }
 
@@ -984,7 +986,7 @@ public class GenreBuilders
         }
 
         var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithGenre.ToList(), context.ContextUser.UserId,
-            PrivacyLevel.Server);
+            PrivacyLevel.Server, context.NumberFormat);
         if (usersWithGenre.Count == 0)
         {
             serverUsers = "None of your friends have listened to this genre.";
@@ -1011,9 +1013,9 @@ public class GenreBuilders
             var avgServerPlaycount = usersWithGenre.Average(a => a.Playcount);
 
             footer.Append($"Genre - ");
-            footer.Append($"{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
-            footer.Append($"{(int)avgServerPlaycount} avg");
+            footer.Append($"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
+            footer.Append($"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.Append($"{((int)avgServerPlaycount).Format(context.NumberFormat)} avg");
             footer.AppendLine();
         }
 

@@ -11,6 +11,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 
@@ -175,7 +176,7 @@ public class RecapBuilders
                 {
                     var enrichedPlays = await this._timeService.EnrichPlaysWithPlayTime(filteredPlays);
                     response.Embed.AddField("Scrobbles",
-                        $"You got **{filteredPlays.Count}** {StringExtensions.GetScrobblesString(filteredPlays.Count)} in **{enrichedPlays.totalPlayTime.TotalMinutes:0}** minutes of listening time.");
+                        $"You got **{filteredPlays.Count.Format(context.NumberFormat)}** {StringExtensions.GetScrobblesString(filteredPlays.Count)} in **{enrichedPlays.totalPlayTime.TotalMinutes:0}** minutes of listening time.");
                 }
                 else
                 {
@@ -183,7 +184,7 @@ public class RecapBuilders
                         timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
                     response.Embed.AddField("Scrobbles",
-                        $"You got **{count}** {StringExtensions.GetScrobblesString(count)}.");
+                        $"You got **{count.Format(context.NumberFormat)}** {StringExtensions.GetScrobblesString(count)}.");
                 }
 
                 if (!userSettings.DifferentUser && timeSettings.EndDateTime >= botStatsCutoff)
@@ -191,7 +192,7 @@ public class RecapBuilders
                     var differentArtists =
                         userInteractions.Where(w => w.Artist != null).GroupBy(g => g.Artist.ToLower()).Count();
                     response.Embed.AddField("Bot stats",
-                        $"You ran **{userInteractions.Count}** commands, which showed you **{differentArtists}** different artists.");
+                        $"You ran **{userInteractions.Count.Format(context.NumberFormat)}** commands, which showed you **{differentArtists.Format(context.NumberFormat)}** different artists.");
                 }
 
                 response.Embed.WithFooter("⬇️ Dive deeper with the dropdown below");
@@ -205,9 +206,9 @@ public class RecapBuilders
                 var stats = this._userService.CalculateBotStats(userInteractions);
 
                 var searchStats = new StringBuilder();
-                searchStats.AppendLine($"**{stats.UniqueArtistsSearched}** different artists");
-                searchStats.AppendLine($"**{stats.UniqueAlbumsSearched}** different albums");
-                searchStats.AppendLine($"**{stats.UniqueTracksSearched}** different tracks");
+                searchStats.AppendLine($"**{stats.UniqueArtistsSearched.Format(context.NumberFormat)}** different artists");
+                searchStats.AppendLine($"**{stats.UniqueAlbumsSearched.Format(context.NumberFormat)}** different albums");
+                searchStats.AppendLine($"**{stats.UniqueTracksSearched.Format(context.NumberFormat)}** different tracks");
                 response.Embed.AddField("Viewed counts", searchStats.ToString(), true);
 
                 var activityField = new StringBuilder();
@@ -220,7 +221,7 @@ public class RecapBuilders
                 response.Embed.AddField("Activity patterns", activityField.ToString(), true);
 
                 var usageField = new StringBuilder();
-                usageField.AppendLine($"Total commands: **{stats.TotalCommands}**");
+                usageField.AppendLine($"Total commands: **{stats.TotalCommands.Format(context.NumberFormat)}**");
                 usageField.AppendLine($"Servers used in: **{stats.ServersUsedIn}**");
                 usageField.AppendLine($"Reliability: **{(100 - stats.ErrorRate):F1}%**");
                 response.Embed.AddField("Usage stats", usageField.ToString(), true);
@@ -235,7 +236,7 @@ public class RecapBuilders
                 response.Embed.AddField("Most active days", peakDaysField.ToString(), true);
 
                 var patternsField = new StringBuilder();
-                patternsField.AppendLine($"Longest daily streak: **{stats.LongestCommandStreak} days**");
+                patternsField.AppendLine($"Longest daily streak: **{stats.LongestCommandStreak.Format(context.NumberFormat)} days**");
                 patternsField.AppendLine(
                     $"Avg. time between commands: **{stats.AverageTimeBetweenCommands.Hours}h {stats.AverageTimeBetweenCommands.Minutes}m**");
                 patternsField.AppendLine($"Avg. commands per session: **{stats.AverageCommandsPerSession:F1}**");
@@ -449,7 +450,7 @@ public class RecapBuilders
 
                     listeningTimeDescription.AppendLine(
                         $"- **`All`** " +
-                        $"— **{enrichedPlays.enrichedPlays.Count}** plays " +
+                        $"— **{enrichedPlays.enrichedPlays.Count.Format(context.NumberFormat)}** plays " +
                         $"— **{StringExtensions.GetLongListeningTimeString(enrichedPlays.totalPlayTime)}**");
 
                     if (coveredTimePeriod.Days <= 32)
@@ -472,7 +473,7 @@ public class RecapBuilders
 
                             listeningTimeDescription.AppendLine(
                                 $"- **`Avg`** " +
-                                $"— **{averagePlays}** plays " +
+                                $"— **{averagePlays.Format(context.NumberFormat)}** plays " +
                                 $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
                         }
 
@@ -481,7 +482,7 @@ public class RecapBuilders
                             var time = TimeService.GetPlayTimeForEnrichedPlays(day);
                             listeningTimeDescription.AppendLine(
                                 $"- **`{day.Key.Day}`** " +
-                                $"— **{day.Count()}** plays " +
+                                $"— **{day.Count().Format(context.NumberFormat)}** plays " +
                                 $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
                         }
                     }
@@ -505,7 +506,7 @@ public class RecapBuilders
 
                             listeningTimeDescription.AppendLine(
                                 $"- **`Avg`** " +
-                                $"— **{averagePlays}** plays " +
+                                $"— **{averagePlays.Format(context.NumberFormat)}** plays " +
                                 $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
                         }
 
@@ -514,7 +515,7 @@ public class RecapBuilders
                             var time = TimeService.GetPlayTimeForEnrichedPlays(month);
                             listeningTimeDescription.AppendLine(
                                 $"- **`{CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month.Key.Month)}`** " +
-                                $"— **{month.Count()}** plays " +
+                                $"— **{month.Count().Format(context.NumberFormat)}** plays " +
                                 $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
                         }
                     }
@@ -534,7 +535,7 @@ public class RecapBuilders
 
                             listeningTimeDescription.AppendLine(
                                 $"- **`Avg`** " +
-                                $"— **{averagePlays}** plays " +
+                                $"— **{averagePlays.Format(context.NumberFormat)}** plays " +
                                 $"— **{StringExtensions.GetLongListeningTimeString(averageTime)}**");
                         }
 
@@ -543,7 +544,7 @@ public class RecapBuilders
                             var time = TimeService.GetPlayTimeForEnrichedPlays(year);
                             listeningTimeDescription.AppendLine(
                                 $"- **`{year.Key.Year}`** " +
-                                $"— **{year.Count()}** plays " +
+                                $"— **{year.Count().Format(context.NumberFormat)}** plays " +
                                 $"— **{StringExtensions.GetLongListeningTimeString(time)}**");
                         }
                     }
