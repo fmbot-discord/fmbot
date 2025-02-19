@@ -52,6 +52,7 @@ public class EurovisionService
 
         allContestants.AddRange(await EurovisionCsvToModel("1956-2022"));
         allContestants.AddRange(await EurovisionCsvToModel("2023-2024"));
+        allContestants.AddRange(await EurovisionCsvToModel("2025"));
 
         foreach (var contestant in allContestants.OrderBy(o => o.Performer))
         {
@@ -79,13 +80,13 @@ public class EurovisionService
     {
         var full = new StringBuilder();
         var oneLine = new StringBuilder();
-        
+
         full.Append(
             $"- **{eurovisionEntry.Year}** entry for **{eurovisionEntry.ToCountry}** :flag_{eurovisionEntry.ToCountryId}:");
         full.AppendLine();
 
         oneLine.Append($"Eurovision {eurovisionEntry.Year} for {eurovisionEntry.ToCountry} {IsoCountryCodeToFlagEmoji(eurovisionEntry.ToCountryId)}");
-        
+
         if (eurovisionEntry.SfNum.HasValue && !eurovisionEntry.PointsFinal.HasValue)
         {
             full.Append(
@@ -107,7 +108,7 @@ public class EurovisionService
             }
             oneLine.Append($" - #{eurovisionEntry.PlaceContest}");
         }
-        
+
         return (full.ToString(), oneLine.ToString());
     }
 
