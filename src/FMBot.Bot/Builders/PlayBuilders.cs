@@ -856,7 +856,7 @@ public class PlayBuilder
             pageFooter.AppendLine();
             pageFooter.AppendLine($"Top genres, artist, album and track per {amount.Format(context.NumberFormat)} days");
             pageFooter.AppendLine(
-                $"{PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(plays), 1)} per day");
+                $"{PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(plays), 1).Format(context.NumberFormat)} per day");
 
             if (days.Count() < amount)
             {
@@ -945,12 +945,12 @@ public class PlayBuilder
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {
             reply.AppendLine(
-                $"-# *Based on {determiner} alltime average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} scrobbles per day — {count.Format(context.NumberFormat)} total in {Math.Round(totalDays, 0)} days*");
+                $"-# *Based on {determiner} alltime average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1).Format(context.NumberFormat)} scrobbles per day — {count.Format(context.NumberFormat)} total in {Math.Round(totalDays, 0)} days*");
         }
         else
         {
             reply.AppendLine(
-                $"-# *Based on {determiner} average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} scrobbles per day in the last {Math.Round(totalDays, 0)} days — {count.Format(context.NumberFormat)} total*");
+                $"-# *Based on {determiner} average of {Math.Round(avgPerDay.GetValueOrDefault(0), 1).Format(context.NumberFormat)} scrobbles per day in the last {Math.Round(totalDays, 0)} days — {count.Format(context.NumberFormat)} total*");
         }
 
         response.Text = reply.ToString();

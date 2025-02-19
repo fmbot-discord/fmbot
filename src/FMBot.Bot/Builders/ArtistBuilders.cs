@@ -1500,7 +1500,8 @@ public class ArtistBuilders
             $" will reach **{goalAmount.Format(context.NumberFormat)}** plays on **{StringExtensions.Sanitize(artistSearch.Artist.ArtistName)}** {goalDateString}");
 
         reply.AppendLine(
-            $"-# *Based on {determiner} average of {Math.Round(avgPerDay, 2)} plays per day in the last {Math.Round(totalDays, 0)} days — {artistPlayCount.Format(context.NumberFormat)} plays in this time period — {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} alltime*");
+            $"-# *Based on {determiner} average of {Math.Round(avgPerDay, 2).Format(context.NumberFormat)} plays per day in the last {Math.Round(totalDays, 0).Format(context.NumberFormat)} days — " +
+            $"{artistPlayCount.Format(context.NumberFormat)} plays in this time period — {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} alltime*");
 
         response.Text = reply.ToString();
         return response;
