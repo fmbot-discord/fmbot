@@ -542,9 +542,9 @@ public class GuildSettingBuilder
             ResponseType = ResponseType.Paginator,
         };
 
-        var guild = await this._guildService.GetGuildAsync(920112256321204264);
+        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
         var prefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
-        var guildUsers = await this._guildService.GetGuildUsers(920112256321204264);
+        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         var footer = new StringBuilder();
 
