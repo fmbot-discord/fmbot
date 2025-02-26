@@ -18,6 +18,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using Shared.Domain.Enums;
 
 namespace FMBot.Bot.Services;
 

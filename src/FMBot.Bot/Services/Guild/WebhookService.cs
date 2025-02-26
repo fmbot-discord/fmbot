@@ -16,6 +16,7 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Shared.Domain.Enums;
 using SkiaSharp;
 
 namespace FMBot.Bot.Services.Guild;

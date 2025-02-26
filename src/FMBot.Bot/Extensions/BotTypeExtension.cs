@@ -1,7 +1,6 @@
 using Discord.Commands;
 using FMBot.Domain;
-using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
+using Shared.Domain.Enums;
 
 namespace FMBot.Bot.Extensions;
 
@@ -19,7 +18,7 @@ public static class BotTypeExtension
             _ => BotType.Local
         };
     }
-        
+
     public static BotType GetBotType(ulong botId)
     {
         return botId switch

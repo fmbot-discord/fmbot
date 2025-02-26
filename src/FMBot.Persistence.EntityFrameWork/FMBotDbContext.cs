@@ -40,6 +40,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<UserCrown> UserCrowns { get; set; }
         public virtual DbSet<UserStreak> UserStreaks { get; set; }
         public virtual DbSet<UserInteraction> UserInteractions { get; set; }
+        public virtual DbSet<UserToken> UserTokens { get; set; }
         public virtual DbSet<AiGeneration> AiGenerations { get; set; }
 
         public virtual DbSet<Artist> Artists { get; set; }
@@ -74,7 +75,7 @@ namespace FMBot.Persistence.EntityFrameWork
                 optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 // Uncomment below connection string when creating migrations, and also comment out the above iconfiguration stuff
-                // optionsBuilder.UseNpgsql("Host=localhost;Port=5435;Username=postgres;Password=password;Database=fmbot-restore-2;Command Timeout=60;Timeout=60;Persist Security Info=True");
+                // optionsBuilder.UseNpgsql("Host=localhost;Port=5435;Username=postgres;Password=password;Database=fmbot-local;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
@@ -177,15 +178,9 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
-            modelBuilder.Entity<Supporter>(entity =>
-            {
-                entity.HasKey(e => e.SupporterId);
-            });
+            modelBuilder.Entity<Supporter>(entity => { entity.HasKey(e => e.SupporterId); });
 
-            modelBuilder.Entity<StripeSupporter>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-            });
+            modelBuilder.Entity<StripeSupporter>(entity => { entity.HasKey(e => e.Id); });
 
             modelBuilder.Entity<StripePricing>(entity =>
             {
@@ -197,20 +192,11 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
-            modelBuilder.Entity<BottedUser>(entity =>
-            {
-                entity.HasKey(e => e.BottedUserId);
-            });
+            modelBuilder.Entity<BottedUser>(entity => { entity.HasKey(e => e.BottedUserId); });
 
-            modelBuilder.Entity<GlobalFilteredUser>(entity =>
-            {
-                entity.HasKey(e => e.GlobalFilteredUserId);
-            });
+            modelBuilder.Entity<GlobalFilteredUser>(entity => { entity.HasKey(e => e.GlobalFilteredUserId); });
 
-            modelBuilder.Entity<BottedUserReport>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-            });
+            modelBuilder.Entity<BottedUserReport>(entity => { entity.HasKey(e => e.Id); });
 
             modelBuilder.Entity<InactiveUsers>(entity =>
             {
@@ -338,10 +324,7 @@ namespace FMBot.Persistence.EntityFrameWork
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<JumbleSession>(entity =>
-            {
-                entity.HasKey(e => e.JumbleSessionId);
-            });
+            modelBuilder.Entity<JumbleSession>(entity => { entity.HasKey(e => e.JumbleSessionId); });
 
             modelBuilder.Entity<JumbleSessionAnswer>(entity =>
             {
@@ -459,15 +442,9 @@ namespace FMBot.Persistence.EntityFrameWork
                     .HasForeignKey(d => d.AlbumId);
             });
 
-            modelBuilder.Entity<CensoredMusic>(entity =>
-            {
-                entity.HasKey(a => a.CensoredMusicId);
-            });
+            modelBuilder.Entity<CensoredMusic>(entity => { entity.HasKey(a => a.CensoredMusicId); });
 
-            modelBuilder.Entity<CensoredMusicReport>(entity =>
-            {
-                entity.HasKey(a => a.Id);
-            });
+            modelBuilder.Entity<CensoredMusicReport>(entity => { entity.HasKey(a => a.Id); });
 
             modelBuilder.Entity<ArtistAlias>(entity =>
             {
@@ -500,6 +477,13 @@ namespace FMBot.Persistence.EntityFrameWork
                     .WithMany(p => p.ArtistGenres)
                     .HasForeignKey(d => d.ArtistId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserToken>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasIndex(i => i.DiscordUserId);
             });
 
             modelBuilder.Entity<UserDiscogs>(entity =>

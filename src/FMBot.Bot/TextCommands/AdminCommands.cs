@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.Rest;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -31,6 +32,7 @@ using Hangfire.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
+using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -3033,5 +3035,39 @@ public class AdminCommands : BaseCommandModule
         {
             await this.Context.HandleCommandException(e);
         }
+    }
+
+    [Command("updatelinkedroles")]
+    public async Task UpdateLinkedRoles([Remainder] string trackValues = null)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            return;
+        }
+
+        await ReplyAsync("Updating linked role");
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        await using var client = new DiscordRestClient();
+        await client.LoginAsync(TokenType.Bearer, "token");
+
+        // fetch application role connection of the current user for the app with provided id.
+        var roleConnection =
+            await client.GetUserApplicationRoleConnectionAsync(
+                this._botSettings.Discord.ApplicationId.GetValueOrDefault());
+
+        // create a new role connection metadata properties object & set some values.
+        DateTimeOffset result =
+            TimeZoneInfo.ConvertTime(contextUser.RegisteredLastFm.GetValueOrDefault(), TimeZoneInfo.Utc);
+
+        var properties = new RoleConnectionProperties("Last.fm", "frikandel_")
+            .WithNumber("total_scrobbles", (int)contextUser.TotalPlaycount.GetValueOrDefault())
+            .WithDate("registered", result);
+
+        // update current user's values with the given properties.
+        await client.ModifyUserApplicationRoleConnectionAsync(
+            this._botSettings.Discord.ApplicationId.GetValueOrDefault(), properties);
+        await client.DisposeAsync();
+        await ReplyAsync("All done");
     }
 }
