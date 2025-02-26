@@ -533,7 +533,7 @@ public class GuildSettingBuilder
 
     public async Task<ResponseModel> BlockedUsersAsync(
         ContextModel context,
-        bool crownBlockedOnly = false,
+        bool includeCrownBlocked = false,
         string searchValue = null)
 
     {
@@ -542,9 +542,9 @@ public class GuildSettingBuilder
             ResponseType = ResponseType.Paginator,
         };
 
-        var guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
+        var guild = await this._guildService.GetGuildAsync(920112256321204264);
         var prefix = guild.Prefix ?? this._botSettings.Bot.Prefix;
-        var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
+        var guildUsers = await this._guildService.GetGuildUsers(920112256321204264);
 
         var footer = new StringBuilder();
 
@@ -555,7 +555,7 @@ public class GuildSettingBuilder
 
         footer.AppendLine($"Block type — Discord ID — Name — Last.fm");
 
-        if (crownBlockedOnly)
+        if (includeCrownBlocked)
         {
             response.Embed.WithTitle($"Crownblocked users in {context.DiscordGuild.Name}");
             footer.AppendLine($"To add: {prefix}crownblock mention/user id/Last.fm username");
@@ -583,10 +583,10 @@ public class GuildSettingBuilder
         }
 
         if (guildUsers != null &&
-            guildUsers.Any(a => a.Value.BlockedFromWhoKnows && (!crownBlockedOnly || a.Value.BlockedFromCrowns)))
+            guildUsers.Any(a => includeCrownBlocked ? a.Value.BlockedFromCrowns || a.Value.BlockedFromWhoKnows : a.Value.BlockedFromWhoKnows))
         {
             guildUsers = guildUsers
-                .Where(w => w.Value.BlockedFromCrowns && (crownBlockedOnly || w.Value.BlockedFromWhoKnows))
+                .Where(w => includeCrownBlocked ? w.Value.BlockedFromCrowns || w.Value.BlockedFromWhoKnows : w.Value.BlockedFromWhoKnows)
                 .ToDictionary(i => i.Key, i => i.Value);
 
             var userPages = guildUsers.Select(s => s.Value).Chunk(15);
