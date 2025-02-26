@@ -3046,28 +3046,7 @@ public class AdminCommands : BaseCommandModule
         }
 
         await ReplyAsync("Updating linked role");
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-        await using var client = new DiscordRestClient();
-        await client.LoginAsync(TokenType.Bearer, "token");
-
-        // fetch application role connection of the current user for the app with provided id.
-        var roleConnection =
-            await client.GetUserApplicationRoleConnectionAsync(
-                this._botSettings.Discord.ApplicationId.GetValueOrDefault());
-
-        // create a new role connection metadata properties object & set some values.
-        DateTimeOffset result =
-            TimeZoneInfo.ConvertTime(contextUser.RegisteredLastFm.GetValueOrDefault(), TimeZoneInfo.Utc);
-
-        var properties = new RoleConnectionProperties("Last.fm", "frikandel_")
-            .WithNumber("total_scrobbles", (int)contextUser.TotalPlaycount.GetValueOrDefault())
-            .WithDate("registered", result);
-
-        // update current user's values with the given properties.
-        await client.ModifyUserApplicationRoleConnectionAsync(
-            this._botSettings.Discord.ApplicationId.GetValueOrDefault(), properties);
-        await client.DisposeAsync();
+        await this._userService.UpdateLinkedRole(Context.User.Id);
         await ReplyAsync("All done");
     }
 }

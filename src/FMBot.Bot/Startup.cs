@@ -230,7 +230,6 @@ public class Startup
             .AddSingleton<TrackRepository>()
             .AddSingleton<UserEventHandler>()
             .AddSingleton<UserBuilder>()
-            .AddSingleton<UserService>()
             .AddSingleton<WhoKnowsService>()
             .AddSingleton<WhoKnowsAlbumService>()
             .AddSingleton<WhoKnowsArtistService>()
@@ -263,6 +262,7 @@ public class Startup
         services.AddHttpClient<OpenAiService>();
         services.AddHttpClient<EurovisionService>();
         services.AddHttpClient<WebhookService>();
+        services.AddHttpClient<UserService>();
 
         services.AddHttpClient("OpenCollective", client =>
         {

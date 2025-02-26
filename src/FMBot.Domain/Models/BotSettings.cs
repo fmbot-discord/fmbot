@@ -11,7 +11,7 @@ public class BotSettings
     public LoggingConfig Logging { get; set; }
 
     public BotConfig Bot { get; set; }
-    
+
     public InternalApiConfig ApiConfig { get; set; }
 
     public ShardConfig Shards { get; set; }
@@ -37,6 +37,9 @@ public class DiscordConfig
 
     public ulong? BotUserId { get; set; }
     public ulong? ApplicationId { get; set; }
+
+    public string ClientSecret { get; set; }
+    public string RedirectUri { get; set; }
 }
 
 public class DatabaseConfig
@@ -140,7 +143,7 @@ public class GoogleConfig
     public string ApiKey { get; set; }
 
     public string InvidiousUrl { get; set; }
-    
+
     public string InvidiousBackupUrl { get; set; }
 }
 

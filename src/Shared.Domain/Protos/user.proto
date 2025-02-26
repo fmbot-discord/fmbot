@@ -16,6 +16,7 @@ message StoreDiscordOAuthTokenRequest {
   string refreshToken = 3;
   google.protobuf.Timestamp expiresAt = 4;
   string scope = 5;
+  string botType = 6;
 }
 
 message StoreDiscordOAuthTokenReply {
