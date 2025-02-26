@@ -14,6 +14,7 @@ using FMBot.LastFM.Converters;
 using FMBot.LastFM.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
+using Prometheus;
 using Serilog;
 
 namespace FMBot.LastFM.Api;
@@ -39,7 +40,8 @@ public class LastfmApi : ILastfmApi
         this._client = httpClient;
     }
 
-    public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call, bool generateSignature = false, bool usePrivateKey = false)
+    public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call,
+        bool generateSignature = false, bool usePrivateKey = false)
     {
         var queryParams = new Dictionary<string, string>
         {
@@ -85,6 +87,7 @@ public class LastfmApi : ILastfmApi
             Method = HttpMethod.Post
         };
 
+        var timer = Statistics.LastfmApiResponseTime.NewTimer();
         using var httpResponse = await this._client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         if (httpResponse.StatusCode == HttpStatusCode.NotFound)
@@ -138,6 +141,7 @@ public class LastfmApi : ILastfmApi
                 {
                     Statistics.LastfmFailureErrors.Inc();
                 }
+
                 if (response.Error == ResponseStatus.BadAuth)
                 {
                     Statistics.LastfmBadAuthErrors.Inc();
@@ -147,8 +151,11 @@ public class LastfmApi : ILastfmApi
         catch (Exception ex)
         {
             response.Success = false;
-            response.Message = "Something went wrong while deserializing the object Last.fm returned. It could be that there are no results, or that they're having issues.";
-            Log.Error("Something went wrong while deserializing the object Last.fm returned - {request} - {requestBody}", call, requestBody, ex);
+            response.Message =
+                "Something went wrong while deserializing the object Last.fm returned. It could be that there are no results, or that they're having issues.";
+            Log.Error(
+                "Something went wrong while deserializing the object Last.fm returned - {request} - {requestBody}",
+                call, requestBody, ex);
 
             var errorParameters = "";
             foreach (var parameter in parameters)
@@ -156,10 +163,12 @@ public class LastfmApi : ILastfmApi
                 errorParameters += $"{parameter.Key}: {parameter.Value} - ";
             }
 
-            Log.Error("Object error - Call: {call} - Parameters: {errorParameters} - RequestBody {requestBody}", call, errorParameters, requestBody);
+            Log.Error("Object error - Call: {call} - Parameters: {errorParameters} - RequestBody {requestBody}",
+                call, errorParameters, requestBody);
             Statistics.LastfmErrors.Inc();
         }
 
+        timer.Dispose();
         return response;
     }
 
@@ -168,14 +177,16 @@ public class LastfmApi : ILastfmApi
     {
         try
         {
-            if (requestBody.Contains("<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>",
+            if (requestBody.Contains(
+                    "<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>",
                     StringComparison.OrdinalIgnoreCase))
             {
                 response.Error = ResponseStatus.TemporaryError;
-                response.Message = "Last.fm said: The server encountered a temporary error and could not complete your request. Please try again in 30 seconds.";
+                response.Message =
+                    "Last.fm said: The server encountered a temporary error and could not complete your request. Please try again in 30 seconds.";
                 return response;
             }
-            
+
             var errorResponse = JsonSerializer.Deserialize<ErrorResponseLfm>(requestBody, jsonSerializerOptions);
 
             if (errorResponse != null)
@@ -203,6 +214,7 @@ public class LastfmApi : ILastfmApi
         {
             sb.Append(t.ToString("X2"));
         }
+
         return sb.ToString();
     }
 }
