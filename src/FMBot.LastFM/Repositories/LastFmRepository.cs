@@ -774,7 +774,7 @@ public class LastFmRepository : ILastfmRepository
         if (amountOfPages == 1)
         {
             topAlbums = await this._lastFmClient.User.GetTopAlbums(lastFmUserName, lastStatsTimeSpan, 1, count);
-            Statistics.LastfmApiCalls.Inc();
+            Statistics.LastfmApiCalls.WithLabels("user.getTopAlbums").Inc();
 
             if (topAlbums.Success && topAlbums.Content.Any())
             {
@@ -784,7 +784,7 @@ public class LastFmRepository : ILastfmRepository
         else
         {
             topAlbums = await this._lastFmClient.User.GetTopAlbums(lastFmUserName, lastStatsTimeSpan, 1, count);
-            Statistics.LastfmApiCalls.Inc();
+            Statistics.LastfmApiCalls.WithLabels("user.getTopAlbums").Inc();
 
             if (topAlbums.Success && topAlbums.Content != null)
             {
@@ -796,7 +796,7 @@ public class LastFmRepository : ILastfmRepository
                     {
                         topAlbums = await this._lastFmClient.User.GetTopAlbums(lastFmUserName, lastStatsTimeSpan, i,
                             count);
-                        Statistics.LastfmApiCalls.Inc();
+                        Statistics.LastfmApiCalls.WithLabels("user.getTopAlbums").Inc();
 
                         if (!topAlbums.Success)
                         {
@@ -970,7 +970,7 @@ public class LastFmRepository : ILastfmRepository
         if (amountOfPages == 1)
         {
             topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, 1, (int)count);
-            Statistics.LastfmApiCalls.Inc();
+            Statistics.LastfmApiCalls.WithLabels("user.getTopArtists").Inc();
 
             if (topArtists.Success && topArtists.Content.Any())
             {
@@ -980,7 +980,7 @@ public class LastFmRepository : ILastfmRepository
         else
         {
             topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, 1, (int)count);
-            Statistics.LastfmApiCalls.Inc();
+            Statistics.LastfmApiCalls.WithLabels("user.getTopArtists").Inc();
 
             if (topArtists.Success)
             {
@@ -993,7 +993,7 @@ public class LastFmRepository : ILastfmRepository
                         topArtists =
                             await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, i,
                                 (int)count);
-                        Statistics.LastfmApiCalls.Inc();
+                        Statistics.LastfmApiCalls.WithLabels("user.getTopArtists").Inc();
 
                         if (!topArtists.Success)
                         {
