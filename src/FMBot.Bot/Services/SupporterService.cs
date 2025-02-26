@@ -348,6 +348,18 @@ public class SupporterService
                         $"*🗒️ Check out the new `.recap` command that shows all commands in one place. Supports timeframes like `monthly`*";
                     break;
                 }
+                case 16:
+                {
+                    message =
+                        $"*🧮 Set your preferred number formatting with the `/localization` slash command*";
+                    break;
+                }
+                case 17:
+                {
+                    message =
+                        $"*🕒 Set your timezone with the `/localization` slash command*";
+                    break;
+                }
             }
         }
         else
