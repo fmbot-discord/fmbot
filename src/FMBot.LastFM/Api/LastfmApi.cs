@@ -87,7 +87,7 @@ public class LastfmApi : ILastfmApi
             Method = HttpMethod.Post
         };
 
-        var timer = Statistics.LastfmApiResponseTime.NewTimer();
+        var timer = Statistics.LastfmApiResponseTime.WithLabels(call).NewTimer();
         using var httpResponse = await this._client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         if (httpResponse.StatusCode == HttpStatusCode.NotFound)
