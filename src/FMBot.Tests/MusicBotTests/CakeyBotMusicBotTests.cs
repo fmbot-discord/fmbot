@@ -18,8 +18,8 @@ public class CakeyBotMusicBotTests
     }
 
     [Test]
-    [TestCase("🎵 **Now Playing:** The Beatles - Here Comes The Sun", "The Beatles", "Here Comes The Sun")]
-    [TestCase("🎵 **Now Playing:** The Weeknd - Blinding Lights", "The Weeknd", "Blinding Lights")]
+    [TestCase("<:CB_NowPlaying:1271328269416796251> Now playing: [Skrillex - Rumble](https://cakey.bot) [<@125740103539621888>]\n<:CB_Volume:1271328279898357760> Volume: `50`", "Skrillex", "Rumble")]
+    [TestCase("<:CB_NowPlaying:1271328269416796251> Now playing: [The Weeknd - Blinding Lights](https://cakey.bot) [<@125740103539621888>]\n<:CB_Volume:1271328279898357760> Volume: `50`", "The Weeknd", "Blinding Lights")]
     public void GetTrackQuery_ShouldExtractCorrectText(string description, string expectedArtist, string expectedTrack)
     {
         // Arrange

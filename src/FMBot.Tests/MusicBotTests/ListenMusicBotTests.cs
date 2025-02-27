@@ -18,12 +18,12 @@ public class ListenMusicBotTests
     }
 
     [Test]
-    [TestCase("**Now Playing**\n**Daft Punk - Get Lucky**", "Daft Punk", "Get Lucky")]
-    [TestCase("**Now Playing**\n**David Bowie - Space Oddity**", "David Bowie", "Space Oddity")]
-    public void GetTrackQuery_ShouldExtractCorrectText(string description, string expectedArtist, string expectedTrack)
+    [TestCase("Bangarang (feat. Sirah)","-# Skrillex", "Skrillex", "Bangarang")]
+    public void GetTrackQuery_ShouldExtractCorrectText(string title, string description, string expectedArtist, string expectedTrack)
     {
         // Arrange
         var bot = new ListenMusicBot();
+        _mockedEmbed.Setup(m => m.Title).Returns(title);
         _mockedEmbed.Setup(m => m.Description).Returns(description);
 
         // Act

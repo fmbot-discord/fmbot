@@ -78,6 +78,9 @@ public class Startup
         var services = new ServiceCollection();
         ConfigureServices(services);
 
+        // temp fix https://github.com/discord-net/Discord.Net/releases/tag/3.15.0
+        services.AddSingleton<IRestClientProvider>(x => x.GetRequiredService<DiscordShardedClient>());
+
         var provider = services.BuildServiceProvider();
         InitializeRequiredServices(provider);
 
