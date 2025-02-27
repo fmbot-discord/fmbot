@@ -654,7 +654,7 @@ public class SupporterService
             var cacheKey = $"new-supporter-{newSupporter.Id}";
             if (this._cache.TryGetValue(cacheKey, out _))
             {
-                return;
+                continue;
             }
 
             var embed = new EmbedBuilder();
