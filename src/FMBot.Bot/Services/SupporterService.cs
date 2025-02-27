@@ -625,6 +625,7 @@ public class SupporterService
                                   $"Subscription type: `{supporter.SubscriptionType}`");
 
             await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+            supporterAuditLogChannel.Dispose();
         }
 
         return supporter;
@@ -644,6 +645,9 @@ public class SupporterService
             .Where(w => w.OpenCollectiveId != null)
             .ToListAsync();
 
+        var supporterUpdateChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
+        var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
         foreach (var newSupporter in openCollectiveSupporters.Users.Where(w =>
                      w.LastPayment >= DateTime.UtcNow.AddHours(-6)))
         {
@@ -652,9 +656,6 @@ public class SupporterService
             {
                 return;
             }
-
-            var supporterUpdateChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
-            var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
             var embed = new EmbedBuilder();
 
@@ -697,6 +698,9 @@ public class SupporterService
 
             this._cache.Set(cacheKey, 1, TimeSpan.FromDays(1));
         }
+
+        supporterAuditLogChannel.Dispose();
+        supporterUpdateChannel.Dispose();
     }
 
     public async Task UpdateExistingOpenCollectiveSupporters()
@@ -1451,6 +1455,7 @@ public class SupporterService
             $"- Old: {oldDiscordUserId} - <@{oldDiscordUserId}>\n" +
             $"- New: {newDiscordUserId} - <@{newDiscordUserId}>");
         await supporterAuditLogChannel.SendMessageAsync(embeds: [embed.Build()]);
+        supporterAuditLogChannel.Dispose();
     }
 
     public async Task AddRoleToNewSupporters()

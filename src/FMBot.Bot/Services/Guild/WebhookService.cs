@@ -182,6 +182,7 @@ public class WebhookService
 
         var webhookClient = new DiscordWebhookClient(webhook);
         await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
+        webhookClient.Dispose();
     }
 
     public async Task PostFeatured(FeaturedLog featuredLog, DiscordShardedClient client)

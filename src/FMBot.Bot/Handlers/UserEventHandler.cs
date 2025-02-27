@@ -101,6 +101,8 @@ public class UserEventHandler
                 embed.WithFooter($"{socketGuildUser.Id}");
 
                 await supporterAuditLogChannel.SendMessageAsync(null, false, new[] { embed.Build() });
+
+                supporterAuditLogChannel.Dispose();
             }
         }
     }
