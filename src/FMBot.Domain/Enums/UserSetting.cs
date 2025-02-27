@@ -20,6 +20,8 @@ public enum UserSetting
     Localization = 15,
     [Option("Music bot scrobbling", "Toggle automatically scrobbling other music bots")]
     BotScrobbling = 20,
+    [Option("Linked roles", "Enable linked roles for servers that use them")]
+    LinkedRoles = 21,
     [Option("Manage alts", "Manage your other .fmbot accounts")]
     ManageAlts = 25,
     [Option("Delete account", "Delete your .fmbot data and account")]

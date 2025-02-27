@@ -1744,4 +1744,22 @@ public class UserBuilder
 
         return response;
     }
+
+    public ResponseModel ManageLinkedRoles(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        response.Embed.WithDescription("Use the link below to authorize .fmbot.\n\n" +
+                                       "If a server has any linked roles available, you can claim them by clicking the server name and going to 'Linked roles'.");
+        response.Components = new ComponentBuilder()
+            .WithButton("Authorize .fmbot", style: ButtonStyle.Link, url: this._botSettings.Discord.InstallUri)
+            .WithButton("Refresh linked data", style: ButtonStyle.Secondary, customId: "update-linkedroles");
+
+        return response;
+    }
 }

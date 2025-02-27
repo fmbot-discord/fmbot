@@ -652,15 +652,10 @@ public class UserCommands : BaseCommandModule
     [Alias("linkedrole", "updatelinkedroles", "updatelinkedrole")]
     public async Task UpdateLinkedRoles([Remainder] string trackValues = null)
     {
-        var embed = new EmbedBuilder();
-        embed.WithColor(DiscordConstants.InformationColorBlue);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var response = this._userBuilder.ManageLinkedRoles(new ContextModel(this.Context, prfx));
 
-        embed.WithDescription("Use the link below to authorize .fmbot.\n\n" +
-                              "If a server has any linked roles available, you can claim them by clicking the server name and going to 'Linked roles'.");
-        var components = new ComponentBuilder()
-            .WithButton("Authorize .fmbot", style: ButtonStyle.Link, url: this._botSettings.Discord.InstallUri)
-            .WithButton("Refresh linked data", style: ButtonStyle.Secondary, customId: "update-linkedroles");
-        await ReplyAsync(embed: embed.Build(), components: components.Build());
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 }
