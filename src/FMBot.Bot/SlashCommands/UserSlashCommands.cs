@@ -1459,7 +1459,7 @@ public class UserSlashCommands : InteractionModuleBase
         }
 
         await this._userService.UpdateLinkedRole(Context.User.Id);
-        embed.WithDescription("✅ Updated linked roles");
+        embed.WithDescription("✅ Refreshed linked role data");
         await RespondAsync(embed: embed.Build(), ephemeral: true);
         this.Context.LogCommandUsed();
     }

@@ -39,7 +39,7 @@ public class DiscordConfig
     public ulong? ApplicationId { get; set; }
 
     public string ClientSecret { get; set; }
-    public string RedirectUri { get; set; }
+    public string InstallUri { get; set; }
 }
 
 public class DatabaseConfig

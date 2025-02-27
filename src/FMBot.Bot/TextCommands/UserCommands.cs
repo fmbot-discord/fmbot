@@ -655,14 +655,11 @@ public class UserCommands : BaseCommandModule
         var embed = new EmbedBuilder();
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var url =
-            $"https://discord.com/oauth2/authorize?client_id={this._botSettings.Discord.ApplicationId}&response_type=code&" +
-            $"redirect_uri={this._botSettings.Discord.RedirectUri}&scope=identify+role_connections.write";
         embed.WithDescription("Use the link below to authorize .fmbot.\n\n" +
-                              "When authorized, you can use the 'Update roles' button.");
+                              "If a server has any linked roles available, you can claim them by clicking the server name and going to 'Linked roles'.");
         var components = new ComponentBuilder()
-            .WithButton("Authorize .fmbot", style: ButtonStyle.Link, url: url)
-            .WithButton("Update roles", style: ButtonStyle.Secondary, customId: "update-linkedroles");
+            .WithButton("Authorize .fmbot", style: ButtonStyle.Link, url: this._botSettings.Discord.InstallUri)
+            .WithButton("Refresh linked data", style: ButtonStyle.Secondary, customId: "update-linkedroles");
         await ReplyAsync(embed: embed.Build(), components: components.Build());
         this.Context.LogCommandUsed();
     }
