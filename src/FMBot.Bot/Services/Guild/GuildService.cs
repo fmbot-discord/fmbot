@@ -63,8 +63,6 @@ public class GuildService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Guilds
             //.AsNoTracking()
-            .Include(i => i.GuildBlockedUsers)
-            .ThenInclude(t => t.User)
             .Include(i => i.GuildUsers.Where(w => !filterBots || w.Bot != true))
             .ThenInclude(t => t.User)
             .Include(i => i.Channels)
@@ -210,14 +208,13 @@ public class GuildService
             stats.GuildActivityThresholdFiltered = preFilterCount - users.Count;
         }
 
-        if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
+        if (users.Any(a => a.Value.BlockedFromWhoKnows))
         {
             var preFilterCount = users.Count;
 
-            var usersToFilter = guild.GuildBlockedUsers
-                .DistinctBy(d => d.UserId)
-                .Where(w => w.BlockedFromWhoKnows)
-                .Select(s => s.UserId)
+            var usersToFilter = users
+                .Where(w => w.Value.BlockedFromWhoKnows)
+                .Select(s => s.Key)
                 .ToHashSet();
 
             users = users
