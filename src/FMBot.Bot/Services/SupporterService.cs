@@ -708,6 +708,11 @@ public class SupporterService
             .Where(w => w.OpenCollectiveId != null)
             .ToListAsync();
 
+        var supporterUpdateChannel =
+            new DiscordWebhookClient(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
+        var supporterAuditLogChannel =
+            new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
         foreach (var existingSupporter in existingSupporters)
         {
             var openCollectiveSupporter =
@@ -721,9 +726,6 @@ public class SupporterService
                 if (existingSupporter.LastPayment != openCollectiveSupporter.LastPayment ||
                     existingSupporter.Name != openCollectiveSupporter.Name)
                 {
-                    var supporterAuditLogChannel =
-                        new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
-
                     Log.Information(
                         "Updating last payment date for supporter {supporterName} from {currentDate} to {newDate}",
                         existingSupporter.Name, existingSupporter.LastPayment, openCollectiveSupporter.LastPayment);
@@ -821,11 +823,6 @@ public class SupporterService
                         continue;
                     }
 
-                    var supporterUpdateChannel =
-                        new DiscordWebhookClient(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
-                    var supporterAuditLogChannel =
-                        new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
-
                     var embed = new EmbedBuilder();
 
                     embed.WithTitle("Monthly supporter expired");
@@ -855,11 +852,6 @@ public class SupporterService
                         continue;
                     }
 
-                    var supporterUpdateChannel =
-                        new DiscordWebhookClient(this._botSettings.Bot.SupporterUpdatesWebhookUrl);
-                    var supporterAuditLogChannel =
-                        new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
-
                     var embed = new EmbedBuilder();
 
                     embed.WithTitle("Yearly supporter expired");
@@ -873,6 +865,9 @@ public class SupporterService
                 }
             }
         }
+
+        supporterAuditLogChannel.Dispose();
+        supporterUpdateChannel.Dispose();
     }
 
     private static string OpenCollectiveSupporterToEmbedDescription(Supporter supporter)
@@ -909,6 +904,9 @@ public class SupporterService
                 w.SubscriptionType == SubscriptionType.Discord || w.SubscriptionType == SubscriptionType.Stripe)
             .ToListAsync();
 
+        var supporterAuditLogChannel =
+            new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
         foreach (var userEntitlements in groupedEntitlements)
         {
             var type = userEntitlements.StartsAt == null ? SubscriptionType.Stripe : SubscriptionType.Discord;
@@ -938,8 +936,6 @@ public class SupporterService
                     }
                 }
 
-                var supporterAuditLogChannel =
-                    new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
                 var subType = Enum.GetName(newSupporter.SubscriptionType.Value);
                 var embed = new EmbedBuilder().WithDescription(
                     $"Added {subType} supporter {userEntitlements.DiscordUserId} - <@{userEntitlements.DiscordUserId}>");
@@ -963,9 +959,6 @@ public class SupporterService
 
                     db.Update(existingSupporter);
                     await db.SaveChangesAsync();
-
-                    var supporterAuditLogChannel =
-                        new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
                     var endDate = userEntitlements.EndsAt.HasValue
                         ? $"<t:{((DateTimeOffset?)userEntitlements.EndsAt)?.ToUnixTimeSeconds()}:f>"
@@ -992,8 +985,6 @@ public class SupporterService
                         await SendSupporterWelcomeMessage(user, false, reActivatedSupporter, true);
                     }
 
-                    var supporterAuditLogChannel =
-                        new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
                     var subType = Enum.GetName(existingSupporter.SubscriptionType.Value);
                     var embed = new EmbedBuilder().WithDescription(
                         $"Re-activated {subType} supporter {userEntitlements.DiscordUserId} - <@{userEntitlements.DiscordUserId}>");
@@ -1006,9 +997,6 @@ public class SupporterService
 
                 if (existingSupporter.Expired != true && !userEntitlements.Active)
                 {
-                    var supporterAuditLogChannel =
-                        new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
-
                     if (await DiscordSubbedElsewhereExpiryFlow(existingSupporter, userEntitlements,
                             supporterAuditLogChannel))
                     {
@@ -1041,6 +1029,8 @@ public class SupporterService
                 }
             }
         }
+
+        supporterAuditLogChannel.Dispose();
     }
 
     public async Task CheckExpiredDiscordSupporters()
@@ -1062,6 +1052,9 @@ public class SupporterService
             .ToListAsync();
 
         Log.Information("Checking expired supporters - {count} possibly expired", possiblyExpiredSupporters.Count);
+
+        var supporterAuditLogChannel =
+            new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
         foreach (var existingSupporter in possiblyExpiredSupporters)
         {
@@ -1088,8 +1081,6 @@ public class SupporterService
                 db.Update(existingSupporter);
                 await db.SaveChangesAsync();
 
-                var supporterAuditLogChannel =
-                    new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
                 var endDate = discordSupporter.EndsAt.HasValue
                     ? $"<t:{((DateTimeOffset?)discordSupporter.EndsAt)?.ToUnixTimeSeconds()}:f>"
                     : "no end date";
@@ -1105,9 +1096,6 @@ public class SupporterService
 
             if (existingSupporter.Expired != true && !discordSupporter.Active)
             {
-                var supporterAuditLogChannel =
-                    new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
-
                 if (await DiscordSubbedElsewhereExpiryFlow(existingSupporter, discordSupporter,
                         supporterAuditLogChannel))
                 {
@@ -1149,6 +1137,8 @@ public class SupporterService
 
             await Task.Delay(500);
         }
+
+        supporterAuditLogChannel.Dispose();
     }
 
     private async Task<bool> DiscordSubbedElsewhereExpiryFlow(Supporter existingSupporter,
@@ -1239,6 +1229,9 @@ public class SupporterService
             "Found {supporterCount} Discord supporters that should have supporter, but don't have the usertype",
             usersThatShouldHaveSupporter.Count);
 
+        var supporterAuditLogChannel =
+            new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
         foreach (var dbUser in usersThatShouldHaveSupporter)
         {
             var discordSupporter = activeSupporters.First(f => f.DiscordUserId == dbUser.DiscordUserId);
@@ -1250,7 +1243,6 @@ public class SupporterService
             await ModifyGuildRole(discordSupporter.DiscordUserId.Value);
             await RunFullUpdate(discordSupporter.DiscordUserId.Value);
 
-            var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
             var embed = new EmbedBuilder().WithDescription(
                 $"Re-activated supporter {discordSupporter.DiscordUserId} - <@{discordSupporter.DiscordUserId}>\n" +
                 $"*User had an active subscription, but their .fmbot account didn't have supporter*");
@@ -1259,6 +1251,8 @@ public class SupporterService
             Log.Information("Re-activated supporter (user was missing type) {discordUserId}",
                 discordSupporter.DiscordUserId);
         }
+
+        supporterAuditLogChannel.Dispose();
     }
 
     public async Task CheckExpiredStripeSupporters()
@@ -1273,21 +1267,96 @@ public class SupporterService
                 !w.EntitlementDeleted)
             .ToListAsync();
 
-        Log.Information("Checking expired Stripe supporters - {count} possibly expired",
+        Log.Information("Checking expired Stripe supporters - {count} expired",
             possiblyExpiredSupporters.Count);
 
-        foreach (var existingSupporter in possiblyExpiredSupporters)
+        var supporterAuditLogChannel =
+            new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
+
+        foreach (var existingStripeSupporter in possiblyExpiredSupporters)
         {
-            var userEntitlements =
-                this._client.Rest.GetEntitlementsAsync(userId: existingSupporter.PurchaserDiscordUserId);
+            var discordUserId = existingStripeSupporter.PurchaserDiscordUserId;
+
+            var existingSupporters = await db.Supporters
+                .Where(w => w.DiscordUserId == discordUserId &&
+                            w.Expired != true)
+                .ToListAsync();
+
+            var existingSupporter = existingSupporters
+                .FirstOrDefault(f => f.SubscriptionType == SubscriptionType.Stripe);
+
+            var otherSupporterSubscription = existingSupporters
+                .FirstOrDefault(f => f.SubscriptionType != SubscriptionType.Stripe);
+
+            if (otherSupporterSubscription == null && existingSupporter != null)
+            {
+                Log.Information("Removing Stripe supporter {discordUserId}", discordUserId);
+
+                var fmbotUser = await
+                    db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+                var hadImported = fmbotUser != null && fmbotUser.DataSource != DataSource.LastFm;
+
+                await ExpireSupporter(discordUserId, existingSupporter);
+                await ModifyGuildRole(discordUserId, false);
+                await RunFullUpdate(discordUserId);
+
+                var user = await this._client.Rest.GetUserAsync(discordUserId);
+                if (user != null)
+                {
+                    await SendSupporterGoodbyeMessage(user, false, hadImported);
+                }
+
+                var embed = new EmbedBuilder().WithDescription(
+                    $"Removed Stripe supporter {discordUserId} - <@{discordUserId}>");
+                await supporterAuditLogChannel.SendMessageAsync(embeds: [embed.Build()]);
+
+                Log.Information("Removed Stripe supporter {discordUserId}", discordUserId);
+            }
+            else if (otherSupporterSubscription != null)
+            {
+                Log.Information("Not removing Stripe supporter because active other {otherType} sub - {discordUserId}",
+                    otherSupporterSubscription.SubscriptionType, discordUserId);
+
+                var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                    $"Prevented removal of Stripe supporter who also has active {otherSupporterSubscription.SubscriptionType} sub (entitlement is still deleted though)\n" +
+                    $"{discordUserId} - <@{discordUserId}>");
+                await supporterAuditLogChannel.SendMessageAsync(embeds: [notCancellingEmbed.Build()]);
+            }
+            else
+            {
+                Log.Information("Not removing Stripe supporter because there is no main supporter? - {discordUserId}", discordUserId);
+
+                var notCancellingEmbed = new EmbedBuilder().WithDescription(
+                    $"Prevented removal of Stripe supporter that has no main supporter in the database, this should never happen but I'm adding this code anyway\n" +
+                    $"{discordUserId} - <@{discordUserId}>");
+                await supporterAuditLogChannel.SendMessageAsync(embeds: [notCancellingEmbed.Build()]);
+            }
+
+            var entitlements =
+                await this._discordSkuService.GetRawEntitlementsFromDiscord(discordUserId: discordUserId);
+            var entitlementToRemove = entitlements.FirstOrDefault(w => !w.EndsAt.HasValue && w.Deleted != true);
+            if (entitlementToRemove != null)
+            {
+                Log.Information("Removing entitlement {entitlementId} from {discordUserId}", entitlementToRemove.Id,
+                    discordUserId);
+                await this._discordSkuService.RemoveEntitlement(entitlementId: entitlementToRemove.Id);
+            }
+
+            existingStripeSupporter.EntitlementDeleted = true;
+            db.Update(existingStripeSupporter);
+            await db.SaveChangesAsync();
 
             await Task.Delay(500);
         }
+
+        supporterAuditLogChannel.Dispose();
     }
 
     public async Task MigrateDiscordForSupporter(ulong oldDiscordUserId, ulong newDiscordUserId)
     {
-        Log.Information("Migrating supporter from {oldDiscordUserId} to {newDiscordUserId}", oldDiscordUserId, newDiscordUserId);
+        Log.Information("Migrating supporter from {oldDiscordUserId} to {newDiscordUserId}", oldDiscordUserId,
+            newDiscordUserId);
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -1304,6 +1373,7 @@ public class SupporterService
         {
             oldUser.UserType = UserType.User;
         }
+
         oldUser.DataSource = DataSource.LastFm;
         db.Update(oldUser);
         await ModifyGuildRole(oldDiscordUserId, false);
@@ -1313,6 +1383,7 @@ public class SupporterService
         {
             newUser.UserType = UserType.Supporter;
         }
+
         db.Update(newUser);
         await ModifyGuildRole(newDiscordUserId);
 
@@ -1321,7 +1392,8 @@ public class SupporterService
 
         if (supporter.SubscriptionType == SubscriptionType.Stripe)
         {
-            var entitlements = await this._discordSkuService.GetRawEntitlementsFromDiscord(discordUserId: oldDiscordUserId);
+            var entitlements =
+                await this._discordSkuService.GetRawEntitlementsFromDiscord(discordUserId: oldDiscordUserId);
             var entitlementToRemove = entitlements.FirstOrDefault(w => !w.EndsAt.HasValue && w.Deleted != true);
             if (entitlementToRemove != null)
             {
