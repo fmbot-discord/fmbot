@@ -101,7 +101,8 @@ public class UpdateService
         await this._aliasService.CacheArtistAliases();
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var user = await db.Users.FindAsync(queueItem.UserId);
+        var user = await db.Users
+            .FindAsync(queueItem.UserId);
 
         if (queueItem.UpdateQueue)
         {
@@ -268,6 +269,8 @@ public class UpdateService
 
             _ = SmallIndex(user);
         }
+
+        _ = SmallIndex(user);
 
         await connection.CloseAsync();
 

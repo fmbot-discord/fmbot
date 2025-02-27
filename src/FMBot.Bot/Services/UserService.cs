@@ -1667,6 +1667,14 @@ public class UserService
         return counter;
     }
 
+    public async Task<bool> HasLinkedRole(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var userToken = await db.UserTokens.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+        return userToken != null;
+    }
+
     public async Task UpdateLinkedRole(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -1677,13 +1685,11 @@ public class UserService
             return;
         }
 
-        // Check if token needs refreshing
         if (DateTime.UtcNow >= userToken.TokenExpiresAt)
         {
             await RefreshDiscordToken(userToken, db);
         }
 
-        // Get user settings for the role connection
         var userSettings = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
         if (userSettings == null)
         {

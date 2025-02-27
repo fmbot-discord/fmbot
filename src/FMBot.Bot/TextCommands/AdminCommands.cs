@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AngleSharp.Attributes;
 using Discord;
 using Discord.Commands;
 using Discord.Rest;
@@ -3035,18 +3036,5 @@ public class AdminCommands : BaseCommandModule
         {
             await this.Context.HandleCommandException(e);
         }
-    }
-
-    [Command("updatelinkedroles")]
-    public async Task UpdateLinkedRoles([Remainder] string trackValues = null)
-    {
-        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
-        {
-            return;
-        }
-
-        await ReplyAsync("Updating linked role");
-        await this._userService.UpdateLinkedRole(Context.User.Id);
-        await ReplyAsync("All done");
     }
 }

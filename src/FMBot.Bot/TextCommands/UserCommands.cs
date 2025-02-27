@@ -646,4 +646,24 @@ public class UserCommands : BaseCommandModule
             components: response.Components.Build());
         this.Context.LogCommandUsed(response.CommandResponse);
     }
+
+
+    [Command("linkedroles")]
+    [Alias("linkedrole", "updatelinkedroles", "updatelinkedrole")]
+    public async Task UpdateLinkedRoles([Remainder] string trackValues = null)
+    {
+        var embed = new EmbedBuilder();
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var url =
+            $"https://discord.com/oauth2/authorize?client_id={this._botSettings.Discord.ApplicationId}&response_type=code&" +
+            $"redirect_uri={this._botSettings.Discord.RedirectUri}&scope=identify+role_connections.write";
+        embed.WithDescription("Use the link below to authorize .fmbot.\n\n" +
+                              "When authorized, you can use the 'Update roles' button.");
+        var components = new ComponentBuilder()
+            .WithButton("Authorize .fmbot", style: ButtonStyle.Link, url: url)
+            .WithButton("Update roles", style: ButtonStyle.Secondary, customId: "update-linkedroles");
+        await ReplyAsync(embed: embed.Build(), components: components.Build());
+        this.Context.LogCommandUsed();
+    }
 }
