@@ -1,14 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using Discord.Commands;
 using Discord.Interactions;
+using Discord.Rest;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -28,6 +32,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using Shared.Domain.Models;
 
 namespace FMBot.Bot.Services;
 
@@ -46,6 +51,7 @@ public class UserService
     private readonly AdminService _adminService;
     private readonly TemplateService _templateService;
     private readonly DiscordShardedClient _client;
+    private readonly HttpClient _httpClient;
 
     public UserService(IMemoryCache cache,
         IDbContextFactory<FMBotDbContext> contextFactory,
@@ -59,7 +65,8 @@ public class UserService
         FriendsService friendsService,
         AdminService adminService,
         TemplateService templateService,
-        DiscordShardedClient client)
+        DiscordShardedClient client,
+        HttpClient httpClient)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
@@ -73,6 +80,7 @@ public class UserService
         this._adminService = adminService;
         this._templateService = templateService;
         this._client = client;
+        this._httpClient = httpClient;
         this._botSettings = botSettings.Value;
     }
 
@@ -1657,5 +1665,116 @@ public class UserService
         await connection.CloseAsync();
 
         return counter;
+    }
+
+    public async Task<bool> HasLinkedRole(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var userToken = await db.UserTokens.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+        return userToken != null;
+    }
+
+    public async Task UpdateLinkedRole(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var userToken = await db.UserTokens.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+        if (userToken == null)
+        {
+            return;
+        }
+
+        if (DateTime.UtcNow >= userToken.TokenExpiresAt)
+        {
+            await RefreshDiscordToken(userToken, db);
+        }
+
+        var userSettings = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+        if (userSettings == null)
+        {
+            return;
+        }
+
+        try
+        {
+            await using var client = new DiscordRestClient();
+            await client.LoginAsync(TokenType.Bearer, userToken.AccessToken);
+
+            DateTimeOffset registeredDate =
+                TimeZoneInfo.ConvertTime((DateTime)userSettings.RegisteredLastFm.GetValueOrDefault(), TimeZoneInfo.Utc);
+
+            var properties = new RoleConnectionProperties("Last.fm", userSettings.UserNameLastFM)
+                .WithNumber("total_scrobbles", (int)userSettings.TotalPlaycount.GetValueOrDefault())
+                .WithDate("registered", registeredDate);
+
+            await client.ModifyUserApplicationRoleConnectionAsync(
+                this._botSettings.Discord.ApplicationId.GetValueOrDefault(), properties);
+
+            Log.Information("Updated linked roles for {discordUserId}", discordUserId);
+
+            await client.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to update linked role for Discord user {UserId}", discordUserId);
+        }
+    }
+
+    private async Task RefreshDiscordToken(UserToken userToken, DbContext db)
+    {
+        try
+        {
+            Log.Information("Refreshing discord token for {discordUserId}", userToken.DiscordUserId);
+
+            var requestContent = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                { "client_id", this._botSettings.Discord.ApplicationId.ToString() },
+                { "client_secret", this._botSettings.Discord.ClientSecret },
+                { "grant_type", "refresh_token" },
+                { "refresh_token", userToken.RefreshToken }
+            });
+
+            var response = await this._httpClient.PostAsync("https://discord.com/api/oauth2/token", requestContent);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonResponse = await response.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+
+                userToken.AccessToken = jsonResponse.AccessToken;
+                userToken.RefreshToken = jsonResponse.RefreshToken;
+                userToken.TokenExpiresAt = DateTime.UtcNow.AddSeconds(jsonResponse.ExpiresIn);
+                userToken.LastUpdated = DateTime.UtcNow;
+
+                db.Update(userToken);
+
+                await db.SaveChangesAsync();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Log.Error("Failed to refresh Discord token for {discordUserId}: {ErrorContent}",
+                    userToken.DiscordUserId, errorContent);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Exception while refreshing Discord token for user {discordUserId}", userToken.DiscordUserId);
+        }
+    }
+
+    private class OAuthTokenResponse
+    {
+        [JsonPropertyName("access_token")]
+        public string AccessToken { get; set; }
+
+        [JsonPropertyName("refresh_token")]
+        public string RefreshToken { get; set; }
+
+        [JsonPropertyName("expires_in")]
+        public int ExpiresIn { get; set; }
+
+        [JsonPropertyName("scope")]
+        public string Scope { get; set; }
     }
 }

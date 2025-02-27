@@ -236,6 +236,8 @@ public class IndexCommands : BaseCommandModule
                 }
             });
 
+            await this._userService.UpdateLinkedRole(this.Context.User.Id);
+
             this.Context.LogCommandUsed();
             return;
         }
@@ -322,6 +324,8 @@ public class IndexCommands : BaseCommandModule
                         .Build()
                     : null;
             });
+
+            await this._userService.UpdateLinkedRole(this.Context.User.Id);
 
             this.Context.LogCommandUsed();
             return;

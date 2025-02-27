@@ -1,4 +1,4 @@
-namespace FMBot.Domain.Models;
+namespace Shared.Domain.Enums;
 
 public enum BotType
 {

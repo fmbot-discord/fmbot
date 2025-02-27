@@ -1440,4 +1440,27 @@ public class UserSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [UsernameSetRequired]
+    [ComponentInteraction($"update-linkedroles")]
+    public async Task UpdateLinkedRoles()
+    {
+        var embed = new EmbedBuilder();
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        var hasLinked = await this._userService.HasLinkedRole(Context.User.Id);
+        if (!hasLinked)
+        {
+            embed.WithDescription("Click the 'Authorize .fmbot' button first to get started.");
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+            await RespondAsync(embed: embed.Build(), ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.NotFound);
+            return;
+        }
+
+        await this._userService.UpdateLinkedRole(Context.User.Id);
+        embed.WithDescription("✅ Refreshed linked role data");
+        await RespondAsync(embed: embed.Build(), ephemeral: true);
+        this.Context.LogCommandUsed();
+    }
 }

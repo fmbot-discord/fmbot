@@ -867,12 +867,20 @@ public class UserBuilder
         var totalDays = (DateTime.UtcNow - age).TotalDays;
         var avgPerDay = userInfo.Playcount / totalDays;
 
-        var playcounts = new StringBuilder();
-        playcounts.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
-        playcounts.AppendLine($"**{userInfo.TrackCount.Format(context.NumberFormat)}** different tracks");
-        playcounts.AppendLine($"**{userInfo.AlbumCount.Format(context.NumberFormat)}** different albums");
-        playcounts.AppendLine($"**{userInfo.ArtistCount.Format(context.NumberFormat)}** different artists");
-        response.Embed.AddField("Counts", playcounts.ToString(), true);
+        if (userInfo.Playcount > 0)
+        {
+            var playcounts = new StringBuilder();
+            playcounts.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
+            playcounts.AppendLine($"**{userInfo.TrackCount.Format(context.NumberFormat)}** different tracks");
+            playcounts.AppendLine($"**{userInfo.AlbumCount.Format(context.NumberFormat)}** different albums");
+            playcounts.AppendLine($"**{userInfo.ArtistCount.Format(context.NumberFormat)}** different artists");
+            response.Embed.AddField("Counts", playcounts.ToString(), true);
+        }
+        else
+        {
+            response.Embed.AddField("Counts", "*This user has not started tracking their music with Last.fm yet..*", true);
+        }
+
 
         var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
 
@@ -906,7 +914,7 @@ public class UserBuilder
             stats.AppendLine($"Most active day of the week is **{topDay.Key.ToString()}**");
         }
 
-        if (stats.Length > 0)
+        if (stats.Length > 0 && userInfo.Playcount > 0)
         {
             response.Embed.AddField("Stats", stats.ToString());
         }

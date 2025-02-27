@@ -646,4 +646,21 @@ public class UserCommands : BaseCommandModule
             components: response.Components.Build());
         this.Context.LogCommandUsed(response.CommandResponse);
     }
+
+
+    [Command("linkedroles")]
+    [Alias("linkedrole", "updatelinkedroles", "updatelinkedrole")]
+    public async Task UpdateLinkedRoles([Remainder] string trackValues = null)
+    {
+        var embed = new EmbedBuilder();
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        embed.WithDescription("Use the link below to authorize .fmbot.\n\n" +
+                              "If a server has any linked roles available, you can claim them by clicking the server name and going to 'Linked roles'.");
+        var components = new ComponentBuilder()
+            .WithButton("Authorize .fmbot", style: ButtonStyle.Link, url: this._botSettings.Discord.InstallUri)
+            .WithButton("Refresh linked data", style: ButtonStyle.Secondary, customId: "update-linkedroles");
+        await ReplyAsync(embed: embed.Build(), components: components.Build());
+        this.Context.LogCommandUsed();
+    }
 }

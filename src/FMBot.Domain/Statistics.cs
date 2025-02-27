@@ -32,7 +32,11 @@ public static class Statistics
         .CreateCounter("lastfm_cached_image_cdn_calls", "Amount of calls locally cached to last.fm images");
 
     public static readonly Histogram LastfmApiResponseTime = Metrics
-        .CreateHistogram("lastfm_api_response_time", "Histogram of Last.fm API response time");
+        .CreateHistogram("lastfm_api_response_time", "Histogram of Last.fm API response time",
+            new HistogramConfiguration
+            {
+                LabelNames = new[] { "method" }
+            });
 
 
     public static readonly Counter LastfmNowPlayingUpdates = Metrics

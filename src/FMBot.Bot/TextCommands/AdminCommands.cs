@@ -5,8 +5,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AngleSharp.Attributes;
 using Discord;
 using Discord.Commands;
+using Discord.Rest;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -31,6 +33,7 @@ using Hangfire.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
+using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.TextCommands;
 
