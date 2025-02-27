@@ -34,7 +34,8 @@ public class CrownService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
+    public async Task<CrownModel> GetAndUpdateCrownForArtist(List<WhoKnowsObjectWithUser> users,
+        IDictionary<int, FullGuildUser> guildUsers, Persistence.Domain.Models.Guild guild, string artistName)
     {
         var eligibleUsers = users.ToList();
 
@@ -45,11 +46,11 @@ public class CrownService
                             w.LastUsed >= DateTime.UtcNow.AddDays(-guild.CrownsActivityThresholdDays.Value))
                 .ToList();
         }
-        if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromCrowns))
+        if (guildUsers.Any(a => a.Value.BlockedFromCrowns))
         {
-            var usersToFilter = guild.GuildBlockedUsers
-                .Where(wh => wh.BlockedFromCrowns)
-                .Select(s => s.UserId)
+            var usersToFilter = guildUsers
+                .Where(wh => wh.Value.BlockedFromCrowns)
+                .Select(s => s.Value.UserId)
                 .Distinct()
                 .ToHashSet();
 

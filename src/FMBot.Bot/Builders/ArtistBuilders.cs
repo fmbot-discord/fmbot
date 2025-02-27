@@ -1564,8 +1564,8 @@ public class ArtistBuilders
             redirectsEnabled)
         {
             crownModel =
-                await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, contextGuild,
-                    artistSearch.Artist.ArtistName);
+                await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, guildUsers,
+                    contextGuild, artistSearch.Artist.ArtistName);
             if (crownModel?.Stolen == true)
             {
                 showCrownButton = true;
