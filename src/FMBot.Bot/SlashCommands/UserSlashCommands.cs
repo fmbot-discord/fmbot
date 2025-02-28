@@ -222,6 +222,13 @@ public class UserSlashCommands : InteractionModuleBase
                     await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
                     break;
                 }
+                case UserSetting.LinkedRoles:
+                {
+                    response = this._userBuilder.ManageLinkedRoles(new ContextModel(this.Context, contextUser));
+
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                    break;
+                }
                 case UserSetting.ManageAlts:
                 {
                     response = await this._userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));

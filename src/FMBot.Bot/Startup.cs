@@ -73,6 +73,26 @@ public class Startup
 
     private async Task RunAsync()
     {
+        ConfigureLogging();
+
+        var services = new ServiceCollection();
+        ConfigureServices(services);
+
+        // temp fix https://github.com/discord-net/Discord.Net/releases/tag/3.15.0
+        services.AddSingleton<IRestClientProvider>(x => x.GetRequiredService<DiscordShardedClient>());
+
+        var provider = services.BuildServiceProvider();
+        InitializeRequiredServices(provider);
+
+        await provider.GetRequiredService<StartupService>().StartAsync();
+
+        StartBackgroundJobServer();
+
+        await Task.Delay(-1); // Keep the program alive
+    }
+
+    private void ConfigureLogging()
+    {
         var botUserId = long.Parse(this.Configuration.GetSection("Discord:BotUserId")?.Value ?? "0");
 
         var consoleLevel = LogEventLevel.Warning;
@@ -87,45 +107,61 @@ public class Startup
             .Enrich.WithExceptionDetails()
             .Enrich.WithEnvironmentVariable("INSTANCE_NAME")
             .Enrich.WithMachineName()
-            .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value) ? this.Configuration.GetSection("Environment").Value : "unknown")
+            .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value)
+                ? this.Configuration.GetSection("Environment").Value
+                : "unknown")
             .Enrich.WithProperty("BotUserId", botUserId)
             .WriteTo.Console(consoleLevel)
-            .WriteTo.Seq(this.Configuration.GetSection("Logging:SeqServerUrl")?.Value, LogEventLevel.Information, apiKey: this.Configuration.GetSection("Logging:SeqApiKey")?.Value)
+            .WriteTo.Seq(this.Configuration.GetSection("Logging:SeqServerUrl")?.Value,
+                LogEventLevel.Information,
+                apiKey: this.Configuration.GetSection("Logging:SeqApiKey")?.Value)
             .CreateLogger();
 
         AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;
 
         Log.Information(".fmbot starting up...");
+    }
 
-        var services = new ServiceCollection(); // Create a new instance of a service collection
-        this.ConfigureServices(services);
-
-        // temp fix https://github.com/discord-net/Discord.Net/releases/tag/3.15.0
-        services.AddSingleton<IRestClientProvider>(x => x.GetRequiredService<DiscordShardedClient>());
-
-        var provider = services.BuildServiceProvider(); // Build the service provider
-        //provider.GetRequiredService<LoggingService>();      // Start the logging service
+    private static void InitializeRequiredServices(ServiceProvider provider)
+    {
         provider.GetRequiredService<CommandHandler>();
         provider.GetRequiredService<InteractionHandler>();
         provider.GetRequiredService<ClientLogHandler>();
         provider.GetRequiredService<UserEventHandler>();
+    }
 
-        await provider.GetRequiredService<StartupService>().StartAsync(); // Start the startup service
-
+    private static void StartBackgroundJobServer()
+    {
         var options = new BackgroundJobServerOptions
         {
             WorkerCount = 64
         };
 
-        using var server = new BackgroundJobServer(options);
-
-        await Task.Delay(-1); // Keep the program alive
+        _ = new BackgroundJobServer(options);
     }
 
     private void ConfigureServices(IServiceCollection services)
     {
         services.Configure<BotSettings>(this.Configuration);
 
+        var discordClient = ConfigureDiscordClient();
+
+        RegisterCoreServices(services, discordClient);
+        RegisterHandlerServices(services);
+        RegisterBuilderServices(services);
+        RegisterDataRepositories(services);
+        RegisterFeatureServices(services);
+        RegisterHttpClients(services);
+        RegisterThirdPartyServices(services);
+
+        services.AddHealthChecks();
+        services.AddDbContextFactory<FMBotDbContext>(b =>
+            b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
+        services.AddMemoryCache();
+    }
+
+    private static DiscordShardedClient ConfigureDiscordClient()
+    {
         var config = new DiscordSocketConfig
         {
             LogLevel = LogSeverity.Info,
@@ -137,29 +173,25 @@ public class Startup
             ConnectionTimeout = 60000
         };
 
-        DiscordShardedClient discordClient;
-
         if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.StartShard.HasValue && ConfigData.Data.Shards.EndShard.HasValue)
         {
             var startShard = ConfigData.Data.Shards.StartShard.Value;
             var endShard = ConfigData.Data.Shards.EndShard.Value;
-
             var arrayLength = endShard - startShard + 1;
-
             var shards = Enumerable.Range(startShard, arrayLength).ToArray();
 
             Log.Warning("Initializing Discord sharded client with {totalShards} total shards, starting at shard {startingShard} til {endingShard} - {shards}",
                 ConfigData.Data.Shards.TotalShards, startShard, endShard, shards);
 
-            discordClient = new DiscordShardedClient(shards, config);
-        }
-        else
-        {
-            Log.Warning("Initializing normal Discord sharded client");
-
-            discordClient = new DiscordShardedClient(config);
+            return new DiscordShardedClient(shards, config);
         }
 
+        Log.Warning("Initializing normal Discord sharded client");
+        return new DiscordShardedClient(config);
+    }
+
+    private void RegisterCoreServices(IServiceCollection services, DiscordShardedClient discordClient)
+    {
         services
             .AddSingleton(discordClient)
             .AddSingleton(new CommandService(new CommandServiceConfig
@@ -168,87 +200,122 @@ public class Startup
                 DefaultRunMode = RunMode.Async,
             }))
             .AddSingleton<InteractionService>()
-            .AddSingleton<AlbumService>()
-            .AddSingleton<AlbumBuilders>()
-            .AddSingleton<AliasService>()
-            .AddSingleton<ArtistBuilders>()
-            .AddSingleton<AlbumRepository>()
-            .AddSingleton<AppleMusicService>()
-            .AddSingleton<AdminService>()
-            .AddSingleton<ArtistsService>()
-            .AddSingleton<ArtistRepository>()
-            .AddSingleton<CensorService>()
-            .AddSingleton<CrownBuilders>()
-            .AddSingleton<CrownService>()
-            .AddSingleton<ChartBuilders>()
-            .AddSingleton<CountryService>()
-            .AddSingleton<CountryBuilders>()
+            .AddSingleton<StartupService>()
+            .AddSingleton<Random>()
+            .AddSingleton(this.Configuration);
+    }
+
+    private static void RegisterHandlerServices(IServiceCollection services)
+    {
+        services
             .AddSingleton<ClientLogHandler>()
             .AddSingleton<CommandHandler>()
+            .AddSingleton<InteractionHandler>()
+            .AddSingleton<UserEventHandler>();
+    }
+
+    private static void RegisterBuilderServices(IServiceCollection services)
+    {
+        services
+            .AddSingleton<AlbumBuilders>()
+            .AddSingleton<ArtistBuilders>()
+            .AddSingleton<ChartBuilders>()
+            .AddSingleton<CountryBuilders>()
+            .AddSingleton<CrownBuilders>()
             .AddSingleton<DiscogsBuilder>()
-            .AddSingleton<DiscogsService>()
             .AddSingleton<EurovisionBuilders>()
+            .AddSingleton<FriendBuilders>()
+            .AddSingleton<GameBuilders>()
+            .AddSingleton<GenreBuilders>()
+            .AddSingleton<GuildBuilders>()
+            .AddSingleton<GuildSettingBuilder>()
+            .AddSingleton<ImportBuilders>()
+            .AddSingleton<PlayBuilder>()
+            .AddSingleton<PremiumSettingBuilder>()
+            .AddSingleton<RecapBuilders>()
+            .AddSingleton<StaticBuilders>()
+            .AddSingleton<TemplateBuilders>()
+            .AddSingleton<TrackBuilders>()
+            .AddSingleton<UserBuilder>();
+    }
+
+    private static void RegisterDataRepositories(IServiceCollection services)
+    {
+        services
+            .AddSingleton<AlbumRepository>()
+            .AddSingleton<ArtistRepository>()
+            .AddSingleton<TrackRepository>()
+            .AddSingleton<SmallIndexRepository>()
+            .AddSingleton<IDataSourceFactory, DataSourceFactory>()
+            .AddSingleton<IPlayDataSourceRepository, PlayDataSourceRepository>()
+            .AddSingleton<IPrefixService, PrefixService>()
+            .AddSingleton<IUserIndexQueue, UserIndexQueue>()
+            .AddSingleton<IUserUpdateQueue, UserUpdateQueue>();
+    }
+
+    private static void RegisterFeatureServices(IServiceCollection services)
+    {
+        // Add general services
+        services
+            .AddSingleton<AdminService>()
+            .AddSingleton<AlbumService>()
+            .AddSingleton<AliasService>()
+            .AddSingleton<ArtistsService>()
+            .AddSingleton<CensorService>()
+            .AddSingleton<ChartService>()
+            .AddSingleton<CountryService>()
+            .AddSingleton<CrownService>()
+            .AddSingleton<DiscogsService>()
+            .AddSingleton<EurovisionService>()
             .AddSingleton<FeaturedService>()
             .AddSingleton<FriendsService>()
-            .AddSingleton<FriendBuilders>()
-            .AddSingleton<GenreBuilders>()
-            .AddSingleton<GenreService>()
-            .AddSingleton<GameBuilders>()
             .AddSingleton<GameService>()
-            .AddSingleton<GuildBuilders>()
+            .AddSingleton<GenreService>()
+            .AddSingleton<IndexService, IndexService>()
+            .AddSingleton<ImportService>()
+            .AddSingleton<MusicBotService>()
+            .AddSingleton<MusicDataFactory>()
+            .AddSingleton<PlayService>()
+            .AddSingleton<PuppeteerService>()
+            .AddSingleton<SettingService>()
+            .AddSingleton<SupporterService>()
+            .AddSingleton<TemplateService>()
+            .AddSingleton<TimeService>()
+            .AddSingleton<TimerService>()
+            .AddSingleton<TrackService>()
+            .AddSingleton<UpdateService, UpdateService>()
+            .AddSingleton<UserService>()
+            .AddSingleton<YoutubeService>();
+
+        // Guild-specific services
+        services
             .AddSingleton<GuildService>()
-            .AddSingleton<GuildSettingBuilder>()
             .AddSingleton<GuildDisabledCommandService>()
             .AddSingleton<ChannelToggledCommandService>()
             .AddSingleton<DisabledChannelService>()
-            .AddSingleton<IndexService, IndexService>()
-            .AddSingleton<IPrefixService, PrefixService>()
-            .AddSingleton<ImportBuilders>()
-            .AddSingleton(new InteractiveConfig
-            {
-                ReturnAfterSendingPaginator = true,
-                ProcessSinglePagePaginators = true
-            })
-            .AddSingleton<InteractiveService>()
-            .AddSingleton<IUserIndexQueue, UserIndexQueue>()
-            .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
-            .AddSingleton<PlayService>()
-            .AddSingleton<PlayBuilder>()
-            .AddSingleton<PremiumSettingBuilder>()
-            .AddSingleton<PuppeteerService>()
-            .AddSingleton<Random>()
-            .AddSingleton<RecapBuilders>()
-            .AddSingleton<StaticBuilders>()
-            .AddSingleton<MusicDataFactory>()
-            .AddSingleton<SettingService>()
-            .AddSingleton<StartupService>()
-            .AddSingleton<SupporterService>()
-            .AddSingleton<TimerService>()
-            .AddSingleton<TimeService>()
-            .AddSingleton<MusicBotService>()
-            .AddSingleton<TrackBuilders>()
-            .AddSingleton<TrackRepository>()
-            .AddSingleton<UserEventHandler>()
-            .AddSingleton<UserBuilder>()
+            .AddSingleton<WebhookService>();
+
+        // WhoKnows services
+        services
             .AddSingleton<WhoKnowsService>()
             .AddSingleton<WhoKnowsAlbumService>()
             .AddSingleton<WhoKnowsArtistService>()
             .AddSingleton<WhoKnowsPlayService>()
             .AddSingleton<WhoKnowsFilterService>()
-            .AddSingleton<WhoKnowsTrackService>()
-            .AddSingleton<YoutubeService>()
-            .AddSingleton<TemplateService>()
-            .AddSingleton<TemplateBuilders>()
-            .AddSingleton<UpdateService, UpdateService>()
-            .AddSingleton<IDataSourceFactory, DataSourceFactory>()
-            .AddSingleton<IPlayDataSourceRepository, PlayDataSourceRepository>()
-            .AddSingleton<IConfiguration>(this.Configuration);
+            .AddSingleton<WhoKnowsTrackService>();
 
-        // These services can only be added after the config is loaded
+        // Interactive configuration
         services
-            .AddSingleton<InteractionHandler>()
-            .AddSingleton<SmallIndexRepository>();
+            .AddSingleton(new InteractiveConfig
+            {
+                ReturnAfterSendingPaginator = true,
+                ProcessSinglePagePaginators = true
+            })
+            .AddSingleton<InteractiveService>();
+    }
 
+    private static void RegisterHttpClients(IServiceCollection services)
+    {
         services.AddHttpClient<BotListService>();
         services.AddHttpClient<ILastfmApi, LastfmApi>();
         services.AddHttpClient<ChartService>();
@@ -263,22 +330,7 @@ public class Startup
         services.AddHttpClient<EurovisionService>();
         services.AddHttpClient<WebhookService>();
         services.AddHttpClient<UserService>();
-
-        services.AddHttpClient("OpenCollective", client =>
-        {
-            client.BaseAddress = new Uri("https://api.opencollective.com/graphql/v2");
-        });
-        services.AddSingleton<GraphQLHttpClient>(sp =>
-        {
-            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-            var httpClient = httpClientFactory.CreateClient("OpenCollective");
-
-            return new GraphQLHttpClient(new GraphQLHttpClientOptions
-            {
-                EndPoint = new Uri("https://api.opencollective.com/graphql/v2")
-            }, new SystemTextJsonSerializer(options => options.PropertyNameCaseInsensitive = true), httpClient);
-        });
-        services.AddSingleton<OpenCollectiveService>();
+        services.AddHttpClient<AppleMusicVideoService>();
 
         services.AddHttpClient<SpotifyService>(client =>
         {
@@ -290,7 +342,41 @@ public class Startup
             client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("fmbot-discord", "1.0"));
             client.Timeout = TimeSpan.FromSeconds(10);
         });
+    }
 
+    private void RegisterThirdPartyServices(IServiceCollection services)
+    {
+        ConfigureOpenCollectiveServices(services);
+
+        ConfigureAppleMusicServices(services);
+
+        ConfigureGrpcServices(services);
+    }
+
+    private static void ConfigureOpenCollectiveServices(IServiceCollection services)
+    {
+        services.AddHttpClient("OpenCollective", client =>
+        {
+            client.BaseAddress = new Uri("https://api.opencollective.com/graphql/v2");
+        });
+
+        services.AddSingleton<GraphQLHttpClient>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var httpClient = httpClientFactory.CreateClient("OpenCollective");
+
+            return new GraphQLHttpClient(new GraphQLHttpClientOptions
+            {
+                EndPoint = new Uri("https://api.opencollective.com/graphql/v2")
+            }, new SystemTextJsonSerializer(options => options.PropertyNameCaseInsensitive = true), httpClient);
+        });
+
+        services.AddSingleton<OpenCollectiveService>();
+    }
+
+    private static void ConfigureAppleMusicServices(IServiceCollection services)
+    {
+        services.AddSingleton<AppleMusicService>();
         services.AddSingleton<AppleMusicJwtAuthProvider>(provider =>
             new AppleMusicJwtAuthProvider(
                 ConfigData.Data.AppleMusic.Secret,
@@ -321,21 +407,15 @@ public class Startup
             }
             client.BaseAddress = new Uri("https://amp-api.music.apple.com/v1/catalog/us/");
         });
+    }
 
-        services.AddHttpClient<AppleMusicVideoService>();
-
+    private void ConfigureGrpcServices(IServiceCollection services)
+    {
         services.AddConfiguredGrpcClient<TimeEnrichment.TimeEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<StatusHandler.StatusHandlerClient>(this.Configuration);
         services.AddConfiguredGrpcClient<AlbumEnrichment.AlbumEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<ArtistEnrichment.ArtistEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<SupporterLinkService.SupporterLinkServiceClient>(this.Configuration);
-
-        services.AddHealthChecks();
-
-        services.AddDbContextFactory<FMBotDbContext>(b =>
-            b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
-
-        services.AddMemoryCache();
     }
 
 

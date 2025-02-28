@@ -184,6 +184,9 @@ public class TimerService
         Log.Information($"RecurringJob: Adding {nameof(CheckExpiredDiscordSupporters)}");
         RecurringJob.AddOrUpdate(nameof(CheckExpiredDiscordSupporters), () => CheckExpiredDiscordSupporters(), "0 */3 * * *");
 
+        Log.Information($"RecurringJob: Adding {nameof(CheckExpiredStripeSupporters)}");
+        RecurringJob.AddOrUpdate(nameof(CheckExpiredStripeSupporters), () => CheckExpiredStripeSupporters(), "30 */3 * * *");
+
         Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
         RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 12 * * *");
 
@@ -497,6 +500,11 @@ public class TimerService
     public async Task CheckExpiredDiscordSupporters()
     {
         await this._supporterService.CheckExpiredDiscordSupporters();
+    }
+
+    public async Task CheckExpiredStripeSupporters()
+    {
+        await this._supporterService.CheckExpiredStripeSupporters();
     }
 
     public async Task CheckDiscordSupportersUserType()
