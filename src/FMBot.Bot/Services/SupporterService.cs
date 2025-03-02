@@ -214,11 +214,6 @@ public class SupporterService
         var goodbyeEmbed = new EmbedBuilder();
         goodbyeEmbed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var goodbyeMessage = new StringBuilder();
-
-        goodbyeMessage.AppendLine("Your .fmbot supporter subscription has expired. Sorry to see you go!");
-        goodbyeMessage.AppendLine();
-
         goodbyeEmbed.AddField("⭐ .fmbot supporter expired",
             "Your .fmbot supporter subscription has expired. Sorry to see you go!\n\n" +
             "Thanks for having supported the bot! Feel free to open a thread in #help on [our server](https://discord.gg/fmbot) if you have any feedback.");

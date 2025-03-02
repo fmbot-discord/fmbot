@@ -1179,7 +1179,7 @@ public class UserBuilder
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         UserType userType,
-        (int amount, bool show) usesLeftToday,
+        (int amount, bool show, int amountThisWeek) usesLeftToday,
         bool differentUserButNotAllowed)
     {
         var response = new ResponseModel
@@ -1237,7 +1237,7 @@ public class UserBuilder
                 description.AppendLine($"You can use this command `{usesLeftToday.amount}` more times today.");
             }
 
-            description.AppendLine($"⭐ Improved AI model has been enabled.");
+            description.AppendLine($"⭐ Supporter perk: Using premium AI model");
 
             if (!hasUsesLeft)
             {
@@ -1311,8 +1311,8 @@ public class UserBuilder
 
         response = selected switch
         {
-            "compliment" => await this.JudgeComplimentAsync(context, userSettings, topArtists),
-            "roast" => await this.JudgeRoastAsync(context, userSettings, topArtists),
+            "compliment" => await this.JudgeComplimentAsync(context, userSettings, topArtists, commandUsesLeft.amountThisWeek),
+            "roast" => await this.JudgeRoastAsync(context, userSettings, topArtists, commandUsesLeft.amountThisWeek),
             _ => response
         };
 
@@ -1320,7 +1320,7 @@ public class UserBuilder
     }
 
     private async Task<ResponseModel> JudgeComplimentAsync(ContextModel context, UserSettingsModel userSettings,
-        List<string> topArtists)
+        List<string> topArtists, int amountThisWeek)
     {
         var response = new ResponseModel
         {
@@ -1329,7 +1329,7 @@ public class UserBuilder
 
         var supporter = context.ContextUser.UserType != UserType.User;
 
-        var enhanced = supporter ? " - Enhanced ⭐" : null;
+        var enhanced = supporter ? " - Premium model ⭐" : null;
         response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Compliment 🙂{enhanced}");
         response.Embed.WithColor(new Color(186, 237, 169));
 
@@ -1337,7 +1337,7 @@ public class UserBuilder
             userSettings.DifferentUser ? userSettings.UserId : null);
 
         var openAiResponse =
-            await this._openAiService.GetJudgeResponse(topArtists, PromptType.Compliment, supporter);
+            await this._openAiService.GetJudgeResponse(topArtists, PromptType.Compliment, amountThisWeek, supporter);
 
         if (openAiResponse.Choices == null)
         {
@@ -1354,7 +1354,7 @@ public class UserBuilder
     }
 
     private async Task<ResponseModel> JudgeRoastAsync(ContextModel context, UserSettingsModel userSettings,
-        List<string> topArtists)
+        List<string> topArtists, int amountThisWeek)
     {
         var response = new ResponseModel
         {
@@ -1362,7 +1362,7 @@ public class UserBuilder
         };
 
         var supporter = context.ContextUser.UserType != UserType.User;
-        var enhanced = supporter ? " - Enhanced ⭐" : null;
+        var enhanced = supporter ? " - Premium model ⭐" : null;
         response.Embed.WithAuthor($"{userSettings.DisplayName}'s .fmbot AI judgement - Roast 🔥{enhanced}");
         response.Embed.WithColor(new Color(255, 122, 1));
 
@@ -1370,7 +1370,7 @@ public class UserBuilder
             userSettings.DifferentUser ? userSettings.UserId : null);
 
         var openAiResponse =
-            await this._openAiService.GetJudgeResponse(topArtists, PromptType.Roast, supporter);
+            await this._openAiService.GetJudgeResponse(topArtists, PromptType.Roast, amountThisWeek, supporter);
 
         if (openAiResponse.Choices == null)
         {
