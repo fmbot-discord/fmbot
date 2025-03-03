@@ -717,4 +717,48 @@ public class ArtistCommands : BaseCommandModule
             await this.Context.HandleCommandException(e);
         }
     }
+    [Command("artistgaps", RunMode = RunMode.Async)]
+    [Summary("Shows the artists you've returned to after a gap in listening.")]
+    [Options(Constants.UserMentionExample, Constants.EmbedSizeExample)]
+    [Examples("gaps", "artistgaps", "artistgaps quarterly @user", "gaps yearly")]
+    [Alias("gaps", "gap", "artistgap")]
+    [UsernameSetRequired]
+    [SupportsPagination]
+    [CommandCategories(CommandCategory.Artists)]
+    public async Task ArtistGapsAsync([Remainder] string extraOptions = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var context = new ContextModel(this.Context, prfx, contextUser);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+
+            var supporterRequiredResponse = ArtistBuilders.GapsSupporterRequired(context, userSettings);
+
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
+            }
+
+            var topListSettings = SettingService.SetTopListSettings(extraOptions);
+            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            var mode = SettingService.SetMode(userSettings.NewSearchValue, contextUser.Mode);
+
+            var response = await this._artistBuilders.ArtistGapsAsync(context, topListSettings,
+                userSettings, mode.mode);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }
