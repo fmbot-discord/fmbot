@@ -214,29 +214,22 @@ public class SupporterService
         var goodbyeEmbed = new EmbedBuilder();
         goodbyeEmbed.WithColor(DiscordConstants.InformationColorBlue);
 
-        var goodbyeMessage = new StringBuilder();
-
-        goodbyeMessage.AppendLine("Your .fmbot supporter subscription has expired. Sorry to see you go!");
-        goodbyeMessage.AppendLine();
+        goodbyeEmbed.AddField("⭐ .fmbot supporter expired",
+            "Your .fmbot supporter subscription has expired. Sorry to see you go!\n\n" +
+            "Thanks for having supported the bot! Feel free to open a thread in #help on [our server](https://discord.gg/fmbot) if you have any feedback.");
 
         if (hadImported)
         {
-            goodbyeMessage.AppendLine(
+            goodbyeEmbed.AddField($"{DiscordConstants.Imports} Importing service deactivated",
                 "The import service is no longer active, so the bot will now only use your Last.fm stats without imported .fmbot data. Your imports are however saved and will be available again if you resubscribe in the future.");
-            goodbyeMessage.AppendLine();
         }
-
-        goodbyeMessage.AppendLine(
-            "Thanks for having supported the bot! Feel free to open a thread in #help on [our server](https://discord.gg/fmbot) if you have any feedback.");
 
         var buttons = new ComponentBuilder()
             .WithButton("Resubscribe", style: ButtonStyle.Secondary,
                 customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault)
             .WithButton("Support server", style: ButtonStyle.Link, url: "https://discord.gg/fmbot");
 
-        goodbyeEmbed.WithDescription(goodbyeMessage.ToString());
-
-        goodbyeEmbed.AddField("⭐ Annual deal",
+        goodbyeEmbed.AddField("\ud83c\udff7\ufe0f Annual deal",
             "Resubscribe and save 50% on .fmbot supporter with our new yearly option.");
 
         await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons.Build());

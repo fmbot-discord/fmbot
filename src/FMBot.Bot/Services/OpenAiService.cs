@@ -81,8 +81,8 @@ public class OpenAiService
         return responseModel;
     }
 
-    public async Task<OpenAiResponse> GetJudgeResponse(List<string> artists, PromptType promptType,
-        bool supporter = false, string language = "en-us")
+    public async Task<OpenAiResponse> GetJudgeResponse(List<string> artists, PromptType promptType,int amountThisWeek,
+        bool supporter = false,  string language = "en-us")
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var prompt = await db.AiPrompts
@@ -96,7 +96,7 @@ public class OpenAiService
             artistList.Add(artist[..Math.Min(artist.Length, 36)]);
         }
 
-        var model = supporter ? prompt.PremiumModel : prompt.FreeModel;
+        var model = supporter ? amountThisWeek <= 2 ? prompt.UltraModel : prompt.PremiumModel : prompt.FreeModel;
 
         return await SendRequest($"{prompt.Prompt} {string.Join(", ", artistList)}", model);
     }
@@ -137,7 +137,7 @@ public class OpenAiService
         return existingGeneration;
     }
 
-    public async Task<(int amount, bool show)> GetJudgeUsesLeft(User user)
+    public async Task<(int amount, bool show, int amountThisWeek)> GetJudgeUsesLeft(User user)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -145,8 +145,12 @@ public class OpenAiService
         var generatedToday =
             await db.AiGenerations.CountAsync(c => c.UserId == user.UserId && c.DateGenerated >= filterDate);
 
+        var filterWeek = DateTime.UtcNow.AddDays(-7);
+        var amountThisWeek =
+            await db.AiGenerations.CountAsync(c => c.UserId == user.UserId && c.DateGenerated >= filterWeek);
+
         var maxDailyUses = SupporterService.IsSupporter(user.UserType) ? 25 : 4;
-        return (maxDailyUses - generatedToday, generatedToday >= maxDailyUses / 2);
+        return (maxDailyUses - generatedToday, generatedToday >= maxDailyUses / 2, amountThisWeek);
     }
 
     public async Task<bool> CheckIfUsernameOffensive(string username)

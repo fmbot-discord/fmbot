@@ -11,4 +11,6 @@ public class AiPrompt
     public string Prompt { get; set; }
     public string FreeModel { get; set; }
     public string PremiumModel { get; set; }
+
+    public string UltraModel { get; set; }
 }
