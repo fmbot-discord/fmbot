@@ -345,7 +345,7 @@ public class UserCommands : BaseCommandModule
                 }
                 else
                 {
-                    if (contextUser.EmoteReactions != null && contextUser.EmoteReactions.Any() &&
+                    if (contextUser?.EmoteReactions != null && contextUser.EmoteReactions.Any() &&
                         SupporterService.IsSupporter(contextUser.UserType))
                     {
                         await GuildService.AddReactionsAsync(message, contextUser.EmoteReactions);

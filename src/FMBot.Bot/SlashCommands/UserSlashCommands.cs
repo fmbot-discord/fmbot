@@ -967,7 +967,6 @@ public class UserSlashCommands : InteractionModuleBase
             var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
             var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
-            var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
             var userSettings = await this._settingService.GetOriginalContextUser(
                 discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
@@ -1024,7 +1023,7 @@ public class UserSlashCommands : InteractionModuleBase
             topArtists = topArtists.Take(artistLimit).ToList();
 
             var response = await this._userBuilder.JudgeHandleAsync(
-                new ContextModel(this.Context, contextUser, discordContextUser),
+                new ContextModel(this.Context, contextUser),
                 userSettings, result, topArtists);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
