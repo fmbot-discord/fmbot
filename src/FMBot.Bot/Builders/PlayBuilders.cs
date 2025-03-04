@@ -84,6 +84,63 @@ public class PlayBuilder
         this._artistsService = artistsService;
     }
 
+    public async Task<ResponseModel> DiscoveryDate(
+        ContextModel context,
+        string searchValue,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
+        if (trackSearch.Track == null)
+        {
+            return trackSearch.Response;
+        }
+
+        var artistFirstPlayDateTask =
+            this._playService.GetArtistFirstPlayDate(userSettings.UserId, trackSearch.Track.ArtistName);
+        var trackFirstPlayDateTask = this._playService.GetTrackFirstPlayDate(userSettings.UserId,
+            trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+        var albumFirstPlayDateTask = this._playService.GetAlbumFirstPlayDate(userSettings.UserId,
+            trackSearch.Track.ArtistName, trackSearch.Track.AlbumName);
+
+        var artistFirstPlayDate = await artistFirstPlayDateTask;
+        var trackFirstPlayDate = await trackFirstPlayDateTask;
+        var albumFirstPlayDate = await albumFirstPlayDateTask;
+
+        var description = new StringBuilder();
+        description.Append($"**{(artistFirstPlayDate.HasValue ? $"<t:{artistFirstPlayDate.Value.ToUnixEpochDate()}:D>" : "Just now")}**");
+        description.Append($" — **[{trackSearch.Track.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(trackSearch.Track.ArtistName)})**");
+        description.AppendLine();
+
+        if (!string.IsNullOrEmpty(trackSearch.Track.AlbumName))
+        {
+            description.Append($"**{(albumFirstPlayDate.HasValue ? $"<t:{albumFirstPlayDate.Value.ToUnixEpochDate()}:D>" : "Just now")}**");
+            description.Append($" — **[{trackSearch.Track.AlbumName}]({LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, trackSearch.Track.AlbumName)})**");
+            description.AppendLine();
+            response.Embed.WithAuthor("Discovery date for artist, album and track");
+        }
+        else
+        {
+            response.Embed.WithAuthor("Discovery date for artist and track");
+        }
+
+        description.Append($"**{(trackFirstPlayDate.HasValue ? $"<t:{trackFirstPlayDate.Value.ToUnixEpochDate()}:D>" : "Just now")}**");
+        description.Append($" — **[{trackSearch.Track.TrackName}]({LastfmUrlExtensions.GetTrackUrl(trackSearch.Track.ArtistName, trackSearch.Track.TrackName)})**");
+        description.AppendLine();
+
+        response.Embed.WithDescription(description.ToString());
+        response.EmbedAuthor.WithName($"Discovery dates for {userSettings.DisplayName}");
+
+        return response;
+    }
+
     public async Task<ResponseModel> NowPlayingAsync(
         ContextModel context,
         UserSettingsModel userSettings)

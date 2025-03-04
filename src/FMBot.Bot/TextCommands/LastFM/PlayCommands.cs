@@ -67,6 +67,42 @@ public class PlayCommands : BaseCommandModule
         this._recapBuilders = recapBuilders;
     }
 
+    [Command("discoverydate", RunMode = RunMode.Async)]
+    [Summary("Shows the date you discovered the artist, album, and track")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Tracks)]
+    [Alias("dd", "datediscovered", "datediscovery")]
+    public async Task DateDiscoveredAsync([Remainder] string options = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        try
+        {
+            var context = new ContextModel(this.Context, prfx, contextUser);
+            var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+
+            var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
+            }
+
+            var response = await this._playBuilder.DiscoveryDate(context, userSettings.NewSearchValue, userSettings);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     [Command("fm", RunMode = RunMode.Async)]
     [Summary("Shows you or someone else's current track")]
     [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "hm", "jm", "km",

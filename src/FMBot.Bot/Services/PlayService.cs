@@ -290,7 +290,8 @@ public class PlayService
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
 
         var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
-        var plays = await PlayRepository.GetUserPlays(userId, connection,importUser?.DataSource ?? DataSource.LastFm, start: monthAgo);
+        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm,
+            start: monthAgo);
 
         return (
             plays.Count(c =>
@@ -320,7 +321,8 @@ public class PlayService
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
 
         var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
-        var plays = await PlayRepository.GetUserPlays(userId, connection,importUser?.DataSource ?? DataSource.LastFm, start: monthAgo);
+        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm,
+            start: monthAgo);
 
         return (
             plays.Count(c =>
@@ -353,7 +355,8 @@ public class PlayService
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
 
         var importUser = await UserRepository.GetImportUserForUserId(userId, connection);
-        var plays = await PlayRepository.GetUserPlays(userId, connection,importUser?.DataSource ?? DataSource.LastFm, start: monthAgo);
+        var plays = await PlayRepository.GetUserPlays(userId, connection, importUser?.DataSource ?? DataSource.LastFm,
+            start: monthAgo);
 
         return (
             plays.Count(c =>
@@ -800,6 +803,11 @@ public class PlayService
 
     public async Task<DateTime?> GetAlbumFirstPlayDate(int userId, string artistName, string albumName)
     {
+        if (albumName == null)
+        {
+            return null;
+        }
+
         var plays = await this.GetAllUserPlays(userId);
         return plays
             .OrderBy(o => o.TimePlayed)
