@@ -790,6 +790,16 @@ public class PlayService
         });
     }
 
+    public async Task<UserPlay> GetArtistFirstPlay(int userId, string artistName)
+    {
+        var plays = await this.GetAllUserPlays(userId);
+        return plays
+            .OrderBy(o => o.TimePlayed)
+            .FirstOrDefault(f =>
+                f.ArtistName != null &&
+                f.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase));
+    }
+
     public async Task<DateTime?> GetArtistFirstPlayDate(int userId, string artistName)
     {
         var plays = await this.GetAllUserPlays(userId);

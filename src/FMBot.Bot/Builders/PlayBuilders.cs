@@ -103,14 +103,37 @@ public class PlayBuilder
             return trackSearch.Response;
         }
 
-        var artistFirstPlayDateTask =
-            this._playService.GetArtistFirstPlayDate(userSettings.UserId, trackSearch.Track.ArtistName);
-        var trackFirstPlayDateTask = this._playService.GetTrackFirstPlayDate(userSettings.UserId,
-            trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
-        var albumFirstPlayDateTask = this._playService.GetAlbumFirstPlayDate(userSettings.UserId,
-            trackSearch.Track.ArtistName, trackSearch.Track.AlbumName);
+        var artistFirstPlay =
+            await this._playService.GetArtistFirstPlay(userSettings.UserId, trackSearch.Track.ArtistName);
 
-        var artistFirstPlayDate = await artistFirstPlayDateTask;
+        var albumName = trackSearch.Track.AlbumName;
+        var trackName = trackSearch.Track.TrackName;
+
+        if (!string.IsNullOrWhiteSpace(searchValue) &&
+            artistFirstPlay != null)
+        {
+            var splitSearch = searchValue.Split(" ");
+            var useFirstArtistTrack = true;
+            foreach (var split in splitSearch)
+            {
+                if (trackName.Contains(split, StringComparison.OrdinalIgnoreCase))
+                {
+                    useFirstArtistTrack = false;
+                }
+            }
+
+            if (useFirstArtistTrack)
+            {
+                albumName = artistFirstPlay.AlbumName;
+                trackName = artistFirstPlay.TrackName;
+            }
+        }
+
+        var trackFirstPlayDateTask = this._playService.GetTrackFirstPlayDate(userSettings.UserId,
+            trackSearch.Track.ArtistName, trackName);
+        var albumFirstPlayDateTask = this._playService.GetAlbumFirstPlayDate(userSettings.UserId,
+            trackSearch.Track.ArtistName, albumName);
+
         var trackFirstPlayDate = await trackFirstPlayDateTask;
         var albumFirstPlayDate = await albumFirstPlayDateTask;
 
@@ -121,14 +144,18 @@ public class PlayBuilder
         }
 
         var description = new StringBuilder();
-        description.Append($"**{(artistFirstPlayDate.HasValue ? $"<t:{artistFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
-        description.Append($" — **[{trackSearch.Track.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(trackSearch.Track.ArtistName)})**");
+        description.Append(
+            $"**{(artistFirstPlay?.TimePlayed != null ? $"<t:{artistFirstPlay.TimePlayed.ToUnixEpochDate()}:D>" : noResult)}**");
+        description.Append(
+            $" — **[{trackSearch.Track.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(trackSearch.Track.ArtistName)})**");
         description.AppendLine();
 
-        if (!string.IsNullOrEmpty(trackSearch.Track.AlbumName))
+        if (!string.IsNullOrEmpty(albumName))
         {
-            description.Append($"**{(albumFirstPlayDate.HasValue ? $"<t:{albumFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
-            description.Append($" — **[{trackSearch.Track.AlbumName}]({LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, trackSearch.Track.AlbumName)})**");
+            description.Append(
+                $"**{(albumFirstPlayDate.HasValue ? $"<t:{albumFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
+            description.Append(
+                $" — **[{albumName}]({LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, albumName)})**");
             description.AppendLine();
             response.Embed.WithAuthor("Discovery date for artist, album and track");
         }
@@ -137,8 +164,10 @@ public class PlayBuilder
             response.Embed.WithAuthor("Discovery date for artist and track");
         }
 
-        description.Append($"**{(trackFirstPlayDate.HasValue ? $"<t:{trackFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
-        description.Append($" — **[{trackSearch.Track.TrackName}]({LastfmUrlExtensions.GetTrackUrl(trackSearch.Track.ArtistName, trackSearch.Track.TrackName)})**");
+        description.Append(
+            $"**{(trackFirstPlayDate.HasValue ? $"<t:{trackFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
+        description.Append(
+            $" — **[{trackName}]({LastfmUrlExtensions.GetTrackUrl(trackSearch.Track.ArtistName, trackName)})**");
         description.AppendLine();
 
         response.Embed.WithDescription(description.ToString());
