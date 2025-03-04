@@ -960,7 +960,7 @@ public class UserSlashCommands : InteractionModuleBase
     {
         try
         {
-            _ = DeferAsync();
+            await DeferAsync();
             await this.Context.DisableInteractionButtons();
 
             var discordUserId = ulong.Parse(discordUser);

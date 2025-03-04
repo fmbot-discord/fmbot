@@ -476,7 +476,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("discoveries", "Shows artists you've recently discovered")]
+    [SlashCommand("discoveries", "⭐ Shows artists you've recently discovered")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -484,7 +484,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Size", "Amount of artists discoveries to show")] EmbedSize? embedSize = null,
+        [Summary("Size", "Amount of artists discoveries to show per page")] EmbedSize? embedSize = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

@@ -20,7 +20,9 @@ using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
+using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
+using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
 
@@ -41,7 +43,8 @@ public class PlayBuilder
     private readonly CountryService _countryService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly AlbumService _albumService;
-    private readonly OpenAiService _openAiService;
+    private readonly PuppeteerService _puppeteerService;
+    private readonly ArtistsService _artistsService;
 
     private InteractiveService Interactivity { get; }
 
@@ -60,7 +63,8 @@ public class PlayBuilder
         TrackService trackService,
         CountryService countryService,
         AlbumService albumService,
-        OpenAiService openAiService)
+        PuppeteerService puppeteerService,
+        ArtistsService artistsService)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -76,7 +80,71 @@ public class PlayBuilder
         this._trackService = trackService;
         this._countryService = countryService;
         this._albumService = albumService;
-        this._openAiService = openAiService;
+        this._puppeteerService = puppeteerService;
+        this._artistsService = artistsService;
+    }
+
+    public async Task<ResponseModel> DiscoveryDate(
+        ContextModel context,
+        string searchValue,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
+        if (trackSearch.Track == null)
+        {
+            return trackSearch.Response;
+        }
+
+        var artistFirstPlayDateTask =
+            this._playService.GetArtistFirstPlayDate(userSettings.UserId, trackSearch.Track.ArtistName);
+        var trackFirstPlayDateTask = this._playService.GetTrackFirstPlayDate(userSettings.UserId,
+            trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
+        var albumFirstPlayDateTask = this._playService.GetAlbumFirstPlayDate(userSettings.UserId,
+            trackSearch.Track.ArtistName, trackSearch.Track.AlbumName);
+
+        var artistFirstPlayDate = await artistFirstPlayDateTask;
+        var trackFirstPlayDate = await trackFirstPlayDateTask;
+        var albumFirstPlayDate = await albumFirstPlayDateTask;
+
+        var noResult = "Just now";
+        if (!string.IsNullOrWhiteSpace(searchValue))
+        {
+            noResult = "No plays yet";
+        }
+
+        var description = new StringBuilder();
+        description.Append($"**{(artistFirstPlayDate.HasValue ? $"<t:{artistFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
+        description.Append($" — **[{trackSearch.Track.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(trackSearch.Track.ArtistName)})**");
+        description.AppendLine();
+
+        if (!string.IsNullOrEmpty(trackSearch.Track.AlbumName))
+        {
+            description.Append($"**{(albumFirstPlayDate.HasValue ? $"<t:{albumFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
+            description.Append($" — **[{trackSearch.Track.AlbumName}]({LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, trackSearch.Track.AlbumName)})**");
+            description.AppendLine();
+            response.Embed.WithAuthor("Discovery date for artist, album and track");
+        }
+        else
+        {
+            response.Embed.WithAuthor("Discovery date for artist and track");
+        }
+
+        description.Append($"**{(trackFirstPlayDate.HasValue ? $"<t:{trackFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
+        description.Append($" — **[{trackSearch.Track.TrackName}]({LastfmUrlExtensions.GetTrackUrl(trackSearch.Track.ArtistName, trackSearch.Track.TrackName)})**");
+        description.AppendLine();
+
+        response.Embed.WithDescription(description.ToString());
+        response.EmbedAuthor.WithName($"Discovery dates for {userSettings.DisplayName}");
+
+        return response;
     }
 
     public async Task<ResponseModel> NowPlayingAsync(
@@ -438,7 +506,8 @@ public class PlayBuilder
             ImportService.AddImportDescription(footer, [trackPage.Last().PlaySource ?? PlaySource.LastFm]);
 
             footer.Append($"Page {pageCounter}/{trackPages.Count.Format(context.NumberFormat)}");
-            footer.Append($" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount.Format(context.NumberFormat)} scrobbles");
+            footer.Append(
+                $" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount.Format(context.NumberFormat)} scrobbles");
 
             if (!string.IsNullOrWhiteSpace(artistToFilter))
             {
@@ -854,7 +923,8 @@ public class PlayBuilder
             }
 
             pageFooter.AppendLine();
-            pageFooter.AppendLine($"Top genres, artist, album and track per {amount.Format(context.NumberFormat)} days");
+            pageFooter.AppendLine(
+                $"Top genres, artist, album and track per {amount.Format(context.NumberFormat)} days");
             pageFooter.AppendLine(
                 $"{PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(plays), 1).Format(context.NumberFormat)} per day");
 
@@ -940,7 +1010,8 @@ public class PlayBuilder
             reply.Append($"<@{context.DiscordUser.Id}> My estimate is that you");
         }
 
-        reply.AppendLine($" will reach **{goalAmount.Format(context.NumberFormat)}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
+        reply.AppendLine(
+            $" will reach **{goalAmount.Format(context.NumberFormat)}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
 
         if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {
@@ -1370,6 +1441,306 @@ public class PlayBuilder
         }
 
         response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        return response;
+    }
+
+    public static ResponseModel GapsSupporterRequired(ContextModel context, UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (context.ContextUser.UserType == UserType.User)
+        {
+            response.Embed.WithDescription(
+                $"To see the biggest gaps between when you listened to certain artists we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters.");
+
+            response.Components = new ComponentBuilder()
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.CommandResponse = CommandResponse.SupporterRequired;
+
+            return response;
+        }
+
+        if (userSettings.UserType == UserType.User)
+        {
+            response.Embed.WithDescription(
+                $"Sorry, artist gaps uses someone their lifetime listening history. You can only use this command on other supporters.");
+
+            response.Components = new ComponentBuilder()
+                .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
+                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.CommandResponse = CommandResponse.SupporterRequired;
+
+            return response;
+        }
+
+        return null;
+    }
+
+    public async Task<ResponseModel> ListeningGapsAsync(
+        ContextModel context,
+        TopListSettings topListSettings,
+        UserSettingsModel userSettings,
+        ResponseMode mode,
+        GapEntityType entityType)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var pages = new List<PageBuilder>();
+
+        string userTitle;
+        if (!userSettings.DifferentUser)
+        {
+            if (!context.SlashCommand)
+            {
+                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            }
+
+            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        }
+        else
+        {
+            userTitle =
+                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+        }
+
+        if (context.ContextUser.LastUpdated < DateTime.UtcNow.AddHours(-1))
+        {
+            await this._updateService.UpdateUser(context.ContextUser);
+        }
+
+        var entityTypeDisplay = entityType.ToString();
+        var userUrl =
+            LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm, $"/library/{entityTypeDisplay.ToLower()}s");
+
+        response.EmbedAuthor.WithName($"{entityTypeDisplay} listening gaps for {userTitle}");
+        response.EmbedAuthor.WithUrl(userUrl);
+
+        var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
+
+        if (allPlays == null || allPlays.Count == 0)
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription($"No plays found in your listening history.")
+                .WithAuthor(response.EmbedAuthor));
+
+            response.StaticPaginator = StringService.BuildStaticPaginator(pages, selectMenuBuilder: context.SelectMenu);
+            response.ResponseType = ResponseType.Paginator;
+            return response;
+        }
+
+        var entityPlays = entityType switch
+        {
+            GapEntityType.Artist => allPlays.OrderBy(o => o.TimePlayed)
+                .GroupBy(g => g.ArtistName, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(d => d.Key, d => d.ToList()),
+            GapEntityType.Album => allPlays
+                .Where(w => !string.IsNullOrEmpty(w.AlbumName))
+                .OrderBy(o => o.TimePlayed)
+                .GroupBy(g => $"{g.ArtistName} - {g.AlbumName}", StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(d => d.Key, d => d.ToList()),
+            GapEntityType.Track => allPlays.OrderBy(o => o.TimePlayed)
+                .GroupBy(g => $"{g.ArtistName} - {g.TrackName}", StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(d => d.Key, d => d.ToList()),
+            _ => throw new ArgumentOutOfRangeException(nameof(entityType), entityType, null)
+        };
+
+        const int gapThresholdDays = 90;
+        var minPlays = entityType switch
+        {
+            GapEntityType.Artist => 3,
+            GapEntityType.Album => 2,
+            GapEntityType.Track => 1,
+            _ => throw new ArgumentOutOfRangeException(nameof(entityType), entityType, null)
+        };
+
+        var entitiesWithGaps =
+            new List<(string DisplayName, string Artist, string ItemName, DateTime ResumeDate, TimeSpan GapDuration, int
+                TotalPlays)>();
+
+        foreach (var entity in entityPlays)
+        {
+            if (entity.Value.Count < minPlays)
+            {
+                continue;
+            }
+
+            var orderedPlays = entity.Value.OrderBy(o => o.TimePlayed).ToList();
+
+            // Compare timestamps between consecutive plays to find gaps
+            for (var i = 1; i < orderedPlays.Count; i++)
+            {
+                var previousPlay = orderedPlays[i - 1].TimePlayed;
+                var currentPlay = orderedPlays[i].TimePlayed;
+                var gap = currentPlay - previousPlay;
+
+                if (gap.TotalDays >= gapThresholdDays)
+                {
+                    string artist;
+                    string itemName = null;
+
+                    switch (entityType)
+                    {
+                        case GapEntityType.Artist:
+                            artist = orderedPlays[i].ArtistName;
+                            break;
+                        case GapEntityType.Album:
+                            artist = orderedPlays[i].ArtistName;
+                            itemName = orderedPlays[i].AlbumName;
+                            break;
+                        case GapEntityType.Track:
+                            artist = orderedPlays[i].ArtistName;
+                            itemName = orderedPlays[i].TrackName;
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(entityType), entityType, null);
+                    }
+
+                    entitiesWithGaps.Add((entity.Key, artist, itemName, currentPlay, gap, entity.Value.Count));
+                    break;
+                }
+            }
+        }
+
+        var sortedEntitiesWithGaps = entitiesWithGaps
+            .OrderByDescending(o => o.GapDuration.TotalDays)
+            .ToList();
+
+        var viewType = new SelectMenuBuilder()
+            .WithPlaceholder("Select gap view")
+            .WithCustomId(InteractionConstants.GapView)
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in Enum.GetValues<GapEntityType>())
+        {
+            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var value =
+                $"{Enum.GetName(option)}-{Enum.GetName(mode)}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
+
+            var active = option == entityType;
+            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+        }
+
+        if (mode == ResponseMode.Image && sortedEntitiesWithGaps.Count != 0)
+        {
+            var topList = sortedEntitiesWithGaps.Take(10).Select(s => new TopListObject
+            {
+                Name = s.DisplayName,
+                SubName = $"Gap: {StringExtensions.GetLongListeningTimeString(s.GapDuration)}",
+                Playcount = s.TotalPlays
+            }).ToList();
+
+            string backgroundImage = null;
+
+            if (entityType == GapEntityType.Artist)
+            {
+                backgroundImage =
+                    (await this._artistsService.GetArtistFromDatabase(sortedEntitiesWithGaps.First().Artist))
+                    ?.SpotifyImageUrl;
+            }
+
+            if (entityType == GapEntityType.Album)
+            {
+                backgroundImage =
+                    (await this._albumService.GetAlbumFromDatabase(sortedEntitiesWithGaps.First().Artist,
+                        sortedEntitiesWithGaps.First().ItemName))
+                    ?.SpotifyImageUrl;
+            }
+
+            var image = await this._puppeteerService.GetTopList(userTitle, $"{entityTypeDisplay} listening gaps",
+                $"returning {entityTypeDisplay.ToLower()}s",
+                "Alltime", sortedEntitiesWithGaps.Count, sortedEntitiesWithGaps.Sum(s => s.TotalPlays), backgroundImage,
+                topList, context.NumberFormat);
+
+            var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+            response.Stream = encoded.AsStream();
+
+            response.FileName = $"{entityTypeDisplay.ToLower()}-gaps-{userSettings.DiscordUserId}.png";
+            response.ResponseType = ResponseType.ImageOnly;
+            response.Embed = null;
+            response.Components = new ComponentBuilder().WithSelectMenu(viewType);
+
+            return response;
+        }
+
+        var entityPages = sortedEntitiesWithGaps.ChunkBy((int)topListSettings.EmbedSize);
+
+        var counter = 1;
+        var pageCounter = 1;
+
+        foreach (var entityPage in entityPages)
+        {
+            var entityPageString = new StringBuilder();
+            foreach (var gapEntity in entityPage)
+            {
+                entityPageString.Append($"{counter}. ");
+
+                switch (entityType)
+                {
+                    case GapEntityType.Artist:
+                        entityPageString.AppendLine(
+                            $"**[{StringExtensions.TruncateLongString(gapEntity.Artist, 28)}]({LastfmUrlExtensions.GetArtistUrl(gapEntity.Artist)})** " +
+                            // $"— *{gapEntity.TotalPlays.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(gapEntity.TotalPlays)}* " +
+                            $"- Resumed **<t:{gapEntity.ResumeDate.ToUnixEpochDate()}:D>** " +
+                            $"after **{(int)gapEntity.GapDuration.TotalDays} days**");
+                        break;
+                    case GapEntityType.Album:
+                        entityPageString.AppendLine(
+                            $"**[{StringExtensions.TruncateLongString(gapEntity.ItemName, 30)}]({LastfmUrlExtensions.GetAlbumUrl(gapEntity.Artist, gapEntity.ItemName)})** " +
+                            $"by **[{StringExtensions.TruncateLongString(gapEntity.Artist, 20)}]({LastfmUrlExtensions.GetArtistUrl(gapEntity.Artist)})** " +
+                            // $"— *{gapEntity.TotalPlays.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(gapEntity.TotalPlays)}* " +
+                            $"- Resumed **<t:{gapEntity.ResumeDate.ToUnixEpochDate()}:D>** " +
+                            $"after **{(int)gapEntity.GapDuration.TotalDays} days**");
+                        break;
+                    case GapEntityType.Track:
+                        entityPageString.AppendLine(
+                            $"**[{StringExtensions.TruncateLongString(gapEntity.ItemName, 30)}]({LastfmUrlExtensions.GetTrackUrl(gapEntity.Artist, gapEntity.ItemName)})** " +
+                            $"by **[{StringExtensions.TruncateLongString(gapEntity.Artist, 20)}]({LastfmUrlExtensions.GetArtistUrl(gapEntity.Artist)})** " +
+                            // $"— *{gapEntity.TotalPlays.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(gapEntity.TotalPlays)}* " +
+                            $"- Resumed **<t:{gapEntity.ResumeDate.ToUnixEpochDate()}:D>** " +
+                            $"after **{(int)gapEntity.GapDuration.TotalDays} days**");
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(entityType), entityType, null);
+                }
+
+                counter++;
+            }
+
+            var footer = new StringBuilder();
+
+            footer.Append($"Page {pageCounter}/{entityPages.Count}");
+
+            footer.Append(
+                $" — {sortedEntitiesWithGaps.Count.Format(context.NumberFormat)} {entityTypeDisplay}s with gaps of {gapThresholdDays}+ days");
+            footer.Append(
+                $" — {minPlays}+ plays");
+
+            pages.Add(new PageBuilder()
+                .WithDescription(entityPageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString()));
+            pageCounter++;
+        }
+
+        if (entityPages.Count == 0)
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription($"No {entityTypeDisplay}s with listening gaps of {gapThresholdDays}+ days found.")
+                .WithAuthor(response.EmbedAuthor));
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);
+        response.ResponseType = ResponseType.Paginator;
         return response;
     }
 }

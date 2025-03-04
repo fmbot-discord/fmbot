@@ -32,3 +32,4 @@ src/.vs/
 .vs/
 
 .DS_Store
+.aider*

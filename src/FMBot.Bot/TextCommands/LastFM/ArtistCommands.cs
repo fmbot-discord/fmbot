@@ -29,13 +29,10 @@ public class ArtistCommands : BaseCommandModule
     private readonly GuildService _guildService;
     private readonly IndexService _indexService;
     private readonly IPrefixService _prefixService;
-    private readonly UpdateService _updateService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly PlayService _playService;
     private readonly SettingService _settingService;
     private readonly UserService _userService;
     private readonly DiscogsBuilder _discogsBuilders;
-    private readonly AdminService _adminService;
+    private readonly PlayBuilder _playBuilders;
 
     private InteractiveService Interactivity { get; }
 
@@ -44,30 +41,24 @@ public class ArtistCommands : BaseCommandModule
         GuildService guildService,
         IndexService indexService,
         IPrefixService prefixService,
-        UpdateService updateService,
-        IDataSourceFactory dataSourceFactory,
-        PlayService playService,
         SettingService settingService,
         UserService userService,
         InteractiveService interactivity,
         IOptions<BotSettings> botSettings,
         ArtistBuilders artistBuilders,
         DiscogsBuilder discogsBuilders,
-        AdminService adminService) : base(botSettings)
+        PlayBuilder playBuilders) : base(botSettings)
     {
         this._artistsService = artistsService;
         this._guildService = guildService;
         this._indexService = indexService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._playService = playService;
         this._prefixService = prefixService;
         this._settingService = settingService;
-        this._updateService = updateService;
         this._userService = userService;
         this.Interactivity = interactivity;
         this._artistBuilders = artistBuilders;
         this._discogsBuilders = discogsBuilders;
-        this._adminService = adminService;
+        this._playBuilders = playBuilders;
     }
 
     [Command("artist", RunMode = RunMode.Async)]
@@ -708,6 +699,51 @@ public class ArtistCommands : BaseCommandModule
 
             var response = await this._artistBuilders.GetIceberg(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("artistgaps", RunMode = RunMode.Async)]
+    [Summary("Shows the artists you've returned to after a gap in listening.")]
+    [Options(Constants.UserMentionExample, Constants.EmbedSizeExample)]
+    [Examples("gaps", "artistgaps", "artistgaps quarterly @user", "gaps yearly")]
+    [Alias("gaps", "gap", "artistgap")]
+    [UsernameSetRequired]
+    [SupportsPagination]
+    [CommandCategories(CommandCategory.Artists)]
+    public async Task ArtistGapsAsync([Remainder] string extraOptions = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var context = new ContextModel(this.Context, prfx, contextUser);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+
+            var supporterRequiredResponse = PlayBuilder.GapsSupporterRequired(context, userSettings);
+
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
+            }
+
+            var topListSettings = SettingService.SetTopListSettings(extraOptions);
+            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            var mode = SettingService.SetMode(userSettings.NewSearchValue, contextUser.Mode);
+
+            var response = await this._playBuilders.ListeningGapsAsync(context, topListSettings,
+                userSettings, mode.mode, GapEntityType.Artist);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

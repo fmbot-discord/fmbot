@@ -208,6 +208,7 @@ public static class InteractionConstants
 
     public const string GuildMembers = "guild-members";
     public const string FeaturedLog = "featured-log";
+    public const string GapView = "listeninggaps-view";
     public const string RecapAlltime = "user-recapalltime";
     public const string RecapPicker = "user-recap";
 

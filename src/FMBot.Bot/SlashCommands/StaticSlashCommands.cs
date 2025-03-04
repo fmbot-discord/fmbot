@@ -60,7 +60,7 @@ public class StaticSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("supporters", "Shows all current supporters")]
+    [SlashCommand("supporters", "⭐ Shows all current supporters")]
     public async Task SupportersAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

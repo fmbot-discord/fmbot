@@ -37,6 +37,7 @@ public class TrackCommands : BaseCommandModule
     private readonly TrackService _trackService;
     private readonly TrackBuilders _trackBuilders;
     private readonly EurovisionBuilders _eurovisionBuilders;
+    private readonly PlayBuilder _playBuilders;
 
     private InteractiveService Interactivity { get; }
 
@@ -52,7 +53,8 @@ public class TrackCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         TrackService trackService,
         TrackBuilders trackBuilders,
-        EurovisionBuilders eurovisionBuilders) : base(botSettings)
+        EurovisionBuilders eurovisionBuilders,
+        PlayBuilder playBuilders) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -64,6 +66,7 @@ public class TrackCommands : BaseCommandModule
         this._trackService = trackService;
         this._trackBuilders = trackBuilders;
         this._eurovisionBuilders = eurovisionBuilders;
+        this._playBuilders = playBuilders;
     }
 
     [Command("track", RunMode = RunMode.Async)]
@@ -670,6 +673,50 @@ public class TrackCommands : BaseCommandModule
             var response =
                 await this._eurovisionBuilders.GetEurovisionOverview(new ContextModel(this.Context, prfx),
                     year ?? DateTime.UtcNow.Year, null);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("trackgaps", RunMode = RunMode.Async)]
+    [Summary("Shows the tracks you've returned to after a gap in listening.")]
+    [Options(Constants.UserMentionExample, Constants.EmbedSizeExample)]
+    [Examples("tgaps", "trackgaps", "trackgaps @user")]
+    [Alias("tgaps", "tgap", "trackgap", "songgaps", "songgap")]
+    [UsernameSetRequired]
+    [SupportsPagination]
+    [CommandCategories(CommandCategory.Tracks)]
+    public async Task TrackGapsAsync([Remainder] string extraOptions = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var context = new ContextModel(this.Context, prfx, contextUser);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+
+            var supporterRequiredResponse = PlayBuilder.GapsSupporterRequired(context, userSettings);
+
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
+            }
+
+            var topListSettings = SettingService.SetTopListSettings(extraOptions);
+            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            var mode = SettingService.SetMode(userSettings.NewSearchValue, contextUser.Mode);
+
+            var response = await this._playBuilders.ListeningGapsAsync(context, topListSettings, userSettings, mode.mode, GapEntityType.Track);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
