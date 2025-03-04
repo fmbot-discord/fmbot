@@ -95,10 +95,18 @@ public class TrackService
         {
             searchValue = trackValues;
 
-            if (searchValue.ToLower() == "featured" && this._timer.CurrentFeatured.TrackName != null)
+            if (searchValue.ToLower() == "featured" || searchValue.ToLower() == ".featured")
             {
-                searchValue =
-                    $"{this._timer.CurrentFeatured.ArtistName} | {this._timer.CurrentFeatured.TrackName}";
+                if (this._timer.CurrentFeatured.TrackName != null)
+                {
+                    searchValue =
+                        $"{this._timer.CurrentFeatured.ArtistName} | {this._timer.CurrentFeatured.TrackName}";
+                }
+                else if (this._timer.CurrentFeatured.AlbumName != null)
+                {
+                    searchValue =
+                        $"{this._timer.CurrentFeatured.ArtistName} {this._timer.CurrentFeatured.AlbumName}";
+                }
             }
 
             if (searchValue.Contains(" | "))

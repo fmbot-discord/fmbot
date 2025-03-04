@@ -173,6 +173,11 @@ public class PlayBuilder
         response.Embed.WithDescription(description.ToString());
         response.EmbedAuthor.WithName($"Discovery dates for {userSettings.DisplayName}");
 
+        if (userSettings.DifferentUser)
+        {
+            response.Embed.WithFooter($"Date for {userSettings.DisplayName}");
+        }
+
         return response;
     }
 
