@@ -51,4 +51,5 @@ public static class DiscordConstants
 
     public const string Loading = "<a:loading:821676038102056991>";
     public const string Imports = "<:fmbot_importing:1131511469096312914>";
+    public const string Discoveries = "<:fmbot_discoveries:1145740579284713512>";
 }

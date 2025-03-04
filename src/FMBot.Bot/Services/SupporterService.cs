@@ -164,8 +164,15 @@ public class SupporterService
         thankYouMessage.AppendLine(
             $"- `.featured` — Chance to get featured on Supporter Sunday (next in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
         thankYouMessage.AppendLine("- `.judge` — Better output and ability to use the command on others");
-        thankYouMessage.AppendLine("- `.jumble` — Play unlimited Jumble games");
-        thankYouMessage.AppendLine("- `.pixel` — Play unlimited Pixel Jumble games");
+        thankYouMessage.AppendLine("- `.jumble` / `.j` — Play unlimited Jumble games");
+        thankYouMessage.AppendLine("- `.pixel` / `.px` — Play unlimited Pixel Jumble games");
+        thankYouMessage.AppendLine();
+
+        thankYouMessage.AppendLine("<:discoveries:1145740579284713512> **Go back in time**");
+        thankYouMessage.AppendLine("- `.discoveries` — View your recently discovered artists");
+        thankYouMessage.AppendLine("- `.gaps` — View music you returned to after a gap in listening");
+        thankYouMessage.AppendLine("- `.discoverydate` / `.dd` — View when you discovered an artist, album and track");
+        thankYouMessage.AppendLine("- `.artist`, `.album`, `.track` — See discovery dates");
         thankYouMessage.AppendLine();
 
         thankYouMessage.AppendLine("<:history:1131511469096312914> **Import your Spotify and/or Apple Music**");
@@ -179,11 +186,6 @@ public class SupporterService
         thankYouMessage.AppendLine($"- `.userreactions` — Set your own emote reactions used globally");
         thankYouMessage.AppendLine(
             $"- `.addfriends` — Add up to {Constants.MaxFriendsSupporter} friends, up from {Constants.MaxFriends}");
-        thankYouMessage.AppendLine();
-
-        thankYouMessage.AppendLine("<:discoveries:1145740579284713512> **Go back in time**");
-        thankYouMessage.AppendLine("- `.discoveries` — View your recently discovered artists");
-        thankYouMessage.AppendLine("- `.artist`, `.album`, `.track` — See discovery dates");
         thankYouMessage.AppendLine();
 
         thankYouMessage.AppendLine("🌐 **Community perks**");
@@ -238,7 +240,7 @@ public class SupporterService
     public async Task<(string message, bool showUpgradeButton)> GetPromotionalUpdateMessage(User user, string prfx,
         ulong? guildId = null)
     {
-        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 60);
+        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 65);
         string message = null;
         var showUpgradeButton = false;
 
@@ -305,7 +307,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*<:fmbot_discoveries:1145740579284713512> View which artists you recently discovered with .fmbot supporter*";
+                        $"*{DiscordConstants.Discoveries} View which artists you recently discovered with .fmbot supporter*";
                     showUpgradeButton = true;
                     break;
                 }
@@ -319,35 +321,43 @@ public class SupporterService
                 }
                 case 12:
                 {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*{DiscordConstants.Discoveries} View which artists you recently returned to with .fmbot supporter*";
+                    showUpgradeButton = true;
+                    break;
+                }
+                case 20:
+                {
                     message =
                         $"*🎮 Play the new `.jumble` game and guess the artist together with your friends*";
                     break;
                 }
-                case 13:
+                case 21:
                 {
                     message =
                         $"*🎮 Play the new `.pixel` game and guess the album together with your friends*";
                     break;
                 }
-                case 14:
+                case 22:
                 {
                     message =
                         $"*🤖 Use .fmbot slash commands everywhere by [adding it to your Discord account](https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1)*";
                     break;
                 }
-                case 15:
+                case 23:
                 {
                     message =
                         $"*🗒️ Check out the new `.recap` command that shows all commands in one place. Supports timeframes like `monthly`*";
                     break;
                 }
-                case 16:
+                case 24:
                 {
                     message =
                         $"*🧮 Set your preferred number formatting with the `/localization` slash command*";
                     break;
                 }
-                case 17:
+                case 25:
                 {
                     message =
                         $"*🕒 Set your timezone with the `/localization` slash command*";
@@ -402,6 +412,13 @@ public class SupporterService
                         message =
                             $"*⭐ Set your own emote reactions that will be used globally with `{prfx}userreactions`*";
                     }
+
+                    break;
+                }
+                case 8:
+                {
+                    message =
+                        $"*{DiscordConstants.Discoveries} View when you discovered an artist, album and track with `{prfx}discoverydate` / `{prfx}dd`*";
 
                     break;
                 }
@@ -1322,7 +1339,8 @@ public class SupporterService
             }
             else
             {
-                Log.Information("Not removing Stripe supporter because there is no main supporter? - {discordUserId}", discordUserId);
+                Log.Information("Not removing Stripe supporter because there is no main supporter? - {discordUserId}",
+                    discordUserId);
 
                 var notCancellingEmbed = new EmbedBuilder().WithDescription(
                     $"Prevented removal of Stripe supporter that has no main supporter in the database, this should never happen but I'm adding this code anyway\n" +
