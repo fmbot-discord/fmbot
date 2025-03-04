@@ -114,14 +114,20 @@ public class PlayBuilder
         var trackFirstPlayDate = await trackFirstPlayDateTask;
         var albumFirstPlayDate = await albumFirstPlayDateTask;
 
+        var noResult = "Just now";
+        if (!string.IsNullOrWhiteSpace(searchValue))
+        {
+            noResult = "No plays yet";
+        }
+
         var description = new StringBuilder();
-        description.Append($"**{(artistFirstPlayDate.HasValue ? $"<t:{artistFirstPlayDate.Value.ToUnixEpochDate()}:D>" : "Just now")}**");
+        description.Append($"**{(artistFirstPlayDate.HasValue ? $"<t:{artistFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
         description.Append($" — **[{trackSearch.Track.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(trackSearch.Track.ArtistName)})**");
         description.AppendLine();
 
         if (!string.IsNullOrEmpty(trackSearch.Track.AlbumName))
         {
-            description.Append($"**{(albumFirstPlayDate.HasValue ? $"<t:{albumFirstPlayDate.Value.ToUnixEpochDate()}:D>" : "Just now")}**");
+            description.Append($"**{(albumFirstPlayDate.HasValue ? $"<t:{albumFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
             description.Append($" — **[{trackSearch.Track.AlbumName}]({LastfmUrlExtensions.GetAlbumUrl(trackSearch.Track.ArtistName, trackSearch.Track.AlbumName)})**");
             description.AppendLine();
             response.Embed.WithAuthor("Discovery date for artist, album and track");
@@ -131,7 +137,7 @@ public class PlayBuilder
             response.Embed.WithAuthor("Discovery date for artist and track");
         }
 
-        description.Append($"**{(trackFirstPlayDate.HasValue ? $"<t:{trackFirstPlayDate.Value.ToUnixEpochDate()}:D>" : "Just now")}**");
+        description.Append($"**{(trackFirstPlayDate.HasValue ? $"<t:{trackFirstPlayDate.Value.ToUnixEpochDate()}:D>" : noResult)}**");
         description.Append($" — **[{trackSearch.Track.TrackName}]({LastfmUrlExtensions.GetTrackUrl(trackSearch.Track.ArtistName, trackSearch.Track.TrackName)})**");
         description.AppendLine();
 
