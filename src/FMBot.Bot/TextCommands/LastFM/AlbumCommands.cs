@@ -22,71 +22,35 @@ namespace FMBot.Bot.TextCommands.LastFM;
 [Name("Albums")]
 public class AlbumCommands : BaseCommandModule
 {
-    private readonly CensorService _censorService;
     private readonly GuildService _guildService;
     private readonly IndexService _indexService;
     private readonly IPrefixService _prefixService;
-    private readonly UpdateService _updateService;
-    private readonly IDataSourceFactory _dataSourceFactory;
-    private readonly SpotifyService _spotifyService;
-    private readonly PlayService _playService;
     private readonly SettingService _settingService;
     private readonly UserService _userService;
-    private readonly TrackService _trackService;
-    private readonly TimeService _timeService;
-    private readonly FriendsService _friendsService;
     private readonly AlbumBuilders _albumBuilders;
-    private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
-    private readonly WhoKnowsPlayService _whoKnowsPlayService;
-    private readonly WhoKnowsService _whoKnowsService;
-    private readonly TimerService _timer;
-    private readonly AlbumService _albumService;
+    private readonly PlayBuilder _playBuilders;
 
     private InteractiveService Interactivity { get; }
 
     public AlbumCommands(
-        CensorService censorService,
         GuildService guildService,
         IndexService indexService,
         IPrefixService prefixService,
-        UpdateService updateService,
-        IDataSourceFactory dataSourceFactory,
-        PlayService playService,
         SettingService settingService,
         UserService userService,
-        WhoKnowsAlbumService whoKnowsAlbumService,
-        WhoKnowsPlayService whoKnowsPlayService,
-        WhoKnowsService whoKnowsService,
         InteractiveService interactivity,
-        TrackService trackService,
-        SpotifyService spotifyService,
         IOptions<BotSettings> botSettings,
-        FriendsService friendsService,
-        TimerService timer,
-        TimeService timeService,
-        AlbumService albumService,
-        AlbumBuilders albumBuilders) : base(botSettings)
+        AlbumBuilders albumBuilders,
+        PlayBuilder playBuilder) : base(botSettings)
     {
-        this._censorService = censorService;
         this._guildService = guildService;
         this._indexService = indexService;
-        this._dataSourceFactory = dataSourceFactory;
-        this._playService = playService;
         this._prefixService = prefixService;
         this._settingService = settingService;
-        this._updateService = updateService;
         this._userService = userService;
-        this._whoKnowsAlbumService = whoKnowsAlbumService;
-        this._whoKnowsPlayService = whoKnowsPlayService;
-        this._whoKnowsService = whoKnowsService;
         this.Interactivity = interactivity;
-        this._trackService = trackService;
-        this._spotifyService = spotifyService;
-        this._friendsService = friendsService;
-        this._timer = timer;
-        this._timeService = timeService;
-        this._albumService = albumService;
         this._albumBuilders = albumBuilders;
+        this._playBuilders = playBuilder;
     }
 
     [Command("album", RunMode = RunMode.Async)]
@@ -108,7 +72,8 @@ public class AlbumCommands : BaseCommandModule
             var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var response = await this._albumBuilders.AlbumAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);
+            var response =
+                await this._albumBuilders.AlbumAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -141,7 +106,8 @@ public class AlbumCommands : BaseCommandModule
         var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._albumBuilders.AlbumPlaysAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, userSettings.NewSearchValue);
+        var response = await this._albumBuilders.AlbumPlaysAsync(new ContextModel(this.Context, prfx, contextUser),
+            userSettings, userSettings.NewSearchValue);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -167,7 +133,8 @@ public class AlbumCommands : BaseCommandModule
 
         try
         {
-            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, albumValues);
+            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, albumValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -202,7 +169,9 @@ public class AlbumCommands : BaseCommandModule
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
             var timeSettings = SettingService.GetTimePeriod(topListSettings.NewSearchValue,
-                topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue ? TimePeriod.AllTime : TimePeriod.Weekly,
+                topListSettings.ReleaseYearFilter.HasValue || topListSettings.ReleaseDecadeFilter.HasValue
+                    ? TimePeriod.AllTime
+                    : TimePeriod.Weekly,
                 registeredLastFm: userSettings.RegisteredLastFm,
                 timeZone: userSettings.TimeZone);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -223,7 +192,8 @@ public class AlbumCommands : BaseCommandModule
     [Command("whoknowsalbum", RunMode = RunMode.Async)]
     [Summary("Shows what other users listen to an album in your server")]
     [Alias("wa", "wka", "wkab", "wab", "wkab", "wk album", "whoknows album")]
-    [Examples("wa", "whoknowsalbum", "whoknowsalbum the beatles abbey road", "whoknowsalbum Metallica & Lou Reed | Lulu")]
+    [Examples("wa", "whoknowsalbum", "whoknowsalbum the beatles abbey road",
+        "whoknowsalbum Metallica & Lou Reed | Lulu")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
@@ -246,7 +216,9 @@ public class AlbumCommands : BaseCommandModule
 
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
-            var response = await this._albumBuilders.WhoKnowsAlbumAsync(new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue, settings.DisplayRoleFilter);
+            var response = await this._albumBuilders.WhoKnowsAlbumAsync(
+                new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
+                settings.DisplayRoleFilter);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -259,7 +231,8 @@ public class AlbumCommands : BaseCommandModule
 
     [Command("globalwhoknowsalbum", RunMode = RunMode.Async)]
     [Summary("Shows what other users listen to the an album on .fmbot")]
-    [Examples("gwa", "globalwhoknowsalbum", "globalwhoknowsalbum the beatles abbey road", "globalwhoknowsalbum Metallica & Lou Reed | Lulu")]
+    [Examples("gwa", "globalwhoknowsalbum", "globalwhoknowsalbum the beatles abbey road",
+        "globalwhoknowsalbum Metallica & Lou Reed | Lulu")]
     [Alias("gwa", "gwka", "gwab", "gwkab", "globalwka", "globalwkalbum", "globalwhoknows album")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows)]
@@ -282,14 +255,16 @@ public class AlbumCommands : BaseCommandModule
 
         try
         {
-            var response = await this._albumBuilders.GlobalWhoKnowsAlbumAsync(new ContextModel(this.Context, prfx, contextUser), settings, settings.NewSearchValue);
+            var response = await this._albumBuilders.GlobalWhoKnowsAlbumAsync(
+                new ContextModel(this.Context, prfx, contextUser), settings, settings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
-            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+            if (!string.IsNullOrEmpty(e.Message) &&
+                e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
@@ -304,7 +279,8 @@ public class AlbumCommands : BaseCommandModule
 
     [Command("friendwhoknowsalbum", RunMode = RunMode.Async)]
     [Summary("Shows who of your friends listen to an album")]
-    [Examples("fwa", "fwka COMA", "friendwhoknows", "friendwhoknowsalbum the beatles abbey road", "friendwhoknowsalbum Metallica & Lou Reed | Lulu")]
+    [Examples("fwa", "fwka COMA", "friendwhoknows", "friendwhoknowsalbum the beatles abbey road",
+        "friendwhoknowsalbum Metallica & Lou Reed | Lulu")]
     [Alias("fwa", "fwka", "fwkab", "fwab", "friendwhoknows album", "friends whoknows album", "friend whoknows album")]
     [UsernameSetRequired]
     [RequiresIndex]
@@ -327,14 +303,16 @@ public class AlbumCommands : BaseCommandModule
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
             var response = await this._albumBuilders
-                .FriendsWhoKnowAlbumAsync(new ContextModel(this.Context, prfx, contextUser), currentSettings.ResponseMode, settings.NewSearchValue);
+                .FriendsWhoKnowAlbumAsync(new ContextModel(this.Context, prfx, contextUser),
+                    currentSettings.ResponseMode, settings.NewSearchValue);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
-            if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+            if (!string.IsNullOrEmpty(e.Message) &&
+                e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
                 await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
@@ -349,7 +327,8 @@ public class AlbumCommands : BaseCommandModule
 
     [Command("albumtracks", RunMode = RunMode.Async)]
     [Summary("Shows track playcounts for a specific album")]
-    [Examples("abt", "albumtracks", "albumtracks de jeugd van tegenwoordig machine", "albumtracks U2 | The Joshua Tree")]
+    [Examples("abt", "albumtracks", "albumtracks de jeugd van tegenwoordig machine",
+        "albumtracks U2 | The Joshua Tree")]
     [Alias("abt", "abtracks", "albumt")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums)]
@@ -378,8 +357,10 @@ public class AlbumCommands : BaseCommandModule
 
     [Command("serveralbums", RunMode = RunMode.Async)]
     [Summary("Top albums for your server, optionally for a specific artist.")]
-    [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
-    [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly", "serveralbums the beatles monthly")]
+    [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`",
+        "Artist name")]
+    [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly",
+        "serveralbums the beatles monthly")]
     [Alias("sab", "stab", "servertopalbums", "serveralbum", "server albums")]
     [RequiresIndex]
     [GuildOnly]
@@ -403,21 +384,69 @@ public class AlbumCommands : BaseCommandModule
         try
         {
             guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, guildAlbumsOptions);
-            var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
+            var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue,
+                guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
 
-            if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+            if (timeSettings.UsePlays ||
+                timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
             {
                 guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
             }
 
             var response =
-                await this._albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context, prfx), guild, guildListSettings);
+                await this._albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context, prfx), guild,
+                    guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
                 response.StaticPaginator.Build(),
                 this.Context.Channel,
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [Command("albumgaps", RunMode = RunMode.Async)]
+    [Summary("Shows the albums you've returned to after a gap in listening.")]
+    [Options(Constants.UserMentionExample, Constants.EmbedSizeExample)]
+    [Examples("agaps", "albumgaps", "albumgaps @user")]
+    [Alias("agaps", "agap", "abgaps", "abgap", "albumgap")]
+    [UsernameSetRequired]
+    [SupportsPagination]
+    [CommandCategories(CommandCategory.Albums)]
+    public async Task AlbumGapsAsync([Remainder] string extraOptions = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var context = new ContextModel(this.Context, prfx, contextUser);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+
+            var supporterRequiredResponse = PlayBuilder.GapsSupporterRequired(context, userSettings);
+
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
+            }
+
+            var topListSettings = SettingService.SetTopListSettings(extraOptions);
+            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            var mode = SettingService.SetMode(userSettings.NewSearchValue, contextUser.Mode);
+
+            var response = await this._playBuilders.ListeningGapsAsync(context, topListSettings, userSettings,
+                mode.mode, GapEntityType.Album);
+
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

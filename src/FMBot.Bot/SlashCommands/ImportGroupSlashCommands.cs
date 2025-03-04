@@ -55,7 +55,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
 
     private const string SpotifyFileDescription = "Spotify history package (.zip) or history files (.json) ";
 
-    [SlashCommand("spotify", "Import your Spotify history into .fmbot")]
+    [SlashCommand("spotify", "⭐ Import your Spotify history into .fmbot")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
@@ -298,7 +298,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("applemusic", "Import your Apple Music history into .fmbot")]
+    [SlashCommand("applemusic", "⭐ Import your Apple Music history into .fmbot")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
@@ -528,7 +528,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
         });
     }
 
-    [SlashCommand("manage", "Manage your imports and configure how they are used")]
+    [SlashCommand("manage", "⭐ Manage your imports and configure how they are used")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]

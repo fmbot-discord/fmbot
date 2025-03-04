@@ -548,4 +548,89 @@ public class PlaySlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [SlashCommand("gaps", "⭐ Shows music you've returned to after a gap in listening")]
+    [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task ListeningGapsAsync(
+        [Summary("Type", "Music gap type")] GapEntityType gapType = GapEntityType.Artist,
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
+        [Summary("Size", "Amount of listening gaps to show per page")] EmbedSize? embedSize = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        mode ??= contextUser.Mode ?? ResponseMode.Embed;
+
+        var context = new ContextModel(this.Context, contextUser);
+
+        var supporterRequiredResponse = ArtistBuilders.DiscoverySupporterRequired(context, userSettings);
+
+        if (supporterRequiredResponse != null)
+        {
+            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+            return;
+        }
+
+        _ = DeferAsync(privateResponse);
+
+        var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default);
+
+        var response = await this._playBuilder.ListeningGapsAsync(context, topListSettings, userSettings, mode.Value, gapType);
+
+        await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [ComponentInteraction(InteractionConstants.GapView)]
+    [RequiresIndex]
+    [GuildOnly]
+    public async Task ListeningGapsPickerAsync(string[] inputs)
+    {
+        try
+        {
+            await DeferAsync();
+            var splitInput = inputs.First().Split("-");
+            if (!Enum.TryParse(splitInput[0], out GapEntityType viewType))
+            {
+                return;
+            }
+            if (!Enum.TryParse(splitInput[1], out ResponseMode responseMode))
+            {
+                return;
+            }
+
+            var components =
+                new ComponentBuilder().WithButton($"Loading {viewType.ToString().ToLower()} gaps...", customId: "1", emote: Emote.Parse(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary);
+            await this.Context.Interaction.ModifyOriginalResponseAsync(m => m.Components = components.Build());
+
+            var discordUserId = ulong.Parse(splitInput[2]);
+            var requesterDiscordUserId = ulong.Parse(splitInput[3]);
+
+            var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
+            var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+            var userSettings = await this._settingService.GetOriginalContextUser(discordUserId, requesterDiscordUserId,
+                this.Context.Guild, this.Context.User);
+
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            if (message == null)
+            {
+                return;
+            }
+
+            var response =
+                await this._playBuilder.ListeningGapsAsync(
+                    new ContextModel(this.Context, contextUser, discordContextUser), new TopListSettings(), userSettings, responseMode, viewType);
+
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }
