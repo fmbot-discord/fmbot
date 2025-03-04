@@ -239,7 +239,7 @@ public class TrackBuilders
         if (context.ContextUser.TotalPlaycount.HasValue && trackSearch.Track.UserPlaycount is >= 10)
         {
             footer.AppendLine(
-                $"{(decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your plays are on this track");
+                $"{((decimal)trackSearch.Track.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)} of all your plays are on this track");
         }
 
         if (footer.Length > 0)
