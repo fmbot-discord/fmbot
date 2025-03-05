@@ -2011,12 +2011,23 @@ public class ArtistBuilders
 
         if (lastfmToCompare == null)
         {
-            response.Embed.WithDescription(
-                $"Please enter a valid Last.fm username or mention someone to compare yourself to.\n" +
-                $"Examples:\n" +
-                $"- `{context.Prefix}taste fm-bot`\n" +
-                $"- `{context.Prefix}taste @.fmbot`");
-            response.CommandResponse = CommandResponse.WrongInput;
+            if (context.SlashCommand)
+            {
+                response.Embed.WithDescription(
+                    $"User you want to compare with isn't registered in .fmbot <:lastfm404:882220605783560222>");
+                response.CommandResponse = CommandResponse.NotFound;
+            }
+            else
+            {
+                response.Embed.WithDescription(
+                    $"Please enter a valid Last.fm username or mention someone to compare yourself to.\n" +
+                    $"Examples:\n" +
+                    $"- `{context.Prefix}taste fm-bot`\n" +
+                    $"- `{context.Prefix}taste @.fmbot`");
+                response.CommandResponse = CommandResponse.WrongInput;
+            }
+
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.ResponseType = ResponseType.Embed;
             return response;
         }
@@ -2029,6 +2040,7 @@ public class ArtistBuilders
                 $"Examples:\n" +
                 $"- `{context.Prefix}taste fm-bot`\n" +
                 $"- `{context.Prefix}taste @.fmbot`");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
             response.ResponseType = ResponseType.Embed;
             return response;

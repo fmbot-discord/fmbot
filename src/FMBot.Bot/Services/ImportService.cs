@@ -55,6 +55,9 @@ public class ImportService
             BadDataFound = null,
         };
 
+        Log.Information(
+            "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Processing {fileName}",
+            user.UserId, user.DiscordUserId, attachment.Filename);
         if (attachment.Filename.EndsWith(".zip"))
         {
             await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
