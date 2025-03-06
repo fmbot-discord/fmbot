@@ -821,6 +821,7 @@ public class StaticCommands : BaseCommandModule
     }
 
     [Command("givemefish", RunMode = RunMode.Async)]
+    [Summary("Fish fish. Blub blub.")]
     [ExcludeFromHelp]
     public async Task FishAsync([Remainder] string extraValues = null)
     {
