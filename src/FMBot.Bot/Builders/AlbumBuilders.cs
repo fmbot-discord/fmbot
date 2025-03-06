@@ -171,7 +171,7 @@ public class AlbumBuilders
         if (context.ContextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 10)
         {
             footer.AppendLine(
-                $"{((decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).Format(context.NumberFormat)} of all your plays are on this album");
+                $"{((decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value).FormatPercentage(context.NumberFormat)} of all your plays are on this album");
         }
 
         if (footer.Length > 0)

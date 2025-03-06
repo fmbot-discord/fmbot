@@ -386,7 +386,7 @@ public class DataSourceFactory : IDataSourceFactory
         }
     }
 
-    private void AddArtistTopList(Response<TopArtistList> topArtists, string lastFmUserName)
+    private static void AddArtistTopList(Response<TopArtistList> topArtists, string lastFmUserName)
     {
         topArtists.TopList = topArtists.Content?.TopArtists?.Select(s => new TopListObject
         {

@@ -208,6 +208,12 @@ public class TrackService
                     lastFmUserName);
             }
 
+            if (!string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName) &&
+                trackInfo?.Content != null)
+            {
+                trackInfo.Content.AlbumName = lastPlayedTrack.AlbumName;
+            }
+
             if (interactionId.HasValue)
             {
                 PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, lastPlayedTrack.ArtistName);

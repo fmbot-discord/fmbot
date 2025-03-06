@@ -62,8 +62,20 @@ public static class FormatExtension
             return number.ToString("N0", numberFormat);
         }
 
-        var decimalPlaces = GetDecimalPlaces(number);
-        return number.ToString("N" + decimalPlaces, numberFormat);
+        return number.ToString("N2", numberFormat);
+    }
+
+    public static string FormatPercentage(this decimal number, NumberFormat format)
+    {
+        var culture = GetCulture(format);
+        var numberFormat = (NumberFormatInfo)culture.NumberFormat.Clone();
+        if (format == NumberFormat.NoSeparator)
+        {
+            numberFormat.NumberGroupSeparator = "";
+            numberFormat.NumberDecimalSeparator = ",";
+        }
+
+        return number.ToString("P", numberFormat);
     }
 
     public static string Format(this double? number, NumberFormat format)
@@ -87,13 +99,6 @@ public static class FormatExtension
         }
 
         return number.ToString("N1", numberFormat);
-    }
-
-    private static int GetDecimalPlaces(decimal number)
-    {
-        var bits = decimal.GetBits(number);
-        var scale = (bits[3] >> 16) & 0xFF;
-        return scale;
     }
 
     private static CultureInfo GetCulture(NumberFormat format)
