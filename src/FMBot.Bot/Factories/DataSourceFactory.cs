@@ -223,6 +223,12 @@ public class DataSourceFactory : IDataSourceFactory
                 await this._playDataSourceRepository.GetArtistPlaycount(importUser, artist.Content.ArtistName);
         }
 
+        if (artist.Success && artist.Content != null &&
+            artistAlias != null && artistAlias.Options.HasFlag(AliasOption.ApplyInternallyLastfmData))
+        {
+            artist.Content.ArtistName = artistAlias.ArtistName;
+        }
+
         return artist;
     }
 
