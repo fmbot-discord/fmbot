@@ -411,7 +411,7 @@ public class CommandHandler
         const int shortSeconds = 15;
 
         var longKey = $"{discordUserId}-ratelimit-long";
-        const int longSeconds = 50;
+        const int longSeconds = 60;
 
         var cacheKeyErrorSent = $"{discordUserId}-ratelimit-errorsent";
 
@@ -422,8 +422,9 @@ public class CommandHandler
             var cacheTime = TimeSpan.FromSeconds(shortSeconds);
             if (recentShortRequests >= 10)
             {
-                this._cache.Set(cacheKeyErrorSent, true, cacheTime);
-                this._cache.Set(shortKey, recentShortRequests, TimeSpan.FromSeconds(shortSeconds - 3));
+                var cooldown = TimeSpan.FromSeconds(shortSeconds - 2);
+                this._cache.Set(cacheKeyErrorSent, true, cooldown);
+                this._cache.Set(shortKey, recentShortRequests, cooldown);
                 return (true, errorSent);
             }
 
@@ -440,8 +441,9 @@ public class CommandHandler
             var cacheTime = TimeSpan.FromSeconds(longSeconds);
             if (recentLongRequests >= 35)
             {
-                this._cache.Set(cacheKeyErrorSent, true, cacheTime);
-                this._cache.Set(shortKey, recentShortRequests, TimeSpan.FromSeconds(longSeconds - 15));
+                var cooldown = TimeSpan.FromSeconds(longSeconds - 20);
+                this._cache.Set(cacheKeyErrorSent, true, cooldown);
+                this._cache.Set(shortKey, recentShortRequests, cooldown);
                 return (true, errorSent);
             }
 
