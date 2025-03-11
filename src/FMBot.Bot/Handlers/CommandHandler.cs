@@ -411,7 +411,7 @@ public class CommandHandler
         const int shortSeconds = 15;
 
         var longKey = $"{discordUserId}-ratelimit-long";
-        const int longSeconds = 60;
+        const int longSeconds = 50;
 
         var cacheKeyErrorSent = $"{discordUserId}-ratelimit-errorsent";
 
