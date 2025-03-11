@@ -20,6 +20,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Prometheus;
 using Serilog;
+
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace FMBot.Bot.Handlers;
@@ -240,6 +241,21 @@ public class CommandHandler
                     return;
                 }
 
+                var rateLimit = CheckUserRateLimit(context.User.Id);
+                if (rateLimit.rateLimited)
+                {
+                    if (!rateLimit.messageSent)
+                    {
+                        var embed = new EmbedBuilder()
+                            .WithColor(DiscordConstants.WarningColorOrange);
+                        embed.RateLimitedResponse();
+                        await context.Channel.SendMessageAsync("", false, embed.Build());
+                    }
+
+                    context.LogCommandUsed(CommandResponse.RateLimited);
+                    return;
+                }
+
                 if (!await CommandEnabled(context, fmSearchResult, prfx, update))
                 {
                     return;
@@ -291,12 +307,16 @@ public class CommandHandler
                 }
 
                 var rateLimit = CheckUserRateLimit(context.User.Id);
-                if (!rateLimit)
+                if (rateLimit.rateLimited)
                 {
-                    var embed = new EmbedBuilder()
-                        .WithColor(DiscordConstants.WarningColorOrange);
-                    embed.RateLimitedResponse();
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    if (!rateLimit.messageSent)
+                    {
+                        var embed = new EmbedBuilder()
+                            .WithColor(DiscordConstants.WarningColorOrange);
+                        embed.RateLimitedResponse();
+                        await context.Channel.SendMessageAsync("", false, embed.Build());
+                    }
+
                     context.LogCommandUsed(CommandResponse.RateLimited);
                     return;
                 }
@@ -385,25 +405,55 @@ public class CommandHandler
         }
     }
 
-    private bool CheckUserRateLimit(ulong discordUserId)
+    private (bool rateLimited, bool messageSent) CheckUserRateLimit(ulong discordUserId)
     {
-        var cacheKey = $"{discordUserId}-ratelimit";
-        if (this._cache.TryGetValue(cacheKey, out int requestsInLastMinute))
+        var shortKey = $"{discordUserId}-ratelimit-short";
+        const int shortSeconds = 15;
+
+        var longKey = $"{discordUserId}-ratelimit-long";
+        const int longSeconds = 50;
+
+        var cacheKeyErrorSent = $"{discordUserId}-ratelimit-errorsent";
+
+        this._cache.TryGetValue(cacheKeyErrorSent, out bool errorSent);
+
+        if (this._cache.TryGetValue(shortKey, out int recentShortRequests))
         {
-            if (requestsInLastMinute > 35)
+            var cacheTime = TimeSpan.FromSeconds(shortSeconds);
+            if (recentShortRequests >= 10)
             {
-                return false;
+                this._cache.Set(cacheKeyErrorSent, true, cacheTime);
+                this._cache.Set(shortKey, recentShortRequests, TimeSpan.FromSeconds(shortSeconds - 3));
+                return (true, errorSent);
             }
 
-            requestsInLastMinute++;
-            this._cache.Set(cacheKey, requestsInLastMinute, TimeSpan.FromSeconds(60 - requestsInLastMinute));
+            recentShortRequests++;
+            this._cache.Set(shortKey, recentShortRequests, cacheTime);
         }
         else
         {
-            this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(1));
+            this._cache.Set(shortKey, 1, TimeSpan.FromSeconds(shortSeconds));
         }
 
-        return true;
+        if (this._cache.TryGetValue(longKey, out int recentLongRequests))
+        {
+            var cacheTime = TimeSpan.FromSeconds(longSeconds);
+            if (recentLongRequests >= 35)
+            {
+                this._cache.Set(cacheKeyErrorSent, true, cacheTime);
+                this._cache.Set(shortKey, recentShortRequests, TimeSpan.FromSeconds(longSeconds - 15));
+                return (true, errorSent);
+            }
+
+            recentLongRequests++;
+            this._cache.Set(longKey, recentLongRequests, cacheTime);
+        }
+        else
+        {
+            this._cache.Set(longKey, 1, TimeSpan.FromSeconds(longSeconds));
+        }
+
+        return (false, errorSent);
     }
 
     private async Task<bool> CommandEnabled(SocketCommandContext context, SearchResult searchResult, string prfx,
@@ -460,7 +510,9 @@ public class CommandHandler
                     {
                         _ = this._interactiveService.DelayedDeleteMessageAsync(
                             await context.Channel.SendMessageAsync("The bot has been disabled in this channel." +
-                                                                   (isMod ? $"\n-# *Configured with `{prfx}togglecommand`*" : null)),
+                                                                   (isMod
+                                                                       ? $"\n-# *Configured with `{prfx}togglecommand`*"
+                                                                       : null)),
                             TimeSpan.FromSeconds(8));
                     }
                 }
