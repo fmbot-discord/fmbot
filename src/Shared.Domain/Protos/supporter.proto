@@ -16,13 +16,13 @@ service SupporterLinkService {
   rpc MigrateDiscordForStripeSupporter (MigrateDiscordForStripeSupporterRequest) returns (MigrateDiscordForStripeSupporterReply);
 }
 
-
 message CreateLinkOptions {
   int64 discordUserId = 1;
   string type = 2;
   string lastFmUserName = 3;
   string existingCustomerId = 4;
   string priceId = 5;
+  string source = 6;
 }
 
 message CreateLinkReply {
@@ -46,6 +46,7 @@ message AddOrUpdateStripeSupporterRequest {
   google.protobuf.Timestamp endsAt = 6;
   bool active = 7;
   string currency = 8;
+  string source = 9;
 }
 
 message AddOrUpdateStripeSupporterReply {

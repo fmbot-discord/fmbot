@@ -1743,7 +1743,7 @@ public class SupporterService
     }
 
     public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string lastFmUserName, string type,
-        StripePricing pricing, StripeSupporter existingStripeSupporter = null)
+        StripePricing pricing, StripeSupporter existingStripeSupporter = null, string source = "unknown")
     {
         var existingStripeCustomerId = "";
         if (existingStripeSupporter != null)
@@ -1756,6 +1756,10 @@ public class SupporterService
         {
             priceId = pricing.YearlyPriceId;
         }
+        if (type.Equals("lifetime", StringComparison.OrdinalIgnoreCase))
+        {
+            priceId = pricing.LifetimePriceId;
+        }
 
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
         {
@@ -1763,7 +1767,8 @@ public class SupporterService
             LastFmUserName = lastFmUserName,
             Type = type,
             ExistingCustomerId = existingStripeCustomerId,
-            PriceId = priceId
+            PriceId = priceId,
+            Source = source
         });
 
         return url?.CheckoutLink;

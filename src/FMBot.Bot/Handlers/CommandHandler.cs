@@ -408,10 +408,10 @@ public class CommandHandler
     private (bool rateLimited, bool messageSent) CheckUserRateLimit(ulong discordUserId)
     {
         var shortKey = $"{discordUserId}-ratelimit-short";
-        const int shortSeconds = 15;
+        const int shortSeconds = 12;
 
         var longKey = $"{discordUserId}-ratelimit-long";
-        const int longSeconds = 50;
+        const int longSeconds = 45;
 
         var cacheKeyErrorSent = $"{discordUserId}-ratelimit-errorsent";
 
@@ -569,7 +569,6 @@ public class CommandHandler
         embed.UserBlockedResponse(s ?? this._botSettings.Bot.Prefix);
         await context.Channel.SendMessageAsync("", false, embed.Build());
         context.LogCommandUsed(CommandResponse.UserBlocked);
-        return;
     }
 
     private async Task UpdateUserLastMessageDate(SocketCommandContext context)

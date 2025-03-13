@@ -103,18 +103,53 @@ public class StaticSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.SupporterLinks.GetPurchaseLink}-*")]
+    [ComponentInteraction($"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-*-*-*-*")]
     [UserSessionRequired]
-    public async Task GetSupporterLink(string type)
+    public async Task SupporterButtonsWithSource(string newResponse, string expandWithPerks, string showExpandButton,
+        string source)
+    {
+        try
+        {
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
+                expandWithPerks == "true", showExpandButton == "true", userLocale: this.Context.Interaction.UserLocale);
+
+            if (newResponse == "true")
+            {
+                await this.Context.SendResponse(this.Interactivity, response, true);
+            }
+            else
+            {
+                await Context.Interaction.DeferAsync(ephemeral: true);
+
+                await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
+                {
+                    m.Components = response.Components?.Build();
+                    m.Embed = response.Embed?.Build();
+                });
+            }
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.SupporterLinks.GetPurchaseLink}-*-*")]
+    [UserSessionRequired]
+    public async Task GetSupporterLink(string type, string source)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var existingStripeSupporter = await this._supporterService.GetStripeSupporter(contextUser.DiscordUserId);
 
         var pricing =
-            await this._supporterService.GetPricing(this.Context.Interaction.UserLocale, existingStripeSupporter?.Currency);
+            await this._supporterService.GetPricing(this.Context.Interaction.UserLocale,
+                existingStripeSupporter?.Currency);
 
         var link = await this._supporterService.GetSupporterCheckoutLink(this.Context.User.Id,
-            contextUser.UserNameLastFM, type, pricing, existingStripeSupporter);
+            contextUser.UserNameLastFM, type, pricing, existingStripeSupporter, source);
 
         var components = new ComponentBuilder().WithButton($"Complete purchase", style: ButtonStyle.Link, url: link,
             emote: Emoji.Parse("⭐"));
@@ -126,6 +161,10 @@ public class StaticSlashCommands : InteractionModuleBase
         if (type == "yearly")
         {
             description.AppendLine($"-# {pricing.YearlySummary}");
+        }
+        else if(type == "lifetime")
+        {
+            description.AppendLine($"-# {pricing.LifetimeSummary}");
         }
         else
         {

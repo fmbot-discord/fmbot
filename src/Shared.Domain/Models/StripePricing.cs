@@ -32,4 +32,17 @@ public class StripePricing
 
     public string YearlySummary { get; set; }
 
+
+    public string LifetimePriceId { get; set; }
+
+    public string LifetimePriceString { get; set; }
+
+    public string LifetimeSubText { get; set; }
+
+    public string LifetimeSummary { get; set; }
+
+
+    public string ByePromo { get; set; }
+
+    public string ByePromoSubText { get; set; }
 }

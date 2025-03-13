@@ -1,6 +1,7 @@
+// ReSharper disable ConvertToConstant.Global
 namespace FMBot.LastFM.Types;
 
-public class Call
+public abstract class Call
 {
     public static readonly string
         ArtistInfo = "artist.getInfo",

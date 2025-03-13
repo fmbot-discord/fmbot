@@ -1627,7 +1627,8 @@
     "Code": "TL",
     "Emoji": "🇹🇱",
     "Unicode": "U+1F1F9 U+1F1F1",
-    "Image": "https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/TL.svg"
+    "Image": "https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/TL.svg",
+    "Aliases": [ "East Timor" ]
   },
   {
     "Name": "Turkmenistan",

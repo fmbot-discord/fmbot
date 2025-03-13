@@ -86,7 +86,8 @@ public class StaticBuilders
         bool expandWithPerks,
         bool showExpandButton,
         bool publicResponse = false,
-        string userLocale = null)
+        string userLocale = null,
+        string source = "unknown")
     {
         var response = new ResponseModel
         {
@@ -171,9 +172,21 @@ public class StaticBuilders
 
                 response.Components = new ComponentBuilder()
                     .WithButton("Get monthly",
-                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly")
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly-{source}")
                     .WithButton("Get yearly",
-                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly");
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly-{source}");
+
+                if (pricing.LifetimePriceId != null &&
+                    pricing.LifetimePriceString != null &&
+                    pricing.LifetimeSubText != null)
+                {
+                    response.Embed.AddField($"Lifetime - {pricing.LifetimePriceString}",
+                        $"-# {pricing.LifetimeSubText}", true);
+
+                    response.Components
+                        .WithButton("Get lifetime",
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-lifetime-{source}");
+                }
             }
         }
 

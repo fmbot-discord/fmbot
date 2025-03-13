@@ -65,7 +65,6 @@ public static class InteractionConstants
 
         public const string TrackRename = "import-trackrename";
         public const string TrackDelete = "import-trackdelete";
-
     }
 
     public const string ImportInstructionsSpotify = "import-spotify-instructions";
@@ -137,8 +136,15 @@ public static class InteractionConstants
 
     public static class SupporterLinks
     {
+        public static string GeneratePurchaseButtons(bool newResponse = true, bool expandWithPerks = false,
+            bool showExpandButton = true, string source = "unknown")
+        {
+            return
+                $"supporter-purchase-buttons-{newResponse.ToString()}-{expandWithPerks.ToString()}-{showExpandButton.ToString()}-{source}";
+        }
+
         public const string GetPurchaseButtons = "supporter-purchase-buttons";
-        public const string GetPurchaseButtonsDefault = "supporter-purchase-buttons-true-false-true";
+        public const string GetPurchaseButtonsDefault = "supporter-purchase-buttons-true-false-true-unknown";
         public const string GetPurchaseLink = "supporter-purchase-link";
         public const string GetManageLink = "supporter-manage-link";
         public const string ManageOverview = "supporter-manage-overview";
