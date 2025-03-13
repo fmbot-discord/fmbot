@@ -72,7 +72,7 @@ public class LastFmRepository : ILastfmRepository
         if (useCache)
         {
             var cachedRecentTracks = this._cache.TryGetValue(cacheKey, out RecentTrackList recentTrackResponse);
-            if (cachedRecentTracks && recentTrackResponse.RecentTracks.Any() &&
+            if (cachedRecentTracks && recentTrackResponse.RecentTracks.Count != 0 &&
                 recentTrackResponse.RecentTracks.Count >= count)
             {
                 return new Response<RecentTrackList>
@@ -85,53 +85,39 @@ public class LastFmRepository : ILastfmRepository
 
         try
         {
-            Response<RecentTracksListLfmResponseModel> recentTracksCall;
-            if (amountOfPages == 1)
+            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams,
+                Call.RecentTracks, authorizedCall);
+
+            if (amountOfPages > 1 && recentTracksCall.Success &&
+                recentTracksCall.Content.RecentTracks.Track.Count >= (count - 2) && count >= 400)
             {
-                recentTracksCall =
-                    await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks,
-                        authorizedCall);
-            }
-            else
-            {
-                recentTracksCall =
-                    await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks,
-                        authorizedCall);
-                if (recentTracksCall.Success && recentTracksCall.Content.RecentTracks.Track.Count >= (count - 2) &&
-                    count >= 400)
+                for (var i = 1; i < amountOfPages; i++)
                 {
-                    for (var i = 1; i < amountOfPages; i++)
+                    queryParams.Remove("page");
+                    queryParams.Add("page", (i + 1).ToString());
+                    var pageResponse =
+                        await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams,
+                            Call.RecentTracks, authorizedCall);
+
+                    if (pageResponse.Success)
                     {
-                        queryParams.Remove("page");
-                        queryParams.Add("page", (i + 1).ToString());
-                        var pageResponse =
+                        recentTracksCall.Content.RecentTracks.Track.AddRange(
+                            pageResponse.Content.RecentTracks.Track);
+                        if (pageResponse.Content.RecentTracks.Track.Count < 1000)
+                        {
+                            break;
+                        }
+                    }
+                    else if (pageResponse.Error == ResponseStatus.Failure)
+                    {
+                        pageResponse =
                             await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams,
                                 Call.RecentTracks, authorizedCall);
-
                         if (pageResponse.Success)
                         {
-                            recentTracksCall.Content.RecentTracks.Track.AddRange(
-                                pageResponse.Content.RecentTracks.Track);
+                            recentTracksCall.Content.RecentTracks.Track.AddRange(pageResponse.Content.RecentTracks
+                                .Track);
                             if (pageResponse.Content.RecentTracks.Track.Count < 1000)
-                            {
-                                break;
-                            }
-                        }
-                        else if (pageResponse.Error == ResponseStatus.Failure)
-                        {
-                            pageResponse =
-                                await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams,
-                                    Call.RecentTracks, authorizedCall);
-                            if (pageResponse.Success)
-                            {
-                                recentTracksCall.Content.RecentTracks.Track.AddRange(pageResponse.Content.RecentTracks
-                                    .Track);
-                                if (pageResponse.Content.RecentTracks.Track.Count < 1000)
-                                {
-                                    break;
-                                }
-                            }
-                            else
                             {
                                 break;
                             }
@@ -140,6 +126,10 @@ public class LastFmRepository : ILastfmRepository
                         {
                             break;
                         }
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
             }
@@ -252,7 +242,7 @@ public class LastFmRepository : ILastfmRepository
         };
     }
 
-    // Scrobble count from a certain unix timestamp
+// Scrobble count from a certain unix timestamp
     public async Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? from = null,
         string sessionKey = null, long? until = null)
     {
@@ -288,7 +278,7 @@ public class LastFmRepository : ILastfmRepository
         return recentTracksCall.Success ? recentTracksCall.Content.RecentTracks.AttributesLfm.Total : (long?)null;
     }
 
-    // Scrobble count from a certain unix timestamp
+// Scrobble count from a certain unix timestamp
     public async Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(string lastFmUserName, string sessionKey,
         long totalScrobbles, long milestoneScrobble)
     {
@@ -388,7 +378,7 @@ public class LastFmRepository : ILastfmRepository
         return tagString.ToString();
     }
 
-    // User
+// User
     public async Task<DataSourceUser> GetLfmUserInfoAsync(string lastFmUserName)
     {
         var queryParams = new Dictionary<string, string>
@@ -458,7 +448,7 @@ public class LastFmRepository : ILastfmRepository
         };
     }
 
-    // Track info
+// Track info
     public async Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, bool redirectsEnabled,
         string username = null)
     {
@@ -762,7 +752,7 @@ public class LastFmRepository : ILastfmRepository
         }
     }
 
-    // Top albums
+// Top albums
     public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
         TimePeriod timePeriod, int count = 2, int amountOfPages = 1)
     {
@@ -958,7 +948,7 @@ public class LastFmRepository : ILastfmRepository
         }
     }
 
-    // Top artists
+// Top artists
     public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
         TimePeriod timePeriod, long count = 2, long amountOfPages = 1)
     {
@@ -1051,7 +1041,7 @@ public class LastFmRepository : ILastfmRepository
         };
     }
 
-    // Top artists custom time period
+// Top artists custom time period
     public async Task<Response<TopArtistList>> GetTopArtistsForCustomTimePeriodAsync(string lastFmUserName,
         DateTime startDateTime, DateTime endDateTime, int count)
     {
@@ -1124,7 +1114,7 @@ public class LastFmRepository : ILastfmRepository
         }
     }
 
-    // Top tracks
+// Top tracks
     public async Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
         string period, int count = 2, int amountOfPages = 1)
     {
@@ -1267,7 +1257,7 @@ public class LastFmRepository : ILastfmRepository
         };
     }
 
-    // Check if Last.fm user exists
+// Check if Last.fm user exists
     public async Task<bool> LastFmUserExistsAsync(string lastFmUserName)
     {
         var dateFromFilter = DateTime.UtcNow.AddDays(-365);

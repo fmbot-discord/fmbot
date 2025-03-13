@@ -24,7 +24,8 @@ public class GameSlashCommands : InteractionModuleBase
 
     private InteractiveService Interactivity { get; }
 
-    public GameSlashCommands(GameBuilders gameBuilders, UserService userService, InteractiveService interactivity, GameService gameService)
+    public GameSlashCommands(GameBuilders gameBuilders, UserService userService, InteractiveService interactivity,
+        GameService gameService)
     {
         this._gameBuilders = gameBuilders;
         this._userService = userService;
@@ -76,7 +77,8 @@ public class GameSlashCommands : InteractionModuleBase
         }
 
         var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
-        if (message != null && PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
+        if (message != null &&
+            PublicProperties.UsedCommandsResponseContextId.TryGetValue(message.Id, out var contextId))
         {
             await this._userService.UpdateInteractionContext(contextId, response.ReferencedMusic);
         }
@@ -90,7 +92,7 @@ public class GameSlashCommands : InteractionModuleBase
         {
             _ = DeferAsync();
             await this.Context.DisableInteractionButtons();
-            
+
             var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -99,16 +101,21 @@ public class GameSlashCommands : InteractionModuleBase
             var cancellationTokenSource = new CancellationTokenSource();
 
             ResponseModel response;
+            var secondsToGuess = GameService.JumbleSecondsToGuess;
             if (jumbleTypeEnum == JumbleType.Artist)
             {
-                response = await this._gameBuilders.StartArtistJumble(context, contextUser.UserId, cancellationTokenSource);
+                response = await this._gameBuilders.StartArtistJumble(context, contextUser.UserId,
+                    cancellationTokenSource);
             }
             else
             {
-                response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId, cancellationTokenSource);
+                secondsToGuess = GameService.PixelationSecondsToGuess;
+                response = await this._gameBuilders.StartPixelJumble(context, contextUser.UserId,
+                    cancellationTokenSource);
             }
 
-            var responseId = await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: response.CommandResponse != CommandResponse.Ok);
+            var responseId = await this.Context.SendFollowUpResponse(this.Interactivity, response,
+                ephemeral: response.CommandResponse != CommandResponse.Ok);
             this.Context.LogCommandUsed(response.CommandResponse);
 
             if (response.CommandResponse == CommandResponse.Ok)
@@ -120,14 +127,16 @@ public class GameSlashCommands : InteractionModuleBase
                 }
 
                 var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
-                var components = new ComponentBuilder().WithButton($"{name} is playing again!", customId: "1", url: null, disabled: true, style: ButtonStyle.Secondary);
+                var components = new ComponentBuilder().WithButton($"{name} is playing again!", customId: "1",
+                    url: null, disabled: true, style: ButtonStyle.Secondary);
                 _ = Task.Run(() => message.ModifyAsync(m => m.Components = components.Build()));
 
                 if (responseId.HasValue && response.GameSessionId.HasValue)
                 {
                     await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Value);
+
                     await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token,
-                        response.GameSessionId.Value, GameService.JumbleSecondsToGuess);
+                        response.GameSessionId.Value, secondsToGuess);
                 }
             }
             else if (response.CommandResponse != CommandResponse.Cooldown)
