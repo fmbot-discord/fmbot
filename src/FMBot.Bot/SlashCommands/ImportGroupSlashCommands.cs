@@ -604,7 +604,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
 
-            await RespondAsync(embed: serverEmbed.Build(), ephemeral: true);
+            await FollowupAsync(embed: serverEmbed.Build(), ephemeral: true);
         }
         else if (this.Context.Channel != null)
         {
