@@ -58,7 +58,9 @@ public static class InteractionConstants
 
         public const string ArtistRename = "import-artistrename";
         public const string ArtistRenameModal = "import-artistrename-modal";
+        public const string ArtistRenameConfirmed = "import-artistrenameconfirmed";
         public const string ArtistDelete = "import-artistdelete";
+        public const string ArtistDeleteConfirmed = "import-artistdeleteconfirmed";
 
         public const string AlbumRename = "import-albumrename";
         public const string AlbumDelete = "import-albumdelete";

@@ -355,7 +355,7 @@ public class ImportService
             if (!timestamps.ContainsKey(userPlay.TimePlayed))
             {
                 playsToReturn.Add(userPlay);
-                timestamps.Add(userPlay.TimePlayed, new List<UserPlay> { userPlay });
+                timestamps.Add(userPlay.TimePlayed, [userPlay]);
             }
             else
             {
@@ -454,5 +454,27 @@ public class ImportService
         }
 
         return null;
+    }
+
+    public async Task RenameArtistImports(User user, string oldArtistName, string newArtistName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.RenameArtistImports(user.UserId, connection, oldArtistName, newArtistName);
+
+        Log.Information("Importing: {userId} / {discordUserId} - Renamed artist {oldArtistName} to {newArtistName}",
+            user.UserId, user.DiscordUserId, oldArtistName, newArtistName);
+    }
+
+    public async Task DeleteArtistImports(User user, string artistName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.DeleteArtistImports(user.UserId, connection, artistName);
+
+        Log.Information("Importing: {userId} / {discordUserId} - Deleted artist {artistName}", user.UserId,
+            user.DiscordUserId, artistName);
     }
 }

@@ -91,6 +91,10 @@ public class ImportCommands : BaseCommandModule
 
             await ReplyAsync(embed: serverEmbed.Build());
         }
+        else
+        {
+            _ = this.Context.Channel.TriggerTypingAsync();
+        }
 
         try
         {

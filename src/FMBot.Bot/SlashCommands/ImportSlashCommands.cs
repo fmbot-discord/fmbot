@@ -180,14 +180,14 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction(InteractionConstants.ImportModify.Modify)]
+    [ComponentInteraction($"{InteractionConstants.ImportModify.Modify}-*")]
     [UsernameSetRequired]
-    public async Task ModifyImport(string[] inputs)
+    public async Task ModifyImport(string pickedOption)
     {
         try
         {
             this.Context.LogCommandUsed();
-            if (Enum.TryParse(inputs.FirstOrDefault(), out ImportModifyPick modifyPick))
+            if (Enum.TryParse(pickedOption, out ImportModifyPick modifyPick))
             {
                 switch (modifyPick)
                 {
@@ -219,6 +219,7 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         try
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
             await DeferAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -238,6 +239,7 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         try
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
             await DeferAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -260,6 +262,7 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         try
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
             await DeferAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -285,7 +288,7 @@ public class ImportSlashCommands : InteractionModuleBase
             var mb = new ModalBuilder()
                 .WithTitle($"Editing '{selectedArtistName}' imports")
                 .WithCustomId($"{InteractionConstants.ImportModify.ArtistRenameModal}——{selectedArtistName}")
-                .AddTextInput("New artist name", "The Beatles", value: selectedArtistName);
+                .AddTextInput("New artist name", "artist_name", placeholder: "The Beatles", value: selectedArtistName);
 
             await Context.Interaction.RespondWithModalAsync(mb.Build());
             this.Context.LogCommandUsed();
@@ -296,12 +299,13 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    [ModalInteraction($"{InteractionConstants.ImportModify.ArtistRename}——*")]
-    public async Task RenameArtist(RenameArtistModal modal, string selectedArtistName)
+    [ModalInteraction($"{InteractionConstants.ImportModify.ArtistRenameModal}——*")]
+    public async Task RenameArtist(string selectedArtistName, RenameArtistModal modal)
     {
         try
         {
             await DeferAsync();
+            await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var response = await this._importBuilders.PickArtist(
@@ -309,12 +313,114 @@ public class ImportSlashCommands : InteractionModuleBase
                 selectedArtistName,
                 modal.ArtistName);
 
-            // await this.Context.ModifyMessage(this.Interactivity, response);
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components.Build();
+            });
+
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
             await this.Context.HandleCommandException(e);
         }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.ArtistRenameConfirmed}——*——*")]
+    public async Task RenameArtistConfirmed(string selectedArtistName, string newArtistName)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader("Editing selected imports...");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            await this._importService.RenameArtistImports(contextUser, selectedArtistName, newArtistName);
+
+            var response = await this._importBuilders.PickArtist(
+                contextUser.UserId,
+                newArtistName,
+                newArtistName,
+                selectedArtistName);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.ArtistDelete}——*")]
+    public async Task DeleteArtist(string artistName)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader();
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._importBuilders.PickArtist(
+                contextUser.UserId,
+                artistName,
+                deletion: false);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.ArtistDeleteConfirmed}——*")]
+    public async Task DeleteArtistConfirmed(string artistName)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader("Deleting selected imports...");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            await this._importService.DeleteArtistImports(contextUser, artistName);
+
+            var response = await this._importBuilders.PickArtist(
+                contextUser.UserId,
+                artistName,
+                deletion: true);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    private async Task EditToLoader(string text = "Loading...")
+    {
+        await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+        {
+            e.Components = new ComponentBuilder().WithButton(text, customId: "0", emote: Emote.Parse(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary).Build();
+        });
     }
 }

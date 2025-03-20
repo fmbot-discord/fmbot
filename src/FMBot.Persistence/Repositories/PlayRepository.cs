@@ -359,4 +359,42 @@ public static class PlayRepository
             newUserId
         });
     }
+
+    public static async Task RenameArtistImports(int userId, NpgsqlConnection connection, string oldArtistName, string newArtistName)
+    {
+        if (string.IsNullOrEmpty(oldArtistName) || string.IsNullOrEmpty(newArtistName))
+        {
+            throw new ArgumentException("Artist names cannot be null or empty");
+        }
+
+        await using var renameArtistImports = new NpgsqlCommand("UPDATE public.user_plays " +
+                                                        "SET artist_name = @newArtistName " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source != 0 " +
+                                                        "AND LOWER(artist_name) = LOWER(@oldArtistName)", connection);
+
+        renameArtistImports.Parameters.AddWithValue("userId", userId);
+        renameArtistImports.Parameters.AddWithValue("oldArtistName", oldArtistName);
+        renameArtistImports.Parameters.AddWithValue("newArtistName", newArtistName);
+
+        await renameArtistImports.ExecuteNonQueryAsync();
+    }
+
+    public static async Task DeleteArtistImports(int userId, NpgsqlConnection connection, string artistName)
+    {
+        if (string.IsNullOrEmpty(artistName))
+        {
+            throw new ArgumentException("Artist name cannot be null or empty");
+        }
+
+        await using var deleteArtistImports = new NpgsqlCommand("DELETE FROM public.user_plays " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source != 0 " +
+                                                        "AND LOWER(artist_name) = LOWER(@artistName)", connection);
+
+        deleteArtistImports.Parameters.AddWithValue("userId", userId);
+        deleteArtistImports.Parameters.AddWithValue("artistName", artistName);
+
+        await deleteArtistImports.ExecuteNonQueryAsync();
+    }
 }
