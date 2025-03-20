@@ -186,6 +186,16 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         try
         {
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+            if (supporterRequired != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequired);
+                this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                return;
+            }
+
             this.Context.LogCommandUsed();
             if (Enum.TryParse(pickedOption, out ImportModifyPick modifyPick))
             {

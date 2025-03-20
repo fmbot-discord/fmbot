@@ -43,10 +43,10 @@ public class ImportCommands : BaseCommandModule
     public async Task ImportSpotifyAsync([Remainder] string _ = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         var supporterRequiredResponse =
-            ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, prfx, userSettings));
+            ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, prfx, contextUser));
 
         if (supporterRequiredResponse != null)
         {
@@ -58,15 +58,15 @@ public class ImportCommands : BaseCommandModule
         ResponseModel response;
         if (this.Context.Message.Content.Contains("spotify", StringComparison.OrdinalIgnoreCase))
         {
-            response = await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, userSettings), true);
+            response = await this._importBuilders.GetSpotifyImportInstructions(new ContextModel(this.Context, prfx, contextUser), true);
         }
         else if (this.Context.Message.Content.Contains("apple", StringComparison.OrdinalIgnoreCase))
         {
-            response = await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, prfx, userSettings), true);
+            response = await this._importBuilders.GetAppleMusicImportInstructions(new ContextModel(this.Context, prfx, contextUser), true);
         }
         else
         {
-            response = this._importBuilders.ImportInstructionsPickSource(new ContextModel(this.Context, prfx, userSettings));
+            response = this._importBuilders.ImportInstructionsPickSource(new ContextModel(this.Context, prfx, contextUser));
         }
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -82,6 +82,16 @@ public class ImportCommands : BaseCommandModule
     {
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+        var supporterRequiredResponse =
+            ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, prfx, contextUser));
+
+        if (supporterRequiredResponse != null)
+        {
+            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+            return;
+        }
 
         if (this.Context.Guild != null)
         {
