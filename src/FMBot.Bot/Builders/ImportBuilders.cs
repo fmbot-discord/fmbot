@@ -349,7 +349,7 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> PickArtist(int userId, string artistName)
+    public async Task<ResponseModel> PickArtist(int userId, string artistName, string newArtistName = null)
     {
         var response = new ResponseModel
         {
@@ -375,11 +375,25 @@ public class ImportBuilders
 
         AddImportPickCounts(response.Embed, allPlays, processedPlays);
 
-        response.Components = new ComponentBuilder()
-            .WithButton("Edit artist imports", style: ButtonStyle.Secondary,
-                customId: $"{InteractionConstants.ImportModify.ArtistRename}——{capitalizedArtistName}")
-            .WithButton("Delete imports", style: ButtonStyle.Danger,
-                customId: $"{InteractionConstants.ImportModify.ArtistDelete}——{capitalizedArtistName}");
+        if (newArtistName == null)
+        {
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.Components = new ComponentBuilder()
+                .WithButton("Edit artist imports", style: ButtonStyle.Secondary,
+                    customId: $"{InteractionConstants.ImportModify.ArtistRename}——{capitalizedArtistName}")
+                .WithButton("Delete imports", style: ButtonStyle.Danger,
+                    customId: $"{InteractionConstants.ImportModify.ArtistDelete}——{capitalizedArtistName}");
+        }
+        else
+        {
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.Embed.AddField("Confirm your edit",
+                $"`{capitalizedArtistName}` to `{newArtistName}`");
+
+            response.Components = new ComponentBuilder()
+                .WithButton("Edit artist imports", style: ButtonStyle.Secondary,
+                    customId: $"{InteractionConstants.ImportModify.ArtistRename}——{capitalizedArtistName}");
+        }
 
         return response;
     }
@@ -508,19 +522,19 @@ public class ImportBuilders
         if (processedPlays.Any(c => c.PlaySource == PlaySource.LastFm))
         {
             processedDescription.AppendLine(
-                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
+                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles used");
         }
 
         if (processedPlays.Any(c => c.PlaySource == PlaySource.SpotifyImport))
         {
             processedDescription.AppendLine(
-                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} Spotify plays");
+                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} Spotify plays used");
         }
 
         if (processedPlays.Any(c => c.PlaySource == PlaySource.AppleMusicImport))
         {
             processedDescription.AppendLine(
-                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} Apple Music plays");
+                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} Apple Music plays used");
         }
 
         embed.AddField("Final playcounts - Overlapping plays filtered", processedDescription.ToString());

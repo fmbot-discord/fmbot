@@ -150,3 +150,12 @@ public class ModifyTrackModal : IModal
     [ModalTextInput("track_name", placeholder: "Yesterday", minLength: 1, maxLength: 512)]
     public string TrackName { get; set; }
 }
+
+public class RenameArtistModal : IModal
+{
+    public string Title => "Editing imports";
+
+    [InputLabel("Artist name")]
+    [ModalTextInput("artist_name", placeholder: "The Beatles", minLength: 1, maxLength: 256)]
+    public string ArtistName { get; set; }
+}

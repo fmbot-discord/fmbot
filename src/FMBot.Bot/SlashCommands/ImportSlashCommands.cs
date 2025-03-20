@@ -295,4 +295,26 @@ public class ImportSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [ModalInteraction($"{InteractionConstants.ImportModify.ArtistRename}——*")]
+    public async Task RenameArtist(RenameArtistModal modal, string selectedArtistName)
+    {
+        try
+        {
+            await DeferAsync();
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._importBuilders.PickArtist(
+                contextUser.UserId,
+                selectedArtistName,
+                modal.ArtistName);
+
+            // await this.Context.ModifyMessage(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }
