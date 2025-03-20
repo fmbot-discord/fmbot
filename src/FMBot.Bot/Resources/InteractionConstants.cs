@@ -63,10 +63,16 @@ public static class InteractionConstants
         public const string ArtistDeleteConfirmed = "import-artistdeleteconfirmed";
 
         public const string AlbumRename = "import-albumrename";
+        public const string AlbumRenameModal = "import-albumrename-modal";
+        public const string AlbumRenameConfirmed = "import-albumrenameconfirmed";
         public const string AlbumDelete = "import-albumdelete";
+        public const string AlbumDeleteConfirmed = "import-albumdeleteconfirmed";
 
         public const string TrackRename = "import-trackrename";
+        public const string TrackRenameModal = "import-trackrename-modal";
+        public const string TrackRenameConfirmed = "import-trackrenameconfirmed";
         public const string TrackDelete = "import-trackdelete";
+        public const string TrackDeleteConfirmed = "import-trackdeleteconfirmed";
     }
 
     public const string ImportInstructionsSpotify = "import-spotify-instructions";

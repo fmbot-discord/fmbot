@@ -265,9 +265,12 @@ public class ImportBuilders
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Components = new ComponentBuilder()
-            .WithButton("Select artist",
-                $"{InteractionConstants.ImportModify.Modify}-{ImportModifyPick.Artist.ToString()}", ButtonStyle.Primary,
-                disabled: disabled)
+            .WithButton("Artist",
+                $"{InteractionConstants.ImportModify.Modify}-{ImportModifyPick.Artist.ToString()}", disabled: disabled)
+            .WithButton("Album",
+                $"{InteractionConstants.ImportModify.Modify}-{ImportModifyPick.Album.ToString()}", disabled: disabled)
+            .WithButton("Track",
+                $"{InteractionConstants.ImportModify.Modify}-{ImportModifyPick.Track.ToString()}", disabled: disabled)
             .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary,
                 disabled: disabled);
 
@@ -284,7 +287,7 @@ public class ImportBuilders
                 "After importing you'll be able to use this command.");
         }
 
-        response.Embed.AddField("✏️ Pick what data from your imports you'd like to modify",
+        response.Embed.AddField("✏️ Select what you want to modify",
             embedDescription.ToString());
 
         if (!hasImported)
@@ -364,8 +367,9 @@ public class ImportBuilders
             else
             {
                 response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.Embed.AddField("Confirm import deletion ⚠️",
-                    $"This can only be reversed by re-importing.");
+                response.Embed.AddField("Warning ⚠️",
+                    $"This will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm)}** imported plays. \n" +
+                    "This action can only be reversed by re-importing.");
 
                 response.Components = new ComponentBuilder()
                     .WithButton("Confirm deletion", style: ButtonStyle.Danger,
@@ -409,7 +413,8 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> PickAlbum(int userId, string artistName, string albumName)
+    public async Task<ResponseModel> PickAlbum(int userId, string artistName, string albumName, string newArtistName = null,
+        string newAlbumName = null, string oldArtistName = null, string oldAlbumName = null, bool? deletion = null)
     {
         var response = new ResponseModel
         {
@@ -445,18 +450,68 @@ public class ImportBuilders
 
         AddImportPickCounts(response.Embed, allPlays, processedPlays);
 
-        response.Components = new ComponentBuilder()
-            .WithButton("Edit album imports", style: ButtonStyle.Secondary,
-                customId:
-                $"{InteractionConstants.ImportModify.AlbumRename}-{capitalizedArtistName}——{capitalizedAlbumName}")
-            .WithButton("Delete imports", style: ButtonStyle.Danger,
-                customId:
-                $"{InteractionConstants.ImportModify.AlbumDelete}-{capitalizedArtistName}——{capitalizedAlbumName}");
+        if (deletion != null)
+        {
+            if (deletion == false)
+            {
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.Embed.AddField("Warning ⚠️",
+                    $"This will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm)}** imported plays. \n" +
+                    "This action can only be reversed by re-importing.");
+
+                response.Components = new ComponentBuilder()
+                    .WithButton("Confirm deletion", style: ButtonStyle.Danger,
+                        customId:
+                        $"{InteractionConstants.ImportModify.AlbumDeleteConfirmed}-{capitalizedArtistName}——{capitalizedAlbumName}");
+            }
+            else
+            {
+                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
+                response.Embed.AddField("Imports successfully deleted ✅",
+                    $"Removed `{capitalizedAlbumName}` by `{capitalizedArtistName}`");
+                response.Components = null;
+            }
+        }
+        else
+        {
+            if (newArtistName == null && newAlbumName == null)
+            {
+                response.Components = new ComponentBuilder()
+                    .WithButton("Edit album imports", style: ButtonStyle.Secondary,
+                        customId:
+                        $"{InteractionConstants.ImportModify.AlbumRename}-{capitalizedArtistName}——{capitalizedAlbumName}")
+                    .WithButton("Delete imports", style: ButtonStyle.Danger,
+                        customId:
+                        $"{InteractionConstants.ImportModify.AlbumDelete}-{capitalizedArtistName}——{capitalizedAlbumName}");
+            }
+            else if (oldArtistName == null && oldAlbumName == null)
+            {
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.Embed.AddField("Warning ⚠️",
+                    $"This will rename **{processedPlays.Count}** imported plays. \n" +
+                    "This action can't be undone.");
+
+                response.Components = new ComponentBuilder()
+                    .WithButton("Confirm rename", style: ButtonStyle.Danger,
+                        customId:
+                        $"{InteractionConstants.ImportModify.AlbumRenameConfirmed}-{capitalizedArtistName}——{capitalizedAlbumName}——{newArtistName}——{newAlbumName}");
+            }
+            else
+            {
+                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
+                response.Embed.AddField("Imports successfully edited ✅",
+                    $"`{oldAlbumName}` by `{oldArtistName}` to `{newAlbumName}` by `{newArtistName}`");
+                response.Embed.AddField("Note about future imports",
+                    $"Usually when you imports duplicates will be filtered out. However, note that now that your imports are edited there might be duplicates when you import the same service again.");
+                response.Components = null;
+            }
+        }
 
         return response;
     }
 
-    public async Task<ResponseModel> PickTrack(int userId, string artistName, string trackName)
+    public async Task<ResponseModel> PickTrack(int userId, string artistName, string trackName, string newArtistName = null,
+        string newTrackName = null, string oldArtistName = null, string oldTrackName = null, bool? deletion = null)
     {
         var response = new ResponseModel
         {
@@ -492,13 +547,62 @@ public class ImportBuilders
 
         AddImportPickCounts(response.Embed, allPlays, processedPlays);
 
-        response.Components = new ComponentBuilder()
-            .WithButton("Edit track imports", style: ButtonStyle.Secondary,
-                customId:
-                $"{InteractionConstants.ImportModify.TrackRename}-{capitalizedArtistName}——{capitalizedTrackName}")
-            .WithButton("Delete imports", style: ButtonStyle.Danger,
-                customId:
-                $"{InteractionConstants.ImportModify.TrackDelete}-{capitalizedArtistName}——{capitalizedTrackName}");
+        if (deletion != null)
+        {
+            if (deletion == false)
+            {
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.Embed.AddField("Warning ⚠️",
+                    $"This will delete **{processedPlays.Count(c => c.PlaySource != PlaySource.LastFm)}** imported plays. \n" +
+                    "This action can only be reversed by re-importing.");
+
+                response.Components = new ComponentBuilder()
+                    .WithButton("Confirm deletion", style: ButtonStyle.Danger,
+                        customId:
+                        $"{InteractionConstants.ImportModify.TrackDeleteConfirmed}-{capitalizedArtistName}——{capitalizedTrackName}");
+            }
+            else
+            {
+                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
+                response.Embed.AddField("Imports successfully deleted ✅",
+                    $"Removed `{capitalizedTrackName}` by `{capitalizedArtistName}`");
+                response.Components = null;
+            }
+        }
+        else
+        {
+            if (newArtistName == null && newTrackName == null)
+            {
+                response.Components = new ComponentBuilder()
+                    .WithButton("Edit track imports", style: ButtonStyle.Secondary,
+                        customId:
+                        $"{InteractionConstants.ImportModify.TrackRename}-{capitalizedArtistName}——{capitalizedTrackName}")
+                    .WithButton("Delete imports", style: ButtonStyle.Danger,
+                        customId:
+                        $"{InteractionConstants.ImportModify.TrackDelete}-{capitalizedArtistName}——{capitalizedTrackName}");
+            }
+            else if (oldArtistName == null && oldTrackName == null)
+            {
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.Embed.AddField("Warning ⚠️",
+                    $"This will rename **{processedPlays.Count}** imported plays. \n" +
+                    "This action can't be undone.");
+
+                response.Components = new ComponentBuilder()
+                    .WithButton("Confirm rename", style: ButtonStyle.Danger,
+                        customId:
+                        $"{InteractionConstants.ImportModify.TrackRenameConfirmed}-{capitalizedArtistName}——{capitalizedTrackName}——{newArtistName}——{newTrackName}");
+            }
+            else
+            {
+                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
+                response.Embed.AddField("Imports successfully edited ✅",
+                    $"`{oldTrackName}` by `{oldArtistName}` to `{newTrackName}` by `{newArtistName}`");
+                response.Embed.AddField("Note about future imports",
+                    $"Usually when you imports duplicates will be filtered out. However, note that now that your imports are edited there might be duplicates when you import the same service again.");
+                response.Components = null;
+            }
+        }
 
         return response;
     }

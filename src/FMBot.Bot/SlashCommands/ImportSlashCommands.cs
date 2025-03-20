@@ -416,6 +416,294 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
+    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumRename}-*——*")]
+    public async Task RenameAlbumImportedPlays(string selectedArtistName, string selectedAlbumName)
+    {
+        try
+        {
+            var mb = new ModalBuilder()
+                .WithTitle($"Editing '{selectedAlbumName}' by '{selectedArtistName}'")
+                .WithCustomId($"{InteractionConstants.ImportModify.AlbumRenameModal}-{selectedArtistName}——{selectedAlbumName}")
+                .AddTextInput("Artist name", "artist_name", placeholder: "The Beatles", value: selectedArtistName)
+                .AddTextInput("Album name", "album_name", placeholder: "Abbey Road", value: selectedAlbumName);
+
+            await Context.Interaction.RespondWithModalAsync(mb.Build());
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ModalInteraction($"{InteractionConstants.ImportModify.AlbumRenameModal}-*——*")]
+    public async Task RenameAlbum(string selectedArtistName, string selectedAlbumName, RenameAlbumModal modal)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader();
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._importBuilders.PickAlbum(
+                contextUser.UserId,
+                selectedArtistName,
+                selectedAlbumName,
+                modal.ArtistName,
+                modal.AlbumName);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumRenameConfirmed}-*——*——*——*")]
+    public async Task RenameAlbumConfirmed(string selectedArtistName, string selectedAlbumName, string newArtistName, string newAlbumName)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader("Editing selected imports...");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            await this._importService.RenameAlbumImports(contextUser, selectedArtistName, selectedAlbumName, newArtistName, newAlbumName);
+
+            var response = await this._importBuilders.PickAlbum(
+                contextUser.UserId,
+                newArtistName,
+                newAlbumName,
+                null,
+                null,
+                selectedArtistName,
+                selectedAlbumName);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumDelete}-*——*")]
+    public async Task DeleteAlbum(string artistName, string albumName)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader();
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._importBuilders.PickAlbum(
+                contextUser.UserId,
+                artistName,
+                albumName,
+                deletion: false);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumDeleteConfirmed}-*——*")]
+    public async Task DeleteAlbumConfirmed(string artistName, string albumName)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader("Deleting selected imports...");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            await this._importService.DeleteAlbumImports(contextUser, artistName, albumName);
+
+            var response = await this._importBuilders.PickAlbum(
+                contextUser.UserId,
+                artistName,
+                albumName,
+                deletion: true);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackRename}-*——*")]
+    public async Task RenameTrackImportedPlays(string selectedArtistName, string selectedTrackName)
+    {
+        try
+        {
+            var mb = new ModalBuilder()
+                .WithTitle($"Editing '{selectedTrackName}' by '{selectedArtistName}'")
+                .WithCustomId($"{InteractionConstants.ImportModify.TrackRenameModal}-{selectedArtistName}——{selectedTrackName}")
+                .AddTextInput("Artist name", "artist_name", placeholder: "The Beatles", value: selectedArtistName)
+                .AddTextInput("Track name", "track_name", placeholder: "Yesterday", value: selectedTrackName);
+
+            await Context.Interaction.RespondWithModalAsync(mb.Build());
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ModalInteraction($"{InteractionConstants.ImportModify.TrackRenameModal}-*——*")]
+    public async Task RenameTrack(string selectedArtistName, string selectedTrackName, RenameTrackModal modal)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader();
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._importBuilders.PickTrack(
+                contextUser.UserId,
+                selectedArtistName,
+                selectedTrackName,
+                modal.ArtistName,
+                modal.TrackName);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackRenameConfirmed}-*——*——*——*")]
+    public async Task RenameTrackConfirmed(string selectedArtistName, string selectedTrackName, string newArtistName, string newTrackName)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader("Editing selected imports...");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            await this._importService.RenameTrackImports(contextUser, selectedArtistName, selectedTrackName, newArtistName, newTrackName);
+
+            var response = await this._importBuilders.PickTrack(
+                contextUser.UserId,
+                newArtistName,
+                newTrackName,
+                null,
+                null,
+                selectedArtistName,
+                selectedTrackName);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackDelete}-*——*")]
+    public async Task DeleteTrack(string artistName, string trackName)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader();
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var response = await this._importBuilders.PickTrack(
+                contextUser.UserId,
+                artistName,
+                trackName,
+                deletion: false);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackDeleteConfirmed}-*——*")]
+    public async Task DeleteTrackConfirmed(string artistName, string trackName)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader("Deleting selected imports...");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            await this._importService.DeleteTrackImports(contextUser, artistName, trackName);
+
+            var response = await this._importBuilders.PickTrack(
+                contextUser.UserId,
+                artistName,
+                trackName,
+                deletion: true);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
     private async Task EditToLoader(string text = "Loading...")
     {
         await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
