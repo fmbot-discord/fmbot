@@ -439,7 +439,7 @@ public class PlayCommands : BaseCommandModule
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context, true);
+        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
         var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime,
             timeZone: userSettings.TimeZone);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
