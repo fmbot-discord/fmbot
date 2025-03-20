@@ -465,7 +465,7 @@ public static class PlayRepository
         renameTrackImports.Parameters.AddWithValue("newArtistName", newArtistName);
         renameTrackImports.Parameters.AddWithValue("newTrackName", newTrackName);
 
-        // await renameTrackImports.ExecuteNonQueryAsync();
+        await renameTrackImports.ExecuteNonQueryAsync();
     }
 
     public static async Task DeleteTrackImports(int userId, NpgsqlConnection connection, string artistName, string trackName)
