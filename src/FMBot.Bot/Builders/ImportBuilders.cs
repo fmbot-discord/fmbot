@@ -261,23 +261,20 @@ public class ImportBuilders
         var hasImported = allPlays.Any(a =>
             a.PlaySource == PlaySource.SpotifyImport || a.PlaySource == PlaySource.AppleMusicImport);
 
-        var disabled = !hasImported && context.ContextUser.DataSource == DataSource.LastFm;
-
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.Components = new ComponentBuilder()
             .WithButton("Artist",
-                $"{InteractionConstants.ImportModify.Modify}-{ImportModifyPick.Artist.ToString()}", disabled: disabled)
+                $"{InteractionConstants.ImportModify.Modify}-{ImportModifyPick.Artist.ToString()}", disabled: !hasImported)
             .WithButton("Album",
-                $"{InteractionConstants.ImportModify.Modify}-{ImportModifyPick.Album.ToString()}", disabled: disabled)
+                $"{InteractionConstants.ImportModify.Modify}-{ImportModifyPick.Album.ToString()}", disabled: !hasImported)
             .WithButton("Track",
-                $"{InteractionConstants.ImportModify.Modify}-{ImportModifyPick.Track.ToString()}", disabled: disabled)
+                $"{InteractionConstants.ImportModify.Modify}-{ImportModifyPick.Track.ToString()}", disabled: !hasImported)
             .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary,
-                disabled: disabled);
+                disabled: !hasImported);
 
         var embedDescription = new StringBuilder();
         embedDescription.AppendLine(
             "Please keep in mind that this only modifies imports that are stored in .fmbot. It doesn't modify any of your Last.fm scrobbles or data.");
-        embedDescription.AppendLine();
 
         if (!hasImported)
         {
@@ -300,13 +297,13 @@ public class ImportBuilders
             if (allPlays.Any(a => a.PlaySource == PlaySource.AppleMusicImport))
             {
                 storedDescription.AppendLine(
-                    $"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} imported Apple Music plays");
+                    $"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport).Format(context.NumberFormat)} imported Apple Music plays");
             }
 
             if (allPlays.Any(a => a.PlaySource == PlaySource.SpotifyImport))
             {
                 storedDescription.AppendLine(
-                    $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} imported Spotify plays");
+                    $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport).Format(context.NumberFormat)} imported Spotify plays");
             }
 
             response.Embed.AddField($"{DiscordConstants.Imports} Your stored imports", storedDescription.ToString());
@@ -329,7 +326,7 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> PickArtist(int userId, string artistName, string newArtistName = null,
+    public async Task<ResponseModel> PickArtist(int userId, NumberFormat numberFormat, string artistName, string newArtistName = null,
         string oldArtistName = null, bool? deletion = null)
     {
         var response = new ResponseModel
@@ -354,7 +351,7 @@ public class ImportBuilders
             .Where(w => w.ArtistName != null && w.ArtistName.Equals(artistName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        AddImportPickCounts(response.Embed, allPlays, processedPlays);
+        AddImportPickCounts(response.Embed, numberFormat, allPlays, processedPlays);
 
         if (deletion != null)
         {
@@ -413,7 +410,7 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> PickAlbum(int userId, string artistName, string albumName, string newArtistName = null,
+    public async Task<ResponseModel> PickAlbum(int userId, NumberFormat numberFormat, string artistName, string albumName, string newArtistName = null,
         string newAlbumName = null, string oldArtistName = null, string oldAlbumName = null, bool? deletion = null)
     {
         var response = new ResponseModel
@@ -448,7 +445,7 @@ public class ImportBuilders
                         w.AlbumName.Equals(albumName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        AddImportPickCounts(response.Embed, allPlays, processedPlays);
+        AddImportPickCounts(response.Embed, numberFormat, allPlays, processedPlays);
 
         if (deletion != null)
         {
@@ -510,7 +507,7 @@ public class ImportBuilders
         return response;
     }
 
-    public async Task<ResponseModel> PickTrack(int userId, string artistName, string trackName, string newArtistName = null,
+    public async Task<ResponseModel> PickTrack(int userId, NumberFormat numberFormat, string artistName, string trackName, string newArtistName = null,
         string newTrackName = null, string oldArtistName = null, string oldTrackName = null, bool? deletion = null)
     {
         var response = new ResponseModel
@@ -545,7 +542,7 @@ public class ImportBuilders
                         w.TrackName.Equals(trackName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        AddImportPickCounts(response.Embed, allPlays, processedPlays);
+        AddImportPickCounts(response.Embed, numberFormat, allPlays, processedPlays);
 
         if (deletion != null)
         {
@@ -607,49 +604,50 @@ public class ImportBuilders
         return response;
     }
 
-    private static void AddImportPickCounts(EmbedBuilder embed, ICollection<UserPlay> allPlays,
+    private static void AddImportPickCounts(EmbedBuilder embed, NumberFormat numberFormat,
+        ICollection<UserPlay> allPlays,
         ICollection<UserPlay> processedPlays)
     {
         var totalDescription = new StringBuilder();
-        totalDescription.AppendLine($"- {allPlays.Count} total plays");
+        totalDescription.AppendLine($"- {allPlays.Count.Format(numberFormat)} total plays");
         if (allPlays.Any(c => c.PlaySource == PlaySource.LastFm))
         {
             totalDescription.AppendLine(
-                $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm)} Last.fm scrobbles");
+                $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm).Format(numberFormat)} Last.fm scrobbles");
         }
 
         if (allPlays.Any(c => c.PlaySource == PlaySource.SpotifyImport))
         {
             totalDescription.AppendLine(
-                $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} Spotify imports");
+                $"- {allPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport).Format(numberFormat)} Spotify imports");
         }
 
         if (allPlays.Any(c => c.PlaySource == PlaySource.AppleMusicImport))
         {
             totalDescription.AppendLine(
-                $"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} Apple Music imports");
+                $"- {allPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport).Format(numberFormat)} Apple Music imports");
         }
 
         embed.AddField("Total playcounts - Including overlapping/duplicate plays", totalDescription.ToString());
 
         var processedDescription = new StringBuilder();
-        processedDescription.AppendLine($"- {processedPlays.Count()} total plays");
+        processedDescription.AppendLine($"- {processedPlays.Count().Format(numberFormat)} total plays");
         if (processedPlays.Any(c => c.PlaySource == PlaySource.LastFm))
         {
             processedDescription.AppendLine(
-                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.LastFm)} of those are Last.fm scrobbles");
+                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.LastFm).Format(numberFormat)} of those are Last.fm scrobbles");
         }
 
         if (processedPlays.Any(c => c.PlaySource == PlaySource.SpotifyImport))
         {
             processedDescription.AppendLine(
-                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport)} of those are Spotify imports");
+                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.SpotifyImport).Format(numberFormat)} of those are Spotify imports");
         }
 
         if (processedPlays.Any(c => c.PlaySource == PlaySource.AppleMusicImport))
         {
             processedDescription.AppendLine(
-                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport)} of those are Apple Music imports");
+                $"- {processedPlays.Count(c => c.PlaySource == PlaySource.AppleMusicImport).Format(numberFormat)} of those are Apple Music imports");
         }
 
         embed.AddField("Final playcounts - Overlapping plays filtered", processedDescription.ToString());

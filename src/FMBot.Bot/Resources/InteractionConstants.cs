@@ -52,27 +52,27 @@ public static class InteractionConstants
     {
         public const string Modify = "user-import-modify";
 
-        public const string PickArtistModal = "import-pickartist";
-        public const string PickAlbumModal = "import-pickalbum";
-        public const string PickTrackModal = "import-picktrack";
+        public const string PickArtistModal = "im-pa";
+        public const string PickAlbumModal = "im-pab";
+        public const string PickTrackModal = "im-ptr";
 
-        public const string ArtistRename = "import-artistrename";
-        public const string ArtistRenameModal = "import-artistrename-modal";
-        public const string ArtistRenameConfirmed = "import-artistrenameconfirmed";
-        public const string ArtistDelete = "import-artistdelete";
-        public const string ArtistDeleteConfirmed = "import-artistdeleteconfirmed";
+        public const string ArtistRename = "im-arn";
+        public const string ArtistRenameModal = "im-arn-mdl";
+        public const string ArtistRenameConfirmed = "im-arn-y";
+        public const string ArtistDelete = "im-adl";
+        public const string ArtistDeleteConfirmed = "im-adl-y";
 
-        public const string AlbumRename = "import-albumrename";
-        public const string AlbumRenameModal = "import-albumrename-modal";
-        public const string AlbumRenameConfirmed = "import-albumrenameconfirmed";
-        public const string AlbumDelete = "import-albumdelete";
-        public const string AlbumDeleteConfirmed = "import-albumdeleteconfirmed";
+        public const string AlbumRename = "im-abrn";
+        public const string AlbumRenameModal = "im-abrn-mdl";
+        public const string AlbumRenameConfirmed = "im-abrn-y";
+        public const string AlbumDelete = "im-abdl";
+        public const string AlbumDeleteConfirmed = "im-abdl-y";
 
-        public const string TrackRename = "import-trackrename";
-        public const string TrackRenameModal = "import-trackrename-modal";
-        public const string TrackRenameConfirmed = "import-trackrenameconfirmed";
-        public const string TrackDelete = "import-trackdelete";
-        public const string TrackDeleteConfirmed = "import-trackdeleteconfirmed";
+        public const string TrackRename = "im-trrn";
+        public const string TrackRenameModal = "im-trrn-mdl";
+        public const string TrackRenameConfirmed = "im-trrn-y";
+        public const string TrackDelete = "im-trdl";
+        public const string TrackDeleteConfirmed = "im-trdl-y";
     }
 
     public const string ImportInstructionsSpotify = "import-spotify-instructions";

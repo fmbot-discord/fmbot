@@ -197,7 +197,8 @@ public class ImportGroupSlashCommands : InteractionModuleBase
                 $"- **{imports.result.Count.Format(numberFormat)}** Spotify imports found");
 
             var plays = await this._importService.SpotifyImportToUserPlays(contextUser, imports.result);
-            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description, $"- **{plays.Count.Format(numberFormat)}** actual plays found");
+            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                $"- **{plays.Count.Format(numberFormat)}** actual plays found");
 
             var playsWithoutDuplicates =
                 await this._importService.RemoveDuplicateImports(contextUser.UserId, plays);
@@ -207,7 +208,8 @@ public class ImportGroupSlashCommands : InteractionModuleBase
             if (playsWithoutDuplicates.Count > 0)
             {
                 await this._importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
-                await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description, $"- Added plays to database");
+                await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                    $"- Added plays to database");
 
                 if (contextUser.DataSource == DataSource.LastFm)
                 {
@@ -222,19 +224,22 @@ public class ImportGroupSlashCommands : InteractionModuleBase
                         await this._userService.SetDataSource(contextUser, DataSource.ImportThenFullLastFm);
                     }
 
-                    await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description, $"- Updated import setting");
+                    await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                        $"- Updated import setting");
                 }
             }
 
             if (contextUser.DataSource != DataSource.LastFm)
             {
                 await this._indexService.RecalculateTopLists(contextUser);
-                await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description, $"- Refreshed top list cache");
+                await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description,
+                    $"- Refreshed top list cache");
             }
 
             await this._importService.UpdateExistingScrobbleSource(contextUser);
 
-            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.SpotifyImport, numberFormat);
+            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.SpotifyImport,
+                numberFormat);
             if (years.Length > 0)
             {
                 embed.AddField("<:fmbot_importing:1131511469096312914> All imported Spotify plays", years, true);
@@ -285,7 +290,8 @@ public class ImportGroupSlashCommands : InteractionModuleBase
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
 
             embed.WithColor(DiscordConstants.SpotifyColorGreen);
-            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description, $"- Import complete!", true, components);
+            await UpdateSpotifyImportEmbed(this.Context.Interaction, embed, description, $"- Import complete!", true,
+                components);
 
             this.Context.LogCommandUsed();
         }
@@ -383,7 +389,8 @@ public class ImportGroupSlashCommands : InteractionModuleBase
                 $"- **{importsWithArtist.userPlays.Count(c => !string.IsNullOrWhiteSpace(c.ArtistName))}** with artist names");
 
             var plays = ImportService.AppleMusicImportsToValidUserPlays(contextUser, importsWithArtist.userPlays);
-            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description, $"- **{plays.Count.Format(numberFormat)}** actual plays found");
+            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+                $"- **{plays.Count.Format(numberFormat)}** actual plays found");
 
             var playsWithoutDuplicates =
                 await this._importService.RemoveDuplicateImports(contextUser.UserId, plays);
@@ -393,7 +400,8 @@ public class ImportGroupSlashCommands : InteractionModuleBase
             if (playsWithoutDuplicates.Count > 0)
             {
                 await this._importService.InsertImportPlays(contextUser, playsWithoutDuplicates);
-                await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description, $"- Added plays to database");
+                await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+                    $"- Added plays to database");
 
                 if (contextUser.DataSource == DataSource.LastFm)
                 {
@@ -408,19 +416,22 @@ public class ImportGroupSlashCommands : InteractionModuleBase
                         await this._userService.SetDataSource(contextUser, DataSource.ImportThenFullLastFm);
                     }
 
-                    await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description, $"- Updated import setting");
+                    await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+                        $"- Updated import setting");
                 }
             }
 
             if (contextUser.DataSource != DataSource.LastFm)
             {
                 await this._indexService.RecalculateTopLists(contextUser);
-                await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description, $"- Refreshed top list cache");
+                await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description,
+                    $"- Refreshed top list cache");
             }
 
             await this._importService.UpdateExistingScrobbleSource(contextUser);
 
-            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.AppleMusicImport, numberFormat);
+            var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.AppleMusicImport,
+                numberFormat);
             if (years.Length > 0)
             {
                 embed.AddField("<:fmbot_importing:1131511469096312914> All imported Apple Music plays", years, true);
@@ -472,7 +483,8 @@ public class ImportGroupSlashCommands : InteractionModuleBase
                     style: ButtonStyle.Primary)
                 .WithButton("Manage import settings", InteractionConstants.ImportManage, style: ButtonStyle.Secondary);
 
-            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description, $"- Import complete!", true, components);
+            await UpdateAppleMusicImportEmbed(this.Context.Interaction, embed, description, $"- Import complete!", true,
+                components);
 
             this.Context.LogCommandUsed();
         }
@@ -485,20 +497,24 @@ public class ImportGroupSlashCommands : InteractionModuleBase
         }
     }
 
-    private static async Task UpdateSpotifyImportEmbed(IDiscordInteraction interaction, EmbedBuilder embed, StringBuilder builder,
+    private static async Task UpdateSpotifyImportEmbed(IDiscordInteraction interaction, EmbedBuilder embed,
+        StringBuilder builder,
         string lineToAdd, bool lastLine = false, ComponentBuilder components = null, string image = null)
     {
-        await UpdateImportEmbed(interaction, embed, builder, lineToAdd, lastLine, components, image, PlaySource.SpotifyImport);
+        await UpdateImportEmbed(interaction, embed, builder, lineToAdd, lastLine, components, image,
+            PlaySource.SpotifyImport);
     }
 
-    private static async Task UpdateAppleMusicImportEmbed(IDiscordInteraction interaction, EmbedBuilder embed, StringBuilder builder,
+    private static async Task UpdateAppleMusicImportEmbed(IDiscordInteraction interaction, EmbedBuilder embed,
+        StringBuilder builder,
         string lineToAdd, bool lastLine = false, ComponentBuilder components = null, string image = null)
     {
         await UpdateImportEmbed(interaction, embed, builder, lineToAdd, lastLine, components, image,
             PlaySource.AppleMusicImport);
     }
 
-    private static async Task UpdateImportEmbed(IDiscordInteraction interaction, EmbedBuilder embed, StringBuilder builder,
+    private static async Task UpdateImportEmbed(IDiscordInteraction interaction, EmbedBuilder embed,
+        StringBuilder builder,
         string lineToAdd, bool lastLine = false, ComponentBuilder components = null, string image = null,
         PlaySource playSource = PlaySource.SpotifyImport)
     {
@@ -554,6 +570,53 @@ public class ImportGroupSlashCommands : InteractionModuleBase
                 await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser), contextUser.UserId);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("modify", "⭐ Edit and delete artists, albums and tracks in your .fmbot imports")]
+    [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task ModifyImportAsync()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var supporterRequired = ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+        if (supporterRequired != null)
+        {
+            await this.Context.SendResponse(this.Interactivity, supporterRequired);
+            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+
+        if (this.Context.Guild != null)
+        {
+            var serverEmbed = new EmbedBuilder()
+                .WithColor(DiscordConstants.InformationColorBlue)
+                .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
+
+            await RespondAsync(embed: serverEmbed.Build(), ephemeral: true);
+        }
+        else if (this.Context.Channel != null)
+        {
+            _ = this.Context.Channel.TriggerTypingAsync();
+        }
+
+        try
+        {
+            var response =
+                await this._importBuilders.ImportModify(new ContextModel(this.Context, contextUser), contextUser.UserId);
+            await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
+                components: response.Components.Build());
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

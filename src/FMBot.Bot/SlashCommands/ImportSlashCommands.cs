@@ -233,7 +233,7 @@ public class ImportSlashCommands : InteractionModuleBase
             await DeferAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._importBuilders.PickArtist(contextUser.UserId, modal.ArtistName);
+            var response = await this._importBuilders.PickArtist(contextUser.UserId, contextUser.NumberFormat ?? NumberFormat.NoSeparator, modal.ArtistName);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -255,6 +255,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickAlbum(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 modal.ArtistName,
                 modal.AlbumName);
 
@@ -278,6 +279,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickTrack(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 modal.ArtistName,
                 modal.TrackName);
 
@@ -320,6 +322,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickArtist(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 selectedArtistName,
                 modal.ArtistName);
 
@@ -350,6 +353,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickArtist(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 newArtistName,
                 newArtistName,
                 selectedArtistName);
@@ -379,6 +383,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickArtist(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 artistName,
                 deletion: false);
 
@@ -409,6 +414,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickArtist(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 artistName,
                 deletion: true);
 
@@ -457,6 +463,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickAlbum(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 selectedArtistName,
                 selectedAlbumName,
                 modal.ArtistName,
@@ -489,6 +496,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickAlbum(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 newArtistName,
                 newAlbumName,
                 null,
@@ -521,6 +529,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickAlbum(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 artistName,
                 albumName,
                 deletion: false);
@@ -552,6 +561,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickAlbum(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 artistName,
                 albumName,
                 deletion: true);
@@ -601,6 +611,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickTrack(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 selectedArtistName,
                 selectedTrackName,
                 modal.ArtistName,
@@ -633,6 +644,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickTrack(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 newArtistName,
                 newTrackName,
                 null,
@@ -665,6 +677,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickTrack(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 artistName,
                 trackName,
                 deletion: false);
@@ -696,6 +709,7 @@ public class ImportSlashCommands : InteractionModuleBase
 
             var response = await this._importBuilders.PickTrack(
                 contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
                 artistName,
                 trackName,
                 deletion: true);
