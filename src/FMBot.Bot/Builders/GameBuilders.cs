@@ -86,7 +86,7 @@ public class GameBuilders
                 $"You've used up all your {jumbleLimit} jumbles of today. Get supporter to play unlimited jumble games and much more.");
             response.Components = new ComponentBuilder()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "jumble-dailylimit"));
             response.CommandResponse = CommandResponse.SupporterRequired;
             return response;
         }
@@ -175,7 +175,7 @@ public class GameBuilders
                 $"You've used up all your {jumbleLimit} pixel jumbles of today. Get supporter to play unlimited jumble games and much more.");
             response.Components = new ComponentBuilder()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "pixel-dailylimit"));
             response.CommandResponse = CommandResponse.SupporterRequired;
             return response;
         }

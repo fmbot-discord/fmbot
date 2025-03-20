@@ -54,7 +54,7 @@ public class StaticSlashCommands : InteractionModuleBase
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
-            false, true, userLocale: this.Context.Interaction.UserLocale);
+            false, true, userLocale: this.Context.Interaction.UserLocale, source: "getsupporter");
 
         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -112,7 +112,7 @@ public class StaticSlashCommands : InteractionModuleBase
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
-                expandWithPerks == "true", showExpandButton == "true", userLocale: this.Context.Interaction.UserLocale);
+                expandWithPerks == "true", showExpandButton == "true", userLocale: this.Context.Interaction.UserLocale, source: source);
 
             if (newResponse == "true")
             {

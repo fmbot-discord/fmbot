@@ -210,8 +210,7 @@ public class SupporterService
         }
     }
 
-    public static async Task SendSupporterGoodbyeMessage(IUser discordUser, bool openCollective = true,
-        bool hadImported = false)
+    public static async Task SendSupporterGoodbyeMessage(IUser discordUser, bool hadImported = false)
     {
         var goodbyeEmbed = new EmbedBuilder();
         goodbyeEmbed.WithColor(DiscordConstants.InformationColorBlue);
@@ -228,21 +227,22 @@ public class SupporterService
 
         var buttons = new ComponentBuilder()
             .WithButton("Resubscribe", style: ButtonStyle.Secondary,
-                customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault)
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "goodbye-resubscribe"))
             .WithButton("Support server", style: ButtonStyle.Link, url: "https://discord.gg/fmbot");
 
-        goodbyeEmbed.AddField("\ud83c\udff7\ufe0f Annual deal",
+        goodbyeEmbed.AddField("🏷️ Annual deal",
             "Resubscribe and save 50% on .fmbot supporter with our new yearly option.");
 
         await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons.Build());
     }
 
-    public async Task<(string message, bool showUpgradeButton)> GetPromotionalUpdateMessage(User user, string prfx,
+    public async Task<(string message, bool showUpgradeButton, string supporterSource)> GetPromotionalUpdateMessage(User user, string prfx,
         ulong? guildId = null)
     {
         var randomHintNumber = RandomNumberGenerator.GetInt32(1, 65);
         string message = null;
         var showUpgradeButton = false;
+        var supporterSource = "updatepromo";
 
         if (!IsSupporter(user.UserType))
         {
@@ -254,6 +254,7 @@ public class SupporterService
                     message =
                         $"*⭐ .fmbot supporters get extra stats and insights into their music history*";
                     showUpgradeButton = true;
+                    supporterSource = "updatepromo-insights";
                     break;
                 }
                 case 3:
@@ -275,6 +276,7 @@ public class SupporterService
                     message =
                         $"*⚙️ Set up to 10 options in your `{prfx}fm` footer as an .fmbot supporter*";
                     showUpgradeButton = true;
+                    supporterSource = "updatepromo-fmfooter";
                     break;
                 }
                 case 5:
@@ -283,6 +285,7 @@ public class SupporterService
                     message =
                         $"*🔥 Supporters get an improved GPT-4o powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others*";
                     showUpgradeButton = true;
+                    supporterSource = "updatepromo-improvedjudge";
                     break;
                 }
                 case 6:
@@ -292,6 +295,7 @@ public class SupporterService
                     message =
                         $"*<:spotify:882221219334725662> Supporters can import and use their full Spotify history in the bot*";
                     showUpgradeButton = true;
+                    supporterSource = "updatepromo-spotifyimport";
                     break;
                 }
                 case 8:
@@ -301,6 +305,7 @@ public class SupporterService
                     message =
                         $"*<:apple_music:1218182727149420544> Supporters can import and use their full Apple Music history in the bot*";
                     showUpgradeButton = true;
+                    supporterSource = "updatepromo-applemusicimport";
                     break;
                 }
                 case 10:
@@ -309,6 +314,7 @@ public class SupporterService
                     message =
                         $"*{DiscordConstants.Discoveries} View which artists you recently discovered with .fmbot supporter*";
                     showUpgradeButton = true;
+                    supporterSource = "updatepromo-discoveries";
                     break;
                 }
                 case 11:
@@ -317,6 +323,7 @@ public class SupporterService
                     message =
                         $"*<:1_to_5_up:912085138232442920> Set your own `{prfx}fm` emote reactions to be used everywhere with .fmbot supporter*";
                     showUpgradeButton = true;
+                    supporterSource = "updatepromo-userreactions";
                     break;
                 }
                 case 12:
@@ -325,6 +332,7 @@ public class SupporterService
                     message =
                         $"*{DiscordConstants.Discoveries} View which artists you recently returned to with .fmbot supporter*";
                     showUpgradeButton = true;
+                    supporterSource = "updatepromo-gaps";
                     break;
                 }
                 case 20:
@@ -465,7 +473,7 @@ public class SupporterService
             // }
         }
 
-        return (message, showUpgradeButton);
+        return (message, showUpgradeButton, supporterSource);
     }
 
     private static string GetGuildPromoCacheKey(ulong? guildId = null)
@@ -1031,7 +1039,7 @@ public class SupporterService
                     var user = await this._client.Rest.GetUserAsync(userEntitlements.DiscordUserId);
                     if (user != null)
                     {
-                        await SendSupporterGoodbyeMessage(user, false, hadImported);
+                        await SendSupporterGoodbyeMessage(user, hadImported);
                     }
 
                     var subType = Enum.GetName(existingSupporter.SubscriptionType.Value);
@@ -1130,7 +1138,7 @@ public class SupporterService
                 var user = await this._client.Rest.GetUserAsync(discordSupporter.DiscordUserId);
                 if (user != null)
                 {
-                    await SendSupporterGoodbyeMessage(user, false, hadImported);
+                    await SendSupporterGoodbyeMessage(user, hadImported);
                 }
 
                 var embed = new EmbedBuilder().WithDescription(
@@ -1318,7 +1326,7 @@ public class SupporterService
                 var user = await this._client.Rest.GetUserAsync(discordUserId);
                 if (user != null)
                 {
-                    await SendSupporterGoodbyeMessage(user, false, hadImported);
+                    await SendSupporterGoodbyeMessage(user, hadImported);
                 }
 
                 var embed = new EmbedBuilder().WithDescription(

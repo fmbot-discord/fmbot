@@ -195,12 +195,12 @@ public class StaticBuilders
             if (expandWithPerks)
             {
                 response.Components.WithButton("Hide all perks", style: ButtonStyle.Secondary,
-                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-false-true");
+                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-false-true-{source}");
             }
             else
             {
                 response.Components.WithButton("View all perks", style: ButtonStyle.Secondary,
-                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-true-true");
+                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-true-true-{source}");
             }
         }
 

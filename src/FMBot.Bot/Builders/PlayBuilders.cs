@@ -1492,7 +1492,7 @@ public class PlayBuilder
 
             response.Components = new ComponentBuilder()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "gaps"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
 
@@ -1506,7 +1506,7 @@ public class PlayBuilder
 
             response.Components = new ComponentBuilder()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
-                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "gaps"));
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;
 

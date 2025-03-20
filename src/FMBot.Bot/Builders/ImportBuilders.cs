@@ -48,7 +48,7 @@ public class ImportBuilders
 
             response.Components = new ComponentBuilder()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault)
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "importing"))
                 .WithButton("Import info", style: ButtonStyle.Link, url: "https://fmbot.xyz/importing/");
             response.Embed.WithColor(DiscordConstants.InformationColorBlue);
             response.CommandResponse = CommandResponse.SupporterRequired;

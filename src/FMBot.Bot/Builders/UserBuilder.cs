@@ -181,7 +181,7 @@ public class UserBuilder
         {
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
                 style: ButtonStyle.Secondary,
-                customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "featured-onsupportersunday"));
         }
 
         response.Embed.WithFooter($"View your featured history with '{context.Prefix}featuredlog'");
@@ -687,7 +687,7 @@ public class UserBuilder
                                 $"Become an [.fmbot supporter]({Constants.GetSupporterDiscordLink}) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
                             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
                                 style: ButtonStyle.Secondary,
-                                customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+                                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "featured-supportersunday"));
                         }
                     }
                     else
@@ -1225,7 +1225,7 @@ public class UserBuilder
 
                 response.Components = new ComponentBuilder()
                     .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                        customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+                        customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "judge-dailylimit"));
             }
         }
         else
@@ -1479,7 +1479,7 @@ public class UserBuilder
 
         response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
             style: ButtonStyle.Primary,
-            customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+            customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "userreactions"));
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.CommandResponse = CommandResponse.SupporterRequired;

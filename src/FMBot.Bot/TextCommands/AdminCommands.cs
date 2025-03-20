@@ -1329,7 +1329,7 @@ public class AdminCommands : BaseCommandModule
 
             var hasImported = userSettings != null && userSettings.DataSource != DataSource.LastFm;
 
-            await SupporterService.SendSupporterGoodbyeMessage(discordUser, hadImported: hasImported);
+            await SupporterService.SendSupporterGoodbyeMessage(discordUser, hasImported);
 
             await ReplyAsync("✅ Goodbye dm sent");
         }
@@ -1418,7 +1418,7 @@ public class AdminCommands : BaseCommandModule
             var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
             if (discordUser != null && sendDm == null)
             {
-                await SupporterService.SendSupporterGoodbyeMessage(discordUser, hadImported: hadImported);
+                await SupporterService.SendSupporterGoodbyeMessage(discordUser, hadImported);
 
                 description.AppendLine("✅ Goodbye dm sent");
             }
@@ -1667,7 +1667,7 @@ public class AdminCommands : BaseCommandModule
             this._embed.WithDescription(description.ToString());
 
             var components = new ComponentBuilder().WithButton("Get .fmbot supporter", style: ButtonStyle.Primary,
-                customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault}-true-false-false");
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false, false, source: "embedpromo"));
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
         }
 
@@ -2415,7 +2415,7 @@ public class AdminCommands : BaseCommandModule
             {
                 var components = new ComponentBuilder()
                     .WithButton("Get .fmbot supporter",
-                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-true-false-true");
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-true-false-true-testlink");
 
                 var embed = new EmbedBuilder();
                 embed.WithDescription("Start the new purchase flow below");
