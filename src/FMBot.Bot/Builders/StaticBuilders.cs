@@ -106,7 +106,7 @@ public class StaticBuilders
                 "-# Import and use your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
 
             response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
-                "-# See exactly when you discovered artists, albums, and tracks in commands and the exclusive Discovery command.");
+                "-# See exactly when you discovered and re-discovered artists, albums, and tracks in commands and through the exclusive Discoveries and Gaps commands.");
 
             response.Embed.AddField("🎮 Play unlimited games",
                 "-# Remove the daily limit on Jumble and Pixel Jumble and play as much as you want.");
