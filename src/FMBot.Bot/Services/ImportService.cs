@@ -355,7 +355,7 @@ public class ImportService
             if (!timestamps.ContainsKey(userPlay.TimePlayed))
             {
                 playsToReturn.Add(userPlay);
-                timestamps.Add(userPlay.TimePlayed, new List<UserPlay> { userPlay });
+                timestamps.Add(userPlay.TimePlayed, [userPlay]);
             }
             else
             {
@@ -454,5 +454,71 @@ public class ImportService
         }
 
         return null;
+    }
+
+    public async Task RenameArtistImports(User user, string oldArtistName, string newArtistName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.RenameArtistImports(user.UserId, connection, oldArtistName, newArtistName);
+
+        Log.Information("Importing: {userId} / {discordUserId} - Renamed artist {oldArtistName} to {newArtistName}",
+            user.UserId, user.DiscordUserId, oldArtistName, newArtistName);
+    }
+
+    public async Task DeleteArtistImports(User user, string artistName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.DeleteArtistImports(user.UserId, connection, artistName);
+
+        Log.Information("Importing: {userId} / {discordUserId} - Deleted artist {artistName}", user.UserId,
+            user.DiscordUserId, artistName);
+    }
+
+    public async Task RenameAlbumImports(User user, string oldArtistName, string oldAlbumName, string newArtistName, string newAlbumName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.RenameAlbumImports(user.UserId, connection, oldArtistName, oldAlbumName, newArtistName, newAlbumName);
+
+        Log.Information("Importing: {userId} / {discordUserId} - Renamed album {oldAlbumName} by {artistName} to {newAlbumName} by {newArtistName}",
+            user.UserId, user.DiscordUserId, oldAlbumName, oldArtistName, newAlbumName, newArtistName);
+    }
+
+    public async Task DeleteAlbumImports(User user, string artistName, string albumName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.DeleteAlbumImports(user.UserId, connection, artistName, albumName);
+
+        Log.Information("Importing: {userId} / {discordUserId} - Deleted album {albumName} by {artistName}", user.UserId,
+            user.DiscordUserId, albumName, artistName);
+    }
+
+    public async Task RenameTrackImports(User user, string oldArtistName, string oldTrackName, string newArtistName, string newTrackName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.RenameTrackImports(user.UserId, connection, oldArtistName, oldTrackName, newArtistName, newTrackName);
+
+        Log.Information("Importing: {userId} / {discordUserId} - Renamed track {oldTrackName} by {artistName} to {newTrackName} by {newArtistName}",
+            user.UserId, user.DiscordUserId, oldTrackName, oldArtistName, newTrackName, newArtistName);
+    }
+
+    public async Task DeleteTrackImports(User user, string artistName, string trackName)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        await PlayRepository.DeleteTrackImports(user.UserId, connection, artistName, trackName);
+
+        Log.Information("Importing: {userId} / {discordUserId} - Deleted track {trackName} by {artistName}", user.UserId,
+            user.DiscordUserId, trackName, artistName);
     }
 }

@@ -257,7 +257,7 @@ public class FriendBuilders
                     $"Sorry, but you can't have more than {Constants.MaxFriends} friends. \n\n" +
                     $".fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends.");
                 response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                    customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-limit"));
             }
             else
             {

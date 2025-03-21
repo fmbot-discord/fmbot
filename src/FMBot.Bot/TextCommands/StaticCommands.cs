@@ -193,7 +193,7 @@ public class StaticCommands : BaseCommandModule
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, prfx, contextUser),
-            true, false, true);
+            true, false, true, "getsupporter");
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

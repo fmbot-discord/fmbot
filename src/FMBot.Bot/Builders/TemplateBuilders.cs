@@ -182,7 +182,7 @@ public class TemplateBuilders
                                        $"[Get supporter here]({Constants.GetSupporterDiscordLink}).");
 
         response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-            customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+            customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "fm-templates"));
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         response.CommandResponse = CommandResponse.SupporterRequired;

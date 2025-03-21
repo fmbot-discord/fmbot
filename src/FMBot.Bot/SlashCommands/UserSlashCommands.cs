@@ -749,7 +749,9 @@ public class UserSlashCommands : InteractionModuleBase
 
             if (!embeds.Any())
             {
-                await RespondAsync("No options set. Select one of the slash command options to configure your localization settings.", ephemeral: true);
+                await RespondAsync(
+                    "No options set. Select one of the slash command options to configure your localization settings.",
+                    ephemeral: true);
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
@@ -1016,7 +1018,11 @@ public class UserSlashCommands : InteractionModuleBase
                 embed.WithDescription(
                     $"Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
                 this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                await RespondAsync(embed: embed.Build());
+                await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+                {
+                    e.Embed = embed.Build();
+                    e.Components = null;
+                });
                 return;
             }
 

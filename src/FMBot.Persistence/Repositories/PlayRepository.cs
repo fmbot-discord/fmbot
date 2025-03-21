@@ -359,4 +359,132 @@ public static class PlayRepository
             newUserId
         });
     }
+
+    public static async Task RenameArtistImports(int userId, NpgsqlConnection connection, string oldArtistName, string newArtistName)
+    {
+        if (string.IsNullOrEmpty(oldArtistName) || string.IsNullOrEmpty(newArtistName))
+        {
+            throw new ArgumentException("Artist names cannot be null or empty");
+        }
+
+        await using var renameArtistImports = new NpgsqlCommand("UPDATE public.user_plays " +
+                                                        "SET artist_name = @newArtistName " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source != 0 " +
+                                                        "AND LOWER(artist_name) = LOWER(@oldArtistName)", connection);
+
+        renameArtistImports.Parameters.AddWithValue("userId", userId);
+        renameArtistImports.Parameters.AddWithValue("oldArtistName", oldArtistName);
+        renameArtistImports.Parameters.AddWithValue("newArtistName", newArtistName);
+
+        await renameArtistImports.ExecuteNonQueryAsync();
+    }
+
+    public static async Task DeleteArtistImports(int userId, NpgsqlConnection connection, string artistName)
+    {
+        if (string.IsNullOrEmpty(artistName))
+        {
+            throw new ArgumentException("Artist name cannot be null or empty");
+        }
+
+        await using var deleteArtistImports = new NpgsqlCommand("DELETE FROM public.user_plays " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source != 0 " +
+                                                        "AND LOWER(artist_name) = LOWER(@artistName)", connection);
+
+        deleteArtistImports.Parameters.AddWithValue("userId", userId);
+        deleteArtistImports.Parameters.AddWithValue("artistName", artistName);
+
+        await deleteArtistImports.ExecuteNonQueryAsync();
+    }
+
+    public static async Task RenameAlbumImports(int userId, NpgsqlConnection connection, string artistName, string oldAlbumName, string newArtistName, string newAlbumName)
+    {
+        if (string.IsNullOrEmpty(artistName) || string.IsNullOrEmpty(oldAlbumName) ||
+            string.IsNullOrEmpty(newArtistName) || string.IsNullOrEmpty(newAlbumName))
+        {
+            throw new ArgumentException("Artist and album names cannot be null or empty");
+        }
+
+        await using var renameAlbumImports = new NpgsqlCommand("UPDATE public.user_plays " +
+                                                        "SET artist_name = @newArtistName, " +
+                                                        "album_name = @newAlbumName " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source != 0 " +
+                                                        "AND LOWER(artist_name) = LOWER(@artistName) " +
+                                                        "AND LOWER(album_name) = LOWER(@oldAlbumName)", connection);
+
+        renameAlbumImports.Parameters.AddWithValue("userId", userId);
+        renameAlbumImports.Parameters.AddWithValue("artistName", artistName);
+        renameAlbumImports.Parameters.AddWithValue("oldAlbumName", oldAlbumName);
+        renameAlbumImports.Parameters.AddWithValue("newArtistName", newArtistName);
+        renameAlbumImports.Parameters.AddWithValue("newAlbumName", newAlbumName);
+
+        await renameAlbumImports.ExecuteNonQueryAsync();
+    }
+
+    public static async Task DeleteAlbumImports(int userId, NpgsqlConnection connection, string artistName, string albumName)
+    {
+        if (string.IsNullOrEmpty(artistName) || string.IsNullOrEmpty(albumName))
+        {
+            throw new ArgumentException("Artist and album names cannot be null or empty");
+        }
+
+        await using var deleteAlbumImports = new NpgsqlCommand("DELETE FROM public.user_plays " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source != 0 " +
+                                                        "AND LOWER(artist_name) = LOWER(@artistName) " +
+                                                        "AND LOWER(album_name) = LOWER(@albumName)", connection);
+
+        deleteAlbumImports.Parameters.AddWithValue("userId", userId);
+        deleteAlbumImports.Parameters.AddWithValue("artistName", artistName);
+        deleteAlbumImports.Parameters.AddWithValue("albumName", albumName);
+
+        await deleteAlbumImports.ExecuteNonQueryAsync();
+    }
+
+    public static async Task RenameTrackImports(int userId, NpgsqlConnection connection, string artistName, string oldTrackName, string newArtistName, string newTrackName)
+    {
+        if (string.IsNullOrEmpty(artistName) || string.IsNullOrEmpty(oldTrackName) ||
+            string.IsNullOrEmpty(newArtistName) || string.IsNullOrEmpty(newTrackName))
+        {
+            throw new ArgumentException("Artist and track names cannot be null or empty");
+        }
+
+        await using var renameTrackImports = new NpgsqlCommand("UPDATE public.user_plays " +
+                                                        "SET artist_name = @newArtistName, " +
+                                                        "track_name = @newTrackName " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source != 0 " +
+                                                        "AND LOWER(artist_name) = LOWER(@artistName) " +
+                                                        "AND LOWER(track_name) = LOWER(@oldTrackName)", connection);
+
+        renameTrackImports.Parameters.AddWithValue("userId", userId);
+        renameTrackImports.Parameters.AddWithValue("artistName", artistName);
+        renameTrackImports.Parameters.AddWithValue("oldTrackName", oldTrackName);
+        renameTrackImports.Parameters.AddWithValue("newArtistName", newArtistName);
+        renameTrackImports.Parameters.AddWithValue("newTrackName", newTrackName);
+
+        await renameTrackImports.ExecuteNonQueryAsync();
+    }
+
+    public static async Task DeleteTrackImports(int userId, NpgsqlConnection connection, string artistName, string trackName)
+    {
+        if (string.IsNullOrEmpty(artistName) || string.IsNullOrEmpty(trackName))
+        {
+            throw new ArgumentException("Artist and track names cannot be null or empty");
+        }
+
+        await using var deleteTrackImports = new NpgsqlCommand("DELETE FROM public.user_plays " +
+                                                        "WHERE user_id = @userId " +
+                                                        "AND play_source != 0 " +
+                                                        "AND LOWER(artist_name) = LOWER(@artistName) " +
+                                                        "AND LOWER(track_name) = LOWER(@trackName)", connection);
+
+        deleteTrackImports.Parameters.AddWithValue("userId", userId);
+        deleteTrackImports.Parameters.AddWithValue("artistName", artistName);
+        deleteTrackImports.Parameters.AddWithValue("trackName", trackName);
+
+        await deleteTrackImports.ExecuteNonQueryAsync();
+    }
 }

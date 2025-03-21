@@ -86,7 +86,8 @@ public class StaticBuilders
         bool expandWithPerks,
         bool showExpandButton,
         bool publicResponse = false,
-        string userLocale = null)
+        string userLocale = null,
+        string source = "unknown")
     {
         var response = new ResponseModel
         {
@@ -105,7 +106,7 @@ public class StaticBuilders
                 "-# Import and use your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
 
             response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
-                "-# See exactly when you discovered artists, albums, and tracks in commands and the exclusive Discovery command.");
+                "-# See exactly when you discovered and re-discovered artists, albums, and tracks in commands and through the exclusive Discoveries and Gaps commands.");
 
             response.Embed.AddField("🎮 Play unlimited games",
                 "-# Remove the daily limit on Jumble and Pixel Jumble and play as much as you want.");
@@ -171,9 +172,21 @@ public class StaticBuilders
 
                 response.Components = new ComponentBuilder()
                     .WithButton("Get monthly",
-                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly")
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-monthly-{source}")
                     .WithButton("Get yearly",
-                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly");
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-yearly-{source}");
+
+                if (pricing.LifetimePriceId != null &&
+                    pricing.LifetimePriceString != null &&
+                    pricing.LifetimeSubText != null)
+                {
+                    response.Embed.AddField($"Lifetime - {pricing.LifetimePriceString}",
+                        $"-# {pricing.LifetimeSubText}", true);
+
+                    response.Components
+                        .WithButton("Get lifetime",
+                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-lifetime-{source}");
+                }
             }
         }
 
@@ -182,12 +195,12 @@ public class StaticBuilders
             if (expandWithPerks)
             {
                 response.Components.WithButton("Hide all perks", style: ButtonStyle.Secondary,
-                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-false-true");
+                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-false-true-{source}");
             }
             else
             {
                 response.Components.WithButton("View all perks", style: ButtonStyle.Secondary,
-                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-true-true");
+                    customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-true-true-{source}");
             }
         }
 

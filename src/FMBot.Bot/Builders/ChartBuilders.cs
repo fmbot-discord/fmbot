@@ -206,7 +206,7 @@ public class ChartBuilders
         if (supporter != null)
         {
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
-                style: ButtonStyle.Secondary, customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+                style: ButtonStyle.Secondary, customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"));
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
@@ -357,7 +357,7 @@ public class ChartBuilders
         if (supporter != null)
         {
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
-                style: ButtonStyle.Secondary, customId: InteractionConstants.SupporterLinks.GetPurchaseButtonsDefault);
+                style: ButtonStyle.Secondary, customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"));
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;

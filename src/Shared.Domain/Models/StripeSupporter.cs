@@ -32,4 +32,6 @@ public class StripeSupporter
     public string Currency { get; set; }
 
     public StripeSupporterType Type { get; set; }
+
+    public string PurchaseSource { get; set; }
 }
