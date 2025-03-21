@@ -70,39 +70,6 @@ public class StaticSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [ComponentInteraction($"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-*-*-*")]
-    [UserSessionRequired]
-    public async Task SupporterButtons(string newResponse, string expandWithPerks, string showExpandButton)
-    {
-        try
-        {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
-                expandWithPerks == "true", showExpandButton == "true", userLocale: this.Context.Interaction.UserLocale);
-
-            if (newResponse == "true")
-            {
-                await this.Context.SendResponse(this.Interactivity, response, true);
-            }
-            else
-            {
-                await Context.Interaction.DeferAsync(ephemeral: true);
-
-                await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
-                {
-                    m.Components = response.Components?.Build();
-                    m.Embed = response.Embed?.Build();
-                });
-            }
-
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
     [ComponentInteraction($"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-*-*-*-*")]
     [UserSessionRequired]
     public async Task SupporterButtonsWithSource(string newResponse, string expandWithPerks, string showExpandButton,
@@ -112,9 +79,11 @@ public class StaticSlashCommands : InteractionModuleBase
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var response = await this._staticBuilders.SupporterButtons(new ContextModel(this.Context, contextUser),
-                expandWithPerks == "true", showExpandButton == "true", userLocale: this.Context.Interaction.UserLocale, source: source);
+                expandWithPerks.Equals("true", StringComparison.OrdinalIgnoreCase),
+                showExpandButton.Equals("true", StringComparison.OrdinalIgnoreCase),
+                userLocale: this.Context.Interaction.UserLocale, source: source);
 
-            if (newResponse == "true")
+            if (newResponse.Equals("true", StringComparison.OrdinalIgnoreCase))
             {
                 await this.Context.SendResponse(this.Interactivity, response, true);
             }
@@ -162,7 +131,7 @@ public class StaticSlashCommands : InteractionModuleBase
         {
             description.AppendLine($"-# {pricing.YearlySummary}");
         }
-        else if(type == "lifetime")
+        else if (type == "lifetime")
         {
             description.AppendLine($"-# {pricing.LifetimeSummary}");
         }
