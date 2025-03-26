@@ -92,7 +92,8 @@ public class FeaturedService
 
         try
         {
-            var user = await GetUserToFeatureAsync(Constants.DaysLastUsedForFeatured + (supporterDay ? 6 : 0), supporterDay);
+            var user = await GetUserToFeatureAsync(Constants.DaysLastUsedForFeatured + (supporterDay ? 6 : 0),
+                supporterDay);
 
             if (user == null)
             {
@@ -105,18 +106,22 @@ public class FeaturedService
             {
                 // Recent listens
                 case FeaturedMode.RecentPlays:
-                    var tracks = await this._lastfmRepository.GetRecentTracksAsync(user.UserNameLastFM, 50, sessionKey: user.SessionKeyLastFm);
+                    var tracks = await this._lastfmRepository.GetRecentTracksAsync(user.UserNameLastFM, 50,
+                        sessionKey: user.SessionKeyLastFm);
 
                     if (!tracks.Success || tracks.Content?.RecentTracks == null)
                     {
-                        Log.Information($"Featured: User {user.UserNameLastFM} had no recent tracks, switching to alternative avatar mode");
+                        Log.Information(
+                            $"Featured: User {user.UserNameLastFM} had no recent tracks, switching to alternative avatar mode");
                         goto case FeaturedMode.TopAlbumsWeekly;
                     }
 
                     RecentTrack trackToFeature = null;
-                    foreach (var track in tracks.Content.RecentTracks.Where(w => w.AlbumName != null && w.AlbumCoverUrl != null))
+                    foreach (var track in tracks.Content.RecentTracks.Where(w =>
+                                 w.AlbumName != null && w.AlbumCoverUrl != null))
                     {
-                        if (await this._censorService.AlbumResult(track.AlbumName, track.ArtistName, true) == CensorService.CensorResult.Safe &&
+                        if (await this._censorService.AlbumResult(track.AlbumName, track.ArtistName, true) ==
+                            CensorService.CensorResult.Safe &&
                             await AlbumNotFeaturedRecently(track.AlbumName, track.ArtistName) &&
                             await AlbumPopularEnough(track.AlbumName, track.ArtistName))
                         {
@@ -173,8 +178,10 @@ public class FeaturedService
 
                     if (!albums.Success || albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
                     {
-                        Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
-                        user = await GetUserToFeatureAsync(Constants.DaysLastUsedForFeatured + (supporterDay ? 6 : 0), supporterDay);
+                        Log.Information(
+                            $"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
+                        user = await GetUserToFeatureAsync(Constants.DaysLastUsedForFeatured + (supporterDay ? 6 : 0),
+                            supporterDay);
                         albums = await this._lastfmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
                     }
 
@@ -185,11 +192,12 @@ public class FeaturedService
 
                     while (!albumFound)
                     {
-                        var currentAlbum = albumList[i];
+                        var currentAlbum = albumList.ElementAtOrDefault(i);
 
-                        if (currentAlbum.AlbumCoverUrl != null &&
+                        if (currentAlbum?.AlbumCoverUrl != null &&
                             currentAlbum.AlbumName != null &&
-                            await this._censorService.AlbumResult(currentAlbum.AlbumName, currentAlbum.ArtistName, true) == CensorService.CensorResult.Safe &&
+                            await this._censorService.AlbumResult(currentAlbum.AlbumName, currentAlbum.ArtistName,
+                                true) == CensorService.CensorResult.Safe &&
                             await AlbumNotFeaturedRecently(currentAlbum.AlbumName, currentAlbum.ArtistName) &&
                             await AlbumPopularEnough(currentAlbum.AlbumName, currentAlbum.ArtistName))
                         {
@@ -219,6 +227,16 @@ public class FeaturedService
                         else
                         {
                             i++;
+
+                            if (i >= albums.Content.TopAlbums.Count)
+                            {
+                                Log.Information($"Featured: User {user.UserNameLastFM} had no albums left, switching to different user.");
+                                user = await GetUserToFeatureAsync(Constants.DaysLastUsedForFeatured + (supporterDay ? 6 : 0), supporterDay);
+                                albums = await this._lastfmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 50);
+                                albumList = albums.Content.TopAlbums.ToList();
+                                i = 0;
+                            }
+
                             await Task.Delay(400);
                         }
                     }
@@ -252,7 +270,8 @@ public class FeaturedService
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
-        var date = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, Constants.FeaturedMinute, 0, kind: DateTimeKind.Utc);
+        var date = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, Constants.FeaturedMinute, 0,
+            kind: DateTimeKind.Utc);
         return await db.FeaturedLogs
             .AsQueryable()
             .FirstOrDefaultAsync(w => w.DateTime == date);
@@ -367,11 +386,13 @@ public class FeaturedService
         {
             if (user != null)
             {
-                description.Append($" from **[{StringExtensions.Sanitize(user.UserName)}]({LastfmUrlExtensions.GetUserUrl(user.UserNameLastFM)})**");
+                description.Append(
+                    $" from **[{StringExtensions.Sanitize(user.UserName)}]({LastfmUrlExtensions.GetUserUrl(user.UserNameLastFM)})**");
             }
             else if (featured.User != null)
             {
-                description.Append($" from **[{featured.User.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(featured.User.UserNameLastFM)})**");
+                description.Append(
+                    $" from **[{featured.User.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(featured.User.UserNameLastFM)})**");
             }
         }
 
@@ -488,16 +509,19 @@ public class FeaturedService
             {
                 users.Add(rndl);
             }
+
             var drasil = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 278633844763262976);
             if (drasil != null)
             {
                 users.Add(drasil);
             }
+
             var aeth = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 616906331537932300);
             if (aeth != null)
             {
                 users.Add(aeth);
             }
+
             var arap = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 339561593320767498);
             if (arap != null)
             {
@@ -579,7 +603,8 @@ public class FeaturedService
 
             if (botUser?.SessionKeyLastFm != null)
             {
-                await this._dataSourceFactory.ScrobbleAsync(botUser.SessionKeyLastFm, featuredLog.ArtistName, featuredLog.TrackName, featuredLog.AlbumName);
+                await this._dataSourceFactory.ScrobbleAsync(botUser.SessionKeyLastFm, featuredLog.ArtistName,
+                    featuredLog.TrackName, featuredLog.AlbumName);
             }
         }
         catch (Exception exception)
