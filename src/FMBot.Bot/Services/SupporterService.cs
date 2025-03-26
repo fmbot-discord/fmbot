@@ -153,7 +153,7 @@ public class SupporterService
 
         thankYouMessage.AppendLine("📈 **Expanded commands with more statistics**");
         thankYouMessage.AppendLine("- `.profile` — Expanded profile with more insights and a yearly overview");
-        thankYouMessage.AppendLine("- `.year` — Extra page with discoveries and months");
+        thankYouMessage.AppendLine("- `.recap` — Extra pages with discoveries and listening time");
         thankYouMessage.AppendLine("- `.recent` — See your lifetime listening history and filter to specific artists");
         thankYouMessage.AppendLine("- `.overview` — See your lifetime listening history day to day");
         thankYouMessage.AppendLine("- `.artisttracks` — See all tracks, even those outside of your top 6000");
@@ -179,6 +179,7 @@ public class SupporterService
         thankYouMessage.AppendLine("- `/import spotify` — Import your full Spotify History");
         thankYouMessage.AppendLine("- `/import applemusic` — Import your full Apple Music History");
         thankYouMessage.AppendLine("- `/import manage` — Configure your imports and how they're used");
+        thankYouMessage.AppendLine("- `/import modify` — Edit and delete artists, albums and tracks in your imports");
         thankYouMessage.AppendLine();
 
         thankYouMessage.AppendLine("⚙️ **More customization**");
@@ -236,7 +237,8 @@ public class SupporterService
         await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons.Build());
     }
 
-    public async Task<(string message, bool showUpgradeButton, string supporterSource)> GetPromotionalUpdateMessage(User user, string prfx,
+    public async Task<(string message, bool showUpgradeButton, string supporterSource)> GetPromotionalUpdateMessage(
+        User user, string prfx,
         ulong? guildId = null)
     {
         var randomHintNumber = RandomNumberGenerator.GetInt32(1, 65);
@@ -291,21 +293,29 @@ public class SupporterService
                 case 6:
                 case 7:
                 {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*<:spotify:882221219334725662> Supporters can import and use their full Spotify history in the bot*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-spotifyimport";
+                    if (user.TotalPlaycount < 100000)
+                    {
+                        SetGuildSupporterPromoCache(guildId);
+                        message =
+                            $"*<:spotify:882221219334725662> Supporters can import and use their full Spotify history in the bot*";
+                        showUpgradeButton = true;
+                        supporterSource = "updatepromo-spotifyimport";
+                    }
+
                     break;
                 }
                 case 8:
                 case 9:
                 {
-                    SetGuildSupporterPromoCache(guildId);
-                    message =
-                        $"*<:apple_music:1218182727149420544> Supporters can import and use their full Apple Music history in the bot*";
-                    showUpgradeButton = true;
-                    supporterSource = "updatepromo-applemusicimport";
+                    if (user.TotalPlaycount < 100000)
+                    {
+                        SetGuildSupporterPromoCache(guildId);
+                        message =
+                            $"*<:apple_music:1218182727149420544> Supporters can import and use their full Apple Music history in the bot*";
+                        showUpgradeButton = true;
+                        supporterSource = "updatepromo-applemusicimport";
+                    }
+
                     break;
                 }
                 case 10:
@@ -335,6 +345,33 @@ public class SupporterService
                     supporterSource = "updatepromo-gaps";
                     break;
                 }
+                case 13:
+                {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*{DiscordConstants.Discoveries} See your discovery date for an artist, album and track with `{prfx}discoverydate`/`{prfx}dd`*";
+                    showUpgradeButton = true;
+                    supporterSource = "updatepromo-discoverydate";
+                    break;
+                }
+                case 14:
+                {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*🎵 See your lifetime history in `{prfx}recent` and filter to artists with .fmbot supporter*";
+                    showUpgradeButton = true;
+                    supporterSource = "updatepromo-recent";
+                    break;
+                }
+                case 15:
+                {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*🎵 See your lifetime history day to day in `{prfx}overview` with .fmbot supporter*";
+                    showUpgradeButton = true;
+                    supporterSource = "updatepromo-recent";
+                    break;
+                }
                 case 20:
                 {
                     message =
@@ -361,14 +398,22 @@ public class SupporterService
                 }
                 case 24:
                 {
-                    message =
-                        $"*🧮 Set your preferred number formatting with the `/localization` slash command*";
+                    if (user.NumberFormat == null)
+                    {
+                        message =
+                            $"*🧮 Set your preferred number formatting with the `/localization` slash command*";
+                    }
+
                     break;
                 }
                 case 25:
                 {
-                    message =
-                        $"*🕒 Set your timezone with the `/localization` slash command*";
+                    if (user.TimeZone == null)
+                    {
+                        message =
+                            $"*🕒 Set your timezone with the `/localization` slash command*";
+                    }
+
                     break;
                 }
             }
@@ -1764,6 +1809,7 @@ public class SupporterService
         {
             priceId = pricing.YearlyPriceId;
         }
+
         if (type.Equals("lifetime", StringComparison.OrdinalIgnoreCase))
         {
             priceId = pricing.LifetimePriceId;
