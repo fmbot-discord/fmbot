@@ -313,7 +313,7 @@ public class UserCommands : BaseCommandModule
     [Command("featured", RunMode = RunMode.Async)]
     [Summary("Displays the currently picked feature and the user.\n\n" +
              "This command will also show something special if the user is in your server")]
-    [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar", "ftrd", "ftd", "feat")]
+    [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar", "ftrd", "ftd", "feat", "pǝɹnʇɐǝɟ")]
     [CommandCategories(CommandCategory.Other)]
     public async Task FeaturedAsync([Remainder] string options = null)
     {
@@ -371,7 +371,7 @@ public class UserCommands : BaseCommandModule
 
     [Command("featuredlog", RunMode = RunMode.Async)]
     [Summary("Shows featured history")]
-    [Alias("featuredhistory", "recentfeatured", "rf", "recentlyfeatured", "fl", "flog")]
+    [Alias("featuredhistory", "recentfeatured", "rf", "recentlyfeatured", "fl", "flog", "ɓolpǝɹnʇɐǝɟ")]
     [Options("global/server/friends/self")]
     [CommandCategories(CommandCategory.Other)]
     [UsernameSetRequired]

@@ -123,6 +123,8 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
+        var specialDate = DateTime.UtcNow >= new DateTime(2025, 04, 01).AddHours(-4) &&
+                          DateTime.UtcNow <= new DateTime(2025, 04, 02).AddHours(-2);
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
 
         if (this._timer.CurrentFeatured == null)
@@ -142,7 +144,7 @@ public class UserBuilder
             response.Embed.WithImageUrl(this._timer.CurrentFeatured.FullSizeImage);
         }
 
-        response.Embed.AddField("Featured:", this._timer.CurrentFeatured.Description);
+        response.Embed.AddField(specialDate ? ":pǝɹnʇɐǝℲ" : "Featured:", this._timer.CurrentFeatured.Description);
 
         if (context.DiscordGuild != null && guildUsers.Any() && this._timer.CurrentFeatured.UserId.HasValue &&
             this._timer.CurrentFeatured.UserId.Value != 0)
@@ -155,10 +157,20 @@ public class UserBuilder
 
                 var dateValue = ((DateTimeOffset)this._timer.CurrentFeatured.DateTime.AddHours(1)).ToUnixTimeSeconds();
 
-                response.Embed.AddField("🥳 Congratulations!",
-                    guildUser.DiscordUserId == context.DiscordUser.Id
-                        ? $"Oh hey, it's you! You'll be featured until <t:{dateValue}:t>."
-                        : $"This user is in this server as **{guildUser.UserName}**.");
+                if (specialDate)
+                {
+                    response.Embed.AddField("!suoᴉʇɐlnʇɐɹɓuoƆ 🥳",
+                        guildUser.DiscordUserId == context.DiscordUser.Id
+                            ? $"<t:{dateValue}:t> lᴉʇun pǝɹnʇɐǝɟ ǝq ll'no\u2144 !noʎ s'ʇᴉ ,ʎǝɥ ɥO."
+                            : $"**{guildUser.UserName}** sɐ ɹǝʌɹǝs sᴉɥʇ uᴉ sᴉ ɹǝsn sᴉɥꞱ");
+                }
+                else
+                {
+                    response.Embed.AddField("🥳 Congratulations!",
+                        guildUser.DiscordUserId == context.DiscordUser.Id
+                            ? $"Oh hey, it's you! You'll be featured until <t:{dateValue}:t>."
+                            : $"This user is in this server as **{guildUser.UserName}**.");
+                }
             }
         }
 
@@ -181,10 +193,11 @@ public class UserBuilder
         {
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
                 style: ButtonStyle.Secondary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "featured-onsupportersunday"));
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
+                    source: "featured-onsupportersunday"));
         }
 
-        response.Embed.WithFooter($"View your featured history with '{context.Prefix}featuredlog'");
+        response.Embed.WithFooter(specialDate ? $"'ɓolpǝɹnʇɐǝɟ{context.Prefix}' ɥʇᴉʍ ʎɹoʇsᴉɥ pǝɹnʇɐǝɟ ɹnoʎ ʍǝᴉΛ" : $"View your featured history with '{context.Prefix}featuredlog'");
 
         if (PublicProperties.IssuesAtLastFm)
         {
@@ -665,7 +678,8 @@ public class UserBuilder
                         description.AppendLine("Sorry, you haven't been featured yet... <:404:882220605783560222>");
                         description.AppendLine();
                         description.AppendLine($"But don't give up hope just yet!");
-                        description.AppendLine($"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that you might be picked.");
+                        description.AppendLine(
+                            $"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that you might be picked.");
 
                         if (context.DiscordGuild?.Id != this._botSettings.Bot.BaseServerId)
                         {
@@ -687,7 +701,8 @@ public class UserBuilder
                                 $"Become an [.fmbot supporter]({Constants.GetSupporterDiscordLink}) and get a higher chance every Supporter Sunday. The next Supporter Sunday is in {nextSupporterSunday} {StringExtensions.GetDaysString(nextSupporterSunday)} (first Sunday of each month).");
                             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
                                 style: ButtonStyle.Secondary,
-                                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "featured-supportersunday"));
+                                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
+                                    source: "featured-supportersunday"));
                         }
                     }
                     else
@@ -695,7 +710,8 @@ public class UserBuilder
                         description.AppendLine("Hmm, they haven't been featured yet... <:404:882220605783560222>");
                         description.AppendLine();
                         description.AppendLine($"But don't let them give up hope just yet!");
-                        description.AppendLine($"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that they might be picked.");
+                        description.AppendLine(
+                            $"Every hour there is a 1 in {odds.Format(context.NumberFormat)} chance that they might be picked.");
                     }
 
                     break;
@@ -878,7 +894,8 @@ public class UserBuilder
         }
         else
         {
-            response.Embed.AddField("Counts", "*This user has not started tracking their music with Last.fm yet..*", true);
+            response.Embed.AddField("Counts", "*This user has not started tracking their music with Last.fm yet..*",
+                true);
         }
 
 
@@ -1225,7 +1242,8 @@ public class UserBuilder
 
                 response.Components = new ComponentBuilder()
                     .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                        customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "judge-dailylimit"));
+                        customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
+                            source: "judge-dailylimit"));
             }
         }
         else
@@ -1311,7 +1329,8 @@ public class UserBuilder
 
         response = selected switch
         {
-            "compliment" => await this.JudgeComplimentAsync(context, userSettings, topArtists, commandUsesLeft.amountThisWeek),
+            "compliment" => await this.JudgeComplimentAsync(context, userSettings, topArtists,
+                commandUsesLeft.amountThisWeek),
             "roast" => await this.JudgeRoastAsync(context, userSettings, topArtists, commandUsesLeft.amountThisWeek),
             _ => response
         };
@@ -1519,7 +1538,8 @@ public class UserBuilder
         };
 
         var description = new StringBuilder();
-        description.AppendLine("Use the `/localization` command to set your timezone and number formatting for .fmbot commands. ");
+        description.AppendLine(
+            "Use the `/localization` command to set your timezone and number formatting for .fmbot commands. ");
         description.AppendLine();
         description.AppendLine("Pick your timezone and format through the option in the slash command.");
         description.AppendLine();
@@ -1590,7 +1610,8 @@ public class UserBuilder
 
         embedDescription.AppendLine("**Last.fm**");
         embedDescription.AppendLine("- Use only your Last.fm for stats and ignore imports");
-        embedDescription.AppendLine($"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} Last.fm scrobbles");
+        embedDescription.AppendLine(
+            $"- {allPlays.Count(c => c.PlaySource == PlaySource.LastFm).Format(context.NumberFormat)} Last.fm scrobbles");
         embedDescription.AppendLine();
 
         embedDescription.AppendLine($"**Full Imports, then Last.fm**");
