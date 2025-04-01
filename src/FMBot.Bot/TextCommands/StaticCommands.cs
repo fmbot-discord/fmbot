@@ -655,13 +655,14 @@ public class StaticCommands : BaseCommandModule
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         if (contextUser == null)
         {
-            description.AppendLine($"**Connecting your Last.fm account: `{prefix}login`**");
-            description.AppendLine($"*Not receiving a DM from .fmbot when logging in? Please check if you have DMs enabled in this servers privacy settings.*");
+            description.AppendLine($"**Connecting a Last.fm account**");
+            description.AppendLine($"To use .fmbot, you have to connect a Last.fm account. Last.fm is a website that tracks what music you listen to. Get started with `{prefix}login`.");
         }
         else
         {
-            description.AppendLine($"**Customizing your `{prefix}fm`**");
-            description.AppendLine($"*For changing how your .fm command looks, use `{prefix}mode`.*");
+            description.AppendLine($"**Customizing .fmbot**");
+            description.AppendLine($"- User settings: `{prefix}settings`");
+            description.AppendLine($"- Server config: `{prefix}configuration`");
 
             footer.AppendLine($"Logged in to .fmbot with the Last.fm account '{contextUser.UserNameLastFM}'");
         }
@@ -671,7 +672,6 @@ public class StaticCommands : BaseCommandModule
         description.AppendLine($"**Commands**");
         description.AppendLine($"- View all commands on [our website](https://fmbot.xyz/commands/)");
         description.AppendLine($"- Or use the dropdown below this message to pick a category");
-
 
         if (prefix != this._botSettings.Bot.Prefix)
         {
