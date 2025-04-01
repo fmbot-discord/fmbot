@@ -106,7 +106,7 @@ public class PlayCommands : BaseCommandModule
     [Command("fm", RunMode = RunMode.Async)]
     [Summary("Shows you or someone else's current track")]
     [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "hm", "jm", "km",
-        "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "nowplaying")]
+        "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "nowplaying", "ɯɟ")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task NowPlayingAsync([Remainder] string options = null)
