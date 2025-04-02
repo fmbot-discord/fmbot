@@ -197,10 +197,7 @@ public class WebhookService
             builder.WithImageUrl(featuredLog.FullSizeImage);
         }
 
-        var specialDate = DateTime.UtcNow >= new DateTime(2025, 04, 01).AddHours(-4) &&
-                          DateTime.UtcNow <= new DateTime(2025, 04, 02).AddHours(-2);
-
-        builder.AddField(specialDate ? ":pǝɹnʇɐǝℲ" : "Featured:", featuredLog.Description);
+        builder.AddField("Featured:", featuredLog.Description);
 
         if (this._botSettings.Bot.BaseServerId != 0 && this._botSettings.Bot.FeaturedChannelId != 0)
         {
@@ -224,9 +221,7 @@ public class WebhookService
 
                         if (guildUser != null)
                         {
-                            var localFeaturedMsg = await channel.SendMessageAsync(
-                                specialDate ? $"˙ɹnoɥ ʇxǝu ǝɥʇ ɹoɟ ɹǝsn pǝɹnʇɐǝɟ ǝɥʇ sɐ pǝʞɔı̣d uǝǝq ʇsnɾ̣ ǝʌ'no⅄ ¡<@{guildUser.User.DiscordUserId}> suoı̣ʇɐןnʇɐɹƃuoƆ 🥳" :
-                                    $"🥳 Congratulations <@{guildUser.User.DiscordUserId}>! You've just been picked as the featured user for the next hour.",
+                            var localFeaturedMsg = await channel.SendMessageAsync($"🥳 Congratulations <@{guildUser.User.DiscordUserId}>! You've just been picked as the featured user for the next hour.",
                                 false,
                                 builder.Build());
 
