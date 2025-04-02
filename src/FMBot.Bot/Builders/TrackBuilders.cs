@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using AngleSharp.Css.Values;
 using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
@@ -1660,7 +1661,7 @@ public class TrackBuilders
 
         response.Embed.WithAuthor(response.EmbedAuthor);
 
-        var track = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
+        var track = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track, true);
 
         if (track == null || track.PlainLyrics == null)
         {
@@ -1670,14 +1671,65 @@ public class TrackBuilders
         }
 
         var allLines = track.PlainLyrics.Split('\n').ToList();
-        var lyricsPages = new List<string>();
+        var lyricsPages = new List<LyricPage>();
         const int linesPerPage = 18;
+
+        var syncedLyricIndex = 0;
+
         for (var i = 0; i < allLines.Count; i += linesPerPage)
         {
             var pageLines = allLines.Skip(i).Take(linesPerPage);
             var pageContent = string.Join("\n", pageLines);
 
-            lyricsPages.Add(pageContent);
+            TimeSpan? start = null;
+            TimeSpan? end = null;
+
+            if (track.SyncedLyrics != null && track.SyncedLyrics.Any())
+            {
+
+
+                var firstLine = track.SyncedLyrics.ElementAtOrDefault(syncedLyricIndex);
+                if (firstLine != null)
+                {
+                    start = firstLine.Timestamp;
+                }
+
+                foreach (var line in pageLines)
+                {
+                    if (line == "")
+                    {
+                        continue;
+                    }
+
+                    var syncedLine = track.SyncedLyrics.ElementAtOrDefault(syncedLyricIndex);
+                    if (syncedLine == null)
+                    {
+                        break;
+                    }
+
+                    var closeness = GameService.GetLevenshteinDistance(syncedLine.Text, line);
+                    if (closeness > 2)
+                    {
+                        syncedLyricIndex++;
+                        syncedLine = track.SyncedLyrics.ElementAtOrDefault(syncedLyricIndex);
+                        if (syncedLine == null)
+                        {
+                            break;
+                        }
+
+                        end = syncedLine.Timestamp;
+                    }
+                    else
+                    {
+                        end = syncedLine.Timestamp;
+                        syncedLyricIndex++;
+                    }
+
+                }
+
+            }
+
+            lyricsPages.Add(new LyricPage(pageContent, start, end));
         }
 
         var pages = new List<PageBuilder>();
@@ -1686,14 +1738,19 @@ public class TrackBuilders
             var footer = new StringBuilder();
 
             footer.Append($"Page {i + 1}/{lyricsPages.Count}");
+            var lyricPage = lyricsPages[i];
 
-            if (track.DurationMs.HasValue)
+            if (lyricPage.Start.HasValue && lyricPage.End.HasValue)
+            {
+                footer.Append($" — {StringExtensions.GetTrackLength(lyricPage.Start.Value)} until {StringExtensions.GetTrackLength(lyricPage.End.Value.Add(TimeSpan.FromSeconds(3)))}");
+            }
+            else if (track.DurationMs.HasValue)
             {
                 footer.Append($" — {StringExtensions.GetTrackLength(track.DurationMs.Value)}");
             }
 
             var page = new PageBuilder()
-                .WithDescription(lyricsPages[i])
+                .WithDescription(lyricPage.Text)
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString());
 
@@ -1719,6 +1776,8 @@ public class TrackBuilders
         response.CommandResponse = CommandResponse.Ok;
         return response;
     }
+
+    private record LyricPage(string Text, TimeSpan? Start, TimeSpan? End);
 
     public static ResponseModel LyricsSupporterRequired(ContextModel context)
     {
