@@ -41,7 +41,6 @@ public class TrackBuilders
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly PuppeteerService _puppeteerService;
     private readonly UpdateService _updateService;
-    private readonly SupporterService _supporterService;
     private readonly IndexService _indexService;
     private readonly CensorService _censorService;
     private readonly WhoKnowsService _whoKnowsService;
@@ -52,6 +51,7 @@ public class TrackBuilders
     private readonly FeaturedService _featuredService;
     private readonly MusicDataFactory _musicDataFactory;
     private readonly DiscordSkuService _discordSkuService;
+    private readonly SupporterService _supporterService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -72,7 +72,8 @@ public class TrackBuilders
         DiscogsService discogsService,
         ArtistsService artistsService,
         FeaturedService featuredService,
-        MusicDataFactory musicDataFactory, DiscordSkuService discordSkuService)
+        MusicDataFactory musicDataFactory,
+        DiscordSkuService discordSkuService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -84,7 +85,6 @@ public class TrackBuilders
         this._dataSourceFactory = dataSourceFactory;
         this._puppeteerService = puppeteerService;
         this._updateService = updateService;
-        this._supporterService = supporterService;
         this._indexService = indexService;
         this._censorService = censorService;
         this._whoKnowsService = whoKnowsService;
@@ -95,6 +95,7 @@ public class TrackBuilders
         this._featuredService = featuredService;
         this._musicDataFactory = musicDataFactory;
         this._discordSkuService = discordSkuService;
+        this._supporterService = supporterService;
     }
 
     public async Task<ResponseModel> TrackAsync(
@@ -338,7 +339,8 @@ public class TrackBuilders
         usersWithTrack = await WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, context.ContextUser,
             trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
-        var (filterStats, filteredUsersWithTrack) = WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack,guildUsers, guild, roles);
+        var (filterStats, filteredUsersWithTrack) =
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, roles);
 
         string albumCoverUrl = null;
         if (track.Track.AlbumName != null)
@@ -391,8 +393,10 @@ public class TrackBuilders
             var avgServerPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
 
             footer.Append($"Track - ");
-            footer.Append($"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.Append(
+                $"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
+            footer.Append(
+                $"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
             footer.AppendLine($"{((int)avgServerPlaycount).Format(context.NumberFormat)} avg");
         }
 
@@ -499,7 +503,8 @@ public class TrackBuilders
         }
 
         var serverUsers =
-            WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server, context.NumberFormat);
+            WhoKnowsService.WhoKnowsListToString(usersWithTrack, context.ContextUser.UserId, PrivacyLevel.Server,
+                context.NumberFormat);
         if (!usersWithTrack.Any())
         {
             serverUsers = "None of your friends have listened to this track.";
@@ -522,8 +527,10 @@ public class TrackBuilders
             var globalPlaycount = usersWithTrack.Sum(a => a.Playcount);
             var avgPlaycount = usersWithTrack.Average(a => a.Playcount);
 
-            footer += $"\n{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ";
-            footer += $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+            footer +=
+                $"\n{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ";
+            footer +=
+                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
             footer += $"{((int)avgPlaycount).Format(context.NumberFormat)} avg";
         }
 
@@ -660,8 +667,10 @@ public class TrackBuilders
             var avgPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
 
             footer.Append($"Global track - ");
-            footer.Append($"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.Append(
+                $"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append(
+                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
             footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
@@ -1005,7 +1014,8 @@ public class TrackBuilders
 
         var firstTrack = lovedTracks.Content.RecentTracks[0];
 
-        var footer = $"{userSettings.UserNameLastFm} has {lovedTracks.Content.TotalAmount.Format(context.NumberFormat)} loved tracks";
+        var footer =
+            $"{userSettings.UserNameLastFm} has {lovedTracks.Content.TotalAmount.Format(context.NumberFormat)} loved tracks";
         DateTime? timePlaying = null;
 
         if (!firstTrack.NowPlaying && firstTrack.TimePlayed.HasValue)
@@ -1326,7 +1336,8 @@ public class TrackBuilders
             footer.Append($"Page {pageCounter}/{trackPages.Count}");
             if (topTracks.Content.TotalAmount.HasValue)
             {
-                footer.Append($" - {topTracks.Content.TotalAmount.Value.Format(context.NumberFormat)} total tracks in this time period");
+                footer.Append(
+                    $" - {topTracks.Content.TotalAmount.Value.Format(context.NumberFormat)} total tracks in this time period");
             }
 
             if (topListSettings.Billboard)
@@ -1618,5 +1629,118 @@ public class TrackBuilders
         }
 
         return response;
+    }
+
+    public async Task<ResponseModel> TrackLyricsAsync(
+        ContextModel context,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var trackSearch = await this._trackService.SearchTrack(response, context.DiscordUser, searchValue,
+            context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            userId: context.ContextUser.UserId, interactionId: context.InteractionId,
+            referencedMessage: context.ReferencedMessage);
+
+        if (trackSearch.Track == null)
+        {
+            return trackSearch.Response;
+        }
+
+        response.EmbedAuthor.WithName(
+            $"Lyrics for {trackSearch.Track.ArtistName} - {trackSearch.Track.TrackName}");
+
+        if (trackSearch.Track.TrackUrl != null)
+        {
+            response.EmbedAuthor.WithUrl(trackSearch.Track.TrackUrl);
+        }
+
+        response.Embed.WithAuthor(response.EmbedAuthor);
+
+        var track = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
+
+        if (track == null || track.PlainLyrics == null)
+        {
+            response.Embed.WithDescription("Sorry, we don't have the lyrics for this track.");
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var allLines = track.PlainLyrics.Split('\n').ToList();
+        var lyricsPages = new List<string>();
+        const int linesPerPage = 18;
+        for (var i = 0; i < allLines.Count; i += linesPerPage)
+        {
+            var pageLines = allLines.Skip(i).Take(linesPerPage);
+            var pageContent = string.Join("\n", pageLines);
+
+            lyricsPages.Add(pageContent);
+        }
+
+        var pages = new List<PageBuilder>();
+        for (var i = 0; i < lyricsPages.Count; i++)
+        {
+            var footer = new StringBuilder();
+
+            footer.Append($"Page {i + 1}/{lyricsPages.Count}");
+
+            if (track.DurationMs.HasValue)
+            {
+                footer.Append($" — {StringExtensions.GetTrackLength(track.DurationMs.Value)}");
+            }
+
+            var page = new PageBuilder()
+                .WithDescription(lyricsPages[i])
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString());
+
+            if (response.Embed.Color.HasValue)
+            {
+                page.WithColor(response.Embed.Color.Value);
+            }
+
+            pages.Add(page);
+        }
+
+        if (pages.Count == 1)
+        {
+            response.ResponseType = ResponseType.Embed;
+            response.SinglePageToEmbedResponseWithButton(pages.First());
+        }
+        else
+        {
+            response.ResponseType = ResponseType.Paginator;
+            response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
+        }
+
+        response.CommandResponse = CommandResponse.Ok;
+        return response;
+    }
+
+    public static ResponseModel LyricsSupporterRequired(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (!SupporterService.IsSupporter(context.ContextUser.UserType))
+        {
+            response.Embed.WithDescription(
+                "Viewing track lyrics in .fmbot is only available for .fmbot supporters.");
+
+            response.Components = new ComponentBuilder()
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "lyrics"));
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.CommandResponse = CommandResponse.SupporterRequired;
+
+            return response;
+        }
+
+        return null;
     }
 }

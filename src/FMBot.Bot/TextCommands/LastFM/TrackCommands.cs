@@ -726,4 +726,44 @@ public class TrackCommands : BaseCommandModule
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [Command("lyrics", RunMode = RunMode.Async)]
+    [Summary("⭐ Shows lyrics for track you're currently listening to or searching for.")]
+    [Examples(
+        "lyrics",
+        "l",
+        "lyrics The Beatles Let It Be",
+        "lyrics Daft Punk | Get Lucky")]
+    [Alias("lyric","lyr", "lr","lyricsfind", "lyricsearch", "lyricssearch")]
+    [UsernameSetRequired]
+    [SupportsPagination]
+    [CommandCategories(CommandCategory.Tracks)]
+    public async Task LyricsAsync([Remainder] string trackValues = null)
+    {
+        try
+        {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var context = new ContextModel(this.Context, prfx, contextUser);
+
+            var supporterRequiredResponse = TrackBuilders.LyricsSupporterRequired(context);
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
+            }
+
+            var response = await this._trackBuilders.TrackLyricsAsync(context, trackValues);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }

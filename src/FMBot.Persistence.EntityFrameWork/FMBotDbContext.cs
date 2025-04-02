@@ -47,6 +47,8 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Album> Albums { get; set; }
         public virtual DbSet<Track> Tracks { get; set; }
 
+        public virtual DbSet<TrackSyncedLyrics> TrackSyncedLyrics { get; set; }
+
         public virtual DbSet<ArtistImage> ArtistImages { get; set; }
         public virtual DbSet<AlbumImage> AlbumImages { get; set; }
 
@@ -440,6 +442,17 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(d => d.Album)
                     .WithMany(p => p.Tracks)
                     .HasForeignKey(d => d.AlbumId);
+            });
+
+            modelBuilder.Entity<TrackSyncedLyrics>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasIndex(i => i.TrackId);
+
+                entity.HasOne(d => d.Track)
+                    .WithMany(p => p.SyncedLyrics)
+                    .HasForeignKey(d => d.TrackId);
             });
 
             modelBuilder.Entity<CensoredMusic>(entity => { entity.HasKey(a => a.CensoredMusicId); });

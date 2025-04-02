@@ -415,6 +415,7 @@ public class Startup
         services.AddConfiguredGrpcClient<StatusHandler.StatusHandlerClient>(this.Configuration);
         services.AddConfiguredGrpcClient<AlbumEnrichment.AlbumEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<ArtistEnrichment.ArtistEnrichmentClient>(this.Configuration);
+        services.AddConfiguredGrpcClient<TrackEnrichment.TrackEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<SupporterLinkService.SupporterLinkServiceClient>(this.Configuration);
     }
 

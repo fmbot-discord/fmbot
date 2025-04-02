@@ -76,6 +76,7 @@
     <Protobuf Include="..\Shared.Domain\Protos\status.proto" GrpcServices="Client" Link="Protos\status.proto" />
     <Protobuf Include="..\Shared.Domain\Protos\album.proto" GrpcServices="Client" Link="Protos\album.proto" />
     <Protobuf Include="..\Shared.Domain\Protos\artist.proto" GrpcServices="Client" Link="Protos\artist.proto" />
+    <Protobuf Include="..\Shared.Domain\Protos\track.proto" GrpcServices="Client" Link="Protos\track.proto" />
     <Protobuf Include="..\Shared.Domain\Protos\supporter.proto" GrpcServices="Client" Link="Protos\supporter.proto" />
   </ItemGroup>
   <ItemGroup>

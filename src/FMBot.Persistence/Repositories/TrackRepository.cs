@@ -37,18 +37,37 @@ public class TrackRepository
         return await copyHelper.SaveAllAsync(connection, tracks);
     }
 
-    public static async Task<Track> GetTrackForName(string artistName, string trackName, NpgsqlConnection connection)
+    public static async Task<Track> GetTrackForName(string artistName, string trackName, NpgsqlConnection connection, bool includeSyncedLyrics = false)
     {
         const string getTrackQuery = "SELECT * FROM public.tracks " +
                                      "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
                                      "UPPER(name) = UPPER(CAST(@trackName AS CITEXT))";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
-        return await connection.QueryFirstOrDefaultAsync<Track>(getTrackQuery, new
+        var track = await connection.QueryFirstOrDefaultAsync<Track>(getTrackQuery, new
         {
             artistName,
             trackName
         });
+
+        if (includeSyncedLyrics && track != null)
+        {
+            track.SyncedLyrics = await GetSyncedLyrics(track.Id, connection);
+        }
+
+        return track;
+    }
+
+    private static async Task<ICollection<TrackSyncedLyrics>> GetSyncedLyrics(int trackId, NpgsqlConnection connection)
+    {
+        const string getTrackSyncedLyricsQuery = "SELECT * FROM public.track_synced_lyrics " +
+                                          "WHERE track_id = @trackId";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<TrackSyncedLyrics>(getTrackSyncedLyricsQuery, new
+        {
+            trackId
+        })).ToList();
     }
 
     public static async Task<ICollection<Track>> GetAlbumTracks(int albumId, NpgsqlConnection connection)

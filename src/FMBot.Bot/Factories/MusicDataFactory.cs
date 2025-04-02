@@ -7,11 +7,13 @@ using FMBot.AppleMusic;
 using FMBot.AppleMusic.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
+using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -32,11 +34,13 @@ public class MusicDataFactory
     private readonly BotSettings _botSettings;
     private readonly AppleMusicService _appleMusicService;
     private readonly AppleMusicVideoService _appleMusicVideoService;
+    private readonly TrackEnrichment.TrackEnrichmentClient _trackEnrichment;
 
     public MusicDataFactory(IOptions<BotSettings> botSettings, SpotifyService spotifyService,
         ArtistEnrichment.ArtistEnrichmentClient artistEnrichment, IDbContextFactory<FMBotDbContext> contextFactory,
         MusicBrainzService musicBrainzService, AppleMusicService appleMusicService,
-        AlbumEnrichment.AlbumEnrichmentClient albumEnrichment, AppleMusicVideoService appleMusicVideoService)
+        AlbumEnrichment.AlbumEnrichmentClient albumEnrichment, AppleMusicVideoService appleMusicVideoService,
+        TrackEnrichment.TrackEnrichmentClient trackEnrichment)
     {
         this._spotifyService = spotifyService;
         this._artistEnrichment = artistEnrichment;
@@ -45,6 +49,7 @@ public class MusicDataFactory
         this._appleMusicService = appleMusicService;
         this._albumEnrichment = albumEnrichment;
         this._appleMusicVideoService = appleMusicVideoService;
+        this._trackEnrichment = trackEnrichment;
         this._botSettings = botSettings.Value;
     }
 
@@ -683,7 +688,7 @@ public class MusicDataFactory
                 existingEditorialVideo.LastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                 existingEditorialVideo.Width = video.PreviewFrame.Width;
-                existingEditorialVideo.Height =video.PreviewFrame.Height;
+                existingEditorialVideo.Height = video.PreviewFrame.Height;
 
                 existingEditorialVideo.BgColor = video.PreviewFrame.BgColor;
                 existingEditorialVideo.TextColor1 = video.PreviewFrame.TextColor1;
@@ -719,7 +724,7 @@ public class MusicDataFactory
         await db.SaveChangesAsync();
     }
 
-    public async Task<Track> GetOrStoreTrackAsync(TrackInfo trackInfo)
+    public async Task<Track> GetOrStoreTrackAsync(TrackInfo trackInfo, bool getSyncedLyrics = false)
     {
         try
         {
@@ -728,7 +733,8 @@ public class MusicDataFactory
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var dbTrack = await TrackRepository.GetTrackForName(trackInfo.ArtistName, trackInfo.TrackName, connection);
+            var dbTrack = await TrackRepository.GetTrackForName(trackInfo.ArtistName, trackInfo.TrackName, connection,
+                getSyncedLyrics);
 
             if (dbTrack == null)
             {
@@ -755,8 +761,19 @@ public class MusicDataFactory
                 var amSongTask =
                     this._appleMusicService.GetAppleMusicSong(trackInfo.ArtistName, trackInfo.TrackName);
 
+                Statistics.LyricsApiCalls.Inc();
+                var lyricsTask =
+                    this._trackEnrichment.GetLyricsAsync(new LyricsRequest
+                    {
+                        AlbumName = trackInfo.AlbumName ?? "",
+                        TrackName = trackInfo.TrackName,
+                        ArtistName = trackInfo.ArtistName,
+                        Duration = trackInfo.Duration?.ToString() ?? ""
+                    });
+
                 var spotifyTrack = await spotifyTrackTask;
                 var amSong = await amSongTask;
+                var lyrics = await lyricsTask;
 
                 if (spotifyTrack != null)
                 {
@@ -797,11 +814,31 @@ public class MusicDataFactory
                     }
                 }
 
+                if (lyrics.Result && !string.IsNullOrWhiteSpace(trackToAdd.PlainLyrics))
+                {
+                    trackToAdd.PlainLyrics = lyrics.PlainLyrics;
+                }
+
+                trackToAdd.LyricsDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 trackToAdd.SpotifyLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 trackToAdd.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                 await db.Tracks.AddAsync(trackToAdd);
                 await db.SaveChangesAsync();
+
+                if (lyrics.Result && lyrics.SyncedLyrics != null && lyrics.SyncedLyrics.Count != 0)
+                {
+                    var syncedLyrics = lyrics.SyncedLyrics.Select(s => new TrackSyncedLyrics
+                    {
+                        TrackId = trackToAdd.Id,
+                        Text = s.Text,
+                        Timestamp = s.Position.ToTimeSpan()
+                    }).ToList();
+
+                    await db.TrackSyncedLyrics.AddRangeAsync(syncedLyrics);
+                    await db.SaveChangesAsync();
+                    trackToAdd.SyncedLyrics = syncedLyrics;
+                }
 
                 return trackToAdd;
             }
@@ -840,6 +877,7 @@ public class MusicDataFactory
 
             Task<FullTrack> updateSpotify = null;
             Task<AmData<AmSongAttributes>> updateAppleMusic = null;
+            AsyncUnaryCall<LyricsReply> updateLyrics = null;
 
             if (dbTrack.SpotifyLastUpdated == null || dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddDays(-120))
             {
@@ -851,6 +889,19 @@ public class MusicDataFactory
             {
                 updateAppleMusic =
                     this._appleMusicService.GetAppleMusicSong(trackInfo.ArtistName, trackInfo.TrackName);
+            }
+
+            if (dbTrack.LyricsDate == null || dbTrack.LyricsDate < DateTime.UtcNow.AddDays(-240))
+            {
+                Statistics.LyricsApiCalls.Inc();
+                updateLyrics =
+                    this._trackEnrichment.GetLyricsAsync(new LyricsRequest
+                    {
+                        AlbumName = trackInfo.AlbumName ?? "",
+                        TrackName = trackInfo.TrackName,
+                        ArtistName = trackInfo.ArtistName,
+                        Duration = trackInfo.Duration?.ToString() ?? ""
+                    });
             }
 
             if (updateSpotify != null)
@@ -906,6 +957,41 @@ public class MusicDataFactory
                 }
 
                 dbTrack.AppleMusicDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+                db.Entry(dbTrack).State = EntityState.Modified;
+            }
+
+            if (updateLyrics != null)
+            {
+                var lyrics = await updateLyrics;
+
+                if (lyrics.Result)
+                {
+                    dbTrack.PlainLyrics = lyrics.PlainLyrics;
+
+                    if (lyrics.SyncedLyrics != null && lyrics.SyncedLyrics.Count != 0)
+                    {
+                        var existingSyncedLyrics = await db.TrackSyncedLyrics
+                            .Where(w => w.TrackId == dbTrack.Id)
+                            .ToListAsync();
+
+                        if (existingSyncedLyrics.Count != 0)
+                        {
+                            db.TrackSyncedLyrics.RemoveRange(existingSyncedLyrics);
+                        }
+
+                        var syncedLyrics = lyrics.SyncedLyrics.Select(s => new TrackSyncedLyrics
+                        {
+                            TrackId = dbTrack.Id,
+                            Text = s.Text,
+                            Timestamp = s.Position.ToTimeSpan()
+                        }).ToList();
+
+                        await db.TrackSyncedLyrics.AddRangeAsync(syncedLyrics);
+                        dbTrack.SyncedLyrics = syncedLyrics;
+                    }
+                }
+
+                dbTrack.LyricsDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 db.Entry(dbTrack).State = EntityState.Modified;
             }
 
