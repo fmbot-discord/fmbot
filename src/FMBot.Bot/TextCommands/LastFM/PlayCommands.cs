@@ -72,6 +72,7 @@ public class PlayCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     [Alias("dd", "datediscovered", "datediscovery")]
+    [SupporterExclusive("To see when you've discovered this artist, album and track we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task DateDiscoveredAsync([Remainder] string options = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -222,6 +223,7 @@ public class PlayCommands : BaseCommandModule
     [Alias("recenttracks", "recents", "r", "rc")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
+    [SupporterEnhanced("Supporters can view their lifetime history and filter to specific artists")]
     public async Task RecentAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -251,6 +253,7 @@ public class PlayCommands : BaseCommandModule
     [Alias("o", "ov")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
+    [SupporterEnhanced("See your lifetime history day to day as a supporter")]
     public async Task OverviewAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -279,6 +282,7 @@ public class PlayCommands : BaseCommandModule
     [Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
+    [SupporterEnhanced("Get an extra page with artist discoveries and a monthly overview")]
     public async Task YearAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();

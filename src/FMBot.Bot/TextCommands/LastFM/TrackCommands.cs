@@ -79,6 +79,7 @@ public class TrackCommands : BaseCommandModule
     [Alias("tr", "ti", "ts", "trackinfo")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
+    [SupporterEnhanced("Supporters can see the date they first discovered a track")]
     public async Task TrackAsync([Remainder] string trackValues = null)
     {
         try
@@ -691,6 +692,7 @@ public class TrackCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]
+    [SupporterExclusive("To see which tracks you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task TrackGapsAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -728,7 +730,7 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("lyrics", RunMode = RunMode.Async)]
-    [Summary("⭐ Shows lyrics for track you're currently listening to or searching for.")]
+    [Summary("Shows lyrics for track you're currently listening to or searching for.")]
     [Examples(
         "lyrics",
         "l",
@@ -738,6 +740,7 @@ public class TrackCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]
+    [SupporterExclusive("Viewing track lyrics in .fmbot is only available for .fmbot supporters")]
     public async Task LyricsAsync([Remainder] string trackValues = null)
     {
         try

@@ -59,6 +59,7 @@ public class FriendsCommands : BaseCommandModule
     [Alias("recentfriends", "friendsrecent", "f")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
+    [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
     public async Task FriendsAsync()
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -91,7 +92,7 @@ public class FriendsCommands : BaseCommandModule
         try
         {
             var response = await this._friendBuilders.FriendedAsync(new ContextModel(this.Context, prfx, contextUser));
-            
+
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
@@ -109,6 +110,7 @@ public class FriendsCommands : BaseCommandModule
     [UsernameSetRequired]
     [GuildOnly]
     [CommandCategories(CommandCategory.Friends)]
+    [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
     public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
     {
         if (enteredFriends.Length == 0)

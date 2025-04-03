@@ -187,6 +187,13 @@ public class UserService
         return !string.IsNullOrEmpty(user?.SessionKeyLastFm);
     }
 
+    public async Task<bool> UserIsSupporter(IUser discordUser)
+    {
+        var user = await GetUserSettingsAsync(discordUser);
+
+        return SupporterService.IsSupporter(user.UserType);
+    }
+
     public async Task<Dictionary<int, User>> GetMultipleUsers(HashSet<int> userIds)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();

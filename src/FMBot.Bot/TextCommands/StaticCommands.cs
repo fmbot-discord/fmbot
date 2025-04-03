@@ -89,14 +89,16 @@ public class StaticCommands : BaseCommandModule
 
         if (socketCommandContext.Client.CurrentUser.Id == Constants.BotBetaId)
         {
-            embedDescription.AppendLine("The version of the bot you're currently using is the beta version, which is used to test new features and fixes.");
+            embedDescription.AppendLine(
+                "The version of the bot you're currently using is the beta version, which is used to test new features and fixes.");
             embedDescription.AppendLine();
 
-            embedDescription.AppendLine("Public invites for the beta version are currently closed. You can still add the normal main bot by **[clicking here](" +
-                                        "https://discord.com/oauth2/authorize?" +
-                                        $"client_id={Constants.BotProductionId}" +
-                                        "&scope=bot%20applications.commands" +
-                                        $"&permissions={Constants.InviteLinkPermissions}).**");
+            embedDescription.AppendLine(
+                "Public invites for the beta version are currently closed. You can still add the normal main bot by **[clicking here](" +
+                "https://discord.com/oauth2/authorize?" +
+                $"client_id={Constants.BotProductionId}" +
+                "&scope=bot%20applications.commands" +
+                $"&permissions={Constants.InviteLinkPermissions}).**");
             embedDescription.AppendLine();
         }
         else
@@ -230,17 +232,21 @@ public class StaticCommands : BaseCommandModule
         description += $"**Current Instance:** `{ConfigData.Data.Shards?.InstanceName}`\n";
         description += $"**Instance Uptime:** `{startTime.ToReadableString()}`\n";
         description += $"**Server Uptime:** `{upTimeInSeconds.ToReadableString()}`\n";
-        description += $"**Usercount:** `{await this._userService.GetTotalUserCountAsync()}`  (Authorized: `{await this._userService.GetTotalAuthorizedUserCountAsync()}` | Discord: `{client.Guilds.Select(s => s.MemberCount).Sum()}`)\n";
+        description +=
+            $"**Usercount:** `{await this._userService.GetTotalUserCountAsync()}`  (Authorized: `{await this._userService.GetTotalAuthorizedUserCountAsync()}` | Discord: `{client.Guilds.Select(s => s.MemberCount).Sum()}`)\n";
         description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
-        description += $"**Servercount:** `{client.Guilds.Count}`  (Shards: `{client.Shards.Count}` (`{client.GetShardIdFor(this.Context.Guild)}`))\n";
-        description += $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}`  (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
+        description +=
+            $"**Servercount:** `{client.Guilds.Count}`  (Shards: `{client.Shards.Count}` (`{client.GetShardIdFor(this.Context.Guild)}`))\n";
+        description +=
+            $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}`  (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
 
         var instanceOverviewDescription = new StringBuilder();
         try
         {
             var instanceOverview = await this._statusHandler.GetOverviewAsync(new Empty());
 
-            foreach (var instance in instanceOverview.Instances.OrderBy(o => o.InstanceName.Length).ThenBy(o => o.InstanceName))
+            foreach (var instance in instanceOverview.Instances.OrderBy(o => o.InstanceName.Length)
+                         .ThenBy(o => o.InstanceName))
             {
                 if (instance.LastHeartbeat.ToDateTime() >= DateTime.UtcNow.AddSeconds(-30))
                 {
@@ -320,20 +326,24 @@ public class StaticCommands : BaseCommandModule
             if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnecting) > 0)
             {
                 var disconnecting = new StringBuilder();
-                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(8))
+                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting)
+                             .Take(8))
                 {
                     disconnecting.Append($"`{shard.ShardId}` - ");
                 }
+
                 this._embed.AddField("Disconnecting shards", disconnecting.ToString());
             }
 
             if (client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnected) > 0)
             {
                 var disconnected = new StringBuilder();
-                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting).Take(8))
+                foreach (var shard in client.Shards.Where(w => w.ConnectionState == ConnectionState.Disconnecting)
+                             .Take(8))
                 {
                     disconnected.Append($"`{shard.ShardId}` - ");
                 }
+
                 this._embed.AddField("Disconnected shards", disconnected.ToString());
             }
         }
@@ -422,7 +432,8 @@ public class StaticCommands : BaseCommandModule
     {
         if (!guildId.HasValue)
         {
-            await this.Context.Channel.SendMessageAsync($"Enter a server id please (this server is `{this.Context.Guild.Id}`)");
+            await this.Context.Channel.SendMessageAsync(
+                $"Enter a server id please (this server is `{this.Context.Guild.Id}`)");
             this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
@@ -449,7 +460,6 @@ public class StaticCommands : BaseCommandModule
                                         $"Latency: `{shard.Latency}ms`\n" +
                                         $"Guilds: `{shard.Guilds.Count}`\n" +
                                         $"Connection state: `{shard.ConnectionState}`");
-
         }
         else
         {
@@ -479,9 +489,14 @@ public class StaticCommands : BaseCommandModule
             var searchResult = this._service.Search(extraValues);
             if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any())
             {
-                var userName = (this.Context.Message.Author as SocketGuildUser)?.DisplayName ?? this.Context.User.GlobalName ?? this.Context.User.Username;
-                this._embed.HelpResponse(searchResult.Commands[0].Command, prefix, userName);
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                var userName = (this.Context.Message.Author as SocketGuildUser)?.DisplayName ??
+                               this.Context.User.GlobalName ?? this.Context.User.Username;
+                var helpResponse =
+                    GenericEmbedService.HelpResponse(this._embed, searchResult.Commands[0].Command, prefix, userName);
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(),
+                    components: helpResponse.showPurchaseButtons && !await this._userService.UserIsSupporter(this.Context.User)
+                        ? GenericEmbedService.PurchaseButtons(searchResult.Commands[0].Command).Build()
+                        : null);
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
@@ -498,7 +513,8 @@ public class StaticCommands : BaseCommandModule
             foreach (var commandCategory in (CommandCategory[])Enum.GetValues(typeof(CommandCategory)))
             {
                 var description = StringExtensions.CommandCategoryToString(commandCategory);
-                options.Add(new MultiSelectionOption<string>(commandCategory.ToString(), commandCategory.ToString(), 1, description?.ToLower() != commandCategory.ToString().ToLower() ? description : null));
+                options.Add(new MultiSelectionOption<string>(commandCategory.ToString(), commandCategory.ToString(), 1,
+                    description?.ToLower() != commandCategory.ToString().ToLower() ? description : null));
                 options.First(x => x.Option == CommandCategory.General.ToString()).IsDefault = true;
             }
 
@@ -517,7 +533,8 @@ public class StaticCommands : BaseCommandModule
                         Enum.TryParse(selectedCategoryOrCommand, out CommandCategory selectedCategory);
 
                         var selectedCommands = this._service.Commands.Where(w =>
-                            w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Contains(selectedCategory))).ToList();
+                            w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
+                                .Any(a => a.Contains(selectedCategory))).ToList();
 
                         if (selectedCommands.Any())
                         {
@@ -526,11 +543,15 @@ public class StaticCommands : BaseCommandModule
 
                             foreach (var selectedCommand in selectedCommands.Take(25))
                             {
-                                options.Add(new MultiSelectionOption<string>(selectedCommand.Name, selectedCommand.Name, 2, null));
+                                options.Add(new MultiSelectionOption<string>(selectedCommand.Name, selectedCommand.Name,
+                                    2, null));
                             }
 
                             var totalCategories = new List<CommandCategory>();
-                            foreach (var selectedCommand in selectedCommands.Select(s => s.Attributes.OfType<CommandCategoriesAttribute>().Select(se => se.Categories)).Distinct())
+                            foreach (var selectedCommand in selectedCommands.Select(s =>
+                                             s.Attributes.OfType<CommandCategoriesAttribute>()
+                                                 .Select(se => se.Categories))
+                                         .Distinct())
                             {
                                 foreach (var test in selectedCommand)
                                 {
@@ -540,7 +561,9 @@ public class StaticCommands : BaseCommandModule
 
                             var usedCommands = new List<CommandInfo>();
 
-                            foreach (var selectedCommand in selectedCommands.Where(w => w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Length == 1 && a.Contains(selectedCategory))))
+                            foreach (var selectedCommand in selectedCommands.Where(w =>
+                                         w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
+                                             .Any(a => a.Length == 1 && a.Contains(selectedCategory))))
                             {
                                 if (!usedCommands.Contains(selectedCommand))
                                 {
@@ -553,7 +576,9 @@ public class StaticCommands : BaseCommandModule
                             {
                                 commands += "\n";
 
-                                foreach (var selectedCommand in selectedCommands.Where(w => w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Contains(CommandCategory.WhoKnows) && a.Length > 1)))
+                                foreach (var selectedCommand in selectedCommands.Where(w =>
+                                             w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
+                                                 .Any(a => a.Contains(CommandCategory.WhoKnows) && a.Length > 1)))
                                 {
                                     if (!usedCommands.Contains(selectedCommand))
                                     {
@@ -567,7 +592,9 @@ public class StaticCommands : BaseCommandModule
 
                             foreach (var category in totalCategories.Distinct())
                             {
-                                foreach (var selectedCommand in selectedCommands.Where(w => w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Contains(category) && a.Length > 1)))
+                                foreach (var selectedCommand in selectedCommands.Where(w =>
+                                             w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories)
+                                                 .Any(a => a.Contains(category) && a.Length > 1)))
                                 {
                                     if (!usedCommands.Contains(selectedCommand))
                                     {
@@ -608,11 +635,17 @@ public class StaticCommands : BaseCommandModule
                     options.First(x => x.Row == 2 && x.Option == selectedCategoryOrCommand).IsDefault = true;
 
                     var searchResult = this._service.Search(selectedCategoryOrCommand);
-                    if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any())
+                    if (searchResult is { IsSuccess: true, Commands: not null } && searchResult.Commands.Any())
                     {
-                        var userName = (this.Context.Message.Author as SocketGuildUser)?.DisplayName ?? this.Context.User.GlobalName ?? this.Context.User.Username;
+                        var userName = (this.Context.Message.Author as SocketGuildUser)?.DisplayName ??
+                                       this.Context.User.GlobalName ?? this.Context.User.Username;
                         this._embed.Fields = new List<EmbedFieldBuilder>();
-                        this._embed.HelpResponse(searchResult.Commands[0].Command, prefix, userName);
+                        var helpResponse =
+                            GenericEmbedService.HelpResponse(this._embed, searchResult.Commands[0].Command, prefix, userName);
+                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(),
+                            components: helpResponse.showPurchaseButtons && !await this._userService.UserIsSupporter(this.Context.User)
+                                ? GenericEmbedService.PurchaseButtons(searchResult.Commands[0].Command).Build()
+                                : null);
                     }
                 }
 
@@ -624,8 +657,10 @@ public class StaticCommands : BaseCommandModule
                     .Build();
 
                 selectedResult = message is null
-                    ? await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2))
-                    : await this.Interactivity.SendSelectionAsync(multiSelection, message, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2));
+                    ? await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel,
+                        TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2))
+                    : await this.Interactivity.SendSelectionAsync(multiSelection, message,
+                        TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2));
 
                 message = selectedResult.Message;
             }
@@ -656,7 +691,8 @@ public class StaticCommands : BaseCommandModule
         if (contextUser == null)
         {
             description.AppendLine($"**Connecting a Last.fm account**");
-            description.AppendLine($"To use .fmbot, you have to connect a Last.fm account. Last.fm is a website that tracks what music you listen to. Get started with `{prefix}login`.");
+            description.AppendLine(
+                $"To use .fmbot, you have to connect a Last.fm account. Last.fm is a website that tracks what music you listen to. Get started with `{prefix}login`.");
         }
         else
         {
@@ -678,7 +714,8 @@ public class StaticCommands : BaseCommandModule
             description.AppendLine();
             description.AppendLine($"**Custom prefix:**");
             description.AppendLine($"*This server has the `{prefix}` prefix*");
-            description.AppendLine($"Some examples of commands with this prefix are `{prefix}whoknows`, `{prefix}chart` and `{prefix}artisttracks`.");
+            description.AppendLine(
+                $"Some examples of commands with this prefix are `{prefix}whoknows`, `{prefix}chart` and `{prefix}artisttracks`.");
         }
 
         description.AppendLine();
@@ -711,8 +748,9 @@ public class StaticCommands : BaseCommandModule
                          $"*\"{PublicProperties.IssuesReason}\"*";
             }
 
-            this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues.\n" +
-                                          $".fmbot is not affiliated with Last.fm.{issues}");
+            this._embed.AddField("Note:",
+                "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues.\n" +
+                $".fmbot is not affiliated with Last.fm.{issues}");
         }
 
         this._embed.WithDescription(description.ToString());
@@ -738,10 +776,8 @@ public class StaticCommands : BaseCommandModule
 
             return $"**`{prefix}{commandInfo.Name}`{firstAlias}** | *{firstLine}*\n";
         }
-        else
-        {
-            return $"**`{prefix}{commandInfo.Name}`{firstAlias}**\n";
-        }
+
+        return $"**`{prefix}{commandInfo.Name}`{firstAlias}**\n";
     }
 
     [Command("supporters", RunMode = RunMode.Async)]
@@ -784,7 +820,8 @@ public class StaticCommands : BaseCommandModule
         var msg = this.Context.Message as SocketUserMessage;
         if (StackCooldownTarget.Contains(this.Context.Message.Author))
         {
-            if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(countdown + 20) >= DateTimeOffset.Now)
+            if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(countdown + 20) >=
+                DateTimeOffset.Now)
             {
                 var secondsLeft = (int)(StackCooldownTimer[
                         StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
@@ -857,7 +894,6 @@ public class StaticCommands : BaseCommandModule
             case 9:
                 reply.AppendLine("🐳 A whale! It looks happy.");
                 break;
-
         }
 
         reply.AppendLine();
@@ -872,22 +908,27 @@ public class StaticCommands : BaseCommandModule
                 reply.AppendLine("*It looks sad, so you let the fish go so it can mind it's own business.*");
                 break;
             case 3:
-                reply.AppendLine("*It whispered, \"I have important fishy business to attend to.\", so you throw it back.*");
+                reply.AppendLine(
+                    "*It whispered, \"I have important fishy business to attend to.\", so you throw it back.*");
                 break;
             case 4:
-                reply.AppendLine("*You felt a strong connection with the fish and decided it was your fishy soulmate, so you let it swim freely.*");
+                reply.AppendLine(
+                    "*You felt a strong connection with the fish and decided it was your fishy soulmate, so you let it swim freely.*");
                 break;
             case 5:
-                reply.AppendLine("*You noticed that it was sleep scrobbling, which is not really your cup of tea. Let's try that again.*");
+                reply.AppendLine(
+                    "*You noticed that it was sleep scrobbling, which is not really your cup of tea. Let's try that again.*");
                 break;
             case 6:
-                reply.AppendLine("*Seems like someone else caught the fish before you did. Looks like a certain member of LOONA...*");
+                reply.AppendLine(
+                    "*Seems like someone else caught the fish before you did. Looks like a certain member of LOONA...*");
                 break;
             case 7:
                 reply.AppendLine("*Wow, it's super heavy! Better to let it swim freely.*");
                 break;
             case 8:
-                reply.AppendLine("*It's scrobbling 'Rolling in the Deep' from Adele. Sounds like it belongs in the water.*");
+                reply.AppendLine(
+                    "*It's scrobbling 'Rolling in the Deep' from Adele. Sounds like it belongs in the water.*");
                 break;
         }
 
@@ -963,7 +1004,6 @@ public class StaticCommands : BaseCommandModule
                     moduleCommands,
                     true);
             }
-
         }
 
         this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}chart help'");
@@ -1014,7 +1054,6 @@ public class StaticCommands : BaseCommandModule
                     moduleCommands,
                     true);
             }
-
         }
 
         this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}prefix help'");
@@ -1063,7 +1102,6 @@ public class StaticCommands : BaseCommandModule
                     moduleCommands,
                     true);
             }
-
         }
 
         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
