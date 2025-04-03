@@ -1581,7 +1581,7 @@ public class UserService
                                                       DateTime.UtcNow.AddDays(-30)))
             {
                 var userExists =
-                    await this._dataSourceFactory.LastFmUserExistsAsync(inactiveUser.First().UserNameLastFM);
+                    await this._dataSourceFactory.LastFmUserExistsAsync(inactiveUser.First().UserNameLastFM, true);
                 var profile =
                     await this._dataSourceFactory.GetLfmUserInfoAsync(inactiveUser.First().UserNameLastFM);
 

@@ -245,8 +245,9 @@ public class FriendBuilders
             {
                 duplicateFriendsList.Add(friendUsername);
             }
-
         }
+
+
 
         if (friendLimitReached)
         {
@@ -282,7 +283,7 @@ public class FriendBuilders
         if (friendNotFoundList.Count > 0)
         {
             reply +=
-                $"Could not add {addedFriendsList.Count} {StringExtensions.GetFriendsString(friendNotFoundList.Count)}. Please ensure you spelled their name correctly and/or that they are registered in .fmbot.\n";
+                $"Could not add {friendNotFoundList.Count} {StringExtensions.GetFriendsString(friendNotFoundList.Count)}. Please ensure you spelled their name correctly, that they are registered in .fmbot and that their Last.fm recent tracks are not set to private.\n";
             foreach (var notFoundFriend in friendNotFoundList)
             {
                 reply += $"- *[{notFoundFriend}]({LastfmUrlExtensions.GetUserUrl(notFoundFriend)})*\n";
