@@ -50,6 +50,7 @@ public class GameCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Games)]
     [Alias("j", "jmbl", "jum", "jumbmle")]
     [Options("stats")]
+    [SupporterEnhanced("Supporters can play unlimited Jumble games without a daily limit")]
     public async Task JumbleAsync([Remainder] string options = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -143,6 +144,7 @@ public class GameCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Games)]
     [Alias("px", "pixelation", "aj", "abj", "popidle", "pixeljumble", "pxj")]
     [Options("stats")]
+    [SupporterEnhanced("Supporters can play unlimited Pixel Jumble games without a daily limit")]
     public async Task PixelAsync([Remainder] string options = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();

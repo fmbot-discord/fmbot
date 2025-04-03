@@ -1258,15 +1258,20 @@ public class LastFmRepository : ILastfmRepository
     }
 
 // Check if Last.fm user exists
-    public async Task<bool> LastFmUserExistsAsync(string lastFmUserName)
+    public async Task<bool> LastFmUserExistsAsync(string lastFmUserName, bool alsoExistsIfPrivate = false)
     {
         var dateFromFilter = DateTime.UtcNow.AddDays(-365);
         var timeFrom = (long?)((DateTimeOffset)dateFromFilter).ToUnixTimeSeconds();
 
         var scrobbles = await this.GetRecentTracksAsync(lastFmUserName, fromUnixTimestamp: timeFrom);
 
-        return scrobbles.Success && scrobbles.Content.RecentTracks.Count > 0 ||
-               scrobbles.Error == ResponseStatus.LoginRequired;
+        if (alsoExistsIfPrivate)
+        {
+            return scrobbles.Success && scrobbles.Content.RecentTracks.Count > 0 ||
+                   scrobbles.Error == ResponseStatus.LoginRequired;
+        }
+        
+        return scrobbles.Success && scrobbles.Content.RecentTracks.Count > 0;
     }
 
     public async Task<Response<TokenResponse>> GetAuthToken()

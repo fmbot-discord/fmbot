@@ -374,8 +374,12 @@ public class CommandHandler
                 var userName = (context.Message.Author as SocketGuildUser)?.DisplayName ??
                                context.User.GlobalName ?? context.User.Username;
 
-                embed.HelpResponse(searchResult.Commands[0].Command, prfx, userName);
-                await context.Channel.SendMessageAsync("", false, embed.Build());
+                var helpResponse =
+                    GenericEmbedService.HelpResponse(embed, searchResult.Commands[0].Command, prfx, userName);
+                await context.Channel.SendMessageAsync("", false, embed.Build(),
+                    components: helpResponse.showPurchaseButtons && !await this._userService.UserIsSupporter(context.User)
+                        ? GenericEmbedService.PurchaseButtons(searchResult.Commands[0].Command).Build()
+                        : null);
                 context.LogCommandUsed(CommandResponse.Help);
                 return;
             }

@@ -63,6 +63,7 @@ public class AlbumCommands : BaseCommandModule
     [Alias("ab")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums)]
+    [SupporterEnhanced("Supporters can see the date they first discovered an album")]
     public async Task AlbumAsync([Remainder] string albumValues = null)
     {
         try
@@ -418,6 +419,7 @@ public class AlbumCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Albums)]
+    [SupporterExclusive("To see which albums you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task AlbumGapsAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();

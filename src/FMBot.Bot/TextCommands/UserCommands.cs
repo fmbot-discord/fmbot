@@ -104,6 +104,7 @@ public class UserCommands : BaseCommandModule
     [UsernameSetRequired]
     [Alias("stats", "user")]
     [CommandCategories(CommandCategory.Other)]
+    [SupporterEnhanced("Get more insights and an overview of all your years")]
     public async Task StatsAsync([Remainder] string userOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -174,6 +175,7 @@ public class UserCommands : BaseCommandModule
     [Alias("roast", "compliment")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [CommandCategories(CommandCategory.Other)]
+    [SupporterEnhanced("Supporters get an improved AI model with better output, a higher usage limit and the ability to use the command on others")]
     public async Task JudgeAsync([Remainder] string extraOptions = null)
     {
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
@@ -206,6 +208,7 @@ public class UserCommands : BaseCommandModule
         "userreactions")]
     [Alias("usersetreactions", "useremojis", "userreacts")]
     [UsernameSetRequired]
+    [SupporterExclusive("Supporters can set their own emote reactions used globally")]
     public async Task SetUserReactionsAsync([Remainder] string emojis = null)
     {
         var user = await this._userService.GetUserAsync(this.Context.User.Id);
@@ -315,6 +318,7 @@ public class UserCommands : BaseCommandModule
              "This command will also show something special if the user is in your server")]
     [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar", "ftrd", "ftd", "feat", "pǝɹnʇɐǝɟ")]
     [CommandCategories(CommandCategory.Other)]
+    [SupporterEnhanced("Every first Sunday of the month is Supporter Sunday. The bot will then exclusively feature supporters as a thank-you for supporting the bot.")]
     public async Task FeaturedAsync([Remainder] string options = null)
     {
         try

@@ -494,9 +494,9 @@ public class DataSourceFactory : IDataSourceFactory
         return await this._lastfmRepository.GetAlbumImageAsStreamAsync(imageUrl);
     }
 
-    public async Task<bool> LastFmUserExistsAsync(string lastFmUserName)
+    public async Task<bool> LastFmUserExistsAsync(string lastFmUserName, bool alsoExistsIfPrivate = false)
     {
-        return await this._lastfmRepository.LastFmUserExistsAsync(lastFmUserName);
+        return await this._lastfmRepository.LastFmUserExistsAsync(lastFmUserName, alsoExistsIfPrivate);
     }
 
     public async Task<Response<TokenResponse>> GetAuthToken()

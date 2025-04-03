@@ -187,6 +187,13 @@ public class UserService
         return !string.IsNullOrEmpty(user?.SessionKeyLastFm);
     }
 
+    public async Task<bool> UserIsSupporter(IUser discordUser)
+    {
+        var user = await GetUserSettingsAsync(discordUser);
+
+        return SupporterService.IsSupporter(user.UserType);
+    }
+
     public async Task<Dictionary<int, User>> GetMultipleUsers(HashSet<int> userIds)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -225,79 +232,81 @@ public class UserService
         var user = await GetUserSettingsAsync(context.User);
         PublicProperties.UsedCommandDiscordUserIds.TryAdd(context.Message.Id, context.User.Id);
 
+        if (user == null)
+        {
+            return;
+        }
+
         await Task.Delay(12000);
 
         try
         {
-            if (user != null)
+            var commandResponse = CommandResponse.Ok;
+            if (PublicProperties.UsedCommandsResponses.TryGetValue(context.Message.Id, out var fetchedResponse))
             {
-                var commandResponse = CommandResponse.Ok;
-                if (PublicProperties.UsedCommandsResponses.TryGetValue(context.Message.Id, out var fetchedResponse))
-                {
-                    commandResponse = fetchedResponse;
-                }
-
-                string errorReference = null;
-                if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Message.Id,
-                        out var fetchedErrorId))
-                {
-                    errorReference = fetchedErrorId;
-                }
-
-                string artist = null;
-                if (PublicProperties.UsedCommandsArtists.TryGetValue(context.Message.Id, out var fetchedArtist))
-                {
-                    artist = fetchedArtist;
-                }
-
-                string album = null;
-                if (PublicProperties.UsedCommandsAlbums.TryGetValue(context.Message.Id, out var fetchedAlbum))
-                {
-                    album = fetchedAlbum;
-                }
-
-                string track = null;
-                if (PublicProperties.UsedCommandsTracks.TryGetValue(context.Message.Id, out var fetchedTrack))
-                {
-                    track = fetchedTrack;
-                }
-
-                ulong? responseId = null;
-                if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Message.Id,
-                        out var fetchedResponseId))
-                {
-                    responseId = fetchedResponseId;
-                }
-
-                bool? hintShown = null;
-                if (PublicProperties.UsedCommandsHintShown.Contains(context.Message.Id))
-                {
-                    hintShown = true;
-                }
-
-                var interaction = new UserInteraction
-                {
-                    Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
-                    CommandContent = context.Message.Content,
-                    CommandName = commandName,
-                    UserId = user.UserId,
-                    DiscordGuildId = context.Guild?.Id,
-                    DiscordChannelId = context.Channel?.Id,
-                    DiscordId = context.Message.Id,
-                    DiscordResponseId = responseId,
-                    Response = commandResponse,
-                    Type = UserInteractionType.TextCommand,
-                    ErrorReferenceId = errorReference,
-                    Artist = artist,
-                    Album = album,
-                    Track = track,
-                    HintShown = hintShown
-                };
-
-                await using var db = await this._contextFactory.CreateDbContextAsync();
-                await db.UserInteractions.AddAsync(interaction);
-                await db.SaveChangesAsync();
+                commandResponse = fetchedResponse;
             }
+
+            string errorReference = null;
+            if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Message.Id,
+                    out var fetchedErrorId))
+            {
+                errorReference = fetchedErrorId;
+            }
+
+            string artist = null;
+            if (PublicProperties.UsedCommandsArtists.TryGetValue(context.Message.Id, out var fetchedArtist))
+            {
+                artist = fetchedArtist;
+            }
+
+            string album = null;
+            if (PublicProperties.UsedCommandsAlbums.TryGetValue(context.Message.Id, out var fetchedAlbum))
+            {
+                album = fetchedAlbum;
+            }
+
+            string track = null;
+            if (PublicProperties.UsedCommandsTracks.TryGetValue(context.Message.Id, out var fetchedTrack))
+            {
+                track = fetchedTrack;
+            }
+
+            ulong? responseId = null;
+            if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Message.Id,
+                    out var fetchedResponseId))
+            {
+                responseId = fetchedResponseId;
+            }
+
+            bool? hintShown = null;
+            if (PublicProperties.UsedCommandsHintShown.Contains(context.Message.Id))
+            {
+                hintShown = true;
+            }
+
+            var interaction = new UserInteraction
+            {
+                Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                CommandContent = context.Message.Content,
+                CommandName = commandName,
+                UserId = user.UserId,
+                DiscordGuildId = context.Guild?.Id,
+                DiscordChannelId = context.Channel?.Id,
+                DiscordId = context.Message.Id,
+                DiscordResponseId = responseId,
+                Response = commandResponse,
+                Type = UserInteractionType.TextCommand,
+                ErrorReferenceId = errorReference,
+                Artist = artist,
+                Album = album,
+                Track = track,
+                HintShown = hintShown
+            };
+
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            await db.UserInteractions.AddAsync(interaction);
+            await db.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -310,91 +319,93 @@ public class UserService
         var user = await GetUserSettingsAsync(context.User);
         PublicProperties.UsedCommandDiscordUserIds.TryAdd(context.Interaction.Id, context.User.Id);
 
+        if (user == null)
+        {
+            return;
+        }
+
         await Task.Delay(12000);
 
         try
         {
-            if (user != null)
+            var commandResponse = CommandResponse.Ok;
+            if (PublicProperties.UsedCommandsResponses.TryGetValue(context.Interaction.Id, out var fetchedResponse))
             {
-                var commandResponse = CommandResponse.Ok;
-                if (PublicProperties.UsedCommandsResponses.TryGetValue(context.Interaction.Id, out var fetchedResponse))
-                {
-                    commandResponse = fetchedResponse;
-                }
-
-                string errorReference = null;
-                if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Interaction.Id,
-                        out var fetchedErrorId))
-                {
-                    errorReference = fetchedErrorId;
-                }
-
-                string artist = null;
-                if (PublicProperties.UsedCommandsArtists.TryGetValue(context.Interaction.Id, out var fetchedArtist))
-                {
-                    artist = fetchedArtist;
-                }
-
-                string album = null;
-                if (PublicProperties.UsedCommandsAlbums.TryGetValue(context.Interaction.Id, out var fetchedAlbum))
-                {
-                    album = fetchedAlbum;
-                }
-
-                string track = null;
-                if (PublicProperties.UsedCommandsTracks.TryGetValue(context.Interaction.Id, out var fetchedTrack))
-                {
-                    track = fetchedTrack;
-                }
-
-                ulong? responseId = null;
-                if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Interaction.Id,
-                        out var fetchedResponseId))
-                {
-                    responseId = fetchedResponseId;
-                }
-
-                bool? hintShown = null;
-                if (PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
-                {
-                    hintShown = true;
-                }
-
-                var options = new Dictionary<string, string>();
-                if (context.Interaction is SocketSlashCommand command)
-                {
-                    foreach (var option in command.Data.Options)
-                    {
-                        options.Add(option.Name, option.Value?.ToString());
-                    }
-                }
-
-                var interaction = new UserInteraction
-                {
-                    Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
-                    CommandName = commandName,
-                    CommandOptions = options.Any() ? options : null,
-                    UserId = user.UserId,
-                    DiscordGuildId = context.Guild?.Id,
-                    DiscordChannelId = context.Channel?.Id,
-                    DiscordId = context.Interaction.Id,
-                    DiscordResponseId = responseId,
-                    Response = commandResponse,
-                    Type = context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-                           !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
-                        ? UserInteractionType.SlashCommandUser
-                        : UserInteractionType.SlashCommandGuild,
-                    ErrorReferenceId = errorReference,
-                    Artist = artist,
-                    Album = album,
-                    Track = track,
-                    HintShown = hintShown
-                };
-
-                await using var db = await this._contextFactory.CreateDbContextAsync();
-                await db.UserInteractions.AddAsync(interaction);
-                await db.SaveChangesAsync();
+                commandResponse = fetchedResponse;
             }
+
+            string errorReference = null;
+            if (PublicProperties.UsedCommandsErrorReferences.TryGetValue(context.Interaction.Id,
+                    out var fetchedErrorId))
+            {
+                errorReference = fetchedErrorId;
+            }
+
+            string artist = null;
+            if (PublicProperties.UsedCommandsArtists.TryGetValue(context.Interaction.Id, out var fetchedArtist))
+            {
+                artist = fetchedArtist;
+            }
+
+            string album = null;
+            if (PublicProperties.UsedCommandsAlbums.TryGetValue(context.Interaction.Id, out var fetchedAlbum))
+            {
+                album = fetchedAlbum;
+            }
+
+            string track = null;
+            if (PublicProperties.UsedCommandsTracks.TryGetValue(context.Interaction.Id, out var fetchedTrack))
+            {
+                track = fetchedTrack;
+            }
+
+            ulong? responseId = null;
+            if (PublicProperties.UsedCommandsResponseMessageId.TryGetValue(context.Interaction.Id,
+                    out var fetchedResponseId))
+            {
+                responseId = fetchedResponseId;
+            }
+
+            bool? hintShown = null;
+            if (PublicProperties.UsedCommandsHintShown.Contains(context.Interaction.Id))
+            {
+                hintShown = true;
+            }
+
+            var options = new Dictionary<string, string>();
+            if (context.Interaction is SocketSlashCommand command)
+            {
+                foreach (var option in command.Data.Options)
+                {
+                    options.Add(option.Name, option.Value?.ToString());
+                }
+            }
+
+            var interaction = new UserInteraction
+            {
+                Timestamp = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                CommandName = commandName,
+                CommandOptions = options.Any() ? options : null,
+                UserId = user.UserId,
+                DiscordGuildId = context.Guild?.Id,
+                DiscordChannelId = context.Channel?.Id,
+                DiscordId = context.Interaction.Id,
+                DiscordResponseId = responseId,
+                Response = commandResponse,
+                Type = context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+                       !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)
+                    ? UserInteractionType.SlashCommandUser
+                    : UserInteractionType.SlashCommandGuild,
+                ErrorReferenceId = errorReference,
+                Artist = artist,
+                Album = album,
+                Track = track,
+                HintShown = hintShown
+            };
+
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            await db.UserInteractions.AddAsync(interaction);
+            await db.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -1570,7 +1581,7 @@ public class UserService
                                                       DateTime.UtcNow.AddDays(-30)))
             {
                 var userExists =
-                    await this._dataSourceFactory.LastFmUserExistsAsync(inactiveUser.First().UserNameLastFM);
+                    await this._dataSourceFactory.LastFmUserExistsAsync(inactiveUser.First().UserNameLastFM, true);
                 var profile =
                     await this._dataSourceFactory.GetLfmUserInfoAsync(inactiveUser.First().UserNameLastFM);
 

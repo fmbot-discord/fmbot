@@ -71,6 +71,7 @@ public class ArtistCommands : BaseCommandModule
     [Alias("a", "ai", "artistinfo")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
+    [SupporterEnhanced("Supporters can see the date they first discovered an artist")]
     public async Task ArtistAsync([Remainder] string artistValues = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -140,6 +141,7 @@ public class ArtistCommands : BaseCommandModule
         "artisttoptrack", "favs")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
+    [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artisttracks command always contains all their tracks")]
     public async Task ArtistTracksAsync([Remainder] string artistValues = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -170,6 +172,7 @@ public class ArtistCommands : BaseCommandModule
         "artisttab")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
+    [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artistalbums command always contains all their albums")]
     public async Task ArtistAlbumsAsync([Remainder] string artistValues = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -317,6 +320,7 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]
+    [SupporterExclusive("To see what music you've recently discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task ArtistDiscoveriesAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -717,6 +721,7 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]
+    [SupporterExclusive("To see which artists you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task ArtistGapsAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();

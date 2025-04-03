@@ -263,79 +263,76 @@ public class ChartService
 
             SKImage finalImage = null;
 
-            using (var tempSurface = SKSurface.Create(new SKImageInfo(
-                       chart.ChartImages.First().Image.Width * chart.Width,
-                       chart.ChartImages.First().Image.Height * chart.Height)))
+            using var tempSurface = SKSurface.Create(new SKImageInfo(
+                chart.ChartImages.First().Image.Width * chart.Width,
+                chart.ChartImages.First().Image.Height * chart.Height));
+            var canvas = tempSurface.Canvas;
+
+            var offset = 0;
+            var offsetTop = 0;
+            var heightRow = 0;
+
+            for (var i = 0; i < Math.Min(chart.ImagesNeeded, chart.ChartImages.Count); i++)
             {
-                var canvas = tempSurface.Canvas;
-
-                var offset = 0;
-                var offsetTop = 0;
-                var heightRow = 0;
-
-                for (var i = 0; i < Math.Min(chart.ImagesNeeded, chart.ChartImages.Count); i++)
+                IOrderedEnumerable<ChartImage> imageList;
+                if (chart.RainbowSortingEnabled)
                 {
-                    IOrderedEnumerable<ChartImage> imageList;
-                    if (chart.RainbowSortingEnabled)
-                    {
-                        imageList = chart.ChartImages
-                            .OrderBy(o => o.PrimaryColor.Value.GetHue())
-                            .ThenBy(o =>
-                                (o.PrimaryColor.Value.R * 3 +
-                                 o.PrimaryColor.Value.G * 2 +
-                                 o.PrimaryColor.Value.B * 1));
-                    }
-                    else
-                    {
-                        imageList = chart.ChartImages.OrderBy(o => o.Index);
-                    }
-
-                    var chartImage = imageList
-                        .Where(w => !chart.SkipNsfw || !w.Nsfw)
-                        .Where(w => !chart.SkipWithoutImage || w.ValidImage)
-                        .ElementAtOrDefault(i);
-
-                    if (chartImage == null)
-                    {
-                        continue;
-                    }
-
-                    canvas.DrawBitmap(chartImage.Image,
-                        SKRect.Create(offset, offsetTop, chartImage.Image.Width, chartImage.Image.Height));
-
-
-                    if (i == (chart.Width - 1) || i - (chart.Width) * heightRow == chart.Width - 1)
-                    {
-                        offsetTop += chartImage.Image.Height;
-                        heightRow += 1;
-                        offset = 0;
-                    }
-                    else
-                    {
-                        offset += chartImage.Image.Width;
-                    }
-
-                    if (chartImage.Nsfw)
-                    {
-                        chart.ContainsNsfw = true;
-                    }
-
-                    if (chartImage.Censored)
-                    {
-                        if (chart.CensoredItems.HasValue)
-                        {
-                            chart.CensoredItems++;
-                        }
-                        else
-                        {
-                            chart.CensoredItems = 1;
-                        }
-                    }
+                    imageList = chart.ChartImages
+                        .OrderBy(o => o.PrimaryColor.Value.GetHue())
+                        .ThenBy(o =>
+                            (o.PrimaryColor.Value.R * 3 +
+                             o.PrimaryColor.Value.G * 2 +
+                             o.PrimaryColor.Value.B * 1));
+                }
+                else
+                {
+                    imageList = chart.ChartImages.OrderBy(o => o.Index);
                 }
 
-                finalImage = tempSurface.Snapshot();
-                tempSurface.Dispose();
+                var chartImage = imageList
+                    .Where(w => !chart.SkipNsfw || !w.Nsfw)
+                    .Where(w => !chart.SkipWithoutImage || w.ValidImage)
+                    .ElementAtOrDefault(i);
+
+                if (chartImage == null)
+                {
+                    continue;
+                }
+
+                canvas.DrawBitmap(chartImage.Image,
+                    SKRect.Create(offset, offsetTop, chartImage.Image.Width, chartImage.Image.Height));
+
+
+                if (i == (chart.Width - 1) || i - (chart.Width) * heightRow == chart.Width - 1)
+                {
+                    offsetTop += chartImage.Image.Height;
+                    heightRow += 1;
+                    offset = 0;
+                }
+                else
+                {
+                    offset += chartImage.Image.Width;
+                }
+
+                if (chartImage.Nsfw)
+                {
+                    chart.ContainsNsfw = true;
+                }
+
+                if (chartImage.Censored)
+                {
+                    if (chart.CensoredItems.HasValue)
+                    {
+                        chart.CensoredItems++;
+                    }
+                    else
+                    {
+                        chart.CensoredItems = 1;
+                    }
+                }
             }
+
+            finalImage = tempSurface.Snapshot();
 
             return finalImage;
         }
@@ -398,7 +395,7 @@ public class ChartService
         }
     }
 
-    public static async Task SaveStreamToCache(Stream stream, string localPath)
+    private static async Task SaveStreamToCache(Stream stream, string localPath)
     {
         stream.Position = 0; // Ensure the stream is at the beginning
         await using var fileStream = File.OpenWrite(localPath);

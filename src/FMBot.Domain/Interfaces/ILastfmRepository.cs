@@ -61,7 +61,7 @@ public interface ILastfmRepository
         long? fromUnixTimestamp = null);
 
     Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl);
-    Task<bool> LastFmUserExistsAsync(string lastFmUserName);
+    Task<bool> LastFmUserExistsAsync(string lastFmUserName, bool alsoExistsIfPrivate = false);
     Task<Response<TokenResponse>> GetAuthToken();
     Task<Response<AuthSessionResponse>> GetAuthSession(string token);
     Task<bool> LoveTrackAsync(string lastFmSessionKey, string artistName, string trackName);
