@@ -166,6 +166,7 @@ public class SupporterService
         thankYouMessage.AppendLine("- `.judge` — Better output and ability to use the command on others");
         thankYouMessage.AppendLine("- `.jumble` / `.j` — Play unlimited Jumble games");
         thankYouMessage.AppendLine("- `.pixel` / `.px` — Play unlimited Pixel Jumble games");
+        thankYouMessage.AppendLine("- `.lyrics` — View lyrics for a track");
         thankYouMessage.AppendLine();
 
         thankYouMessage.AppendLine("<:discoveries:1145740579284713512> **Go back in time**");
@@ -241,7 +242,7 @@ public class SupporterService
         User user, string prfx,
         ulong? guildId = null)
     {
-        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 65);
+        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 80);
         string message = null;
         var showUpgradeButton = false;
         var supporterSource = "updatepromo";
@@ -369,19 +370,28 @@ public class SupporterService
                     message =
                         $"*🎵 See your lifetime history day to day in `{prfx}overview` with .fmbot supporter*";
                     showUpgradeButton = true;
-                    supporterSource = "updatepromo-recent";
+                    supporterSource = "updatepromo-overview";
+                    break;
+                }
+                case 16:
+                {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*🎤 Supporters can read along with the exclusive `{prfx}lyrics` command*";
+                    showUpgradeButton = true;
+                    supporterSource = "updatepromo-lyrics";
                     break;
                 }
                 case 20:
                 {
                     message =
-                        $"*🎮 Play the new `.jumble` game and guess the artist together with your friends*";
+                        $"*🎮 Play the new `{prfx}jumble` game and guess the artist together with your friends*";
                     break;
                 }
                 case 21:
                 {
                     message =
-                        $"*🎮 Play the new `.pixel` game and guess the album together with your friends*";
+                        $"*🎮 Play the new `{prfx}pixel` game and guess the album together with your friends*";
                     break;
                 }
                 case 22:
@@ -393,7 +403,7 @@ public class SupporterService
                 case 23:
                 {
                     message =
-                        $"*🗒️ Check out the new `.recap` command that shows all commands in one place. Supports timeframes like `monthly`*";
+                        $"*🗒️ See all commands into one overview with the `{prfx}recap` command. Supports timeframes like `monthly` or `2025`*";
                     break;
                 }
                 case 24:
