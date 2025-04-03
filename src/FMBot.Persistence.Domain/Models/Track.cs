@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace FMBot.Persistence.Domain.Models;
 
@@ -44,10 +45,16 @@ public class Track
 
     public string SpotifyPreviewUrl { get; set; }
     public string AppleMusicPreviewUrl { get; set; }
-    
+
     public DateTime? AppleMusicDate { get; set; }
     public DateTime? SpotifyLastUpdated { get; set; }
 
+
+    public DateTime? LyricsDate { get; set; }
+    public string PlainLyrics { get; set; }
+    public ICollection<TrackSyncedLyrics> SyncedLyrics { get; set; }
+
     public Artist Artist { get; set; }
     public Album Album { get; set; }
+
 }

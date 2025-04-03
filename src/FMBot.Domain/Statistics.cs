@@ -81,6 +81,9 @@ public static class Statistics
     public static readonly Counter AppleMusicApiCalls = Metrics
         .CreateCounter("applemusic_api_calls", "Amount of Apple Music API calls");
 
+    public static readonly Counter LyricsApiCalls = Metrics
+        .CreateCounter("lyrics_api_calls", "Amount of Lyric service API calls");
+
 
     public static readonly Counter CommandsExecuted = Metrics
         .CreateCounter("bot_commands_executed", "Amount of commands executed",

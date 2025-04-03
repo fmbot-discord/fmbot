@@ -45,7 +45,7 @@ public class GeniusCommands : BaseCommandModule
 
     [Command("genius")]
     [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
-    [Alias("lyrics", "lyr", "lr", "gen", "lyricsfind", "lyricsearch", "lyricssearch")]
+    [Alias("gen")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     public async Task GeniusAsync([Remainder] string searchValue = null)

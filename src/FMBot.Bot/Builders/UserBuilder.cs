@@ -123,8 +123,6 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
-        var specialDate = DateTime.UtcNow >= new DateTime(2025, 04, 01).AddHours(-4) &&
-                          DateTime.UtcNow <= new DateTime(2025, 04, 02).AddHours(-2);
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild?.Id);
 
         if (this._timer.CurrentFeatured == null)
@@ -144,7 +142,7 @@ public class UserBuilder
             response.Embed.WithImageUrl(this._timer.CurrentFeatured.FullSizeImage);
         }
 
-        response.Embed.AddField(specialDate ? ":pǝɹnʇɐǝℲ" : "Featured:", this._timer.CurrentFeatured.Description);
+        response.Embed.AddField("Featured:", this._timer.CurrentFeatured.Description);
 
         if (context.DiscordGuild != null && guildUsers.Any() && this._timer.CurrentFeatured.UserId.HasValue &&
             this._timer.CurrentFeatured.UserId.Value != 0)
@@ -157,20 +155,10 @@ public class UserBuilder
 
                 var dateValue = ((DateTimeOffset)this._timer.CurrentFeatured.DateTime.AddHours(1)).ToUnixTimeSeconds();
 
-                if (specialDate)
-                {
-                    response.Embed.AddField("!suoᴉʇɐlnʇɐɹɓuoƆ 🥳",
-                        guildUser.DiscordUserId == context.DiscordUser.Id
-                            ? $"<t:{dateValue}:t> lᴉʇun pǝɹnʇɐǝɟ ǝq ll'no\u2144 !noʎ s'ʇᴉ ,ʎǝɥ ɥO."
-                            : $"**{guildUser.UserName}** sɐ ɹǝʌɹǝs sᴉɥʇ uᴉ sᴉ ɹǝsn sᴉɥꞱ");
-                }
-                else
-                {
-                    response.Embed.AddField("🥳 Congratulations!",
-                        guildUser.DiscordUserId == context.DiscordUser.Id
-                            ? $"Oh hey, it's you! You'll be featured until <t:{dateValue}:t>."
-                            : $"This user is in this server as **{guildUser.UserName}**.");
-                }
+                response.Embed.AddField("🥳 Congratulations!",
+                    guildUser.DiscordUserId == context.DiscordUser.Id
+                        ? $"Oh hey, it's you! You'll be featured until <t:{dateValue}:t>."
+                        : $"This user is in this server as **{guildUser.UserName}**.");
             }
         }
 
@@ -197,7 +185,7 @@ public class UserBuilder
                     source: "featured-onsupportersunday"));
         }
 
-        response.Embed.WithFooter(specialDate ? $"'ɓolpǝɹnʇɐǝɟ{context.Prefix}' ɥʇᴉʍ ʎɹoʇsᴉɥ pǝɹnʇɐǝɟ ɹnoʎ ʍǝᴉΛ" : $"View your featured history with '{context.Prefix}featuredlog'");
+        response.Embed.WithFooter($"View your featured history with '{context.Prefix}featuredlog'");
 
         if (PublicProperties.IssuesAtLastFm)
         {

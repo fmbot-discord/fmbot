@@ -1,0 +1,30 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+package track;
+
+service TrackEnrichment {
+  rpc GetLyrics (LyricsRequest) returns (LyricsReply);
+}
+
+message LyricsRequest {
+  string trackName = 1;
+  string artistName = 2;
+  string albumName = 3;
+  string duration = 4;
+}
+
+message SyncedLyric {
+  google.protobuf.Duration position = 1;
+  string text = 2;
+}
+
+message LyricsReply {
+  bool result = 1;
+  string plainLyrics = 2;
+  repeated SyncedLyric syncedLyrics = 3;
+}

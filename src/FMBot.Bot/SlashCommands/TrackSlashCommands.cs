@@ -368,4 +368,65 @@ public class TrackSlashCommands : InteractionModuleBase
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
+
+    [SlashCommand("lyrics", "⭐ Shows lyrics for the track you're currently listening to or searching for")]
+    [UsernameSetRequired]
+    [SupportsPagination]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task LyricsAsync(
+        [Summary("Track", "The track you want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var context = new ContextModel(this.Context, contextUser);
+
+        var supporterRequiredResponse = TrackBuilders.LyricsSupporterRequired(context);
+
+        if (supporterRequiredResponse != null)
+        {
+            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+            return;
+        }
+
+        _ = DeferAsync();
+
+        try
+        {
+            var response = await this._trackBuilders.TrackLyricsAsync(context, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("scrobble", "Scrobbles a track on Last.fm")]
+    [UserSessionRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task ScrobbleAsync(
+        [Summary("Track", "The track your want to scrobble")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._trackBuilders.ScrobbleAsync(new ContextModel(this.Context, contextUser), name);
+
+            await this.Context.SendResponse(this.Interactivity, response, privateResponse);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }

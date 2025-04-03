@@ -1330,7 +1330,7 @@ public class UserSlashCommands : InteractionModuleBase
 
             description.AppendLine();
             description.AppendLine(
-                "Transferring data only transfers .fmbot streaks, imports and featured history to your current .fmbot account.");
+                "Transferring data transfers .fmbot streaks, imports and featured history to your current .fmbot account.");
             description.AppendLine();
             description.AppendLine(
                 ".fmbot is not affiliated with Last.fm. No Last.fm data can be modified, transferred or deleted with this command.");
