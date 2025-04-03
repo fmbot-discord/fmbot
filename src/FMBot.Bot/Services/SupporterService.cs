@@ -1004,8 +1004,20 @@ public class SupporterService
                 }
 
                 var subType = Enum.GetName(newSupporter.SubscriptionType.Value);
-                var embed = new EmbedBuilder().WithDescription(
-                    $"Added {subType} supporter {userEntitlements.DiscordUserId} - <@{userEntitlements.DiscordUserId}>");
+                var description =
+                    $"Added {subType} supporter {userEntitlements.DiscordUserId} - <@{userEntitlements.DiscordUserId}>";
+
+                if (newSupporter.SubscriptionType.Value == SubscriptionType.Stripe)
+                {
+                    var stripeSub = await this.GetStripeSupporter(userEntitlements.DiscordUserId);
+                    if (stripeSub != null)
+                    {
+                        description +=
+                            $"\n-# *Source {stripeSub.PurchaseSource} — Ends <t:{((DateTimeOffset?)stripeSub.DateEnding)?.ToUnixTimeSeconds()}:f>*";
+                    }
+                }
+
+                var embed = new EmbedBuilder().WithDescription(description);
                 await supporterAuditLogChannel.SendMessageAsync(embeds: new[] { embed.Build() });
 
                 Log.Information("Added supporter {discordUserId} - {subscriptionType}", userEntitlements.DiscordUserId,
