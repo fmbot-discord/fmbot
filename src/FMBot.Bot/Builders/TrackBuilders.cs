@@ -1672,7 +1672,7 @@ public class TrackBuilders
 
         var allLines = track.PlainLyrics.Split('\n').ToList();
         var lyricsPages = new List<LyricPage>();
-        const int linesPerPage = 18;
+        const int linesPerPage = 20;
 
         var syncedLyricIndex = 0;
 

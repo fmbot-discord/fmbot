@@ -405,4 +405,28 @@ public class TrackSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [SlashCommand("scrobble", "Scrobbles a track on Last.fm")]
+    [UserSessionRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task ScrobbleAsync(
+        [Summary("Track", "The track your want to scrobble")]
+        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._trackBuilders.ScrobbleAsync(new ContextModel(this.Context, contextUser), name);
+
+            await this.Context.SendResponse(this.Interactivity, response, privateResponse);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }
