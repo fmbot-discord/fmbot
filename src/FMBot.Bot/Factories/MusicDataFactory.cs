@@ -256,10 +256,13 @@ public class MusicDataFactory
                         newImage.Width);
                 }
 
-                if (spotifyArtist != null && spotifyArtist.Genres.Any())
+                if (dbArtist.ArtistGenres == null || dbArtist.ArtistGenres.Count == 0)
                 {
-                    await ArtistRepository.AddOrUpdateArtistGenres(dbArtist.Id, spotifyArtist.Genres.Select(s => s),
-                        connection);
+                    if (spotifyArtist != null && spotifyArtist.Genres.Count != 0)
+                    {
+                        await ArtistRepository.AddOrUpdateArtistGenres(dbArtist.Id, spotifyArtist.Genres.Select(s => s),
+                            connection);
+                    }
                 }
 
                 dbArtist.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
