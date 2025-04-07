@@ -41,11 +41,13 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("track", "Shows track info for the track you're currently listening to or searching for")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task TrackAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))] string name = null)
+        [Autocomplete(typeof(TrackAutoComplete))]
+        string name = null)
     {
         _ = DeferAsync();
 
@@ -68,9 +70,12 @@ public class TrackSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task WhoKnowsTrackAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false)
+        [Autocomplete(typeof(TrackAutoComplete))]
+        string name = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")]
+        ResponseMode? mode = null,
+        [Summary("Role-picker", "Display a rolepicker to filter with roles")]
+        bool displayRoleFilter = false)
     {
         _ = DeferAsync();
 
@@ -81,7 +86,8 @@ public class TrackSlashCommands : InteractionModuleBase
         try
         {
             var response =
-                await this._trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), mode.Value, name, displayRoleFilter);
+                await this._trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), mode.Value,
+                    name, displayRoleFilter);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -113,7 +119,8 @@ public class TrackSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), ResponseMode.Embed, $"{track.ArtistName} | {track.Name}", true, roleIds);
+            var response = await this._trackBuilders.WhoKnowsTrackAsync(new ContextModel(this.Context, contextUser),
+                ResponseMode.Embed, $"{track.ArtistName} | {track.Name}", true, roleIds);
 
             await this.Context.UpdateInteractionEmbed(response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -126,13 +133,17 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("fwktrack", "Shows who of your friends listen to a track")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FriendsWhoKnowAlbumAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [Autocomplete(typeof(TrackAutoComplete))]
+        string name = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")]
+        ResponseMode? mode = null,
+        [Summary("Private", "Only show response to you")]
+        bool privateResponse = false)
     {
         _ = DeferAsync(privateResponse);
 
@@ -142,7 +153,9 @@ public class TrackSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._trackBuilders.FriendsWhoKnowTrackAsync(new ContextModel(this.Context, contextUser), mode.Value, name);
+            var response =
+                await this._trackBuilders.FriendsWhoKnowTrackAsync(new ContextModel(this.Context, contextUser),
+                    mode.Value, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -155,13 +168,17 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("gwktrack", "Shows what other users listen to a track globally in .fmbot")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task GlobalWhoKnowsTrackAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Mode", "The type of response you want - change default with /responsemode")] ResponseMode? mode = null,
-        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
+        [Autocomplete(typeof(TrackAutoComplete))]
+        string name = null,
+        [Summary("Mode", "The type of response you want - change default with /responsemode")]
+        ResponseMode? mode = null,
+        [Summary("Hide-private", "Hide or show private users")]
+        bool hidePrivate = false)
     {
         _ = DeferAsync();
 
@@ -179,7 +196,8 @@ public class TrackSlashCommands : InteractionModuleBase
         try
         {
             var response =
-                await this._trackBuilders.GlobalWhoKnowsTrackAsync(new ContextModel(this.Context, contextUser), currentSettings, name);
+                await this._trackBuilders.GlobalWhoKnowsTrackAsync(new ContextModel(this.Context, contextUser),
+                    currentSettings, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -192,21 +210,26 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("trackplays", "Shows playcount for current track or the one you're searching for")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task TrackPlaysAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [Autocomplete(typeof(TrackAutoComplete))]
+        string name = null,
+        [Summary("User", "The user to show (defaults to self)")]
+        string user = null)
     {
         _ = DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         try
         {
-            var response = await this._trackBuilders.TrackPlays(new ContextModel(this.Context, contextUser), userSettings, name);
+            var response =
+                await this._trackBuilders.TrackPlays(new ContextModel(this.Context, contextUser), userSettings, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -219,11 +242,13 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("trackdetails", "Shows metadata details for current track or the one you're searching for")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task TrackDetailsAsync(
         [Summary("Track", "The track your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))] string name = null)
+        [Autocomplete(typeof(TrackAutoComplete))]
+        string name = null)
     {
         _ = DeferAsync();
 
@@ -265,7 +290,43 @@ public class TrackSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._trackBuilders.TrackPreviewAsync(new ContextModel(this.Context, contextUser), $"{dbTrack.ArtistName} | {dbTrack.Name}", Context.Interaction.Token);
+            var response = await this._trackBuilders.TrackPreviewAsync(new ContextModel(this.Context, contextUser),
+                $"{dbTrack.ArtistName} | {dbTrack.Name}", Context.Interaction.Token);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.TrackLyrics}-*")]
+    [UsernameSetRequired]
+    public async Task TrackLyricsAsync(string trackId)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var context = new ContextModel(this.Context, contextUser);
+        var supporterRequiredResponse = TrackBuilders.LyricsSupporterRequired(context);
+
+        if (supporterRequiredResponse != null)
+        {
+            await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, true);
+            this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+            return;
+        }
+
+        _ = DeferAsync();
+
+        await this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.TrackLyrics}-{trackId}");
+
+        var parsedTrackId = int.Parse(trackId);
+        var dbTrack = await this._trackService.GetTrackForId(parsedTrackId);
+
+        try
+        {
+            var response =
+                await this._trackBuilders.TrackLyricsAsync(context, $"{dbTrack.ArtistName} | {dbTrack.Name}");
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -276,12 +337,15 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("love", "Loves track you're currently listening to or searching for on Last.fm")]
     [UserSessionRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task LoveTrackAsync(
         [Summary("Track", "The track your want to love (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [Autocomplete(typeof(TrackAutoComplete))]
+        string name = null,
+        [Summary("Private", "Only show response to you")]
+        bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -300,18 +364,22 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("unlove", "Removes track you're currently listening to or searching from your loved tracks")]
     [UserSessionRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task UnloveTrackAsync(
         [Summary("Track", "The track your want to remove (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [Autocomplete(typeof(TrackAutoComplete))]
+        string name = null,
+        [Summary("Private", "Only show response to you")]
+        bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
-            var response = await this._trackBuilders.UnLoveTrackAsync(new ContextModel(this.Context, contextUser), name);
+            var response =
+                await this._trackBuilders.UnLoveTrackAsync(new ContextModel(this.Context, contextUser), name);
 
             await this.Context.SendResponse(this.Interactivity, response, privateResponse);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -324,27 +392,35 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("receipt", "Shows your track receipt. Based on Receiptify.")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ReceiptAsync(
-        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [Summary("Time-period", "Time period")] [Autocomplete(typeof(DateTimeAutoComplete))]
+        string timePeriod = null,
+        [Summary("User", "The user to show (defaults to self)")]
+        string user = null,
+        [Summary("Private", "Only show response to you")]
+        bool privateResponse = false)
     {
         _ = DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, timeZone: userSettings.TimeZone);
 
         if (timeSettings.DefaultPicked)
         {
             var monthName = DateTime.UtcNow.AddDays(-24).ToString("MMM", CultureInfo.InvariantCulture);
-            timeSettings = SettingService.GetTimePeriod(monthName, registeredLastFm: userSettings.RegisteredLastFm, timeZone: userSettings.TimeZone);
+            timeSettings = SettingService.GetTimePeriod(monthName, registeredLastFm: userSettings.RegisteredLastFm,
+                timeZone: userSettings.TimeZone);
         }
 
-        var response = await this._trackBuilders.GetReceipt(new ContextModel(this.Context, contextUser), userSettings, timeSettings);
+        var response =
+            await this._trackBuilders.GetReceipt(new ContextModel(this.Context, contextUser), userSettings,
+                timeSettings);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -352,18 +428,23 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("loved", "Shows your Last.fm loved tracks")]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task LovedTracksAsync(
-        [Summary("User", "The user to show (defaults to self)")] string user = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [Summary("User", "The user to show (defaults to self)")]
+        string user = null,
+        [Summary("Private", "Only show response to you")]
+        bool privateResponse = false)
     {
         _ = DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var response = await this._trackBuilders.LovedTracksAsync(new ContextModel(this.Context, contextUser), userSettings);
+        var response =
+            await this._trackBuilders.LovedTracksAsync(new ContextModel(this.Context, contextUser), userSettings);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -372,11 +453,13 @@ public class TrackSlashCommands : InteractionModuleBase
     [SlashCommand("lyrics", "⭐ Shows lyrics for the track you're currently listening to or searching for")]
     [UsernameSetRequired]
     [SupportsPagination]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task LyricsAsync(
         [Summary("Track", "The track you want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(TrackAutoComplete))] string name = null)
+        [Autocomplete(typeof(TrackAutoComplete))]
+        string name = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -408,12 +491,14 @@ public class TrackSlashCommands : InteractionModuleBase
 
     [SlashCommand("scrobble", "Scrobbles a track on Last.fm")]
     [UserSessionRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task ScrobbleAsync(
-        [Summary("Track", "The track your want to scrobble")]
-        [Autocomplete(typeof(TrackAutoComplete))] string name = null,
-        [Summary("Private", "Only show response to you")] bool privateResponse = false)
+        [Summary("Track", "The track your want to scrobble")] [Autocomplete(typeof(TrackAutoComplete))]
+        string name = null,
+        [Summary("Private", "Only show response to you")]
+        bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 

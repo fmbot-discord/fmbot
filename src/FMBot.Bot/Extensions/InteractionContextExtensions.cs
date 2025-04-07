@@ -345,7 +345,7 @@ public static class InteractionContextExtensions
                         else
                         {
                             newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
-                                null, buttonComponent.Url, true);
+                                buttonComponent.Emote, buttonComponent.Url, true);
                         }
 
                     }

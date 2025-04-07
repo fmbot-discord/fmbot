@@ -82,6 +82,7 @@ public static class InteractionConstants
     public const string DeleteStreakModal = "user-streak-delete-modal";
 
     public const string TrackPreview = "track-preview";
+    public const string TrackLyrics = "track-lyrics";
 
     public static class ManageAlts
     {

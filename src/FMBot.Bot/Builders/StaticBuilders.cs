@@ -114,8 +114,8 @@ public class StaticBuilders
             response.Embed.AddField("⚙️ Customize your commands",
                 "-# Expand your .fm footer, add more friends, set automatic emoji reactions, and personalize your experience.");
 
-            response.Embed.AddField("🔥 Enhanced judge command",
-                "-# Get a GPT-4o-powered .judge with higher limits, sharper roasts, and the ability to use it on others.");
+            response.Embed.AddField("🎤 View lyrics",
+                "-# View your favorite `.lyrics` directly inside of .fmbot.");
 
             response.Embed.AddField("⭐ Exclusive supporter perks",
                 $"-# Show your support with a badge, gain access to a private [Discord role and channel](https://discord.gg/fmbot), and a higher chance to be featured on Supporter Sunday (next up in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())}).");

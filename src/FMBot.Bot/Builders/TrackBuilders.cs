@@ -129,7 +129,7 @@ public class TrackBuilders
 
         response.Embed.WithAuthor(response.EmbedAuthor);
 
-        var spotifyTrack = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
+        var dbTrack = await this._musicDataFactory.GetOrStoreTrackAsync(trackSearch.Track);
         var stats = new StringBuilder();
         var info = new StringBuilder();
         var footer = new StringBuilder();
@@ -147,7 +147,7 @@ public class TrackBuilders
                 trackSearch.Track.TrackName, trackSearch.Track.UserPlaycount.Value);
         }
 
-        var duration = spotifyTrack?.DurationMs ?? trackSearch.Track.Duration;
+        var duration = dbTrack?.DurationMs ?? trackSearch.Track.Duration;
         if (duration is > 0)
         {
             var trackLength = TimeSpan.FromMilliseconds(duration.GetValueOrDefault());
@@ -169,30 +169,30 @@ public class TrackBuilders
 
         var audioFeatures = new StringBuilder();
 
-        if (spotifyTrack != null && !string.IsNullOrEmpty(spotifyTrack.SpotifyId))
+        if (dbTrack != null && !string.IsNullOrEmpty(dbTrack.SpotifyId))
         {
-            var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
+            var pitch = StringExtensions.KeyIntToPitchString(dbTrack.Key.GetValueOrDefault());
 
             info.AppendLine($"`{pitch}` key");
 
-            if (spotifyTrack.Tempo.HasValue)
+            if (dbTrack.Tempo.HasValue)
             {
-                var bpm = $"{spotifyTrack.Tempo.Value:0.0}";
+                var bpm = $"{dbTrack.Tempo.Value:0.0}";
                 info.AppendLine($"`{bpm}` bpm");
             }
 
-            if (spotifyTrack.Danceability.HasValue && spotifyTrack.Energy.HasValue &&
-                spotifyTrack.Instrumentalness.HasValue &&
-                spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue &&
-                spotifyTrack.Liveness.HasValue && spotifyTrack.Valence.HasValue)
+            if (dbTrack.Danceability.HasValue && dbTrack.Energy.HasValue &&
+                dbTrack.Instrumentalness.HasValue &&
+                dbTrack.Acousticness.HasValue && dbTrack.Speechiness.HasValue &&
+                dbTrack.Liveness.HasValue && dbTrack.Valence.HasValue)
             {
-                var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
-                var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
-                var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
-                var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
-                var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
-                var liveness = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
-                var valence = ((decimal)(spotifyTrack.Valence / 1)).ToString("0%");
+                var danceability = ((decimal)(dbTrack.Danceability / 1)).ToString("0%");
+                var energetic = ((decimal)(dbTrack.Energy / 1)).ToString("0%");
+                var instrumental = ((decimal)(dbTrack.Instrumentalness / 1)).ToString("0%");
+                var acoustic = ((decimal)(dbTrack.Acousticness / 1)).ToString("0%");
+                var speechful = ((decimal)(dbTrack.Speechiness / 1)).ToString("0%");
+                var liveness = ((decimal)(dbTrack.Liveness / 1)).ToString("0%");
+                var valence = ((decimal)(dbTrack.Valence / 1)).ToString("0%");
 
                 audioFeatures.AppendLine($"`{danceability}` danceable");
                 audioFeatures.AppendLine($"`{energetic}` energetic");
@@ -264,13 +264,15 @@ public class TrackBuilders
         var eurovisionEntry =
             EurovisionService.GetEurovisionEntry(trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
 
+        response.Components = new ComponentBuilder();
+
         if (eurovisionEntry != null)
         {
             var eurovisionDescription = EurovisionService.GetEurovisionDescription(eurovisionEntry);
             response.Embed.AddField($"Eurovision <:eurovision:1084971471610323035> ", eurovisionDescription.full);
             if (eurovisionEntry.YoutubeUrl != null)
             {
-                response.Components = new ComponentBuilder().WithButton(style: ButtonStyle.Link,
+                response.Components.WithButton(style: ButtonStyle.Link,
                     emote: Emote.Parse(DiscordConstants.YouTube), url: eurovisionEntry.YoutubeUrl);
             }
         }
@@ -280,14 +282,23 @@ public class TrackBuilders
             response.Embed.AddField("Summary", trackSearch.Track.Description);
         }
 
-        if (spotifyTrack?.SpotifyPreviewUrl != null)
+        if (dbTrack?.SpotifyPreviewUrl != null)
         {
-            response.Components = new ComponentBuilder()
-                .WithButton(
+            response.Components.WithButton(
                     "Preview",
-                    $"{InteractionConstants.TrackPreview}-{spotifyTrack.Id}",
+                    $"{InteractionConstants.TrackPreview}-{dbTrack.Id}",
                     style: ButtonStyle.Secondary,
                     emote: Emote.Parse("<:playpreview:1305607890941378672>"));
+        }
+
+        if (SupporterService.IsSupporter(context.ContextUser.UserType) &&
+            !string.IsNullOrWhiteSpace(dbTrack.PlainLyrics))
+        {
+            response.Components.WithButton(
+                "Lyrics",
+                $"{InteractionConstants.TrackLyrics}-{dbTrack.Id}",
+                style: ButtonStyle.Secondary,
+                emote: Emoji.Parse("🎤"));
         }
 
         //if (track.Tags != null && track.Tags.Any())
