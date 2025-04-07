@@ -269,12 +269,15 @@ public class MusicDataFactory
                 db.Entry(dbArtist).State = EntityState.Modified;
                 await db.SaveChangesAsync();
 
-                if (spotifyArtist != null && spotifyArtist.Genres.Any())
+                if (dbArtist.ArtistGenres == null || dbArtist.ArtistGenres.Count == 0)
                 {
-                    dbArtist.ArtistGenres = spotifyArtist.Genres.Select(s => new ArtistGenre
+                    if (spotifyArtist != null && spotifyArtist.Genres.Any())
                     {
-                        Name = s
-                    }).ToList();
+                        dbArtist.ArtistGenres = spotifyArtist.Genres.Select(s => new ArtistGenre
+                        {
+                            Name = s
+                        }).ToList();
+                    }
                 }
             }
 
