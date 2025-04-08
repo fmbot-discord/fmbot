@@ -205,7 +205,7 @@ public class GenreCommands : BaseCommandModule
     }
 
     [Command("friendwhoknowgenre", RunMode = RunMode.Async)]
-    [Summary("Shows who of your friends listen to a genre in .fmbot")]
+    [Summary("Who of your friends listen to a genre")]
     [Examples("fwg", "fwg pop", "friendwhoknowgenre", "friendwhoknowgenre pov: indie")]
     [Alias("fwg", "fwkg", "friendwhoknows genre", "friendwhoknowsgenre", "friend whoknowsgenre", "friends whoknow genre", "friend whoknows genre", "friends whoknows genre")]
     [UsernameSetRequired]

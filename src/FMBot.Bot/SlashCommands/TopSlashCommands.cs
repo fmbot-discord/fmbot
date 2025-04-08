@@ -51,7 +51,7 @@ public class TopSlashCommands : InteractionModuleBase
         this._discogsBuilders = discogsBuilders;
     }
 
-    [SlashCommand("artists", "Shows your top artists")]
+    [SlashCommand("artists", "Your top artists")]
     [UsernameSetRequired]
     public async Task TopArtistsAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,

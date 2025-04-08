@@ -169,7 +169,7 @@ public class DiscogsSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("collection", "Shows your or someone else's Discogs collection")]
+    [SlashCommand("collection", "You or someone else's Discogs collection")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]

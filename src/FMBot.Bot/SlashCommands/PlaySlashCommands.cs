@@ -204,7 +204,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("streak", "Shows you or someone else's streak")]
+    [SlashCommand("streak", "You or someone else's streak for an artist, album and track")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
@@ -645,7 +645,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("gaps", "⭐ Shows music you've returned to after a gap in listening")]
+    [SlashCommand("gaps", "⭐ Music you've returned to after a gap in listening")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]

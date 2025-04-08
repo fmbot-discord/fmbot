@@ -90,7 +90,7 @@ public class UserSlashCommands : InteractionModuleBase
         this._botSettings = botSettings.Value;
     }
 
-    [SlashCommand("settings", "Shows user settings for .fmbot")]
+    [SlashCommand("settings", "Your user settings in .fmbot")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]

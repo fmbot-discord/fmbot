@@ -35,7 +35,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         this._albumService = albumService;
     }
 
-    [SlashCommand("album", "Shows album info for the album you're currently listening to or searching for")]
+    [SlashCommand("album", "Album info for the album you're currently listening to or searching for")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -150,7 +150,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("fwkalbum", "Shows who of your friends listen to an album")]
+    [SlashCommand("fwkalbum", "Who of your friends know an album")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]

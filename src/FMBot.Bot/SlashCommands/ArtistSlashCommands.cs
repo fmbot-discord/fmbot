@@ -46,7 +46,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         this._artistsService = artistsService;
     }
 
-    [SlashCommand("artist", "Shows info for current artist or the one you're searching for")]
+    [SlashCommand("artist", "General info for current artist or one you're searching for")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]

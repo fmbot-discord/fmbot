@@ -33,7 +33,7 @@ public class StaticSlashCommands : InteractionModuleBase
         this._supporterService = supporterService;
     }
 
-    [SlashCommand("outofsync", "Shows info if your Last.fm isn't up to date with Spotify")]
+    [SlashCommand("outofsync", "What to do if your Last.fm isn't up to date with Spotify")]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]

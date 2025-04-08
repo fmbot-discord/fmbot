@@ -89,7 +89,7 @@ public class DiscogsCommands : BaseCommandModule
     }
 
     [Command("collection", RunMode = RunMode.Async)]
-    [Summary("Shows your Discogs collection")]
+    [Summary("You or someone else their Discogs collection")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
     [Alias("coll", "vinyl", "discogscollection")]
