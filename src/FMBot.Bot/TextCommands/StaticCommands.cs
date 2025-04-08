@@ -116,13 +116,13 @@ public class StaticCommands : BaseCommandModule
         }
 
         embedDescription.AppendLine(
-            "- Join the [.fmbot server](http://server.fmbot.xyz/) for support and updates.");
+            "- Join the [.fmbot server](https://discord.gg/fmbot) for support and updates.");
 
         embedDescription.AppendLine(
             $"- Help us cover hosting, development and other costs by getting [.fmbot supporter]({Constants.GetSupporterDiscordLink})");
 
         embedDescription.AppendLine(
-            "- Check our [website](https://fmbot.xyz/) for more information.");
+            "- Check our [website](https://fm.bot/) for more information.");
 
         this._embed.WithDescription(embedDescription.ToString());
 
@@ -163,8 +163,8 @@ public class StaticCommands : BaseCommandModule
             "[Main GitHub repository](https://github.com/fmbot-discord/fmbot/)\n" +
             "[Docs repository](https://github.com/fmbot-discord/docs)\n" +
             "[File an issue](https://github.com/fmbot-discord/fmbot/issues/new/choose)\n" +
-            "[Development](https://fmbot.xyz/setup/)\n" +
-            "[Supporter](https://fmbot.xyz/supporter)");
+            "[Development](https://fm.bot/setup/)\n" +
+            "[Supporter](https://fm.bot/supporter)");
 
         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         this.Context.LogCommandUsed();
@@ -212,7 +212,7 @@ public class StaticCommands : BaseCommandModule
 
         this._embedAuthor.WithIconUrl(selfUser.GetAvatarUrl());
         this._embedAuthor.WithName($"{selfUser.Username}");
-        this._embedAuthor.WithUrl("https://fmbot.xyz/");
+        this._embedAuthor.WithUrl("https://fm.bot/");
 
         this._embed.WithAuthor(this._embedAuthor);
 
@@ -706,7 +706,7 @@ public class StaticCommands : BaseCommandModule
         description.AppendLine();
 
         description.AppendLine($"**Commands**");
-        description.AppendLine($"- View all commands on [our website](https://fmbot.xyz/commands/)");
+        description.AppendLine($"- View all commands on [our website](https://fm.bot/commands/)");
         description.AppendLine($"- Or use the dropdown below this message to pick a category");
 
         if (prefix != this._botSettings.Bot.Prefix)
@@ -720,7 +720,7 @@ public class StaticCommands : BaseCommandModule
 
         description.AppendLine();
         description.AppendLine("**Links**");
-        description.Append("[Website](https://fmbot.xyz/) - ");
+        description.Append("[Website](https://fm.bot/) - ");
 
         var socketCommandContext = (SocketCommandContext)this.Context;
         var selfId = socketCommandContext.Client.CurrentUser.Id.ToString();

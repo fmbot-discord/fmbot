@@ -2398,7 +2398,7 @@ public class ArtistBuilders
         if (!File.Exists(path))
         {
             gifStream =
-                await this._dataSourceFactory.GetAlbumImageAsStreamAsync("https://fmbot.xyz/img/bot/iceberg.png");
+                await this._dataSourceFactory.GetAlbumImageAsStreamAsync("https://fm.bot/img/bot/iceberg.png");
             saveFile = true;
         }
         else

@@ -44,7 +44,7 @@ public class WebhookService
         {
             Log.Information("Downloading avatar...");
             var wc = new System.Net.WebClient();
-            wc.DownloadFile("https://fmbot.xyz/img/bot/avatar.png", this._avatarImagePath);
+            wc.DownloadFile("https://fm.bot/img/bot/avatar.png", this._avatarImagePath);
         }
     }
 

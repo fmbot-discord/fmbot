@@ -130,7 +130,7 @@ public class EurovisionService
 
     public async Task<List<EurovisionContestantModel>> EurovisionCsvToModel(string years)
     {
-        await using var stream = await this._httpClient.GetStreamAsync($"https://fmbot.xyz/bot-assets/eurovision/contestants-{years}.csv");
+        await using var stream = await this._httpClient.GetStreamAsync($"https://fm.bot/bot-assets/eurovision/contestants-{years}.csv");
 
         var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
         {

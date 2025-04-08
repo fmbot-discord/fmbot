@@ -12,7 +12,7 @@ public class DiscogsApi
 {
     private readonly HttpClient _client;
 
-    private const string UserAgent = ".fmbot/1.0 +https://fmbot.xyz/";
+    private const string UserAgent = ".fmbot/1.0 +https://fm.bot/";
     private readonly string _key;
     private readonly string _secret;
 

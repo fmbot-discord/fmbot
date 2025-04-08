@@ -234,7 +234,7 @@ public class TimerService
                 {
                     var overview = await this._statusHandler.GetOverviewAsync(new Empty());
                     await this._client.SetCustomStatusAsync(
-                        $"{this._botSettings.Bot.Prefix}fm — fmbot.xyz — {overview.TotalGuilds} servers");
+                        $"{this._botSettings.Bot.Prefix}fm — fm.bot — {overview.TotalGuilds} servers");
                 }
                 else
                 {
