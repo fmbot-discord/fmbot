@@ -16,7 +16,7 @@ public static class Constants
     public const ulong BotProductionId = 356268235697553409;
     public const ulong BotBetaId = 493845886166630443;
 
-    public const string DocsUrl = "https://fmbot.xyz";
+    public const string DocsUrl = "https://fm.bot/";
 
     public const string CompactTimePeriodList = "weekly/monthly/quarterly/half/yearly/alltime";
 
@@ -33,7 +33,7 @@ public static class Constants
 
     public const string GetSupporterButton = "Get .fmbot supporter";
 
-    public const string GetSupporterOverviewLink = "https://fmbot.xyz/supporter/";
+    public const string GetSupporterOverviewLink = "https://fm.bot/supporter/";
     public const string GetSupporterDiscordLink = "https://discord.com/application-directory/356268235697553409/store/1120720816154345532";
 
     public const int SupporterMessageChance = 12;

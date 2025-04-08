@@ -2,11 +2,11 @@
    <img src="https://raw.githubusercontent.com/fmbot-discord/fmbot/main/fmbotlogo.png" width="350" alt=".fmbot logo">
 </p>
 <h3 align="center">
-   <a href="https://fmbot.xyz/">A source-available Last.fm Discord bot.</a>
+   <a href="https://fm.bot/">A source-available Last.fm Discord bot.</a>
 </h3>
 <p align="center">
   <a href="https://www.codacy.com/gh/fmbot-discord/fmbot/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=fmbot-discord/fmbot&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/e793453ce7d048f696357408b3abbb8c" alt="Codacy code quality"/></a>
-  <a href="http://server.fmbot.xyz/"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg" alt="Join our server"></a>
+  <a href="http://discord.gg/fmbot/"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg" alt="Join our server"></a>
   <a href="https://top.gg/bot/356268235697553409"><img src="https://top.gg/api/widget/status/356268235697553409.svg?noavatar=true" alt="Discord bot status"></a>
   <a href="https://top.gg/bot/356268235697553409"><img src="https://top.gg/api/widget/servers/356268235697553409.svg?noavatar=true" alt="Discord bot server amount"></a>
 </p>
@@ -19,15 +19,17 @@ Easily see who listens to your favorite artist in a server and make new friends.
 
 <hr />
 
-Documentation and website: https://fmbot.xyz/
+Documentation and website: [fm.bot](https://fm.bot/)
 
-Join our Discord server: http://server.fmbot.xyz/
+Join our Discord server: [discord.gg/fmbot](https://discord.gg/fmbot)
 
-[Click here to add the bot to your server](http://invite.fmbot.xyz/).
+[Click here to add the bot to your server](https://discord.com/oauth2/authorize?client_id=356268235697553409&permissions=275415092288&scope=applications.commands%20bot)
+
+[Click here to add the bot to your Discord account (User app)](https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1)
 
 <h3>Funding</h3>
 
-For funding, see [.fmbot supporter](https://fmbot.xyz/supporter/). 
+For funding, see [.fmbot supporter](https://fm.bot/supporter/). 
 
 Supporting helps us maintain and host the bot, while you get some nice perks in return.
 
@@ -42,7 +44,7 @@ See our Docker builds on [Github Packages](https://github.com/fmbot-discord/fmbo
 
 <h3>Contributing </h3>
 
-Please see https://fmbot.xyz/setup on how to setup a local development environment, and see the [CONTRIBUTING.md](CONTRIBUTING.md) for further info.
+Please see https://fm.bot/setup on how to setup a local development environment, and see the [CONTRIBUTING.md](CONTRIBUTING.md) for further info.
 
 <h3>Thanks</h3>
 

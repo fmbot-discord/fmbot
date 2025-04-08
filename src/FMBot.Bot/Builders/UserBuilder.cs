@@ -212,7 +212,7 @@ public class UserBuilder
             .WithButton("Enable", InteractionConstants.BotScrobblingEnable, style: ButtonStyle.Primary)
             .WithButton("Disable", InteractionConstants.BotScrobblingDisable, style: ButtonStyle.Secondary)
             .WithButton("Supported music bots", style: ButtonStyle.Link,
-                url: "https://fmbot.xyz/botscrobbling/#currently-supported-bots");
+                url: "https://fm.bot/botscrobbling/#currently-supported-bots");
 
         return response;
     }

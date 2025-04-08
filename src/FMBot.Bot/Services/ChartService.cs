@@ -62,12 +62,12 @@ public class ChartService
     {
         var files = new Dictionary<string, string>
         {
-            { "https://fmbot.xyz/fonts/arial-unicode-ms.ttf", this._fontPath },
-            { "https://fmbot.xyz/fonts/worksans-regular.otf", this._workSansFontPath },
-            { "https://fmbot.xyz/img/bot/loading-error.png", this._loadingErrorImagePath },
-            { "https://fmbot.xyz/img/bot/unknown.png", this._unknownImagePath },
-            { "https://fmbot.xyz/img/bot/unknown-artist.png", this._unknownArtistImagePath },
-            { "https://fmbot.xyz/img/bot/censored.png", this._censoredImagePath }
+            { "https://fm.bot/fonts/arial-unicode-ms.ttf", this._fontPath },
+            { "https://fm.bot/fonts/worksans-regular.otf", this._workSansFontPath },
+            { "https://fm.bot/img/bot/loading-error.png", this._loadingErrorImagePath },
+            { "https://fm.bot/img/bot/unknown.png", this._unknownImagePath },
+            { "https://fm.bot/img/bot/unknown-artist.png", this._unknownArtistImagePath },
+            { "https://fm.bot/img/bot/censored.png", this._censoredImagePath }
         };
 
         foreach (var file in files)
