@@ -155,7 +155,7 @@ public class StaticCommands : BaseCommandModule
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         embedDescription.AppendLine(".fmbot is a source-available Discord bot.");
-        embedDescription.AppendLine("The bot is written in C#, uses .NET 8 and Discord.Net.");
+        embedDescription.AppendLine("The bot is written in C#, uses .NET 9 and Discord.Net.");
 
         this._embed.WithDescription(embedDescription.ToString());
 

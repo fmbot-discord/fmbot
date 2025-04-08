@@ -730,7 +730,7 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("lyrics", RunMode = RunMode.Async)]
-    [Summary("Shows lyrics for track you're currently listening to or searching for.")]
+    [Summary("Lyrics for a track you're currently listening to or searching for")]
     [Examples(
         "lyrics",
         "l",

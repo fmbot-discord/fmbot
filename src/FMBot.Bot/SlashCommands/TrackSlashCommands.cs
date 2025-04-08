@@ -131,7 +131,7 @@ public class TrackSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("fwktrack", "Shows who of your friends listen to a track")]
+    [SlashCommand("fwktrack", "Who of your friends know a track")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
@@ -426,7 +426,7 @@ public class TrackSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("loved", "Shows your Last.fm loved tracks")]
+    [SlashCommand("loved", "Tracks you've loved on Last.fm")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]

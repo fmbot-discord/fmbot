@@ -308,7 +308,7 @@ public class PlayCommands : BaseCommandModule
     }
 
     [Command("recap", RunMode = RunMode.Async)]
-    [Summary("Shows a recap")]
+    [Summary("A recap to easily view multiple .fmbot commands into one")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     [Alias("rcp", "wrapped")]

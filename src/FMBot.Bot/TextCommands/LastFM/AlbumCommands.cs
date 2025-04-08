@@ -279,7 +279,7 @@ public class AlbumCommands : BaseCommandModule
     }
 
     [Command("friendwhoknowsalbum", RunMode = RunMode.Async)]
-    [Summary("Shows who of your friends listen to an album")]
+    [Summary("Who of your friends listen to an album")]
     [Examples("fwa", "fwka COMA", "friendwhoknows", "friendwhoknowsalbum the beatles abbey road",
         "friendwhoknowsalbum Metallica & Lou Reed | Lulu")]
     [Alias("fwa", "fwka", "fwkab", "fwab", "friendwhoknows album", "friends whoknows album", "friend whoknows album")]

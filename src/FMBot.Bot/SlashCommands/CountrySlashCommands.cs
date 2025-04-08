@@ -31,7 +31,7 @@ public class CountrySlashCommands : InteractionModuleBase
         this.Interactivity = interactivity;
     }
 
-    [SlashCommand("country", "Shows country for artist or top artists for country")]
+    [SlashCommand("country", "Country for artist or top artists for country")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]

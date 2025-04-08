@@ -71,7 +71,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         this._botSettings = botSettings.Value;
     }
 
-    [SlashCommand("configuration", "Shows server configuration for .fmbot")]
+    [SlashCommand("configuration", "Server configuration for .fmbot")]
     [RequiresIndex]
     [GuildOnly]
     public async Task ServerSettingsAsync()
@@ -92,7 +92,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("members", "Shows server members that use .fmbot")]
+    [SlashCommand("members", "Members in this server that use .fmbot")]
     [RequiresIndex]
     [GuildOnly]
     public async Task MemberOverviewAsync(

@@ -75,7 +75,7 @@ public class UserCommands : BaseCommandModule
     }
 
     [Command("settings", RunMode = RunMode.Async)]
-    [Summary("Shows overview of user settings for .fmbot")]
+    [Summary("Your user settings in .fmbot")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     [Alias("userconfig", "usersettings", "usersetting", "setting")]

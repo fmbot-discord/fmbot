@@ -36,7 +36,7 @@ public class CrownSlashCommands : InteractionModuleBase
         this._artistsService = artistsService;
     }
 
-    [SlashCommand("crown", "Shows history for a specific crown")]
+    [SlashCommand("crown", "History for a specific crown")]
     [UsernameSetRequired]
     public async Task CrownAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]

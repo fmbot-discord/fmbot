@@ -313,7 +313,7 @@ public class ArtistCommands : BaseCommandModule
     }
 
     [Command("discoveries", RunMode = RunMode.Async)]
-    [Summary("Shows the artists you've recently discovered.")]
+    [Summary("Artists you've recently discovered")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample, Constants.EmbedSizeExample)]
     [Examples("d", "discovered", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]
     [Alias("d", "discovered", "discovery", "artistdiscoveries", "firstlistened")]
@@ -511,7 +511,7 @@ public class ArtistCommands : BaseCommandModule
     }
 
     [Command("friendwhoknows", RunMode = RunMode.Async)]
-    [Summary("Shows who of your friends listen to an artist in .fmbot")]
+    [Summary("Who of your friends know an artist")]
     [Examples("fw", "fwk COMA", "friendwhoknows", "friendwhoknows DJ Seinfeld")]
     [Alias("fw", "fwk", "friendwhoknows artist", "friend whoknows", "friends whoknows", "friend whoknows artist",
         "friends whoknows artist")]
