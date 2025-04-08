@@ -161,12 +161,12 @@ public class SupporterService
         thankYouMessage.AppendLine();
 
         thankYouMessage.AppendLine("🎮 **Enhanced commands**");
+        thankYouMessage.AppendLine("- `.lyrics` — View lyrics for a track");
         thankYouMessage.AppendLine(
             $"- `.featured` — Chance to get featured on Supporter Sunday (next in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
         thankYouMessage.AppendLine("- `.judge` — Better output and ability to use the command on others");
         thankYouMessage.AppendLine("- `.jumble` / `.j` — Play unlimited Jumble games");
         thankYouMessage.AppendLine("- `.pixel` / `.px` — Play unlimited Pixel Jumble games");
-        thankYouMessage.AppendLine("- `.lyrics` — View lyrics for a track");
         thankYouMessage.AppendLine();
 
         thankYouMessage.AppendLine("<:discoveries:1145740579284713512> **Go back in time**");
