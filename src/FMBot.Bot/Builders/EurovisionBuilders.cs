@@ -117,7 +117,7 @@ public class EurovisionBuilders
             var footer = new StringBuilder();
             footer.Append($"Page {pageCounter}/{eurovisionPages.Count()}");
             footer.AppendLine($" - {contestants.Count} total entries");
-            footer.Append("Data provided by ESC Discord");
+            footer.Append("Data provided by ESC Discord / ranked.be");
 
             pages.Add(new PageBuilder()
                 .WithTitle($"Eurovision {year} <:eurovision:1084971471610323035>")
