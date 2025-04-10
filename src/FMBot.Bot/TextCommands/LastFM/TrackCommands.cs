@@ -666,6 +666,7 @@ public class TrackCommands : BaseCommandModule
 
     [Command("eurovision", RunMode = RunMode.Async)]
     [Alias("ev", "esc", "eurovisie", "eurovisionsongcontest", "songcontest")]
+    [UsernameSetRequired]
     public async Task EurovisionAsync([Remainder] string extraOptions = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -700,7 +701,6 @@ public class TrackCommands : BaseCommandModule
                 response =
                     await this._eurovisionBuilders.GetEurovisionYear(context, year ?? DateTime.UtcNow.Year);
             }
-
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
