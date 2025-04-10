@@ -220,7 +220,8 @@ public class EurovisionBuilders
 
         var juryVotes = votes
             .Where(w => string.Equals(w.ToCountry, country.Code, StringComparison.OrdinalIgnoreCase)
-                        && w.VoteType == VoteType.JuryVotes).ToList();
+                        && w.VoteType == VoteType.JuryVotes
+                        && w.Points > 0).ToList();
         if (juryVotes.Any())
         {
             var juryVotesDesc = new StringBuilder();
@@ -238,7 +239,8 @@ public class EurovisionBuilders
 
         var teleVotes = votes
             .Where(w => string.Equals(w.ToCountry, country.Code, StringComparison.OrdinalIgnoreCase)
-                        && w.VoteType == VoteType.TeleVotes).ToList();
+                        && w.VoteType == VoteType.TeleVotes
+                        && w.Points > 0).ToList();
         if (teleVotes.Any())
         {
             var teleVotesDesc = new StringBuilder();
