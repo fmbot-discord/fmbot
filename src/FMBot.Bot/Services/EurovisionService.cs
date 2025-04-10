@@ -1,149 +1,109 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using CsvHelper;
-using CsvHelper.Configuration;
 using FMBot.Bot.Extensions;
-using FMBot.Domain;
-using FMBot.Domain.Models;
+using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
 
 public class EurovisionService
 {
-    private readonly HttpClient _httpClient;
+    private readonly EurovisionEnrichment.EurovisionEnrichmentClient _eurovisionEnrichment;
+    private CountryService CountryService { get; set; }
 
-    public EurovisionService(HttpClient httpClient)
+
+    public EurovisionService(EurovisionEnrichment.EurovisionEnrichmentClient eurovisionEnrichment,
+        CountryService countryService)
     {
-        this._httpClient = httpClient;
+        this._eurovisionEnrichment = eurovisionEnrichment;
+        this.CountryService = countryService;
     }
 
-    private class DotToNullIntConverter : CsvHelper.TypeConversion.ITypeConverter
+    public async Task<EurovisionEntry> GetEurovisionEntryForSpotifyId(string spotifyId)
     {
-        public object ConvertFromString(string text, IReaderRow row, MemberMapData memberMapData)
+        try
         {
-            if (string.IsNullOrWhiteSpace(text) || text.Contains('.'))
+            var entry = await this._eurovisionEnrichment.GetEntryBySpotifyIdAsync(new SpotifyIdRequest
             {
-                return null;
-            }
+                SpotifyId = spotifyId
+            });
 
-            if (int.TryParse(text, out var intValue))
-            {
-                return intValue;
-            }
-
-            throw new Exception($"Cannot convert {text} to int.");
+            return entry?.Entry;
         }
-
-        public string ConvertToString(object value, IWriterRow row, MemberMapData memberMapData)
+        catch (Exception)
         {
-            return value?.ToString() ?? string.Empty;
+            return null;
         }
     }
 
-    public async Task UpdateEurovisionData()
-    {
-        var allContestants = new List<EurovisionContestantModel>();
-
-        allContestants.AddRange(await EurovisionCsvToModel("1956-2022"));
-        allContestants.AddRange(await EurovisionCsvToModel("2023-2024"));
-        allContestants.AddRange(await EurovisionCsvToModel("2025"));
-
-        foreach (var contestant in allContestants.OrderBy(o => o.Performer))
-        {
-            var key = GetEurovisionContestantEntryKey(contestant.Performer, contestant.Song);
-            PublicProperties.EurovisionContestants.TryRemove(key, out _);
-            PublicProperties.EurovisionContestants.TryAdd(key, contestant);
-        }
-        foreach (var year in allContestants.GroupBy(g => g.Year))
-        {
-            var countries = year.GroupBy(g => g.ToCountryId);
-            var contestants = countries.Select(s => s.OrderByDescending(o => o.RunningSf.HasValue).First());
-
-            PublicProperties.EurovisionYears.TryRemove(year.Key, out _);
-            PublicProperties.EurovisionYears.TryAdd(year.Key, contestants.ToList());
-        }
-    }
-
-    public static EurovisionContestantModel GetEurovisionEntry(string artistName, string trackName)
-    {
-        var key = GetEurovisionContestantEntryKey(artistName, trackName);
-        return PublicProperties.EurovisionContestants.GetValueOrDefault(key);
-    }
-
-    public static (string full, string oneline) GetEurovisionDescription(EurovisionContestantModel eurovisionEntry)
+    public (string full, string oneline) GetEurovisionDescription(EurovisionEntry eurovisionEntry)
     {
         var full = new StringBuilder();
         var oneLine = new StringBuilder();
 
+        var country = this.CountryService.GetValidCountry(eurovisionEntry.EntryCode);
+
         full.Append(
-            $"- **{eurovisionEntry.Year}** entry for **{eurovisionEntry.ToCountry}** :flag_{eurovisionEntry.ToCountryId}:");
+            $"- **{eurovisionEntry.Year}** entry for **{country.Name}** {country.Emoji}");
         full.AppendLine();
 
-        oneLine.Append($"Eurovision {eurovisionEntry.Year} for {eurovisionEntry.ToCountry} {IsoCountryCodeToFlagEmoji(eurovisionEntry.ToCountryId)}");
+        oneLine.Append(
+            $"Eurovision {eurovisionEntry.Year} for {country.Name} {IsoCountryCodeToFlagEmoji(eurovisionEntry.EntryCode)}");
 
-        if (eurovisionEntry.SfNum.HasValue && !eurovisionEntry.PointsFinal.HasValue)
+        if (!eurovisionEntry.HasScore && !eurovisionEntry.ReachedFinals && eurovisionEntry.HasSemiFinalNr)
         {
             full.Append(
-                $"- Playing in the **{eurovisionEntry.SfNum}{StringExtensions.GetAmountEnd((int)eurovisionEntry.SfNum.Value)} semi-final** - **{eurovisionEntry.RunningSf}{StringExtensions.GetAmountEnd((int)eurovisionEntry.RunningSf.GetValueOrDefault())} running position**");
-            oneLine.Append($" - {eurovisionEntry.SfNum}{StringExtensions.GetAmountEnd((int)eurovisionEntry.SfNum.Value)} semi-final");
+                $"- Playing in the **{eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final**");
+            if (eurovisionEntry.HasDraw)
+            {
+                full.Append(
+                    $" - **{eurovisionEntry.Draw}{StringExtensions.GetAmountEnd(eurovisionEntry.Draw)} running position**");
+            }
+
+            oneLine.Append(
+                $" - {eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final");
         }
-        else if (!eurovisionEntry.PointsFinal.HasValue && eurovisionEntry.RunningFinal.HasValue)
+        else if (!eurovisionEntry.HasScore && eurovisionEntry.ReachedFinals)
         {
-            full.Append($"- Playing in the finals - **{eurovisionEntry.RunningFinal}{StringExtensions.GetAmountEnd((int)eurovisionEntry.RunningFinal.GetValueOrDefault())} running position**");
+            full.Append(
+                $"- Playing in the finals");
+            if (eurovisionEntry.HasDraw)
+            {
+                full.Append(
+                    $" - **{eurovisionEntry.Draw}{StringExtensions.GetAmountEnd(eurovisionEntry.Draw)} running position**");
+            }
+
             oneLine.Append($" - Finals");
         }
-        else if (eurovisionEntry.PlaceContest.HasValue)
+        else if (eurovisionEntry.HasPosition)
         {
             full.Append(
-                $"- Got **{eurovisionEntry.PlaceContest}{StringExtensions.GetAmountEnd(eurovisionEntry.PlaceContest.GetValueOrDefault())} place**");
-            if (eurovisionEntry.PointsFinal.HasValue)
+                $"- Got **{eurovisionEntry.Position}{StringExtensions.GetAmountEnd(eurovisionEntry.Position)} place**");
+            if (eurovisionEntry.HasScore)
             {
-                full.Append($" with **{eurovisionEntry.PointsFinal} points**");
+                full.Append($" with **{eurovisionEntry.Score} points**");
             }
-            oneLine.Append($" - #{eurovisionEntry.PlaceContest}");
+
+            oneLine.Append($" - #{eurovisionEntry.Position}");
         }
 
         return (full.ToString(), oneLine.ToString());
     }
 
+    public async Task<List<EurovisionEntry>> GetEntries(int year)
+    {
+        var entries = await this._eurovisionEnrichment.GetContestByYearAsync(new YearRequest
+        {
+            Year = year
+        });
+
+        return entries?.Contest?.Entries?.ToList();
+    }
+
     public static string IsoCountryCodeToFlagEmoji(string country)
     {
         return string.Concat(country.ToUpper().Select(x => char.ConvertFromUtf32(x + 0x1F1A5)));
-    }
-
-    private static string GetEurovisionContestantEntryKey(string artistName, string trackName)
-    {
-        // todo: no hardcoded redirects pls
-        if (artistName.Contains("joost", StringComparison.OrdinalIgnoreCase))
-        {
-            artistName = "joost";
-        }
-        return $"{artistName.ToLower()}--{trackName.ToLower()}";
-    }
-
-
-    public async Task<List<EurovisionContestantModel>> EurovisionCsvToModel(string years)
-    {
-        await using var stream = await this._httpClient.GetStreamAsync($"https://fm.bot/bot-assets/eurovision/contestants-{years}.csv");
-
-        var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            BadDataFound = null,
-        };
-
-        using var innerCsvStreamReader = new StreamReader(stream);
-
-        var csv = new CsvReader(innerCsvStreamReader, csvConfig);
-        csv.Context.TypeConverterCache.AddConverter<int?>(new DotToNullIntConverter());
-
-        var records = csv.GetRecords<EurovisionContestantModel>();
-
-        return records.ToList();
     }
 }

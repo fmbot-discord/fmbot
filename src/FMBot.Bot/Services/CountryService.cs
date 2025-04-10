@@ -18,7 +18,7 @@ public class CountryService
 {
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
-    private readonly List<CountryInfo> _countries;
+    public readonly List<CountryInfo> Countries;
 
     public CountryService(IMemoryCache cache, IOptions<BotSettings> botSettings)
     {
@@ -27,7 +27,7 @@ public class CountryService
 
         var countryJsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "countries.json");
         var countryJson = File.ReadAllBytes(countryJsonPath);
-        this._countries = JsonSerializer.Deserialize<List<CountryInfo>>(countryJson, new JsonSerializerOptions
+        this.Countries = JsonSerializer.Deserialize<List<CountryInfo>>(countryJson, new JsonSerializerOptions
         {
             AllowTrailingCommas = true
         });
@@ -84,7 +84,7 @@ public class CountryService
 
         var searchQuery = TrimCountry(countryValues);
 
-        var foundCountry = this._countries
+        var foundCountry = this.Countries
             .FirstOrDefault(f => TrimCountry(f.Name) == searchQuery ||
                                  f.Emoji == searchQuery ||
                                  f.Code.ToLower() == searchQuery ||
@@ -102,7 +102,7 @@ public class CountryService
 
         var searchQuery = TrimCountry(countryValues);
 
-        var foundCountries = this._countries
+        var foundCountries = this.Countries
             .Where(f => TrimCountry(f.Name) == searchQuery ||
                         f.Code.ToLower() == searchQuery ||
                         TrimCountry(f.Name).StartsWith(searchQuery) ||
@@ -139,7 +139,7 @@ public class CountryService
             .Select(s => new TopCountry
             {
                 UserPlaycount = s.Sum(se => se.Playcount),
-                CountryName = this._countries.FirstOrDefault(f => f.Code.ToLower() == s.Key.ToLower())?.Name,
+                CountryName = this.Countries.FirstOrDefault(f => f.Code.ToLower() == s.Key.ToLower())?.Name,
                 CountryCode = s.Key,
             }).ToList();
 
@@ -195,7 +195,7 @@ public class CountryService
 
     public string CountryCodeToCountryName(string code)
     {
-        return this._countries.FirstOrDefault(f => f.Code == code)?.Name;
+        return this.Countries.FirstOrDefault(f => f.Code == code)?.Name;
     }
 
     public async Task<List<string>> GetTopCountriesForTopArtistsString(IEnumerable<string> topArtists)

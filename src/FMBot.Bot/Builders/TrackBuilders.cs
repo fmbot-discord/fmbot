@@ -1,16 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using AngleSharp.Css.Values;
 using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -53,6 +50,7 @@ public class TrackBuilders
     private readonly MusicDataFactory _musicDataFactory;
     private readonly DiscordSkuService _discordSkuService;
     private readonly SupporterService _supporterService;
+    private readonly EurovisionService _eurovisionService;
 
     public TrackBuilders(UserService userService,
         GuildService guildService,
@@ -74,7 +72,7 @@ public class TrackBuilders
         ArtistsService artistsService,
         FeaturedService featuredService,
         MusicDataFactory musicDataFactory,
-        DiscordSkuService discordSkuService)
+        DiscordSkuService discordSkuService, EurovisionService eurovisionService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -96,6 +94,7 @@ public class TrackBuilders
         this._featuredService = featuredService;
         this._musicDataFactory = musicDataFactory;
         this._discordSkuService = discordSkuService;
+        this._eurovisionService = eurovisionService;
         this._supporterService = supporterService;
     }
 
@@ -261,21 +260,27 @@ public class TrackBuilders
             response.Embed.AddField("Info", info.ToString(), true);
         }
 
-        var eurovisionEntry =
-            EurovisionService.GetEurovisionEntry(trackSearch.Track.ArtistName, trackSearch.Track.TrackName);
-
         response.Components = new ComponentBuilder();
 
-        if (eurovisionEntry != null)
+        if (dbTrack?.SpotifyId != null)
         {
-            var eurovisionDescription = EurovisionService.GetEurovisionDescription(eurovisionEntry);
-            response.Embed.AddField($"Eurovision <:eurovision:1084971471610323035> ", eurovisionDescription.full);
-            if (eurovisionEntry.YoutubeUrl != null)
+            var eurovisionEntry =
+                await this._eurovisionService.GetEurovisionEntryForSpotifyId(dbTrack.SpotifyId);
+
+
+            if (eurovisionEntry != null)
             {
-                response.Components.WithButton(style: ButtonStyle.Link,
-                    emote: Emote.Parse(DiscordConstants.YouTube), url: eurovisionEntry.YoutubeUrl);
+                var eurovisionDescription = this._eurovisionService.GetEurovisionDescription(eurovisionEntry);
+                response.Embed.AddField($"Eurovision <:eurovision:1084971471610323035> ", eurovisionDescription.full);
+                if (eurovisionEntry.VideoLink != null)
+                {
+                    response.Components.WithButton(style: ButtonStyle.Link,
+                        emote: Emote.Parse(DiscordConstants.YouTube), url: eurovisionEntry.VideoLink);
+                }
             }
         }
+
+
 
         if (!string.IsNullOrWhiteSpace(trackSearch.Track.Description))
         {
@@ -292,7 +297,7 @@ public class TrackBuilders
         }
 
         if (SupporterService.IsSupporter(context.ContextUser.UserType) &&
-            !string.IsNullOrWhiteSpace(dbTrack.PlainLyrics))
+            !string.IsNullOrWhiteSpace(dbTrack?.PlainLyrics))
         {
             response.Components.WithButton(
                 "Lyrics",

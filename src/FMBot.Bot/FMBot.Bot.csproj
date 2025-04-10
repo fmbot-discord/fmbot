@@ -78,6 +78,7 @@
     <Protobuf Include="..\Shared.Domain\Protos\artist.proto" GrpcServices="Client" Link="Protos\artist.proto" />
     <Protobuf Include="..\Shared.Domain\Protos\track.proto" GrpcServices="Client" Link="Protos\track.proto" />
     <Protobuf Include="..\Shared.Domain\Protos\supporter.proto" GrpcServices="Client" Link="Protos\supporter.proto" />
+    <Protobuf Include="..\Shared.Domain\Protos\eurovision.proto" GrpcServices="Client" Link="Protos\eurovision.proto" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FMBot.AppleMusic\FMBot.AppleMusic.csproj" />

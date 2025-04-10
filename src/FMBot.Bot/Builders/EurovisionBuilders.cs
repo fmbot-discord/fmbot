@@ -1,15 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using FMBot.Bot.Models;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
-using FMBot.Domain;
 using FMBot.Domain.Models;
-using Microsoft.Extensions.Primitives;
 
 namespace FMBot.Bot.Builders;
 
@@ -17,11 +14,14 @@ public class EurovisionBuilders
 {
     private readonly UserService _userService;
     private readonly EurovisionService _eurovisionService;
+    private readonly CountryService _countryService;
 
-    public EurovisionBuilders(UserService userService, EurovisionService eurovisionService)
+    public EurovisionBuilders(UserService userService, EurovisionService eurovisionService,
+        CountryService countryService)
     {
         this._userService = userService;
         this._eurovisionService = eurovisionService;
+        this._countryService = countryService;
     }
 
     public async Task<ResponseModel> GetEurovisionOverview(ContextModel context, int year, string country)
@@ -31,9 +31,7 @@ public class EurovisionBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        await this._eurovisionService.UpdateEurovisionData();
-
-        PublicProperties.EurovisionYears.TryGetValue(year, out var contestants);
+        var contestants = await this._eurovisionService.GetEntries(year);
 
         if (contestants == null || !contestants.Any())
         {
@@ -45,7 +43,13 @@ public class EurovisionBuilders
 
         var pages = new List<PageBuilder>();
         var pageCounter = 1;
-        var eurovisionPages = contestants.OrderByDescending(o => o.PointsFinal).ThenByDescending(o => o.SfNum.HasValue).ThenBy(o => o.SfNum).Chunk(8);
+        var eurovisionPages = contestants
+            .OrderByDescending(o => o.ReachedFinals)
+            .ThenByDescending(o => o.Score)
+            .ThenBy(o => o.SemiFinalNr)
+            .ThenByDescending(o => o.SemiFinalScore)
+            .ThenBy(o => o.Draw).Chunk(8)
+            .ToList();
 
         foreach (var page in eurovisionPages)
         {
@@ -53,53 +57,66 @@ public class EurovisionBuilders
 
             foreach (var eurovisionEntry in page)
             {
+                var validCountry = this._countryService.GetValidCountry(eurovisionEntry.EntryCode);
 
-                if (eurovisionEntry.PlaceContest.HasValue)
+                if (eurovisionEntry.HasPosition)
                 {
                     pageDescription.Append(
-                        $"#{eurovisionEntry.PlaceContest} — {eurovisionEntry.ToCountry}");
+                        $"#{eurovisionEntry.Position} — {validCountry.Name}");
                 }
                 else
                 {
                     pageDescription.Append(
-                        $"{eurovisionEntry.ToCountry}");
+                        $"{validCountry.Name}");
                 }
 
-                if (eurovisionEntry.SfNum.HasValue && !eurovisionEntry.PointsFinal.HasValue)
+                if (!eurovisionEntry.HasScore)
                 {
-                    pageDescription.Append(
-                        $" — {eurovisionEntry.SfNum}{StringExtensions.GetAmountEnd((int)eurovisionEntry.SfNum.Value)} semi-final - {eurovisionEntry.RunningSf}{StringExtensions.GetAmountEnd((int)eurovisionEntry.RunningSf.GetValueOrDefault())} running");
-                }
-                else if (!eurovisionEntry.PointsFinal.HasValue && eurovisionEntry.RunningFinal.HasValue)
-                {
-                    pageDescription.Append($" — Finals");
-                    if (eurovisionEntry.RunningFinal.HasValue)
+                    if (eurovisionEntry.ReachedFinals)
                     {
-                        pageDescription.Append($" — {eurovisionEntry.RunningFinal}{StringExtensions.GetAmountEnd((int)eurovisionEntry.RunningFinal.GetValueOrDefault())} running");
+                        pageDescription.Append($" — Finals");
+                        if (eurovisionEntry.HasDraw)
+                        {
+                            pageDescription.Append(
+                                $" — {eurovisionEntry.Draw}{StringExtensions.GetAmountEnd(eurovisionEntry.Draw)} running");
+                        }
+                    }
+                    else if (eurovisionEntry.HasSemiFinalScore)
+                    {
+                        pageDescription.Append(
+                            $" — {eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final - {eurovisionEntry.SemiFinalScore} points");
+                    }
+                    else
+                    {
+                        pageDescription.Append(
+                            $" — {eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final - {eurovisionEntry.Draw}{StringExtensions.GetAmountEnd(eurovisionEntry.Draw)} running");
                     }
                 }
-                else if (eurovisionEntry.PointsFinal.HasValue)
+                else
                 {
-                    pageDescription.Append($" — {eurovisionEntry.PointsFinal}");
+                    pageDescription.Append($" — {eurovisionEntry.Score}");
                 }
 
                 pageDescription.AppendLine();
-                pageDescription.Append($":flag_{eurovisionEntry.ToCountryId}:  ");
-                if (!string.IsNullOrWhiteSpace(eurovisionEntry.YoutubeUrl))
+                pageDescription.Append($":flag_{eurovisionEntry.EntryCode}:  ");
+                if (!string.IsNullOrWhiteSpace(eurovisionEntry.VideoLink))
                 {
-                    pageDescription.Append($"**[{eurovisionEntry.Performer} - {eurovisionEntry.Song}]({eurovisionEntry.YoutubeUrl})**");
+                    pageDescription.Append(
+                        $"**[{eurovisionEntry.Artist} - {eurovisionEntry.Title}]({eurovisionEntry.VideoLink})**");
                 }
                 else
                 {
-                    pageDescription.Append($"**{eurovisionEntry.Performer} - {eurovisionEntry.Song}**");
+                    pageDescription.Append($"**{eurovisionEntry.Artist} - {eurovisionEntry.Title}**");
                 }
+
                 pageDescription.AppendLine();
                 pageDescription.AppendLine();
             }
 
             var footer = new StringBuilder();
             footer.Append($"Page {pageCounter}/{eurovisionPages.Count()}");
-            footer.Append($" - {contestants.Count} total entries");
+            footer.AppendLine($" - {contestants.Count} total entries");
+            footer.Append("Data provided by ESC Discord");
 
             pages.Add(new PageBuilder()
                 .WithTitle($"Eurovision {year} <:eurovision:1084971471610323035>")
@@ -110,6 +127,7 @@ public class EurovisionBuilders
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
+
         return response;
     }
 }

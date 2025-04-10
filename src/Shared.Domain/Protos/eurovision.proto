@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+package eurovision;
+
+service EurovisionEnrichment {
+  rpc GetContestByYear (YearRequest) returns (ContestReply);
+
+  rpc GetCountryEntryByYear (CountryYearRequest) returns (EntryReply);
+
+  rpc GetEntryBySpotifyId (SpotifyIdRequest) returns (EntryReply);
+
+  rpc GetVotesForCountryByYear (VotesRequest) returns (VotesReply);
+}
+
+message YearRequest {
+  int32 year = 1;
+}
+
+message CountryYearRequest {
+  int32 year = 1;
+  string countryCode = 2;
+}
+
+message SpotifyIdRequest {
+  string spotifyId = 1;
+}
+
+message VotesRequest {
+  int32 year = 1;
+  string countryCode = 2;
+  string show = 3; // Optional, defaults to "gf" (Grand Final)
+}
+
+message ContestReply {
+  EurovisionContest contest = 1;
+}
+
+message EntryReply {
+  EurovisionEntry entry = 1;
+}
+
+message VotesReply {
+  repeated EurovisionVote votes = 1;
+}
+
+message EurovisionContest {
+  string contestId = 1;
+  string name = 2;
+  int32 year = 3;
+  string hostCountry = 4;
+  string hostCity = 5;
+  string hostVenue = 6;
+  repeated EurovisionEntry entries = 7;
+  repeated EurovisionShow shows = 8;
+}
+
+message EurovisionEntry {
+  string entryCode = 1;
+  string artist = 2;
+  string title = 3;
+  string languages = 4;
+  optional int32 draw = 5;
+  optional int32 position = 6;
+  optional int32 score = 7;
+  optional int32 semiFinalScore = 8;
+  bool reachedFinals = 9;
+  string videoLink = 10;
+  string spotifyLink = 11;
+  int32 year = 12;
+  optional int32 semiFinalNr = 13;
+}
+
+message EurovisionShow {
+  string showId = 1;
+  string phase = 2;
+  google.protobuf.Timestamp dateTime = 3;
+  string name = 4;
+}
+
+message EurovisionVote {
+  string fromCountry = 1;
+  string toCountry = 2;
+  string voteType = 3;
+  int32 points = 4;
+}
