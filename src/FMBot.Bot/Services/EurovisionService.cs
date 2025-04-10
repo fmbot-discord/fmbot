@@ -50,7 +50,7 @@ public class EurovisionService
         full.AppendLine();
 
         oneLine.Append(
-            $"Eurovision {eurovisionEntry.Year} for {country.Name} {IsoCountryCodeToFlagEmoji(eurovisionEntry.EntryCode)}");
+            $"Eurovision {eurovisionEntry.Year} for {country.Name} {country.Emoji}");
 
         if (!eurovisionEntry.HasScore && !eurovisionEntry.ReachedFinals && eurovisionEntry.HasSemiFinalNr)
         {
@@ -102,8 +102,27 @@ public class EurovisionService
         return entries?.Contest?.Entries?.ToList();
     }
 
-    public static string IsoCountryCodeToFlagEmoji(string country)
+    public async Task<EurovisionEntry> GetEntry(int year, string countryCode)
     {
-        return string.Concat(country.ToUpper().Select(x => char.ConvertFromUtf32(x + 0x1F1A5)));
+        var entry = await this._eurovisionEnrichment.GetCountryEntryByYearAsync(new CountryYearRequest
+        {
+            Year = year,
+            CountryCode = countryCode
+        });
+
+        return entry?.Entry;
     }
+
+    public async Task<List<EurovisionVote>> GetVotesForEntry(int year, string countryCode)
+    {
+        var votes = await this._eurovisionEnrichment.GetVotesForCountryByYearAsync(new VotesRequest
+        {
+            Year = year,
+            CountryCode = countryCode
+        });
+
+        return votes?.Votes?.ToList();
+    }
+
+
 }

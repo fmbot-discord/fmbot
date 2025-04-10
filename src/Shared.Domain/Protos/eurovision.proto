@@ -82,9 +82,15 @@ message EurovisionShow {
   string name = 4;
 }
 
+enum VoteType {
+  Unspecified = 0;
+  TeleVotes = 1;
+  JuryVotes = 2;
+}
+
 message EurovisionVote {
   string fromCountry = 1;
   string toCountry = 2;
-  string voteType = 3;
+  VoteType voteType = 3;
   int32 points = 4;
 }
