@@ -530,6 +530,9 @@ public class TrackSlashCommands : InteractionModuleBase
         [Summary("Year", "Year (1956 to now)")] [Autocomplete(typeof(YearAutoComplete))] string year = null,
         [Summary("Country", "Eurovision country")] [Autocomplete(typeof(EurovisionAutoComplete))] string country = null)
     {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var context = new ContextModel(this.Context, contextUser);
+
         try
         {
             CountryInfo pickedCountry = null;
@@ -542,13 +545,13 @@ public class TrackSlashCommands : InteractionModuleBase
             ResponseModel response;
             if (pickedCountry != null)
             {
-                response = await this._eurovisionBuilders.GetEurovisionCountryYear(new ContextModel(this.Context),
+                response = await this._eurovisionBuilders.GetEurovisionCountryYear(context,
                     pickedCountry, pickedYear);
             }
             else
             {
                 response =
-                    await this._eurovisionBuilders.GetEurovisionYear(new ContextModel(this.Context), pickedYear);
+                    await this._eurovisionBuilders.GetEurovisionYear(context, pickedYear);
             }
 
             await this.Context.SendResponse(this.Interactivity, response);

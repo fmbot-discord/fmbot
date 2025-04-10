@@ -64,17 +64,18 @@ message EurovisionEntry {
   string artist = 2;
   string title = 3;
   string languages = 4;
-  optional int32 draw = 5;
-  optional int32 semiFinalDraw = 6;
-  optional int32 position = 7;
-  optional int32 semiFinalPosition = 8;
-  optional int32 score = 9;
-  optional int32 semiFinalScore = 10;
-  bool reachedFinals = 11;
-  string videoLink = 12;
-  string spotifyLink = 13;
-  int32 year = 14;
-  optional int32 semiFinalNr = 15;
+  string extraLanguages = 5;
+  optional int32 draw = 6;
+  optional int32 semiFinalDraw = 7;
+  optional int32 position = 8;
+  optional int32 semiFinalPosition = 9;
+  optional int32 score = 10;
+  optional int32 semiFinalScore = 11;
+  bool reachedFinals = 12;
+  string videoLink = 13;
+  string spotifyLink = 14;
+  int32 year = 15;
+  optional int32 semiFinalNr = 16;
 }
 
 message EurovisionShow {

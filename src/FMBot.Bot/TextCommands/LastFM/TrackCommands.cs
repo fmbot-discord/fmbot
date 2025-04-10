@@ -665,9 +665,13 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("eurovision", RunMode = RunMode.Async)]
-    [Alias("ev")]
+    [Alias("ev", "esc", "eurovisie", "eurovisionsongcontest", "songcontest")]
     public async Task EurovisionAsync([Remainder] string extraOptions = null)
     {
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var context = new ContextModel(this.Context, prfx, contextUser);
+
         try
         {
             CountryInfo pickedCountry = null;
@@ -685,19 +689,16 @@ public class TrackCommands : BaseCommandModule
             }
 
             var year = SettingService.GetYear(extraOptions);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             ResponseModel response;
             if (pickedCountry != null)
             {
-                response = await this._eurovisionBuilders.GetEurovisionCountryYear(new ContextModel(this.Context, prfx),
-                    pickedCountry, year ?? DateTime.UtcNow.Year);
+                response = await this._eurovisionBuilders.GetEurovisionCountryYear(context, pickedCountry, year ?? DateTime.UtcNow.Year);
             }
             else
             {
                 response =
-                    await this._eurovisionBuilders.GetEurovisionYear(new ContextModel(this.Context, prfx),
-                        year ?? DateTime.UtcNow.Year);
+                    await this._eurovisionBuilders.GetEurovisionYear(context, year ?? DateTime.UtcNow.Year);
             }
 
 

@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Web.InternalApi;
 
@@ -18,13 +20,15 @@ public class EurovisionBuilders
     private readonly UserService _userService;
     private readonly EurovisionService _eurovisionService;
     private readonly CountryService _countryService;
+    private readonly WhoKnowsTrackService _whoKnowsTrackService;
 
     public EurovisionBuilders(UserService userService, EurovisionService eurovisionService,
-        CountryService countryService)
+        CountryService countryService, WhoKnowsTrackService whoKnowsTrackService)
     {
         this._userService = userService;
         this._eurovisionService = eurovisionService;
         this._countryService = countryService;
+        this._whoKnowsTrackService = whoKnowsTrackService;
     }
 
     public async Task<ResponseModel> GetEurovisionYear(ContextModel context, int year)
@@ -82,7 +86,7 @@ public class EurovisionBuilders
                 {
                     if (eurovisionEntry.ReachedFinals)
                     {
-                        pageDescription.Append($" — Finals");
+                        pageDescription.Append($" — Grand final");
                         if (eurovisionEntry.HasDraw)
                         {
                             pageDescription.Append(
@@ -163,13 +167,17 @@ public class EurovisionBuilders
         response.Embed.WithTitle($":flag_{country.Code.ToLower()}: Eurovision entry for {country.Name} in {year}");
         var description = new StringBuilder();
         description.AppendLine($"### [{entry.Title} by {entry.Artist}]({entry.VideoLink})");
-        description.AppendLine($"Language: **{entry.Languages}**");
+        description.Append($"Sung in **{entry.Languages}**");
+        if (!string.IsNullOrWhiteSpace(entry.ExtraLanguages))
+        {
+            description.Append($" (with {entry.ExtraLanguages})");
+        }
         response.Embed.WithDescription(description.ToString());
 
         var positionDesc = new StringBuilder();
         if (entry.HasPosition)
         {
-            positionDesc.Append($"- **#{entry.Position}** in Finals");
+            positionDesc.Append($"- **#{entry.Position}** in Grand final");
             if (entry.HasScore)
             {
                 positionDesc.Append($" with **{entry.Score} points**");
@@ -185,7 +193,7 @@ public class EurovisionBuilders
         else if (entry.HasDraw)
         {
             positionDesc.AppendLine(
-                $"- **{entry.Draw}{StringExtensions.GetAmountEnd(entry.Draw)} running** in Finals");
+                $"- **{entry.Draw}{StringExtensions.GetAmountEnd(entry.Draw)} running** in Grand final");
         }
 
         if (entry.HasSemiFinalPosition)
@@ -225,7 +233,7 @@ public class EurovisionBuilders
                 juryVotesDesc.AppendLine($"**{vote.Points}**  ·  {votedCountry.Emoji} {votedCountry.Name}");
             }
 
-            response.Embed.AddField("Received juryvotes", juryVotesDesc.ToString(), true);
+            response.Embed.AddField("Received jury points", juryVotesDesc.ToString(), true);
         }
 
         var teleVotes = votes
@@ -243,11 +251,21 @@ public class EurovisionBuilders
                 teleVotesDesc.AppendLine($"**{vote.Points}**  ·  {votedCountry.Emoji} {votedCountry.Name}");
             }
 
-            response.Embed.AddField("Received televotes", teleVotesDesc.ToString(), true);
+            response.Embed.AddField("Received televote points", teleVotesDesc.ToString(), true);
         }
 
-        PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, entry.Artist.Split(" and ")[0]);
+        var artistName = entry.Artist.Split(" and ")[0];
+        PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artistName);
         PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, entry.Title);
+
+        var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(artistName,
+            entry.Title, context.ContextUser.UserId);
+
+        if (userPlaycount > 0)
+        {
+            response.Embed.WithFooter(
+                $"{userPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(userPlaycount)}");
+        }
 
         return response;
     }
