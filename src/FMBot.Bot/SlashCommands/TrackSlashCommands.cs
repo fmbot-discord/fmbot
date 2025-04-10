@@ -22,6 +22,8 @@ public class TrackSlashCommands : InteractionModuleBase
     private readonly SettingService _settingService;
     private readonly TrackBuilders _trackBuilders;
     private readonly TrackService _trackService;
+    private readonly EurovisionBuilders _eurovisionBuilders;
+    private readonly CountryService _countryService;
 
     private InteractiveService Interactivity { get; }
 
@@ -30,13 +32,17 @@ public class TrackSlashCommands : InteractionModuleBase
         SettingService settingService,
         TrackBuilders trackBuilders,
         InteractiveService interactivity,
-        TrackService trackService)
+        TrackService trackService,
+        EurovisionBuilders eurovisionBuilders,
+        CountryService countryService)
     {
         this._userService = userService;
         this._settingService = settingService;
         this._trackBuilders = trackBuilders;
         this.Interactivity = interactivity;
         this._trackService = trackService;
+        this._eurovisionBuilders = eurovisionBuilders;
+        this._countryService = countryService;
     }
 
     [SlashCommand("track", "Shows track info for the track you're currently listening to or searching for")]
@@ -507,6 +513,45 @@ public class TrackSlashCommands : InteractionModuleBase
             var response = await this._trackBuilders.ScrobbleAsync(new ContextModel(this.Context, contextUser), name);
 
             await this.Context.SendResponse(this.Interactivity, response, privateResponse);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [SlashCommand("eurovision", "View Eurovision overview for a year and/or a country")]
+    [UserSessionRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task EurovisionAsync(
+        [Summary("Year", "Year (1956 to now)")] [Autocomplete(typeof(YearAutoComplete))] string year = null,
+        [Summary("Country", "Eurovision country")] [Autocomplete(typeof(EurovisionAutoComplete))] string country = null)
+    {
+        try
+        {
+            CountryInfo pickedCountry = null;
+            if (country != null)
+            {
+                pickedCountry = this._countryService.GetValidCountry(country);
+            }
+            var pickedYear = SettingService.GetYear(year)?? DateTime.UtcNow.Year;
+
+            ResponseModel response;
+            if (pickedCountry != null)
+            {
+                response = await this._eurovisionBuilders.GetEurovisionCountryYear(new ContextModel(this.Context),
+                    pickedCountry, pickedYear);
+            }
+            else
+            {
+                response =
+                    await this._eurovisionBuilders.GetEurovisionYear(new ContextModel(this.Context), pickedYear);
+            }
+
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

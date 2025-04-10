@@ -38,91 +38,116 @@ public class EurovisionService
         }
     }
 
-    public (string full, string oneline) GetEurovisionDescription(EurovisionEntry eurovisionEntry)
+    public (string full, string oneline) GetEurovisionDescription(EurovisionEntry entry)
     {
         var full = new StringBuilder();
         var oneLine = new StringBuilder();
 
-        var country = this.CountryService.GetValidCountry(eurovisionEntry.EntryCode);
+        var country = this.CountryService.GetValidCountry(entry.EntryCode);
 
         full.Append(
-            $"- **{eurovisionEntry.Year}** entry for **{country.Name}** {country.Emoji}");
+            $"- **{entry.Year}** entry for **{country.Name}** {country.Emoji}");
         full.AppendLine();
 
         oneLine.Append(
-            $"Eurovision {eurovisionEntry.Year} for {country.Name} {country.Emoji}");
+            $"Eurovision {entry.Year} for {country.Name} {country.Emoji}");
 
-        if (!eurovisionEntry.HasScore && !eurovisionEntry.ReachedFinals && eurovisionEntry.HasSemiFinalNr)
+        if (!entry.HasScore && !entry.ReachedFinals && entry.HasSemiFinalNr)
         {
             full.Append(
-                $"- Playing in the **{eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final**");
-            if (eurovisionEntry.HasDraw)
+                $"- Playing in the **{entry.SemiFinalNr}{StringExtensions.GetAmountEnd(entry.SemiFinalNr)} semi-final**");
+            if (entry.HasSemiFinalDraw)
             {
                 full.Append(
-                    $" - **{eurovisionEntry.Draw}{StringExtensions.GetAmountEnd(eurovisionEntry.Draw)} running position**");
+                    $" - **{entry.HasSemiFinalDraw}{StringExtensions.GetAmountEnd(entry.SemiFinalDraw)} running position**");
             }
 
             oneLine.Append(
-                $" - {eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final");
+                $" - {entry.SemiFinalNr}{StringExtensions.GetAmountEnd(entry.SemiFinalNr)} semi-final");
         }
-        else if (!eurovisionEntry.HasScore && eurovisionEntry.ReachedFinals)
+        else if (!entry.HasScore && entry.ReachedFinals)
         {
             full.Append(
                 $"- Playing in the finals");
-            if (eurovisionEntry.HasDraw)
+            if (entry.HasDraw)
             {
                 full.Append(
-                    $" - **{eurovisionEntry.Draw}{StringExtensions.GetAmountEnd(eurovisionEntry.Draw)} running position**");
+                    $" - **{entry.Draw}{StringExtensions.GetAmountEnd(entry.Draw)} running position**");
             }
 
             oneLine.Append($" - Finals");
         }
-        else if (eurovisionEntry.HasPosition)
+        else if (entry.HasPosition)
         {
             full.Append(
-                $"- Got **{eurovisionEntry.Position}{StringExtensions.GetAmountEnd(eurovisionEntry.Position)} place**");
-            if (eurovisionEntry.HasScore)
+                $"- Got **{entry.Position}{StringExtensions.GetAmountEnd(entry.Position)} place**");
+            if (entry.HasScore)
             {
-                full.Append($" with **{eurovisionEntry.Score} points**");
+                full.Append($" with **{entry.Score} points**");
+            }
+            if (entry.Position == 1)
+            {
+                full.Append($" 👑");
             }
 
-            oneLine.Append($" - #{eurovisionEntry.Position}");
+            oneLine.Append($" - #{entry.Position}");
+        }
+        else if (entry.HasSemiFinalPosition)
+        {
+            full.Append(
+                $"- Got **{entry.SemiFinalPosition}{StringExtensions.GetAmountEnd(entry.SemiFinalPosition)} place in semi-finals**");
+            if (entry.HasSemiFinalScore)
+            {
+                full.Append($" with **{entry.HasSemiFinalScore} points**");
+            }
         }
 
         return (full.ToString(), oneLine.ToString());
     }
 
-    public async Task<List<EurovisionEntry>> GetEntries(int year)
+    public async Task<EurovisionContest> GetEntries(int year)
     {
         var entries = await this._eurovisionEnrichment.GetContestByYearAsync(new YearRequest
         {
             Year = year
         });
 
-        return entries?.Contest?.Entries?.ToList();
+        return entries?.Contest;
     }
 
     public async Task<EurovisionEntry> GetEntry(int year, string countryCode)
     {
-        var entry = await this._eurovisionEnrichment.GetCountryEntryByYearAsync(new CountryYearRequest
+        try
         {
-            Year = year,
-            CountryCode = countryCode
-        });
+            var entry = await this._eurovisionEnrichment.GetCountryEntryByYearAsync(new CountryYearRequest
+            {
+                Year = year,
+                CountryCode = countryCode
+            });
 
-        return entry?.Entry;
+            return entry?.Entry;
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 
     public async Task<List<EurovisionVote>> GetVotesForEntry(int year, string countryCode)
     {
-        var votes = await this._eurovisionEnrichment.GetVotesForCountryByYearAsync(new VotesRequest
+        try
         {
-            Year = year,
-            CountryCode = countryCode
-        });
+            var votes = await this._eurovisionEnrichment.GetVotesForCountryByYearAsync(new VotesRequest
+            {
+                Year = year,
+                CountryCode = countryCode
+            });
 
-        return votes?.Votes?.ToList();
+            return votes?.Votes?.ToList() ?? [];
+        }
+        catch (Exception e)
+        {
+            return [];
+        }
     }
-
-
 }

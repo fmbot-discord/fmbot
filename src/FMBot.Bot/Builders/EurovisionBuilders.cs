@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,6 +7,7 @@ using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using Web.InternalApi;
 
@@ -32,7 +34,8 @@ public class EurovisionBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var contestants = await this._eurovisionService.GetEntries(year);
+        var contest = await this._eurovisionService.GetEntries(year);
+        var contestants = contest?.Entries?.ToList();
 
         if (contestants == null || !contestants.Any())
         {
@@ -42,6 +45,8 @@ public class EurovisionBuilders
             return response;
         }
 
+        var hostCountry = this._countryService.GetValidCountry(contest.HostCountry);
+
         var pages = new List<PageBuilder>();
         var pageCounter = 1;
         var eurovisionPages = contestants
@@ -49,7 +54,9 @@ public class EurovisionBuilders
             .ThenByDescending(o => o.Score)
             .ThenBy(o => o.SemiFinalNr)
             .ThenByDescending(o => o.SemiFinalScore)
-            .ThenBy(o => o.Draw).Chunk(8)
+            .ThenBy(o => o.Draw)
+            .ThenBy(o => o.SemiFinalDraw)
+            .Chunk(8)
             .ToList();
 
         foreach (var page in eurovisionPages)
@@ -90,7 +97,7 @@ public class EurovisionBuilders
                     else
                     {
                         pageDescription.Append(
-                            $" — {eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final - {eurovisionEntry.Draw}{StringExtensions.GetAmountEnd(eurovisionEntry.Draw)} running");
+                            $" — {eurovisionEntry.SemiFinalNr}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalNr)} semi-final - {eurovisionEntry.SemiFinalDraw}{StringExtensions.GetAmountEnd(eurovisionEntry.SemiFinalDraw)} running");
                     }
                 }
                 else
@@ -115,12 +122,15 @@ public class EurovisionBuilders
             }
 
             var footer = new StringBuilder();
+
+
+            footer.AppendLine("Data provided by ESC Discord / ranked.be");
             footer.Append($"Page {pageCounter}/{eurovisionPages.Count()}");
-            footer.AppendLine($" - {contestants.Count} total entries");
-            footer.Append("Data provided by ESC Discord / ranked.be");
+            footer.Append($" - {contestants.Count} total entries");
+            footer.Append($" - Add country for details");
 
             pages.Add(new PageBuilder()
-                .WithTitle($"Eurovision {year} <:eurovision:1084971471610323035>")
+                .WithTitle($"Eurovision {year} in {contest.HostCity}, {hostCountry.Name} <:eurovision:1084971471610323035>")
                 .WithDescription(pageDescription.ToString())
                 .WithFooter(footer.ToString()));
             pageCounter++;
@@ -152,38 +162,92 @@ public class EurovisionBuilders
 
         response.Embed.WithTitle($":flag_{country.Code.ToLower()}: Eurovision entry for {country.Name} in {year}");
         var description = new StringBuilder();
-        description.AppendLine($"## [{entry.Title} by {entry.Artist}]({entry.VideoLink})");
+        description.AppendLine($"### [{entry.Title} by {entry.Artist}]({entry.VideoLink})");
+        description.AppendLine($"Language: **{entry.Languages}**");
         response.Embed.WithDescription(description.ToString());
 
-        if (votes.Any(a => a.ToCountry == country.Code && a.VoteType == VoteType.JuryVotes))
+        var positionDesc = new StringBuilder();
+        if (entry.HasPosition)
         {
-            var juryVotes = new StringBuilder();
-            foreach (var vote in votes
-                         .Where(w => w.ToCountry == country.Code && w.VoteType == VoteType.JuryVotes)
+            positionDesc.Append($"- **#{entry.Position}** in Finals");
+            if (entry.HasScore)
+            {
+                positionDesc.Append($" with **{entry.Score} points**");
+            }
+
+            if (entry.Position == 1)
+            {
+                positionDesc.Append($" 👑");
+            }
+
+            positionDesc.AppendLine();
+        }
+        else if (entry.HasDraw)
+        {
+            positionDesc.AppendLine(
+                $"- **{entry.Draw}{StringExtensions.GetAmountEnd(entry.Draw)} running** in Finals");
+        }
+
+        if (entry.HasSemiFinalPosition)
+        {
+            positionDesc.Append(
+                $"- **#{entry.SemiFinalPosition}** in {entry.SemiFinalNr}{StringExtensions.GetAmountEnd(entry.SemiFinalNr)} semi-final");
+            if (entry.HasSemiFinalScore)
+            {
+                positionDesc.Append($" with **{entry.SemiFinalScore} points**");
+            }
+
+            positionDesc.AppendLine();
+        }
+        else if (entry.HasSemiFinalDraw)
+        {
+            positionDesc.AppendLine(
+                $"- **{entry.SemiFinalDraw}{StringExtensions.GetAmountEnd(entry.SemiFinalDraw)} running** in {entry.SemiFinalNr}{StringExtensions.GetAmountEnd(entry.SemiFinalNr)} semi-final");
+        }
+
+        if (positionDesc.Length > 0)
+        {
+            response.Embed.AddField("Positions", positionDesc.ToString());
+        }
+
+        var juryVotes = votes
+            .Where(w => string.Equals(w.ToCountry, country.Code, StringComparison.OrdinalIgnoreCase)
+                        && w.VoteType == VoteType.JuryVotes).ToList();
+        if (juryVotes.Any())
+        {
+            var juryVotesDesc = new StringBuilder();
+            juryVotesDesc.AppendLine($"**{juryVotes.Count}**  ·  Total");
+            foreach (var vote in juryVotes
                          .OrderByDescending(o => o.Points)
                          .Take(8))
             {
                 var votedCountry = this._countryService.GetValidCountry(vote.FromCountry);
-                juryVotes.AppendLine($"**{vote.Points}** - {votedCountry.Emoji} {votedCountry.Name}");
+                juryVotesDesc.AppendLine($"**{vote.Points}**  ·  {votedCountry.Emoji} {votedCountry.Name}");
             }
 
-            response.Embed.AddField("Most jury votes received", juryVotes.ToString(), true);
+            response.Embed.AddField("Received juryvotes", juryVotesDesc.ToString(), true);
         }
 
-        if (votes.Any(a => a.ToCountry == country.Code && a.VoteType == VoteType.TeleVotes))
+        var teleVotes = votes
+            .Where(w => string.Equals(w.ToCountry, country.Code, StringComparison.OrdinalIgnoreCase)
+                        && w.VoteType == VoteType.TeleVotes).ToList();
+        if (teleVotes.Any())
         {
-            var teleVotes = new StringBuilder();
-            foreach (var vote in votes
-                         .Where(w => w.ToCountry == country.Code && w.VoteType == VoteType.TeleVotes)
+            var teleVotesDesc = new StringBuilder();
+            teleVotesDesc.AppendLine($"**{teleVotes.Count}**  ·  Total");
+            foreach (var vote in teleVotes
                          .OrderByDescending(o => o.Points)
                          .Take(8))
             {
                 var votedCountry = this._countryService.GetValidCountry(vote.FromCountry);
-                teleVotes.AppendLine($"**{vote.Points}** - {votedCountry.Emoji} {votedCountry.Name}");
+                teleVotesDesc.AppendLine($"**{vote.Points}**  ·  {votedCountry.Emoji} {votedCountry.Name}");
             }
 
-            response.Embed.AddField("Most tele votes received", teleVotes.ToString(), true);
+            response.Embed.AddField("Received televotes", teleVotesDesc.ToString(), true);
         }
+
+        PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, entry.Artist.Split(" and ")[0]);
+        PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, entry.Title);
 
         return response;
     }

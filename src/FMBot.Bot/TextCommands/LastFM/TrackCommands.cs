@@ -666,7 +666,6 @@ public class TrackCommands : BaseCommandModule
 
     [Command("eurovision", RunMode = RunMode.Async)]
     [Alias("ev")]
-    [RequiresIndex]
     public async Task EurovisionAsync([Remainder] string extraOptions = null)
     {
         try
@@ -678,6 +677,10 @@ public class TrackCommands : BaseCommandModule
                 foreach (var option in splitOptions)
                 {
                     pickedCountry = this._countryService.GetValidCountry(option);
+                    if (pickedCountry != null)
+                    {
+                        break;
+                    }
                 }
             }
 

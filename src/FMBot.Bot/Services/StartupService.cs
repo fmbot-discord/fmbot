@@ -194,6 +194,7 @@ public class StartupService
 
         this.StartMetricsPusher();
 
+        await this.RegisterSlashCommands();
         var startDelay = (this._client.Shards.Count * 1) + 10;
 
         if (ConfigData.Data.Shards == null || ConfigData.Data.Shards.MainInstance == true)
