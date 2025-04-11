@@ -152,14 +152,6 @@ public class TimerService
             Log.Warning("Main guild not connected, not queuing master jobs");
             BackgroundJob.Schedule(() => MakeSureMasterJobsAreQueued(), TimeSpan.FromMinutes(2));
         }
-
-        BackgroundJob.Schedule(() => UpdateEurovisionData(), TimeSpan.FromSeconds(1));
-
-        if (DateTime.Today.Month == 5 || DateTime.Today.Month == 4)
-        {
-            Log.Information($"RecurringJob: Adding {nameof(UpdateEurovisionData)}");
-            RecurringJob.AddOrUpdate(nameof(UpdateEurovisionData), () => UpdateEurovisionData(), "30 */2 * * *");
-        }
     }
 
     public void MakeSureMasterJobsAreQueued()
@@ -593,11 +585,6 @@ public class TimerService
     {
         var filteredUsers = await this._whoKnowsFilterService.GetNewGlobalFilteredUsers();
         await this._whoKnowsFilterService.AddFilteredUsersToDatabase(filteredUsers);
-    }
-
-    public async Task UpdateEurovisionData()
-    {
-        await this._eurovisionService.UpdateEurovisionData();
     }
 
     public void ClearUserCache()

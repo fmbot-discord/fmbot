@@ -278,10 +278,10 @@ public class PlayBuilder
         // return response;
 
         var fmText = "";
+        var useSmallMarkdown = embedType == FmEmbedType.TextFull || embedType == FmEmbedType.TextMini;
         var footerText = await this._userService.GetFooterAsync(
             context.ContextUser.FmFooterOptions, userSettings, currentTrack, previousTrack, totalPlaycount, context,
-            guild, guildUsers,
-            embedType == FmEmbedType.TextFull || embedType == FmEmbedType.TextMini);
+            guild, guildUsers, useSmallMarkdown);
 
         if (!userSettings.DifferentUser &&
             !currentTrack.NowPlaying &&
@@ -373,7 +373,6 @@ public class PlayBuilder
                     footerText.AppendLine("Last scrobble:");
                     response.Embed.WithTimestamp(currentTrack.TimePlayed.Value);
                 }
-
 
                 if (guild != null && !userSettings.DifferentUser)
                 {

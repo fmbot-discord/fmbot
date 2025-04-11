@@ -78,6 +78,8 @@ public class TemplateContext
 
     public RecentTrack CurrentTrack { get; set; }
 
+    public Track DbTrack { get; set; }
+
     public RecentTrack PreviousTrack { get; set; }
 
     public long TotalScrobbles { get; set; }
@@ -94,6 +96,8 @@ public class TemplateContext
     public CountryService CountryService { get; set; }
     public UserService UserService { get; set; }
     public PlayService PlayService { get; set; }
+
+    public EurovisionService EurovisionService { get; set; }
 }
 
 public enum EmbedOption
@@ -346,7 +350,8 @@ public static class TemplateOptions
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                return new VariableResult($"{playcount.Format(context.NumberFormat)} artist scrobbles", playcount.Format(context.NumberFormat).ToString());
+                return new VariableResult($"{playcount.Format(context.NumberFormat)} artist scrobbles",
+                    playcount.Format(context.NumberFormat).ToString());
             },
             ParametersFactory = context => new Dictionary<string, object>
             {
@@ -368,7 +373,8 @@ public static class TemplateOptions
                     context.Connection, start);
                 var count = plays.Count(a =>
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} artist plays this week", count.Format(context.NumberFormat).ToString());
+                return new VariableResult($"{count.Format(context.NumberFormat)} artist plays this week",
+                    count.Format(context.NumberFormat).ToString());
             }
         },
         new ComplexTemplateOption
@@ -383,7 +389,8 @@ public static class TemplateOptions
                     context.Connection, start);
                 var count = plays.Count(a =>
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} artist plays this month", count.Format(context.NumberFormat).ToString());
+                return new VariableResult($"{count.Format(context.NumberFormat)} artist plays this month",
+                    count.Format(context.NumberFormat).ToString());
             }
         },
         new SqlTemplateOption
@@ -398,7 +405,8 @@ public static class TemplateOptions
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                return new VariableResult($"{playcount.Format(context.NumberFormat)} album scrobbles", playcount.Format(context.NumberFormat).ToString());
+                return new VariableResult($"{playcount.Format(context.NumberFormat)} album scrobbles",
+                    playcount.Format(context.NumberFormat).ToString());
             },
             ParametersFactory = context => new Dictionary<string, object>
             {
@@ -421,7 +429,8 @@ public static class TemplateOptions
                     a.AlbumName != null &&
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
                     a.AlbumName.Equals(context.CurrentTrack.AlbumName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} album plays this week", count.Format(context.NumberFormat).ToString());
+                return new VariableResult($"{count.Format(context.NumberFormat)} album plays this week",
+                    count.Format(context.NumberFormat).ToString());
             }
         },
         new ComplexTemplateOption
@@ -438,7 +447,8 @@ public static class TemplateOptions
                     a.AlbumName != null &&
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
                     a.AlbumName.Equals(context.CurrentTrack.AlbumName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} album plays this month", count.Format(context.NumberFormat).ToString());
+                return new VariableResult($"{count.Format(context.NumberFormat)} album plays this month",
+                    count.Format(context.NumberFormat).ToString());
             }
         },
         new SqlTemplateOption
@@ -453,7 +463,8 @@ public static class TemplateOptions
             ResultProcessor = async (context, reader) =>
             {
                 var playcount = await reader.IsDBNullAsync(0) ? 0 : await reader.GetFieldValueAsync<int>(0);
-                return new VariableResult($"{playcount.Format(context.NumberFormat)} track scrobbles", playcount.Format(context.NumberFormat).ToString());
+                return new VariableResult($"{playcount.Format(context.NumberFormat)} track scrobbles",
+                    playcount.Format(context.NumberFormat).ToString());
             },
             ParametersFactory = context => new Dictionary<string, object>
             {
@@ -475,7 +486,8 @@ public static class TemplateOptions
                 var count = plays.Count(a =>
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
                     a.AlbumName.Equals(context.CurrentTrack.TrackName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} track plays this week", count.Format(context.NumberFormat).ToString());
+                return new VariableResult($"{count.Format(context.NumberFormat)} track plays this week",
+                    count.Format(context.NumberFormat).ToString());
             }
         },
         new ComplexTemplateOption
@@ -491,7 +503,8 @@ public static class TemplateOptions
                 var count = plays.Count(a =>
                     a.ArtistName.Equals(context.CurrentTrack.ArtistName, StringComparison.OrdinalIgnoreCase) &&
                     a.AlbumName.Equals(context.CurrentTrack.TrackName, StringComparison.OrdinalIgnoreCase));
-                return new VariableResult($"{count.Format(context.NumberFormat)} track plays this month", count.Format(context.NumberFormat).ToString());
+                return new VariableResult($"{count.Format(context.NumberFormat)} track plays this month",
+                    count.Format(context.NumberFormat).ToString());
             }
         },
         new ComplexTemplateOption
@@ -502,7 +515,8 @@ public static class TemplateOptions
             VariableType = VariableType.Text,
             FooterOrder = 50,
             ExecutionLogic = context =>
-                Task.FromResult(new VariableResult($"{context.TotalScrobbles.Format(context.NumberFormat)} total scrobbles",
+                Task.FromResult(new VariableResult(
+                    $"{context.TotalScrobbles.Format(context.NumberFormat)} total scrobbles",
                     context.TotalScrobbles.Format(context.NumberFormat).ToString()))
         },
         new ComplexTemplateOption
@@ -718,52 +732,35 @@ public static class TemplateOptions
             VariableType = VariableType.ResourceUrl,
             ExecutionLogic = context => Task.FromResult(new VariableResult(context.PreviousTrack.TrackUrl))
         },
-        new SqlTemplateOption
+        new ComplexTemplateOption
         {
             FooterOption = FmFooterOption.TrackBpm,
             Variable = "track.bpm",
             Description = "Track beats per minute",
             VariableType = VariableType.Text,
             FooterOrder = 300,
-            SqlQuery = @"
-                    SELECT tempo
-                    FROM public.tracks
-                    WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT))
-                      AND UPPER(name) = UPPER(CAST(@trackName AS CITEXT))",
-            ResultProcessor = async (context, reader) =>
+            ExecutionLogic = context =>
             {
-                if (!await reader.IsDBNullAsync(0))
+                if (context.DbTrack?.Tempo != null)
                 {
-                    var tempo = await reader.GetFieldValueAsync<float>(0);
-                    return new VariableResult($"bpm {tempo:0.0}", $"{tempo:0.0}");
+                    return Task.FromResult(new VariableResult($"bpm {context.DbTrack?.Tempo:0.0}", $"{context.DbTrack?.Tempo:0.0}"));
                 }
 
-                return null;
-            },
-            ParametersFactory = context => new Dictionary<string, object>
-            {
-                { "artistName", context.CurrentTrack.ArtistName },
-                { "trackName", context.CurrentTrack.TrackName }
+                return Task.FromResult<VariableResult>(null);
             }
         },
-        new SqlTemplateOption
+        new ComplexTemplateOption
         {
             FooterOption = FmFooterOption.TrackDuration,
             Variable = "track.duration",
             Description = "Track duration",
             VariableType = VariableType.Text,
             FooterOrder = 310,
-            SqlQuery = @"
-                    SELECT duration_ms
-                    FROM public.tracks
-                    WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT))
-                      AND UPPER(name) = UPPER(CAST(@trackName AS CITEXT))",
-            ResultProcessor = async (context, reader) =>
+            ExecutionLogic = context =>
             {
-                if (!await reader.IsDBNullAsync(0))
+                if (context.DbTrack?.DurationMs != null)
                 {
-                    var durationMs = await reader.GetFieldValueAsync<int>(0);
-                    var trackLength = TimeSpan.FromMilliseconds(durationMs);
+                    var trackLength = TimeSpan.FromMilliseconds(context.DbTrack.DurationMs.Value);
                     var formattedTrackLength =
                         $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
 
@@ -774,15 +771,10 @@ public static class TemplateOptions
                         12 => "🕛", _ => "🕒"
                     };
 
-                    return new VariableResult($"{emoji} {formattedTrackLength}", formattedTrackLength);
+                    return Task.FromResult(new VariableResult($"{emoji} {formattedTrackLength}", formattedTrackLength));
                 }
 
-                return null;
-            },
-            ParametersFactory = context => new Dictionary<string, object>
-            {
-                { "artistName", context.CurrentTrack.ArtistName },
-                { "trackName", context.CurrentTrack.TrackName }
+                return Task.FromResult<VariableResult>(null);
             }
         },
         new ComplexTemplateOption
@@ -850,7 +842,8 @@ public static class TemplateOptions
                 {
                     var currentPlaycount = await reader.GetFieldValueAsync<int>(0);
                     var userName = await reader.GetFieldValueAsync<string>(2);
-                    return new VariableResult($"👑 {Format.Sanitize(userName)} ({currentPlaycount.Format(context.NumberFormat)} plays)",
+                    return new VariableResult(
+                        $"👑 {Format.Sanitize(userName)} ({currentPlaycount.Format(context.NumberFormat)} plays)",
                         Format.Sanitize(userName));
                 }
 
@@ -917,7 +910,8 @@ public static class TemplateOptions
                     .filteredUsers;
 
                 return artistListeners.Any()
-                    ? new VariableResult($"{artistListeners.Count.Format(context.NumberFormat)} listeners", artistListeners.Count.Format(context.NumberFormat).ToString())
+                    ? new VariableResult($"{artistListeners.Count.Format(context.NumberFormat)} listeners",
+                        artistListeners.Count.Format(context.NumberFormat).ToString())
                     : null;
             }
         },
@@ -975,7 +969,8 @@ public static class TemplateOptions
                     .FilterWhoKnowsObjects(albumListeners, context.GuildUsers, context.Guild).filteredUsers;
 
                 return albumListeners.Any()
-                    ? new VariableResult($"{albumListeners.Count.Format(context.NumberFormat)} album listeners", albumListeners.Count.Format(context.NumberFormat).ToString())
+                    ? new VariableResult($"{albumListeners.Count.Format(context.NumberFormat)} album listeners",
+                        albumListeners.Count.Format(context.NumberFormat).ToString())
                     : null;
             }
         },
@@ -1033,7 +1028,8 @@ public static class TemplateOptions
                     .FilterWhoKnowsObjects(trackListeners, context.GuildUsers, context.Guild).filteredUsers;
 
                 return trackListeners.Any()
-                    ? new VariableResult($"{trackListeners.Count.Format(context.NumberFormat)} track listeners", trackListeners.Count.Format(context.NumberFormat).ToString())
+                    ? new VariableResult($"{trackListeners.Count.Format(context.NumberFormat)} track listeners",
+                        trackListeners.Count.Format(context.NumberFormat).ToString())
                     : null;
             }
         },

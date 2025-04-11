@@ -38,6 +38,7 @@ public class TrackCommands : BaseCommandModule
     private readonly TrackBuilders _trackBuilders;
     private readonly EurovisionBuilders _eurovisionBuilders;
     private readonly PlayBuilder _playBuilders;
+    private readonly CountryService _countryService;
 
     private InteractiveService Interactivity { get; }
 
@@ -54,7 +55,8 @@ public class TrackCommands : BaseCommandModule
         TrackService trackService,
         TrackBuilders trackBuilders,
         EurovisionBuilders eurovisionBuilders,
-        PlayBuilder playBuilders) : base(botSettings)
+        PlayBuilder playBuilders,
+        CountryService countryService) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -67,6 +69,7 @@ public class TrackCommands : BaseCommandModule
         this._trackBuilders = trackBuilders;
         this._eurovisionBuilders = eurovisionBuilders;
         this._playBuilders = playBuilders;
+        this._countryService = countryService;
     }
 
     [Command("track", RunMode = RunMode.Async)]
@@ -662,18 +665,42 @@ public class TrackCommands : BaseCommandModule
     }
 
     [Command("eurovision", RunMode = RunMode.Async)]
-    [Alias("ev")]
-    [RequiresIndex]
+    [Alias("ev", "esc", "eurovisie", "eurovisionsongcontest", "songcontest")]
+    [UsernameSetRequired]
     public async Task EurovisionAsync([Remainder] string extraOptions = null)
     {
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var context = new ContextModel(this.Context, prfx, contextUser);
+
         try
         {
-            var year = SettingService.GetYear(extraOptions);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            CountryInfo pickedCountry = null;
+            if (extraOptions != null)
+            {
+                var splitOptions = extraOptions.Split(" ");
+                foreach (var option in splitOptions)
+                {
+                    pickedCountry = this._countryService.GetValidCountry(option);
+                    if (pickedCountry != null)
+                    {
+                        break;
+                    }
+                }
+            }
 
-            var response =
-                await this._eurovisionBuilders.GetEurovisionOverview(new ContextModel(this.Context, prfx),
-                    year ?? DateTime.UtcNow.Year, null);
+            var year = SettingService.GetYear(extraOptions);
+
+            ResponseModel response;
+            if (pickedCountry != null)
+            {
+                response = await this._eurovisionBuilders.GetEurovisionCountryYear(context, pickedCountry, year ?? DateTime.UtcNow.Year);
+            }
+            else
+            {
+                response =
+                    await this._eurovisionBuilders.GetEurovisionYear(context, year ?? DateTime.UtcNow.Year);
+            }
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -692,7 +719,8 @@ public class TrackCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]
-    [SupporterExclusive("To see which tracks you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
+    [SupporterExclusive(
+        "To see which tracks you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task TrackGapsAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -718,7 +746,8 @@ public class TrackCommands : BaseCommandModule
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var mode = SettingService.SetMode(userSettings.NewSearchValue, contextUser.Mode);
 
-            var response = await this._playBuilders.ListeningGapsAsync(context, topListSettings, userSettings, mode.mode, GapEntityType.Track);
+            var response = await this._playBuilders.ListeningGapsAsync(context, topListSettings, userSettings,
+                mode.mode, GapEntityType.Track);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -736,7 +765,7 @@ public class TrackCommands : BaseCommandModule
         "l",
         "lyrics The Beatles Let It Be",
         "lyrics Daft Punk | Get Lucky")]
-    [Alias("lyric","lyr", "lr","lyricsfind", "lyricsearch", "lyricssearch")]
+    [Alias("lyric", "lyr", "lr", "lyricsfind", "lyricsearch", "lyricssearch")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -52,6 +51,7 @@ public class UserService
     private readonly TemplateService _templateService;
     private readonly DiscordShardedClient _client;
     private readonly HttpClient _httpClient;
+    private readonly EurovisionService _eurovisionService;
 
     public UserService(IMemoryCache cache,
         IDbContextFactory<FMBotDbContext> contextFactory,
@@ -66,7 +66,8 @@ public class UserService
         AdminService adminService,
         TemplateService templateService,
         DiscordShardedClient client,
-        HttpClient httpClient)
+        HttpClient httpClient,
+        EurovisionService eurovisionService)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
@@ -81,6 +82,7 @@ public class UserService
         this._templateService = templateService;
         this._client = client;
         this._httpClient = httpClient;
+        this._eurovisionService = eurovisionService;
         this._botSettings = botSettings.Value;
     }
 
@@ -969,10 +971,14 @@ public class UserService
         await connection.OpenAsync();
         DefaultTypeMap.MatchNamesWithUnderscores = true;
 
+        var dbTrack =
+            await TrackRepository.GetTrackForName(currentTrack.ArtistName, currentTrack.TrackName, connection);
+
         var footerContext = new TemplateContext
         {
             UserService = this,
             CurrentTrack = currentTrack,
+            DbTrack = dbTrack,
             PreviousTrack = previousTrack,
             Connection = connection,
             Guild = guild,
@@ -980,6 +986,7 @@ public class UserService
             WhoKnowsTrackService = this._whoKnowsTrackService,
             WhoKnowsAlbumService = this._whoKnowsAlbumService,
             WhoKnowsArtistService = this._whoKnowsArtistService,
+            EurovisionService = this._eurovisionService,
             CountryService = this._countryService,
             PlayService = this._playService,
             UserSettings = userSettings,

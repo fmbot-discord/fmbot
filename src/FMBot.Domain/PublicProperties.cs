@@ -27,8 +27,5 @@ public static class PublicProperties
     public static ConcurrentDictionary<ulong, string> UsedCommandsTracks = new();
     public static ConcurrentDictionary<ulong, ReferencedMusic> UsedCommandsReferencedMusic = new();
 
-    public static ConcurrentDictionary<int, List<EurovisionContestantModel>> EurovisionYears = new();
-    public static ConcurrentDictionary<string, EurovisionContestantModel> EurovisionContestants = new();
-
     public static SpotifyClientConfig SpotifyConfig = null;
 }

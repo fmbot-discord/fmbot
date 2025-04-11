@@ -47,12 +47,15 @@ public partial class TemplateService
         var complexTasks = complexOptions.Select(o => ProcessComplexOptionAsync(o, context, options));
         await Task.WhenAll(complexTasks);
 
-        var eurovision =
-            EurovisionService.GetEurovisionEntry(context.CurrentTrack.ArtistName, context.CurrentTrack.TrackName);
-        if (eurovision != null)
+        if (context.DbTrack?.SpotifyId != null)
         {
-            var description = EurovisionService.GetEurovisionDescription(eurovision);
-            options.Add((new VariableResult(description.oneline), 500));
+            var eurovisionEntry =
+                await context.EurovisionService.GetEurovisionEntryForSpotifyId(context.DbTrack.SpotifyId);
+            if (eurovisionEntry != null)
+            {
+                var description = context.EurovisionService.GetEurovisionDescription(eurovisionEntry);
+                options.Add((new VariableResult(description.oneline), 500));
+            }
         }
 
         return options.Where(w => context.Genres != w.Result.Content).OrderBy(o => o.Order)
@@ -118,7 +121,7 @@ public partial class TemplateService
 
     public record TemplateResult(EmbedBuilder EmbedBuilder, Dictionary<EmbedOption, string> Content);
 
-    private async Task<TemplateResult> TemplateToEmbed(Template template, TemplateContext context)
+    private static async Task<TemplateResult> TemplateToEmbed(Template template, TemplateContext context)
     {
         var embed = new EmbedBuilder();
         var script = template.Content.Replace("$$fm-template", "").TrimStart();

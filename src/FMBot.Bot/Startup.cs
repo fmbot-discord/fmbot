@@ -327,7 +327,6 @@ public class Startup
         services.AddHttpClient<TrackService>();
         services.AddHttpClient<DiscordSkuService>();
         services.AddHttpClient<OpenAiService>();
-        services.AddHttpClient<EurovisionService>();
         services.AddHttpClient<WebhookService>();
         services.AddHttpClient<UserService>();
         services.AddHttpClient<AppleMusicVideoService>();
@@ -417,6 +416,7 @@ public class Startup
         services.AddConfiguredGrpcClient<ArtistEnrichment.ArtistEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<TrackEnrichment.TrackEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<SupporterLinkService.SupporterLinkServiceClient>(this.Configuration);
+        services.AddConfiguredGrpcClient<EurovisionEnrichment.EurovisionEnrichmentClient>(this.Configuration);
     }
 
 

@@ -148,17 +148,9 @@ public class IndexService
 
         if (updateType.HasFlag(UpdateType.AllPlays) || updateType.HasFlag(UpdateType.Full))
         {
-            var plays = await GetPlaysForUserFromLastFm(user);
+            var plays = await GetPlaysForUserFromLastFm(user, userInfo.Playcount, stats);
 
-            if (userInfo.Playcount >= 1000 && plays.Count < 200)
-            {
-                Log.Warning("Index: {userId} / {discordUserId} / {UserNameLastFM} - Fetching AllPlays failed - {playCount} expected, {fetchedPlayCount} fetched",
-                    user.UserId, user.DiscordUserId, user.UserNameLastFM, userInfo.Playcount, plays.Count);
-
-                stats.UpdateError = true;
-                stats.FailedUpdates |= UpdateType.AllPlays;
-            }
-            else
+            if (plays.Any())
             {
                 await PlayRepository.ReplaceAllPlays(plays, user.UserId, connection);
 
@@ -289,7 +281,8 @@ public class IndexService
         }).ToList();
     }
 
-    private async Task<IReadOnlyList<UserPlay>> GetPlaysForUserFromLastFm(User user)
+    private async Task<IReadOnlyList<UserPlay>> GetPlaysForUserFromLastFm(User user, long expectedCount,
+        IndexedUserStats stats)
     {
         Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Getting plays",
             user.UserId, user.DiscordUserId, user.UserNameLastFM);
@@ -301,6 +294,16 @@ public class IndexService
 
         if (!recentPlays.Success || recentPlays.Content?.RecentTracks == null || recentPlays.Content.RecentTracks.Count == 0)
         {
+            return new List<UserPlay>();
+        }
+
+        if (expectedCount >= 1000 && recentPlays.Content.RecentTracks.Count < 200)
+        {
+            Log.Warning("Index: {userId} / {discordUserId} / {UserNameLastFM} - Fetching AllPlays failed - {playCount} expected, {fetchedPlayCount} fetched",
+                user.UserId, user.DiscordUserId, user.UserNameLastFM, expectedCount, recentPlays.Content.RecentTracks.Count);
+
+            stats.UpdateError = true;
+            stats.FailedUpdates |= UpdateType.AllPlays;
             return new List<UserPlay>();
         }
 
