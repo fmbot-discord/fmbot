@@ -398,7 +398,8 @@ public class IndexService
             var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = discordGuild.Id,
-                Name = discordGuild.Name
+                Name = discordGuild.Name,
+                LastIndexed = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
             };
 
             await db.Guilds.AddAsync(newGuild);

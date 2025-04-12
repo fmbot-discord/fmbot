@@ -81,7 +81,9 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var guildPermissions = await GuildService.GetGuildPermissionsAsync(this.Context);
 
-            var response = await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, contextUser), guildPermissions);
+            var response =
+                await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, contextUser),
+                    guildPermissions);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -96,7 +98,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
     [RequiresIndex]
     [GuildOnly]
     public async Task MemberOverviewAsync(
-        [Discord.Interactions.Summary("View", "Statistic you want to view")] GuildViewType viewType)
+        [Discord.Interactions.Summary("View", "Statistic you want to view")]
+        GuildViewType viewType)
     {
         try
         {
@@ -105,7 +108,9 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild, viewType);
+            var response =
+                await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild,
+                    viewType);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -139,13 +144,16 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             var name = viewType.GetAttribute<ChoiceDisplayAttribute>().Name;
 
             var components =
-                new ComponentBuilder().WithButton($"Loading {name.ToLower()} view...", customId: "1", emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
+                new ComponentBuilder().WithButton($"Loading {name.ToLower()} view...", customId: "1",
+                    emote: Emote.Parse("<a:loading:821676038102056991>"), disabled: true, style: ButtonStyle.Secondary);
             await message.ModifyAsync(m => m.Components = components.Build());
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild, viewType);
+            var response =
+                await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, contextUser), guild,
+                    viewType);
 
             await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -177,10 +185,10 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             switch (guildSetting)
             {
                 case GuildSetting.TextPrefix:
-                    {
-                        response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context));
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
-                    }
+                {
+                    response = await this._guildSettingBuilder.SetPrefix(new ContextModel(this.Context));
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 case GuildSetting.EmoteReactions:
                     response = GuildSettingBuilder.GuildReactionsAsync(new ContextModel(this.Context), prfx);
@@ -188,65 +196,70 @@ public class GuildSettingSlashCommands : InteractionModuleBase
                     await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
                     return;
                 case GuildSetting.DefaultEmbedType:
-                    {
-                        response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context));
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    }
+                {
+                    response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context));
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 case GuildSetting.WhoKnowsActivityThreshold:
-                    {
-                        response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context));
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
-                    }
+                {
+                    response =
+                        await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context));
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 case GuildSetting.WhoKnowsBlockedUsers:
-                    {
-                        response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, userSettings));
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    }
+                {
+                    response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context,
+                        userSettings));
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                }
                     break;
                 case GuildSetting.CrownActivityThreshold:
-                    {
-                        response = await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context));
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
-                    }
+                {
+                    response =
+                        await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context));
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 case GuildSetting.CrownBlockedUsers:
-                    {
-                        response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, userSettings), true);
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    }
+                {
+                    response = await this._guildSettingBuilder.BlockedUsersAsync(
+                        new ContextModel(this.Context, userSettings), true);
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                }
 
                     break;
                 case GuildSetting.CrownMinimumPlaycount:
-                    {
-                        response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context));
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
-                    }
+                {
+                    response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context));
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 case GuildSetting.CrownSeeder:
-                    {
-                        response = await this._guildSettingBuilder.CrownSeeder(new ContextModel(this.Context));
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
-                    }
+                {
+                    response = await this._guildSettingBuilder.CrownSeeder(new ContextModel(this.Context));
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 case GuildSetting.CrownsDisabled:
-                    {
-                        response = await this._guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context));
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
-                    }
+                {
+                    response = await this._guildSettingBuilder.ToggleCrowns(new ContextModel(this.Context));
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 case GuildSetting.DisabledCommands:
-                    {
-                        response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), this.Context.Channel.Id);
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
-                    }
+                {
+                    response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+                        this.Context.Channel.Id);
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 case GuildSetting.DisabledGuildCommands:
-                    {
-                        response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
-                    }
+                {
+                    response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context));
+                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: false);
+                }
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -267,7 +280,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
 
         var amountOfCrownsSeeded = await this._crownService.SeedCrownsForGuild(guild, guildCrowns);
 
-        response = await this._guildSettingBuilder.CrownSeederDone(new ContextModel(this.Context), amountOfCrownsSeeded);
+        response = await this._guildSettingBuilder.CrownSeederDone(new ContextModel(this.Context),
+            amountOfCrownsSeeded);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -282,7 +296,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetPrefixModal>($"{InteractionConstants.SetPrefixModal}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<SetPrefixModal>(
+            $"{InteractionConstants.SetPrefixModal}-{message.Id}");
     }
 
     [ModalInteraction($"{InteractionConstants.SetPrefixModal}-*")]
@@ -302,7 +317,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
                  modal.NewPrefix.Contains("_") ||
                  modal.NewPrefix.Contains("~"))
         {
-            await RespondAsync($"Prefix contains disallowed characters. Please try a different prefix.", ephemeral: true);
+            await RespondAsync($"Prefix contains disallowed characters. Please try a different prefix.",
+                ephemeral: true);
             return;
         }
         else
@@ -337,18 +353,30 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
+        try
         {
-            await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, embedType);
+            if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
+            {
+                await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, embedType);
+            }
+            else
+            {
+                await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, null);
+            }
+
+            var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context), this.Context.User);
+
+            await Context.Interaction.DeferAsync(ephemeral: true);
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components.Build();
+            });
         }
-        else
+        catch (Exception e)
         {
-            await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, null);
+            await this.Context.HandleCommandException(e);
         }
-
-        var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context), this.Context.User);
-
-        await this.Context.UpdateInteractionEmbed(response);
     }
 
     [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandChannelFmType}-*-*")]
@@ -370,14 +398,16 @@ public class GuildSettingSlashCommands : InteractionModuleBase
 
         if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
         {
-            await this._guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, embedType, this.Context.Guild.Id);
+            await this._guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, embedType,
+                this.Context.Guild.Id);
         }
         else
         {
             await this._guildService.SetChannelEmbedType(selectedChannel, guild.GuildId, null, this.Context.Guild.Id);
         }
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+            parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -392,7 +422,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetFmbotActivityThresholdModal>($"{InteractionConstants.SetFmbotActivityThresholdModal}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<SetFmbotActivityThresholdModal>(
+            $"{InteractionConstants.SetFmbotActivityThresholdModal}-{message.Id}");
     }
 
     [ModalInteraction($"{InteractionConstants.SetFmbotActivityThresholdModal}-*")]
@@ -415,7 +446,9 @@ public class GuildSettingSlashCommands : InteractionModuleBase
 
         await this._guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, result);
 
-        var response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response =
+            await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context),
+                this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -425,7 +458,9 @@ public class GuildSettingSlashCommands : InteractionModuleBase
     {
         await this._guildService.SetFmbotActivityThresholdDaysAsync(this.Context.Guild, null);
 
-        var response = await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response =
+            await this._guildSettingBuilder.SetFmbotActivityThreshold(new ContextModel(this.Context),
+                this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -440,7 +475,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetCrownActivityThresholdModal>($"{InteractionConstants.SetCrownActivityThresholdModal}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<SetCrownActivityThresholdModal>(
+            $"{InteractionConstants.SetCrownActivityThresholdModal}-{message.Id}");
     }
 
     [ModalInteraction($"{InteractionConstants.SetCrownActivityThresholdModal}-*")]
@@ -457,7 +493,9 @@ public class GuildSettingSlashCommands : InteractionModuleBase
 
         await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, result);
 
-        var response = await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response =
+            await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context),
+                this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -467,7 +505,9 @@ public class GuildSettingSlashCommands : InteractionModuleBase
     {
         await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, null);
 
-        var response = await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context), this.Context.User);
+        var response =
+            await this._guildSettingBuilder.SetCrownActivityThreshold(new ContextModel(this.Context),
+                this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -483,7 +523,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<SetCrownMinPlaycountModal>($"{InteractionConstants.SetCrownMinPlaycountModal}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<SetCrownMinPlaycountModal>(
+            $"{InteractionConstants.SetCrownMinPlaycountModal}-{message.Id}");
     }
 
     [ModalInteraction($"{InteractionConstants.SetCrownMinPlaycountModal}-*")]
@@ -500,7 +541,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
 
         await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, result);
 
-        var response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
+        var response =
+            await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
 
@@ -510,7 +552,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
     {
         await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, null);
 
-        var response = await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
+        var response =
+            await this._guildSettingBuilder.SetCrownMinPlaycount(new ContextModel(this.Context), this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -521,7 +564,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+            parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -536,12 +580,14 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<AddDisabledChannelCommandModal>($"{InteractionConstants.ToggleCommand.ToggleCommandAddModal}-{channelId}-{categoryId}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<AddDisabledChannelCommandModal>(
+            $"{InteractionConstants.ToggleCommand.ToggleCommandAddModal}-{channelId}-{categoryId}-{message.Id}");
     }
 
     [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandAddModal}-*-*-*")]
     [ServerStaffOnly]
-    public async Task AddDisabledChannelCommand(string channelId, string categoryId, string messageId, AddDisabledChannelCommandModal modal)
+    public async Task AddDisabledChannelCommand(string channelId, string categoryId, string messageId,
+        AddDisabledChannelCommandModal modal)
     {
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
@@ -568,18 +614,22 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         if (currentlyDisabledCommands != null &&
             currentlyDisabledCommands.Any(a => a == commandToDisable.Command.Name))
         {
-            await RespondAsync($"The command `{commandToDisable.Command.Name}` is already disabled in <#{selectedChannel.Id}>.", ephemeral: true);
+            await RespondAsync(
+                $"The command `{commandToDisable.Command.Name}` is already disabled in <#{selectedChannel.Id}>.",
+                ephemeral: true);
             return;
         }
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
         await this._guildService
-            .DisableChannelCommandsAsync(selectedChannel, guild.GuildId, new List<string> { commandToDisable.Command.Name }, this.Context.Guild.Id);
+            .DisableChannelCommandsAsync(selectedChannel, guild.GuildId,
+                new List<string> { commandToDisable.Command.Name }, this.Context.Guild.Id);
 
         await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+            parsedChannelId, parsedCategoryId, this.Context.User);
 
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
@@ -595,12 +645,14 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledChannelCommandModal>($"{InteractionConstants.ToggleCommand.ToggleCommandRemoveModal}-{channelId}-{categoryId}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledChannelCommandModal>(
+            $"{InteractionConstants.ToggleCommand.ToggleCommandRemoveModal}-{channelId}-{categoryId}-{message.Id}");
     }
 
     [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandRemoveModal}-*-*-*")]
     [ServerStaffOnly]
-    public async Task RemoveDisabledChannelCommand(string channelId, string categoryId, string messageId, RemoveDisabledChannelCommandModal modal)
+    public async Task RemoveDisabledChannelCommand(string channelId, string categoryId, string messageId,
+        RemoveDisabledChannelCommandModal modal)
     {
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);
@@ -621,16 +673,20 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         if (currentlyDisabledCommands == null ||
             currentlyDisabledCommands.All(a => a != commandToEnable.Command.Name))
         {
-            await RespondAsync($"The command `{commandToEnable.Command.Name}` is not disabled in <#{selectedChannel.Id}>.", ephemeral: true);
+            await RespondAsync(
+                $"The command `{commandToEnable.Command.Name}` is not disabled in <#{selectedChannel.Id}>.",
+                ephemeral: true);
             return;
         }
 
         await this._guildService
-            .EnableChannelCommandsAsync(selectedChannel, new List<string> { commandToEnable.Command.Name }, this.Context.Guild.Id);
+            .EnableChannelCommandsAsync(selectedChannel, new List<string> { commandToEnable.Command.Name },
+                this.Context.Guild.Id);
 
         await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+            parsedChannelId, parsedCategoryId, this.Context.User);
 
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
@@ -647,7 +703,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
 
         await this._channelToggledCommandService.ReloadToggledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+            parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -664,7 +721,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this._guildService.DisableChannelAsync(selectedChannel, guild.GuildId, this.Context.Guild.Id);
         await this._disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+            parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -680,7 +738,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this._guildService.EnableChannelAsync(selectedChannel, this.Context.Guild.Id);
         await this._disabledChannelService.ReloadDisabledChannels(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context), parsedChannelId, parsedCategoryId, this.Context.User);
+        var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context),
+            parsedChannelId, parsedCategoryId, this.Context.User);
         await this.Context.UpdateInteractionEmbed(response);
     }
 
@@ -695,7 +754,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<AddDisabledGuildCommandModal>($"{InteractionConstants.ToggleCommand.ToggleGuildCommandAddModal}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<AddDisabledGuildCommandModal>(
+            $"{InteractionConstants.ToggleCommand.ToggleGuildCommandAddModal}-{message.Id}");
     }
 
     [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandAddModal}-*")]
@@ -725,14 +785,16 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         if (currentlyDisabledCommands != null &&
             currentlyDisabledCommands.Any(a => a == commandToDisable.Command.Name))
         {
-            await RespondAsync($"The command `{commandToDisable.Command.Name}` is already disabled in this server.", ephemeral: true);
+            await RespondAsync($"The command `{commandToDisable.Command.Name}` is already disabled in this server.",
+                ephemeral: true);
             return;
         }
 
         await this._guildService.AddGuildDisabledCommandAsync(this.Context.Guild, commandToDisable.Command.Name);
         await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
+        var response =
+            await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
 
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
@@ -748,7 +810,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
             return;
         }
 
-        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledGuildCommandModal>($"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemoveModal}-{message.Id}");
+        await this.Context.Interaction.RespondWithModalAsync<RemoveDisabledGuildCommandModal>(
+            $"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemoveModal}-{message.Id}");
     }
 
     [ModalInteraction($"{InteractionConstants.ToggleCommand.ToggleGuildCommandRemoveModal}-*")]
@@ -772,14 +835,16 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         if (currentlyDisabledCommands == null ||
             currentlyDisabledCommands.All(a => a != commandToEnable.Command.Name))
         {
-            await RespondAsync($"The command `{commandToEnable.Command.Name}` is not disabled in this server.", ephemeral: true);
+            await RespondAsync($"The command `{commandToEnable.Command.Name}` is not disabled in this server.",
+                ephemeral: true);
             return;
         }
 
         await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, commandToEnable.Command.Name);
         await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
+        var response =
+            await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
 
         await this.Context.UpdateMessageEmbed(response, messageId);
     }
@@ -791,7 +856,8 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this._guildService.ClearGuildDisabledCommandAsync(this.Context.Guild);
         await this._guildDisabledCommandService.ReloadDisabledCommands(this.Context.Guild.Id);
 
-        var response = await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
+        var response =
+            await this._guildSettingBuilder.ToggleGuildCommand(new ContextModel(this.Context), this.Context.User);
 
         await this.Context.UpdateInteractionEmbed(response);
     }
