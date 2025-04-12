@@ -426,7 +426,6 @@ public class UserBuilder
         embedDescription.AppendLine("Use the dropdowns below to configure how your `fm` command looks.");
         embedDescription.AppendLine();
 
-
         embedDescription.Append(
             $"The first dropdown allows you to select a mode, while the second allows you to select up to {maxOptions} options that will be displayed in the footer. ");
         if (context.ContextUser.UserType != UserType.User)

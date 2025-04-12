@@ -652,7 +652,7 @@ public class GuildSettingBuilder
             var optionDescription = option.GetAttribute<OptionAttribute>().Description;
             var value = Enum.GetName(option);
 
-            var selected = name == guild.FmEmbedType.ToString();
+            var selected = value == guild.FmEmbedType.ToString();
             fmType.AddOption(new SelectMenuOptionBuilder(name, value, optionDescription, isDefault: selected));
         }
 
@@ -664,7 +664,7 @@ public class GuildSettingBuilder
         description.AppendLine();
         description.AppendLine("To disable, simply de-select the mode you have selected.");
         description.AppendLine();
-        description.AppendLine("Use `channelmode` to configure this per-channel.");
+        description.AppendLine("Use `togglecommand` to configure this per-channel.");
         description.AppendLine();
 
         if (guild.FmEmbedType.HasValue)
