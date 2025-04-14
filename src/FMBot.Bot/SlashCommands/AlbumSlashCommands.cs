@@ -319,7 +319,8 @@ public class AlbumSlashCommands : InteractionModuleBase
     public async Task AlbumTracksAsync(
         [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
-        [Summary("User", "The user to show (defaults to self)")] string user = null)
+        [Summary("User", "The user to show (defaults to self)")] string user = null,
+        [Summary("Playcount-order", "If the list should be ordered by playcount")] bool orderByPlaycount = false)
     {
         _ = DeferAsync();
 
@@ -328,7 +329,7 @@ public class AlbumSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._albumBuilders.AlbumTracksAsync(new ContextModel(this.Context, contextUser), userSettings, name);
+            var response = await this._albumBuilders.AlbumTracksAsync(new ContextModel(this.Context, contextUser), userSettings, name, orderByPlaycount);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

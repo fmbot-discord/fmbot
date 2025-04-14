@@ -548,7 +548,7 @@ public class SettingService
         return (userMode.Value, newSearchValue);
     }
 
-    public WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions, UserType userType = UserType.User)
+    public static WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions, UserType userType = UserType.User)
     {
         var whoKnowsSettings = currentWhoKnowsSettings;
 
@@ -595,6 +595,17 @@ public class SettingService
         whoKnowsSettings.NewSearchValue = newSearchValue;
 
         return whoKnowsSettings;
+    }
+
+    public static (bool Enabled, string NewSearchValue) OrderByPlaycount(string extraOptions)
+    {
+        var noRedirect = new[] { "plays", "playcount", "orderbyplays", "orderbyplaycount" };
+        if (Contains(extraOptions, noRedirect))
+        {
+            return (true, ContainsAndRemove(extraOptions, noRedirect));
+        }
+
+        return (false, extraOptions);
     }
 
     public static (bool Enabled, string NewSearchValue) RedirectsEnabled(string extraOptions)

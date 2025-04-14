@@ -10,5 +10,6 @@ public class AlbumTrack
     public long? DurationSeconds { get; set; }
 
     public long? Rank { get; set; }
-    public int Disc { get; set; }
+
+    public int? Playcount { get; set; }
 }

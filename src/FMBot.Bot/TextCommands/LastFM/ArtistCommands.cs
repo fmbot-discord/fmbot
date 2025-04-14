@@ -432,7 +432,7 @@ public class ArtistCommands : BaseCommandModule
             };
 
             var settings =
-                this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
+                SettingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
             var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context,
                     prfx,
@@ -486,7 +486,7 @@ public class ArtistCommands : BaseCommandModule
             };
 
             var settings =
-                this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
+                SettingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
             var response = await this._artistBuilders
                 .GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), settings);
@@ -534,7 +534,7 @@ public class ArtistCommands : BaseCommandModule
             };
 
             var settings =
-                this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
+                SettingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
             var response = await this._artistBuilders
                 .FriendsWhoKnowArtistAsync(new ContextModel(this.Context, prfx, contextUser),
