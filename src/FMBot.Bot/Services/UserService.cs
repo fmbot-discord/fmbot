@@ -1274,7 +1274,14 @@ public class UserService
         }
     }
 
-    public async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
+    public enum LoginStatus
+    {
+        Success,
+        TooManyAccounts,
+        TimedOut
+    }
+
+    public async Task<LoginStatus> GetAndStoreAuthSession(IUser contextUser, string token)
     {
         Log.Information("LastfmAuth: Login session starting for {user} | {discordUserId}", contextUser.Username,
             contextUser.Id);
@@ -1298,15 +1305,30 @@ public class UserService
                 Log.Information(
                     "LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})",
                     authSession.Content.Session.Name, contextUser.Id);
+
+                await using var db = await this._contextFactory.CreateDbContextAsync();
+                var existingUserCount = await db.Users
+                    .AsQueryable()
+                    .Where(w => w.UserNameLastFM.ToLower() == userSettings.UserNameLastFM.ToLower())
+                    .CountAsync();
+
+                if (existingUserCount > Constants.MaxAlts)
+                {
+                    Log.Information(
+                        "LastfmAuth: Too many accounts already connected to {userName} - {altCount} alts (discordUserId: {discordUserId})",
+                        userSettings.UserNameLastFM, existingUserCount, contextUser.Id);
+                    return LoginStatus.TooManyAccounts;
+                }
+
                 await SetLastFm(contextUser, userSettings, true);
-                return true;
+                return LoginStatus.Success;
             }
 
             if (!authSession.Success && i == 10)
             {
                 Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})",
                     contextUser.Id);
-                return false;
+                return LoginStatus.TimedOut;
             }
 
             if (!authSession.Success)
@@ -1315,7 +1337,7 @@ public class UserService
             }
         }
 
-        return false;
+        return LoginStatus.TimedOut;
     }
 
     public async Task<PrivacyLevel> SetPrivacyLevel(int userId, PrivacyLevel privacyLevel)

@@ -291,9 +291,9 @@ public class UserSlashCommands : InteractionModuleBase
                 components: loginUrlResponse.Components.Build());
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
 
-            var loginSuccess = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
+            var loginStatus = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
 
-            if (loginSuccess)
+            if (loginStatus == UserService.LoginStatus.Success)
             {
                 var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -350,6 +350,13 @@ public class UserSlashCommands : InteractionModuleBase
                         await this._indexService.AddGuildUserToDatabase(newGuildUser);
                     }
                 }
+            }
+            else if (loginStatus == UserService.LoginStatus.TooManyAccounts)
+            {
+                var loginFailure = UserBuilder.LoginTooManyAccounts();
+                await FollowupAsync(null, [loginFailure.Embed.Build()], ephemeral: true);
+
+                this.Context.LogCommandUsed(CommandResponse.RateLimited);
             }
             else
             {

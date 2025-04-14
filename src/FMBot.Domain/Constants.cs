@@ -58,6 +58,8 @@ public static class Constants
 
     public const string GetPremiumServer = "This feature is not quite ready yet. Stay tuned!";
 
+    public const int MaxAlts = 12;
+
     public static readonly int[] PlayCountBreakPoints = {
         50,
         100,
