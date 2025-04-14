@@ -98,6 +98,13 @@ public static class CommandContextExtensions
                     break;
                 case ResponseType.Paginator:
                     var existingMessage = await context.Channel.GetMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
+                    if (existingMessage.Attachments != null && existingMessage.Attachments.Any())
+                    {
+                        await context.Channel.ModifyMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
+                        {
+                            msg.Attachments = null;
+                        });
+                    }
                     await interactiveService.SendPaginatorAsync(
                                 response.StaticPaginator.Build(),
                                 (IUserMessage)existingMessage,
