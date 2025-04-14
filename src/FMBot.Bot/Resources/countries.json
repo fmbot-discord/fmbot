@@ -1072,7 +1072,8 @@
     "Code": "MK",
     "Emoji": "🇲🇰",
     "Unicode": "U+1F1F2 U+1F1F0",
-    "Image": "https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/MK.svg"
+    "Image": "https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/MK.svg",
+    "Aliases": [ "Macedonia" ]
   },
   {
     "Name": "Mali",
