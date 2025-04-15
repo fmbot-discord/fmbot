@@ -215,7 +215,7 @@ public class AlbumCommands : BaseCommandModule
                 DisplayRoleFilter = false
             };
 
-            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
+            var settings = SettingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
             var response = await this._albumBuilders.WhoKnowsAlbumAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
@@ -252,7 +252,7 @@ public class AlbumCommands : BaseCommandModule
             NewSearchValue = albumValues
         };
 
-        var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
+        var settings = SettingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
         try
         {
@@ -301,7 +301,7 @@ public class AlbumCommands : BaseCommandModule
                 NewSearchValue = albumValues
             };
 
-            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
+            var settings = SettingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
             var response = await this._albumBuilders
                 .FriendsWhoKnowAlbumAsync(new ContextModel(this.Context, prfx, contextUser),
@@ -329,9 +329,11 @@ public class AlbumCommands : BaseCommandModule
     [Command("albumtracks", RunMode = RunMode.Async)]
     [Summary("Shows track playcounts for a specific album")]
     [Examples("abt", "albumtracks", "albumtracks de jeugd van tegenwoordig machine",
-        "albumtracks U2 | The Joshua Tree")]
+        "albumtracks This Old Dog plays", "albumtracks U2 | The Joshua Tree")]
     [Alias("abt", "abtracks", "albumt")]
+    [Options("Order by plays: `plays`")]
     [UsernameSetRequired]
+    [SupportsPagination]
     [CommandCategories(CommandCategory.Albums)]
     public async Task AlbumTracksAsync([Remainder] string albumValues = null)
     {
@@ -342,10 +344,11 @@ public class AlbumCommands : BaseCommandModule
 
         try
         {
-            var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
+            var orderByPlaycount = SettingService.OrderByPlaycount(albumValues);
+            var userSettings = await this._settingService.GetUser(orderByPlaycount.NewSearchValue, contextUser, this.Context);
 
             var response = await this._albumBuilders.AlbumTracksAsync(new ContextModel(this.Context, prfx, contextUser),
-                userSettings, userSettings.NewSearchValue);
+                userSettings, userSettings.NewSearchValue, orderByPlaycount.Enabled);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

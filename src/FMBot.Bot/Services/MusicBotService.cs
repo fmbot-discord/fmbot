@@ -114,7 +114,7 @@ public class MusicBotService
             Album = trackResult.AlbumName,
             Track = trackResult.TrackName
         };
-        
+
         PublicProperties.UsedCommandsReferencedMusic.TryAdd(scrobbleMessage.Id, referencedMusic);
         PublicProperties.UsedCommandsReferencedMusic.TryAdd(botMessageId, referencedMusic);
 
@@ -160,9 +160,9 @@ public class MusicBotService
         }
 
         this._cache.Set($"now-playing-{user.UserId}", true, TimeSpan.FromMilliseconds(trackScrobbleDelayMs - 1000));
-        
+
         await Task.Delay(TimeSpan.FromMilliseconds(trackScrobbleDelayMs));
-        
+
         if (!this._cache.TryGetValue($"now-playing-{user.UserId}", out bool _))
         {
             await this._dataSourceFactory.ScrobbleAsync(user.SessionKeyLastFm, result.ArtistName, result.TrackName, result.AlbumName);
@@ -215,7 +215,9 @@ public class MusicBotService
 
             await using var db = await this._contextFactory.CreateDbContextAsync();
 
-            var userIds = voiceChannel.ConnectedUsers.Select(s => s.Id);
+            var userIds = voiceChannel.ConnectedUsers
+                .Where(w => !w.IsDeafened && !w.IsSelfDeafened)
+                .Select(s => s.Id);
 
             var users = await db.Users
                 .AsQueryable()

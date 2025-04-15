@@ -311,10 +311,32 @@ public class UserBuilder
 
         response.Embed.WithColor(DiscordConstants.WarningColorOrange);
         response.Embed.WithDescription(
-            $"Login expired. Re-run `/login` to try again.\n\n" +
-            $"Getting 'Invalid API key' error? This is a [known Last.fm issue](https://support.last.fm/t/invalid-api-key-error-when-connecting-to-discord-fmbot-on-iphone/65329) on iOS. " +
-            $"Current workaround is to try connecting on a different device.\n\n" +
+            $"Login expired or failed. Re-run `/login` to try again.\n\n" +
             $"Still having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.");
+
+        return response;
+    }
+
+    public static ResponseModel LoginTooManyAccounts()
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var description = new StringBuilder();
+        description.AppendLine($"Can't login, this Last.fm is connected to too many Discord accounts already (max is {Constants.MaxAlts}).");
+        description.AppendLine("");
+        description.AppendLine("To delete and transfer data from your other .fmbot accounts:");
+        description.AppendLine("1. Use Discord on one of your logged in accounts");
+        description.AppendLine("2. Open `.settings` in .fmbot");
+        description.AppendLine("3. Click 'Manage alts'");
+        description.AppendLine("4. Delete and optionally transfer data from your other accounts");
+        description.AppendLine("");
+        description.AppendLine($"Note that deleting an .fmbot account does not delete any data from Last.fm.");
+
+        response.Embed.WithDescription(description.ToString());
+        response.Embed.WithColor(DiscordConstants.WarningColorOrange);
 
         return response;
     }

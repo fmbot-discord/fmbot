@@ -228,6 +228,12 @@ public class TrackBuilders
             }
         }
 
+        if (trackSearch.IsRandom)
+        {
+            footer.AppendLine(
+                $"Track #{trackSearch.RandomTrackPosition} ({trackSearch.RandomTrackPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(trackSearch.RandomTrackPlaycount)})");
+        }
+
         var featuredHistory =
             await this._featuredService.GetTrackFeaturedHistory(trackSearch.Track.ArtistName,
                 trackSearch.Track.TrackName);
@@ -390,6 +396,12 @@ public class TrackBuilders
         response.Embed.WithDescription(serverUsers);
 
         var footer = new StringBuilder();
+
+        if (track.IsRandom)
+        {
+            footer.AppendLine(
+                $"Track #{track.RandomTrackPosition} ({track.RandomTrackPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(track.RandomTrackPlaycount)})");
+        }
 
         var rnd = new Random();
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);

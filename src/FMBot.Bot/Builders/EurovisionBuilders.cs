@@ -74,12 +74,12 @@ public class EurovisionBuilders
                 if (eurovisionEntry.HasPosition)
                 {
                     pageDescription.Append(
-                        $"#{eurovisionEntry.Position} — {validCountry.Name}");
+                        $"#{eurovisionEntry.Position} — {validCountry?.Name ?? eurovisionEntry.EntryCode}");
                 }
                 else
                 {
                     pageDescription.Append(
-                        $"{validCountry.Name}");
+                        $"{validCountry?.Name ?? eurovisionEntry.EntryCode}");
                 }
 
                 if (!eurovisionEntry.HasScore)

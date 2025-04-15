@@ -122,6 +122,12 @@ public class ArtistBuilders
 
         var footer = new StringBuilder();
 
+        if (artistSearch.IsRandom)
+        {
+            footer.AppendLine(
+                $"Artist #{artistSearch.RandomArtistPosition} ({artistSearch.RandomArtistPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(artistSearch.RandomArtistPlaycount)})");
+        }
+
         var featuredHistory = await this._featuredService.GetArtistFeaturedHistory(artistSearch.Artist.ArtistName);
         if (featuredHistory.Any())
         {

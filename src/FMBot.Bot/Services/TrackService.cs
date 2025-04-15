@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -16,6 +17,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Extensions;
 using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
@@ -109,6 +111,23 @@ public class TrackService
                 }
             }
 
+            int? rndPosition = null;
+            long? rndPlaycount = null;
+            if (userId.HasValue && (searchValue.ToLower() == "rnd" || searchValue.ToLower() == "random"))
+            {
+                var topTracks = await this.GetUserAllTimeTopTracks(userId.Value, true);
+                if (topTracks.Count > 0)
+                {
+                    var rnd = RandomNumberGenerator.GetInt32(0, topTracks.Count);
+
+                    var track = topTracks[rnd];
+
+                    rndPosition = rnd;
+                    rndPlaycount = track.UserPlaycount;
+                    searchValue = $"{track.ArtistName} | {track.TrackName}";
+                }
+            }
+
             if (searchValue.Contains(" | "))
             {
                 if (otherUserUsername != null)
@@ -164,7 +183,7 @@ public class TrackService
                     return new TrackSearch(null, response);
                 }
 
-                return new TrackSearch(trackInfo.Content, response);
+                return new TrackSearch(trackInfo.Content, response, rndPosition, rndPlaycount);
             }
         }
         else
@@ -310,6 +329,37 @@ public class TrackService
         response.CommandResponse = CommandResponse.LastFmError;
         response.ResponseType = ResponseType.Embed;
         return new TrackSearch(null, response);
+    }
+
+    public async Task<List<TopTrack>> GetUserAllTimeTopTracks(int userId, bool useCache = false)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        var cacheKey = $"user-{userId}-toptracks-alltime";
+        if (this._cache.TryGetValue(cacheKey, out List<TopTrack> topTracks) && useCache)
+        {
+            return topTracks;
+        }
+
+        var freshTopTracks = (await TrackRepository.GetUserTracks(userId, connection))
+            .Select(s => new TopTrack
+            {
+                ArtistName = s.ArtistName,
+                TrackName = s.Name,
+                UserPlaycount = s.Playcount,
+                ArtistUrl = LastfmUrlExtensions.GetArtistUrl(s.ArtistName),
+                TrackUrl = LastfmUrlExtensions.GetTrackUrl(s.ArtistName, s.Name)
+            })
+            .OrderByDescending(o => o.UserPlaycount)
+            .ToList();
+
+        if (freshTopTracks.Count > 100)
+        {
+            this._cache.Set(cacheKey, freshTopTracks, TimeSpan.FromMinutes(10));
+        }
+
+        return freshTopTracks;
     }
 
     public async Task<Response<TrackInfo>> GetCachedTrack(string artistName, string trackName, string lastFmUserName,

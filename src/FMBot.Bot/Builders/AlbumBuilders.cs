@@ -154,6 +154,12 @@ public class AlbumBuilders
 
         var footer = new StringBuilder();
 
+        if (albumSearch.IsRandom)
+        {
+            footer.AppendLine(
+                $"Album #{albumSearch.RandomAlbumPosition} ({albumSearch.RandomAlbumPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(albumSearch.RandomAlbumPlaycount)})");
+        }
+
         var featuredHistory =
             await this._featuredService.GetAlbumFeaturedHistory(albumSearch.Album.ArtistName,
                 albumSearch.Album.AlbumName);
@@ -416,6 +422,12 @@ public class AlbumBuilders
 
         var footer = new StringBuilder();
 
+        if (album.IsRandom)
+        {
+            footer.AppendLine(
+                $"Album #{album.RandomAlbumPosition} ({album.RandomAlbumPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(album.RandomAlbumPlaycount)})");
+        }
+
         var rnd = new Random();
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
         if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-180))
@@ -435,8 +447,10 @@ public class AlbumBuilders
             var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
             footer.Append($"Album - ");
-            footer.Append($"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
-            footer.Append($"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
+            footer.Append(
+                $"{serverListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(serverListeners)} - ");
+            footer.Append(
+                $"{serverPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(serverPlaycount)} - ");
             footer.AppendLine($"{((int)avgServerPlaycount).Format(context.NumberFormat)} avg");
         }
 
@@ -587,8 +601,10 @@ public class AlbumBuilders
             var globalPlaycount = usersWithAlbum.Sum(a => a.Playcount);
             var avgPlaycount = usersWithAlbum.Average(a => a.Playcount);
 
-            footer += $"\n{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ";
-            footer += $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+            footer +=
+                $"\n{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ";
+            footer +=
+                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ";
             footer += $"{((int)avgPlaycount).Format(context.NumberFormat)} avg";
         }
 
@@ -710,8 +726,10 @@ public class AlbumBuilders
             var avgPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
             footer.Append($"Global album - ");
-            footer.Append($"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
-            footer.Append($"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
+            footer.Append(
+                $"{globalListeners.Format(context.NumberFormat)} {StringExtensions.GetListenersString(globalListeners)} - ");
+            footer.Append(
+                $"{globalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(globalPlaycount)} - ");
             footer.AppendLine($"{((int)avgPlaycount).Format(context.NumberFormat)} avg");
         }
 
@@ -913,7 +931,7 @@ public class AlbumBuilders
         {
             var totalLength = TimeSpan.FromSeconds(albumTracks.Sum(s => s.DurationSeconds ?? 0));
             var formattedTrackLength =
-                $"{(totalLength.Hours == 0 ? "" : $"{totalLength.Hours}:")}{totalLength.Minutes}:{totalLength.Seconds:D2}";
+                $"{(totalLength.Hours == 0 ? $"{totalLength.Minutes}" : $"{totalLength.Hours}:{totalLength.Minutes:D2}")}:{totalLength.Seconds:D2}";
             footer.Append($" — {formattedTrackLength}");
         }
 
@@ -931,70 +949,82 @@ public class AlbumBuilders
         var tracksDisplayed = 0;
         var pageNumber = 1;
 
-        if (orderByPlaycount)
+        foreach (var albumTrack in albumTracks)
         {
-        }
-        else
-        {
-            for (var disc = 1; disc < amountOfDiscs + 1; disc++)
+            var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
+                StringExtensions.SanitizeTrackNameForComparison(albumTrack.TrackName)
+                    .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
+            if (albumTrackWithPlaycount != null)
             {
-                if (amountOfDiscs > 1)
-                {
-                    description.AppendLine($"`Disc {disc}`");
-                }
-
-                for (; i < albumTracks.Count; i++)
-                {
-                    var albumTrack = albumTracks[i];
-
-                    var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
-                        StringExtensions.SanitizeTrackNameForComparison(albumTrack.TrackName)
-                            .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
-
-                    description.Append($"{i + 1}.");
-                    description.Append($" **{albumTrack.TrackName}**");
-
-                    if (albumTrackWithPlaycount != null)
-                    {
-                        description.Append(
-                            $" - *{albumTrackWithPlaycount.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}*");
-                    }
-
-                    if (albumTrack.DurationSeconds.HasValue)
-                    {
-                        description.Append(albumTrackWithPlaycount == null ? " — " : " - ");
-
-                        var duration = TimeSpan.FromSeconds(albumTrack.DurationSeconds.Value);
-                        var formattedTrackLength =
-                            $"{(duration.Hours == 0 ? "" : $"{duration.Hours}:")}{duration.Minutes}:{duration.Seconds:D2}";
-                        description.Append($"`{formattedTrackLength}`");
-                    }
-
-                    description.AppendLine();
-
-                    var pageNumberDesc = $"Page {pageNumber}/{albumTracks.ChunkBy(12).Count} — ";
-
-                    tracksDisplayed++;
-                    if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
-                    {
-                        var page = new PageBuilder()
-                            .WithDescription(description.ToString())
-                            .WithTitle($"Track playcounts for {albumName}")
-                            .WithFooter(pageNumberDesc + footer);
-
-                        if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                        {
-                            page.WithUrl(url);
-                        }
-
-                        pages.Add(page);
-                        description = new StringBuilder();
-                        pageNumber++;
-                    }
-                }
+                albumTrack.Playcount = albumTrackWithPlaycount.Playcount;
             }
         }
 
+        if (orderByPlaycount)
+        {
+            amountOfDiscs = 1;
+            albumTracks = albumTracks.OrderByDescending(o => o.Playcount).ToList();
+        }
+
+        for (var disc = 1; disc < amountOfDiscs + 1; disc++)
+        {
+            if (amountOfDiscs > 1)
+            {
+                description.AppendLine($"`Disc {disc}`");
+            }
+
+            for (; i < albumTracks.Count; i++)
+            {
+                var albumTrack = albumTracks[i];
+
+                description.Append($"{i + 1}.");
+                description.Append($" **{albumTrack.TrackName}**");
+
+                if (albumTrack.Playcount.HasValue)
+                {
+                    description.Append(
+                        $" - *{albumTrack.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(albumTrack.Playcount)}*");
+                }
+
+                if (albumTrack.DurationSeconds.HasValue)
+                {
+                    description.Append(!albumTrack.Playcount.HasValue ? " — " : " - ");
+
+                    var duration = TimeSpan.FromSeconds(albumTrack.DurationSeconds.Value);
+                    var formattedTrackLength =
+                        $"{(duration.Hours == 0 ? "" : $"{duration.Hours}:")}{duration.Minutes}:{duration.Seconds:D2}";
+                    description.Append($"`{formattedTrackLength}`");
+                }
+
+                description.AppendLine();
+
+                var pageNumberDesc = new StringBuilder();
+                if (orderByPlaycount)
+                {
+                    pageNumberDesc.AppendLine("Ordered by plays");
+                }
+
+                pageNumberDesc.Append($"Page {pageNumber}/{albumTracks.ChunkBy(12).Count} — ");
+
+                tracksDisplayed++;
+                if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
+                {
+                    var page = new PageBuilder()
+                        .WithDescription(description.ToString())
+                        .WithTitle($"Track playcounts for {albumName}")
+                        .WithFooter(pageNumberDesc.ToString() + footer);
+
+                    if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                    {
+                        page.WithUrl(url);
+                    }
+
+                    pages.Add(page);
+                    description = new StringBuilder();
+                    pageNumber++;
+                }
+            }
+        }
 
         dbAlbum ??= await this._albumService.GetAlbumFromDatabase(albumSearch.Album.ArtistName,
             albumSearch.Album.AlbumName);

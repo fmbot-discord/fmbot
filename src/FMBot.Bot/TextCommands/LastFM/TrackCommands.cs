@@ -346,7 +346,7 @@ public class TrackCommands : BaseCommandModule
                 DisplayRoleFilter = false
             };
 
-            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
+            var settings = SettingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
 
             var response = await this._trackBuilders.WhoKnowsTrackAsync(
                 new ContextModel(this.Context, prfx, contextUser), settings.ResponseMode, settings.NewSearchValue,
@@ -383,7 +383,7 @@ public class TrackCommands : BaseCommandModule
             AdminView = false,
             NewSearchValue = trackValues
         };
-        var settings = this._settingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
+        var settings = SettingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
 
         try
         {
@@ -431,7 +431,7 @@ public class TrackCommands : BaseCommandModule
             HidePrivateUsers = false,
             NewSearchValue = trackValues
         };
-        var settings = this._settingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
+        var settings = SettingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
 
         try
         {
