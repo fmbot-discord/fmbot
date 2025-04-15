@@ -75,19 +75,19 @@ public class TrackSearchResult
 
 public class TrackSearch
 {
-    public TrackSearch(TrackInfo track, ResponseModel response, int? randomAlbumPosition = null, long? randomAlbumPlaycount = null)
+    public TrackSearch(TrackInfo track, ResponseModel response, int? randomTrackPosition = null, long? randomTrackPlaycount = null)
     {
         this.Track = track;
         this.Response = response;
-        this.IsRandom = randomAlbumPosition.HasValue && randomAlbumPlaycount.HasValue;
-        this.RandomAlbumPosition = randomAlbumPosition + 1;
-        this.RandomAlbumPlaycount = randomAlbumPlaycount;
+        this.IsRandom = randomTrackPosition.HasValue && randomTrackPlaycount.HasValue;
+        this.RandomTrackPosition = randomTrackPosition + 1;
+        this.RandomTrackPlaycount = randomTrackPlaycount;
     }
 
     public TrackInfo Track { get; set; }
     public ResponseModel Response { get; set; }
 
     public bool IsRandom { get; set; }
-    public int? RandomAlbumPosition { get; set; }
-    public long? RandomAlbumPlaycount { get; set; }
+    public int? RandomTrackPosition { get; set; }
+    public long? RandomTrackPlaycount { get; set; }
 }

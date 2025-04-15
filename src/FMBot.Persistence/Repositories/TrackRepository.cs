@@ -98,4 +98,14 @@ public class TrackRepository
             artistName
         });
     }
+
+    public static async Task<IReadOnlyCollection<UserTrack>> GetUserTracks(int userId, NpgsqlConnection connection)
+    {
+        const string sql = "SELECT * FROM public.user_tracks where user_id = @userId";
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return (await connection.QueryAsync<UserTrack>(sql, new
+        {
+            userId
+        })).ToList();
+    }
 }

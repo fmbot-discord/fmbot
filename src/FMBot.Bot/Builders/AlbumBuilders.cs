@@ -154,6 +154,12 @@ public class AlbumBuilders
 
         var footer = new StringBuilder();
 
+        if (albumSearch.IsRandom)
+        {
+            footer.AppendLine(
+                $"Album #{albumSearch.RandomAlbumPosition} ({albumSearch.RandomAlbumPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(albumSearch.RandomAlbumPlaycount)})");
+        }
+
         var featuredHistory =
             await this._featuredService.GetAlbumFeaturedHistory(albumSearch.Album.ArtistName,
                 albumSearch.Album.AlbumName);
@@ -415,6 +421,12 @@ public class AlbumBuilders
         response.Embed.WithDescription(serverUsers);
 
         var footer = new StringBuilder();
+
+        if (album.IsRandom)
+        {
+            footer.AppendLine(
+                $"Album #{album.RandomAlbumPosition} ({album.RandomAlbumPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(album.RandomAlbumPlaycount)})");
+        }
 
         var rnd = new Random();
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.DiscordGuild);
