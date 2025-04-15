@@ -81,8 +81,8 @@ public class OpenAiService
         return responseModel;
     }
 
-    public async Task<OpenAiResponse> GetJudgeResponse(List<string> artists, PromptType promptType,int amountThisWeek,
-        bool supporter = false,  string language = "en-us")
+    public async Task<OpenAiResponse> GetJudgeResponse(List<TopArtist> artists, List<TopTrack> topTracks,
+        PromptType promptType,int amountThisWeek, bool supporter = false,  string language = "en-us")
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var prompt = await db.AiPrompts
@@ -90,15 +90,29 @@ public class OpenAiService
             .FirstAsync(f => f.Type == promptType &&
                              f.Language == language);
 
-        var artistList = new List<string>();
-        foreach (var artist in artists)
+        var music = new StringBuilder();
+        music.AppendLine("My top artists: ");
+        foreach (var artist in artists.OrderByDescending(o => o.UserPlaycount).Take(14))
         {
-            artistList.Add(artist[..Math.Min(artist.Length, 36)]);
+            music.Append(artist.ArtistName[..Math.Min(artist.ArtistName.Length, 40)]);
+            music.Append($" - {artist.UserPlaycount} plays");
+            music.AppendLine();
+        }
+
+        music.AppendLine();
+        music.AppendLine("My top tracks: ");
+        foreach (var track in topTracks.OrderByDescending(o => o.UserPlaycount).Take(16))
+        {
+            music.Append(track.TrackName[..Math.Min(track.TrackName.Length, 50)]);
+            music.Append(" by ");
+            music.Append(track.ArtistName[..Math.Min(track.ArtistName.Length, 40)]);
+            music.Append($" - {track.UserPlaycount} plays");
+            music.AppendLine();
         }
 
         var model = supporter ? amountThisWeek <= 2 ? prompt.UltraModel : prompt.PremiumModel : prompt.FreeModel;
 
-        return await SendRequest($"{prompt.Prompt} {string.Join(", ", artistList)}", model);
+        return await SendRequest(prompt.Prompt, model, music.ToString());
     }
 
     public async Task<AiGeneration> StoreAiGeneration(ulong contextId, int userId, int? targetedUserId)

@@ -45,9 +45,9 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly ImportService _importService;
     private readonly IPrefixService _prefixService;
     private readonly AdminService _adminService;
-    private readonly ImportBuilders _importBuilders;
     private readonly TimerService _timerService;
     private readonly PlayService _playService;
+    private readonly TrackService _trackService;
 
     private readonly BotSettings _botSettings;
 
@@ -67,9 +67,9 @@ public class UserSlashCommands : InteractionModuleBase
         ImportService importService,
         IPrefixService prefixService,
         AdminService adminService,
-        ImportBuilders importBuilders,
         TimerService timerService,
-        PlayService playService)
+        PlayService playService,
+        TrackService trackService)
     {
         this._userService = userService;
         this._dataSourceFactory = dataSourceFactory;
@@ -84,9 +84,9 @@ public class UserSlashCommands : InteractionModuleBase
         this._importService = importService;
         this._prefixService = prefixService;
         this._adminService = adminService;
-        this._importBuilders = importBuilders;
         this._timerService = timerService;
         this._playService = playService;
+        this._trackService = trackService;
         this._botSettings = botSettings.Value;
     }
 
@@ -1003,8 +1003,7 @@ public class UserSlashCommands : InteractionModuleBase
 
             var timeSettings = SettingService.GetTimePeriod(timeOption, TimePeriod.AllTime);
 
-            List<string> topArtists;
-            const int artistLimit = 15;
+            List<TopArtist> topArtists;
             if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
             {
                 topArtists =
@@ -1012,18 +1011,28 @@ public class UserSlashCommands : InteractionModuleBase
             }
             else
             {
-                var lfmTopArtists =
-                    await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings,
-                        artistLimit);
-                topArtists = lfmTopArtists.Content?.TopArtists?.Select(s => s.ArtistName).ToList();
+                topArtists =
+                    (await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 20))?.Content?.TopArtists;
             }
 
-            if (topArtists == null || !topArtists.Any())
+            List<TopTrack> topTracks;
+            if (timeSettings.TimePeriod == TimePeriod.Quarterly && !userSettings.DifferentUser)
+            {
+                topTracks =
+                    await this._trackService.GetRecentTopTracks(userSettings.DiscordUserId, daysToGoBack: 90);
+            }
+            else
+            {
+                topTracks =
+                    (await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20))?.Content?.TopTracks;
+            }
+
+            if (topArtists == null || !topArtists.Any() || topTracks == null || !topTracks.Any())
             {
                 var embed = new EmbedBuilder();
                 embed.WithColor(DiscordConstants.LastFmColorRed);
                 embed.WithDescription(
-                    $"Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
+                    $"Sorry, you or the user you're searching for don't have any top artists or top tracks in the selected time period.");
                 this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                 await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
                 {
@@ -1033,11 +1042,9 @@ public class UserSlashCommands : InteractionModuleBase
                 return;
             }
 
-            topArtists = topArtists.Take(artistLimit).ToList();
-
             var response = await this._userBuilder.JudgeHandleAsync(
                 new ContextModel(this.Context, contextUser),
-                userSettings, result, topArtists);
+                userSettings, result, topArtists, topTracks);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {

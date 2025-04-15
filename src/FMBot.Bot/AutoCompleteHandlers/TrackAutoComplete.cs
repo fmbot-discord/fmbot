@@ -22,7 +22,7 @@ public class TrackAutoComplete : AutocompleteHandler
         IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
     {
         var recentlyPlayedTracks = await this._trackService.GetLatestTracks(context.User.Id);
-        var recentTopTracks = await this._trackService.GetRecentTopTracks(context.User.Id);
+        var recentTopTracks = await this._trackService.GetRecentTopTracksAutoComplete(context.User.Id);
 
         var results = new List<string>();
 

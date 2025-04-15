@@ -924,36 +924,68 @@ public class TrackService
         }
     }
 
-    public async Task<List<TrackAutoCompleteSearchModel>> GetRecentTopTracks(ulong discordUserId,
+    public async Task<List<TrackAutoCompleteSearchModel>> GetRecentTopTracksAutoComplete(ulong discordUserId,
         bool cacheEnabled = true)
+    {
+        try
+        {
+            var topTracks = await GetRecentTopTracks(discordUserId, cacheEnabled);
+            return topTracks
+                .Select(s => new TrackAutoCompleteSearchModel(s.ArtistName, s.TrackName))
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            Log.Error($"Error in {nameof(GetRecentTopTracks)}", e);
+            throw;
+        }
+    }
+
+    public async Task<List<TopTrack>> GetRecentTopTracks(ulong discordUserId,
+        bool cacheEnabled = true, int daysToGoBack = 20)
     {
         try
         {
             var cacheKey = $"user-recent-top-tracks-{discordUserId}";
 
-            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<TrackAutoCompleteSearchModel> userAlbums);
+            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<TopTrack> userTracks);
             if (cacheAvailable && cacheEnabled)
             {
-                return userAlbums;
+                return userTracks;
             }
 
             var user = await this._userService.GetUserAsync(discordUserId);
 
             if (user == null)
             {
-                return [new TrackAutoCompleteSearchModel(Constants.AutoCompleteLoginRequired)];
+                return
+                [
+                    new TopTrack
+                    {
+                        ArtistName = Constants.AutoCompleteLoginRequired,
+                        UserPlaycount = 1
+                    }
+                ];
             }
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             var plays = await PlayRepository.GetUserPlaysWithinTimeRange(user.UserId, connection,
-                DateTime.UtcNow.AddDays(-20));
+                DateTime.UtcNow.AddDays(-daysToGoBack));
 
             var tracks = plays
-                .GroupBy(g => new TrackAutoCompleteSearchModel(g.ArtistName, g.TrackName))
-                .OrderByDescending(o => o.Count())
-                .Select(s => s.Key)
+                .GroupBy(x => new
+                {
+                    x.ArtistName, x.TrackName
+                })
+                .Select(s => new TopTrack
+                {
+                    ArtistName = s.Key.ArtistName,
+                    TrackName = s.Key.TrackName,
+                    UserPlaycount = s.Count()
+                })
+                .OrderByDescending(o => o.UserPlaycount)
                 .ToList();
 
             this._cache.Set(cacheKey, tracks, TimeSpan.FromSeconds(120));

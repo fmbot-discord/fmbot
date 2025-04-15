@@ -325,7 +325,8 @@ public class UserBuilder
         };
 
         var description = new StringBuilder();
-        description.AppendLine($"Can't login, this Last.fm is connected to too many Discord accounts already (max is {Constants.MaxAlts}).");
+        description.AppendLine(
+            $"Can't login, this Last.fm is connected to too many Discord accounts already (max is {Constants.MaxAlts}).");
         description.AppendLine("");
         description.AppendLine("To delete and transfer data from your other .fmbot accounts:");
         description.AppendLine("1. Use Discord on one of your logged in accounts");
@@ -1307,7 +1308,7 @@ public class UserBuilder
     public async Task<ResponseModel> JudgeHandleAsync(ContextModel context,
         UserSettingsModel userSettings,
         string selected,
-        List<string> topArtists)
+        List<TopArtist> topArtists, List<TopTrack> topTracks)
     {
         var response = new ResponseModel
         {
@@ -1338,9 +1339,10 @@ public class UserBuilder
 
         response = selected switch
         {
-            "compliment" => await this.JudgeComplimentAsync(context, userSettings, topArtists,
+            "compliment" => await this.JudgeComplimentAsync(context, userSettings, topArtists, topTracks,
                 commandUsesLeft.amountThisWeek),
-            "roast" => await this.JudgeRoastAsync(context, userSettings, topArtists, commandUsesLeft.amountThisWeek),
+            "roast" => await this.JudgeRoastAsync(context, userSettings, topArtists, topTracks,
+                commandUsesLeft.amountThisWeek),
             _ => response
         };
 
@@ -1348,7 +1350,7 @@ public class UserBuilder
     }
 
     private async Task<ResponseModel> JudgeComplimentAsync(ContextModel context, UserSettingsModel userSettings,
-        List<string> topArtists, int amountThisWeek)
+        List<TopArtist> topArtists, List<TopTrack> topTracks, int amountThisWeek)
     {
         var response = new ResponseModel
         {
@@ -1365,7 +1367,7 @@ public class UserBuilder
             userSettings.DifferentUser ? userSettings.UserId : null);
 
         var openAiResponse =
-            await this._openAiService.GetJudgeResponse(topArtists, PromptType.Compliment, amountThisWeek, supporter);
+            await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.NewCompliment, amountThisWeek, supporter);
 
         if (openAiResponse.Choices == null)
         {
@@ -1376,13 +1378,13 @@ public class UserBuilder
         var aiGeneration =
             await this._openAiService.UpdateAiGeneration(context.InteractionId, openAiResponse);
 
-        response.Embed.WithDescription(ImproveAiResponse(aiGeneration.Output, topArtists));
+        response.Embed.WithDescription(aiGeneration.Output);
 
         return response;
     }
 
     private async Task<ResponseModel> JudgeRoastAsync(ContextModel context, UserSettingsModel userSettings,
-        List<string> topArtists, int amountThisWeek)
+        List<TopArtist> topArtists, List<TopTrack> topTracks, int amountThisWeek)
     {
         var response = new ResponseModel
         {
@@ -1398,7 +1400,7 @@ public class UserBuilder
             userSettings.DifferentUser ? userSettings.UserId : null);
 
         var openAiResponse =
-            await this._openAiService.GetJudgeResponse(topArtists, PromptType.Roast, amountThisWeek, supporter);
+            await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.NewRoast, amountThisWeek, supporter);
 
         if (openAiResponse.Choices == null)
         {
@@ -1409,7 +1411,7 @@ public class UserBuilder
         var aiGeneration =
             await this._openAiService.UpdateAiGeneration(context.InteractionId, openAiResponse);
 
-        response.Embed.WithDescription(ImproveAiResponse(aiGeneration.Output, topArtists));
+        response.Embed.WithDescription(aiGeneration.Output);
 
         return response;
     }

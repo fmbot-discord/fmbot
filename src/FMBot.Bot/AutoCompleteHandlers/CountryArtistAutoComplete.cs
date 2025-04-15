@@ -24,7 +24,8 @@ public class CountryArtistAutoComplete : AutocompleteHandler
         IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
     {
         var recentlyPlayedArtists = await this._artistsService.GetLatestArtists(context.User.Id);
-        var recentTopArtists = await this._artistsService.GetRecentTopArtists(context.User.Id);
+        var recentTopArtists = (await this._artistsService.GetRecentTopArtists(context.User.Id))
+            .Select(s => s.ArtistName).ToList();
 
         var results = new List<string>();
 

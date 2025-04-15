@@ -647,14 +647,14 @@ public class ArtistsService
         }
     }
 
-    public async Task<List<string>> GetRecentTopArtists(ulong discordUserId, bool cacheEnabled = true,
+    public async Task<List<TopArtist>> GetRecentTopArtists(ulong discordUserId, bool cacheEnabled = true,
         int daysToGoBack = 20)
     {
         try
         {
             var cacheKey = $"user-recent-top-artists-{discordUserId}";
 
-            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<string> userArtists);
+            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<TopArtist> userArtists);
             if (cacheAvailable && cacheEnabled)
             {
                 return userArtists;
@@ -664,7 +664,14 @@ public class ArtistsService
 
             if (user == null)
             {
-                return [Constants.AutoCompleteLoginRequired];
+                return
+                [
+                    new TopArtist
+                    {
+                        ArtistName = Constants.AutoCompleteLoginRequired,
+                        UserPlaycount = 1
+                    }
+                ];
             }
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -676,7 +683,11 @@ public class ArtistsService
             var artists = plays
                 .GroupBy(g => g.ArtistName)
                 .OrderByDescending(o => o.Count())
-                .Select(s => s.Key)
+                .Select(s => new TopArtist
+                {
+                    ArtistName = s.Key,
+                    UserPlaycount = s.Count()
+                })
                 .ToList();
 
             this._cache.Set(cacheKey, artists, TimeSpan.FromSeconds(120));
