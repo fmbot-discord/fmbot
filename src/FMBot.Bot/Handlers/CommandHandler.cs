@@ -412,10 +412,10 @@ public class CommandHandler
     private (bool rateLimited, bool messageSent) CheckUserRateLimit(ulong discordUserId)
     {
         var shortKey = $"{discordUserId}-ratelimit-short";
-        const int shortSeconds = 12;
+        const int shortSeconds = 10;
 
         var longKey = $"{discordUserId}-ratelimit-long";
-        const int longSeconds = 45;
+        const int longSeconds = 40;
 
         var cacheKeyErrorSent = $"{discordUserId}-ratelimit-errorsent";
 
@@ -424,7 +424,7 @@ public class CommandHandler
         if (this._cache.TryGetValue(shortKey, out int recentShortRequests))
         {
             var cacheTime = TimeSpan.FromSeconds(shortSeconds);
-            if (recentShortRequests >= 10)
+            if (recentShortRequests >= 12)
             {
                 var cooldown = TimeSpan.FromSeconds(shortSeconds - 2);
                 this._cache.Set(cacheKeyErrorSent, true, cooldown);
