@@ -12,7 +12,7 @@ public class FilterStats
 
     public List<ulong> Roles { get; set; }
 
-    public bool RequesterFiltered { get; set; }
+    public bool? RequesterFiltered { get; set; }
 
     public int? ActivityThresholdFiltered { get; set; }
     public int? GuildActivityThresholdFiltered { get; set; }
@@ -54,6 +54,11 @@ public class FilterStats
             if (descriptionList.Any())
             {
                 description.Append($"Filtered: {StringService.StringListToLongString(descriptionList)} users");
+            }
+
+            if (RequesterFiltered == true)
+            {
+                description.Append($" (You've been filtered)");
             }
 
             if (this.Roles != null && this.Roles.Any())

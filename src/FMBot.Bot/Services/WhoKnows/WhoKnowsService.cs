@@ -76,6 +76,7 @@ public class WhoKnowsService
     public static (FilterStats stats, IDictionary<int, FullGuildUser> filteredGuildUsers) FilterGuildUsers(
         IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,
+        int contextUserId,
         List<ulong> roles = null)
     {
         var wkObjects = guildUsers.Select(s => new WhoKnowsObjectWithUser
@@ -89,7 +90,7 @@ public class WhoKnowsService
             UserId = s.Key
         }).ToList();
 
-        var (stats, filteredUsers) = FilterWhoKnowsObjects(wkObjects, guildUsers, guild, roles);
+        var (stats, filteredUsers) = FilterWhoKnowsObjects(wkObjects, guildUsers, guild, contextUserId, roles);
 
         var userIdsLeft = filteredUsers
             .Select(s => s.UserId)
@@ -106,14 +107,19 @@ public class WhoKnowsService
         ICollection<WhoKnowsObjectWithUser> users,
         IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,
+        int contextUserId,
         List<ulong> roles = null)
     {
         var stats = new FilterStats
         {
             StartCount = users.Count,
-            RequesterFiltered = false,
             Roles = roles
         };
+
+        if (users.Select(s => s.UserId).Contains(contextUserId))
+        {
+            stats.RequesterFiltered = false;
+        }
 
         if (guild.ActivityThresholdDays.HasValue)
         {
@@ -200,6 +206,12 @@ public class WhoKnowsService
         }
 
         stats.EndCount = users.Count;
+
+        if (stats.RequesterFiltered.HasValue &&
+            !users.Select(s => s.UserId).Contains(contextUserId))
+        {
+            stats.RequesterFiltered = true;
+        }
 
         return (stats, users.ToList());
     }

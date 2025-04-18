@@ -37,6 +37,8 @@ public class User
 
     public ResponseMode? Mode { get; set; }
 
+    // public WhoKnowsResponseMode? WhoKnowsMode { get; set; }
+
     public PrivacyLevel PrivacyLevel { get; set; }
 
     public DateTime? LastIndexed { get; set; }

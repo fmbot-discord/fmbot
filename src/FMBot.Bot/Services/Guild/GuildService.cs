@@ -180,7 +180,6 @@ public class GuildService
         var stats = new FilterStats
         {
             StartCount = users.Count,
-            RequesterFiltered = false,
             Roles = roles
         };
 
