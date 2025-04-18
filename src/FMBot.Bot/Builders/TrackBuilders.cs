@@ -363,7 +363,7 @@ public class TrackBuilders
             trackName, context.DiscordGuild, track.Track.UserPlaycount);
 
         var (filterStats, filteredUsersWithTrack) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithTrack, guildUsers, guild, context.ContextUser.UserId, roles);
 
         string albumCoverUrl = null;
         if (track.Track.AlbumName != null)

@@ -198,7 +198,7 @@ public class AlbumBuilders
                 var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild,
                     guildUsers, guild.GuildId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
                 var (filterStats, filteredUsersWithAlbum) =
-                    WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild);
+                    WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild, context.ContextUser.UserId);
 
                 if (filteredUsersWithAlbum.Count != 0)
                 {
@@ -373,7 +373,7 @@ public class AlbumBuilders
             fullAlbumName, context.DiscordGuild, album.Album.UserPlaycount);
 
         var (filterStats, filteredUsersWithAlbum) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithAlbum, guildUsers, guild, context.ContextUser.UserId, roles);
 
         var albumCoverUrl = album.Album.AlbumCoverUrl;
         if (cachedAlbum.SpotifyImageUrl != null)

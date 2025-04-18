@@ -286,7 +286,7 @@ public class ArtistBuilders
                 var usersWithArtist = await this._whoKnowsArtistService.GetIndexedUsersForArtist(context.DiscordGuild,
                     guildUsers, contextGuild.GuildId, artistSearch.Artist.ArtistName);
                 var (filterStats, filteredUsersWithArtist) =
-                    WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild);
+                    WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, context.ContextUser.UserId);
 
                 if (filteredUsersWithArtist.Count != 0)
                 {
@@ -1563,7 +1563,7 @@ public class ArtistBuilders
             artistSearch.Artist.ArtistName, context.DiscordGuild, artistSearch.Artist.UserPlaycount);
 
         var (filterStats, filteredUsersWithArtist) =
-            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, roles);
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithArtist, guildUsers, contextGuild, context.ContextUser.UserId, roles);
 
         CrownModel crownModel = null;
         if (contextGuild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1 && !displayRoleSelector &&
