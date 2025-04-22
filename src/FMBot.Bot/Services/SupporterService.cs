@@ -176,7 +176,7 @@ public class SupporterService
         thankYouMessage.AppendLine("- `.artist`, `.album`, `.track` — See discovery dates");
         thankYouMessage.AppendLine();
 
-        thankYouMessage.AppendLine("<:history:1131511469096312914> **Import your Spotify and/or Apple Music**");
+        thankYouMessage.AppendLine("<:history:1131511469096312914> **Use your Spotify and Apple Music history**");
         thankYouMessage.AppendLine("- `/import spotify` — Import your full Spotify History");
         thankYouMessage.AppendLine("- `/import applemusic` — Import your full Apple Music History");
         thankYouMessage.AppendLine("- `/import manage` — Configure your imports and how they're used");

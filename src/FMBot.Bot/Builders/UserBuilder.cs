@@ -1798,7 +1798,7 @@ public class UserBuilder
         return response;
     }
 
-    public ResponseModel UpdatePlaysInit(ContextModel context)
+    public static ResponseModel UpdatePlaysInit(ContextModel context)
     {
         var response = new ResponseModel
         {

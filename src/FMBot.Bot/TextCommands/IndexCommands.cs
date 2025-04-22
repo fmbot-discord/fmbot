@@ -118,7 +118,7 @@ public class IndexCommands : BaseCommandModule
 
         if (!updateType.optionPicked)
         {
-            var initialResponse = this._userBuilder.UpdatePlaysInit(new ContextModel(this.Context, prfx, contextUser));
+            var initialResponse = UserBuilder.UpdatePlaysInit(new ContextModel(this.Context, prfx, contextUser));
             var message = await this.Context.SendResponse(this.Interactivity,initialResponse);
 
             var updatedResponse =

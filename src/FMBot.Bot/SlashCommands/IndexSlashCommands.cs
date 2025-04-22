@@ -89,7 +89,7 @@ public class IndexSlashCommands : InteractionModuleBase
 
         if (updateTypeInput == UpdateType.RecentPlays || updateType.updateType.HasFlag(UpdateType.RecentPlays))
         {
-            var initialResponse = this._userBuilder.UpdatePlaysInit(new ContextModel(this.Context, contextUser));
+            var initialResponse = UserBuilder.UpdatePlaysInit(new ContextModel(this.Context, contextUser));
             await this.Context.SendResponse(this.Interactivity, initialResponse);
 
             var updatedResponse = await this._userBuilder.UpdatePlays(new ContextModel(this.Context, contextUser));
