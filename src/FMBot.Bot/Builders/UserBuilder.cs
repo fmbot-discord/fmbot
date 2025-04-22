@@ -30,7 +30,6 @@ public class UserBuilder
 {
     private readonly UserService _userService;
     private readonly GuildService _guildService;
-    private readonly IPrefixService _prefixService;
     private readonly TimerService _timer;
     private readonly FeaturedService _featuredService;
     private readonly BotSettings _botSettings;
@@ -42,10 +41,11 @@ public class UserBuilder
     private readonly DiscogsService _discogsService;
     private readonly OpenAiService _openAiService;
     private readonly AdminService _adminService;
+    private readonly UpdateService _updateService;
+    private readonly IndexService _indexService;
 
     public UserBuilder(UserService userService,
         GuildService guildService,
-        IPrefixService prefixService,
         TimerService timer,
         IOptions<BotSettings> botSettings,
         FeaturedService featuredService,
@@ -56,11 +56,12 @@ public class UserBuilder
         SupporterService supporterService,
         DiscogsService discogsService,
         OpenAiService openAiService,
-        AdminService adminService)
+        AdminService adminService,
+        UpdateService updateService,
+        IndexService indexService)
     {
         this._userService = userService;
         this._guildService = guildService;
-        this._prefixService = prefixService;
         this._timer = timer;
         this._featuredService = featuredService;
         this._dataSourceFactory = dataSourceFactory;
@@ -71,6 +72,8 @@ public class UserBuilder
         this._discogsService = discogsService;
         this._openAiService = openAiService;
         this._adminService = adminService;
+        this._updateService = updateService;
+        this._indexService = indexService;
         this._botSettings = botSettings.Value;
     }
 
@@ -1367,7 +1370,8 @@ public class UserBuilder
             userSettings.DifferentUser ? userSettings.UserId : null);
 
         var openAiResponse =
-            await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.NewCompliment, amountThisWeek, supporter);
+            await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.NewCompliment, amountThisWeek,
+                supporter);
 
         if (openAiResponse.Choices == null)
         {
@@ -1400,7 +1404,8 @@ public class UserBuilder
             userSettings.DifferentUser ? userSettings.UserId : null);
 
         var openAiResponse =
-            await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.NewRoast, amountThisWeek, supporter);
+            await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.NewRoast, amountThisWeek,
+                supporter);
 
         if (openAiResponse.Choices == null)
         {
@@ -1791,6 +1796,238 @@ public class UserBuilder
         response.Components = new ComponentBuilder()
             .WithButton("Authorize .fmbot", style: ButtonStyle.Link, url: this._botSettings.Discord.InstallUri)
             .WithButton("Refresh linked data", style: ButtonStyle.Secondary, customId: "update-linkedroles");
+
+        return response;
+    }
+
+    public ResponseModel UpdatePlaysInit(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        response.Embed.WithDescription(
+            $"<a:loading:821676038102056991> Fetching **{context.ContextUser.UserNameLastFM}**'s latest scrobbles...");
+
+        return response;
+    }
+
+    public async Task<ResponseModel> UpdatePlays(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var update = await this._updateService.UpdateUserAndGetRecentTracks(context.ContextUser);
+
+        var updatePromo =
+            await this._supporterService.GetPromotionalUpdateMessage(context.ContextUser, context.Prefix,
+                context.DiscordGuild?.Id);
+        var upgradeButton = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+            style: ButtonStyle.Secondary,
+            customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: updatePromo.supporterSource));
+
+        if (GenericEmbedService.RecentScrobbleCallFailed(update))
+        {
+            return GenericEmbedService.RecentScrobbleCallFailedResponse(update, context.ContextUser.UserNameLastFM);
+        }
+
+        var updatedDescription = new StringBuilder();
+
+        if (update.Content.NewRecentTracksAmount == 0 && update.Content.RemovedRecentTracksAmount == 0)
+        {
+            var previousUpdate = DateTime.SpecifyKind(context.ContextUser.LastUpdated.Value, DateTimeKind.Utc);
+            var previousUpdateValue = ((DateTimeOffset)previousUpdate).ToUnixTimeSeconds();
+
+            updatedDescription.AppendLine(
+                $"Nothing new found on [your Last.fm profile]({LastfmUrlExtensions.GetUserUrl(context.ContextUser.UserNameLastFM)}) since the last check <t:{previousUpdateValue}:R>.");
+
+            if (update.Content?.RecentTracks != null && update.Content.RecentTracks.Any())
+            {
+                if (!update.Content.RecentTracks.Any(a => a.NowPlaying))
+                {
+                    var latestScrobble = update.Content.RecentTracks.MaxBy(o => o.TimePlayed);
+                    if (latestScrobble != null && latestScrobble.TimePlayed.HasValue)
+                    {
+                        var specifiedDateTime = DateTime.SpecifyKind(latestScrobble.TimePlayed.Value, DateTimeKind.Utc);
+                        var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+                        updatedDescription.AppendLine();
+                        updatedDescription.AppendLine($"Your last scrobble was <t:{dateValue}:R>.");
+                    }
+
+                    updatedDescription.AppendLine();
+                    updatedDescription.AppendLine(
+                        $"Last.fm not keeping track of your Spotify properly? Try the instructions in `{context.Prefix}outofsync` for help.");
+                }
+            }
+            else
+            {
+                if (updatePromo.message != null)
+                {
+                    updatedDescription.AppendLine();
+                    updatedDescription.AppendLine(updatePromo.message);
+                    if (updatePromo.showUpgradeButton)
+                    {
+                        response.Components = upgradeButton;
+                    }
+                }
+            }
+
+            response.Embed =
+                new EmbedBuilder()
+                    .WithDescription(updatedDescription.ToString())
+                    .WithColor(DiscordConstants.SuccessColorGreen);
+        }
+        else
+        {
+            if (update.Content.RemovedRecentTracksAmount == 0)
+            {
+                updatedDescription.AppendLine(
+                    $"✅ Cached playcounts have been updated for {context.ContextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount.Format(context.NumberFormat)} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)}.");
+            }
+            else
+            {
+                updatedDescription.AppendLine(
+                    $"✅ Cached playcounts have been updated for {context.ContextUser.UserNameLastFM} based on {update.Content.NewRecentTracksAmount.Format(context.NumberFormat)} new {StringExtensions.GetScrobblesString(update.Content.NewRecentTracksAmount)} " +
+                    $"and {update.Content.RemovedRecentTracksAmount} removed {StringExtensions.GetScrobblesString(update.Content.RemovedRecentTracksAmount)}.");
+            }
+
+            if (update.Content.NewRecentTracksAmount < 25)
+            {
+                var random = new Random().Next(0, 8);
+                if (random == 1)
+                {
+                    updatedDescription.AppendLine();
+                    updatedDescription.AppendLine(
+                        "Note that .fmbot also updates you automatically once every 48 hours.");
+                }
+
+                if (random == 2)
+                {
+                    updatedDescription.AppendLine();
+                    updatedDescription.AppendLine(
+                        "Any commands that require you to be updated will also update you automatically.");
+                }
+            }
+
+            if (updatePromo.message != null)
+            {
+                updatedDescription.AppendLine();
+                updatedDescription.AppendLine(updatePromo.message);
+                if (updatePromo.showUpgradeButton)
+                {
+                    response.Components = upgradeButton;
+                }
+            }
+
+            response.Embed = new EmbedBuilder()
+                .WithDescription(updatedDescription.ToString())
+                .WithColor(DiscordConstants.SuccessColorGreen);
+        }
+
+        await this._userService.UpdateLinkedRole(context.ContextUser.DiscordUserId);
+
+        return response;
+    }
+
+    public ResponseModel UpdateOptionsInit(ContextModel context, UpdateType updateType, string updateTypeDescription)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (PublicProperties.IssuesAtLastFm)
+        {
+            var issueDescription = new StringBuilder();
+
+            issueDescription.AppendLine(
+                "Doing an advanced update is disabled temporarily while Last.fm is having issues. Please try again later.");
+            if (PublicProperties.IssuesReason != null)
+            {
+                issueDescription.AppendLine();
+                issueDescription.AppendLine("Note:");
+                issueDescription.AppendLine($"*{PublicProperties.IssuesReason}*");
+            }
+
+            response.Embed.WithDescription(issueDescription.ToString());
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.Disabled;
+            return response;
+        }
+
+        var indexAlreadyStarted = this._indexService.IndexStarted(context.ContextUser.UserId);
+
+        if (!indexAlreadyStarted)
+        {
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.Embed.WithDescription(
+                "An advanced update has recently been started for you. Please wait before starting a new one.");
+            response.CommandResponse = CommandResponse.Cooldown;
+            return response;
+        }
+
+        if (context.ContextUser.LastIndexed > DateTime.UtcNow.AddMinutes(-30))
+        {
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.Embed.WithDescription(
+                "You can't do full updates too often. These are only meant to be used when your Last.fm history has been adjusted.\n\n" +
+                $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{context.Prefix}outofsync` for help. Spotify sync issues can't be fixed inside of .fmbot.");
+            response.CommandResponse = CommandResponse.Cooldown;
+            return response;
+        }
+
+        var indexDescription = new StringBuilder();
+        indexDescription.AppendLine(
+            $"<a:loading:821676038102056991> Fetching Last.fm playcounts for user {context.ContextUser.UserNameLastFM}...");
+        indexDescription.AppendLine();
+        indexDescription.AppendLine("The following playcount caches are being rebuilt:");
+        indexDescription.AppendLine(updateTypeDescription);
+
+        if (context.ContextUser.UserType != UserType.User)
+        {
+            indexDescription.AppendLine(
+                $"*Thanks for being an .fmbot {context.ContextUser.UserType.ToString().ToLower()}. " +
+                $"Your full Last.fm history will now be cached, so this command might take slightly longer...*");
+        }
+        response.Embed.WithDescription(indexDescription.ToString());
+
+        return response;
+    }
+
+    public async Task<ResponseModel> UpdateOptions(ContextModel context, UpdateType updateType)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (!updateType.HasFlag(UpdateType.Full) && !updateType.HasFlag(UpdateType.AllPlays))
+        {
+            var update = await this._updateService.UpdateUserAndGetRecentTracks(context.ContextUser, bypassIndexPending: true);
+
+            if (GenericEmbedService.RecentScrobbleCallFailed(update))
+            {
+                return GenericEmbedService.RecentScrobbleCallFailedResponse(update, context.ContextUser.UserNameLastFM);
+            }
+        }
+
+        var result = await this._indexService.ModularUpdate(context.ContextUser, updateType);
+
+        var description = UserService.GetIndexCompletedUserStats(context.ContextUser, result, context.NumberFormat);
+
+          response.Embed = new EmbedBuilder()
+                .WithDescription(description.description)
+                .WithColor(result.UpdateError != true ? DiscordConstants.SuccessColorGreen : DiscordConstants.WarningColorOrange);
+            response.Components = description.promo
+                ? new ComponentBuilder()
+                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Secondary,
+                        customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "update-alldata"))
+                : null;
+
+        await this._userService.UpdateLinkedRole(context.DiscordUser.Id);
 
         return response;
     }
