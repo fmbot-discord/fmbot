@@ -77,6 +77,9 @@ public class IndexSlashCommands : InteractionModuleBase
 
     [SlashCommand("update", "Update .fmbot's cache manually with your latest Last.fm data")]
     [UsernameSetRequired]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task UpdateAsync(
         [Summary("type", "Select what you want to update")]
         UpdateType updateTypeInput = UpdateType.RecentPlays)
@@ -84,7 +87,7 @@ public class IndexSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
         var updateType = SettingService.GetUpdateType(Enum.GetName(updateTypeInput));
 
-        if (updateType.updateType.HasFlag(UpdateType.RecentPlays))
+        if (updateTypeInput == UpdateType.RecentPlays || updateType.updateType.HasFlag(UpdateType.RecentPlays))
         {
             var initialResponse = this._userBuilder.UpdatePlaysInit(new ContextModel(this.Context, contextUser));
             await this.Context.Interaction.RespondAsync(embed: initialResponse.Embed.Build(),
