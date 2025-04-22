@@ -41,7 +41,7 @@ public static class GenericEmbedService
 
     public static void RateLimitedResponse(this EmbedBuilder embed)
     {
-        embed.WithDescription($"Sorry, you're being ratelimited. Please cool down.");
+        embed.WithDescription($"Sorry, you're being ratelimited. Please cool down and wait a minute before using commands again.");
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 

@@ -424,7 +424,7 @@ public class CommandHandler
         if (this._cache.TryGetValue(shortKey, out int recentShortRequests))
         {
             var cacheTime = TimeSpan.FromSeconds(shortSeconds);
-            if (recentShortRequests >= 12)
+            if (recentShortRequests >= 13)
             {
                 var cooldown = TimeSpan.FromSeconds(shortSeconds - 2);
                 this._cache.Set(cacheKeyErrorSent, true, cooldown);
