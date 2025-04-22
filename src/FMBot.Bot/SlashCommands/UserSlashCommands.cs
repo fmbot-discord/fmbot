@@ -140,118 +140,126 @@ public class UserSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out UserSetting userSetting))
+        try
         {
-            ResponseModel response;
-            switch (userSetting)
+            if (Enum.TryParse(setting.Replace("view-", "").Replace("set-", ""), out UserSetting userSetting))
             {
-                case UserSetting.Privacy:
+                ResponseModel response;
+                switch (userSetting)
                 {
-                    response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
-
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    break;
-                }
-                case UserSetting.FmMode:
-                {
-                    response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser));
-
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    break;
-                }
-                case UserSetting.WkMode:
-                {
-                    response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
-
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    break;
-                }
-                case UserSetting.BotScrobbling:
-                {
-                    response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
-
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    break;
-                }
-                case UserSetting.SpotifyImport:
-                {
-                    var supporterRequired =
-                        ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
-
-                    if (supporterRequired != null)
+                    case UserSetting.Privacy:
                     {
-                        await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
-                        this.Context.LogCommandUsed(supporterRequired.CommandResponse);
-                        return;
+                        response = UserBuilder.Privacy(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
                     }
-
-                    response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
-                        contextUser.UserId);
-
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    break;
-                }
-                case UserSetting.UserReactions:
-                {
-                    var supporterRequired =
-                        UserBuilder.UserReactionsSupporterRequired(new ContextModel(this.Context, contextUser), prfx);
-
-                    if (supporterRequired != null)
+                    case UserSetting.FmMode:
                     {
-                        await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
-                        this.Context.LogCommandUsed(supporterRequired.CommandResponse);
-                        return;
+                        response = UserBuilder.FmMode(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
                     }
+                    case UserSetting.WkMode:
+                    {
+                        response = UserBuilder.ResponseMode(new ContextModel(this.Context, contextUser));
 
-                    response = UserBuilder.UserReactions(new ContextModel(this.Context, contextUser), prfx);
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.BotScrobbling:
+                    {
+                        response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
 
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    break;
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.SpotifyImport:
+                    {
+                        var supporterRequired =
+                            ImportBuilders.ImportSupporterRequired(new ContextModel(this.Context, contextUser));
+
+                        if (supporterRequired != null)
+                        {
+                            await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
+                            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                            return;
+                        }
+
+                        response = await this._userBuilder.ImportMode(new ContextModel(this.Context, contextUser),
+                            contextUser.UserId);
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.UserReactions:
+                    {
+                        var supporterRequired =
+                            UserBuilder.UserReactionsSupporterRequired(new ContextModel(this.Context, contextUser),
+                                prfx);
+
+                        if (supporterRequired != null)
+                        {
+                            await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
+                            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                            return;
+                        }
+
+                        response = UserBuilder.UserReactions(new ContextModel(this.Context, contextUser), prfx);
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.Localization:
+                    {
+                        response = UserBuilder.Localization(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.OutOfSync:
+                    {
+                        response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.LinkedRoles:
+                    {
+                        response = this._userBuilder.ManageLinkedRoles(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.ManageAlts:
+                    {
+                        response = await this._userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
+                    case UserSetting.DeleteAccount:
+                    {
+                        var serverEmbed = new EmbedBuilder()
+                            .WithColor(DiscordConstants.WarningColorOrange)
+                            .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
+
+                        await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+
+                        response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
+                        await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
+                            components: response.Components.Build());
+                        break;
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
-                case UserSetting.Localization:
-                {
-                    response = UserBuilder.Localization(new ContextModel(this.Context, contextUser));
-
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    break;
-                }
-                case UserSetting.OutOfSync:
-                {
-                    response = StaticBuilders.OutOfSync(new ContextModel(this.Context, contextUser));
-
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    break;
-                }
-                case UserSetting.LinkedRoles:
-                {
-                    response = this._userBuilder.ManageLinkedRoles(new ContextModel(this.Context, contextUser));
-
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    break;
-                }
-                case UserSetting.ManageAlts:
-                {
-                    response = await this._userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
-
-                    await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-                    break;
-                }
-                case UserSetting.DeleteAccount:
-                {
-                    var serverEmbed = new EmbedBuilder()
-                        .WithColor(DiscordConstants.WarningColorOrange)
-                        .WithDescription("Check your DMs to continue with your .fmbot account deletion.");
-
-                    await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
-
-                    response = UserBuilder.RemoveDataResponse(new ContextModel(this.Context, contextUser));
-                    await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
-                        components: response.Components.Build());
-                    break;
-                }
-                default:
-                    throw new ArgumentOutOfRangeException();
             }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
@@ -1011,7 +1019,8 @@ public class UserSlashCommands : InteractionModuleBase
             else
             {
                 topArtists =
-                    (await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 20))?.Content?.TopArtists;
+                    (await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings, 20))
+                    ?.Content?.TopArtists;
             }
 
             List<TopTrack> topTracks;
@@ -1023,7 +1032,8 @@ public class UserSlashCommands : InteractionModuleBase
             else
             {
                 topTracks =
-                    (await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20))?.Content?.TopTracks;
+                    (await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20))
+                    ?.Content?.TopTracks;
             }
 
             if (topArtists == null || !topArtists.Any() || topTracks == null || !topTracks.Any())
