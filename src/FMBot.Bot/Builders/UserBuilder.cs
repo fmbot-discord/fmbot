@@ -1707,63 +1707,61 @@ public class UserBuilder
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
         var alts = await this._adminService.GetUsersWithLfmUsernameAsync(context.ContextUser.UserNameLastFM);
 
-        SelectMenuBuilder altSelector;
         if (alts.Count > 1)
         {
-            altSelector = new SelectMenuBuilder()
+            var altSelector = new SelectMenuBuilder()
                 .WithPlaceholder("Select alt to manage")
                 .WithCustomId(InteractionConstants.ManageAlts.ManageAltsPicker)
                 .WithMinValues(1)
                 .WithMaxValues(1);
+
+            var amount = 1;
+            foreach (var alt in alts
+                         .OrderByDescending(o => o.LastUsed)
+                         .ThenByDescending(o => o.UserId)
+                         .Where(w => w.UserId != context.ContextUser.UserId)
+                         .Take(25))
+            {
+                var description = new StringBuilder();
+
+                var displayName = alt.DiscordUserId.ToString();
+                if (amount <= 5)
+                {
+                    var user = await this._userService.GetUserFromDiscord(alt.DiscordUserId);
+                    if (user != null)
+                    {
+                        displayName = user.Username;
+                        if (user.GlobalName != null)
+                        {
+                            description.Append($"{user.GlobalName}");
+                        }
+                    }
+                }
+
+                if (alt.LastUsed.HasValue)
+                {
+                    if (description.Length > 0)
+                    {
+                        description.Append($" - ");
+                    }
+
+                    description.Append($"Last used {StringExtensions.GetTimeAgoShortString(alt.LastUsed.Value)} ago");
+                }
+
+                altSelector.AddOption(description.Length > 0
+                    ? new SelectMenuOptionBuilder(displayName, alt.UserId.ToString(), description.ToString())
+                    : new SelectMenuOptionBuilder(displayName, alt.UserId.ToString()));
+
+                amount++;
+            }
+
+            response.Components = new ComponentBuilder().WithSelectMenu(altSelector);
         }
         else
         {
-            altSelector = new SelectMenuBuilder()
-                .WithPlaceholder("No alts found")
-                .WithDisabled(true);
+            response.Embed.AddField("No alts found",
+                "You don't have any other .fmbot accounts with the same Last.fm username.");
         }
-
-        var amount = 1;
-        foreach (var alt in alts
-                     .OrderByDescending(o => o.LastUsed)
-                     .ThenByDescending(o => o.UserId)
-                     .Where(w => w.UserId != context.ContextUser.UserId)
-                     .Take(25))
-        {
-            var description = new StringBuilder();
-
-            var displayName = alt.DiscordUserId.ToString();
-            if (amount <= 5)
-            {
-                var user = await this._userService.GetUserFromDiscord(alt.DiscordUserId);
-                if (user != null)
-                {
-                    displayName = user.Username;
-                    if (user.GlobalName != null)
-                    {
-                        description.Append($"{user.GlobalName}");
-                    }
-                }
-            }
-
-            if (alt.LastUsed.HasValue)
-            {
-                if (description.Length > 0)
-                {
-                    description.Append($" - ");
-                }
-
-                description.Append($"Last used {StringExtensions.GetTimeAgoShortString(alt.LastUsed.Value)} ago");
-            }
-
-            altSelector.AddOption(description.Length > 0
-                ? new SelectMenuOptionBuilder(displayName, alt.UserId.ToString(), description.ToString())
-                : new SelectMenuOptionBuilder(displayName, alt.UserId.ToString()));
-
-            amount++;
-        }
-
-        response.Components = new ComponentBuilder().WithSelectMenu(altSelector);
 
         response.Embed.WithTitle("Manage other .fmbot accounts");
 
@@ -1992,6 +1990,7 @@ public class UserBuilder
                 $"*Thanks for being an .fmbot {context.ContextUser.UserType.ToString().ToLower()}. " +
                 $"Your full Last.fm history will now be cached, so this command might take slightly longer...*");
         }
+
         response.Embed.WithDescription(indexDescription.ToString());
 
         return response;
@@ -2006,7 +2005,8 @@ public class UserBuilder
 
         if (!updateType.HasFlag(UpdateType.Full) && !updateType.HasFlag(UpdateType.AllPlays))
         {
-            var update = await this._updateService.UpdateUserAndGetRecentTracks(context.ContextUser, bypassIndexPending: true);
+            var update =
+                await this._updateService.UpdateUserAndGetRecentTracks(context.ContextUser, bypassIndexPending: true);
 
             if (GenericEmbedService.RecentScrobbleCallFailed(update))
             {
@@ -2018,14 +2018,16 @@ public class UserBuilder
 
         var description = UserService.GetIndexCompletedUserStats(context.ContextUser, result, context.NumberFormat);
 
-          response.Embed = new EmbedBuilder()
-                .WithDescription(description.description)
-                .WithColor(result.UpdateError != true ? DiscordConstants.SuccessColorGreen : DiscordConstants.WarningColorOrange);
-            response.Components = description.promo
-                ? new ComponentBuilder()
-                    .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Secondary,
-                        customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "update-alldata"))
-                : null;
+        response.Embed = new EmbedBuilder()
+            .WithDescription(description.description)
+            .WithColor(result.UpdateError != true
+                ? DiscordConstants.SuccessColorGreen
+                : DiscordConstants.WarningColorOrange);
+        response.Components = description.promo
+            ? new ComponentBuilder()
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Secondary,
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "update-alldata"))
+            : null;
 
         await this._userService.UpdateLinkedRole(context.DiscordUser.Id);
 
