@@ -21,6 +21,9 @@ public class OpenAIModels
 
         [JsonPropertyName("messages")]
         public List<RequestMessage> Messages { get; set; }
+
+        [JsonPropertyName("temperature")]
+        public double Temperature { get; set; }
     }
 
     public class Choice

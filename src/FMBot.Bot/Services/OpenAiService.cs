@@ -40,7 +40,7 @@ public class OpenAiService
     }
 
     private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-4o-mini",
-        string userMessage = null)
+        string userMessage = null, double temperature = 1.00)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
         request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
@@ -48,14 +48,15 @@ public class OpenAiService
         var content = new OpenAiRequest
         {
             Model = model,
-            Messages = new List<RequestMessage>
-            {
-                new()
+            Temperature = temperature,
+            Messages =
+            [
+                new RequestMessage
                 {
                     Role = "system",
                     Content = prompt
                 }
-            }
+            ]
         };
 
         if (userMessage != null)
@@ -112,7 +113,7 @@ public class OpenAiService
 
         var model = supporter ? amountThisWeek <= 2 ? prompt.UltraModel : prompt.PremiumModel : prompt.FreeModel;
 
-        return await SendRequest(prompt.Prompt, model, music.ToString());
+        return await SendRequest(prompt.Prompt, model, music.ToString(), 1.1);
     }
 
     public async Task<AiGeneration> StoreAiGeneration(ulong contextId, int userId, int? targetedUserId)
