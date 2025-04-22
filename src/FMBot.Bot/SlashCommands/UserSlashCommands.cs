@@ -312,7 +312,6 @@ public class UserSlashCommands : InteractionModuleBase
                 });
                 this.Context.LogCommandUsed();
 
-
                 if (indexUser)
                 {
                     await this._indexService.IndexUser(newUserSettings);
@@ -877,7 +876,7 @@ public class UserSlashCommands : InteractionModuleBase
             followUpEmbed.WithTitle("Removal successful");
             followUpEmbed.WithDescription(
                 "Your settings, friends and any other data have been successfully deleted from .fmbot.");
-            await FollowupAsync(embeds: new[] { followUpEmbed.Build() }, ephemeral: true);
+            await FollowupAsync(embed: followUpEmbed.Build(), ephemeral: true);
         }
         catch (Exception e)
         {

@@ -60,7 +60,7 @@ public static class CommandContextExtensions
         PublicProperties.UsedCommandsResponses.TryAdd(context.Message.Id, CommandResponse.LastFmError);
     }
 
-    public static async Task<ulong?> SendResponse(this ICommandContext context, InteractiveService interactiveService, ResponseModel response)
+    public static async Task<IUserMessage> SendResponse(this ICommandContext context, InteractiveService interactiveService, ResponseModel response)
     {
         IUserMessage responseMessage = null;
 
@@ -215,7 +215,7 @@ public static class CommandContextExtensions
             }
         }
 
-        return responseMessage?.Id;
+        return responseMessage;
     }
 
     public static string GenerateRandomCode()

@@ -1271,11 +1271,6 @@ public class AlbumBuilders
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
         }
 
-        if (!userSettings.DifferentUser && !context.SlashCommand)
-        {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
-        }
-
         var userUrl = LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm,
             $"/library/albums?{timeSettings.UrlParameter}");
 
@@ -1419,7 +1414,7 @@ public class AlbumBuilders
             footer.Append($"Page {pageCounter}/{albumPages.Count}");
             if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)
             {
-                footer.Append($" - {albums.Content.TotalAmount} different albums in this time period");
+                footer.Append($" - {albums.Content.TotalAmount} different albums");
             }
 
             if (topListSettings.Billboard)

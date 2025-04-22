@@ -1218,10 +1218,6 @@ public class TrackBuilders
         if (!userSettings.DifferentUser)
         {
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-            if (!context.SlashCommand)
-            {
-                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
-            }
         }
         else
         {
@@ -1366,7 +1362,7 @@ public class TrackBuilders
             if (topTracks.Content.TotalAmount.HasValue)
             {
                 footer.Append(
-                    $" - {topTracks.Content.TotalAmount.Value.Format(context.NumberFormat)} total tracks in this time period");
+                    $" - {topTracks.Content.TotalAmount.Value.Format(context.NumberFormat)} different tracks");
             }
 
             if (topListSettings.Billboard)

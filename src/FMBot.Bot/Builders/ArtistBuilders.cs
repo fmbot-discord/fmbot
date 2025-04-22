@@ -747,8 +747,6 @@ public class ArtistBuilders
                 footer.Append(
                     $"{userTitle} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total scrobbles on this artist");
                 title.Append($"Your top tracks for '{artistSearch.Artist.ArtistName}'");
-
-                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
             }
 
             if (maybeMissingResults)
@@ -884,8 +882,6 @@ public class ArtistBuilders
                 footer.Append(
                     $" - {userTitle} has {artistSearch.Artist.UserPlaycount.Format(context.NumberFormat)} total scrobbles on this artist");
                 title.Append($"Your top albums for '{artistSearch.Artist.ArtistName}'");
-
-                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
             }
 
             response.EmbedAuthor.WithName(title.ToString());
@@ -1034,11 +1030,6 @@ public class ArtistBuilders
         string userTitle;
         if (!userSettings.DifferentUser)
         {
-            if (!context.SlashCommand)
-            {
-                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
-            }
-
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         }
         else
@@ -1157,7 +1148,7 @@ public class ArtistBuilders
             if (artists.Content.TotalAmount.HasValue)
             {
                 footer.Append(
-                    $" - {artists.Content.TotalAmount.Format(context.NumberFormat)} different artists in this time period");
+                    $" - {artists.Content.TotalAmount.Format(context.NumberFormat)} different artists");
             }
 
             if (topListSettings.Billboard)
@@ -1240,11 +1231,6 @@ public class ArtistBuilders
         string userTitle;
         if (!userSettings.DifferentUser)
         {
-            if (!context.SlashCommand)
-            {
-                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
-            }
-
             userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         }
         else

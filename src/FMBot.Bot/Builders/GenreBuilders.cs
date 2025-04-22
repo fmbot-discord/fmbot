@@ -186,14 +186,7 @@ public class GenreBuilders
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
-        if (!userSettings.DifferentUser)
-        {
-            if (!context.SlashCommand)
-            {
-                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
-            }
-        }
-        else
+        if (userSettings.DifferentUser)
         {
             userTitle =
                 $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
@@ -713,11 +706,6 @@ public class GenreBuilders
 
             response.EmbedAuthor.WithName(
                 $"Top '{genres.genres.First().Transform(To.TitleCase)}' artists for {context.DiscordGuild.Name}");
-        }
-
-        if (!context.SlashCommand && !userSettings.DifferentUser)
-        {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
         }
 
         var interaction = userView ? InteractionConstants.Genre.GenreGuild : InteractionConstants.Genre.GenreUser;

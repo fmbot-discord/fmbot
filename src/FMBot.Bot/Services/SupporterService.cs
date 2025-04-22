@@ -520,12 +520,12 @@ public class SupporterService
                     $"*🌞 Tip: All commands that support time periods also support timeframes like `december` or `2025`*";
                 break;
             }
-            // case 25:
-            // {
-            //     message =
-            //         $"*🌞 Tip: Delete an unwanted bot response yourself by opening the message options > Apps > 'Delete response'*";
-            //     break;
-            // }
+            case 25:
+            {
+                message =
+                    $"*🌞 Tip: Delete an unwanted bot response yourself by opening the message options > Apps > 'Delete response'*";
+                break;
+            }
         }
 
         return (message, showUpgradeButton, supporterSource);

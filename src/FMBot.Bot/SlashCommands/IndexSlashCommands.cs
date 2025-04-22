@@ -90,8 +90,7 @@ public class IndexSlashCommands : InteractionModuleBase
         if (updateTypeInput == UpdateType.RecentPlays || updateType.updateType.HasFlag(UpdateType.RecentPlays))
         {
             var initialResponse = this._userBuilder.UpdatePlaysInit(new ContextModel(this.Context, contextUser));
-            await this.Context.Interaction.RespondAsync(embed: initialResponse.Embed.Build(),
-                components: initialResponse.Components?.Build());
+            await this.Context.SendResponse(this.Interactivity, initialResponse);
 
             var updatedResponse = await this._userBuilder.UpdatePlays(new ContextModel(this.Context, contextUser));
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
@@ -106,8 +105,7 @@ public class IndexSlashCommands : InteractionModuleBase
             var initialResponse =
                 this._userBuilder.UpdateOptionsInit(new ContextModel(this.Context, contextUser), updateType.updateType,
                     updateType.description);
-            await this.Context.Interaction.RespondAsync(embed: initialResponse.Embed.Build(),
-                components: initialResponse.Components?.Build());
+            await this.Context.SendResponse(this.Interactivity, initialResponse);
 
             if (initialResponse.CommandResponse != CommandResponse.Ok)
             {

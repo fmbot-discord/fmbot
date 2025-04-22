@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -14,9 +12,6 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain;
-using FMBot.Domain.Enums;
-using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -29,29 +24,26 @@ public class IndexCommands : BaseCommandModule
     private readonly GuildService _guildService;
     private readonly IndexService _indexService;
     private readonly IPrefixService _prefixService;
-    private readonly UpdateService _updateService;
     private readonly UserService _userService;
-    private readonly SupporterService _supporterService;
     private readonly UserBuilder _userBuilder;
 
+    private InteractiveService Interactivity { get; }
 
     public IndexCommands(
         GuildService guildService,
         IndexService indexService,
         IPrefixService prefixService,
-        UpdateService updateService,
         UserService userService,
         IOptions<BotSettings> botSettings,
-        SupporterService supporterService,
-        UserBuilder userBuilder) : base(botSettings)
+        UserBuilder userBuilder,
+        InteractiveService interactivity) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
         this._prefixService = prefixService;
-        this._updateService = updateService;
         this._userService = userService;
-        this._supporterService = supporterService;
         this._userBuilder = userBuilder;
+        this.Interactivity = interactivity;
     }
 
     [Command("refreshmembers", RunMode = RunMode.Async)]
@@ -127,7 +119,7 @@ public class IndexCommands : BaseCommandModule
         if (!updateType.optionPicked)
         {
             var initialResponse = this._userBuilder.UpdatePlaysInit(new ContextModel(this.Context, prfx, contextUser));
-            var message = await this.Context.Channel.SendMessageAsync(embed: initialResponse.Embed.Build());
+            var message = await this.Context.SendResponse(this.Interactivity,initialResponse);
 
             var updatedResponse =
                 await this._userBuilder.UpdatePlays(new ContextModel(this.Context, prfx, contextUser));
@@ -144,7 +136,7 @@ public class IndexCommands : BaseCommandModule
         {
             var initialResponse = this._userBuilder.UpdateOptionsInit(new ContextModel(this.Context, prfx, contextUser),
                 updateType.updateType, updateType.description);
-            var message = await this.Context.Channel.SendMessageAsync(embed: initialResponse.Embed.Build());
+            var message = await this.Context.SendResponse(this.Interactivity,initialResponse);
 
             if (initialResponse.CommandResponse != CommandResponse.Ok)
             {

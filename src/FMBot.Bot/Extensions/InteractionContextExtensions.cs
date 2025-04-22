@@ -135,7 +135,7 @@ public static class InteractionContextExtensions
         var embeds = new[] { response.Embed.Build() };
         if (extraResponse != null)
         {
-            embeds = new[] { response.Embed.Build(), extraResponse.Embed?.Build() };
+            embeds = [response.Embed.Build(), extraResponse.Embed?.Build()];
         }
 
         switch (response.ResponseType)

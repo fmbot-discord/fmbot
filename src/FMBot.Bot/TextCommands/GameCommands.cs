@@ -84,10 +84,10 @@ public class GameCommands : BaseCommandModule
             var responseId = await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
 
-            if (responseId.HasValue && response.GameSessionId.HasValue)
+            if (responseId?.Id != null && response.GameSessionId.HasValue)
             {
-                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Value);
-                await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.JumbleSecondsToGuess);
+                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
+                await JumbleTimeExpired(context, responseId.Id, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.JumbleSecondsToGuess);
             }
         }
         catch (OperationCanceledException)
@@ -180,10 +180,10 @@ public class GameCommands : BaseCommandModule
             var responseId = await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
 
-            if (responseId.HasValue && response.GameSessionId.HasValue)
+            if (responseId?.Id != null && response.GameSessionId.HasValue)
             {
-                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Value);
-                await JumbleTimeExpired(context, responseId.Value, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.PixelationSecondsToGuess);
+                await this._gameService.JumbleAddResponseId(response.GameSessionId.Value, responseId.Id);
+                await JumbleTimeExpired(context, responseId.Id, cancellationTokenSource.Token, response.GameSessionId.Value, GameService.PixelationSecondsToGuess);
             }
         }
         catch (OperationCanceledException)
