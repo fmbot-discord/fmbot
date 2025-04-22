@@ -14,6 +14,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
+using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -77,23 +78,48 @@ public class IndexSlashCommands : InteractionModuleBase
     [SlashCommand("update", "Update .fmbot's cache manually with your latest Last.fm data")]
     [UsernameSetRequired]
     public async Task UpdateAsync(
-        [Summary("type", "Select what you want to update")] UpdateType updateType = UpdateType.RecentPlays)
+        [Summary("type", "Select what you want to update")]
+        UpdateType updateTypeInput = UpdateType.RecentPlays)
     {
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+        var updateType = SettingService.GetUpdateType(Enum.GetName(updateTypeInput));
 
-        if (updateType.HasFlag(UpdateType.RecentPlays))
+        if (updateType.updateType.HasFlag(UpdateType.RecentPlays))
         {
             var initialResponse = this._userBuilder.UpdatePlaysInit(new ContextModel(this.Context, contextUser));
             await this.Context.Interaction.RespondAsync(embed: initialResponse.Embed.Build(),
                 components: initialResponse.Components?.Build());
 
             var updatedResponse = await this._userBuilder.UpdatePlays(new ContextModel(this.Context, contextUser));
-
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = updatedResponse.Embed.Build();
+                e.Components = updatedResponse.Components?.Build();
+            });
+            this.Context.LogCommandUsed(updatedResponse.CommandResponse);
         }
         else
         {
             var initialResponse =
-                this._userBuilder.UpdateOptionsInit(new ContextModel(this.Context, contextUser), updateType, "");
+                this._userBuilder.UpdateOptionsInit(new ContextModel(this.Context, contextUser), updateType.updateType,
+                    updateType.description);
+            await this.Context.Interaction.RespondAsync(embed: initialResponse.Embed.Build(),
+                components: initialResponse.Components?.Build());
+
+            if (initialResponse.CommandResponse != CommandResponse.Ok)
+            {
+                this.Context.LogCommandUsed(initialResponse.CommandResponse);
+                return;
+            }
+
+            var updatedResponse =
+                await this._userBuilder.UpdateOptions(new ContextModel(this.Context, contextUser), updateType.updateType);
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = updatedResponse.Embed.Build();
+                e.Components = updatedResponse.Components?.Build();
+            });
+            this.Context.LogCommandUsed(updatedResponse.CommandResponse);
         }
     }
 }

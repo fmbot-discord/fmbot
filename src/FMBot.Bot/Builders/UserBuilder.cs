@@ -1964,7 +1964,7 @@ public class UserBuilder
         {
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.Embed.WithDescription(
-                "An advanced update has recently been started for you. Please wait before starting a new one.");
+                "An advanced update has recently already been started for you. Please wait before starting a new one.");
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }

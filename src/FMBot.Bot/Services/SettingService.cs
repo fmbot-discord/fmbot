@@ -656,7 +656,7 @@ public class SettingService
             var artists = new[] { "artists", "artist", "a" };
             if (Contains(extraOptions, artists))
             {
-                updateType |= UpdateType.Artist;
+                updateType |= UpdateType.Artists;
                 optionPicked = true;
                 description.AppendLine("- Your top artists");
             }
@@ -678,13 +678,13 @@ public class SettingService
             }
         }
 
-        var discogs = new[] { "discogs", "discog", "vinyl", "collection" };
-        if (Contains(extraOptions, discogs))
-        {
-            updateType |= UpdateType.Discogs;
-            optionPicked = true;
-            description.AppendLine("- Your Discogs collection");
-        }
+        // var discogs = new[] { "discogs", "discog", "vinyl", "collection" };
+        // if (Contains(extraOptions, discogs))
+        // {
+        //     updateType |= UpdateType.Discogs;
+        //     optionPicked = true;
+        //     description.AppendLine("- Your Discogs collection");
+        // }
 
         return (updateType, optionPicked, description.ToString());
     }

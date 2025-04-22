@@ -160,7 +160,7 @@ public class IndexService
             }
         }
 
-        if (updateType.HasFlag(UpdateType.Artist) || updateType.HasFlag(UpdateType.Full))
+        if (updateType.HasFlag(UpdateType.Artists) || updateType.HasFlag(UpdateType.Full))
         {
             var artists = await GetTopArtistsForUser(user);
 
@@ -170,7 +170,7 @@ public class IndexService
                     user.UserId, user.DiscordUserId, user.UserNameLastFM, userInfo.ArtistCount, artists.Count);
 
                 stats.UpdateError = true;
-                stats.FailedUpdates |= UpdateType.Artist;
+                stats.FailedUpdates |= UpdateType.Artists;
             }
             else
             {
@@ -249,7 +249,7 @@ public class IndexService
     {
         try
         {
-            await this.ModularUpdate(user, UpdateType.Artist | UpdateType.Albums | UpdateType.Tracks);
+            await this.ModularUpdate(user, UpdateType.Artists | UpdateType.Albums | UpdateType.Tracks);
         }
         catch (Exception e)
         {

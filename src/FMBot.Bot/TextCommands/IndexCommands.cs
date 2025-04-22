@@ -146,6 +146,12 @@ public class IndexCommands : BaseCommandModule
                 updateType.updateType, updateType.description);
             var message = await this.Context.Channel.SendMessageAsync(embed: initialResponse.Embed.Build());
 
+            if (initialResponse.CommandResponse != CommandResponse.Ok)
+            {
+                this.Context.LogCommandUsed(initialResponse.CommandResponse);
+                return;
+            }
+
             var updatedResponse =
                 await this._userBuilder.UpdateOptions(new ContextModel(this.Context, prfx, contextUser),
                     updateType.updateType);

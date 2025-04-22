@@ -1123,7 +1123,7 @@ public class UserService
                 description.AppendLine($"- Could not fetch user info from Last.fm");
             }
 
-            if (stats.FailedUpdates.HasFlag(UpdateType.Artist))
+            if (stats.FailedUpdates.HasFlag(UpdateType.Artists))
             {
                 description.AppendLine($"- Could not fetch top artists");
             }
