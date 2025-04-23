@@ -137,6 +137,26 @@ public class UserService
         return $"user-{userNameLastFm.ToLower()}";
     }
 
+    public async Task<User> GetUserOrTempUser(IUser discordUser)
+    {
+        if (this._cache.TryGetValue(TempUserCacheKey(discordUser.Id), out string lastFmUserName))
+        {
+            return new User
+            {
+                UserNameLastFM = lastFmUserName,
+                DiscordUserId = discordUser.Id,
+                SessionKeyLastFm = "tempuser"
+            };
+        }
+
+        return await GetUserAsync(discordUser.Id);
+    }
+
+    private static string TempUserCacheKey(ulong discordUserId)
+    {
+        return $"tempuser-{discordUserId}";
+    }
+
     public async Task<User> GetUserForIdAsync(int userId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -1286,7 +1306,7 @@ public class UserService
         Log.Information("LastfmAuth: Login session starting for {user} | {discordUserId}", contextUser.Username,
             contextUser.Id);
 
-        var loginDelay = 8000;
+        var loginDelay = 6000;
         for (var i = 0; i < 11; i++)
         {
             await Task.Delay(loginDelay);
@@ -1314,6 +1334,7 @@ public class UserService
 
                 if (existingUserCount > Constants.MaxAlts)
                 {
+                    this._cache.Set(TempUserCacheKey(contextUser.Id), authSession.Content.Session.Name);
                     Log.Information(
                         "LastfmAuth: Too many accounts already connected to {userName} - {altCount} alts (discordUserId: {discordUserId})",
                         userSettings.UserNameLastFM, existingUserCount, contextUser.Id);

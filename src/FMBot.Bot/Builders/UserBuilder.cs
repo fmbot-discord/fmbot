@@ -332,15 +332,17 @@ public class UserBuilder
             $"Can't login, this Last.fm is connected to too many Discord accounts already (max is {Constants.MaxAlts}).");
         description.AppendLine("");
         description.AppendLine("To delete and transfer data from your other .fmbot accounts:");
-        description.AppendLine("1. Use Discord on one of your logged in accounts");
-        description.AppendLine("2. Open `.settings` in .fmbot");
-        description.AppendLine("3. Click 'Manage alts'");
-        description.AppendLine("4. Delete and optionally transfer data from your other accounts");
+        description.AppendLine("1. Use 'Manage alts'");
+        description.AppendLine("2. Delete .fmbot accounts you don't use anymore");
+        description.AppendLine("3. Login again");
         description.AppendLine("");
         description.AppendLine($"Note that deleting an .fmbot account does not delete any data from Last.fm.");
 
         response.Embed.WithDescription(description.ToString());
         response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+
+        response.Components = new ComponentBuilder()
+            .WithButton("Manage alts", InteractionConstants.ManageAlts.ManageAltsButton, style: ButtonStyle.Primary);
 
         return response;
     }

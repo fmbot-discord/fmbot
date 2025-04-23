@@ -86,6 +86,7 @@ public static class InteractionConstants
 
     public static class ManageAlts
     {
+        public const string ManageAltsButton = "managealts";
         public const string ManageAltsPicker = "managealts-picker";
         public const string ManageAltsDeleteAlt = "managealts-delete";
         public const string ManageAltsDeleteAltConfirm = "managealts-deleteconfirmed";

@@ -361,7 +361,8 @@ public class UserSlashCommands : InteractionModuleBase
             else if (loginStatus == UserService.LoginStatus.TooManyAccounts)
             {
                 var loginFailure = UserBuilder.LoginTooManyAccounts();
-                await FollowupAsync(null, [loginFailure.Embed.Build()], ephemeral: true);
+                await FollowupAsync(null, [loginFailure.Embed.Build()], components: loginFailure.Components.Build(),
+                    ephemeral: true);
 
                 this.Context.LogCommandUsed(CommandResponse.RateLimited);
             }
@@ -1308,7 +1309,15 @@ public class UserSlashCommands : InteractionModuleBase
     {
         try
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserOrTempUser(this.Context.User);
+
+            if (contextUser == null)
+            {
+                await RespondAsync("Session expired. Login again to manage your alts.", ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                return;
+            }
+
             var targetUser = await this._userService.GetUserForIdAsync(int.Parse(inputs.First()));
 
             if (targetUser == null)
@@ -1361,10 +1370,14 @@ public class UserSlashCommands : InteractionModuleBase
             var components = new ComponentBuilder()
                 .WithButton("Delete account",
                     $"{InteractionConstants.ManageAlts.ManageAltsDeleteAlt}-false-{targetUser.UserId}",
-                    style: ButtonStyle.Danger)
-                .WithButton("Transfer data and delete account",
+                    style: ButtonStyle.Danger);
+
+            if (contextUser.SessionKeyLastFm != "tempuser")
+            {
+                components.WithButton("Transfer data and delete account",
                     $"{InteractionConstants.ManageAlts.ManageAltsDeleteAlt}-true-{targetUser.UserId}",
                     style: ButtonStyle.Danger);
+            }
 
             embed.WithDescription(description.ToString());
 
@@ -1377,11 +1390,18 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-    [UserSessionRequired]
     [ComponentInteraction($"{InteractionConstants.ManageAlts.ManageAltsDeleteAlt}-*-*")]
     public async Task DeleteAlt(string transferData, string targetUserId)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserOrTempUser(this.Context.User);
+
+        if (contextUser == null)
+        {
+            await RespondAsync("Session expired. Login again to manage your alts.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+            return;
+        }
+
         var userToDelete = await this._userService.GetUserForIdAsync(int.Parse(targetUserId));
 
         if (userToDelete == null)
@@ -1394,6 +1414,11 @@ public class UserSlashCommands : InteractionModuleBase
         if (!userToDelete.UserNameLastFM.Equals(contextUser.UserNameLastFM, StringComparison.OrdinalIgnoreCase))
         {
             return;
+        }
+
+        if (contextUser.SessionKeyLastFm == "tempuser")
+        {
+            transferData = "false";
         }
 
         var embed = new EmbedBuilder();
@@ -1427,7 +1452,6 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed();
     }
 
-    [UserSessionRequired]
     [ComponentInteraction($"{InteractionConstants.ManageAlts.ManageAltsDeleteAltConfirm}-*-*")]
     public async Task DeleteAltConfirmed(string transferData, string targetUserId)
     {
@@ -1436,7 +1460,15 @@ public class UserSlashCommands : InteractionModuleBase
             _ = DeferAsync(true);
             await this.Context.DisableInteractionButtons(interactionEdit: true);
 
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserOrTempUser(this.Context.User);
+
+            if (contextUser == null)
+            {
+                await RespondAsync("Session expired. Login again to manage your alts.", ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                return;
+            }
+
             var userToDelete = await this._userService.GetUserForIdAsync(int.Parse(targetUserId));
 
             if (userToDelete == null)
@@ -1497,5 +1529,33 @@ public class UserSlashCommands : InteractionModuleBase
         embed.WithDescription("✅ Refreshed linked role data");
         await RespondAsync(embed: embed.Build(), ephemeral: true);
         this.Context.LogCommandUsed();
+    }
+
+    [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsButton)]
+    public async Task ManageAlts()
+    {
+        var contextUser = await this._userService.GetUserOrTempUser(this.Context.User);
+
+        if (contextUser == null)
+        {
+            await RespondAsync("Session expired. Login again to manage your alts.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+            return;
+        }
+
+        await DeferAsync(true);
+
+        try
+        {
+            var response =
+                await this._userBuilder.ManageAlts(new ContextModel(this.Context, contextUser));
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
     }
 }
