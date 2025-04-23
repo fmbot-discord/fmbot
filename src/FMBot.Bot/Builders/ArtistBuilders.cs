@@ -2012,10 +2012,11 @@ public class ArtistBuilders
             else
             {
                 response.Embed.WithDescription(
-                    $"Please enter a valid Last.fm username or mention someone to compare yourself to.\n" +
+                    $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
                     $"Examples:\n" +
                     $"- `{context.Prefix}taste fm-bot`\n" +
-                    $"- `{context.Prefix}taste @.fmbot`");
+                    $"- `{context.Prefix}taste @.fmbot`\n" +
+                    $"Please note that the other user must also have an .fmbot account.");
                 response.CommandResponse = CommandResponse.WrongInput;
             }
 
