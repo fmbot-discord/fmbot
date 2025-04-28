@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,7 +8,6 @@ using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -229,7 +227,7 @@ public class UserBuilder
 
         var reply = new StringBuilder();
         var link =
-            $"http://www.last.fm/api/auth/?api_key={publicKey}&token={authToken}";
+            $"https://www.last.fm/api/auth/?api_key={publicKey}&token={authToken}";
 
         if (contextUser == null)
         {
@@ -1419,18 +1417,6 @@ public class UserBuilder
             await this._openAiService.UpdateAiGeneration(context.InteractionId, openAiResponse);
 
         response.Embed.WithDescription(aiGeneration.Output);
-
-        return response;
-    }
-
-    private static string ImproveAiResponse(string response, List<string> artists)
-    {
-        response = StringExtensions.Sanitize(response);
-
-        foreach (var artist in artists)
-        {
-            response = response.Replace(artist, $"*{artist}*");
-        }
 
         return response;
     }

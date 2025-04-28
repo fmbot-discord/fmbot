@@ -113,8 +113,8 @@ public class TimerService
             (ConfigData.Data.Shards == null ||
              ConfigData.Data.Shards.MainInstance == true))
         {
-            Log.Information($"RecurringJob: Adding {nameof(AddUsersToIndexQueue)}");
-            RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 8 * * *");
+            // Log.Information($"RecurringJob: Adding {nameof(AddUsersToIndexQueue)}");
+            // RecurringJob.AddOrUpdate(nameof(AddUsersToIndexQueue), () => AddUsersToIndexQueue(), "0 8 * * *");
         }
         else
         {
