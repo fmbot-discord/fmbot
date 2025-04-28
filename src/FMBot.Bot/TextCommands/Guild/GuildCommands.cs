@@ -1,12 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -16,7 +12,6 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -301,7 +296,14 @@ public class GuildCommands : BaseCommandModule
         try
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var response = await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context, prfx), this.Context.Channel.Id);
+            var id = this.Context.Channel.Id;
+            if (this.Context.Channel is SocketThreadChannel threadChannel)
+            {
+                id = threadChannel.ParentChannel.Id;
+            }
+
+            var response =
+                await this._guildSettingBuilder.ToggleChannelCommand(new ContextModel(this.Context, prfx), id);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
