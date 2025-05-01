@@ -90,10 +90,10 @@ public class IndexCommands : BaseCommandModule
 
             this.Context.LogCommandUsed();
 
-            if (usersToFullyUpdate != null && usersToFullyUpdate.Count != 0)
-            {
-                this._indexService.AddUsersToIndexQueue(usersToFullyUpdate);
-            }
+            // if (usersToFullyUpdate != null && usersToFullyUpdate.Count != 0)
+            // {
+            //     this._indexService.AddUsersToIndexQueue(usersToFullyUpdate);
+            // }
         }
         catch (Exception e)
         {
