@@ -1769,7 +1769,7 @@ Not following these rules might lead to a mute, kick or ban. Staff members can b
                 ]
             }.WithAccentColor(DiscordConstants.InformationColorBlue));
 
-            await ReplyAsync(components: components.Build(), flags: MessageFlags.ComponentsV2);
+            await ReplyAsync(components: components.Build(), flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
         }
 
         if (type == "buysupporter")
