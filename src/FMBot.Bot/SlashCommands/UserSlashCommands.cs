@@ -1284,23 +1284,32 @@ public class UserSlashCommands : InteractionModuleBase
     [ComponentInteraction($"{InteractionConstants.User.History}-*-*")]
     public async Task ProfileHistoryAsync(string discordUser, string requesterDiscordUser)
     {
-        _ = DeferAsync();
-        await this.Context.DisableInteractionButtons();
+        try
+        {
+            _ = DeferAsync();
+            // await this.Context.DisableInteractionButtons();
 
-        var discordUserId = ulong.Parse(discordUser);
-        var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
+            var discordUserId = ulong.Parse(discordUser);
+            var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
 
-        var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
-        var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
-        var userSettings = await this._settingService.GetOriginalContextUser(
-            discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
+            var contextUser = await this._userService.GetFullUserAsync(requesterDiscordUserId);
+            var discordContextUser = await this.Context.Client.GetUserAsync(requesterDiscordUserId);
+            var userSettings = await this._settingService.GetOriginalContextUser(
+                discordUserId, requesterDiscordUserId, this.Context.Guild, this.Context.User);
 
-        var response =
-            await this._userBuilder.ProfileHistoryAsync(new ContextModel(this.Context, contextUser, discordContextUser),
-                userSettings);
+            var response =
+                await this._userBuilder.ProfileHistoryAsync(
+                    new ContextModel(this.Context, contextUser, discordContextUser),
+                    userSettings);
 
-        await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
-        this.Context.LogCommandUsed(response.CommandResponse);
+            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [ComponentInteraction(InteractionConstants.ManageAlts.ManageAltsPicker)]

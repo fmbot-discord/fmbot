@@ -52,14 +52,6 @@ public static class CommandContextExtensions
         PublicProperties.UsedCommandsErrorReferences.TryAdd(context.Message.Id, referenceId);
     }
 
-    public static void LogCommandWithLastFmError(this ICommandContext context, ResponseStatus? responseStatus)
-    {
-        Log.Error("CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent} | Last.fm error: {responseStatus}",
-            context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.LastFmError, context.Message.Content, responseStatus);
-
-        PublicProperties.UsedCommandsResponses.TryAdd(context.Message.Id, CommandResponse.LastFmError);
-    }
-
     public static async Task<IUserMessage> SendResponse(this ICommandContext context, InteractiveService interactiveService, ResponseModel response)
     {
         IUserMessage responseMessage = null;
@@ -84,6 +76,22 @@ public static class CommandContextExtensions
                         msg.Content = response.Text;
                         msg.Embed = response.ResponseType == ResponseType.ImageOnly ? null : response.Embed?.Build();
                         msg.Components = response.Components?.Build();
+                        msg.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                        {
+                            new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName)
+                        }) : null;
+                    });
+
+                    if (response.Stream != null)
+                    {
+                        await response.Stream.DisposeAsync();
+                    }
+
+                    break;
+                case ResponseType.ComponentsV2:
+                    await context.Channel.ModifyMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
+                    {
+                        msg.Components = response.ComponentsV2?.Build();
                         msg.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
                         {
                             new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName)
@@ -182,6 +190,10 @@ public static class CommandContextExtensions
 
                 await response.Stream.DisposeAsync();
                 responseMessage = image;
+                break;
+            case ResponseType.ComponentsV2:
+                var components = await context.Channel.SendMessageAsync(components: response.ComponentsV2?.Build(), flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+                responseMessage = components;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();

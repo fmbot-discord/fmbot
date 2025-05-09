@@ -819,98 +819,53 @@ public class UserBuilder
                 return response;
             }
 
-            userTitle =
-                $"{userSettings.DisplayName}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+            userTitle = userSettings.DisplayName;
             user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
         }
         else
         {
-            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+            userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
         }
 
-        response.EmbedAuthor.WithName($"Profile for {userTitle}");
-        response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}");
-        response.Embed.WithAuthor(response.EmbedAuthor);
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
+
+        var initialDescription = new StringBuilder();
 
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
-
-        if (!string.IsNullOrWhiteSpace(userInfo.Image))
-        {
-            response.Embed.WithThumbnailUrl(userInfo.Image);
-        }
-
-        var description = new StringBuilder();
+        initialDescription.AppendLine(
+            $"## [{userTitle}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})");
+        // initialDescription.AppendLine($"-# {userInfo.Country}");
+        initialDescription.AppendLine($"{userInfo.Playcount.Format(context.NumberFormat)} scrobbles");
+        initialDescription.AppendLine($"Joined <t:{userInfo.LfmRegisteredUnix}:D>");
         if (user.UserType != UserType.User)
         {
-            description.AppendLine(
+            initialDescription.AppendLine(
                 $"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
         }
 
-        if (user.DataSource != DataSource.LastFm)
-        {
-            var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
+        response.ResponseType = ResponseType.ComponentsV2;
+        response.ComponentsContainer.WithSection([
+                new TextDisplayBuilder(initialDescription.ToString())
+            ],
+            !string.IsNullOrWhiteSpace(userInfo.Image) ? new ThumbnailBuilder(userInfo.Image) : null);
 
-            switch (user.DataSource)
-            {
-                case DataSource.FullImportThenLastFm:
-                case DataSource.ImportThenFullLastFm:
-                    description.AppendLine($"Imported: {name}");
-                    break;
-                case DataSource.LastFm:
-                default:
-                    break;
-            }
+        var playcounts = new StringBuilder();
+        if (userInfo.Playcount > 0)
+        {
+            playcounts.AppendLine($"**{userInfo.TrackCount.Format(context.NumberFormat)}** different tracks");
+            playcounts.AppendLine($"**{userInfo.AlbumCount.Format(context.NumberFormat)}** different albums");
+            playcounts.AppendLine($"**{userInfo.ArtistCount.Format(context.NumberFormat)}** different artists");
         }
 
-        if (description.Length > 0)
+        if (playcounts.Length > 0)
         {
-            response.Embed.WithDescription(description.ToString());
+            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(playcounts.ToString()));
         }
-
-        var lastFmStats = new StringBuilder();
-        if (!string.IsNullOrWhiteSpace(userInfo.Name))
-        {
-            lastFmStats.AppendLine($"*{userInfo.Name}*");
-        }
-
-        lastFmStats.AppendLine(
-            $"**[{userSettings.UserNameLastFm}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})**");
-        lastFmStats.AppendLine($"**{userInfo.Country}**");
-        lastFmStats.AppendLine($"Since **<t:{userInfo.LfmRegisteredUnix}:D>**");
-
-        if (userInfo.Type != "user")
-        {
-            if (userInfo.Type == "subscriber")
-            {
-                lastFmStats.AppendLine("Last.fm Pro subscriber");
-            }
-            else
-            {
-                lastFmStats.AppendLine($"Last.fm {userInfo.Type}");
-            }
-        }
-
-        response.Embed.AddField("Last.fm", lastFmStats.ToString(), true);
 
         var age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
         var totalDays = (DateTime.UtcNow - age).TotalDays;
         var avgPerDay = userInfo.Playcount / totalDays;
-
-        if (userInfo.Playcount > 0)
-        {
-            var playcounts = new StringBuilder();
-            playcounts.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
-            playcounts.AppendLine($"**{userInfo.TrackCount.Format(context.NumberFormat)}** different tracks");
-            playcounts.AppendLine($"**{userInfo.AlbumCount.Format(context.NumberFormat)}** different albums");
-            playcounts.AppendLine($"**{userInfo.ArtistCount.Format(context.NumberFormat)}** different artists");
-            response.Embed.AddField("Counts", playcounts.ToString(), true);
-        }
-        else
-        {
-            response.Embed.AddField("Counts", "*This user has not started tracking their music with Last.fm yet..*",
-                true);
-        }
-
 
         var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
 
@@ -946,7 +901,8 @@ public class UserBuilder
 
         if (stats.Length > 0 && userInfo.Playcount > 0)
         {
-            response.Embed.AddField("Stats", stats.ToString());
+            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(stats.ToString()));
         }
 
         var discogs = false;
@@ -984,42 +940,56 @@ public class UserBuilder
         var footer = new StringBuilder();
         if (user.Friends?.Count > 0)
         {
-            footer.AppendLine($"Friends: {user.Friends?.Count}");
+            footer.Append($"{user.Friends?.Count} friends");
         }
 
         if (user.FriendedByUsers?.Count > 0)
         {
-            footer.AppendLine($"Befriended by: {user.FriendedByUsers?.Count}");
+            if (footer.Length > 0)
+            {
+                footer.Append($" - ");
+            }
+
+            footer.Append($"Befriended by {user.FriendedByUsers?.Count}");
         }
 
         if (featuredHistory.Count >= 1)
         {
-            footer.AppendLine(
+            if (footer.Length > 15)
+            {
+                footer.Append($" - ");
+            }
+
+            footer.Append(
                 $"Featured {featuredHistory.Count} {StringExtensions.GetTimesString(featuredHistory.Count)}");
         }
 
         if (footer.Length > 0)
         {
-            response.Embed.WithFooter(footer.ToString());
+            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"-# " + footer));
         }
 
-        response.Components = new ComponentBuilder()
-            .WithButton("History",
-                $"{InteractionConstants.User.History}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: new Emoji("📖"));
+        var actionRow = new ActionRowBuilder();
+
+        actionRow.WithButton("History",
+            $"{InteractionConstants.User.History}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+            style: ButtonStyle.Secondary, emote: new Emoji("📖"));
 
         if (discogs)
         {
-            response.Components
+            actionRow
                 .WithButton("Collection",
                     $"{InteractionConstants.Discogs.Collection}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                     style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.Vinyl));
         }
 
-        response.Components
+        actionRow
             .WithButton("Last.fm", style: ButtonStyle.Link,
                 url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm),
                 emote: Emote.Parse("<:lastfm:882227627287515166>"));
+
+        response.ComponentsV2.AddComponent(actionRow);
 
         return response;
     }
@@ -1042,61 +1012,35 @@ public class UserBuilder
                 return response;
             }
 
-            userTitle =
-                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+            userTitle = userSettings.DisplayName;
             user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
         }
         else
         {
-            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+            userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
         }
 
-        response.EmbedAuthor.WithName($"History for {userTitle}");
-        response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}");
-        response.Embed.WithAuthor(response.EmbedAuthor);
-        var anyHistoryStored = false;
+        response.ResponseType = ResponseType.ComponentsV2;
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
 
-        var description = new StringBuilder();
+        var initialDescription = new StringBuilder();
+        var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+        initialDescription.AppendLine(
+            $"## [{userTitle}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})'s history");
+        initialDescription.AppendLine($"{userInfo.Playcount.Format(context.NumberFormat)} scrobbles");
+        initialDescription.AppendLine($"Joined <t:{userInfo.LfmRegisteredUnix}:D>");
         if (user.UserType != UserType.User)
         {
-            description.AppendLine(
+            initialDescription.AppendLine(
                 $"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
         }
 
-        if (user.DataSource != DataSource.LastFm)
-        {
-            var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
+        response.ComponentsContainer.WithSection([
+                new TextDisplayBuilder(initialDescription.ToString())
+            ],
+            !string.IsNullOrWhiteSpace(userInfo.Image) ? new ThumbnailBuilder(userInfo.Image) : null);
 
-            switch (user.DataSource)
-            {
-                case DataSource.FullImportThenLastFm:
-                case DataSource.ImportThenFullLastFm:
-                    description.AppendLine($"Imported: {name}");
-                    break;
-                case DataSource.LastFm:
-                default:
-                    break;
-            }
-        }
-
-        if (this._supporterService.ShowSupporterPromotionalMessage(context.ContextUser.UserType,
-                context.DiscordGuild?.Id))
-        {
-            var random = new Random().Next(0, Constants.SupporterPromoChance);
-            switch (random)
-            {
-                case 1:
-                    this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
-                    description.AppendLine(
-                        $"*Want to see an overview of all your years? [View all perks and get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
-                    break;
-                case 2:
-                    this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
-                    description.AppendLine(
-                        $"*Want to import and use your Spotify history in .fmbot? [View all perks and get .fmbot supporter here.]({Constants.GetSupporterDiscordLink})*");
-                    break;
-            }
-        }
+        var anyHistoryStored = false;
 
         var allPlays = await this._playService.GetAllUserPlays(userSettings.UserId);
         allPlays = (await this._timeService.EnrichPlaysWithPlayTime(allPlays)).enrichedPlays;
@@ -1125,7 +1069,8 @@ public class UserBuilder
         if (monthDescription.Length > 0)
         {
             anyHistoryStored = true;
-            response.Embed.AddField("Last months", monthDescription.ToString());
+            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("**Last months**\n" + monthDescription));
         }
 
         if (userSettings.UserType != UserType.User)
@@ -1139,24 +1084,25 @@ public class UserBuilder
             if (totalTime.TotalSeconds > 0)
             {
                 yearDescription.AppendLine(
-                    $"` All`** " +
+                    $"**` All`** " +
                     $"- **{allPlays.Count.Format(context.NumberFormat)}** plays " +
-                    $"- **{StringExtensions.GetLongListeningTimeString(totalTime)}");
+                    $"- **{StringExtensions.GetLongListeningTimeString(totalTime)}**");
             }
 
             foreach (var year in yearGroups)
             {
                 var time = TimeService.GetPlayTimeForEnrichedPlays(year);
                 yearDescription.AppendLine(
-                    $"`{year.Key}`** " +
+                    $"**`{year.Key}`** " +
                     $"- **{year.Count()}** plays " +
-                    $"- **{StringExtensions.GetLongListeningTimeString(time)}");
+                    $"- **{StringExtensions.GetLongListeningTimeString(time)}**");
             }
 
             if (yearDescription.Length > 0)
             {
                 anyHistoryStored = true;
-                response.Embed.AddField("Years", $"**{yearDescription.ToString()}**");
+                response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+                response.ComponentsContainer.AddComponent(new TextDisplayBuilder("**All years**\n" + yearDescription));
             }
         }
         else
@@ -1184,23 +1130,40 @@ public class UserBuilder
 
         if (!anyHistoryStored)
         {
-            if (description.Length > 0)
+            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("*Sorry, it seems like there is no stored data in .fmbot for this user.*"));
+        }
+        else
+        {
+            if (user.DataSource != DataSource.LastFm)
             {
-                description.AppendLine();
-            }
+                var name = user.DataSource.GetAttribute<OptionAttribute>().Name;
 
-            description.AppendLine("*Sorry, it seems like there is no stored data in .fmbot for this user.*");
+                switch (user.DataSource)
+                {
+                    case DataSource.FullImportThenLastFm:
+                    case DataSource.ImportThenFullLastFm:
+                        response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+                        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"{DiscordConstants.Imports} .fmbot imports: {name}"));
+                        break;
+                    case DataSource.LastFm:
+                    default:
+                        break;
+                }
+            }
         }
 
-        response.Embed.WithDescription(description.ToString());
+        var actionRow = new ActionRowBuilder();
 
-        response.Components = new ComponentBuilder()
+        actionRow
             .WithButton("Profile",
                 $"{InteractionConstants.User.Profile}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
                 style: ButtonStyle.Secondary, emote: new Emoji("ℹ"))
             .WithButton("Last.fm", style: ButtonStyle.Link,
                 url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm),
                 emote: Emote.Parse("<:lastfm:882227627287515166>"));
+
+        response.ComponentsV2.AddComponent(actionRow);
 
         return response;
     }

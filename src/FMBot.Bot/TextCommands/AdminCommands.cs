@@ -1653,11 +1653,124 @@ public class AdminCommands : BaseCommandModule
         if (string.IsNullOrWhiteSpace("type"))
         {
             await ReplyAsync(
-                "Pick an embed type that you want to post. Currently available: `gwkreporter`, `nsfwreporter` and `buysupporter`");
+                "Pick an embed type that you want to post. Currently available: `rules`, `gwkreporter`, `nsfwreporter` and `buysupporter`");
             return;
         }
 
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
+
+        if (type == "rules")
+        {
+            var components = new ComponentBuilderV2();
+            components.AddComponent(new ContainerBuilder
+            {
+                Components =
+                [
+                    new TextDisplayBuilder(
+                        "Welcome to the .fmbot support server!\n" +
+                        "Get help with .fmbot, chat with other music enthusiasts and more."),
+                    new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
+                    new TextDisplayBuilder(@"## 📜 Server rules:
+1. Be friendly towards other members. No toxic, creepy or troll behaviour. No racism, homophobia, sexism, personal attacks, slurs, and anything else of that nature. Don't make fun of others for liking certain music, fandoms or other things.
+2. Respect the music tastes of others. Criticism is fine, shitting on entire genres for no reason and music elitism is not.
+3. Don't be spammy or annoying in general. This can include repeatedly interrupting others, immaturity, excessive lyricposting, sharing every song you listen to, and other behaviour that sucks the air out of the chat.
+4.  No advertising or DM ads.
+5. SFW content only, with the exception of spoilered album covers.
+6. English only.
+7. If a user is being problematic, use the <@&1083762942144688198> ping role. If the bot is down (i.e. not responding) use the <@&1083762904924434442> ping role. For anything else you must use <#856212952305893376> and after that ask in <#1006526334316576859>. Someone will get to you when they have time.
+
+Not following these rules might lead to a mute, kick or ban. Staff members can ban, kick or mute you for any reason if they feel it is needed."),
+                    new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
+                    new TextDisplayBuilder(@"## Links:
+- Documentation: <https://fm.bot/>
+- Link to this server: <http://discord.gg/fmbot>
+- Bluesky: <https://bsky.app/profile/fm.bot>
+- Feature requests or bug reports: <#1006526334316576859> or [GitHub](<https://github.com/fmbot-discord/fmbot/issues/new/choose>)
+- Frequently Asked Questions: <#856212952305893376>
+- Configure your notification roles in <id:customize>"),
+                    new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
+                    new SectionBuilder
+                    {
+                        Components =
+                        [
+                            new TextDisplayBuilder("### Get .fmbot in your server")
+                        ],
+                        Accessory = new ButtonBuilder("Add to server", style: ButtonStyle.Link,
+                            url:
+                            "https://discord.com/oauth2/authorize?client_id=356268235697553409&permissions=275415092288&scope=applications.commands%20bot")
+                    },
+                    new SectionBuilder
+                    {
+                        Components =
+                        [
+                            new TextDisplayBuilder("### Use .fmbot slash commands everywhere")
+                        ],
+                        Accessory = new ButtonBuilder("Add to account", style: ButtonStyle.Link,
+                            url:
+                            "https://discord.com/oauth2/authorize?client_id=356268235697553409&scope=applications.commands&integration_type=1")
+                    },
+                    new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
+                    new SectionBuilder
+                    {
+                        Components =
+                        [
+                            new TextDisplayBuilder("### Support us and unlock extra perks")
+                        ],
+                        Accessory = new ButtonBuilder("Get .fmbot supporter", style: ButtonStyle.Primary,
+                            customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false,
+                                false, source: "rulespromo"))
+                    },
+                ],
+            }.WithAccentColor(DiscordConstants.InformationColorBlue));
+
+            components.AddComponent(new ContainerBuilder
+            {
+                Components =
+                [
+                    new TextDisplayBuilder("## 🚨 NSFW and NSFL artwork report form"),
+                    new TextDisplayBuilder(
+                        "Found album artwork or an artist image that should be marked NSFW or censored entirely? Please report that here. \n\n" +
+                        "Note that artwork is censored according to Discord guidelines and only as required by Discord. .fmbot is fundamentally opposed to artistic censorship."),
+                    new TextDisplayBuilder("**Marked NSFW**\n" +
+                                           "Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology] and furry art in an erotic context"),
+                    new TextDisplayBuilder(
+                        "**Fully censored / NSFL**\n" +
+                        "Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]"),
+                    new SeparatorBuilder(),
+                    new ActionRowBuilder()
+                        .WithButton("Report artist image", style: ButtonStyle.Secondary,
+                            customId: InteractionConstants.ModerationCommands.ReportArtist)
+                        .WithButton("Report album cover", style: ButtonStyle.Secondary,
+                            customId: InteractionConstants.ModerationCommands.ReportAlbum)
+                ]
+            }.WithAccentColor(DiscordConstants.InformationColorBlue));
+
+            var globalWhoKnowsDescription = new StringBuilder();
+            globalWhoKnowsDescription.AppendLine(
+                "Want staff to take a look at someone that might be adding artificial or fake scrobbles? Or someone that is spamming short tracks? Report their profile here.");
+            globalWhoKnowsDescription.AppendLine();
+            globalWhoKnowsDescription.AppendLine(
+                "Optionally you can add a note to your report. Keep in mind that everyone is kept to the same standard regardless of the added note.");
+            globalWhoKnowsDescription.AppendLine();
+            globalWhoKnowsDescription.AppendLine(
+                "Note that we don't take reports for sleep or 24/7 scrobbling, those get filtered automatically with temporary bans.");
+            this._embed.WithDescription(globalWhoKnowsDescription.ToString());
+
+            components.AddComponent(new ContainerBuilder
+            {
+                Components =
+                [
+                    new TextDisplayBuilder("## 🌐 GlobalWhoKnows report form"),
+                    new TextDisplayBuilder(globalWhoKnowsDescription.ToString()),
+                    new SeparatorBuilder(),
+                    new ActionRowBuilder()
+                        .WithButton("Report user", style: ButtonStyle.Secondary,
+                            customId: InteractionConstants.ModerationCommands.GlobalWhoKnowsReport)
+                ]
+            }.WithAccentColor(DiscordConstants.InformationColorBlue));
+
+            await ReplyAsync(components: components.Build(), flags: MessageFlags.ComponentsV2);
+        }
 
         if (type == "buysupporter")
         {
@@ -1667,7 +1780,8 @@ public class AdminCommands : BaseCommandModule
             this._embed.WithDescription(description.ToString());
 
             var components = new ComponentBuilder().WithButton("Get .fmbot supporter", style: ButtonStyle.Primary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false, false, source: "embedpromo"));
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(true, false, false,
+                    source: "embedpromo"));
             await ReplyAsync(embed: this._embed.Build(), components: components.Build());
         }
 

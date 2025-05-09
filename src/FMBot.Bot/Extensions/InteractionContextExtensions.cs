@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AngleSharp.Css.Dom;
 using Discord;
 using Discord.WebSocket;
 using Fergun.Interactive;
@@ -214,9 +213,13 @@ public static class InteractionContextExtensions
                 responseId = text.Id;
                 break;
             case ResponseType.Embed:
-                var embed = await context.Interaction.FollowupAsync(null, new[] { response.Embed.Build() },
+                var embed = await context.Interaction.FollowupAsync(null, [response.Embed.Build()],
                     ephemeral: ephemeral, components: response.Components?.Build());
                 responseId = embed.Id;
+                break;
+            case ResponseType.ComponentsV2:
+                var components = await context.Interaction.FollowupAsync(ephemeral: ephemeral, components: response.ComponentsV2?.Build());
+                responseId = components.Id;
                 break;
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
@@ -329,34 +332,42 @@ public static class InteractionContextExtensions
         }
 
         var newComponents = new ComponentBuilder();
-        foreach (var actionRowComponent in message.Components)
+        foreach (var component in message.Components)
         {
-            foreach (var component in actionRowComponent.Components)
+            if (component is not ActionRowComponent actionRowComponent)
             {
-                if (component is ButtonComponent buttonComponent)
+                continue;
+            }
+
+            foreach (var subComponent in actionRowComponent.Components)
+            {
+                if (subComponent is ButtonComponent buttonComponent)
                 {
                     if (specificButtonOnly != null && specificButtonOnly == buttonComponent.CustomId)
                     {
                         if (addLoaderToSpecificButton)
                         {
-                            newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                            newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId,
+                                buttonComponent.Style,
                                 Emote.Parse(DiscordConstants.Loading), buttonComponent.Url, true);
                         }
                         else
                         {
-                            newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                            newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId,
+                                buttonComponent.Style,
                                 buttonComponent.Emote, buttonComponent.Url, true);
                         }
-
                     }
-                    else if(specificButtonOnly == null)
+                    else if (specificButtonOnly == null)
                     {
-                        newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                        newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId,
+                            buttonComponent.Style,
                             buttonComponent.Emote, buttonComponent.Url, true);
                     }
                     else
                     {
-                        newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
+                        newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId,
+                            buttonComponent.Style,
                             buttonComponent.Emote, buttonComponent.Url, false);
                     }
                 }
@@ -376,11 +387,16 @@ public static class InteractionContextExtensions
         }
 
         var newComponents = new ComponentBuilder();
-        foreach (var actionRowComponent in message.Components)
+        foreach (var component in message.Components)
         {
-            foreach (var component in actionRowComponent.Components)
+            if (component is not ActionRowComponent actionRowComponent)
             {
-                if (component is ButtonComponent buttonComponent)
+                continue;
+            }
+
+            foreach (var subComponent in actionRowComponent.Components)
+            {
+                if (subComponent is ButtonComponent buttonComponent)
                 {
                     newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
                         buttonComponent.Emote, buttonComponent.Url, true);
@@ -403,11 +419,16 @@ public static class InteractionContextExtensions
         }
 
         var newComponents = new ComponentBuilder();
-        foreach (var actionRowComponent in message.Components)
+        foreach (var component in message.Components)
         {
-            foreach (var component in actionRowComponent.Components)
+            if (component is not ActionRowComponent actionRowComponent)
             {
-                if (component is ButtonComponent buttonComponent)
+                continue;
+            }
+
+            foreach (var subComponent in actionRowComponent.Components)
+            {
+                if (subComponent is ButtonComponent buttonComponent)
                 {
                     newComponents.WithButton(buttonComponent.Label, buttonComponent.CustomId, buttonComponent.Style,
                         buttonComponent.Emote, buttonComponent.Url);
@@ -456,8 +477,10 @@ public static class InteractionContextExtensions
         {
             await context.Interaction.ModifyOriginalResponseAsync(m =>
             {
-                m.Components = response.Components?.Build();
-                m.Embed = response.Embed?.Build();
+                m.Components = response.ResponseType == ResponseType.ComponentsV2
+                    ? response.ComponentsV2?.Build()
+                    : response.Components?.Build();
+                m.Embed = response.ResponseType == ResponseType.ComponentsV2 ? null : response.Embed?.Build();
                 m.Attachments = response.Stream != null
                     ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
                     {
@@ -465,14 +488,17 @@ public static class InteractionContextExtensions
                             response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")
                     })
                     : null;
+                m.AllowedMentions = AllowedMentions.None;
             });
         }
         else
         {
             await message.ModifyAsync(m =>
             {
-                m.Components = response.Components?.Build();
-                m.Embed = response.Embed?.Build();
+                m.Components = response.ResponseType == ResponseType.ComponentsV2
+                    ? response.ComponentsV2?.Build()
+                    : response.Components?.Build();
+                m.Embed = response.ResponseType == ResponseType.ComponentsV2 ? null : response.Embed?.Build();
                 m.Attachments = response.Stream != null
                     ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
                     {
@@ -480,6 +506,7 @@ public static class InteractionContextExtensions
                             response.Spoiler ? $"SPOILER_{response.FileName}" : $"{response.FileName}")
                     })
                     : null;
+                m.AllowedMentions = AllowedMentions.None;
             });
         }
 
