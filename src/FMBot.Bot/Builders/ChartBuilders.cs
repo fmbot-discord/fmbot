@@ -205,7 +205,7 @@ public class ChartBuilders
 
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
-            embedDescription.AppendLine($"⚠️ Contains NSFW covers - Click to reveal");
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("**⚠️ Contains NSFW covers - Click to reveal**"));
         }
 
         response.FileName =
@@ -218,13 +218,11 @@ public class ChartBuilders
 
         if (embedDescription.Length > 0)
         {
-            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
             response.ComponentsContainer.AddComponent(new TextDisplayBuilder(embedDescription.ToString()));
         }
 
         if (!userSettings.DifferentUser)
         {
-            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
             response.ComponentsContainer.AddComponent(new TextDisplayBuilder(
                 $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles"));
         }
@@ -364,7 +362,7 @@ public class ChartBuilders
 
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
-            embedDescription.AppendLine($"⚠️ Contains NSFW covers - Click to reveal");
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("**⚠️ Contains NSFW images - Click to reveal**"));
         }
 
         response.FileName =
@@ -377,11 +375,9 @@ public class ChartBuilders
 
         if (embedDescription.Length > 0)
         {
-            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
             response.ComponentsContainer.AddComponent(new TextDisplayBuilder(embedDescription.ToString()));
         }
 
-        response.ComponentsContainer.AddComponent(new SeparatorBuilder());
         response.ComponentsContainer.AddComponent(new TextDisplayBuilder(footer.ToString()));
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
