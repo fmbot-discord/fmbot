@@ -1262,7 +1262,7 @@ public class UserSlashCommands : InteractionModuleBase
     public async Task ProfileAsync(string discordUser, string requesterDiscordUser)
     {
         _ = DeferAsync();
-        await this.Context.DisableInteractionButtons();
+        await this.Context.DisableActionRows();
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -1287,7 +1287,7 @@ public class UserSlashCommands : InteractionModuleBase
         try
         {
             _ = DeferAsync();
-            // await this.Context.DisableInteractionButtons();
+            await this.Context.DisableActionRows();
 
             var discordUserId = ulong.Parse(discordUser);
             var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);

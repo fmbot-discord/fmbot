@@ -835,8 +835,8 @@ public class UserBuilder
         initialDescription.AppendLine(
             $"## [{userTitle}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})");
         // initialDescription.AppendLine($"-# {userInfo.Country}");
-        initialDescription.AppendLine($"{userInfo.Playcount.Format(context.NumberFormat)} scrobbles");
-        initialDescription.AppendLine($"Joined <t:{userInfo.LfmRegisteredUnix}:D>");
+        initialDescription.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
+        initialDescription.AppendLine($"Since <t:{userInfo.LfmRegisteredUnix}:D>");
         if (user.UserType != UserType.User)
         {
             initialDescription.AppendLine(
@@ -844,10 +844,19 @@ public class UserBuilder
         }
 
         response.ResponseType = ResponseType.ComponentsV2;
-        response.ComponentsContainer.WithSection([
-                new TextDisplayBuilder(initialDescription.ToString())
-            ],
-            !string.IsNullOrWhiteSpace(userInfo.Image) ? new ThumbnailBuilder(userInfo.Image) : null);
+
+        if (string.IsNullOrWhiteSpace(userInfo.Image))
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(initialDescription.ToString()));
+        }
+        else
+        {
+            response.ComponentsContainer.WithSection([
+                    new TextDisplayBuilder(initialDescription.ToString())
+                ],
+                new ThumbnailBuilder(userInfo.Image));
+        }
+
 
         var playcounts = new StringBuilder();
         if (userInfo.Playcount > 0)
@@ -1027,8 +1036,8 @@ public class UserBuilder
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
         initialDescription.AppendLine(
             $"## [{userTitle}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)})'s history");
-        initialDescription.AppendLine($"{userInfo.Playcount.Format(context.NumberFormat)} scrobbles");
-        initialDescription.AppendLine($"Joined <t:{userInfo.LfmRegisteredUnix}:D>");
+        initialDescription.AppendLine($"**{userInfo.Playcount.Format(context.NumberFormat)}** scrobbles");
+        initialDescription.AppendLine($"Since <t:{userInfo.LfmRegisteredUnix}:D>");
         if (user.UserType != UserType.User)
         {
             initialDescription.AppendLine(
@@ -1131,7 +1140,8 @@ public class UserBuilder
         if (!anyHistoryStored)
         {
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("*Sorry, it seems like there is no stored data in .fmbot for this user.*"));
+            response.ComponentsContainer.AddComponent(
+                new TextDisplayBuilder("*Sorry, it seems like there is no stored data in .fmbot for this user.*"));
         }
         else
         {
@@ -1144,7 +1154,8 @@ public class UserBuilder
                     case DataSource.FullImportThenLastFm:
                     case DataSource.ImportThenFullLastFm:
                         response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-                        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"{DiscordConstants.Imports} .fmbot imports: {name}"));
+                        response.ComponentsContainer.AddComponent(
+                            new TextDisplayBuilder($"{DiscordConstants.Imports} .fmbot imports: {name}"));
                         break;
                     case DataSource.LastFm:
                     default:

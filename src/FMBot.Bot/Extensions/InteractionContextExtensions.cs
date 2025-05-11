@@ -11,6 +11,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.FileSystemGlobbing.Internal;
 using Serilog;
 
 namespace FMBot.Bot.Extensions;
@@ -218,7 +219,8 @@ public static class InteractionContextExtensions
                 responseId = embed.Id;
                 break;
             case ResponseType.ComponentsV2:
-                var components = await context.Interaction.FollowupAsync(ephemeral: ephemeral, components: response.ComponentsV2?.Build());
+                var components = await context.Interaction.FollowupAsync(ephemeral: ephemeral,
+                    components: response.ComponentsV2?.Build());
                 responseId = components.Id;
                 break;
             case ResponseType.Paginator:
@@ -319,6 +321,38 @@ public static class InteractionContextExtensions
         }
 
         await context.ModifyMessage(message, response, defer);
+    }
+
+
+    public static async Task DisableActionRows(this IInteractionContext context, bool interactionEdit = false)
+    {
+        var message = (context.Interaction as SocketMessageComponent)?.Message;
+
+        if (message == null)
+        {
+            return;
+        }
+
+        var componentBuilder = message.Components.ToBuilder();
+        foreach (var row in componentBuilder.Components)
+        {
+            if (row is not ActionRowBuilder rowBuilder)
+            {
+                continue;
+            }
+
+            foreach (var rowComponent in rowBuilder.Components)
+            {
+                if (rowComponent is not ButtonBuilder button)
+                {
+                    continue;
+                }
+
+                button.IsDisabled = true;
+            }
+        }
+
+        await ModifyComponents(context, message, componentBuilder, interactionEdit);
     }
 
     public static async Task DisableInteractionButtons(this IInteractionContext context, bool interactionEdit = false,
@@ -455,6 +489,21 @@ public static class InteractionContextExtensions
 
     public static async Task ModifyComponents(this IInteractionContext context, IUserMessage message,
         ComponentBuilder newComponents, bool interactionEdit = false)
+    {
+        if ((context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+             !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)) ||
+            interactionEdit)
+        {
+            await context.Interaction.ModifyOriginalResponseAsync(m => m.Components = newComponents.Build());
+        }
+        else
+        {
+            await message.ModifyAsync(m => m.Components = newComponents.Build());
+        }
+    }
+
+    public static async Task ModifyComponents(this IInteractionContext context, IUserMessage message,
+        ComponentBuilderV2 newComponents, bool interactionEdit = false)
     {
         if ((context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
              !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall)) ||
