@@ -192,7 +192,7 @@ public class AlbumCommands : BaseCommandModule
 
     [Command("whoknowsalbum", RunMode = RunMode.Async)]
     [Summary("Shows what other users listen to an album in your server")]
-    [Alias("wa", "wka", "wkab", "wab", "wkab", "wk album", "whoknows album")]
+    [Alias("wa", "wka", "wkab", "wab", "wkab","wkal", "wk album", "whoknows album", "wkalbum")]
     [Examples("wa", "whoknowsalbum", "whoknowsalbum the beatles abbey road",
         "whoknowsalbum Metallica & Lou Reed | Lulu")]
     [UsernameSetRequired]
