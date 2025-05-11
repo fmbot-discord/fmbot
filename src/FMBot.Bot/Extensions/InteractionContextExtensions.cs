@@ -348,6 +348,11 @@ public static class InteractionContextExtensions
                     continue;
                 }
 
+                if (button.Style == ButtonStyle.Link)
+                {
+                    continue;
+                }
+
                 button.IsDisabled = true;
             }
         }

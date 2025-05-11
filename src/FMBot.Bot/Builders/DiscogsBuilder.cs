@@ -293,6 +293,7 @@ public class DiscogsBuilder
                 .WithDescription(description.ToString())
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString()));
+
             pageCounter++;
         }
 
