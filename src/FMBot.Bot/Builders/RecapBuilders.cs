@@ -385,7 +385,6 @@ public class RecapBuilders
                 response.ResponseType = chartResponse.ResponseType;
                 response.FileName = chartResponse.FileName;
 
-                response.Embed.Description = null;
                 response.Embed.Footer = null;
 
                 break;
@@ -399,7 +398,6 @@ public class RecapBuilders
                 response.ResponseType = chartResponse.ResponseType;
                 response.FileName = chartResponse.FileName;
 
-                response.Embed.Description = null;
                 response.Embed.Footer = null;
 
                 break;

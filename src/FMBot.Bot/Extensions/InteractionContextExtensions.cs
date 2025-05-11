@@ -219,9 +219,25 @@ public static class InteractionContextExtensions
                 responseId = embed.Id;
                 break;
             case ResponseType.ComponentsV2:
-                var components = await context.Interaction.FollowupAsync(ephemeral: ephemeral,
-                    components: response.ComponentsV2?.Build());
-                responseId = components.Id;
+                if (response.Stream.Length > 0)
+                {
+                    response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
+                    var componentImage = await context.Interaction.FollowupWithFileAsync(response.Stream,
+                        response.FileName,
+                        components: response.ComponentsV2?.Build(),
+                        ephemeral: ephemeral,
+                        allowedMentions: AllowedMentions.None);
+
+                    await response.Stream.DisposeAsync();
+                    responseId = componentImage.Id;
+                }
+                else
+                {
+                    var components = await context.Interaction.FollowupAsync(ephemeral: ephemeral,
+                        components: response.ComponentsV2?.Build());
+                    responseId = components.Id;
+                }
+
                 break;
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(

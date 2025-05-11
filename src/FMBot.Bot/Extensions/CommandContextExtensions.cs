@@ -19,40 +19,49 @@ namespace FMBot.Bot.Extensions;
 
 public static class CommandContextExtensions
 {
-    public static void LogCommandUsed(this ICommandContext context, CommandResponse commandResponse = CommandResponse.Ok)
+    public static void LogCommandUsed(this ICommandContext context,
+        CommandResponse commandResponse = CommandResponse.Ok)
     {
-        Log.Information("CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
-            context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse, context.Message.Content);
+        Log.Information(
+            "CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
+            context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse,
+            context.Message.Content);
 
         PublicProperties.UsedCommandsResponses.TryAdd(context.Message.Id, commandResponse);
     }
 
-    public static async Task HandleCommandException(this ICommandContext context, Exception exception, string message = null, bool sendReply = true)
+    public static async Task HandleCommandException(this ICommandContext context, Exception exception,
+        string message = null, bool sendReply = true)
     {
         var referenceId = GenerateRandomCode();
 
-        Log.Error(exception, "CommandUsed: Error {referenceId} | {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",
-            referenceId, context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.Error, message, context.Message.Content);
+        Log.Error(exception,
+            "CommandUsed: Error {referenceId} | {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",
+            referenceId, context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id,
+            CommandResponse.Error, message, context.Message.Content);
 
         if (sendReply)
         {
             if (exception?.Message != null && exception.Message.Contains("error 50013"))
             {
-                await context.Channel.SendMessageAsync("Sorry, something went wrong because the bot is missing permissions. Make sure the bot has `Embed links` and `Attach Files`.\n" +
-                                                       "Please adjust .fmbot permissions or ask server staff to do this for you.\n" +
-                                                       $"*Reference id: `{referenceId}`*", allowedMentions: AllowedMentions.None);
+                await context.Channel.SendMessageAsync(
+                    "Sorry, something went wrong because the bot is missing permissions. Make sure the bot has `Embed links` and `Attach Files`.\n" +
+                    "Please adjust .fmbot permissions or ask server staff to do this for you.\n" +
+                    $"*Reference id: `{referenceId}`*", allowedMentions: AllowedMentions.None);
             }
             else
             {
                 await context.Channel.SendMessageAsync("Sorry, something went wrong. Please try again later.\n" +
-                                                       $"*Reference id: `{referenceId}`*", allowedMentions: AllowedMentions.None);
+                                                       $"*Reference id: `{referenceId}`*",
+                    allowedMentions: AllowedMentions.None);
             }
         }
 
         PublicProperties.UsedCommandsErrorReferences.TryAdd(context.Message.Id, referenceId);
     }
 
-    public static async Task<IUserMessage> SendResponse(this ICommandContext context, InteractiveService interactiveService, ResponseModel response)
+    public static async Task<IUserMessage> SendResponse(this ICommandContext context,
+        InteractiveService interactiveService, ResponseModel response, MessageReference messageReference = null)
     {
         IUserMessage responseMessage = null;
 
@@ -61,26 +70,33 @@ public static class CommandContextExtensions
             switch (response.ResponseType)
             {
                 case ResponseType.Text:
-                    await context.Channel.ModifyMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
-                    {
-                        msg.Content = response.Text;
-                        msg.Embed = null;
-                        msg.Components = response.Components?.Build();
-                    });
+                    await context.Channel.ModifyMessageAsync(
+                        PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
+                        {
+                            msg.Content = response.Text;
+                            msg.Embed = null;
+                            msg.Components = response.Components?.Build();
+                        });
                     break;
                 case ResponseType.Embed:
                 case ResponseType.ImageWithEmbed:
                 case ResponseType.ImageOnly:
-                    await context.Channel.ModifyMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
-                    {
-                        msg.Content = response.Text;
-                        msg.Embed = response.ResponseType == ResponseType.ImageOnly ? null : response.Embed?.Build();
-                        msg.Components = response.Components?.Build();
-                        msg.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                    await context.Channel.ModifyMessageAsync(
+                        PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
                         {
-                            new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName)
-                        }) : null;
-                    });
+                            msg.Content = response.Text;
+                            msg.Embed = response.ResponseType == ResponseType.ImageOnly
+                                ? null
+                                : response.Embed?.Build();
+                            msg.Components = response.Components?.Build();
+                            msg.Attachments = response.Stream != null
+                                ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                                {
+                                    new(response.Stream,
+                                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName)
+                                })
+                                : null;
+                        });
 
                     if (response.Stream != null)
                     {
@@ -89,14 +105,19 @@ public static class CommandContextExtensions
 
                     break;
                 case ResponseType.ComponentsV2:
-                    await context.Channel.ModifyMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
-                    {
-                        msg.Components = response.ComponentsV2?.Build();
-                        msg.Attachments = response.Stream != null ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                    await context.Channel.ModifyMessageAsync(
+                        PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
                         {
-                            new(response.Stream, response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName)
-                        }) : null;
-                    });
+                            msg.Flags = MessageFlags.ComponentsV2;
+                            msg.Components = response.ComponentsV2?.Build();
+                            msg.Attachments = response.Stream != null
+                                ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
+                                {
+                                    new(response.Stream,
+                                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName)
+                                })
+                                : null;
+                        });
 
                     if (response.Stream != null)
                     {
@@ -105,18 +126,20 @@ public static class CommandContextExtensions
 
                     break;
                 case ResponseType.Paginator:
-                    var existingMessage = await context.Channel.GetMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
+                    var existingMessage =
+                        await context.Channel.GetMessageAsync(
+                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
                     if (existingMessage.Attachments != null && existingMessage.Attachments.Any())
                     {
-                        await context.Channel.ModifyMessageAsync(PublicProperties.UsedCommandsResponseMessageId[context.Message.Id], msg =>
-                        {
-                            msg.Attachments = null;
-                        });
+                        await context.Channel.ModifyMessageAsync(
+                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
+                            msg => { msg.Attachments = null; });
                     }
+
                     await interactiveService.SendPaginatorAsync(
-                                response.StaticPaginator.Build(),
-                                (IUserMessage)existingMessage,
-                                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                        response.StaticPaginator.Build(),
+                        (IUserMessage)existingMessage,
+                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -131,6 +154,7 @@ public static class CommandContextExtensions
                 {
                     PublicProperties.UsedCommandsTracks.TryAdd(context.Message.Id, response.ReferencedMusic.Track);
                 }
+
                 if (PublicProperties.UsedCommandsAlbums.TryRemove(context.Message.Id, out _))
                 {
                     if (response.ReferencedMusic.Album != null)
@@ -138,6 +162,7 @@ public static class CommandContextExtensions
                         PublicProperties.UsedCommandsAlbums.TryAdd(context.Message.Id, response.ReferencedMusic.Album);
                     }
                 }
+
                 if (PublicProperties.UsedCommandsArtists.TryRemove(context.Message.Id, out _))
                 {
                     PublicProperties.UsedCommandsArtists.TryAdd(context.Message.Id, response.ReferencedMusic.Artist);
@@ -150,11 +175,13 @@ public static class CommandContextExtensions
         switch (response.ResponseType)
         {
             case ResponseType.Text:
-                var text = await context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None, components: response.Components?.Build());
+                var text = await context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None,
+                    components: response.Components?.Build());
                 responseMessage = text;
                 break;
             case ResponseType.Embed:
-                var embed = await context.Channel.SendMessageAsync("", false, response.Embed.Build(), components: response.Components?.Build());
+                var embed = await context.Channel.SendMessageAsync("", false, response.Embed.Build(),
+                    components: response.Components?.Build());
                 responseMessage = embed;
                 break;
             case ResponseType.Paginator:
@@ -179,12 +206,10 @@ public static class CommandContextExtensions
                 responseMessage = imageWithEmbed;
                 break;
             case ResponseType.ImageOnly:
-                var imageFilename = StringExtensions.ReplaceInvalidChars(response.FileName);
+                response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
                 var image = await context.Channel.SendFileAsync(
                     response.Stream,
-                    imageFilename,
-                    null,
-                    false,
+                    response.FileName,
                     isSpoiler: response.Spoiler,
                     components: response.Components?.Build());
 
@@ -192,8 +217,28 @@ public static class CommandContextExtensions
                 responseMessage = image;
                 break;
             case ResponseType.ComponentsV2:
-                var components = await context.Channel.SendMessageAsync(components: response.ComponentsV2?.Build(), flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
-                responseMessage = components;
+                if (response.Stream.Length > 0)
+                {
+                    response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
+                    var componentImage = await context.Channel.SendFileAsync(
+                        response.Stream,
+                        response.FileName,
+                        messageReference: messageReference,
+                        isSpoiler: response.Spoiler,
+                        components: response.ComponentsV2?.Build(),
+                        flags: MessageFlags.ComponentsV2,
+                        allowedMentions: AllowedMentions.None);
+
+                    await response.Stream.DisposeAsync();
+                    responseMessage = componentImage;
+                }
+                else
+                {
+                    var components = await context.Channel.SendMessageAsync(components: response.ComponentsV2?.Build(),
+                        flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+                    responseMessage = components;
+                }
+
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -240,6 +285,7 @@ public static class CommandContextExtensions
         {
             crypto.GetBytes(data);
         }
+
         var result = new StringBuilder(size);
         for (var i = 0; i < size; i++)
         {

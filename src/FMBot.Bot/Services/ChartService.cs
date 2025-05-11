@@ -746,64 +746,58 @@ public class ChartService
         return chartSettings;
     }
 
-    public static string AddSettingsToDescription(ChartSettings chartSettings, string embedDescription,
+    public static string AddSettingsToDescription(ChartSettings chartSettings, StringBuilder embedDescription,
         string randomSupporter, string prfx)
     {
         var single = chartSettings.ArtistChart ? "Artist" : "Album";
         var multiple = chartSettings.ArtistChart ? "Artists" : "Albums";
 
-        if (chartSettings.CustomOptionsEnabled)
-        {
-            embedDescription += "Chart options:\n";
-        }
-
         if (chartSettings.ReleaseYearFilter.HasValue)
         {
-            embedDescription += $"- Filtering to albums released in {chartSettings.ReleaseYearFilter.Value}\n";
+            embedDescription.AppendLine($"- Filtering to albums released in {chartSettings.ReleaseYearFilter.Value}");
         }
 
         if (chartSettings.ReleaseDecadeFilter.HasValue)
         {
-            embedDescription += $"- Filtering to albums released in the {chartSettings.ReleaseDecadeFilter.Value}s\n";
+            embedDescription.AppendLine($"- Filtering to albums released in the {chartSettings.ReleaseDecadeFilter.Value}s");
         }
 
         if (chartSettings.SkipWithoutImage)
         {
-            embedDescription += $"- {multiple} without images skipped\n";
+            embedDescription.AppendLine($"- {multiple} without images skipped");
         }
 
         if (chartSettings.SkipNsfw)
         {
-            embedDescription += $"- {multiple} with NSFW images skipped\n";
+            embedDescription.AppendLine($"- {multiple} with NSFW images skipped");
         }
 
         if (chartSettings.TitleSetting == TitleSetting.TitlesDisabled)
         {
-            embedDescription += $"- {single} titles disabled\n";
+            embedDescription.AppendLine($"- {single} titles disabled");
         }
 
         if (chartSettings.TitleSetting == TitleSetting.ClassicTitles)
         {
-            embedDescription += "- Classic titles enabled\n";
+            embedDescription.AppendLine("- Classic titles enabled");
         }
 
         if (chartSettings.RainbowSortingEnabled)
         {
-            embedDescription += "- Secret rainbow option enabled! (Not perfect but hey, it somewhat exists)\n";
+            embedDescription.AppendLine("- Secret rainbow option enabled! (Not perfect but hey, it somewhat exists)");
         }
 
         var rnd = new Random();
         if (chartSettings.ImagesNeeded == 1 && rnd.Next(0, 3) == 1 && !chartSettings.ArtistChart)
         {
-            embedDescription += $"*Linus Tech Tip: Use `{prfx}cover` if you just want to see an album cover.*\n";
+            embedDescription.AppendLine($"*Linus Tech Tip: Use `{prfx}cover` if you just want to see an album cover.*");
         }
 
         if (!string.IsNullOrEmpty(randomSupporter))
         {
-            embedDescription +=
-                $"*This chart was brought to you by .fmbot supporter `{StringExtensions.Sanitize(randomSupporter)}`.*\n";
+            embedDescription.AppendLine($"*This chart was brought to you by .fmbot supporter `{StringExtensions.Sanitize(randomSupporter)}`.*");
         }
 
-        return embedDescription;
+        return embedDescription.ToString();
     }
 }

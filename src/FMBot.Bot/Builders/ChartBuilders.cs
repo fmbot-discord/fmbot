@@ -59,9 +59,10 @@ public class ChartBuilders
 
         if (chartSettings.ImagesNeeded > 100)
         {
-            response.Text = $"You can't create a chart with more than 100 images (10x10).\n" +
-                            $"Please try a smaller size.";
-            response.ResponseType = ResponseType.Text;
+            response.Embed.Description = $"You can't create a chart with more than 100 images (10x10).\n" +
+                                         $"Please try a smaller size.";
+            response.ResponseType = ResponseType.Embed;
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
             return response;
         }
@@ -95,8 +96,9 @@ public class ChartBuilders
                          $"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.";
             }
 
-            response.Text = reply;
-            response.ResponseType = ResponseType.Text;
+            response.Embed.Description = reply;
+            response.ResponseType = ResponseType.Embed;
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
             return response;
         }
@@ -120,10 +122,11 @@ public class ChartBuilders
 
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Text =
+                response.Embed.Description =
                     $"Sorry, you haven't listened to enough albums released in {chartSettings.ReleaseYearFilter} ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
                     $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
-                response.ResponseType = ResponseType.Text;
+                response.ResponseType = ResponseType.Embed;
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
             }
@@ -135,10 +138,11 @@ public class ChartBuilders
 
             if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
             {
-                response.Text =
+                response.Embed.Description =
                     $"Sorry, you haven't listened to enough albums released in the {chartSettings.ReleaseDecadeFilter}s ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) to generate a chart.\n" +
                     $"Please try a smaller chart, a different year or a bigger time period ({Constants.CompactTimePeriodList})";
-                response.ResponseType = ResponseType.Text;
+                response.ResponseType = ResponseType.Embed;
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
             }
@@ -171,42 +175,23 @@ public class ChartBuilders
 
         chartSettings.Albums = topAlbums;
 
-        var embedAuthorDescription = "";
-        if (!userSettings.DifferentUser)
-        {
-            embedAuthorDescription =
-                $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart for " +
-                await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        }
-        else
-        {
-            embedAuthorDescription =
-                $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
-        }
+        var url =
+            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/albums?{chartSettings.TimespanUrlString}";
+        var embedTitle = new StringBuilder();
 
-        response.EmbedAuthor.WithName(embedAuthorDescription);
-        response.EmbedAuthor.WithUrl(
-            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/albums?{chartSettings.TimespanUrlString}");
+        embedTitle.Append(
+            $"[{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart]({url}) for {userSettings.DisplayName}");
 
-        var embedDescription = "";
-
-        response.Embed.WithAuthor(response.EmbedAuthor);
-
-        if (!userSettings.DifferentUser)
-        {
-            response.EmbedFooter.Text =
-                $"{userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles";
-            response.Embed.WithFooter(response.EmbedFooter);
-        }
+        var embedDescription = new StringBuilder();
 
         var supporter =
             await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
-        embedDescription +=
-            ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
+        ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
         if (supporter != null)
         {
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
-                style: ButtonStyle.Secondary, customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"));
+                style: ButtonStyle.Secondary,
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"));
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
@@ -214,27 +199,46 @@ public class ChartBuilders
 
         if (chartSettings.CensoredItems is > 0)
         {
-            embedDescription +=
-                $"{chartSettings.CensoredItems.Value} {StringExtensions.GetAlbumsString(chartSettings.CensoredItems.Value)} filtered due to images that are not allowed to be posted on Discord.\n";
+            embedDescription.AppendLine(
+                $"{chartSettings.CensoredItems.Value} {StringExtensions.GetAlbumsString(chartSettings.CensoredItems.Value)} filtered due to images that are not allowed to be posted on Discord.");
         }
 
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
-            embedDescription +=
-                $"⚠️ Contains NSFW covers - Click to reveal\n";
+            embedDescription.AppendLine($"⚠️ Contains NSFW covers - Click to reveal");
         }
-
-        response.Embed.WithDescription(embedDescription);
-
-        var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
-        response.Stream = encoded.AsStream();
 
         response.FileName =
             $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
-        response.Spoiler = chartSettings.ContainsNsfw;
+
+        response.ComponentsContainer.AddComponent(new MediaGalleryBuilder().AddItem($"attachment://{response.FileName}",
+            isSpoiler: chartSettings.ContainsNsfw));
+
+        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"**{embedTitle}**"));
+
+        if (embedDescription.Length > 0)
+        {
+            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(embedDescription.ToString()));
+        }
+
+        if (!userSettings.DifferentUser)
+        {
+            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(
+                $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles"));
+        }
+
+        var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
+        response.Stream = encoded.AsStream();
+        response.ResponseType = ResponseType.ComponentsV2;
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
 
         if (context.SelectMenu != null)
         {
+            response.Embed.WithDescription($"**{embedTitle}**");
+            response.Spoiler = chartSettings.ContainsNsfw;
+            response.ResponseType = ResponseType.Embed;
             response.Components = new ComponentBuilder().WithSelectMenu(context.SelectMenu);
         }
 
@@ -253,9 +257,10 @@ public class ChartBuilders
 
         if (chartSettings.ImagesNeeded > 100)
         {
-            response.Text = $"You can't create a chart with more than 100 images (10x10).\n" +
-                            $"Please try a smaller size.";
-            response.ResponseType = ResponseType.Text;
+            response.Embed.Description = $"You can't create a chart with more than 100 images (10x10).\n" +
+                                         $"Please try a smaller size.";
+            response.ResponseType = ResponseType.Embed;
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
             return response;
         }
@@ -285,8 +290,9 @@ public class ChartBuilders
                          $"Note that {extraArtists} extra albums are required because you are skipping artists without an image.";
             }
 
-            response.Text = reply;
-            response.ResponseType = ResponseType.Text;
+            response.Embed.Description = reply;
+            response.ResponseType = ResponseType.Embed;
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
             return response;
         }
@@ -318,46 +324,33 @@ public class ChartBuilders
 
         chartSettings.Artists = topArtists;
 
-        var embedAuthorDescription = "";
-        if (!userSettings.DifferentUser)
-        {
-            embedAuthorDescription =
-                $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Artist Chart for " +
-                await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        }
-        else
-        {
-            embedAuthorDescription =
-                $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Artist Chart for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
-        }
+        var url =
+            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{chartSettings.TimespanUrlString}";
 
-        response.EmbedAuthor.WithName(embedAuthorDescription);
-        response.EmbedAuthor.WithUrl(
-            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{chartSettings.TimespanUrlString}");
+        var embedTitle = new StringBuilder();
 
-        var embedDescription = "";
+        embedTitle.Append(
+            $"[{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Artist Chart]({url}) for {userSettings.DisplayName}");
 
-        response.Embed.WithAuthor(response.EmbedAuthor);
+        var embedDescription = new StringBuilder();
 
         var footer = new StringBuilder();
-
-        footer.AppendLine("Image source: Spotify | Use 'skip' to skip artists without images");
-
         if (!userSettings.DifferentUser)
         {
-            footer.AppendLine($"{userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles");
+            footer.AppendLine(
+                $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles");
         }
 
-        response.Embed.WithFooter(footer.ToString());
+        footer.AppendLine("-# Image source: Spotify | Use 'skip' to skip artists without images");
 
         var supporter =
             await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
-        embedDescription +=
-            ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
+        ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
         if (supporter != null)
         {
             response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
-                style: ButtonStyle.Secondary, customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"));
+                style: ButtonStyle.Secondary,
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"));
         }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
@@ -365,27 +358,42 @@ public class ChartBuilders
 
         if (chartSettings.CensoredItems is > 0)
         {
-            embedDescription +=
-                $"{chartSettings.CensoredItems.Value} {StringExtensions.GetArtistsString(chartSettings.CensoredItems.Value)} filtered due to images that are not allowed to be posted on Discord.\n";
+            embedDescription.AppendLine(
+                $"{chartSettings.CensoredItems.Value} {StringExtensions.GetArtistsString(chartSettings.CensoredItems.Value)} filtered due to images that are not allowed to be posted on Discord.");
         }
 
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
-            embedDescription +=
-                $"⚠️ Contains NSFW covers - Click to reveal\n";
+            embedDescription.AppendLine($"⚠️ Contains NSFW covers - Click to reveal");
         }
-
-        response.Embed.WithDescription(embedDescription);
-
-        var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
-        response.Stream = encoded.AsStream();
 
         response.FileName =
             $"artist-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
-        response.Spoiler = chartSettings.ContainsNsfw;
+
+        response.ComponentsContainer.AddComponent(new MediaGalleryBuilder().AddItem($"attachment://{response.FileName}",
+            isSpoiler: chartSettings.ContainsNsfw));
+
+        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"**{embedTitle}**"));
+
+        if (embedDescription.Length > 0)
+        {
+            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(embedDescription.ToString()));
+        }
+
+        response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+        response.ComponentsContainer.AddComponent(new TextDisplayBuilder(footer.ToString()));
+
+        var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
+        response.Stream = encoded.AsStream();
+        response.ResponseType = ResponseType.ComponentsV2;
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
 
         if (context.SelectMenu != null)
         {
+            response.Embed.WithDescription($"**{embedTitle}**");
+            response.Spoiler = chartSettings.ContainsNsfw;
+            response.ResponseType = ResponseType.Embed;
             response.Components = new ComponentBuilder().WithSelectMenu(context.SelectMenu);
         }
 

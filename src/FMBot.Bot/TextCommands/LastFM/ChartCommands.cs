@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -108,7 +109,7 @@ public class ChartCommands : BaseCommandModule
             var response = await this._chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
+            await this.Context.SendResponse(this.Interactivity, response, new MessageReference(Context.Message.Id));
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -170,7 +171,7 @@ public class ChartCommands : BaseCommandModule
             var response = await this._chartBuilders.ArtistChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response);
+            await this.Context.SendResponse(this.Interactivity, response, new MessageReference(Context.Message.Id));
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
