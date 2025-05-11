@@ -219,7 +219,7 @@ public static class InteractionContextExtensions
                 responseId = embed.Id;
                 break;
             case ResponseType.ComponentsV2:
-                if (response.Stream.Length > 0)
+                if (response.Stream is { Length: > 0 })
                 {
                     response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
                     var componentImage = await context.Interaction.FollowupWithFileAsync(response.Stream,
