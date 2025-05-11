@@ -964,7 +964,7 @@ public class UserBuilder
 
         if (featuredHistory.Count >= 1)
         {
-            if (footer.Length > 15)
+            if (footer.Length > 0)
             {
                 footer.Append($" - ");
             }
