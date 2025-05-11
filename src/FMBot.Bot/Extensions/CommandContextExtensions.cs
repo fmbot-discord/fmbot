@@ -217,7 +217,7 @@ public static class CommandContextExtensions
                 responseMessage = image;
                 break;
             case ResponseType.ComponentsV2:
-                if (response.Stream.Length > 0)
+                if (response.Stream is { Length: > 0 })
                 {
                     response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
                     var componentImage = await context.Channel.SendFileAsync(

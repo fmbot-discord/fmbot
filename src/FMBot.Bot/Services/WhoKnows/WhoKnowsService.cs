@@ -375,6 +375,7 @@ public class WhoKnowsService
             }
 
             var playString = StringExtensions.GetPlaysString(user.Playcount);
+            var lfmUrl = LastfmUrlExtensions.GetUserUrl(user.LastFMUsername);
 
             var positionCounter = $"{spacer}{indexNumber}.";
             positionCounter = user.UserId == requestedUserId
@@ -394,11 +395,11 @@ public class WhoKnowsService
 
             if (user.UserId == requestedUserId)
             {
-                reply.Append($" - {user.Playcount.Format(numberFormat)} {playString}**\n");
+                reply.Append($" — [{user.Playcount.Format(numberFormat)} {playString}]({lfmUrl})**\n");
             }
             else
             {
-                reply.Append($" - **{user.Playcount.Format(numberFormat)}** {playString}\n");
+                reply.Append($" — *[{user.Playcount.Format(numberFormat)} {playString}]({lfmUrl})*\n");
             }
 
             indexNumber += 1;
@@ -445,6 +446,9 @@ public class WhoKnowsService
         {
             discordName = user.LastFMUsername;
         }
+
+        return $"\u2066{discordName}\u2069";
+
 
         var nameWithLink = $"[\u2066{discordName}\u2069]({LastfmUrlExtensions.GetUserUrl(user.LastFMUsername)})";
         return nameWithLink;
