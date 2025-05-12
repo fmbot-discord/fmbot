@@ -665,19 +665,17 @@ public class PuppeteerService
     public void CreatePopularityIcebergImage(SKBitmap chartImage, string username, string timePeriod,
         List<ArtistPopularity> artists)
     {
-        var typeface = SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arial-unicode-ms.ttf"));
+        var typeface = SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sourcehansans-medium.otf"));
 
         using var bitmapCanvas = new SKCanvas(chartImage);
 
         // Draw title
-        using var titlePaint = new SKPaint
-        {
-            TextSize = 90,
-            IsAntialias = true,
-            TextAlign = SKTextAlign.Center,
-            Color = SKColors.Black,
-            Typeface = typeface
-        };
+        using var titlePaint = new SKPaint();
+        titlePaint.TextSize = 90;
+        titlePaint.IsAntialias = true;
+        titlePaint.TextAlign = SKTextAlign.Center;
+        titlePaint.Color = SKColors.Black;
+        titlePaint.Typeface = typeface;
 
         bitmapCanvas.DrawShapedText($"{username}'s", 590, 198, titlePaint);
 

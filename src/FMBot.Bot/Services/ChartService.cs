@@ -39,7 +39,7 @@ public class ChartService
 
         try
         {
-            this._fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arial-unicode-ms.ttf");
+            this._fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sourcehansans-medium.otf");
             this._workSansFontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf");
             this._loadingErrorImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loading-error.png");
             this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown.png");
@@ -62,7 +62,7 @@ public class ChartService
     {
         var files = new Dictionary<string, string>
         {
-            { "https://fm.bot/fonts/arial-unicode-ms.ttf", this._fontPath },
+            { "https://fm.bot/fonts/sourcehansans-medium.otf", this._fontPath },
             { "https://fm.bot/fonts/worksans-regular.otf", this._workSansFontPath },
             { "https://fm.bot/img/bot/loading-error.png", this._loadingErrorImagePath },
             { "https://fm.bot/img/bot/unknown.png", this._unknownImagePath },
