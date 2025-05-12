@@ -423,6 +423,11 @@ public class UserBuilder
 
             var active = context.ContextUser.FmFooterOptions.HasFlag(option);
 
+            if (fmOptions.Options.Count(c => c.IsDefault == true) >= maxOptions)
+            {
+                active = false;
+            }
+
             if (!supporterOnly)
             {
                 fmOptions.AddOption(new SelectMenuOptionBuilder(name, value, description, isDefault: active));
