@@ -1,14 +1,20 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.TextCommands;
@@ -20,14 +26,16 @@ public class OwnerCommands : BaseCommandModule
 {
     private readonly AdminService _adminService;
     private readonly UserService _userService;
+    private readonly IMemoryCache _cache;
 
     public OwnerCommands(
         AdminService adminService,
         UserService userService,
-        IOptions<BotSettings> botSettings) : base(botSettings)
+        IOptions<BotSettings> botSettings, IMemoryCache cache) : base(botSettings)
     {
         this._adminService = adminService;
         this._userService = userService;
+        this._cache = cache;
     }
 
     [Command("say"), Summary("Says something")]
@@ -248,6 +256,212 @@ public class OwnerCommands : BaseCommandModule
             await ReplyAsync("Only .fmbot owners can execute this command.");
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
+    }
 
+    [Command("memorydiag", RunMode = RunMode.Async)]
+    [Summary("Displays detailed memory diagnostics.")]
+    public async Task MemoryDiagnosticsAsync()
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        var embed = new EmbedBuilder()
+            .WithColor(DiscordConstants.InformationColorBlue)
+            .WithTitle("Detailed Memory Diagnostics");
+
+        var process = Process.GetCurrentProcess();
+        var processInfo = new StringBuilder();
+        processInfo.AppendLine($"**Working Set:** `{process.WorkingSet64.ToFormattedByteString()}`");
+        processInfo.AppendLine($"**Private Memory:** `{process.PrivateMemorySize64.ToFormattedByteString()}`");
+        processInfo.AppendLine($"**Virtual Memory:** `{process.VirtualMemorySize64.ToFormattedByteString()}`");
+        processInfo.AppendLine($"**Paged Memory:** `{process.PagedMemorySize64.ToFormattedByteString()}`");
+        processInfo.AppendLine($"**Thread Count:** `{process.Threads.Count}`");
+        embed.AddField("Process Memory", processInfo.ToString());
+
+        var gen0 = GC.CollectionCount(0);
+        var gen1 = GC.CollectionCount(1);
+        var gen2 = GC.CollectionCount(2);
+
+        var gcDetails = new StringBuilder();
+        gcDetails.AppendLine($"**Total Memory:** `{GC.GetTotalMemory(false).ToFormattedByteString()}`");
+
+
+        var gcInfo = GC.GetGCMemoryInfo();
+        gcDetails.AppendLine($"**Heap Size:** `{gcInfo.HeapSizeBytes.ToFormattedByteString()}`");
+        gcDetails.AppendLine($"**Committed:** `{gcInfo.TotalCommittedBytes.ToFormattedByteString()}`");
+        gcDetails.AppendLine($"**Fragmented:** `{gcInfo.FragmentedBytes.ToFormattedByteString()}`");
+        gcDetails.AppendLine($"**Memory Load:** `{gcInfo.MemoryLoadBytes.ToFormattedByteString()}`");
+        gcDetails.AppendLine(
+            $"**High Memory Threshold:** `{gcInfo.HighMemoryLoadThresholdBytes.ToFormattedByteString()}`");
+
+        if (gcInfo.PauseTimePercentage > 0)
+        {
+            gcDetails.AppendLine($"**GC Pause %:** `{gcInfo.PauseTimePercentage:F2}%`");
+        }
+
+        gcDetails.AppendLine($"**Gen0 Collections:** `{GC.CollectionCount(0)}`");
+        gcDetails.AppendLine($"**Gen1 Collections:** `{GC.CollectionCount(1)}`");
+        gcDetails.AppendLine($"**Gen2 Collections:** `{GC.CollectionCount(2)}`");
+
+        gcDetails.AppendLine($"**Total Allocated:** `{GC.GetTotalAllocatedBytes(true).ToFormattedByteString()}`");
+
+        gcDetails.AppendLine($"**Collections:** Gen0: `{gen0}` | Gen1: `{gen1}` | Gen2: `{gen2}`");
+        gcDetails.AppendLine($"**Pause Mode:** `{GCSettings.LatencyMode}`");
+        gcDetails.AppendLine($"**Server GC:** `{GCSettings.IsServerGC}`");
+
+        embed.AddField("GC Information", gcDetails.ToString());
+
+        var perfInfo = new StringBuilder();
+        var totalCollections = gen0 + gen1 + gen2;
+        if (totalCollections > 0)
+        {
+            var gen2Percentage = (gen2 * 100.0 / totalCollections);
+            perfInfo.AppendLine(
+                $"**Gen2 Collection Rate:** `{gen2Percentage:F1}%` {(gen2Percentage > 10 ? "⚠️" : "✅")}");
+        }
+
+        var memoryPressure = (gcInfo.MemoryLoadBytes * 100.0 / gcInfo.HighMemoryLoadThresholdBytes);
+        perfInfo.AppendLine($"**Memory Pressure:** `{memoryPressure:F1}%` {(memoryPressure > 80 ? "⚠️" : "✅")}");
+
+        var fragmentation = (gcInfo.FragmentedBytes * 100.0 / gcInfo.HeapSizeBytes);
+        perfInfo.AppendLine($"**Fragmentation:** `{fragmentation:F1}%` {(fragmentation > 20 ? "⚠️" : "✅")}");
+        embed.AddField("Performance", perfInfo.ToString());
+
+        var cacheStats = GetCacheStatistics();
+        if (!string.IsNullOrEmpty(cacheStats))
+        {
+            embed.AddField("Cache Statistics", cacheStats);
+        }
+
+        var chromeStats = await GetChromeStatistics();
+        if (!string.IsNullOrEmpty(chromeStats))
+        {
+            embed.AddField("Chrome/Puppeteer", chromeStats);
+        }
+
+        await this.Context.Channel.SendMessageAsync("", false, embed.Build());
+        this.Context.LogCommandUsed();
+    }
+
+    private string GetCacheStatistics()
+    {
+        var sb = new StringBuilder();
+
+        try
+        {
+            if (_cache is MemoryCache memoryCache)
+            {
+                var stats = memoryCache.GetCurrentStatistics();
+                if (stats != null)
+                {
+                    sb.AppendLine($"**Cache Entries:** `{stats.CurrentEntryCount:N0}`");
+                    sb.AppendLine(
+                        $"**Cache Size:** `{stats.CurrentEstimatedSize?.ToFormattedByteString() ?? "Unknown"}`");
+                    sb.AppendLine(
+                        $"**Hit Ratio:** `{(stats.TotalHits > 0 ? (stats.TotalHits * 100.0 / (stats.TotalHits + stats.TotalMisses)) : 0):F1}%`");
+                    sb.AppendLine($"**Total Hits:** `{stats.TotalHits:N0}`");
+                    sb.AppendLine($"**Total Misses:** `{stats.TotalMisses:N0}`");
+                }
+                else
+                {
+                    sb.AppendLine($"**Cache Type:** `{_cache.GetType().Name}`");
+                    sb.AppendLine("**Statistics:** Not available (enable MemoryCacheOptions.TrackStatistics)");
+                }
+            }
+            else
+            {
+                sb.AppendLine($"**Cache Type:** `{_cache.GetType().Name}`");
+            }
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine($"**Cache Stats Error:** `{ex.Message}`");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("**Global Collections:**");
+        sb.AppendLine($"**Slash Commands:** `{PublicProperties.SlashCommands.Count:N0}`");
+        sb.AppendLine($"**Premium Servers:** `{PublicProperties.PremiumServers.Count:N0}`");
+        sb.AppendLine($"**Registered Users:** `{PublicProperties.RegisteredUsers.Count:N0}`");
+
+        sb.AppendLine();
+        sb.AppendLine("**Command Tracking:**");
+        sb.AppendLine($"**Command Responses:** `{PublicProperties.UsedCommandsResponses.Count:N0}`");
+        sb.AppendLine($"**Response Messages:** `{PublicProperties.UsedCommandsResponseMessageId.Count:N0}`");
+        sb.AppendLine($"**Response Contexts:** `{PublicProperties.UsedCommandsResponseContextId.Count:N0}`");
+        sb.AppendLine($"**Error References:** `{PublicProperties.UsedCommandsErrorReferences.Count:N0}`");
+        sb.AppendLine($"**Discord User IDs:** `{PublicProperties.UsedCommandDiscordUserIds.Count:N0}`");
+        sb.AppendLine($"**Hints Shown:** `{PublicProperties.UsedCommandsHintShown.Count:N0}`");
+
+        sb.AppendLine();
+        sb.AppendLine("**Music References:**");
+        sb.AppendLine($"**Artists:** `{PublicProperties.UsedCommandsArtists.Count:N0}`");
+        sb.AppendLine($"**Albums:** `{PublicProperties.UsedCommandsAlbums.Count:N0}`");
+        sb.AppendLine($"**Tracks:** `{PublicProperties.UsedCommandsTracks.Count:N0}`");
+        sb.AppendLine($"**Referenced Music:** `{PublicProperties.UsedCommandsReferencedMusic.Count:N0}`");
+
+            var estimatedSize = EstimateCollectionMemory();
+            sb.AppendLine();
+            sb.AppendLine($"**Estimated Collections Memory:** `{estimatedSize.ToFormattedByteString()}`");
+
+        return sb.ToString();
+    }
+
+    private static async Task<string> GetChromeStatistics()
+    {
+        var sb = new StringBuilder();
+
+        try
+        {
+            var chromeProcesses = Process.GetProcesses()
+                .Where(p => p.ProcessName.Contains("chrome", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            sb.AppendLine($"**Chrome Processes:** `{chromeProcesses.Count}`");
+
+            var totalChromeMem = chromeProcesses.Sum(p => p.WorkingSet64);
+            sb.AppendLine($"**Chrome Memory:** `{totalChromeMem.ToFormattedByteString()}`");
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine($"Error getting Chrome stats: {ex.Message}");
+        }
+
+        return await Task.FromResult(sb.ToString());
+    }
+
+    private static long EstimateCollectionMemory()
+    {
+        long totalSize = 0;
+
+        totalSize += EstimateDictionarySize(PublicProperties.SlashCommands.Count, 20, 18);
+        totalSize += EstimateDictionarySize(PublicProperties.PremiumServers.Count, 8, 10);
+        totalSize += EstimateDictionarySize(PublicProperties.RegisteredUsers.Count, 18, 10);
+
+        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsResponses.Count, 18, 5);
+
+        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsResponseMessageId.Count, 18, 18);
+        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsResponseContextId.Count, 18, 18);
+        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsErrorReferences.Count, 18, 18);
+        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandDiscordUserIds.Count, 18, 18);
+
+        totalSize += PublicProperties.UsedCommandsHintShown.Count * 16;
+
+        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsArtists.Count, 18, 20);
+        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsAlbums.Count, 18, 30);
+        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsTracks.Count, 18, 20);
+
+        totalSize += EstimateDictionarySize(PublicProperties.UsedCommandsReferencedMusic.Count, 18, 100);
+
+        return totalSize;
+    }
+
+    private static long EstimateDictionarySize(int count, int keySize, int valueSize)
+    {
+        const int baseOverhead = 400;
+
+        return baseOverhead + (count * (keySize + valueSize));
     }
 }
