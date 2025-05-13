@@ -273,7 +273,6 @@ public class TrackBuilders
             var eurovisionEntry =
                 await this._eurovisionService.GetEurovisionEntryForSpotifyId(dbTrack.SpotifyId);
 
-
             if (eurovisionEntry != null)
             {
                 var eurovisionDescription = this._eurovisionService.GetEurovisionDescription(eurovisionEntry);

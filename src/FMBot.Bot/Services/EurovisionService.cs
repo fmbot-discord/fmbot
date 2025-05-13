@@ -59,7 +59,7 @@ public class EurovisionService
             if (entry.HasSemiFinalDraw)
             {
                 full.Append(
-                    $" - **{entry.HasSemiFinalDraw}{StringExtensions.GetAmountEnd(entry.SemiFinalDraw)} running position**");
+                    $" - **{entry.SemiFinalDraw}{StringExtensions.GetAmountEnd(entry.SemiFinalDraw)} running position**");
             }
 
             oneLine.Append(
