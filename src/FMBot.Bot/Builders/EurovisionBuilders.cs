@@ -260,13 +260,16 @@ public class EurovisionBuilders
         PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artistName);
         PublicProperties.UsedCommandsTracks.TryAdd(context.InteractionId, entry.Title);
 
-        var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(artistName,
-            entry.Title, context.ContextUser.UserId);
-
-        if (userPlaycount > 0)
+        if (context.ContextUser != null)
         {
-            response.Embed.WithFooter(
-                $"{userPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(userPlaycount)}");
+            var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(artistName,
+                entry.Title, context.ContextUser.UserId);
+
+            if (userPlaycount > 0)
+            {
+                response.Embed.WithFooter(
+                    $"{userPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(userPlaycount)}");
+            }
         }
 
         return response;
