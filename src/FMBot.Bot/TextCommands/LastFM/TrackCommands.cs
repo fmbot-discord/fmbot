@@ -666,7 +666,6 @@ public class TrackCommands : BaseCommandModule
 
     [Command("eurovision", RunMode = RunMode.Async)]
     [Alias("ev", "esc", "eurovisie", "eurovisionsongcontest", "songcontest")]
-    [UsernameSetRequired]
     public async Task EurovisionAsync([Remainder] string extraOptions = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
