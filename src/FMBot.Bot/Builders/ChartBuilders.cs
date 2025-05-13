@@ -7,6 +7,7 @@ using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
@@ -226,6 +227,11 @@ public class ChartBuilders
             response.ComponentsContainer.AddComponent(new TextDisplayBuilder(
                 $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles"));
         }
+        else
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(
+                $"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}"));
+        }
 
         var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream();
@@ -337,6 +343,10 @@ public class ChartBuilders
         {
             footer.AppendLine(
                 $"-# {userSettings.UserNameLastFm} has {context.ContextUser.TotalPlaycount.Format(context.NumberFormat)} scrobbles");
+        }
+        else
+        {
+            footer.AppendLine($"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}");
         }
 
         footer.AppendLine("-# Image source: Spotify | Use 'skip' to skip artists without images");

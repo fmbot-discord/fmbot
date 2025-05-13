@@ -61,7 +61,7 @@ public static class CommandContextExtensions
     }
 
     public static async Task<IUserMessage> SendResponse(this ICommandContext context,
-        InteractiveService interactiveService, ResponseModel response, MessageReference messageReference = null)
+        InteractiveService interactiveService, ResponseModel response)
     {
         IUserMessage responseMessage = null;
 
@@ -223,7 +223,6 @@ public static class CommandContextExtensions
                     var componentImage = await context.Channel.SendFileAsync(
                         response.Stream,
                         response.FileName,
-                        messageReference: messageReference,
                         isSpoiler: response.Spoiler,
                         components: response.ComponentsV2?.Build(),
                         flags: MessageFlags.ComponentsV2,

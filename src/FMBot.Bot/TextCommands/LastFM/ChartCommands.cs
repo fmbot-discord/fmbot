@@ -109,7 +109,7 @@ public class ChartCommands : BaseCommandModule
             var response = await this._chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response, new MessageReference(Context.Message.Id));
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -171,7 +171,7 @@ public class ChartCommands : BaseCommandModule
             var response = await this._chartBuilders.ArtistChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
 
-            await this.Context.SendResponse(this.Interactivity, response, new MessageReference(Context.Message.Id));
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
