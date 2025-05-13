@@ -4,12 +4,6 @@ FROM mcr.microsoft.com/dotnet/runtime:9.0-noble-amd64 AS base
 RUN apt-get update -y && apt-get install -y libgdiplus software-properties-common
 RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg7 && apt update -y && apt install ffmpeg -y
 
-# Add diagnostic tools
-RUN dotnet tool install --global dotnet-counters
-RUN dotnet tool install --global dotnet-dump
-RUN dotnet tool install --global dotnet-trace
-ENV PATH="${PATH}:/root/.dotnet/tools"
-
 WORKDIR /app
 
 #####################
