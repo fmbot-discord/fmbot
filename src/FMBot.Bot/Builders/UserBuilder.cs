@@ -990,14 +990,13 @@ public class UserBuilder
             $"{InteractionConstants.User.History}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
             style: ButtonStyle.Secondary, emote: new Emoji("📖"));
 
-        // TODO: Add this back when Fergun.interactive supports Components v2 paginators
-        // if (discogs)
-        // {
-        //     actionRow
-        //         .WithButton("Collection",
-        //             $"{InteractionConstants.Discogs.Collection}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-        //             style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.Vinyl));
-        // }
+        if (discogs)
+        {
+            actionRow
+                .WithButton("Collection",
+                    $"{InteractionConstants.Discogs.Collection}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
+                    style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.Vinyl));
+        }
 
         actionRow
             .WithButton("Last.fm", style: ButtonStyle.Link,

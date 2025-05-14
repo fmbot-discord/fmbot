@@ -340,7 +340,7 @@ public static class InteractionContextExtensions
     }
 
 
-    public static async Task DisableActionRows(this IInteractionContext context, bool interactionEdit = false)
+    public static async Task DisableActionRows(this IInteractionContext context, bool interactionEdit = false, string specificButtonOnly = null)
     {
         var message = (context.Interaction as SocketMessageComponent)?.Message;
 
@@ -365,6 +365,11 @@ public static class InteractionContextExtensions
                 }
 
                 if (button.Style == ButtonStyle.Link)
+                {
+                    continue;
+                }
+
+                if (specificButtonOnly != null && button.CustomId != specificButtonOnly)
                 {
                     continue;
                 }

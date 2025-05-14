@@ -204,7 +204,7 @@ public class DiscogsSlashCommands : InteractionModuleBase
     public async Task CollectionAsync(string discordUser, string requesterDiscordUser)
     {
         _ = DeferAsync();
-        await this.Context.DisableInteractionButtons();
+        await this.Context.DisableActionRows(specificButtonOnly:$"{InteractionConstants.Discogs.Collection}-{discordUser}-{requesterDiscordUser}");
 
         var discordUserId = ulong.Parse(discordUser);
         var requesterDiscordUserId = ulong.Parse(requesterDiscordUser);
@@ -222,7 +222,7 @@ public class DiscogsSlashCommands : InteractionModuleBase
         {
             var response = await this._discogsBuilder.DiscogsCollectionAsync(new ContextModel(this.Context, contextUser, discordContextUser), userSettings, collectionSettings, null, true);
 
-            await this.Context.UpdateInteractionEmbed(response, this.Interactivity, false);
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
