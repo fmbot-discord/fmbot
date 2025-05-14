@@ -877,6 +877,35 @@ public class UserBuilder
             response.ComponentsContainer.AddComponent(new TextDisplayBuilder(playcounts.ToString()));
         }
 
+        var discogs = false;
+        if (user.UserDiscogs != null)
+        {
+            var collection = new StringBuilder();
+            if (user.UserType != UserType.User)
+            {
+                var discogsCollection = await this._discogsService.GetUserCollection(userSettings.UserId);
+                if (discogsCollection.Any())
+                {
+                    var collectionTypes = discogsCollection
+                        .GroupBy(g => g.Release.Format)
+                        .OrderByDescending(o => o.Count());
+                    foreach (var type in collectionTypes)
+                    {
+                        collection.AppendLine(
+                            $" {StringService.GetDiscogsFormatEmote(type.Key)} **{type.Key}** - *{type.Count()} collected* ");
+                    }
+
+                    discogs = true;
+                }
+            }
+
+            if (collection.Length > 0)
+            {
+                response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+                response.ComponentsContainer.AddComponent(new TextDisplayBuilder(collection.ToString()));
+            }
+        }
+
         var age = DateTimeOffset.FromUnixTimeSeconds(userInfo.RegisteredUnix);
         var totalDays = (DateTime.UtcNow - age).TotalDays;
         var avgPerDay = userInfo.Playcount / totalDays;
@@ -917,35 +946,6 @@ public class UserBuilder
         {
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
             response.ComponentsContainer.AddComponent(new TextDisplayBuilder(stats.ToString()));
-        }
-
-        var discogs = false;
-        if (user.UserDiscogs != null)
-        {
-            var collection = new StringBuilder();
-            if (user.UserType != UserType.User)
-            {
-                var discogsCollection = await this._discogsService.GetUserCollection(userSettings.UserId);
-                if (discogsCollection.Any())
-                {
-                    var collectionTypes = discogsCollection
-                        .GroupBy(g => g.Release.Format)
-                        .OrderByDescending(o => o.Count());
-                    foreach (var type in collectionTypes)
-                    {
-                        collection.AppendLine(
-                            $" {StringService.GetDiscogsFormatEmote(type.Key)} **{type.Key}** - *{type.Count()} {StringExtensions.GetItemsString(type.Count())}* ");
-                    }
-
-                    discogs = true;
-                }
-            }
-
-            if (collection.Length > 0)
-            {
-                var determiner = userSettings.DifferentUser ? "Their" : "Your";
-                response.Embed.AddField($"{determiner} Discogs collection", collection.ToString());
-            }
         }
 
         var featuredHistory =
