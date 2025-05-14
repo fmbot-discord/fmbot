@@ -210,7 +210,7 @@ public class ImportSlashCommands : InteractionModuleBase
                             .ImportModify.PickAlbumModal);
                         break;
                     case ImportModifyPick.Track:
-                        await this.Context.Interaction.RespondWithModalAsync<ModifyAlbumModal>(InteractionConstants
+                        await this.Context.Interaction.RespondWithModalAsync<ModifyTrackModal>(InteractionConstants
                             .ImportModify.PickTrackModal);
                         break;
                     default:
