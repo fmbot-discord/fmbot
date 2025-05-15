@@ -880,7 +880,8 @@ public class PlayBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        await this._updateService.UpdateUser(context.ContextUser);
+        var targetUser = await this._userService.GetUserForIdAsync(userSettings.UserId);
+        await this._updateService.UpdateUser(targetUser);
 
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById(userSettings.TimeZone ?? "Eastern Standard Time");
 
