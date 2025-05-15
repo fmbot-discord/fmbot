@@ -298,7 +298,7 @@ public class ImportSlashCommands : InteractionModuleBase
         try
         {
             var mb = new ModalBuilder()
-                .WithTitle($"Editing '{selectedArtistName}' imports")
+                .WithTitle($"Editing artist")
                 .WithCustomId($"{InteractionConstants.ImportModify.ArtistRenameModal}——{selectedArtistName}")
                 .AddTextInput("New artist name", "artist_name", placeholder: "The Beatles", value: selectedArtistName);
 
@@ -307,7 +307,7 @@ public class ImportSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
@@ -438,7 +438,7 @@ public class ImportSlashCommands : InteractionModuleBase
         try
         {
             var mb = new ModalBuilder()
-                .WithTitle($"Editing '{selectedAlbumName}' by '{selectedArtistName}'")
+                .WithTitle($"Editing album")
                 .WithCustomId($"{InteractionConstants.ImportModify.AlbumRenameModal}-{selectedArtistName}——{selectedAlbumName}")
                 .AddTextInput("Artist name", "artist_name", placeholder: "The Beatles", value: selectedArtistName)
                 .AddTextInput("Album name", "album_name", placeholder: "Abbey Road", value: selectedAlbumName);
@@ -448,7 +448,7 @@ public class ImportSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
@@ -586,7 +586,7 @@ public class ImportSlashCommands : InteractionModuleBase
         try
         {
             var mb = new ModalBuilder()
-                .WithTitle($"Editing '{selectedTrackName}' by '{selectedArtistName}'")
+                .WithTitle($"Editing track")
                 .WithCustomId($"{InteractionConstants.ImportModify.TrackRenameModal}-{selectedArtistName}——{selectedTrackName}")
                 .AddTextInput("Artist name", "artist_name", placeholder: "The Beatles", value: selectedArtistName)
                 .AddTextInput("Track name", "track_name", placeholder: "Yesterday", value: selectedTrackName);
@@ -596,7 +596,7 @@ public class ImportSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            await this.Context.HandleCommandException(e);
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
