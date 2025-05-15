@@ -557,9 +557,9 @@ public class GuildSettingSlashCommands : InteractionModuleBase
         await this.Context.UpdateInteractionEmbed(response);
     }
 
-    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandMove}-*-*")]
+    [ComponentInteraction($"{InteractionConstants.ToggleCommand.ToggleCommandMove}-*-*-*")]
     [ServerStaffOnly]
-    public async Task ToggleChannelCommandMove(string channelId, string categoryId)
+    public async Task ToggleChannelCommandMove(string channelId, string categoryId, string direction)
     {
         var parsedChannelId = ulong.Parse(channelId);
         var parsedCategoryId = ulong.Parse(categoryId);

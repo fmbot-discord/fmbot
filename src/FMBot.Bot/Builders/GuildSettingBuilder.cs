@@ -932,8 +932,8 @@ public class GuildSettingBuilder
         var downDisabled = nextCategoryId == 0 || nextChannelId == 0;
 
         var components = new ComponentBuilder()
-            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}-{previousChannelId}-{previousCategoryId}", style: ButtonStyle.Secondary, Emote.Parse(DiscordConstants.OneToFiveUp), disabled: upDisabled)
-            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}-{nextChannelId}-{nextCategoryId}", style: ButtonStyle.Secondary, Emote.Parse(DiscordConstants.OneToFiveDown), disabled: downDisabled, row: 1)
+            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}-{previousChannelId}-{previousCategoryId}-up", style: ButtonStyle.Secondary, Emote.Parse(DiscordConstants.OneToFiveUp), disabled: upDisabled)
+            .WithButton(null, $"{InteractionConstants.ToggleCommand.ToggleCommandMove}-{nextChannelId}-{nextCategoryId}-down", style: ButtonStyle.Secondary, Emote.Parse(DiscordConstants.OneToFiveDown), disabled: downDisabled, row: 1)
             .WithButton("Add", $"{InteractionConstants.ToggleCommand.ToggleCommandAdd}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary)
             .WithButton("Remove", $"{InteractionConstants.ToggleCommand.ToggleCommandRemove}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0)
             .WithButton("Clear", $"{InteractionConstants.ToggleCommand.ToggleCommandClear}-{selectedChannel.Id}-{selectedCategoryId}", style: ButtonStyle.Secondary, disabled: currentlyDisabled.Length == 0);
