@@ -56,10 +56,10 @@ public class EurovisionBuilders
         var eurovisionPages = contestants
             .OrderByDescending(o => o.ReachedFinals)
             .ThenByDescending(o => o.Score)
-            .ThenBy(o => o.SemiFinalNr)
-            .ThenByDescending(o => o.SemiFinalScore)
             .ThenBy(o => o.Draw)
+            .ThenBy(o => o.SemiFinalNr)
             .ThenBy(o => o.SemiFinalDraw)
+            .ThenByDescending(o => o.SemiFinalScore)
             .Chunk(8)
             .ToList();
 
