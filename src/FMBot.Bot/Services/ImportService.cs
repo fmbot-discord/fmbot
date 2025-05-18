@@ -236,7 +236,7 @@ public class ImportService
             var spotifyPlays = new List<SpotifyEndSongImportModel>();
             var processedFiles = new List<string>();
 
-            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".json"))
+            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".json", StringComparison.OrdinalIgnoreCase))
                          .GroupBy(g => g.Filename))
             {
                 await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
@@ -255,19 +255,19 @@ public class ImportService
                 }
             }
 
-            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".zip"))
+            foreach (var attachment in attachments.Where(w => w?.Url != null && w.Filename.Contains(".zip", StringComparison.OrdinalIgnoreCase))
                          .GroupBy(g => g.Filename))
             {
                 await using var stream = await this._httpClient.GetStreamAsync(attachment.First().Url);
 
                 using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
 
-                if (zip.Entries.Any(w => w.Name.Contains("Userdata")))
+                if (zip.Entries.Any(w => w.Name.Contains("Userdata", StringComparison.OrdinalIgnoreCase)))
                 {
                     return (ImportStatus.WrongPackageFailure, null, null);
                 }
 
-                foreach (var entry in zip.Entries.Where(w => w.Name.Contains(".json")))
+                foreach (var entry in zip.Entries.Where(w => w.Name.Contains(".json", StringComparison.OrdinalIgnoreCase)))
                 {
                     try
                     {
