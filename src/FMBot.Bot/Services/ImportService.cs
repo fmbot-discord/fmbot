@@ -58,7 +58,7 @@ public class ImportService
         Log.Information(
             "Importing: {userId} / {discordUserId} - HandleAppleMusicFiles - Processing {fileName}",
             user.UserId, user.DiscordUserId, attachment.Filename);
-        if (attachment.Filename.EndsWith(".zip"))
+        if (attachment.Filename.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
             await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
             using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
@@ -98,7 +98,7 @@ public class ImportService
             }
         }
 
-        if (attachment.Filename.EndsWith(".csv"))
+        if (attachment.Filename.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
         {
             await using var stream = await this._httpClient.GetStreamAsync(attachment.Url);
             using var innerCsvStreamReader = new StreamReader(stream);
