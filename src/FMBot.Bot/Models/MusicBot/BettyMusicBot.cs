@@ -1,29 +1,24 @@
-using System;
 using System.Linq;
 using Discord;
-using Discord.WebSocket;
 
 namespace FMBot.Bot.Models.MusicBot;
 
 internal class BettyMusicBot : MusicBot
 {
-    private const string NowPlaying = "・Now Playing";
-
-    public BettyMusicBot() : base("Betty", false, trackNameFirst: true)
+    public BettyMusicBot() : base("Betty", false)
     {
     }
 
     public override bool ShouldIgnoreMessage(IUserMessage msg)
     {
-        if (!msg.Embeds.Any())
+        if (msg.Attachments.Count == 0)
         {
             return true;
         }
 
-        foreach (var embed in msg.Embeds)
+        foreach (var attachment in msg.Attachments)
         {
-            if (!string.IsNullOrEmpty(embed.Description) &&
-                embed.Description.Contains(NowPlaying, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(attachment.Description) && attachment.Description.Contains(" | "))
             {
                 return false;
             }
@@ -38,29 +33,16 @@ internal class BettyMusicBot : MusicBot
      */
     public override string GetTrackQuery(IUserMessage msg)
     {
-        foreach (var embed in msg.Embeds)
+        foreach (var attachment in msg.Attachments)
         {
-            if (string.IsNullOrEmpty(embed.Description) ||
-                !embed.Description.Contains(NowPlaying, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(attachment.Description))
             {
-                continue;
+                var artist = attachment.Description.Split(" | ")[0];
+                var track = attachment.Description.Split(" | ")[1];
+                return $"{artist} - {track}";
             }
-
-            // Look for the start and end indices of the song info within **SONGTITLE - AUTHOR**.
-            var startIndex = embed.Description.IndexOf("Now Playing **", StringComparison.OrdinalIgnoreCase) +
-                             "Now Playing **".Length;
-            var endIndex = embed.Description.IndexOf("**", startIndex, StringComparison.OrdinalIgnoreCase);
-
-            if (startIndex < "Now Playing **".Length || endIndex < 0 || endIndex <= startIndex)
-            {
-                return string.Empty;
-            }
-
-            // Extract the song info "SONGTITLE - AUTHOR".
-            var songByArtist = embed.Description.Substring(startIndex, endIndex - startIndex);
-            return songByArtist;
         }
 
-        return string.Empty;
+        return null;
     }
 }
