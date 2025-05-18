@@ -1307,8 +1307,7 @@ public class UserSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            await this.Context.HandleCommandException(e);
         }
     }
 

@@ -1049,10 +1049,17 @@ public class UserBuilder
                 $"{userSettings.UserType.UserTypeToIcon()} .fmbot {userSettings.UserType.ToString().ToLower()}");
         }
 
-        response.ComponentsContainer.WithSection([
-                new TextDisplayBuilder(initialDescription.ToString())
-            ],
-            !string.IsNullOrWhiteSpace(userInfo.Image) ? new ThumbnailBuilder(userInfo.Image) : null);
+        if (string.IsNullOrWhiteSpace(userInfo.Image))
+        {
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(initialDescription.ToString()));
+        }
+        else
+        {
+            response.ComponentsContainer.WithSection([
+                    new TextDisplayBuilder(initialDescription.ToString())
+                ],
+                new ThumbnailBuilder(userInfo.Image));
+        }
 
         var anyHistoryStored = false;
 
