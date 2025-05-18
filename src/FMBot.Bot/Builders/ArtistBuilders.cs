@@ -1200,7 +1200,7 @@ public class ArtistBuilders
         if (userSettings.UserType == UserType.User)
         {
             response.Embed.WithDescription(
-                $"Sorry, discovery commands use someone their lifetime listening history. You can only use this command on other supporters.");
+                $"Sorry, discovery commands uses somebody's lifetime listening history. You can only use this command on other supporters.");
 
             response.Components = new ComponentBuilder()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,

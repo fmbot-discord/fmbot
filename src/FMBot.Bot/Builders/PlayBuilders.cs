@@ -1502,7 +1502,7 @@ public class PlayBuilder
         if (userSettings.UserType == UserType.User)
         {
             response.Embed.WithDescription(
-                $"Sorry, artist gaps uses someone their lifetime listening history. You can only use this command on other supporters.");
+                $"Sorry, artist gaps uses somebody's lifetime listening history. You can only use this command on other supporters.");
 
             response.Components = new ComponentBuilder()
                 .WithButton(".fmbot supporter", style: ButtonStyle.Secondary,
