@@ -1124,6 +1124,17 @@ public class UserSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
+    [ComponentInteraction(InteractionConstants.BotScrobblingManage)]
+    [UserSessionRequired]
+    public async Task BotScrobblingButtonAsync()
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var response = UserBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser));
+
+        await this.Context.SendResponse(this.Interactivity, response, true);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
     [ComponentInteraction(InteractionConstants.BotScrobblingEnable)]
     [UserSessionRequired]
     public async Task EnableBotScrobbling()

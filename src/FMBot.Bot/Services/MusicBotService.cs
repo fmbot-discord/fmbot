@@ -78,7 +78,7 @@ public class MusicBotService
             }
 
             _ = RegisterTrack(usersInChannel, trackResult, musicBot);
-            _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count, msg.Id);
+            _ = SendScrobbleMessage(context, musicBot, trackResult, usersInChannel.Count, msg.Id);
         }
         catch (Exception e)
         {
@@ -87,26 +87,37 @@ public class MusicBotService
         }
     }
 
-    private async Task SendScrobbleMessage(ICommandContext context, TrackSearchResult trackResult,
+    private async Task SendScrobbleMessage(ICommandContext context, MusicBot musicBot, TrackSearchResult trackResult,
         int listenerCount, ulong botMessageId)
     {
-        var embed = new EmbedBuilder().WithColor(DiscordConstants.LastFmColorRed);
-        var prfx = this._prefixService.GetPrefix(context.Guild?.Id);
+        var componentBuilder = new ComponentBuilderV2();
+        var container = new ContainerBuilder();
+        container.WithAccentColor(DiscordConstants.LastFmColorRed);
+        componentBuilder.WithContainer(container);
 
         var description = new StringBuilder();
-        description.Append($"Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");
-        embed.WithDescription(description.ToString());
+        description.Append($"<a:now_scrobbling:1374003167838081136> Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");
+        container.AddComponent(new TextDisplayBuilder(description.ToString()));
 
         var footer = new StringBuilder();
         if (trackResult.DurationMs.HasValue)
         {
-            footer.Append($"Length {StringExtensions.GetTrackLength(trackResult.DurationMs.GetValueOrDefault())} - ");
+            footer.Append($"Length {StringExtensions.GetTrackLength(trackResult.DurationMs.GetValueOrDefault())} — ");
         }
-        footer.Append($"Manage with '{prfx}botscrobbling'");
-        embed.WithFooter(footer.ToString());
+        footer.Append($"{musicBot.Name}");
+
+        container.AddComponent(new SectionBuilder
+        {
+            Components =
+            [
+                new TextDisplayBuilder(footer.ToString())
+            ],
+            Accessory = new ButtonBuilder("Manage", style: ButtonStyle.Secondary,
+                customId: InteractionConstants.BotScrobblingManage)
+        });
 
         var scrobbleMessage =
-            await context.Channel.SendMessageAsync(embed: embed.Build(), flags: MessageFlags.SuppressNotification);
+            await context.Channel.SendMessageAsync(components: componentBuilder.Build(), flags: MessageFlags.SuppressNotification | MessageFlags.ComponentsV2);
 
         var referencedMusic = new ReferencedMusic
         {
@@ -121,7 +132,7 @@ public class MusicBotService
         Log.Information("BotScrobbling: Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild?.Name, context.Guild?.Id);
         this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Scrobbled `{trackResult.TrackName}` by `{trackResult.ArtistName}`"));
 
-        var messageDelayMs = (int)(trackResult.DurationMs - 5000 ?? 120000);
+        var messageDelayMs = (int)(trackResult.DurationMs - 3000 ?? 120000);
         await Task.Delay(messageDelayMs);
 
         await scrobbleMessage.DeleteAsync();

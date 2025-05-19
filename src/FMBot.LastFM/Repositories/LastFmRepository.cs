@@ -1270,7 +1270,7 @@ public class LastFmRepository : ILastfmRepository
             return scrobbles.Success && scrobbles.Content.RecentTracks.Count > 0 ||
                    scrobbles.Error == ResponseStatus.LoginRequired;
         }
-        
+
         return scrobbles.Success && scrobbles.Content.RecentTracks.Count > 0;
     }
 

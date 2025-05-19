@@ -161,6 +161,7 @@ public static class InteractionConstants
 
     public const string BotScrobblingEnable = "user-setting-botscrobbling-enable";
     public const string BotScrobblingDisable = "user-setting-botscrobbling-disable";
+    public const string BotScrobblingManage = "user-setting-botscrobbling-manage";
 
     public const string SetPrefix = "set-prefix-threshold";
     public const string SetPrefixModal = "set-prefix-modal";

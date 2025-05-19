@@ -587,7 +587,7 @@ public class TrackService
 
                 var trackLfm = await this._dataSourceFactory.GetTrackInfoAsync(trackName, artistName);
 
-                if (trackLfm.Success)
+                if (trackLfm.Success && trackLfm.Content.TotalPlaycount > 20)
                 {
                     return new TrackSearchResult
                     {
@@ -651,11 +651,6 @@ public class TrackService
     {
         internal string Track { get; init; }
         internal string Artist { get; init; }
-
-        public override string ToString()
-        {
-            return $"{nameof(this.Track)}: {this.Track}, {nameof(this.Artist)}: {this.Artist}";
-        }
     }
 
     public async Task<List<UserTrack>> GetArtistUserTracks(int userId, string artistName)
