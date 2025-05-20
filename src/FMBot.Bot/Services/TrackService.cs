@@ -252,13 +252,21 @@ public class TrackService
 
             if (trackInfo?.Content == null || !trackInfo.Success)
             {
-                response.Embed.WithDescription(
-                    $"Last.fm did not return a result for **{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**.\n\n" +
-                    $"This usually happens on recently released tracks. Please try again later.");
+                var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(lastPlayedTrack.ArtistName,
+                    lastPlayedTrack.TrackName, userId.Value);
 
-                response.CommandResponse = CommandResponse.NotFound;
-                response.ResponseType = ResponseType.Embed;
-                return new TrackSearch(null, response);
+                return new TrackSearch(new TrackInfo
+                {
+                    ArtistName = lastPlayedTrack.ArtistName,
+                    ArtistUrl = lastPlayedTrack.ArtistUrl,
+                    AlbumName = lastPlayedTrack.AlbumName,
+                    AlbumUrl = lastPlayedTrack.AlbumUrl,
+                    TrackName = lastPlayedTrack.TrackName,
+                    TrackUrl = lastPlayedTrack.TrackUrl,
+                    Loved = lastPlayedTrack.Loved,
+                    AlbumCoverUrl = lastPlayedTrack.AlbumCoverUrl,
+                    UserPlaycount = userPlaycount
+                }, response);
             }
 
             return new TrackSearch(trackInfo.Content, response);
