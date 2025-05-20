@@ -39,9 +39,17 @@ public static class GenericEmbedService
                 customId: InteractionConstants.User.Login);
     }
 
+    public static ComponentBuilder ReconnectComponents()
+    {
+        return new ComponentBuilder()
+            .WithButton("Reconnect Last.fm account", style: ButtonStyle.Secondary,
+                customId: InteractionConstants.User.Login);
+    }
+
     public static void RateLimitedResponse(this EmbedBuilder embed)
     {
-        embed.WithDescription($"Sorry, you're being ratelimited. Please cool down and wait a minute before using commands again.");
+        embed.WithDescription(
+            $"Sorry, you're being ratelimited. Please cool down and wait a minute before using commands again.");
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
@@ -55,14 +63,10 @@ public static class GenericEmbedService
 
     public static void SessionRequiredResponse(this EmbedBuilder embed, string prfx)
     {
-        var loginCommand = PublicProperties.SlashCommands.ContainsKey("login")
-            ? $"</login:{PublicProperties.SlashCommands["login"]}>"
-            : "`/login`";
         embed.WithDescription(
             "While you have set your username, you haven't connected .fmbot to your Last.fm account yet, which is required for the command you're trying to use.\n" +
-            $"Please use the {loginCommand} command to reconnect your Last.fm account.");
+            $"Please reconnect your Last.fm account with the button below.");
 
-        embed.WithUrl($"{Constants.DocsUrl}/commands/");
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
@@ -125,8 +129,9 @@ public static class GenericEmbedService
                     $"Please try a re-login to the bot with {loginCommand}.");
                 break;
             case ResponseStatus.SessionExpired:
-                embed.WithDescription("Can't retrieve data because your Last.fm session is expired or invalid.\n" +
-                                      $"Please re-login to the bot with {loginCommand}.");
+                embed.WithDescription(
+                    "Can't retrieve data because .fmbot has been disconnected from your Last.fm account.\n" +
+                    $"Please re-authorize .fmbot with {loginCommand}.");
                 break;
             case ResponseStatus.MissingParameters:
                 if (expectedResultType != null)
@@ -320,6 +325,7 @@ public static class GenericEmbedService
     {
         return new ComponentBuilder()
             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: $"help-{commandInfo.Name}"));
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
+                    source: $"help-{commandInfo.Name}"));
     }
 }

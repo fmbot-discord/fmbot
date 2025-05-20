@@ -265,7 +265,7 @@ public class InteractionHandler
                 var userNickname = (context.User as SocketGuildUser)?.DisplayName;
                 embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
 
-                await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true, components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
+                await context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true, components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return false;
             }
@@ -279,7 +279,7 @@ public class InteractionHandler
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 embed.SessionRequiredResponse("/");
-                await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+                await context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true, components: GenericEmbedService.ReconnectComponents().Build());
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return false;
             }
