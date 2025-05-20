@@ -38,7 +38,7 @@ public class SpotifySlashCommands : InteractionModuleBase
         Playlist = 4
     }
 
-    [SlashCommand("spotify", "Search through Spotify.")]
+    [SlashCommand("spotify", "Search through Spotify")]
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]

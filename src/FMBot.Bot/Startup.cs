@@ -239,7 +239,8 @@ public class Startup
             .AddSingleton<StaticBuilders>()
             .AddSingleton<TemplateBuilders>()
             .AddSingleton<TrackBuilders>()
-            .AddSingleton<UserBuilder>();
+            .AddSingleton<UserBuilder>()
+            .AddSingleton<YoutubeBuilders>();
     }
 
     private static void RegisterDataRepositories(IServiceCollection services)
