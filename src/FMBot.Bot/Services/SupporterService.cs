@@ -214,28 +214,37 @@ public class SupporterService
 
     public static async Task SendSupporterGoodbyeMessage(IUser discordUser, bool hadImported = false)
     {
-        var goodbyeEmbed = new EmbedBuilder();
-        goodbyeEmbed.WithColor(DiscordConstants.InformationColorBlue);
-
-        goodbyeEmbed.AddField("⭐ .fmbot supporter expired",
-            "Your .fmbot supporter subscription has expired. Sorry to see you go!\n\n" +
-            "Thanks for having supported the bot! Feel free to open a thread in #help on [our server](https://discord.gg/fmbot) if you have any feedback.");
-
-        if (hadImported)
+        try
         {
-            goodbyeEmbed.AddField($"{DiscordConstants.Imports} Importing service deactivated",
-                "The import service is no longer active, so the bot will now only use your Last.fm stats without imported .fmbot data. Your imports are however saved and will be available again if you resubscribe in the future.");
+            var goodbyeEmbed = new EmbedBuilder();
+            goodbyeEmbed.WithColor(DiscordConstants.InformationColorBlue);
+
+            goodbyeEmbed.AddField("⭐ .fmbot supporter expired",
+                "Your .fmbot supporter subscription has expired. Sorry to see you go!\n\n" +
+                "Thanks for having supported the bot! Feel free to open a thread in #help on [our server](https://discord.gg/fmbot) if you have any feedback.");
+
+            if (hadImported)
+            {
+                goodbyeEmbed.AddField($"{DiscordConstants.Imports} Importing service deactivated",
+                    "The import service is no longer active, so the bot will now only use your Last.fm stats without imported .fmbot data. Your imports are however saved and will be available again if you resubscribe in the future.");
+            }
+
+            var buttons = new ComponentBuilder()
+                .WithButton("Resubscribe", style: ButtonStyle.Secondary,
+                    customId: InteractionConstants.SupporterLinks
+                        .GeneratePurchaseButtons(source: "goodbye-resubscribe"))
+                .WithButton("Support server", style: ButtonStyle.Link, url: "https://discord.gg/fmbot");
+
+            goodbyeEmbed.AddField("🏷️ Annual deal",
+                "Resubscribe and save 50% on .fmbot supporter with our new yearly option.");
+
+            await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons.Build());
         }
-
-        var buttons = new ComponentBuilder()
-            .WithButton("Resubscribe", style: ButtonStyle.Secondary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "goodbye-resubscribe"))
-            .WithButton("Support server", style: ButtonStyle.Link, url: "https://discord.gg/fmbot");
-
-        goodbyeEmbed.AddField("🏷️ Annual deal",
-            "Resubscribe and save 50% on .fmbot supporter with our new yearly option.");
-
-        await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons.Build());
+        catch (Exception e)
+        {
+            Log.Information("SupporterService: Error while sending goodbye message to {discordUserId}", discordUser.Id,
+                e);
+        }
     }
 
     public async Task<(string message, bool showUpgradeButton, string supporterSource)> GetPromotionalUpdateMessage(
