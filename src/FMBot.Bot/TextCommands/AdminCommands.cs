@@ -408,10 +408,10 @@ public class AdminCommands : BaseCommandModule
                 {
                     pages.Add(new PageBuilder()
                         .WithDescription(
-                            "No bot scrobbling logs yet, make sure fmbot can see the 'Now playing' message")
+                            "User logs yet")
                         .WithFooter($"Page {pageCounter}/{logPages.Count()}")
                         .WithTitle(
-                            $"Bot scrobbling debug log for {this.Context.Guild.Name} | {this.Context.Guild.Id}"));
+                            $"User command log for {this.Context.Guild.Name} | {this.Context.Guild.Id}"));
                 }
 
                 var paginator = StringService.BuildStaticPaginator(pages);

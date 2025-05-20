@@ -1700,11 +1700,11 @@ public class UserService
             foreach (var oldUnusedAccount in groupedUser
                          .Where(w => w.LastUsed == null || w.LastUsed < DateTime.UtcNow.AddMonths(-24)))
             {
-                //await PlayRepository.MoveFeaturedLogs(oldUnusedAccount.UserId, lastUsedAccount.UserId, connection);
-                //await PlayRepository.MoveFriends(oldUnusedAccount.UserId, lastUsedAccount.UserId, connection);
+                await PlayRepository.MoveFeaturedLogs(oldUnusedAccount.UserId, lastUsedAccount.UserId, connection);
+                await PlayRepository.MoveFriends(oldUnusedAccount.UserId, lastUsedAccount.UserId, connection);
 
-                //await this._friendsService.RemoveAllFriendsAsync(oldUnusedAccount.UserId);
-                //await DeleteUser(oldUnusedAccount.UserId);
+                await this._friendsService.RemoveAllFriendsAsync(oldUnusedAccount.UserId);
+                await DeleteUser(oldUnusedAccount.UserId);
 
                 Log.Information(
                     "DeleteOldDuplicateUsers: User {userNameLastFm} | {userId} | {discordUserId} - Last used {lastUsed}",
