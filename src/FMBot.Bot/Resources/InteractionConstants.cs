@@ -57,22 +57,22 @@ public static class InteractionConstants
         public const string PickTrackModal = "im-ptr";
 
         public const string ArtistRename = "im-arn";
-        public const string ArtistRenameModal = "im-arn-mdl";
-        public const string ArtistRenameConfirmed = "im-arn-y";
+        public const string ArtistRenameModal = "im-arn^mdl";
+        public const string ArtistRenameConfirmed = "im-arn^y";
         public const string ArtistDelete = "im-adl";
-        public const string ArtistDeleteConfirmed = "im-adl-y";
+        public const string ArtistDeleteConfirmed = "im-adl^y";
 
         public const string AlbumRename = "im-abrn";
-        public const string AlbumRenameModal = "im-abrn-mdl";
-        public const string AlbumRenameConfirmed = "im-abrn-y";
+        public const string AlbumRenameModal = "im-abrn^mdl";
+        public const string AlbumRenameConfirmed = "im-abrn^y";
         public const string AlbumDelete = "im-abdl";
-        public const string AlbumDeleteConfirmed = "im-abdl-y";
+        public const string AlbumDeleteConfirmed = "im-abdl^y";
 
         public const string TrackRename = "im-trrn";
-        public const string TrackRenameModal = "im-trrn-mdl";
-        public const string TrackRenameConfirmed = "im-trrn-y";
+        public const string TrackRenameModal = "im-trrn^mdl";
+        public const string TrackRenameConfirmed = "im-trrn^y";
         public const string TrackDelete = "im-trdl";
-        public const string TrackDeleteConfirmed = "im-trdl-y";
+        public const string TrackDeleteConfirmed = "im-trdl^y";
     }
 
     public const string ImportInstructionsSpotify = "import-spotify-instructions";
