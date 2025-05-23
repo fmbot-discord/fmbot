@@ -299,9 +299,9 @@ public class UserSlashCommands : InteractionModuleBase
                 components: loginUrlResponse.Components.Build());
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
 
-            var loginStatus = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
+            var loginResult = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
 
-            if (loginStatus == UserService.LoginStatus.Success)
+            if (loginResult.Status == UserService.LoginStatus.Success)
             {
                 var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -358,9 +358,9 @@ public class UserSlashCommands : InteractionModuleBase
                     }
                 }
             }
-            else if (loginStatus == UserService.LoginStatus.TooManyAccounts)
+            else if (loginResult.Status == UserService.LoginStatus.TooManyAccounts)
             {
-                var loginFailure = UserBuilder.LoginTooManyAccounts();
+                var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount); // Pass AltCount here
                 await FollowupAsync(null, [loginFailure.Embed.Build()], components: loginFailure.Components.Build(),
                     ephemeral: true);
 
