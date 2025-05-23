@@ -1301,7 +1301,7 @@ public class UserService
         TimedOut
     }
 
-    public async Task<LoginStatus> GetAndStoreAuthSession(IUser contextUser, string token)
+    public async Task<(LoginStatus Status, int AltCount)> GetAndStoreAuthSession(IUser contextUser, string token)
     {
         Log.Information("LastfmAuth: Login session starting for {user} | {discordUserId}", contextUser.Username,
             contextUser.Id);
@@ -1338,18 +1338,18 @@ public class UserService
                     Log.Information(
                         "LastfmAuth: Too many accounts already connected to {userName} - {altCount} alts (discordUserId: {discordUserId})",
                         userSettings.UserNameLastFM, existingUserCount, contextUser.Id);
-                    return LoginStatus.TooManyAccounts;
+                    return (LoginStatus.TooManyAccounts, existingUserCount);
                 }
 
                 await SetLastFm(contextUser, userSettings, true);
-                return LoginStatus.Success;
+                return (LoginStatus.Success, 0);
             }
 
             if (!authSession.Success && i == 10)
             {
                 Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})",
                     contextUser.Id);
-                return LoginStatus.TimedOut;
+                return (LoginStatus.TimedOut, 0);
             }
 
             if (!authSession.Success)
@@ -1358,7 +1358,7 @@ public class UserService
             }
         }
 
-        return LoginStatus.TimedOut;
+        return (LoginStatus.TimedOut, 0);
     }
 
     public async Task<PrivacyLevel> SetPrivacyLevel(int userId, PrivacyLevel privacyLevel)

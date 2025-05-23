@@ -318,7 +318,7 @@ public class UserBuilder
         return response;
     }
 
-    public static ResponseModel LoginTooManyAccounts()
+    public static ResponseModel LoginTooManyAccounts(int altCount)
     {
         var response = new ResponseModel
         {
@@ -327,7 +327,7 @@ public class UserBuilder
 
         var description = new StringBuilder();
         description.AppendLine(
-            $"Can't login, this Last.fm is connected to too many Discord accounts already (max is {Constants.MaxAlts}).");
+            $"Can't login, this Last.fm is connected to too many Discord accounts already ({altCount}/{Constants.MaxAlts}).");
         description.AppendLine("");
         description.AppendLine("To delete and transfer data from your other .fmbot accounts:");
         description.AppendLine("1. Use 'Manage alts'");
