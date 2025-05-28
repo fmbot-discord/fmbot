@@ -413,7 +413,7 @@ public class LastFmRepository : ILastfmRepository
 
     public async Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery)
     {
-        var trackSearch = await this._lastFmClient.Track.SearchAsync(searchQuery, itemsPerPage: 1);
+        var trackSearch = await this._lastFmClient.Track.SearchAsync(searchQuery, itemsPerPage: 10);
         Statistics.LastfmApiCalls.WithLabels("track.search").Inc();
 
         if (!trackSearch.Success)
@@ -421,7 +421,7 @@ public class LastFmRepository : ILastfmRepository
             return new Response<TrackInfo>
             {
                 Success = false,
-                Error = (ResponseStatus)Enum.Parse(typeof(ResponseStatus), trackSearch.Status.ToString()),
+                Error = Enum.Parse<ResponseStatus>(trackSearch.Status.ToString()),
                 Message = "Last.fm returned an error"
             };
         }
@@ -435,20 +435,31 @@ public class LastFmRepository : ILastfmRepository
             };
         }
 
+        var firstValidTrack = trackSearch.Content
+            .FirstOrDefault(track => !IsArtistBlocked(track.ArtistName));
+
+        if (firstValidTrack == null)
+        {
+            return new Response<TrackInfo>
+            {
+                Success = true,
+                Content = null
+            };
+        }
+
         return new Response<TrackInfo>
         {
             Success = true,
             Content = new TrackInfo
             {
-                ArtistName = trackSearch.Content.First().ArtistName,
-                AlbumArtist = trackSearch.Content.First().ArtistName,
-                AlbumName = trackSearch.Content.First().AlbumName,
-                TrackName = trackSearch.Content.First().Name
+                ArtistName = firstValidTrack.ArtistName,
+                AlbumArtist = firstValidTrack.ArtistName,
+                AlbumName = firstValidTrack.AlbumName,
+                TrackName = firstValidTrack.Name
             }
         };
     }
 
-// Track info
     public async Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, bool redirectsEnabled,
         string username = null)
     {
@@ -647,37 +658,49 @@ public class LastFmRepository : ILastfmRepository
 
     public async Task<Response<AlbumInfo>> SearchAlbumAsync(string searchQuery)
     {
-        var albumSearch = await this._lastFmClient.Album.SearchAsync(searchQuery, itemsPerPage: 1);
+        var albumSearch = await this._lastFmClient.Album.SearchAsync(searchQuery, itemsPerPage: 10);
         Statistics.LastfmApiCalls.WithLabels("album.search").Inc();
 
-        if (albumSearch.Success)
+        if (!albumSearch.Success)
         {
-            if (!albumSearch.Content.Any())
+            return new Response<AlbumInfo>
             {
-                return new Response<AlbumInfo>
-                {
-                    Success = true,
-                    Content = null
-                };
-            }
+                Success = false,
+                Error = Enum.Parse<ResponseStatus>(albumSearch.Status.ToString()),
+                Message = "Last.fm returned an error"
+            };
+        }
 
+        if (!albumSearch.Content.Any())
+        {
             return new Response<AlbumInfo>
             {
                 Success = true,
-                Content = new AlbumInfo
-                {
-                    AlbumName = albumSearch.Content.FirstOrDefault()?.Name,
-                    AlbumUrl = albumSearch.Content.FirstOrDefault()?.Url.ToString(),
-                    ArtistName = albumSearch.Content.FirstOrDefault()?.ArtistName
-                }
+                Content = null
+            };
+        }
+
+        var firstValidAlbum = albumSearch.Content
+            .FirstOrDefault(album => !IsArtistBlocked(album.ArtistName));
+
+        if (firstValidAlbum == null)
+        {
+            return new Response<AlbumInfo>
+            {
+                Success = true,
+                Content = null
             };
         }
 
         return new Response<AlbumInfo>
         {
-            Success = false,
-            Error = (ResponseStatus)Enum.Parse(typeof(ResponseStatus), albumSearch.Status.ToString()),
-            Message = "Last.fm returned an error"
+            Success = true,
+            Content = new AlbumInfo
+            {
+                AlbumName = firstValidAlbum.Name,
+                AlbumUrl = firstValidAlbum.Url.ToString(),
+                ArtistName = firstValidAlbum.ArtistName
+            }
         };
     }
 
@@ -1392,4 +1415,12 @@ public class LastFmRepository : ILastfmRepository
             Message = scrobbleCall.Message
         };
     }
+
+    private static bool IsArtistBlocked(string artistName) =>
+        !string.IsNullOrWhiteSpace(artistName) && SearchBlockedArtists.Contains(artistName);
+
+    private static readonly HashSet<string> SearchBlockedArtists = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "pornhub.com"
+    };
 }
