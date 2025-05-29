@@ -172,8 +172,6 @@ public class CensorService
             {
                 return CensorResult.Nsfw;
             }
-
-            return CensorResult.Safe;
         }
 
         return CensorResult.Safe;

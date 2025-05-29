@@ -30,9 +30,9 @@ public class AliasService
             return;
         }
 
-        this._cache.Set(cacheKey, true, TimeSpan.FromMinutes(10));
-        
-        var cacheTime = TimeSpan.FromMinutes(20);
+        this._cache.Set(cacheKey, true, TimeSpan.FromMinutes(30));
+
+        var cacheTime = TimeSpan.FromMinutes(40);
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var artistAliases = await db.ArtistAliases

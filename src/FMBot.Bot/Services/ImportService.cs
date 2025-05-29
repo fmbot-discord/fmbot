@@ -19,6 +19,7 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.Repositories;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
@@ -33,15 +34,17 @@ public class ImportService
     private readonly BotSettings _botSettings;
     private readonly TimeEnrichment.TimeEnrichmentClient _timeEnrichment;
     private readonly ArtistEnrichment.ArtistEnrichmentClient _artistEnrichment;
+    private readonly IMemoryCache _cache;
 
 
     public ImportService(HttpClient httpClient, TimeService timeService, IOptions<BotSettings> botSettings,
-        TimeEnrichment.TimeEnrichmentClient timeEnrichment, ArtistEnrichment.ArtistEnrichmentClient artistEnrichment)
+        TimeEnrichment.TimeEnrichmentClient timeEnrichment, ArtistEnrichment.ArtistEnrichmentClient artistEnrichment, IMemoryCache cache)
     {
         this._httpClient = httpClient;
         this._timeService = timeService;
         this._timeEnrichment = timeEnrichment;
         this._artistEnrichment = artistEnrichment;
+        this._cache = cache;
         this._botSettings = botSettings.Value;
     }
 
@@ -454,6 +457,20 @@ public class ImportService
         }
 
         return null;
+    }
+
+    public string StoreImportEdit(ImportEdit importEdit)
+    {
+        var id = Guid.NewGuid().ToString();
+
+        this._cache.Set($"import-edit-{id}", importEdit);
+
+        return id;
+    }
+
+    public ImportEdit GetImportEdit(string id)
+    {
+        return this._cache.Get<ImportEdit>($"import-edit-{id}");
     }
 
     public async Task RenameArtistImports(User user, string oldArtistName, string newArtistName)

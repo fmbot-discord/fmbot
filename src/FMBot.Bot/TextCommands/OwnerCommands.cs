@@ -217,7 +217,7 @@ public class OwnerCommands : BaseCommandModule
             {
                 await ReplyAsync($"Starting inactive user deleter / de-duplicater.");
                 var deletedUsers = await this._userService.DeleteOldDuplicateUsers();
-                await ReplyAsync($"Deleted {deletedUsers} inactive users from the database (test so not actually)");
+                await ReplyAsync($"Deleted {deletedUsers} inactive users from the database");
             }
             catch (Exception e)
             {

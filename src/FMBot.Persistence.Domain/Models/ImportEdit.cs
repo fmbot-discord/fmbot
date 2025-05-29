@@ -2,8 +2,6 @@ namespace FMBot.Persistence.Domain.Models;
 
 public class ImportEdit
 {
-    public int Id { get; set; }
-
     public bool Applied { get; set; }
 
     public string OldArtistName { get; set; }
@@ -17,4 +15,12 @@ public class ImportEdit
 
     public int OldPlaycount { get; set; }
     public int NewPlaycount { get; set; }
+}
+
+public enum ImportEditAction
+{
+    Rename = 1,
+    RenameConfirmed = 2,
+    Delete = 10,
+    DeleteConfirmed = 11,
 }

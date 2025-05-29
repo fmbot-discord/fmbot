@@ -1687,7 +1687,9 @@ public class UserService
             .ToListAsync();
 
         var usersWithTooManyAccounts = groupedUsers
-            .Where(w => w.Count() > 1 && w.Any(a => a.LastUsed > DateTime.UtcNow.AddMonths(-18)));
+            .Where(w => w.Count() > 1 &&
+                        w.All(a => a.UserType == UserType.User) &&
+                        w.Any(a => a.LastUsed > DateTime.UtcNow.AddMonths(-18)));
 
         await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
         await connection.OpenAsync();
@@ -1700,11 +1702,11 @@ public class UserService
             foreach (var oldUnusedAccount in groupedUser
                          .Where(w => w.LastUsed == null || w.LastUsed < DateTime.UtcNow.AddMonths(-18)))
             {
-                // await PlayRepository.MoveFeaturedLogs(oldUnusedAccount.UserId, lastUsedAccount.UserId, connection);
-                // await PlayRepository.MoveFriends(oldUnusedAccount.UserId, lastUsedAccount.UserId, connection);
-                //
-                // await this._friendsService.RemoveAllFriendsAsync(oldUnusedAccount.UserId);
-                // await DeleteUser(oldUnusedAccount.UserId);
+                await PlayRepository.MoveFeaturedLogs(oldUnusedAccount.UserId, lastUsedAccount.UserId, connection);
+                await PlayRepository.MoveFriends(oldUnusedAccount.UserId, lastUsedAccount.UserId, connection);
+
+                await this._friendsService.RemoveAllFriendsAsync(oldUnusedAccount.UserId);
+                await DeleteUser(oldUnusedAccount.UserId);
 
                 Log.Information(
                     "DeleteOldDuplicateUsers: User {userNameLastFm} | {userId} | {discordUserId} - Last used {lastUsed}",
