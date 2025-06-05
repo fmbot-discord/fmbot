@@ -562,7 +562,7 @@ public class GameService
         {
             var random = RandomNumberGenerator.GetInt32(artist.ArtistGenres.Count);
             var genre = artist.ArtistGenres.ToList()[random];
-            hints.Add(new JumbleSessionHint(JumbleHintType.Genre, $"- One of the artist their genres is **{genre.Name}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Genre, $"- One of the artist's genres is **{genre.Name}**"));
         }
 
         if (artist?.StartDate != null)
