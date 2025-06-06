@@ -4,6 +4,7 @@ x-instance-defaults: &instance-defaults
   image: ghcr.io/fmbot-discord/fmbot:dev
   restart: always
   network_mode: host
+  mem_limit: 10g
   volumes:
     - /fmbot/beta/:/app/configs/
     - /fmbot/cache/:/app/cache/
