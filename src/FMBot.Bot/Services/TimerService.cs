@@ -102,8 +102,8 @@ public class TimerService
         Log.Information($"RecurringJob: Adding {nameof(CheckIfShardsNeedReconnect)}");
         RecurringJob.AddOrUpdate(nameof(CheckIfShardsNeedReconnect), () => CheckIfShardsNeedReconnect(), "*/2 * * * *");
 
-        // Log.Information($"RecurringJob: Adding {nameof(ClearUserCache)}");
-        // RecurringJob.AddOrUpdate(nameof(ClearUserCache), () => ClearUserCache(), "30 */2 * * *");
+        Log.Information($"RecurringJob: Adding {nameof(ClearUserCache)}");
+        RecurringJob.AddOrUpdate(nameof(ClearUserCache), () => ClearUserCache(), "30 */2 * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(ClearInternalLogs)}");
         RecurringJob.AddOrUpdate(nameof(ClearInternalLogs), () => ClearInternalLogs(), "0 8 * * *");
