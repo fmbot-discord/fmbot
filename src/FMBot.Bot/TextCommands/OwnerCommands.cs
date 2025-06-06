@@ -27,15 +27,19 @@ public class OwnerCommands : BaseCommandModule
     private readonly AdminService _adminService;
     private readonly UserService _userService;
     private readonly IMemoryCache _cache;
+    private readonly DiscordShardedClient _client;
 
     public OwnerCommands(
         AdminService adminService,
         UserService userService,
-        IOptions<BotSettings> botSettings, IMemoryCache cache) : base(botSettings)
+        IOptions<BotSettings> botSettings,
+        IMemoryCache cache,
+        DiscordShardedClient client) : base(botSettings)
     {
         this._adminService = adminService;
         this._userService = userService;
         this._cache = cache;
+        this._client = client;
     }
 
     [Command("say"), Summary("Says something")]
@@ -330,6 +334,7 @@ public class OwnerCommands : BaseCommandModule
         embed.AddField("Performance", perfInfo.ToString());
 
         var cacheStats = GetCacheStatistics();
+        cacheStats += $"\n**Downloaded members**: {this._client.Guilds.Sum(s => s.DownloadedMemberCount)}";
         if (!string.IsNullOrEmpty(cacheStats))
         {
             embed.AddField("Cache Statistics", cacheStats);
