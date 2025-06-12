@@ -91,44 +91,49 @@ public class LastFmRepository : ILastfmRepository
             if (amountOfPages > 1 && recentTracksCall.Success &&
                 recentTracksCall.Content.RecentTracks.Track.Count >= (count - 2) && count >= 400)
             {
+                const int maxFailureRetries = 4; // Initial attempt + 3 retries
+                int[] failureDelay = [300, 2000, 5000];
+
                 for (var i = 1; i < amountOfPages; i++)
                 {
                     queryParams.Remove("page");
                     queryParams.Add("page", (i + 1).ToString());
-                    var pageResponse =
-                        await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams,
+
+                    Response<RecentTracksListLfmResponseModel> pageResponse = null;
+                    var pageFetchedSuccessfully = false;
+                    var attempts = 0;
+
+                    while (attempts < maxFailureRetries && !pageFetchedSuccessfully)
+                    {
+                        if (attempts > 0)
+                        {
+                            await Task.Delay(failureDelay[attempts - 1]);
+                        }
+
+                        pageResponse = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams,
                             Call.RecentTracks, authorizedCall);
 
-                    if (pageResponse.Success)
+                        attempts++;
+
+                        if (pageResponse.Success)
+                        {
+                            pageFetchedSuccessfully = true;
+                        }
+                    }
+
+                    if (pageFetchedSuccessfully)
                     {
                         recentTracksCall.Content.RecentTracks.Track.AddRange(
                             pageResponse.Content.RecentTracks.Track);
-                        if (pageResponse.Content.RecentTracks.Track.Count < 1000)
+
+                        if (pageResponse.Content.RecentTracks.Track.Count < (count - 2))
                         {
-                            break;
-                        }
-                    }
-                    else if (pageResponse.Error == ResponseStatus.Failure)
-                    {
-                        pageResponse =
-                            await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams,
-                                Call.RecentTracks, authorizedCall);
-                        if (pageResponse.Success)
-                        {
-                            recentTracksCall.Content.RecentTracks.Track.AddRange(pageResponse.Content.RecentTracks
-                                .Track);
-                            if (pageResponse.Content.RecentTracks.Track.Count < 1000)
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            break;
+                            break; // Last page of results, exit the loop.
                         }
                     }
                     else
                     {
+                        Log.Warning("Failed to fetch page {page} for {user} after {attempts} attempts. Stopping pagination.", (i + 1), lastFmUserName, attempts);
                         break;
                     }
                 }
