@@ -467,8 +467,7 @@ public class CountryBuilders
     public async Task<ResponseModel> GetTopCountryChart(
         ContextModel context,
         UserSettingsModel userSettings,
-        TimeSettingsModel timeSettings,
-        TopListSettings topListSettings)
+        TimeSettingsModel timeSettings)
     {
         var response = new ResponseModel
         {
@@ -490,7 +489,7 @@ public class CountryBuilders
 
             if (!artists.Success || artists.Content == null)
             {
-                response.Embed.ErrorResponse(artists.Error, artists.Message, "topgenres", context.DiscordUser);
+                response.Embed.ErrorResponse(artists.Error, artists.Message, "countrychart", context.DiscordUser);
                 response.CommandResponse = CommandResponse.LastFmError;
                 response.ResponseType = ResponseType.Embed;
                 return response;

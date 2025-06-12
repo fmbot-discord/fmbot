@@ -77,8 +77,8 @@ public class CountryCommands : BaseCommandModule
 
     [Command("countrychart", RunMode = RunMode.Async)]
     [Summary("Generates a map of the location from your top artists.")]
-    [Alias("cc")]
-    public async Task TestAsync([Remainder] string extraOptions = null)
+    [Alias("cc", "worldmap", "artistmap")]
+    public async Task CountryChartAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -88,14 +88,13 @@ public class CountryCommands : BaseCommandModule
         try
         {
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm, defaultTimePeriod: TimePeriod.AllTime,
                 timeZone: userSettings.TimeZone);
 
             var response = await this._countryBuilders.GetTopCountryChart(new ContextModel(this.Context, prfx, contextUser),
-                userSettings, timeSettings, topListSettings);
+                userSettings, timeSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
