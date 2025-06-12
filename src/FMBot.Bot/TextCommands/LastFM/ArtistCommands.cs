@@ -410,7 +410,7 @@ public class ArtistCommands : BaseCommandModule
     [Command("whoknows", RunMode = RunMode.Async)]
     [Summary("Shows what other users listen to an artist in your server")]
     [Examples("w", "wk COMA", "whoknows", "whoknows DJ Seinfeld")]
-    [Alias("w", "wk", "whoknows artist")]
+    [Alias("w", "wk", "whoknows artist", "thosewhoknow")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
