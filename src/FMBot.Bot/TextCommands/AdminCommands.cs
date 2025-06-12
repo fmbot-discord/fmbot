@@ -1769,7 +1769,8 @@ Not following these rules might lead to a mute, kick or ban. Staff members can b
                 ]
             }.WithAccentColor(DiscordConstants.InformationColorBlue));
 
-            await ReplyAsync(components: components.Build(), flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+            await ReplyAsync(components: components.Build(), flags: MessageFlags.ComponentsV2,
+                allowedMentions: AllowedMentions.None);
         }
 
         if (type == "buysupporter")
@@ -3150,5 +3151,31 @@ Not following these rules might lead to a mute, kick or ban. Staff members can b
         {
             await this.Context.HandleCommandException(e);
         }
+    }
+
+    [Command("postpendingreports")]
+    public async Task PostPendingReports([Remainder] string trackValues = null)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            return;
+        }
+
+        await ReplyAsync("Reposting open reports...");
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var musicReports = db.CensoredMusicReport.Where(w => w.ReportStatus == ReportStatus.Pending).ToList();
+        foreach (var report in musicReports)
+        {
+            await this._censorService.PostReport(report);
+        }
+
+        var userReports = db.BottedUserReport.Where(w => w.ReportStatus == ReportStatus.Pending).ToList();
+        foreach (var report in userReports)
+        {
+            await this._adminService.PostReport(report);
+        }
+
+        await ReplyAsync("Done");
     }
 }
