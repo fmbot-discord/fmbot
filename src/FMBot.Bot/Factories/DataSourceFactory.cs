@@ -110,12 +110,11 @@ public class DataSourceFactory : IDataSourceFactory
     }
 
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2,
-        bool useCache = false, string sessionKey = null,
-        long? fromUnixTimestamp = null, int amountOfPages = 1)
+        bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1,
+        int errorRetries = 2)
     {
         var recentTracks = await this._lastfmRepository.GetRecentTracksAsync(lastFmUserName, count, useCache,
-            sessionKey,
-            fromUnixTimestamp, amountOfPages);
+            sessionKey, fromUnixTimestamp, amountOfPages, errorRetries);
 
         var importUser = await this.GetImportUserForLastFmUserName(lastFmUserName);
 

@@ -47,7 +47,8 @@ public class LastFmRepository : ILastfmRepository
 
     // Recent scrobbles
     public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2,
-        bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1)
+        bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1,
+        int errorRetries = 2)
     {
         var cacheKey = $"{lastFmUserName}-lastfm-recent-tracks";
         var queryParams = new Dictionary<string, string>
@@ -91,8 +92,7 @@ public class LastFmRepository : ILastfmRepository
             if (amountOfPages > 1 && recentTracksCall.Success &&
                 recentTracksCall.Content.RecentTracks.Track.Count >= (count - 2) && count >= 400)
             {
-                const int maxFailureRetries = 4; // Initial attempt + 3 retries
-                int[] failureDelay = [300, 2000, 5000];
+                int[] failureDelay = [500, 2500, 5000, 10000, 25000];
 
                 for (var i = 1; i < amountOfPages; i++)
                 {
@@ -103,7 +103,7 @@ public class LastFmRepository : ILastfmRepository
                     var pageFetchedSuccessfully = false;
                     var attempts = 0;
 
-                    while (attempts < maxFailureRetries && !pageFetchedSuccessfully)
+                    while (attempts < errorRetries && !pageFetchedSuccessfully)
                     {
                         if (attempts > 0)
                         {

@@ -290,7 +290,7 @@ public class IndexService
         var pages = UserHasHigherIndexLimit(user) ? 1000 : 25;
 
         var recentPlays = await this._dataSourceFactory.GetRecentTracksAsync(user.UserNameLastFM, 1000,
-            sessionKey: user.SessionKeyLastFm, amountOfPages: pages);
+            sessionKey: user.SessionKeyLastFm, amountOfPages: pages, errorRetries: 5);
 
         if (!recentPlays.Success || recentPlays.Content?.RecentTracks == null || recentPlays.Content.RecentTracks.Count == 0)
         {
