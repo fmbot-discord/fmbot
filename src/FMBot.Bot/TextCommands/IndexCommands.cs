@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -88,6 +89,10 @@ public class IndexCommands : BaseCommandModule
                     .Build();
             });
 
+            if (this.Context.Guild is SocketGuild socketGuild)
+            {
+                socketGuild.PurgeUserCache();
+            }
             this.Context.LogCommandUsed();
 
             // if (usersToFullyUpdate != null && usersToFullyUpdate.Count != 0)

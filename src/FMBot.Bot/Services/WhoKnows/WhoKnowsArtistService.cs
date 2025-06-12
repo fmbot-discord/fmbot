@@ -319,7 +319,7 @@ public class WhoKnowsArtistService
             return guildArtists;
         }
 
-        var amount = largeGuild ? 200 : 300;
+        var amount = largeGuild ? 125 : 300;
 
         var sql = "SELECT * " +
                   "FROM ( " +
@@ -355,8 +355,8 @@ public class WhoKnowsArtistService
             return guildArtists;
         }
 
-        var amount = largeGuild ? 60 : 120;
-        var amountOfDays = largeGuild ? 28 : 91;
+        var amount = largeGuild ? 50 : 120;
+        var amountOfDays = largeGuild ? 20 : 90;
 
         var sql = "SELECT * " +
                   "FROM ( " +

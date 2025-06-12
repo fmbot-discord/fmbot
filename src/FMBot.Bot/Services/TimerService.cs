@@ -246,6 +246,8 @@ public class TimerService
     {
         Log.Information($"Running {nameof(UpdateMetrics)}");
 
+        UpdateCacheMetrics();
+
         Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
         Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
         Statistics.UniqueUserCount.Set(await this._userService.GetTotalGroupedLastfmUserCountAsync());
@@ -589,12 +591,55 @@ public class TimerService
 
     public void ClearUserCache()
     {
+        UpdateCacheMetrics();
+        var usersBefore = Statistics.DiscordCachedUsersTotal.Value;
+
         var clients = this._client.Shards;
         foreach (var socketClient in clients)
         {
             socketClient.PurgeUserCache();
         }
-        Log.Information("Purged discord caches");
+
+        UpdateCacheMetrics();
+        var usersAfter = Statistics.DiscordCachedUsersTotal.Value;
+
+        Log.Information("Purged Discord caches - Users before: {usersBefore}, after: {usersAfter}, cleared: {usersCleared}",
+            usersBefore, usersAfter, usersBefore - usersAfter);
+    }
+
+    public void UpdateCacheMetrics()
+    {
+        try
+        {
+            var totalCachedUsers = 0;
+            var totalCachedGuilds = 0;
+
+            foreach (var shard in this._client.Shards)
+            {
+                var shardCachedUsers = 0;
+                var shardCachedGuilds = shard.Guilds.Count;
+
+                foreach (var guild in shard.Guilds)
+                {
+                    shardCachedUsers += guild.Users.Count;
+                }
+
+                totalCachedUsers += shardCachedUsers;
+                totalCachedGuilds += shardCachedGuilds;
+
+                Statistics.DiscordCachedUsersPerShard.WithLabels(shard.ShardId.ToString()).Set(shardCachedUsers);
+            }
+
+            Statistics.DiscordCachedUsersTotal.Set(totalCachedUsers);
+            Statistics.DiscordCachedGuildsTotal.Set(totalCachedGuilds);
+
+            Log.Debug("Cache metrics updated - Users: {cachedUsers}, Guilds: {cachedGuilds}",
+                totalCachedUsers, totalCachedGuilds);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error updating cache metrics");
+        }
     }
 
     public void ClearInternalLogs()

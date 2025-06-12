@@ -608,5 +608,10 @@ public class CommandHandler
         await this._indexService.StoreGuildUsers(context.Guild, guildUsers);
 
         await this._guildService.UpdateGuildIndexTimestampAsync(context.Guild, DateTime.UtcNow);
+
+        if (context.Guild is SocketGuild socketGuild)
+        {
+            socketGuild.PurgeUserCache();
+        }
     }
 }

@@ -197,4 +197,16 @@ public static class Statistics
     public static readonly Gauge ConnectedShards = Metrics
         .CreateGauge("bot_connected_shards", "Gauge of amount of shards that are connected");
 
+
+    public static readonly Gauge DiscordCachedUsersTotal = Metrics
+        .CreateGauge("discord_cached_users_total", "Total number of users cached across all shards");
+
+    public static readonly Gauge DiscordCachedUsersPerShard = Metrics
+        .CreateGauge("discord_cached_users_per_shard", "Number of users cached per shard", new GaugeConfiguration
+        {
+            LabelNames = ["shard_id"]
+        });
+
+    public static readonly Gauge DiscordCachedGuildsTotal = Metrics
+        .CreateGauge("discord_cached_guilds_total", "Total number of guilds cached across all shards");
 }

@@ -9,6 +9,7 @@ using FMBot.Bot.Services.Guild;
 using Serilog;
 using System.Text;
 using Discord;
+using Discord.WebSocket;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -67,6 +68,10 @@ public class IndexSlashCommands : InteractionModuleBase
 
             await FollowupAsync(null, [embed.Build()]);
 
+            if (this.Context.Guild is SocketGuild socketGuild)
+            {
+                socketGuild.PurgeUserCache();
+            }
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
