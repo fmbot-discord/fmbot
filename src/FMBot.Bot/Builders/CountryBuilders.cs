@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
@@ -474,18 +475,11 @@ public class CountryBuilders
             ResponseType = ResponseType.ImageWithEmbed
         };
 
-        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-
-        if (userSettings.DifferentUser)
-        {
-            userTitle =
-                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
-        }
-
-        response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artist countries for {userTitle}");
-        response.EmbedAuthor.WithUrl(
-            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}");
-        response.Embed.WithAuthor(response.EmbedAuthor);
+        var url =
+            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/artists?{timeSettings.UrlParameter}";
+        var embedTitle = new StringBuilder();
+        embedTitle.Append(
+            $"[Top {timeSettings.Description.ToLower()} artist]({url}) countries for {userSettings.DisplayName}");
 
         Response<TopArtistList> artists;
 
@@ -534,13 +528,18 @@ public class CountryBuilders
 
         var countries = await this._countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists, true);
 
-        response.Embed.WithFooter($"Country source: Musicbrainz");
-
         var image = await this._puppeteerService.GetWorldArtistMap(countries);
-
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream();
         response.FileName = "artist-map.png";
+
+        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"**{embedTitle}**"));
+        response.ComponentsContainer.AddComponent(
+            new MediaGalleryBuilder().AddItem($"attachment://{response.FileName}"));
+        response.ComponentsContainer.AddComponent(new TextDisplayBuilder("-# Country source: Musicbrainz"));
+
+        response.ResponseType = ResponseType.ComponentsV2;
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.LastFmColorRed);
 
         return response;
     }

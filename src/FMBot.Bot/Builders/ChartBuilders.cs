@@ -179,7 +179,6 @@ public class ChartBuilders
         var url =
             $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library/albums?{chartSettings.TimespanUrlString}";
         var embedTitle = new StringBuilder();
-
         embedTitle.Append(
             $"[{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart]({url}) for {userSettings.DisplayName}");
 

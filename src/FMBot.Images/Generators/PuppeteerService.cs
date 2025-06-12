@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.Text;
 using System.Text.RegularExpressions;
 using FMBot.Domain.Enums;
@@ -9,6 +10,7 @@ using PuppeteerSharp;
 using Serilog;
 using SkiaSharp;
 using SkiaSharp.HarfBuzz;
+// ReSharper disable UsingStatementResourceInitialization
 
 namespace FMBot.Images.Generators;
 
@@ -235,9 +237,12 @@ public class PuppeteerService
         {
             content = content.Replace("{{users}}", userList.ToString());
 
-            content = content.Replace("{{listeners}}", whoKnowsObjects.Count(w => w.Playcount > 0).Format(numberFormat).ToString());
-            content = content.Replace("{{plays}}", whoKnowsObjects.Sum(a => a.Playcount).Format(numberFormat).ToString());
-            content = content.Replace("{{average}}", ((int)whoKnowsObjects.Average(a => a.Playcount)).Format(numberFormat).ToString());
+            content = content.Replace("{{listeners}}",
+                whoKnowsObjects.Count(w => w.Playcount > 0).Format(numberFormat).ToString());
+            content = content.Replace("{{plays}}",
+                whoKnowsObjects.Sum(a => a.Playcount).Format(numberFormat).ToString());
+            content = content.Replace("{{average}}",
+                ((int)whoKnowsObjects.Average(a => a.Playcount)).Format(numberFormat).ToString());
         }
         else
         {
@@ -256,7 +261,8 @@ public class PuppeteerService
         return SKBitmap.FromImage(SKImage.FromEncodedData(img));
     }
 
-    private static string GetWhoKnowsLine(string position, string name, int plays, NumberFormat numberFormat, bool self = false)
+    private static string GetWhoKnowsLine(string position, string name, int plays, NumberFormat numberFormat,
+        bool self = false)
     {
         name = name.Length > 18 ? $"{name[..17]}.." : name;
         var cssClass = self ? "num own-num" : "num";
@@ -391,7 +397,8 @@ public class PuppeteerService
         return SKBitmap.FromImage(SKImage.FromEncodedData(img));
     }
 
-    private static string GetTopLine(string position, string name, long plays, HtmlSanitizer htmlSanitizer, NumberFormat numberFormat)
+    private static string GetTopLine(string position, string name, long plays, HtmlSanitizer htmlSanitizer,
+        NumberFormat numberFormat)
     {
         name = htmlSanitizer.Sanitize(name);
         name = name.Length > 28 ? $"{name[..27]}.." : name;
@@ -542,82 +549,126 @@ public class PuppeteerService
 
     private static void AddCountryListToMap(SKBitmap chartImage, List<GroupedCountries> lines)
     {
-        const int textSize = 35;
+        var typeface =
+            SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sourcehansans-medium.otf"));
 
-        var typeface = SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf"));
-
-        using var textPaint = new SKPaint
+        using var titleFont = new SKFont(typeface, 42);
+        using var titlePaint = new SKPaint
         {
-            TextSize = textSize,
             IsAntialias = true,
-            TextAlign = SKTextAlign.Center,
-            Color = SKColors.Black,
-
-            Typeface = typeface
+            Color = SKColors.White,
+            Style = SKPaintStyle.Fill
         };
 
-        using var promoTextPaint = new SKPaint
+        using var subtitleFont = new SKFont(typeface, 28);
+        using var subtitlePaint = new SKPaint
         {
-            TextSize = 16,
             IsAntialias = true,
-            TextAlign = SKTextAlign.Center,
-            Color = SKColors.Black,
-            Typeface = typeface
+            Color = new SKColor(220, 220, 220), // Slightly muted white
+            Style = SKPaintStyle.Fill
         };
 
-        textPaint.TextSize = textSize;
-
-        using var rectanglePaint = new SKPaint
+        using var legendFont = new SKFont(typeface, 28);
+        using var legendTextPaint = new SKPaint
         {
-            TextAlign = SKTextAlign.Center,
-            Color = new SKColor(244, 244, 244),
             IsAntialias = true,
+            Color = SKColors.White,
+            Style = SKPaintStyle.Fill
+        };
+
+        using var legendStrokePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 4,
+            Color = new SKColor(0, 0, 0, 180) // Semi-transparent black stroke
+        };
+
+        using var backgroundPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = new SKColor(20, 20, 30, 240), // Dark with transparency
+            Style = SKPaintStyle.Fill
+        };
+
+        using var borderPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2,
+            Color = new SKColor(80, 80, 100, 200)
         };
 
         using var bitmapCanvas = new SKCanvas(chartImage);
+        using var shaper = new SKShaper(typeface);
 
-        const int lineHeight = 65;
+        const int padding = 40;
+        const int legendItemHeight = 55;
+        const int colorBoxSize = 40;
+        const int colorBoxMargin = 20;
 
-        const int rectangleLeft = 100;
-        const int rectangleRight = 440;
-        const int rectangleTop = 700;
-        const int rectangleBottom = 1350;
+        const int legendWidth = 400;
+        var legendHeight = 120 + (lines.Count * legendItemHeight) + 80; // Header + items + footer
 
-        var backgroundRectangle = new SKRect(rectangleLeft, rectangleTop, rectangleRight,
-            rectangleBottom - (lineHeight * (7 - lines.Count)));
+        const int legendLeft = 80;
+        var legendTop = chartImage.Height - legendHeight - 80;
 
-        bitmapCanvas.DrawRoundRect(backgroundRectangle, 12, 12, rectanglePaint);
+        var backgroundRect = new SKRect(legendLeft - padding, legendTop - padding,
+            legendLeft + legendWidth + padding, legendTop + legendHeight + padding);
+        bitmapCanvas.DrawRoundRect(backgroundRect, 20, 20, backgroundPaint);
+        bitmapCanvas.DrawRoundRect(backgroundRect, 20, 20, borderPaint);
 
-        bitmapCanvas.DrawShapedText($"Artists per country", rectangleLeft + 170, rectangleTop + 58, textPaint);
+        var titleY = legendTop + 50;
+        bitmapCanvas.DrawShapedText(shaper, "Artists per country",
+            legendLeft + legendWidth / 2, titleY,
+            SKTextAlign.Center, titleFont, titlePaint);
 
-        for (var index = 0; index < lines.Count; index++)
+        var currentY = titleY + 80;
+
+        foreach (var line in lines)
         {
-            var line = lines[index];
-            using var colorRectanglePaint = new SKPaint
+            using var colorFillPaint = new SKPaint
             {
-                TextAlign = SKTextAlign.Center,
+                IsAntialias = true,
                 Color = new SKColor(73, 125, 255, (byte)(line.Opacity * 255)),
-                IsAntialias = true
+                Style = SKPaintStyle.Fill
             };
-            using var colorRectanglePaintBackground = new SKPaint
-            {
-                TextAlign = SKTextAlign.Center,
-                Color = new SKColor(0, 0, 15),
-                IsAntialias = true
-            };
-            var colorRectangle = new SKRect(rectangleLeft + 25, rectangleTop + 100 + (index * lineHeight),
-                rectangleLeft + 90, rectangleTop + 132 + (index * lineHeight));
-            bitmapCanvas.DrawRoundRect(colorRectangle, 8, 8, colorRectanglePaintBackground);
-            bitmapCanvas.DrawRoundRect(colorRectangle, 8, 8, colorRectanglePaint);
 
-            var text = line.MinAmount == line.MaxAmount ? $"{line.MinAmount}" : $"{line.MinAmount} - {line.MaxAmount}";
-            bitmapCanvas.DrawShapedText(text, rectangleLeft + 200, rectangleTop + 129 + (index * 65), textPaint);
+            using var colorBorderPaint = new SKPaint
+            {
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2,
+                Color = SKColors.White
+            };
+
+            var colorRect = new SKRect(legendLeft + colorBoxMargin, currentY - colorBoxSize + 12,
+                legendLeft + colorBoxMargin + colorBoxSize, currentY + 12);
+
+            bitmapCanvas.DrawRoundRect(colorRect, 8, 8, colorFillPaint);
+            bitmapCanvas.DrawRoundRect(colorRect, 8, 8, colorBorderPaint);
+
+            var text = line.MinAmount == line.MaxAmount ? $"{line.MinAmount}" : $"{line.MaxAmount} - {line.MinAmount}";
+            const int textX = legendLeft + colorBoxMargin + colorBoxSize + 30;
+
+            bitmapCanvas.DrawShapedText(shaper, text, textX, currentY,
+                SKTextAlign.Left, legendFont, legendStrokePaint);
+            bitmapCanvas.DrawShapedText(shaper, text, textX, currentY,
+                SKTextAlign.Left, legendFont, legendTextPaint);
+
+            currentY += legendItemHeight;
         }
 
-        bitmapCanvas.DrawShapedText($"{lines.SelectMany(s => s.CountryCodes).Count()} countries", rectangleLeft + 170,
-            rectangleTop + 140 + ((lines.Count) * lineHeight), textPaint);
-        bitmapCanvas.DrawShapedText($"Generated by .fmbot", rectangleLeft + 170,
-            rectangleTop + 170 + ((lines.Count) * lineHeight), promoTextPaint);
+        var totalCountries = lines.SelectMany(s => s.CountryCodes).Count();
+        var footerY = currentY + 40;
+
+        bitmapCanvas.DrawShapedText(shaper, $"{totalCountries} countries",
+            legendLeft + legendWidth / 2, footerY,
+            SKTextAlign.Center, subtitleFont, subtitlePaint);
+
+        bitmapCanvas.DrawShapedText(shaper, "Generated by .fmbot",
+            legendLeft + legendWidth / 2, footerY + 35,
+            SKTextAlign.Center, subtitleFont, subtitlePaint);
     }
 
     private const int ImageWidth = 1241;
@@ -663,87 +714,88 @@ public class PuppeteerService
 
 
     public void CreatePopularityIcebergImage(SKBitmap chartImage, string username, string timePeriod,
-    List<ArtistPopularity> artists)
-{
-    var typeface = SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sourcehansans-medium.otf"));
-
-    using var bitmapCanvas = new SKCanvas(chartImage);
-
-    using var titleFont = new SKFont(typeface, 90);
-    using var titlePaint = new SKPaint
+        List<ArtistPopularity> artists)
     {
-        IsAntialias = true,
-        Color = SKColors.Black,
-        Style = SKPaintStyle.Fill
-    };
+        var typeface =
+            SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sourcehansans-medium.otf"));
 
-    bitmapCanvas.DrawShapedText($"{username}'s", 590, 198, SKTextAlign.Center, titleFont, titlePaint);
+        using var bitmapCanvas = new SKCanvas(chartImage);
 
-    titleFont.Size = 60;
-    bitmapCanvas.DrawShapedText($"iceberg", 830, 262, SKTextAlign.Center, titleFont, titlePaint);
-
-    titleFont.Size = 42;
-    bitmapCanvas.DrawShapedText(timePeriod, 980, 415, SKTextAlign.Center, titleFont, titlePaint);
-
-    using var artistFont = new SKFont(typeface, 38);
-    using var artistTextPaint = new SKPaint
-    {
-        IsAntialias = true,
-        Color = SKColors.Black,
-        Style = SKPaintStyle.Fill
-    };
-
-    using var artistStrokePaint = new SKPaint
-    {
-        IsAntialias = true,
-        Style = SKPaintStyle.Stroke,
-        StrokeWidth = 10,
-        Color = SKColors.White
-    };
-
-    const float sectionRange = 100f / TotalSections;
-    const float totalAvailableHeight = LastArtistY - FirstArtistY;
-
-    using var shaper = new SKShaper(typeface);
-
-    for (var section = 0; section < TotalSections; section++)
-    {
-        var maxPopularity = 100 - (section * sectionRange);
-        var minPopularity = maxPopularity - sectionRange;
-
-        var minPlaycount = artists.Count(c => c.Playcount >= 15) > 100 ? 15 : 5;
-
-        var sectionArtists = artists
-            .Where(a =>
-                a.Playcount >= minPlaycount &&
-                a.Popularity > minPopularity && a.Popularity <= maxPopularity)
-            .OrderByDescending(a => a.Playcount)
-            .Take(5)
-            .OrderByDescending(a => a.Name.Length)
-            .ToList();
-
-        var sectionY = FirstArtistY + (section * (totalAvailableHeight / TotalSections));
-        var positions = GenerateArtistNamePositions(sectionY, sectionArtists.Count);
-
-        for (var i = 0; i < sectionArtists.Count; i++)
+        using var titleFont = new SKFont(typeface, 90);
+        using var titlePaint = new SKPaint
         {
-            var position = positions[i];
-            var isWhiteText = position.Y >= TextColorChangeY;
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Fill
+        };
 
-            if (isWhiteText)
+        bitmapCanvas.DrawShapedText($"{username}'s", 590, 198, SKTextAlign.Center, titleFont, titlePaint);
+
+        titleFont.Size = 60;
+        bitmapCanvas.DrawShapedText($"iceberg", 830, 262, SKTextAlign.Center, titleFont, titlePaint);
+
+        titleFont.Size = 42;
+        bitmapCanvas.DrawShapedText(timePeriod, 980, 415, SKTextAlign.Center, titleFont, titlePaint);
+
+        using var artistFont = new SKFont(typeface, 38);
+        using var artistTextPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Fill
+        };
+
+        using var artistStrokePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 10,
+            Color = SKColors.White
+        };
+
+        const float sectionRange = 100f / TotalSections;
+        const float totalAvailableHeight = LastArtistY - FirstArtistY;
+
+        using var shaper = new SKShaper(typeface);
+
+        for (var section = 0; section < TotalSections; section++)
+        {
+            var maxPopularity = 100 - (section * sectionRange);
+            var minPopularity = maxPopularity - sectionRange;
+
+            var minPlaycount = artists.Count(c => c.Playcount >= 15) > 100 ? 15 : 5;
+
+            var sectionArtists = artists
+                .Where(a =>
+                    a.Playcount >= minPlaycount &&
+                    a.Popularity > minPopularity && a.Popularity <= maxPopularity)
+                .OrderByDescending(a => a.Playcount)
+                .Take(5)
+                .OrderByDescending(a => a.Name.Length)
+                .ToList();
+
+            var sectionY = FirstArtistY + (section * (totalAvailableHeight / TotalSections));
+            var positions = GenerateArtistNamePositions(sectionY, sectionArtists.Count);
+
+            for (var i = 0; i < sectionArtists.Count; i++)
             {
-                artistTextPaint.Color = SKColors.White;
-                artistStrokePaint.Color = SKColor.Parse("#001B3A");
+                var position = positions[i];
+                var isWhiteText = position.Y >= TextColorChangeY;
+
+                if (isWhiteText)
+                {
+                    artistTextPaint.Color = SKColors.White;
+                    artistStrokePaint.Color = SKColor.Parse("#001B3A");
+
+                    bitmapCanvas.DrawShapedText(shaper, sectionArtists[i].Name, position.X, position.Y,
+                        SKTextAlign.Center, artistFont, artistStrokePaint);
+                }
 
                 bitmapCanvas.DrawShapedText(shaper, sectionArtists[i].Name, position.X, position.Y,
-                    SKTextAlign.Center, artistFont, artistStrokePaint);
+                    SKTextAlign.Center, artistFont, artistTextPaint);
             }
-
-            bitmapCanvas.DrawShapedText(shaper, sectionArtists[i].Name, position.X, position.Y,
-                SKTextAlign.Center, artistFont, artistTextPaint);
         }
     }
-}
 
     public async Task<string> GetAppleToken()
     {
