@@ -262,7 +262,7 @@ public class AlbumService
                     lastFmUserName);
             }
 
-            if (interactionId is not null)
+            if (albumInfo?.Content != null && interactionId is not null)
             {
                 PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, albumInfo.Content.ArtistName);
                 if (albumInfo.Content.AlbumName != null)
@@ -275,6 +275,14 @@ public class AlbumService
                     Artist = albumInfo.Content.ArtistName,
                     Album = albumInfo.Content.AlbumName
                 };
+            }
+
+            if (albumInfo?.Content == null || !albumInfo.Success)
+            {
+                response.Embed.ErrorResponse(albumInfo.Error, albumInfo.Message, null, discordUser, "album");
+                response.CommandResponse = CommandResponse.LastFmError;
+                response.ResponseType = ResponseType.Embed;
+                return new AlbumSearch(null, response);
             }
 
             return new AlbumSearch(albumInfo.Content, response);

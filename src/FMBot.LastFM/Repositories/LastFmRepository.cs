@@ -686,7 +686,7 @@ public class LastFmRepository : ILastfmRepository
         }
 
         var firstValidAlbum = albumSearch.Content
-            .FirstOrDefault(album => !IsArtistBlocked(album.ArtistName));
+            .FirstOrDefault(album => !IsArtistBlocked(album.ArtistName) && album.Name != "(null)");
 
         if (firstValidAlbum == null)
         {
