@@ -27,7 +27,7 @@ using Web.InternalApi;
 namespace FMBot.Bot.Services;
 
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-public class TimerService
+public class TimerService : IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly UserService _userService;
@@ -411,6 +411,7 @@ public class TimerService
         if (this._updateQueueCancellationToken != null)
         {
             await this._updateQueueCancellationToken.CancelAsync();
+            this._updateQueueCancellationToken.Dispose();
             Log.Information("Cancelled previous update queue");
         }
 
@@ -668,5 +669,12 @@ public class TimerService
     public async Task UpdateBotLists()
     {
         await this._botListService.UpdateBotLists();
+    }
+
+    public void Dispose()
+    {
+        this._updateQueueCancellationToken?.Dispose();
+        this._updateQueueHandler?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

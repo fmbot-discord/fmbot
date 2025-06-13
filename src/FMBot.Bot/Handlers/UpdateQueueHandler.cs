@@ -70,17 +70,9 @@ public class UpdateQueueHandler : IDisposable
         }
     }
 
-    private async Task CompletionTaskAsync(List<Task> tasks)
+    private static async Task CompletionTaskAsync(List<Task> tasks)
     {
-        var completionSource = new TaskCompletionSource<bool>();
-        foreach (var task in tasks)
-        {
-            _ = task.ContinueWith(t =>
-            {
-                completionSource.TrySetResult(true);
-            }, TaskContinuationOptions.ExecuteSynchronously);
-        }
-        await completionSource.Task;
+        await Task.WhenAny(tasks);
         tasks.RemoveAll(t => t.IsCompleted);
     }
 
@@ -107,5 +99,6 @@ public class UpdateQueueHandler : IDisposable
     public void Dispose()
     {
         _semaphore.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
