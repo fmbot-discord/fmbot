@@ -8,10 +8,10 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using AngleSharp.Css.Values;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Discord;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
@@ -459,18 +459,18 @@ public class ImportService
         return null;
     }
 
-    public string StoreImportEdit(ImportEdit importEdit)
+    public string StoreImportReference(ReferencedMusic importEdit)
     {
-        var id = Guid.NewGuid().ToString();
+        var id = CommandContextExtensions.GenerateRandomCode();
 
-        this._cache.Set($"import-edit-{id}", importEdit);
+        this._cache.Set($"impref-{id}", importEdit);
 
         return id;
     }
 
-    public ImportEdit GetImportEdit(string id)
+    public ReferencedMusic GetImportRef(string id)
     {
-        return this._cache.Get<ImportEdit>($"import-edit-{id}");
+        return this._cache.Get<ReferencedMusic>($"impref-{id}");
     }
 
     public async Task RenameArtistImports(User user, string oldArtistName, string newArtistName)

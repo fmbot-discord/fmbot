@@ -14,6 +14,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using Fergun.Interactive;
 using FMBot.Domain.Attributes;
+using FMBot.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -233,7 +234,10 @@ public class ImportSlashCommands : InteractionModuleBase
             await DeferAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._importBuilders.PickArtist(contextUser.UserId, contextUser.NumberFormat ?? NumberFormat.NoSeparator, modal.ArtistName);
+            var importRef = this._importService.StoreImportReference(new ReferencedMusic { Artist = modal.ArtistName });
+
+            var response = await this._importBuilders.PickArtist(contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator, importRef);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -253,11 +257,13 @@ public class ImportSlashCommands : InteractionModuleBase
             await DeferAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
+            var importRef = this._importService.StoreImportReference(new ReferencedMusic
+                { Artist = modal.ArtistName, Album = modal.AlbumName });
+
             var response = await this._importBuilders.PickAlbum(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                modal.ArtistName,
-                modal.AlbumName);
+                importRef);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -277,11 +283,13 @@ public class ImportSlashCommands : InteractionModuleBase
             await DeferAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
+            var importRef = this._importService.StoreImportReference(new ReferencedMusic
+                { Artist = modal.ArtistName, Track = modal.TrackName });
+
             var response = await this._importBuilders.PickTrack(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                modal.ArtistName,
-                modal.TrackName);
+                importRef);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -293,14 +301,16 @@ public class ImportSlashCommands : InteractionModuleBase
     }
 
     [ComponentInteraction($"{InteractionConstants.ImportModify.ArtistRename}——*")]
-    public async Task RenameArtistImportedPlays(string selectedArtistName)
+    public async Task RenameArtistImportedPlays(string selectedArtistRef)
     {
         try
         {
+            var selectedArtist = this._importService.GetImportRef(selectedArtistRef)?.Artist;
+
             var mb = new ModalBuilder()
                 .WithTitle($"Editing artist")
-                .WithCustomId($"{InteractionConstants.ImportModify.ArtistRenameModal}——{selectedArtistName}")
-                .AddTextInput("New artist name", "artist_name", placeholder: "The Beatles", value: selectedArtistName);
+                .WithCustomId($"{InteractionConstants.ImportModify.ArtistRenameModal}——{selectedArtistRef}")
+                .AddTextInput("New artist name", "artist_name", placeholder: "The Beatles", value: selectedArtist);
 
             await Context.Interaction.RespondWithModalAsync(mb.Build());
             this.Context.LogCommandUsed();
@@ -312,7 +322,7 @@ public class ImportSlashCommands : InteractionModuleBase
     }
 
     [ModalInteraction($"{InteractionConstants.ImportModify.ArtistRenameModal}——*")]
-    public async Task RenameArtist(string selectedArtistName, RenameArtistModal modal)
+    public async Task RenameArtist(string selectedArtistRef, RenameArtistModal modal)
     {
         try
         {
@@ -320,16 +330,19 @@ public class ImportSlashCommands : InteractionModuleBase
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
+            var newArtistRef =
+                this._importService.StoreImportReference(new ReferencedMusic { Artist = modal.ArtistName });
+
             var response = await this._importBuilders.PickArtist(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                selectedArtistName,
-                modal.ArtistName);
+                selectedArtistRef,
+                newArtistRef);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
                 e.Embed = response.Embed.Build();
-                e.Components = response.Components.Build();
+                e.Components = response.Components?.Build();
             });
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -341,7 +354,7 @@ public class ImportSlashCommands : InteractionModuleBase
     }
 
     [ComponentInteraction($"{InteractionConstants.ImportModify.ArtistRenameConfirmed}——*——*")]
-    public async Task RenameArtistConfirmed(string selectedArtistName, string newArtistName)
+    public async Task RenameArtistConfirmed(string selectedArtistRef, string newArtistRef)
     {
         try
         {
@@ -349,14 +362,20 @@ public class ImportSlashCommands : InteractionModuleBase
             await EditToLoader("Editing selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            await this._importService.RenameArtistImports(contextUser, selectedArtistName, newArtistName);
+            var selectedArtist = this._importService.GetImportRef(selectedArtistRef)?.Artist;
+            var newArtist = this._importService.GetImportRef(newArtistRef)?.Artist;
+
+            if (selectedArtist != null && newArtist != null)
+            {
+                await this._importService.RenameArtistImports(contextUser, selectedArtist, newArtist);
+            }
 
             var response = await this._importBuilders.PickArtist(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                newArtistName,
-                newArtistName,
-                selectedArtistName);
+                newArtistRef,
+                newArtistRef,
+                selectedArtistRef);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
@@ -373,7 +392,7 @@ public class ImportSlashCommands : InteractionModuleBase
     }
 
     [ComponentInteraction($"{InteractionConstants.ImportModify.ArtistDelete}——*")]
-    public async Task DeleteArtist(string artistName)
+    public async Task DeleteArtist(string artistRef)
     {
         try
         {
@@ -384,7 +403,7 @@ public class ImportSlashCommands : InteractionModuleBase
             var response = await this._importBuilders.PickArtist(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                artistName,
+                artistRef,
                 deletion: false);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
@@ -402,7 +421,7 @@ public class ImportSlashCommands : InteractionModuleBase
     }
 
     [ComponentInteraction($"{InteractionConstants.ImportModify.ArtistDeleteConfirmed}——*")]
-    public async Task DeleteArtistConfirmed(string artistName)
+    public async Task DeleteArtistConfirmed(string artistRef)
     {
         try
         {
@@ -410,12 +429,17 @@ public class ImportSlashCommands : InteractionModuleBase
             await EditToLoader("Deleting selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            await this._importService.DeleteArtistImports(contextUser, artistName);
+            var artist = this._importService.GetImportRef(artistRef)?.Artist;
+
+            if (artist != null)
+            {
+                await this._importService.DeleteArtistImports(contextUser, artist);
+            }
 
             var response = await this._importBuilders.PickArtist(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                artistName,
+                artistRef,
                 deletion: true);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
@@ -432,16 +456,18 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumRename}-*——*")]
-    public async Task RenameAlbumImportedPlays(string selectedArtistName, string selectedAlbumName)
+    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumRename}——*")]
+    public async Task RenameAlbumImportedPlays(string selectedAlbumRef)
     {
         try
         {
+            var selectedAlbum = this._importService.GetImportRef(selectedAlbumRef);
+
             var mb = new ModalBuilder()
                 .WithTitle($"Editing album")
-                .WithCustomId($"{InteractionConstants.ImportModify.AlbumRenameModal}-{selectedArtistName}——{selectedAlbumName}")
-                .AddTextInput("Artist name", "artist_name", placeholder: "The Beatles", value: selectedArtistName)
-                .AddTextInput("Album name", "album_name", placeholder: "Abbey Road", value: selectedAlbumName);
+                .WithCustomId($"{InteractionConstants.ImportModify.AlbumRenameModal}——{selectedAlbumRef}")
+                .AddTextInput("Artist name", "artist_name", placeholder: "The Beatles", value: selectedAlbum?.Artist)
+                .AddTextInput("Album name", "album_name", placeholder: "Abbey Road", value: selectedAlbum?.Album);
 
             await Context.Interaction.RespondWithModalAsync(mb.Build());
             this.Context.LogCommandUsed();
@@ -452,8 +478,8 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    [ModalInteraction($"{InteractionConstants.ImportModify.AlbumRenameModal}-*——*")]
-    public async Task RenameAlbum(string selectedArtistName, string selectedAlbumName, RenameAlbumModal modal)
+    [ModalInteraction($"{InteractionConstants.ImportModify.AlbumRenameModal}——*")]
+    public async Task RenameAlbum(string selectedAlbumRef, RenameAlbumModal modal)
     {
         try
         {
@@ -461,48 +487,14 @@ public class ImportSlashCommands : InteractionModuleBase
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._importBuilders.PickAlbum(
-                contextUser.UserId,
-                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                selectedArtistName,
-                selectedAlbumName,
-                modal.ArtistName,
-                modal.AlbumName);
-
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
-            {
-                e.Embed = response.Embed.Build();
-                e.Components = response.Components.Build();
-            });
-
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumRenameConfirmed}-*——*——*——*")]
-    public async Task RenameAlbumConfirmed(string selectedArtistName, string selectedAlbumName, string newArtistName, string newAlbumName)
-    {
-        try
-        {
-            await DeferAsync();
-            await EditToLoader("Editing selected imports...");
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            await this._importService.RenameAlbumImports(contextUser, selectedArtistName, selectedAlbumName, newArtistName, newAlbumName);
+            var newAlbumRef = this._importService.StoreImportReference(new ReferencedMusic
+                { Artist = modal.ArtistName, Album = modal.AlbumName });
 
             var response = await this._importBuilders.PickAlbum(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                newArtistName,
-                newAlbumName,
-                null,
-                null,
-                selectedArtistName,
-                selectedAlbumName);
+                selectedAlbumRef,
+                newAlbumRef);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
@@ -518,8 +510,47 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumDelete}-*——*")]
-    public async Task DeleteAlbum(string artistName, string albumName)
+    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumRenameConfirmed}——*——*")]
+    public async Task RenameAlbumConfirmed(string selectedAlbumRef, string newAlbumRef)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader("Editing selected imports...");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var selectedAlbum = this._importService.GetImportRef(selectedAlbumRef);
+            var newAlbum = this._importService.GetImportRef(newAlbumRef);
+
+            if (selectedAlbum != null && newAlbum != null)
+            {
+                await this._importService.RenameAlbumImports(contextUser, selectedAlbum.Artist, selectedAlbum.Album,
+                    newAlbum.Artist, newAlbum.Album);
+            }
+
+            var response = await this._importBuilders.PickAlbum(
+                contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
+                newAlbumRef,
+                newAlbumRef,
+                selectedAlbumRef);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumDelete}——*")]
+    public async Task DeleteAlbum(string albumRef)
     {
         try
         {
@@ -530,8 +561,7 @@ public class ImportSlashCommands : InteractionModuleBase
             var response = await this._importBuilders.PickAlbum(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                artistName,
-                albumName,
+                albumRef,
                 deletion: false);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
@@ -548,8 +578,8 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumDeleteConfirmed}-*——*")]
-    public async Task DeleteAlbumConfirmed(string artistName, string albumName)
+    [ComponentInteraction($"{InteractionConstants.ImportModify.AlbumDeleteConfirmed}——*")]
+    public async Task DeleteAlbumConfirmed(string albumRef)
     {
         try
         {
@@ -557,13 +587,17 @@ public class ImportSlashCommands : InteractionModuleBase
             await EditToLoader("Deleting selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            await this._importService.DeleteAlbumImports(contextUser, artistName, albumName);
+            var album = this._importService.GetImportRef(albumRef);
+
+            if (album != null)
+            {
+                await this._importService.DeleteAlbumImports(contextUser, album.Artist, album.Album);
+            }
 
             var response = await this._importBuilders.PickAlbum(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                artistName,
-                albumName,
+                albumRef,
                 deletion: true);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
@@ -580,16 +614,18 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackRename}-*——*")]
-    public async Task RenameTrackImportedPlays(string selectedArtistName, string selectedTrackName)
+    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackRename}——*")]
+    public async Task RenameTrackImportedPlays(string selectedTrackRef)
     {
         try
         {
+            var selectedTrack = this._importService.GetImportRef(selectedTrackRef);
+
             var mb = new ModalBuilder()
                 .WithTitle($"Editing track")
-                .WithCustomId($"{InteractionConstants.ImportModify.TrackRenameModal}-{selectedArtistName}——{selectedTrackName}")
-                .AddTextInput("Artist name", "artist_name", placeholder: "The Beatles", value: selectedArtistName)
-                .AddTextInput("Track name", "track_name", placeholder: "Yesterday", value: selectedTrackName);
+                .WithCustomId($"{InteractionConstants.ImportModify.TrackRenameModal}——{selectedTrackRef}")
+                .AddTextInput("Artist name", "artist_name", placeholder: "The Beatles", value: selectedTrack?.Artist)
+                .AddTextInput("Track name", "track_name", placeholder: "Yesterday", value: selectedTrack?.Track);
 
             await Context.Interaction.RespondWithModalAsync(mb.Build());
             this.Context.LogCommandUsed();
@@ -600,8 +636,8 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    [ModalInteraction($"{InteractionConstants.ImportModify.TrackRenameModal}-*——*")]
-    public async Task RenameTrack(string selectedArtistName, string selectedTrackName, RenameTrackModal modal)
+    [ModalInteraction($"{InteractionConstants.ImportModify.TrackRenameModal}——*")]
+    public async Task RenameTrack(string selectedTrackRef, RenameTrackModal modal)
     {
         try
         {
@@ -609,48 +645,14 @@ public class ImportSlashCommands : InteractionModuleBase
             await EditToLoader();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._importBuilders.PickTrack(
-                contextUser.UserId,
-                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                selectedArtistName,
-                selectedTrackName,
-                modal.ArtistName,
-                modal.TrackName);
-
-            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
-            {
-                e.Embed = response.Embed.Build();
-                e.Components = response.Components.Build();
-            });
-
-            this.Context.LogCommandUsed(response.CommandResponse);
-        }
-        catch (Exception e)
-        {
-            await this.Context.HandleCommandException(e);
-        }
-    }
-
-    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackRenameConfirmed}-*——*——*——*")]
-    public async Task RenameTrackConfirmed(string selectedArtistName, string selectedTrackName, string newArtistName, string newTrackName)
-    {
-        try
-        {
-            await DeferAsync();
-            await EditToLoader("Editing selected imports...");
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            await this._importService.RenameTrackImports(contextUser, selectedArtistName, selectedTrackName, newArtistName, newTrackName);
+            var newTrackRef = this._importService.StoreImportReference(new ReferencedMusic
+                { Artist = modal.ArtistName, Track = modal.TrackName });
 
             var response = await this._importBuilders.PickTrack(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                newArtistName,
-                newTrackName,
-                null,
-                null,
-                selectedArtistName,
-                selectedTrackName);
+                selectedTrackRef,
+                newTrackRef);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
@@ -666,8 +668,47 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackDelete}-*——*")]
-    public async Task DeleteTrack(string artistName, string trackName)
+    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackRenameConfirmed}——*——*")]
+    public async Task RenameTrackConfirmed(string selectedTrackRef, string newTrackRef)
+    {
+        try
+        {
+            await DeferAsync();
+            await EditToLoader("Editing selected imports...");
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var selectedTrack = this._importService.GetImportRef(selectedTrackRef);
+            var newTrack = this._importService.GetImportRef(newTrackRef);
+
+            if (selectedTrack != null && newTrack != null)
+            {
+                await this._importService.RenameTrackImports(contextUser, selectedTrack.Artist, selectedTrack.Track,
+                    newTrack.Artist, newTrack.Track);
+            }
+
+            var response = await this._importBuilders.PickTrack(
+                contextUser.UserId,
+                contextUser.NumberFormat ?? NumberFormat.NoSeparator,
+                newTrackRef,
+                newTrackRef,
+                selectedTrackRef);
+
+            await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
+            {
+                e.Embed = response.Embed.Build();
+                e.Components = response.Components?.Build();
+            });
+
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackDelete}——*")]
+    public async Task DeleteTrack(string trackRef)
     {
         try
         {
@@ -678,8 +719,7 @@ public class ImportSlashCommands : InteractionModuleBase
             var response = await this._importBuilders.PickTrack(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                artistName,
-                trackName,
+                trackRef,
                 deletion: false);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
@@ -696,8 +736,8 @@ public class ImportSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackDeleteConfirmed}-*——*")]
-    public async Task DeleteTrackConfirmed(string artistName, string trackName)
+    [ComponentInteraction($"{InteractionConstants.ImportModify.TrackDeleteConfirmed}——*")]
+    public async Task DeleteTrackConfirmed(string trackRef)
     {
         try
         {
@@ -705,13 +745,17 @@ public class ImportSlashCommands : InteractionModuleBase
             await EditToLoader("Deleting selected imports...");
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            await this._importService.DeleteTrackImports(contextUser, artistName, trackName);
+            var track = this._importService.GetImportRef(trackRef);
+
+            if (track != null)
+            {
+                await this._importService.DeleteTrackImports(contextUser, track.Artist, track.Track);
+            }
 
             var response = await this._importBuilders.PickTrack(
                 contextUser.UserId,
                 contextUser.NumberFormat ?? NumberFormat.NoSeparator,
-                artistName,
-                trackName,
+                trackRef,
                 deletion: true);
 
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
@@ -732,7 +776,8 @@ public class ImportSlashCommands : InteractionModuleBase
     {
         await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
         {
-            e.Components = new ComponentBuilder().WithButton(text, customId: "0", emote: Emote.Parse(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary).Build();
+            e.Components = new ComponentBuilder().WithButton(text, customId: "0",
+                emote: Emote.Parse(DiscordConstants.Loading), disabled: true, style: ButtonStyle.Secondary).Build();
         });
     }
 }

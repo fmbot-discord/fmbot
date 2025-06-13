@@ -7,10 +7,10 @@ public class ImportEdit
     public string OldArtistName { get; set; }
     public string NewArtistName { get; set; }
 
-    public string OldAlbumName { get; set; }
+    public string AlbumName { get; set; }
     public string NewAlbumName { get; set; }
 
-    public string OldTrackName { get; set; }
+    public string TrackName { get; set; }
     public string NewTrackName { get; set; }
 
     public int OldPlaycount { get; set; }
