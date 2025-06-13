@@ -373,7 +373,7 @@ public class ImportBuilders
         {
             if (deletion == true)
             {
-                response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
                 response.Embed.AddField("Imports deleted",
                     $"Your imports for this artist have been deleted.");
             }
@@ -417,7 +417,7 @@ public class ImportBuilders
             }
             else
             {
-                response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
                 response.Embed.AddField("Imports successfully edited ✅",
                     $"`{oldArtistName}` to `{newArtistName}`");
                 response.Embed.AddField("Note about future imports",
@@ -528,7 +528,7 @@ public class ImportBuilders
             }
             else
             {
-                response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
                 response.Embed.AddField("Imports successfully edited ✅",
                     $"`{oldAlbumRef.Album}` by `{oldAlbumRef.Artist}` to `{newAlbumRef.Album}` by `{newAlbumRef.Artist}`");
                 response.Embed.AddField("Note about future imports",
@@ -638,7 +638,7 @@ public class ImportBuilders
             }
             else
             {
-                response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+                response.Embed.WithColor(DiscordConstants.SuccessColorGreen);
                 response.Embed.AddField("Imports successfully edited ✅",
                     $"`{oldTrackRef.Track}` by `{oldTrackRef.Artist}` to `{newTrackRef.Track}` by `{newTrackRef.Artist}`");
                 response.Embed.AddField("Note about future imports",
