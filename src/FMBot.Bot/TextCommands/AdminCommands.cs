@@ -3164,7 +3164,12 @@ Not following these rules might lead to a mute, kick or ban. Staff members can b
         await ReplyAsync("Reposting open reports...");
 
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var musicReports = db.CensoredMusicReport.Where(w => w.ReportStatus == ReportStatus.Pending).ToList();
+        var musicReports = db.CensoredMusicReport
+            .Where(w => w.ReportStatus == ReportStatus.Pending)
+            .Include(i => i.Album)
+            .Include(i => i.Artist)
+            .ToList();
+
         foreach (var report in musicReports)
         {
             await this._censorService.PostReport(report);
