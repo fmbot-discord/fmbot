@@ -1,7 +1,7 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 FROM mcr.microsoft.com/dotnet/runtime:9.0-noble-amd64 AS base
-RUN apt-get update -y && apt-get install -y libgdiplus software-properties-common
+RUN apt-get update -y && apt-get install -y libgdiplus software-properties-common curl
 RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg7 && apt update -y && apt install ffmpeg -y
 
 WORKDIR /app
@@ -26,6 +26,13 @@ ENV PUPPETEER_EXECUTABLE_PATH "/usr/bin/google-chrome-stable"
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
+
+# Install dotnet diagnostic tools
+RUN dotnet tool install --global dotnet-dump
+RUN dotnet tool install --global dotnet-counters
+RUN dotnet tool install --global dotnet-trace
+RUN dotnet tool install --global dotnet-gcdump
+
 COPY ["src/FMBot.Bot", "FMBot.Bot/"]
 COPY ["src/FMBot.Images", "FMBot.Images/"]
 COPY ["src/FMBot.Persistence.Domain", "FMBot.Persistence.Domain/"]
@@ -50,8 +57,11 @@ RUN dotnet publish "FMBot.Bot.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY --from=build /root/.dotnet/tools /root/.dotnet/tools
 
 ENV DOTNET_gcServer=1
+ENV PATH="/root/.dotnet/tools:${PATH}"
+ENV DOTNET_EnableDiagnostics=1
 
 ENTRYPOINT ["dotnet", "FMBot.Bot.dll"]
 
