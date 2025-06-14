@@ -91,7 +91,7 @@ public class FriendBuilders
         var friendResult = new List<FriendResult>();
         await friends.ParallelForEachAsync(async friend =>
         {
-            var friendUsername = friend.LastFMUserName;
+            var friendUsername = friend.FriendUser?.UserNameLastFM ?? friend.LastFMUserName;
             var friendNameToDisplay = friendUsername;
 
             if (guild?.GuildUsers != null && guild.GuildUsers.Any() && friend.FriendUserId.HasValue)
