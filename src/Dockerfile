@@ -60,6 +60,8 @@ COPY --from=publish /app/publish .
 COPY --from=build /root/.dotnet/tools /root/.dotnet/tools
 
 ENV DOTNET_gcServer=1
+ENV DOTNET_GCDynamicAdaptationMode=1
+
 ENV PATH="/root/.dotnet/tools:${PATH}"
 ENV DOTNET_EnableDiagnostics=1
 

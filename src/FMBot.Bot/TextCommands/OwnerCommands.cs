@@ -346,6 +346,16 @@ public class OwnerCommands : BaseCommandModule
             embed.AddField("Chrome/Puppeteer", chromeStats);
         }
 
+        // Unmanaged memory analysis
+        var managedMemory = GC.GetTotalMemory(false);
+        var workingSet = process.WorkingSet64;
+        var unmanagedEstimate = workingSet - managedMemory;
+
+        var unmanagedInfo = new StringBuilder();
+        unmanagedInfo.AppendLine($"**Unmanaged (Estimated):** `{unmanagedEstimate.ToFormattedByteString()}`");
+        unmanagedInfo.AppendLine($"**Handle Count:** `{process.HandleCount}`");
+        embed.AddField("Unmanaged Memory", unmanagedInfo.ToString());
+
         await this.Context.Channel.SendMessageAsync("", false, embed.Build());
         this.Context.LogCommandUsed();
     }
@@ -407,9 +417,9 @@ public class OwnerCommands : BaseCommandModule
         sb.AppendLine($"**Tracks:** `{PublicProperties.UsedCommandsTracks.Count:N0}`");
         sb.AppendLine($"**Referenced Music:** `{PublicProperties.UsedCommandsReferencedMusic.Count:N0}`");
 
-            var estimatedSize = EstimateCollectionMemory();
-            sb.AppendLine();
-            sb.AppendLine($"**Estimated Collections Memory:** `{estimatedSize.ToFormattedByteString()}`");
+        var estimatedSize = EstimateCollectionMemory();
+        sb.AppendLine();
+        sb.AppendLine($"**Estimated Collections Memory:** `{estimatedSize.ToFormattedByteString()}`");
 
         return sb.ToString();
     }
@@ -469,4 +479,5 @@ public class OwnerCommands : BaseCommandModule
 
         return baseOverhead + (count * (keySize + valueSize));
     }
+
 }
