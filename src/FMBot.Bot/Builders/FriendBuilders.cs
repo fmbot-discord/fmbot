@@ -116,13 +116,9 @@ public class FriendBuilders
             }
 
             string sessionKey = null;
-            if (friend.FriendUser?.UserNameLastFM != null)
+            if (!string.IsNullOrWhiteSpace(friend.FriendUser?.SessionKeyLastFm))
             {
-                friendUsername = friend.FriendUser.UserNameLastFM;
-                if (!string.IsNullOrWhiteSpace(friend.FriendUser.SessionKeyLastFm))
-                {
-                    sessionKey = friend.FriendUser.SessionKeyLastFm;
-                }
+                sessionKey = friend.FriendUser.SessionKeyLastFm;
             }
 
             Response<RecentTrackList> tracks;
@@ -165,7 +161,8 @@ public class FriendBuilders
                 totalPlaycount += (int)tracks.Content.TotalAmount;
             }
 
-            friendResult.Add(new FriendResult(timePlayed, $"**[{friendNameToDisplay}]({LastfmUrlExtensions.GetUserUrl(friendUsername)})** | {track}"));
+            friendResult.Add(new FriendResult(timePlayed,
+                $"**[{friendNameToDisplay}]({LastfmUrlExtensions.GetUserUrl(friendUsername)})** | {track}"));
         }, maxDegreeOfParallelism: 3);
 
         response.EmbedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
@@ -248,7 +245,6 @@ public class FriendBuilders
         }
 
 
-
         if (friendLimitReached)
         {
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
@@ -257,7 +253,8 @@ public class FriendBuilders
                 response.Embed.AddField("Friend limit reached",
                     $"Sorry, but you can't have more than {Constants.MaxFriends} friends. \n\n" +
                     $".fmbot supporters can add up to {Constants.MaxFriendsSupporter} friends.");
-                response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
+                    style: ButtonStyle.Primary,
                     customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "friends-limit"));
             }
             else
@@ -304,7 +301,8 @@ public class FriendBuilders
 
         response.Embed.WithDescription(reply);
 
-        if (context.ContextUser.UserType != UserType.User && !friendLimitReached && existingFriends.Count >= Constants.MaxFriendsSupporter - 5)
+        if (context.ContextUser.UserType != UserType.User && !friendLimitReached &&
+            existingFriends.Count >= Constants.MaxFriendsSupporter - 5)
         {
             var userType = context.ContextUser.UserType.ToString().ToLower();
             response.Embed.WithFooter(
@@ -314,7 +312,8 @@ public class FriendBuilders
         return response;
     }
 
-    public async Task<ResponseModel> RemoveFriendsAsync(ContextModel context, string[] enteredFriends, bool contextCommand = false)
+    public async Task<ResponseModel> RemoveFriendsAsync(ContextModel context, string[] enteredFriends,
+        bool contextCommand = false)
     {
         var response = new ResponseModel
         {
@@ -329,7 +328,8 @@ public class FriendBuilders
         foreach (var enteredFriendParameter in enteredFriends)
         {
             var foundFriend =
-                await this._settingService.GetUser(enteredFriendParameter, context.ContextUser, context.DiscordGuild, context.DiscordUser, true, true);
+                await this._settingService.GetUser(enteredFriendParameter, context.ContextUser, context.DiscordGuild,
+                    context.DiscordUser, true, true);
 
             var friendUsername = foundFriend.DifferentUser ? foundFriend.UserNameLastFm : enteredFriendParameter;
 
@@ -431,7 +431,8 @@ public class FriendBuilders
 
             foreach (var friend in friendedPage)
             {
-                friendedPageString.AppendLine($"{counter}. **[{friend.User.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(friend.User.UserNameLastFM)})**");
+                friendedPageString.AppendLine(
+                    $"{counter}. **[{friend.User.UserNameLastFM}]({LastfmUrlExtensions.GetUserUrl(friend.User.UserNameLastFM)})**");
                 counter++;
             }
 
