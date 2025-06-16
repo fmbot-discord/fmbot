@@ -20,10 +20,6 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
-    <PropertyGroup>
-        <ServerGarbageCollection>true</ServerGarbageCollection>
-        <GarbageCollectionAdaptationMode>1</GarbageCollectionAdaptationMode>
-    </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="AsyncEnumerator" Version="4.0.2"/>
         <PackageReference Include="CsvHelper" Version="33.1.0"/>
