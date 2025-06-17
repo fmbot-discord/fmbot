@@ -382,7 +382,7 @@ public class TimerService : IDisposable
 
         foreach (var userToUpdate in usersToUpdate)
         {
-            if (userToUpdate.LastUpdated < DateTime.UtcNow.AddMonths(-3))
+            if (userToUpdate.LastUpdated < DateTime.UtcNow.AddMonths(-6))
             {
                 var updateUserQueueItem = new IndexUserQueueItem
                 {

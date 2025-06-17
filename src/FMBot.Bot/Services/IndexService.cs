@@ -51,13 +51,6 @@ public class IndexService
         await IndexUser(user);
     }
 
-    public void AddUsersToIndexQueue(IReadOnlyList<User> users)
-    {
-        Log.Information($"Adding {users.Count} users to index queue");
-
-        this._userIndexQueue.Publish(users);
-    }
-
     public async Task<IndexedUserStats> IndexUser(User user)
     {
         Log.Information("Starting index for {UserNameLastFM}", user.UserNameLastFM);
