@@ -463,7 +463,7 @@ public class ImportService
     {
         var id = CommandContextExtensions.GenerateRandomCode();
 
-        this._cache.Set($"impref-{id}", importEdit);
+        this._cache.Set($"impref-{id}", importEdit, TimeSpan.FromDays(2));
 
         return id;
     }
