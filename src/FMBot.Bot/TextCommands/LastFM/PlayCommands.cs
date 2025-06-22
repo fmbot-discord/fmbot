@@ -121,7 +121,7 @@ public class PlayCommands : BaseCommandModule
             this._embed.UsernameNotSetErrorResponse(prfx,
                 userNickname ?? this.Context.User.GlobalName ?? this.Context.User.Username);
 
-            await ReplyAsync("", false, this._embed.Build());
+            await ReplyAsync("", false, this._embed.Build(), components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
             this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
             return;
         }
