@@ -24,6 +24,15 @@ public class StripePricing
     public string MonthlySummary { get; set; }
 
 
+    public string QuarterlyPriceId { get; set; }
+
+    public string QuarterlyPriceString { get; set; }
+
+    public string QuarterlySubText { get; set; }
+
+    public string QuarterlySummary { get; set; }
+
+
     public string YearlyPriceId { get; set; }
 
     public string YearlyPriceString { get; set; }
@@ -31,6 +40,15 @@ public class StripePricing
     public string YearlySubText { get; set; }
 
     public string YearlySummary { get; set; }
+
+
+    public string TwoYearPriceId { get; set; }
+
+    public string TwoYearPriceString { get; set; }
+
+    public string TwoYearSubText { get; set; }
+
+    public string TwoYearSummary { get; set; }
 
 
     public string LifetimePriceId { get; set; }

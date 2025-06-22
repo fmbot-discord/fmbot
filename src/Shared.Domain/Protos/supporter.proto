@@ -13,6 +13,8 @@ service SupporterLinkService {
 
   rpc AddOrUpdateStripeSupporter (AddOrUpdateStripeSupporterRequest) returns (AddOrUpdateStripeSupporterReply);
 
+  rpc AddGiftedSupporter (AddGiftedSupporterRequest) returns (AddGiftedSupporterReply);
+
   rpc MigrateDiscordForStripeSupporter (MigrateDiscordForStripeSupporterRequest) returns (MigrateDiscordForStripeSupporterReply);
 }
 
@@ -23,6 +25,8 @@ message CreateLinkOptions {
   string existingCustomerId = 4;
   string priceId = 5;
   string source = 6;
+  int64 giftReceiverDiscordUserId = 7;
+  string giftReceiverLastFmUserName = 8;
 }
 
 message CreateLinkReply {
@@ -63,5 +67,23 @@ message MigrateDiscordForStripeSupporterRequest {
 }
 
 message MigrateDiscordForStripeSupporterReply {
+  bool success = 1;
+}
+
+message AddGiftedSupporterRequest {
+  int64 purchaserDiscordUserId = 1;
+  string purchaserLastFmUserName = 2;
+  int64 receiverDiscordUserId = 3;
+  string stripeCustomerId = 4;
+  string stripePaymentIntentId = 5;
+  google.protobuf.Timestamp created = 6;
+  google.protobuf.Timestamp endsAt = 7;
+  string currency = 8;
+  string source = 9;
+  string priceId = 10;
+  string receiverLastFmUserName = 11;
+}
+
+message AddGiftedSupporterReply {
   bool success = 1;
 }

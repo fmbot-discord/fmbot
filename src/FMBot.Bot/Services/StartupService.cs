@@ -23,6 +23,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Prometheus;
 using Serilog;
+
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace FMBot.Bot.Services;
@@ -143,7 +144,8 @@ public class StartupService
         PrepareCacheFolder();
 
         var gateway = await this._client.GetBotGatewayAsync();
-        Log.Information("ShardStarter: connects left {connectsLeft} - reset after {resetAfter}", gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter);
+        Log.Information("ShardStarter: connects left {connectsLeft} - reset after {resetAfter}",
+            gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter);
 
         var maxConcurrency = gateway.SessionStartLimit.MaxConcurrency;
         if (maxConcurrency > 4)
@@ -151,7 +153,8 @@ public class StartupService
             maxConcurrency = 4;
         }
 
-        Log.Information("ShardStarter: max concurrency {maxConcurrency}, total shards {shardCount}", maxConcurrency, this._client.Shards.Count);
+        Log.Information("ShardStarter: max concurrency {maxConcurrency}, total shards {shardCount}", maxConcurrency,
+            this._client.Shards.Count);
 
         var connectTasks = new List<Task>();
         var connectingShards = new List<int>();
@@ -184,10 +187,13 @@ public class StartupService
         {
             await Task.Delay(100);
         }
+
         Log.Information("ShardStarter: Done");
 
         await this._timerService.UpdateStatus();
         await this._timerService.UpdateHealthCheck();
+
+        await this.RegisterSlashCommands();
 
         InitializeHangfireConfig();
         this._timerService.QueueJobs();
@@ -243,7 +249,8 @@ public class StartupService
 
     private void StartMetricsPusher()
     {
-        if (string.IsNullOrWhiteSpace(this._botSettings.Bot.MetricsPusherName) || string.IsNullOrWhiteSpace(this._botSettings.Bot.MetricsPusherEndpoint))
+        if (string.IsNullOrWhiteSpace(this._botSettings.Bot.MetricsPusherName) ||
+            string.IsNullOrWhiteSpace(this._botSettings.Bot.MetricsPusherEndpoint))
         {
             Log.Information("Metrics pusher config not set, not pushing");
             return;
@@ -268,20 +275,16 @@ public class StartupService
 
         pusher.Start();
 
-        Log.Information("Metrics pusher pushing to {MetricsPusherEndpoint}, job name {MetricsPusherName}", this._botSettings.Bot.MetricsPusherEndpoint, this._botSettings.Bot.MetricsPusherName);
+        Log.Information("Metrics pusher pushing to {MetricsPusherEndpoint}, job name {MetricsPusherName}",
+            this._botSettings.Bot.MetricsPusherEndpoint, this._botSettings.Bot.MetricsPusherName);
     }
 
     public async Task RegisterSlashCommands()
     {
         Log.Information("Starting slash command registration");
 
-#if DEBUG
-        Log.Information("Registering slash commands to guild");
-        await this._interactionService.RegisterCommandsToGuildAsync(this._botSettings.Bot.BaseServerId);
-#else
-            Log.Information("Registering slash commands globally");
-            await this._interactionService.RegisterCommandsGloballyAsync();
-#endif
+        Log.Information("Registering slash commands globally");
+        await this._interactionService.RegisterCommandsGloballyAsync();
     }
 
     private static void PrepareCacheFolder()

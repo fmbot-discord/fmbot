@@ -128,25 +128,43 @@ public class SupporterService
     }
 
     public static async Task SendSupporterWelcomeMessage(IUser discordUser, bool hasDiscogs, Supporter supporter,
-        bool reactivation = false)
+        bool reactivation = false, bool isGifted = false, StripeSupporter stripeSupporter = null)
     {
         var thankYouEmbed = new EmbedBuilder();
         thankYouEmbed.WithColor(DiscordConstants.InformationColorBlue);
 
         var thankYouMessage = new StringBuilder();
 
-        thankYouEmbed.WithAuthor("Thank you for getting .fmbot supporter!");
-
-        if (supporter != null && (supporter.SubscriptionType == SubscriptionType.LifetimeOpenCollective ||
-                                  supporter.SubscriptionType == SubscriptionType.LifetimeStripeManual))
+        if (isGifted)
         {
-            thankYouMessage.AppendLine(
-                "Your purchase allows us to keep the bot running and continuously add improvements. Here's an overview of the features you can now access:");
+            thankYouEmbed.WithAuthor("🎁 You've received .fmbot supporter as a gift!");
+            thankYouMessage.AppendLine("Someone has gifted you .fmbot supporter!");
+            thankYouMessage.AppendLine();
+            if (stripeSupporter?.DateEnding != null)
+            {
+                thankYouMessage.AppendLine(
+                    $"You will now have full access to all .fmbot supporter features until <t:{((DateTimeOffset)stripeSupporter.DateEnding).ToUnixTimeSeconds()}:d>.");
+            }
+            else
+            {
+                thankYouMessage.AppendLine("This gift gives you access to the following supporter features:");
+            }
         }
         else
         {
-            thankYouMessage.AppendLine(
-                "Your subscription allows us to keep the bot running and continuously add improvements. Here's an overview of the features you can now access:");
+            thankYouEmbed.WithAuthor("Thank you for getting .fmbot supporter!");
+
+            if (supporter != null && (supporter.SubscriptionType == SubscriptionType.LifetimeOpenCollective ||
+                                      supporter.SubscriptionType == SubscriptionType.LifetimeStripeManual))
+            {
+                thankYouMessage.AppendLine(
+                    "Your purchase allows us to keep the bot running and continuously add improvements. Here's an overview of the features you can now access:");
+            }
+            else
+            {
+                thankYouMessage.AppendLine(
+                    "Your subscription allows us to keep the bot running and continuously add improvements. Here's an overview of the features you can now access:");
+            }
         }
 
         thankYouMessage.AppendLine();
@@ -209,6 +227,45 @@ public class SupporterService
         else
         {
             await discordUser.SendMessageAsync(embed: thankYouEmbed.Build());
+        }
+    }
+
+    public static async Task SendGiftPurchaserThankYouMessage(IUser purchaserUser, StripeSupporter stripeSupporter)
+    {
+        try
+        {
+            var thankYouEmbed = new EmbedBuilder();
+            thankYouEmbed.WithColor(DiscordConstants.SuccessColorGreen);
+            thankYouEmbed.WithAuthor("🎁 Thank you for gifting .fmbot supporter!");
+
+            var thankYouMessage = new StringBuilder();
+            thankYouMessage.AppendLine("Your gift has been successfully delivered!");
+            thankYouMessage.AppendLine();
+
+            if (!string.IsNullOrEmpty(stripeSupporter.GiftReceiverLastFmUserName))
+            {
+                thankYouMessage.AppendLine($"**Recipient**: {stripeSupporter.GiftReceiverLastFmUserName}");
+            }
+            else
+            {
+                thankYouMessage.AppendLine($"**Recipient**: <@{stripeSupporter.GiftReceiverDiscordUserId}>");
+            }
+
+            if (stripeSupporter.DateEnding != null)
+            {
+                thankYouMessage.AppendLine($"**Gift expires**: <t:{((DateTimeOffset)stripeSupporter.DateEnding).ToUnixTimeSeconds()}:d>");
+            }
+
+            thankYouMessage.AppendLine();
+            thankYouMessage.AppendLine("Thank you for supporting both the recipient and .fmbot!");
+
+            thankYouEmbed.WithDescription(thankYouMessage.ToString());
+
+            await purchaserUser.SendMessageAsync(embed: thankYouEmbed.Build());
+        }
+        catch (Exception e)
+        {
+            Log.Information("SupporterService: Error while sending gift purchaser thank you message to {discordUserId}", purchaserUser.Id, e);
         }
     }
 
@@ -629,12 +686,26 @@ public class SupporterService
             .FirstOrDefaultAsync(f => f.PurchaserDiscordUserId == discordUserId);
     }
 
-    public async Task<StripePricing> GetPricing(string userLocale, string existingUserCurrency)
+    public async Task<StripeSupporter> GetStripeSupporterByRecipient(ulong discordUserId)
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+
+        return await db.StripeSupporters
+            .Where(f => f.GiftReceiverDiscordUserId == discordUserId &&
+                       f.Type == StripeSupporterType.GiftedSupporter &&
+                       f.DateStarted <= DateTime.UtcNow &&
+                       (f.DateEnding == null || f.DateEnding > DateTime.UtcNow))
+            .OrderByDescending(o => o.DateStarted)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<StripePricing> GetPricing(string userLocale, string existingUserCurrency,
+        StripeSupporterType type = StripeSupporterType.Supporter)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         var prices = await db.StripePricing
-            .Where(w => w.Type == StripeSupporterType.Supporter)
+            .Where(w => w.Type == type)
             .ToListAsync();
 
         if (existingUserCurrency != null)
@@ -1009,11 +1080,14 @@ public class SupporterService
                 await RunFullUpdate(userEntitlements.DiscordUserId);
 
                 var user = await this._client.Rest.GetUserAsync(userEntitlements.DiscordUserId);
+                var stripeSub = await this.GetStripeSupporterByRecipient(userEntitlements.DiscordUserId);
+                var isGifted = stripeSub?.Type == StripeSupporterType.GiftedSupporter;
+
                 if (user != null)
                 {
                     try
                     {
-                        await SendSupporterWelcomeMessage(user, false, newSupporter);
+                        await SendSupporterWelcomeMessage(user, false, newSupporter, false, isGifted, stripeSub);
                     }
                     catch (Exception e)
                     {
@@ -1022,14 +1096,37 @@ public class SupporterService
                     }
                 }
 
-                var subType = Enum.GetName(newSupporter.SubscriptionType.Value);
-                var description =
-                    $"Added {subType} supporter {userEntitlements.DiscordUserId} - <@{userEntitlements.DiscordUserId}>";
-
-                if (newSupporter.SubscriptionType.Value == SubscriptionType.Stripe)
+                if (isGifted && stripeSub != null)
                 {
-                    var stripeSub = await this.GetStripeSupporter(userEntitlements.DiscordUserId);
-                    if (stripeSub != null)
+                    try
+                    {
+                        var purchaser = await this._client.Rest.GetUserAsync(stripeSub.PurchaserDiscordUserId);
+                        if (purchaser != null)
+                        {
+                            await SendGiftPurchaserThankYouMessage(purchaser, stripeSub);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error("Could not send gift purchaser thank you message to {purchaserDiscordUserId}",
+                            stripeSub.PurchaserDiscordUserId, e);
+                    }
+                }
+
+                var subType = Enum.GetName(newSupporter.SubscriptionType.Value);
+
+                var description = isGifted
+                    ? $"Added 🎁 **GIFTED** {subType} supporter {userEntitlements.DiscordUserId} - <@{userEntitlements.DiscordUserId}>"
+                    : $"Added {subType} supporter {userEntitlements.DiscordUserId} - <@{userEntitlements.DiscordUserId}>";
+
+                if (newSupporter.SubscriptionType.Value == SubscriptionType.Stripe && stripeSub != null)
+                {
+                    if (isGifted)
+                    {
+                        description +=
+                            $"\n-# *🎁 Gift from <@{stripeSub.PurchaserDiscordUserId}> — Source {stripeSub.PurchaseSource} — Ends <t:{((DateTimeOffset?)stripeSub.DateEnding)?.ToUnixTimeSeconds()}:f>*";
+                    }
+                    else
                     {
                         description +=
                             $"\n-# *Source {stripeSub.PurchaseSource} — Ends <t:{((DateTimeOffset?)stripeSub.DateEnding)?.ToUnixTimeSeconds()}:f>*";
@@ -1373,7 +1470,9 @@ public class SupporterService
 
         foreach (var existingStripeSupporter in possiblyExpiredSupporters)
         {
-            var discordUserId = existingStripeSupporter.PurchaserDiscordUserId;
+            var discordUserId = existingStripeSupporter.Type == StripeSupporterType.GiftedSupporter
+                ? existingStripeSupporter.GiftReceiverDiscordUserId ?? existingStripeSupporter.PurchaserDiscordUserId
+                : existingStripeSupporter.PurchaserDiscordUserId;
 
             var existingSupporters = await db.Supporters
                 .Where(w => w.DiscordUserId == discordUserId &&
@@ -1854,6 +1953,23 @@ public class SupporterService
             ExistingCustomerId = existingStripeCustomerId,
             PriceId = priceId,
             Source = source
+        });
+
+        return url?.CheckoutLink;
+    }
+
+    public async Task<string> GetSupporterCheckoutLink(ulong discordUserId, string type, string lastFmUserName,
+        string priceId, string source, ulong? giftReceiverDiscordUserId = null, string existingStripeCustomerId = null)
+    {
+        var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
+        {
+            DiscordUserId = (long)discordUserId,
+            LastFmUserName = lastFmUserName,
+            Type = type,
+            ExistingCustomerId = existingStripeCustomerId,
+            PriceId = priceId,
+            Source = source,
+            GiftReceiverDiscordUserId = giftReceiverDiscordUserId.HasValue ? (long)giftReceiverDiscordUserId.Value : 0
         });
 
         return url?.CheckoutLink;

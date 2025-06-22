@@ -13,6 +13,8 @@ public class StripeSupporter
 
     public ulong? GiftReceiverDiscordUserId { get; set; }
 
+    public string GiftReceiverLastFmUserName { get; set; }
+
     public string StripeCustomerId { get; set; }
 
     public string StripeSubscriptionId { get; set; }
