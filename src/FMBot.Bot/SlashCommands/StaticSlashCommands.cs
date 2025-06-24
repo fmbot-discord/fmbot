@@ -286,7 +286,7 @@ public class StaticSlashCommands : InteractionModuleBase
             return;
         }
 
-        if (SupporterService.IsSupporter(contextUser.UserType))
+        if (SupporterService.IsSupporter(recipientUser.UserType))
         {
             await Context.Interaction.FollowupAsync(
                 "❌ The user you want to gift supporter already has access to the supporter perks.", ephemeral: true);
@@ -344,13 +344,12 @@ public class StaticSlashCommands : InteractionModuleBase
 
         try
         {
-            var checkoutLink = await this._supporterService.GetSupporterCheckoutLink(
+            var checkoutLink = await this._supporterService.GetSupporterGiftCheckoutLink(
                 contextUser.DiscordUserId,
-                "GiftedSupporter",
                 contextUser.UserNameLastFM,
                 priceId,
-                $"gift-{duration}",
                 recipientDiscordId,
+                recipientUser.UserNameLastFM,
                 existingStripeSupporter?.StripeCustomerId);
 
             if (string.IsNullOrEmpty(checkoutLink))
