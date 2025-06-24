@@ -256,7 +256,7 @@ public class StaticBuilders
 
         if (!string.IsNullOrEmpty(pricing.TwoYearPriceId))
         {
-            response.Embed.AddField($"Two-yearly - {pricing.TwoYearPriceString}",
+            response.Embed.AddField($"Two years - {pricing.TwoYearPriceString}",
                 $"-# {pricing.TwoYearSubText}", true);
             actionRow.WithButton("Gift two years", $"gift-supporter-purchase-twoyear-{recipient.DiscordUserId}");
         }
