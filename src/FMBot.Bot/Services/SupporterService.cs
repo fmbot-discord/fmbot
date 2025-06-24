@@ -1112,8 +1112,10 @@ public class SupporterService
                     ? $"Added **gifted** {subType} supporter {userEntitlements.DiscordUserId} — <@{userEntitlements.DiscordUserId}>"
                     : $"Added {subType} supporter {userEntitlements.DiscordUserId} — <@{userEntitlements.DiscordUserId}>");
 
-                if (newSupporter.SubscriptionType.Value == SubscriptionType.Stripe && stripeSub != null)
+                if (newSupporter.SubscriptionType.Value == SubscriptionType.Stripe)
                 {
+                    stripeSub ??= await this.GetStripeSupporter(userEntitlements.DiscordUserId);
+
                     auditLogMessage.AppendLine();
                     auditLogMessage.Append(
                         $"-# *Source {stripeSub.PurchaseSource} — Ends <t:{((DateTimeOffset?)stripeSub.DateEnding)?.ToUnixTimeSeconds()}:f>*");
@@ -1209,8 +1211,10 @@ public class SupporterService
                         ? $"Re-activated **gifted** {subType} supporter {userEntitlements.DiscordUserId} — <@{userEntitlements.DiscordUserId}>"
                         : $"Re-activated {subType} supporter {userEntitlements.DiscordUserId} — <@{userEntitlements.DiscordUserId}>");
 
-                    if (reActivatedSupporter.SubscriptionType.Value == SubscriptionType.Stripe && stripeSub != null)
+                    if (reActivatedSupporter.SubscriptionType.Value == SubscriptionType.Stripe)
                     {
+                        stripeSub ??= await this.GetStripeSupporter(userEntitlements.DiscordUserId);
+
                         auditLogMessage.AppendLine();
                         auditLogMessage.Append(
                             $"-# *Source {stripeSub.PurchaseSource} — Ends <t:{((DateTimeOffset?)stripeSub.DateEnding)?.ToUnixTimeSeconds()}:f>*");
