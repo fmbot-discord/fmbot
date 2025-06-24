@@ -11,7 +11,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
-using Humanizer.DateTimeHumanizeStrategy;
+using Shared.Domain.Enums;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -259,5 +259,129 @@ public class StaticSlashCommands : InteractionModuleBase
 
         await RespondAsync(embed: embed.Build(), ephemeral: true, components: components.Build());
         this.Context.LogCommandUsed();
+    }
+
+    [UserCommand("Gift supporter")]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task GiftSupporterUserCommand(IUser targetUser)
+    {
+        await Context.Interaction.DeferAsync(ephemeral: true);
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var recipientUser = await this._userService.GetUserAsync(targetUser.Id);
+
+        if (recipientUser == null)
+        {
+            await Context.Interaction.FollowupAsync(
+                "❌ This user has not used .fmbot before. They need to set up their account first.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+            return;
+        }
+
+        if (recipientUser.DiscordUserId == contextUser.DiscordUserId)
+        {
+            await Context.Interaction.FollowupAsync(
+                "❌ You cannot gift supporter to yourself. Use `/getsupporter` instead.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            return;
+        }
+
+        if (SupporterService.IsSupporter(recipientUser.UserType))
+        {
+            await Context.Interaction.FollowupAsync(
+                "❌ The user you want to gift supporter already has access to the supporter perks.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            return;
+        }
+
+        var response = await this._staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
+            Context.Interaction.UserLocale);
+
+        await Context.Interaction.FollowupAsync(embed: response.Embed?.Build(),
+            components: response.Components?.Build(), ephemeral: true);
+        this.Context.LogCommandUsed();
+    }
+
+    [ComponentInteraction("gift-supporter-purchase-*-*")]
+    public async Task HandleGiftPurchase(string duration, string recipientId)
+    {
+        await Context.Interaction.DeferAsync(ephemeral: true);
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var recipientDiscordId = ulong.Parse(recipientId);
+
+        var recipientUser = await this._userService.GetUserAsync(recipientDiscordId);
+        if (recipientUser == null)
+        {
+            await Context.Interaction.FollowupAsync("❌ Could not find recipient user.", ephemeral: true);
+            return;
+        }
+
+        var existingStripeSupporter = await this._supporterService.GetStripeSupporter(this.Context.User.Id);
+        var pricing = await this._supporterService.GetPricing(this.Context.Interaction.UserLocale,
+            existingStripeSupporter?.Currency, StripeSupporterType.GiftedSupporter);
+        var priceId = duration switch
+        {
+            "quarterly" => pricing.QuarterlyPriceId,
+            "yearly" => pricing.YearlyPriceId,
+            "twoyear" => pricing.TwoYearPriceId,
+            "lifetime" => pricing.LifetimePriceId,
+            _ => null
+        };
+        var summary = duration switch
+        {
+            "quarterly" => pricing.QuarterlySummary,
+            "yearly" => pricing.YearlySummary,
+            "twoyear" => pricing.TwoYearSummary,
+            "lifetime" => pricing.LifetimeSummary,
+            _ => null
+        };
+
+        if (string.IsNullOrEmpty(priceId))
+        {
+            await Context.Interaction.FollowupAsync(
+                "❌ Error while attempting to create checkout, please contact support.", ephemeral: true);
+            return;
+        }
+
+        try
+        {
+            var checkoutLink = await this._supporterService.GetSupporterGiftCheckoutLink(
+                contextUser.DiscordUserId,
+                contextUser.UserNameLastFM,
+                priceId,
+                $"gift-{duration}",
+                recipientDiscordId,
+                recipientUser.UserNameLastFM,
+                existingStripeSupporter?.StripeCustomerId);
+
+            if (string.IsNullOrEmpty(checkoutLink))
+            {
+                await Context.Interaction.FollowupAsync("❌ Could not create checkout link. Please try again later.",
+                    ephemeral: true);
+                return;
+            }
+
+            var description = new StringBuilder();
+            description.AppendLine(
+                $"**Click the unique link below to complete your gift purchase for {recipientUser.UserNameLastFM}**");
+            description.AppendLine($"-# {summary}");
+            var embed = new EmbedBuilder()
+                .WithDescription(description.ToString())
+                .WithColor(DiscordConstants.InformationColorBlue);
+
+            var components = new ComponentBuilder()
+                .WithButton("Complete purchase", style: ButtonStyle.Link, url: checkoutLink, emote: Emoji.Parse("🎁"));
+
+            await Context.Interaction.FollowupAsync(embed: embed.Build(), components: components.Build(),
+                ephemeral: true);
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception ex)
+        {
+            await this.Context.HandleCommandException(ex);
+        }
     }
 }

@@ -12,9 +12,10 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Shared.Domain.Enums;
 
 namespace FMBot.Bot.Builders;
 
@@ -134,7 +135,9 @@ public class StaticBuilders
         if (publicResponse)
         {
             response.Components.WithButton(
-                SupporterService.IsSupporter(context.ContextUser.UserType) ? "Manage your supporter" : "Get .fmbot supporter",
+                SupporterService.IsSupporter(context.ContextUser.UserType)
+                    ? "Manage your supporter"
+                    : "Get .fmbot supporter",
                 style: ButtonStyle.Secondary,
                 customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-true-false-false-{source}");
         }
@@ -150,6 +153,11 @@ public class StaticBuilders
 
                     response.Components.WithButton("View current supporter status", style: ButtonStyle.Secondary,
                         customId: InteractionConstants.SupporterLinks.ManageOverview);
+                }
+                else if (stripeSupporter.Type == StripeSupporterType.GiftedSupporter)
+                {
+                    response.Embed.AddField("Thank you for being a supporter",
+                        "You have been gifted supporter status! Since this was a gift, you cannot manage this subscription directly.");
                 }
                 else
                 {
@@ -185,7 +193,7 @@ public class StaticBuilders
 
                     response.Components
                         .WithButton("Get lifetime",
-                        customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-lifetime-{source}");
+                            customId: $"{InteractionConstants.SupporterLinks.GetPurchaseLink}-lifetime-{source}");
                 }
             }
         }
@@ -203,6 +211,64 @@ public class StaticBuilders
                     customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-false-true-true-{source}");
             }
         }
+
+        return response;
+    }
+
+    public async Task<ResponseModel> BuildGiftSupporterResponse(ulong purchaserDiscordId, User recipient,
+        string userLocale)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        response.Embed
+            .WithTitle("🎁 Gift .fmbot supporter")
+            .WithDescription(
+                $"You are gifting supporter to **{recipient.UserNameLastFM}** (<@{recipient.DiscordUserId}>)")
+            .WithColor(Color.Gold);
+
+        var existingStripeSupporter = await this._supporterService.GetStripeSupporter(purchaserDiscordId);
+        var pricing = await this._supporterService.GetPricing(userLocale, existingStripeSupporter?.Currency, StripeSupporterType.GiftedSupporter);
+
+        response.Embed.AddField("Note",
+            "- This is a gift purchase - no subscription will be created\n" +
+            "- The recipient will receive all supporter benefits",
+            false);
+
+        var components = new ComponentBuilder();
+        var actionRow = new ActionRowBuilder();
+
+        if (!string.IsNullOrEmpty(pricing.QuarterlyPriceId))
+        {
+            response.Embed.AddField($"Quarterly - {pricing.QuarterlyPriceString}",
+                $"-# {pricing.QuarterlySubText}", true);
+            actionRow.WithButton("Gift quarter", $"gift-supporter-purchase-quarterly-{recipient.DiscordUserId}");
+        }
+
+        if (!string.IsNullOrEmpty(pricing.YearlyPriceId))
+        {
+            response.Embed.AddField($"Yearly - {pricing.YearlyPriceString}",
+                $"-# {pricing.YearlySubText}", true);
+            actionRow.WithButton("Gift year", $"gift-supporter-purchase-yearly-{recipient.DiscordUserId}");
+        }
+
+        if (!string.IsNullOrEmpty(pricing.TwoYearPriceId))
+        {
+            response.Embed.AddField($"Two years - {pricing.TwoYearPriceString}",
+                $"-# {pricing.TwoYearSubText}", true);
+            actionRow.WithButton("Gift two years", $"gift-supporter-purchase-twoyear-{recipient.DiscordUserId}");
+        }
+
+        // if (!string.IsNullOrEmpty(pricing.LifetimePriceId))
+        // {
+        //     actionRow.WithButton("Lifetime", $"gift-supporter-purchase-lifetime-{recipient.DiscordUserId}", ButtonStyle.Success, new Emoji("⭐"));
+        // }
+
+        components.AddRow(actionRow);
+
+        response.Components = components;
 
         return response;
     }

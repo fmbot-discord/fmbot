@@ -391,7 +391,7 @@ public class TimerService : IDisposable
                 };
 
                 BackgroundJob.Schedule(() => this._indexService.IndexUser(updateUserQueueItem), indexDelay);
-                indexDelay = indexDelay.AddSeconds(20);
+                indexDelay = indexDelay.AddSeconds(25);
                 indexCount++;
             }
             else

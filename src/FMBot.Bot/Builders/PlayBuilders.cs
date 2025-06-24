@@ -960,7 +960,7 @@ public class PlayBuilder
             pageFooter.AppendLine(
                 $"Top genres, artist, album and track per {amount.Format(context.NumberFormat)} days");
             pageFooter.AppendLine(
-                $"{PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(plays), 1).Format(context.NumberFormat)} per day");
+                $"{PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(days), 1).Format(context.NumberFormat)} per day");
 
             if (days.Count() < amount)
             {

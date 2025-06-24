@@ -220,11 +220,9 @@ public class PlayService
             .Count();
     }
 
-    public static double GetAvgPerDayCount(IEnumerable<UserPlay> plays)
+    public static double GetAvgPerDayCount(DayOverview[] days)
     {
-        return plays
-            .GroupBy(g => g.TimePlayed.Date)
-            .Average(a => a.Count());
+        return days.Length != 0 ? Math.Round(days.Average(d => d.Playcount), 1) : 0;
     }
 
     private static string GetTopTrackForPlays(IEnumerable<UserPlay> plays)
