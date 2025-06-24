@@ -243,7 +243,7 @@ public class StaticBuilders
 
         if (!string.IsNullOrEmpty(pricing.QuarterlyPriceId))
         {
-            response.Embed.AddField($"Quarterly - {pricing.QuarterlyPriceString}",
+            response.Embed.AddField($"Quarter - {pricing.QuarterlyPriceString}",
                 $"-# {pricing.QuarterlySubText}", true);
             actionRow.WithButton("Gift quarter", $"gift-supporter-purchase-quarterly-{recipient.DiscordUserId}");
         }
