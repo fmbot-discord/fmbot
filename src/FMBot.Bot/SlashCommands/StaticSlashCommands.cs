@@ -276,6 +276,7 @@ public class StaticSlashCommands : InteractionModuleBase
         {
             await Context.Interaction.FollowupAsync(
                 "❌ This user has not used .fmbot before. They need to set up their account first.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
             return;
         }
 
@@ -283,6 +284,7 @@ public class StaticSlashCommands : InteractionModuleBase
         {
             await Context.Interaction.FollowupAsync(
                 "❌ You cannot gift supporter to yourself. Use `/getsupporter` instead.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.WrongInput);
             return;
         }
 
@@ -290,6 +292,7 @@ public class StaticSlashCommands : InteractionModuleBase
         {
             await Context.Interaction.FollowupAsync(
                 "❌ The user you want to gift supporter already has access to the supporter perks.", ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.Cooldown);
             return;
         }
 
@@ -298,6 +301,7 @@ public class StaticSlashCommands : InteractionModuleBase
 
         await Context.Interaction.FollowupAsync(embed: response.Embed?.Build(),
             components: response.Components?.Build(), ephemeral: true);
+        this.Context.LogCommandUsed();
     }
 
     [ComponentInteraction("gift-supporter-purchase-*-*")]
@@ -373,10 +377,11 @@ public class StaticSlashCommands : InteractionModuleBase
 
             await Context.Interaction.FollowupAsync(embed: embed.Build(), components: components.Build(),
                 ephemeral: true);
+            this.Context.LogCommandUsed();
         }
         catch (Exception ex)
         {
-            await Context.Interaction.FollowupAsync($"❌ Error creating checkout: {ex.Message}", ephemeral: true);
+            await this.Context.HandleCommandException(ex);
         }
     }
 }
