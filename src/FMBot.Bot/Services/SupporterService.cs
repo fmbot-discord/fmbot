@@ -143,7 +143,7 @@ public class SupporterService
             if (stripeSupporter?.DateEnding != null)
             {
                 thankYouMessage.AppendLine(
-                    $"You will now have full access to all .fmbot supporter features until <t:{((DateTimeOffset)stripeSupporter.DateEnding).ToUnixTimeSeconds()}:d>.");
+                    $"You will now have full access to all .fmbot supporter features until <t:{((DateTimeOffset)stripeSupporter.DateEnding).ToUnixTimeSeconds()}:D>.");
             }
             else
             {
@@ -241,20 +241,11 @@ public class SupporterService
             var thankYouMessage = new StringBuilder();
             thankYouMessage.AppendLine("Your gift has been successfully delivered!");
             thankYouMessage.AppendLine();
-
-            if (!string.IsNullOrEmpty(stripeSupporter.GiftReceiverLastFmUserName))
-            {
-                thankYouMessage.AppendLine($"**Recipient**: {stripeSupporter.GiftReceiverLastFmUserName}");
-            }
-            else
-            {
-                thankYouMessage.AppendLine($"**Recipient**: <@{stripeSupporter.GiftReceiverDiscordUserId}>");
-            }
-
+            thankYouMessage.AppendLine($"**Recipient**: {stripeSupporter.GiftReceiverLastFmUserName}");
             if (stripeSupporter.DateEnding != null)
             {
                 thankYouMessage.AppendLine(
-                    $"**Gift expires**: <t:{((DateTimeOffset)stripeSupporter.DateEnding).ToUnixTimeSeconds()}:d>");
+                    $"**Gift expires**: <t:{((DateTimeOffset)stripeSupporter.DateEnding).ToUnixTimeSeconds()}:D>");
             }
 
             thankYouMessage.AppendLine();
@@ -2009,7 +2000,7 @@ public class SupporterService
     }
 
     public async Task<string> GetSupporterGiftCheckoutLink(ulong discordUserId, string lastFmUserName,
-        string priceId, ulong giftReceiverDiscordUserId, string giftReceiverLastFmUserName,
+        string priceId, string source, ulong giftReceiverDiscordUserId, string giftReceiverLastFmUserName,
         string existingStripeCustomerId = null)
     {
         var url = await this._supporterLinkService.GetCheckoutLinkAsync(new CreateLinkOptions
@@ -2019,7 +2010,7 @@ public class SupporterService
             Type = "GiftedSupporter",
             ExistingCustomerId = existingStripeCustomerId,
             PriceId = priceId,
-            Source = "gift-supporter",
+            Source = source,
             GiftReceiverDiscordUserId = (long)giftReceiverDiscordUserId,
             GiftReceiverLastFmUserName = giftReceiverLastFmUserName ?? ""
         });

@@ -348,6 +348,7 @@ public class StaticSlashCommands : InteractionModuleBase
                 contextUser.DiscordUserId,
                 contextUser.UserNameLastFM,
                 priceId,
+                $"gift-{duration}",
                 recipientDiscordId,
                 recipientUser.UserNameLastFM,
                 existingStripeSupporter?.StripeCustomerId);
