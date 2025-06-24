@@ -234,7 +234,8 @@ public class StaticBuilders
 
         response.Embed.AddField("Note",
             "- This is a gift purchase - no subscription will be created\n" +
-            "- The recipient will receive all supporter benefits",
+            "- The recipient will receive all supporter benefits\n" +
+            "- Your identity will not be revealed",
             false);
 
         var components = new ComponentBuilder();
