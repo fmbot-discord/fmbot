@@ -2012,7 +2012,7 @@ public class SupporterService
             DiscordUserId = (long)discordUserId,
             LastFmUserName = lastFmUserName,
             Type = "GiftedSupporter",
-            ExistingCustomerId = existingStripeCustomerId,
+            ExistingCustomerId = existingStripeCustomerId ?? "",
             PriceId = priceId,
             Source = source,
             GiftReceiverDiscordUserId = (long)giftReceiverDiscordUserId,
