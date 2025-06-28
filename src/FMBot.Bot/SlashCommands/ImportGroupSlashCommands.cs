@@ -240,7 +240,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
 
             var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.SpotifyImport,
                 numberFormat);
-            if (years.Length > 0)
+            if (years is { Length: > 0 })
             {
                 embed.AddField("<:fmbot_importing:1131511469096312914> All imported Spotify plays", years, true);
             }
@@ -432,7 +432,7 @@ public class ImportGroupSlashCommands : InteractionModuleBase
 
             var years = await this._importBuilders.GetImportedYears(contextUser.UserId, PlaySource.AppleMusicImport,
                 numberFormat);
-            if (years.Length > 0)
+            if (years is { Length: > 0 })
             {
                 embed.AddField("<:fmbot_importing:1131511469096312914> All imported Apple Music plays", years, true);
             }
