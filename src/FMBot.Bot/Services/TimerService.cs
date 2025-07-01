@@ -379,10 +379,11 @@ public class TimerService : IDisposable
 
         var updateCount = 1;
         var indexCount = 1;
+        var maxIndexUsers = 1000;
 
         foreach (var userToUpdate in usersToUpdate)
         {
-            if (userToUpdate.LastUpdated < DateTime.UtcNow.AddMonths(-6))
+            if (userToUpdate.LastUpdated < DateTime.UtcNow.AddMonths(-6) && indexCount <= maxIndexUsers)
             {
                 var updateUserQueueItem = new IndexUserQueueItem
                 {
