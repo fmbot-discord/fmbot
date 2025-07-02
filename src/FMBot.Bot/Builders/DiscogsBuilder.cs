@@ -79,7 +79,7 @@ public class DiscogsBuilder
 
         await this._discogsService.RemoveDiscogs(context.ContextUser.UserId);
 
-        response.Embed.WithDescription($"Your Discogs account has been removed from your Discogs account.");
+        response.Embed.WithDescription($"Your Discogs has been unlinked from your .fmbot account.");
 
         response.Embed.WithColor(DiscordConstants.InformationColorBlue);
 
