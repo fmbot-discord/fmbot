@@ -545,6 +545,11 @@ public class GameService
             hints.Add(new JumbleSessionHint(JumbleHintType.Label, $"- Album label is **{album.Label}**"));
         }
 
+        if (album is { Type: not null } && !album.Type.Equals("album", StringComparison.OrdinalIgnoreCase))
+        {
+            hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- Album type is **{album.Type}**"));
+        }
+
         if (album is { ReleaseDate: not null })
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.ReleaseDate, $"- Album was released on **{AlbumService.GetAlbumReleaseDate(album)}**"));
