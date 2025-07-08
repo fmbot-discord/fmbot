@@ -223,6 +223,30 @@ public class StaticBuilders
             ResponseType = ResponseType.Embed
         };
 
+        if (recipient == null)
+        {
+            response.Text = "❌ This user has not used .fmbot before. They need to set up their account first.";
+            response.CommandResponse = CommandResponse.UsernameNotSet;
+            response.ResponseType = ResponseType.Text;
+            return response;
+        }
+
+        if (recipient.DiscordUserId == purchaserDiscordId)
+        {
+            response.Text = "❌ You cannot gift supporter to yourself. Use `/getsupporter` instead.";
+            response.CommandResponse = CommandResponse.WrongInput;
+            response.ResponseType = ResponseType.Text;
+            return response;
+        }
+
+        if (SupporterService.IsSupporter(recipient.UserType))
+        {
+            response.Text = "❌ The user you want to gift supporter already has access to the supporter perks.";
+            response.CommandResponse = CommandResponse.Cooldown;
+            response.ResponseType = ResponseType.Text;
+            return response;
+        }
+
         response.Embed
             .WithTitle("🎁 Gift .fmbot supporter")
             .WithDescription(

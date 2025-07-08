@@ -46,7 +46,7 @@ public class StaticSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("getsupporter", "Information about getting supporter or your current subscription")]
+    [SlashCommand("getsupporter", "⭐ Information about getting supporter or your current subscription")]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
@@ -261,6 +261,22 @@ public class StaticSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed();
     }
 
+    [SlashCommand("giftsupporter", "🎁 Gift supporter to another user")]
+    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
+        InteractionContextType.Guild)]
+    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    public async Task GiftSupporterAsync([Summary("User", "The user you want to gift supporter")] IUser user)
+    {
+        await Context.Interaction.DeferAsync(ephemeral: true);
+
+        var recipientUser = await this._userService.GetUserAsync(user.Id);
+        var response = await this._staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
+            Context.Interaction.UserLocale);
+
+        await Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
     [UserCommand("Gift supporter")]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
@@ -269,39 +285,12 @@ public class StaticSlashCommands : InteractionModuleBase
     {
         await Context.Interaction.DeferAsync(ephemeral: true);
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var recipientUser = await this._userService.GetUserAsync(targetUser.Id);
-
-        if (recipientUser == null)
-        {
-            await Context.Interaction.FollowupAsync(
-                "❌ This user has not used .fmbot before. They need to set up their account first.", ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
-            return;
-        }
-
-        if (recipientUser.DiscordUserId == contextUser.DiscordUserId)
-        {
-            await Context.Interaction.FollowupAsync(
-                "❌ You cannot gift supporter to yourself. Use `/getsupporter` instead.", ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.WrongInput);
-            return;
-        }
-
-        if (SupporterService.IsSupporter(recipientUser.UserType))
-        {
-            await Context.Interaction.FollowupAsync(
-                "❌ The user you want to gift supporter already has access to the supporter perks.", ephemeral: true);
-            this.Context.LogCommandUsed(CommandResponse.Cooldown);
-            return;
-        }
-
         var response = await this._staticBuilders.BuildGiftSupporterResponse(this.Context.User.Id, recipientUser,
             Context.Interaction.UserLocale);
 
-        await Context.Interaction.FollowupAsync(embed: response.Embed?.Build(),
-            components: response.Components?.Build(), ephemeral: true);
-        this.Context.LogCommandUsed();
+        await Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [ComponentInteraction("gift-supporter-purchase-*-*")]
