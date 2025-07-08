@@ -46,7 +46,7 @@ public class StaticSlashCommands : InteractionModuleBase
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [SlashCommand("getsupporter", "⭐ Information about getting supporter or your current subscription")]
+    [SlashCommand("getsupporter", "⭐ Get supporter or manage your current subscription")]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]

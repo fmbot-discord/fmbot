@@ -535,24 +535,26 @@ public class GameService
     {
         var hints = new List<JumbleSessionHint>();
 
+        var albumType = "Album";
+        if (album is { Type: not null } && album.Type.Equals("single", StringComparison.OrdinalIgnoreCase))
+        {
+            albumType = "Single";
+            hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- Album type is a **{album.Type}**"));
+        }
+
         if (album is { Popularity: not null })
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- Album has a popularity of **{album.Popularity}** out of 100"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- {albumType} has a popularity of **{album.Popularity}** out of 100"));
         }
 
         if (album is { Label: not null })
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Label, $"- Album label is **{album.Label}**"));
-        }
-
-        if (album is { Type: not null } && !album.Type.Equals("album", StringComparison.OrdinalIgnoreCase))
-        {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- Album type is **{album.Type}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Label, $"- {albumType} label is **{album.Label}**"));
         }
 
         if (album is { ReleaseDate: not null })
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.ReleaseDate, $"- Album was released on **{AlbumService.GetAlbumReleaseDate(album)}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.ReleaseDate, $"- {albumType} was released on **{AlbumService.GetAlbumReleaseDate(album)}**"));
         }
 
         if (album is { AppleMusicShortDescription: not null } &&
