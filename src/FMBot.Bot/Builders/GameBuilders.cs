@@ -220,7 +220,6 @@ public class GameBuilders
         await this._gameService.JumbleStoreShowedHints(game, hints);
 
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints, jumbleType: JumbleType.Pixelation);
-        ;
 
         var image = await this._gameService.GetSkImage(album.AlbumCoverUrl, album.AlbumName, album.ArtistName,
             game.JumbleSessionId);

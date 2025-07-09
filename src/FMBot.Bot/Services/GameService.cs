@@ -362,8 +362,14 @@ public class GameService
 
     public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount, NumberFormat numberFormat, CountryInfo country = null)
     {
-        var hints = GetRandomAlbumHints(album, artist, country);
-        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this album"));
+        var albumType = "Album";
+        if (album is { Type: not null } && album.Type.Equals("single", StringComparison.OrdinalIgnoreCase))
+        {
+            albumType = "Single";
+        }
+
+        var hints = GetRandomAlbumHints(album, artist, country, albumType);
+        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this {albumType.ToLower()}"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 
@@ -531,14 +537,12 @@ public class GameService
         return hints;
     }
 
-    private static List<JumbleSessionHint> GetRandomAlbumHints(Album album, Artist artist, CountryInfo country = null)
+    private static List<JumbleSessionHint> GetRandomAlbumHints(Album album, Artist artist, CountryInfo country = null, string albumType = "Album")
     {
         var hints = new List<JumbleSessionHint>();
 
-        var albumType = "Album";
-        if (album is { Type: not null } && album.Type.Equals("single", StringComparison.OrdinalIgnoreCase))
+        if (album is { Type: not null } && !album.Type.Equals("album", StringComparison.OrdinalIgnoreCase))
         {
-            albumType = "Single";
             hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- Album type is a **{album.Type}**"));
         }
 
