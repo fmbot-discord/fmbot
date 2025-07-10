@@ -1851,7 +1851,7 @@ public class UserService
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
 
-                if (errorContent.Contains("invalid grant", StringComparison.OrdinalIgnoreCase))
+                if (errorContent.Contains("invalid_grant", StringComparison.OrdinalIgnoreCase))
                 {
                     db.UserTokens.Remove(userToken);
                     await db.SaveChangesAsync();
