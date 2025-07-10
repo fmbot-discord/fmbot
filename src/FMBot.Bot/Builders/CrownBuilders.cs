@@ -203,6 +203,22 @@ public class CrownBuilders
             ? $"{crownType} for {userSettings.UserNameLastFm}, requested by {userTitle}"
             : $"{crownType} for {userTitle}";
 
+        var viewType = new SelectMenuBuilder()
+            .WithPlaceholder("Select crown view")
+            .WithCustomId(InteractionConstants.User.CrownSelectMenu)
+            .WithMinValues(1)
+            .WithMaxValues(1);
+
+        foreach (var option in ((CrownViewType[])Enum.GetValues(typeof(CrownViewType))))
+        {
+            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
+            var value = $"{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{Enum.GetName(option)}";
+
+            var active = option == crownViewType;
+
+            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+        }
+
         if (!userCrowns.Any())
         {
             if (crownViewType == CrownViewType.Stolen)
@@ -218,6 +234,7 @@ public class CrownBuilders
 
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
+            response.Components = new ComponentBuilder().WithSelectMenu(viewType);
             return response;
         }
 
@@ -257,22 +274,6 @@ public class CrownBuilders
                 .WithTitle(title)
                 .WithFooter(footer.ToString()));
             pageCounter++;
-        }
-
-        var viewType = new SelectMenuBuilder()
-            .WithPlaceholder("Select crown view")
-            .WithCustomId(InteractionConstants.User.CrownSelectMenu)
-            .WithMinValues(1)
-            .WithMaxValues(1);
-
-        foreach (var option in ((CrownViewType[])Enum.GetValues(typeof(CrownViewType))))
-        {
-            var name = option.GetAttribute<ChoiceDisplayAttribute>().Name;
-            var value = $"{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}-{Enum.GetName(option)}";
-
-            var active = option == crownViewType;
-
-            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginatorWithSelectMenu(pages, viewType);

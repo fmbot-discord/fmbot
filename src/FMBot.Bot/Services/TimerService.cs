@@ -587,14 +587,6 @@ public class TimerService : IDisposable
 
     public async Task UpdateGlobalWhoKnowsFilters()
     {
-        var startDate = new DateTime(2025, 6, 13);
-        var endDate = new DateTime(2025, 6, 26);
-        if (DateTime.UtcNow >= startDate && DateTime.UtcNow <= endDate)
-        {
-            Log.Information("GWKFilter: Skipping autofilter");
-            return;
-        }
-
         var filteredUsers = await this._whoKnowsFilterService.GetNewGlobalFilteredUsers();
         await this._whoKnowsFilterService.AddFilteredUsersToDatabase(filteredUsers);
     }

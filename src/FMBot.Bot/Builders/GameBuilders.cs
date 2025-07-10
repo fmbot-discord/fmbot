@@ -121,7 +121,8 @@ public class GameBuilders
             artistCountry = this._countryService.GetValidCountry(databaseArtist.CountryCode);
         }
 
-        var hints = GameService.GetJumbleArtistHints(databaseArtist, artist.userPlaycount, context.NumberFormat, artistCountry);
+        var hints = GameService.GetJumbleArtistHints(databaseArtist, artist.userPlaycount, context.NumberFormat,
+            artistCountry);
         await this._gameService.JumbleStoreShowedHints(game, hints);
 
         BuildJumbleEmbed(response.Embed, game.JumbledArtist, game.Hints);
@@ -253,9 +254,18 @@ public class GameBuilders
 
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
+        var albumType = "album";
+        if (hints.Count != 0 &&
+            hints.Any(a =>
+                a.Type == JumbleHintType.Type &&
+                a.Content.Contains("single", StringComparison.OrdinalIgnoreCase)))
+        {
+            albumType = "single";
+        }
+
         var hintTitle = jumbleType == JumbleType.Artist
             ? "Jumble - Guess the artist"
-            : "Pixel Jumble - Guess the album";
+            : $"Pixel Jumble - Guess the {albumType}";
 
         if (jumbledArtist != null)
         {
@@ -294,7 +304,8 @@ public class GameBuilders
         userPage.WithAuthor($"{name} user stats - {userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}");
 
         var userStats =
-            await this._gameService.GetJumbleUserStats(userSettings.UserId, userSettings.DiscordUserId, jumbleType, timeSettings?.StartDateTime, timeSettings?.EndDateTime);
+            await this._gameService.GetJumbleUserStats(userSettings.UserId, userSettings.DiscordUserId, jumbleType,
+                timeSettings?.StartDateTime, timeSettings?.EndDateTime);
 
         if (userStats == null)
         {
@@ -345,7 +356,8 @@ public class GameBuilders
         else
         {
             var gameStats = new StringBuilder();
-            gameStats.AppendLine($"- **{guildStats.TotalGamesPlayed.Format(context.NumberFormat)}** total games played");
+            gameStats.AppendLine(
+                $"- **{guildStats.TotalGamesPlayed.Format(context.NumberFormat)}** total games played");
             gameStats.AppendLine($"- **{guildStats.GamesSolved.Format(context.NumberFormat)}** games solved");
             gameStats.AppendLine($"- **{guildStats.TotalReshuffles.Format(context.NumberFormat)}** total reshuffles");
             gameStats.AppendLine($"- **{decimal.Round(guildStats.AvgHintsShown, 1)}** average hints shown");

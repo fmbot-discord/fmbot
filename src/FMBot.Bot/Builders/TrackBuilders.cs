@@ -1160,9 +1160,10 @@ public class TrackBuilders
             var pageString = new StringBuilder();
             foreach (var track in page)
             {
+                var trackName = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue) ? $"**{track.ArtistName}** - **{track.TrackName}**" : $"**{track.TrackName}**";
                 var name = guildListSettings.OrderType == OrderType.Listeners
-                    ? $"`{track.ListenerCount.Format(context.NumberFormat)}` · **{track.ArtistName}** - **{track.TrackName}** · *{track.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
-                    : $"`{track.TotalPlaycount.Format(context.NumberFormat)}` · **{track.ArtistName}** - **{track.TrackName}** · *{track.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(track.ListenerCount)}*";
+                    ? $"`{track.ListenerCount.Format(context.NumberFormat)}` · {trackName} · *{track.TotalPlaycount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(track.TotalPlaycount)}*"
+                    : $"`{track.TotalPlaycount.Format(context.NumberFormat)}` · {trackName} · *{track.ListenerCount.Format(context.NumberFormat)} {StringExtensions.GetListenersString(track.ListenerCount)}*";
 
                 if (previousTopGuildTracks != null && previousTopGuildTracks.Any())
                 {

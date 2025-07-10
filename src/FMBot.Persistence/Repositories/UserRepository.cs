@@ -62,7 +62,7 @@ public class UserRepository
 
     public static async Task SetUserIndexTime(int userId, NpgsqlConnection connection, IEnumerable<UserPlay> plays)
     {
-        Log.Information($"Setting user index time for user {userId}");
+        Log.Information("UserRepository: Setting user index time for user {userId}", userId);
         var now = DateTime.UtcNow;
 
         var lastScrobble = plays?.MaxBy(o => o.TimePlayed)?.TimePlayed;
@@ -81,7 +81,7 @@ public class UserRepository
 
     public static async Task<DateTime> SetUserPlayStats(User user, NpgsqlConnection connection, DataSourceUser dataSourceUser)
     {
-        Log.Information($"Import: Setting user stats for {user.UserId}");
+        Log.Information("UserRepository: Setting user stats for {userId}", user.UserId);
 
         await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET registered_last_fm='{dataSourceUser.Registered:u}', lastfm_pro = '{dataSourceUser.Subscriber}', total_playcount = {dataSourceUser.Playcount} " +
                                                          $"WHERE user_id = {user.UserId};", connection);
