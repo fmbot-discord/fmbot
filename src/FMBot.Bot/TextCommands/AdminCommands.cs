@@ -2382,7 +2382,7 @@ Not following these rules might lead to a mute, kick or ban. Staff members can b
 
                 if (blacklistResult)
                 {
-                    await ReplyAsync("Blocked " + user + " from using .fmbot.", allowedMentions: AllowedMentions.None);
+                    await ReplyAsync("Blocked " + user + " from using .fmbot. Cached up to 5 minutes, applies to their Last.fm username globally.", allowedMentions: AllowedMentions.None);
                 }
                 else
                 {
@@ -2426,7 +2426,7 @@ Not following these rules might lead to a mute, kick or ban. Staff members can b
 
                 if (blacklistResult)
                 {
-                    await ReplyAsync("Removed " + user + " from the list of users who are blocked from using .fmbot.",
+                    await ReplyAsync("Removed " + user + " from the list of users who are blocked from using .fmbot. Cached up to 5 minutes, applies to their Last.fm username globally.",
                         allowedMentions: AllowedMentions.None);
                 }
                 else

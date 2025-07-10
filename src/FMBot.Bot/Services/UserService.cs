@@ -187,7 +187,41 @@ public class UserService
     {
         var user = await GetUserAsync(discordUserId);
 
-        return user?.Blocked == true;
+        if (user?.Blocked == true)
+        {
+            return true;
+        }
+
+        if (user?.UserNameLastFM != null)
+        {
+            var blockedUsernames = await GetBlockedUsernamesAsync();
+            return blockedUsernames.Contains(user.UserNameLastFM);
+        }
+
+        return false;
+    }
+
+    private async Task<HashSet<string>> GetBlockedUsernamesAsync()
+    {
+        const string cacheKey = "blocked-usernames";
+        
+        if (this._cache.TryGetValue(cacheKey, out HashSet<string> cachedBlockedUsernames))
+        {
+            return cachedBlockedUsernames;
+        }
+
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var blockedUsernames = await db.Users
+            .AsNoTracking()
+            .Where(u => u.Blocked == true && u.UserNameLastFM != null)
+            .Select(u => u.UserNameLastFM)
+            .ToListAsync();
+
+        var blockedUsernamesHashSet = new HashSet<string>(blockedUsernames, StringComparer.OrdinalIgnoreCase);
+        
+        this._cache.Set(cacheKey, blockedUsernamesHashSet, TimeSpan.FromMinutes(5));
+        
+        return blockedUsernamesHashSet;
     }
 
     public async Task<IUser> GetUserFromDiscord(ulong discordUserId)
