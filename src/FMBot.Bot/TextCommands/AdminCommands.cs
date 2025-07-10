@@ -145,6 +145,13 @@ public class AdminCommands : BaseCommandModule
     [Alias("guilddebug", "debugserver", "debugguild")]
     public async Task DebugGuildAsync([Remainder] string guildId = null)
     {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
         guildId ??= this.Context.Guild.Id.ToString();
 
         if (!ulong.TryParse(guildId, out var discordGuildId))
@@ -202,7 +209,36 @@ public class AdminCommands : BaseCommandModule
         }
 
         this._embed.WithDescription(description);
-        await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+
+        // Add guild flags selectmenu
+        var guildFlagsOptions = new SelectMenuBuilder()
+            .WithPlaceholder("Select guild flags")
+            .WithCustomId($"guild-flags-{guild.DiscordGuildId}")
+            .WithMinValues(0)
+            .WithMaxValues(Enum.GetValues<GuildFlags>().Length);
+
+        foreach (var flag in Enum.GetValues(typeof(GuildFlags)).Cast<GuildFlags>())
+        {
+            if (flag == 0)
+            {
+                continue;
+            }
+
+            var flagName = Enum.GetName(flag);
+            var isActive = guild.GuildFlags.HasValue && guild.GuildFlags.Value.HasFlag(flag);
+
+            guildFlagsOptions.AddOption(new SelectMenuOptionBuilder(
+                label: flagName,
+                value: flagName,
+                description: $"Toggle {flagName} flag",
+                isDefault: isActive
+            ));
+        }
+
+        var builder = new ComponentBuilder()
+            .WithSelectMenu(guildFlagsOptions);
+
+        await ReplyAsync("", false, this._embed.Build(), components: builder.Build()).ConfigureAwait(false);
         this.Context.LogCommandUsed();
     }
 
@@ -256,6 +292,57 @@ public class AdminCommands : BaseCommandModule
             await guildToLeave.LeaveAsync();
 
             await ReplyAsync("Left guild (if the bot was in there)");
+            this.Context.LogCommandUsed();
+        }
+        else
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
+    [Command("banguild")]
+    [Summary("Bans a guild and makes the bot leave the server")]
+    [Alias("banserver")]
+    public async Task BanGuild([Remainder] string guildId = null)
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            if (!ulong.TryParse(guildId, out var id))
+            {
+                await ReplyAsync("Invalid guild ID");
+                this.Context.LogCommandUsed();
+                return;
+            }
+
+            // Check if guild exists in database
+            var dbGuild = await this._guildService.GetGuildAsync(id);
+            if (dbGuild == null)
+            {
+                await ReplyAsync("Guild does not exist in database");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            // Add banned flag
+            var currentFlags = dbGuild.GuildFlags ?? (GuildFlags)0;
+            var newFlags = currentFlags | GuildFlags.Banned;
+            await this._guildService.SetGuildFlags(dbGuild.GuildId, newFlags);
+
+            // Leave the guild
+            var guildToLeave = await this._client.Rest.GetGuildAsync(id);
+            if (guildToLeave != null)
+            {
+                await guildToLeave.LeaveAsync();
+                await ReplyAsync($"Banned and left guild: {guildToLeave.Name} ({id})");
+            }
+            else
+            {
+                await ReplyAsync($"Guild banned but bot was not in the guild ({id})");
+            }
+
             this.Context.LogCommandUsed();
         }
         else

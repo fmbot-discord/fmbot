@@ -9,6 +9,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 using Shared.Domain.Enums;
@@ -146,6 +147,14 @@ public class ClientLogHandler
         Log.Information(
             "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
 
+        var dbGuild = await this._guildService.GetGuildAsync(guild.Id);
+        if (dbGuild?.GuildFlags.HasValue == true && dbGuild.GuildFlags.Value.HasFlag(GuildFlags.Banned))
+        {
+            Log.Information("JoinedGuild: {guildName} / {guildId} | Guild is banned, leaving immediately", guild.Name, guild.Id);
+            await guild.LeaveAsync();
+            return;
+        }
+
         _ = this._channelToggledCommandService.ReloadToggledCommands(guild.Id);
         _ = this._guildDisabledCommandService.ReloadDisabledCommands(guild.Id);
         _ = this._disabledChannelService.ReloadDisabledChannels(guild.Id);
@@ -189,6 +198,12 @@ public class ClientLogHandler
         }
 
         if (BotTypeExtension.GetBotType(this._client.CurrentUser.Id) == BotType.Beta)
+        {
+            keepData = true;
+        }
+
+        var dbGuild = await this._guildService.GetGuildAsync(guild.Id);
+        if (dbGuild?.GuildFlags.HasValue == true && dbGuild.GuildFlags.Value.HasFlag(GuildFlags.Banned))
         {
             keepData = true;
         }

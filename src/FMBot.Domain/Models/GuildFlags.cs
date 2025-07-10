@@ -8,4 +8,5 @@ public enum GuildFlags : long
     StaffCommandsAvailable = 1 << 1,
     PremiumServerTester = 1 << 2,
     LegacyWhoKnowsWhitelist = 1 << 3,
+    Banned = 1 << 4,
 }

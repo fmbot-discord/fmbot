@@ -11,6 +11,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models.Modals;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Attributes;
@@ -35,11 +36,12 @@ public class AdminSlashCommands : InteractionModuleBase
     private readonly UserService _userService;
     private readonly SupporterService _supporterService;
     private readonly IndexService _indexService;
+    private readonly GuildService _guildService;
 
     public AdminSlashCommands(AdminService adminService, CensorService censorService, AlbumService albumService,
         ArtistsService artistService, IDataSourceFactory dataSourceFactory, AliasService aliasService,
         PlayService playService, FriendsService friendsService, UserService userService,
-        SupporterService supporterService, IndexService indexService)
+        SupporterService supporterService, IndexService indexService, GuildService guildService)
     {
         this._adminService = adminService;
         this._censorService = censorService;
@@ -52,6 +54,7 @@ public class AdminSlashCommands : InteractionModuleBase
         this._userService = userService;
         this._supporterService = supporterService;
         this._indexService = indexService;
+        this._guildService = guildService;
     }
 
     [ComponentInteraction(InteractionConstants.ModerationCommands.CensorTypes)]
@@ -806,5 +809,45 @@ public class AdminSlashCommands : InteractionModuleBase
             await ReplyAsync(Constants.FmbotStaffOnly);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);
         }
+    }
+
+    [ComponentInteraction(InteractionConstants.ModerationCommands.GuildFlags)]
+    public async Task SetGuildFlags(string discordGuildId, string[] inputs)
+    {
+        if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            await RespondAsync(Constants.FmbotStaffOnly, ephemeral: true);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            return;
+        }
+
+        var discordId = ulong.Parse(discordGuildId);
+        var guild = await this._guildService.GetGuildAsync(discordId);
+        if (guild == null)
+        {
+            await RespondAsync("Guild not found in database", ephemeral: true);
+            return;
+        }
+
+        var newFlags = (GuildFlags)0;
+        foreach (var option in Enum.GetNames<GuildFlags>())
+        {
+            if (Enum.TryParse(option, out GuildFlags flag))
+            {
+                if (inputs.Any(a => a == option))
+                {
+                    newFlags |= flag;
+                }
+                else
+                {
+                    newFlags &= ~flag;
+                }
+            }
+        }
+
+        await this._guildService.SetGuildFlags(guild.GuildId, newFlags);
+
+        var flagsDescription = newFlags == 0 ? "None" : string.Join(", ", inputs);
+        await RespondAsync($"Guild flags updated to: {flagsDescription}", ephemeral: true);
     }
 }

@@ -1267,4 +1267,23 @@ public class GuildService
             Log.Error(e, $"Exception in {nameof(UpdateGuildUserLastMessageDate)}");
         }
     }
+
+    public async Task SetGuildFlags(int guildId, GuildFlags flags)
+    {
+        try
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var guild = await db.Guilds.FirstOrDefaultAsync(g => g.GuildId == guildId);
+            
+            if (guild != null)
+            {
+                guild.GuildFlags = flags;
+                await db.SaveChangesAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, $"Exception in {nameof(SetGuildFlags)}");
+        }
+    }
 }

@@ -29,46 +29,34 @@ namespace FMBot.Bot.TextCommands;
 public class UserCommands : BaseCommandModule
 {
     private readonly GuildService _guildService;
-    private readonly IndexService _indexService;
     private readonly IPrefixService _prefixService;
-    private readonly IDataSourceFactory _dataSourceFactory;
     private readonly SettingService _settingService;
     private readonly UserService _userService;
     private readonly UserBuilder _userBuilder;
-    private readonly ArtistsService _artistsService;
     private readonly OpenAiService _openAiService;
     private readonly TimerService _timerService;
     private readonly TemplateBuilders _templateBuilders;
 
     private InteractiveService Interactivity { get; }
 
-    private static readonly List<DateTimeOffset> StackCooldownTimer = new();
-    private static readonly List<SocketUser> StackCooldownTarget = new();
-
     public UserCommands(
         GuildService guildService,
-        IndexService indexService,
         IPrefixService prefixService,
-        IDataSourceFactory dataSourceFactory,
         SettingService settingService,
         UserService userService,
         IOptions<BotSettings> botSettings,
         UserBuilder userBuilder,
         InteractiveService interactivity,
-        ArtistsService artistsService,
         OpenAiService openAiService,
         TimerService timerService,
         TemplateBuilders templateBuilders) : base(botSettings)
     {
         this._guildService = guildService;
-        this._indexService = indexService;
-        this._dataSourceFactory = dataSourceFactory;
         this._prefixService = prefixService;
         this._settingService = settingService;
         this._userService = userService;
         this._userBuilder = userBuilder;
         this.Interactivity = interactivity;
-        this._artistsService = artistsService;
         this._openAiService = openAiService;
         this._timerService = timerService;
         this._templateBuilders = templateBuilders;
