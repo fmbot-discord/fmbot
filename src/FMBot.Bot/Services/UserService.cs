@@ -204,7 +204,7 @@ public class UserService
     private async Task<HashSet<string>> GetBlockedUsernamesAsync()
     {
         const string cacheKey = "blocked-usernames";
-        
+
         if (this._cache.TryGetValue(cacheKey, out HashSet<string> cachedBlockedUsernames))
         {
             return cachedBlockedUsernames;
@@ -218,9 +218,9 @@ public class UserService
             .ToListAsync();
 
         var blockedUsernamesHashSet = new HashSet<string>(blockedUsernames, StringComparer.OrdinalIgnoreCase);
-        
+
         this._cache.Set(cacheKey, blockedUsernamesHashSet, TimeSpan.FromMinutes(5));
-        
+
         return blockedUsernamesHashSet;
     }
 
@@ -1818,7 +1818,7 @@ public class UserService
         }
     }
 
-    private async Task RefreshDiscordToken(UserToken userToken, DbContext db)
+    private async Task RefreshDiscordToken(UserToken userToken, FMBotDbContext db)
     {
         try
         {
@@ -1850,6 +1850,15 @@ public class UserService
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
+
+                if (errorContent.Contains("invalid grant", StringComparison.OrdinalIgnoreCase))
+                {
+                    db.UserTokens.Remove(userToken);
+                    await db.SaveChangesAsync();
+                    Log.Information("Removed discord token for {discordUserId}", userToken.DiscordUserId);
+                    return;
+                }
+
                 Log.Error("Failed to refresh Discord token for {discordUserId}: {ErrorContent}",
                     userToken.DiscordUserId, errorContent);
             }
