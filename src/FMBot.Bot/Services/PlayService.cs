@@ -409,7 +409,8 @@ public class PlayService
             UserId = userId
         };
 
-        for (var i = 1; i < lastPlaysList.Count; i++)
+        var startIndex = lastPlay.NowPlaying ? 1 : 0;
+        for (var i = startIndex; i < lastPlaysList.Count; i++)
         {
             var currentPlay = lastPlaysList[i];
 
@@ -428,7 +429,7 @@ public class PlayService
             }
         }
 
-        for (var i = 1; i < lastPlaysList.Count; i++)
+        for (var i = startIndex; i < lastPlaysList.Count; i++)
         {
             var currentPlay = lastPlaysList[i];
 
@@ -449,7 +450,7 @@ public class PlayService
             }
         }
 
-        for (var i = 1; i < lastPlaysList.Count; i++)
+        for (var i = startIndex; i < lastPlaysList.Count; i++)
         {
             var currentPlay = lastPlaysList[i];
 
