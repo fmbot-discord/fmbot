@@ -37,7 +37,8 @@ public class GameService
     public const int JumbleSecondsToGuess = 25;
     public const int PixelationSecondsToGuess = 40;
 
-    public GameService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, HttpClient client)
+    public GameService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory,
+        IOptions<BotSettings> botSettings, HttpClient client)
     {
         this._cache = cache;
         this._contextFactory = contextFactory;
@@ -45,7 +46,8 @@ public class GameService
         this._botSettings = botSettings.Value;
     }
 
-    public static (string artist, long userPlaycount) PickArtistForJumble(List<TopArtist> topArtists, List<JumbleSession> recentJumbles = null)
+    public static (string artist, long userPlaycount) PickArtistForJumble(List<TopArtist> topArtists,
+        List<JumbleSession> recentJumbles = null)
     {
         recentJumbles ??= [];
 
@@ -101,8 +103,9 @@ public class GameService
             .Where(w => w.UserPlaycount >= finalMinPlaycount)
             .ToList();
 
-        Log.Information("PickArtistForJumble: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
-                        "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
+        Log.Information(
+            "PickArtistForJumble: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
+            "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
             topArtists.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount);
 
         if (eligibleArtists.Count == 0)
@@ -184,8 +187,9 @@ public class GameService
                 w.UserPlaycount >= finalMinPlaycount)
             .ToList();
 
-        Log.Information("PickAlbumForPixelation: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
-                        "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
+        Log.Information(
+            "PickAlbumForPixelation: {topArtistCount} top artists - {jumblesPlayedTodayCount} jumbles played today - " +
+            "{multiplier} multiplier - {minPlaycount} min playcount - {finalMinPlaycount} final min playcount",
             topAlbums.Count, recentJumbles.Count, multiplier, minPlaycount, finalMinPlaycount);
 
         if (eligibleAlbums.Count == 0)
@@ -216,8 +220,8 @@ public class GameService
     }
 
     public async Task<JumbleSession> StartJumbleGame(int userId, ContextModel context, JumbleType jumbleType,
-                                                     string answer, CancellationTokenSource cancellationToken,
-                                                     string artist, string album = null)
+        string answer, CancellationTokenSource cancellationToken,
+        string artist, string album = null)
     {
         if (jumbleType == JumbleType.Pixelation)
         {
@@ -260,7 +264,8 @@ public class GameService
 
         var cacheTime = TimeSpan.FromMinutes(1);
         this._cache.Set(CacheKeyForJumbleSession(context.DiscordChannel.Id), cancellationToken, cacheTime);
-        this._cache.Set(CacheKeyForJumbleSessionCancellationToken(context.DiscordChannel.Id), cancellationToken, cacheTime);
+        this._cache.Set(CacheKeyForJumbleSessionCancellationToken(context.DiscordChannel.Id), cancellationToken,
+            cacheTime);
 
         return jumbleSession;
     }
@@ -333,9 +338,68 @@ public class GameService
         return jumblesPlayedToday.ToList();
     }
 
+    public async Task<int> GetConsecutiveDaysStreak(ulong discordUserId, JumbleType jumbleType)
+    {
+        try
+        {
+            const string sql = """
+                               WITH all_activity AS (
+                                   SELECT DATE(js.date_started) as activity_date
+                                   FROM public.jumble_sessions js
+                                   INNER JOIN public.users u ON js.starter_user_id = u.user_id
+                                   WHERE u.discord_user_id = @discordUserId
+                                     AND js.jumble_type = @jumbleType
+
+                                   UNION
+
+                                   SELECT DATE(jsa.date_answered) as activity_date
+                                   FROM public.jumble_session_answers jsa
+                                   INNER JOIN public.jumble_sessions js ON jsa.jumble_session_id = js.jumble_session_id
+                                   WHERE jsa.discord_user_id = @discordUserId
+                                     AND js.jumble_type = @jumbleType
+                               ),
+                               daily_plays AS (
+                                   SELECT DISTINCT activity_date as play_date
+                                   FROM all_activity
+                               ),
+                               ranked AS (
+                                   SELECT
+                                       play_date,
+                                       ROW_NUMBER() OVER (ORDER BY play_date DESC) as rn,
+                                       MAX(play_date) OVER () as max_play_date
+                                   FROM
+                                       daily_plays
+                               )
+                               SELECT COUNT(*)
+                               FROM ranked
+                               WHERE max_play_date >= CURRENT_DATE - INTERVAL '1 day'
+                                 AND play_date = max_play_date - (rn - 1) * INTERVAL '1 day';
+                               """;
+
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var convertedId = (long)discordUserId;
+            var result = await connection.QuerySingleOrDefaultAsync<int?>(sql,
+                new
+                {
+                    discordUserId = convertedId,
+                    jumbleType
+                });
+
+            return result ?? 0;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "GetConsecutiveDaysStreak error: {userId} - {jumbleType}", discordUserId, jumbleType);;
+            return 0;
+        }
+    }
+
     public async Task CancelToken(ulong channelId)
     {
-        if (!this._cache.TryGetValue(CacheKeyForJumbleSessionCancellationToken(channelId), out CancellationTokenSource token))
+        if (!this._cache.TryGetValue(CacheKeyForJumbleSessionCancellationToken(channelId),
+                out CancellationTokenSource token))
         {
             return;
         }
@@ -343,11 +407,13 @@ public class GameService
         await token.CancelAsync();
     }
 
-    public static List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount, NumberFormat numberFormat,
+    public static List<JumbleSessionHint> GetJumbleArtistHints(Artist artist, long userPlaycount,
+        NumberFormat numberFormat,
         CountryInfo country = null)
     {
         var hints = GetRandomArtistHints(artist, country);
-        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
+        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount,
+            $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this artist"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 
@@ -360,7 +426,8 @@ public class GameService
         return hints;
     }
 
-    public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount, NumberFormat numberFormat, CountryInfo country = null)
+    public static List<JumbleSessionHint> GetJumbleAlbumHints(Album album, Artist artist, long userPlaycount,
+        NumberFormat numberFormat, CountryInfo country = null)
     {
         var albumType = "Album";
         if (album is { Type: not null } && album.Type.Equals("single", StringComparison.OrdinalIgnoreCase))
@@ -369,7 +436,8 @@ public class GameService
         }
 
         var hints = GetRandomAlbumHints(album, artist, country, albumType);
-        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount, $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this {albumType.ToLower()}"));
+        hints.Add(new JumbleSessionHint(JumbleHintType.Playcount,
+            $"- You have **{userPlaycount.Format(numberFormat)}** {StringExtensions.GetPlaysString(userPlaycount)} on this {albumType.ToLower()}"));
 
         RandomNumberGenerator.Shuffle(CollectionsMarshal.AsSpan(hints));
 
@@ -479,7 +547,8 @@ public class GameService
 
         if (artist is { Popularity: not null })
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- They have a popularity of **{artist.Popularity}** out of 100"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity,
+                $"- They have a popularity of **{artist.Popularity}** out of 100"));
         }
 
         if (artist?.ArtistGenres != null && artist.ArtistGenres.Any())
@@ -496,7 +565,8 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- They were born **<t:{dateValue}:D>** {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate,
+                    $"- They were born **<t:{dateValue}:D>** {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
             }
             else
             {
@@ -511,7 +581,8 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- They passed away on **<t:{dateValue}:D>**"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate,
+                    $"- They passed away on **<t:{dateValue}:D>**"));
             }
             else
             {
@@ -519,9 +590,11 @@ public class GameService
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(artist?.Disambiguation) && !artist.Disambiguation.Contains(artist.Name, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(artist?.Disambiguation) &&
+            !artist.Disambiguation.Contains(artist.Name, StringComparison.OrdinalIgnoreCase))
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation, $"- They might be described as **{artist.Disambiguation}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation,
+                $"- They might be described as **{artist.Disambiguation}**"));
         }
 
         if (!string.IsNullOrWhiteSpace(artist?.Type))
@@ -531,13 +604,15 @@ public class GameService
 
         if (artist?.CountryCode != null && country != null)
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Country, $"- Their country flag: :flag_{country.Code.ToLower()}:"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Country,
+                $"- Their country flag: :flag_{country.Code.ToLower()}:"));
         }
 
         return hints;
     }
 
-    private static List<JumbleSessionHint> GetRandomAlbumHints(Album album, Artist artist, CountryInfo country = null, string albumType = "Album")
+    private static List<JumbleSessionHint> GetRandomAlbumHints(Album album, Artist artist, CountryInfo country = null,
+        string albumType = "Album")
     {
         var hints = new List<JumbleSessionHint>();
 
@@ -548,7 +623,8 @@ public class GameService
 
         if (album is { Popularity: not null })
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity, $"- {albumType} has a popularity of **{album.Popularity}** out of 100"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Popularity,
+                $"- {albumType} has a popularity of **{album.Popularity}** out of 100"));
         }
 
         if (album is { Label: not null })
@@ -558,7 +634,8 @@ public class GameService
 
         if (album is { ReleaseDate: not null })
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.ReleaseDate, $"- {albumType} was released on **{AlbumService.GetAlbumReleaseDate(album)}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.ReleaseDate,
+                $"- {albumType} was released on **{AlbumService.GetAlbumReleaseDate(album)}**"));
         }
 
         if (album is { AppleMusicShortDescription: not null } &&
@@ -566,7 +643,8 @@ public class GameService
             !album.AppleMusicShortDescription.Contains("apple music", StringComparison.OrdinalIgnoreCase) &&
             !album.AppleMusicShortDescription.Contains(album.Name, StringComparison.OrdinalIgnoreCase))
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.AppleMusicDescription, $"- *{album.AppleMusicShortDescription}*"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.AppleMusicDescription,
+                $"- *{album.AppleMusicShortDescription}*"));
         }
 
         if (artist?.ArtistGenres != null && artist.ArtistGenres.Any())
@@ -583,11 +661,13 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- Artist was born **<t:{dateValue}:D>** {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate,
+                    $"- Artist was born **<t:{dateValue}:D>** {ArtistsService.IsArtistBirthday(artist.StartDate)}"));
             }
             else
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate, $"- Artist started on **<t:{dateValue}:D>**"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.StartDate,
+                    $"- Artist started on **<t:{dateValue}:D>**"));
             }
         }
 
@@ -598,7 +678,8 @@ public class GameService
 
             if (artist.Type?.ToLower() == "person")
             {
-                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate, $"- Artist passed away on **<t:{dateValue}:D>**"));
+                hints.Add(new JumbleSessionHint(JumbleHintType.EndDate,
+                    $"- Artist passed away on **<t:{dateValue}:D>**"));
             }
             else
             {
@@ -606,9 +687,11 @@ public class GameService
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(artist?.Disambiguation) && !artist.Disambiguation.Contains(artist.Name, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(artist?.Disambiguation) &&
+            !artist.Disambiguation.Contains(artist.Name, StringComparison.OrdinalIgnoreCase))
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation, $"- Artist might be described as **{artist.Disambiguation}**"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Disambiguation,
+                $"- Artist might be described as **{artist.Disambiguation}**"));
         }
 
         if (!string.IsNullOrWhiteSpace(artist?.Type))
@@ -618,7 +701,8 @@ public class GameService
 
         if (artist?.CountryCode != null && country != null)
         {
-            hints.Add(new JumbleSessionHint(JumbleHintType.Country, $"- Artist country flag: :flag_{country.Code.ToLower()}:"));
+            hints.Add(new JumbleSessionHint(JumbleHintType.Country,
+                $"- Artist country flag: :flag_{country.Code.ToLower()}:"));
         }
 
         return hints;
@@ -656,7 +740,7 @@ public class GameService
             userAnswer.Contains(uncleanedCorrectAnswer, StringComparison.OrdinalIgnoreCase) ||
             correctAnswer.Equals(userAnswer, StringComparison.OrdinalIgnoreCase) ||
             uncleanedCorrectAnswer.Equals(userAnswer, StringComparison.OrdinalIgnoreCase) ||
-            correctAnswer.Equals(messageContent, StringComparison.OrdinalIgnoreCase)||
+            correctAnswer.Equals(messageContent, StringComparison.OrdinalIgnoreCase) ||
             uncleanedCorrectAnswer.Equals(messageContent, StringComparison.OrdinalIgnoreCase))
         {
             return true;
@@ -727,8 +811,14 @@ public class GameService
             return source1Length;
         }
 
-        for (var i = 0; i <= source1Length; matrix[i, 0] = i++) { }
-        for (var j = 0; j <= source2Length; matrix[0, j] = j++) { }
+        for (var i = 0; i <= source1Length; matrix[i, 0] = i++)
+        {
+        }
+
+        for (var j = 0; j <= source2Length; matrix[0, j] = j++)
+        {
+        }
+
         for (var i = 1; i <= source1Length; i++)
         {
             for (var j = 1; j <= source2Length; j++)
@@ -821,6 +911,7 @@ public class GameService
                 canvas.DrawRect(rect, paint);
             }
         }
+
         return pixelatedBitmap;
     }
 
@@ -875,11 +966,15 @@ public class GameService
             AvgCorrectAnsweringTime = correctAnswers.Any()
                 ? (decimal)correctAnswers.Average(a => (a.DateAnswered - a.JumbleSession.DateStarted).TotalSeconds)
                 : 0,
-            AvgAttemptsUntilCorrect = jumbleSessions.Any(s => s.Answers.Any(a => a.DiscordUserId == discordUserId && a.Correct)) ?
-                (decimal)jumbleSessions
-                    .Where(s => s.Answers.Any(a => a.DiscordUserId == discordUserId && a.Correct))
-                    .Average(s => s.Answers.Count(a => a.DiscordUserId == discordUserId &&
-                                                       a.DateAnswered <= s.Answers.FirstOrDefault(ca => ca.DiscordUserId == discordUserId && ca.Correct)?.DateAnswered)) : 0
+            AvgAttemptsUntilCorrect =
+                jumbleSessions.Any(s => s.Answers.Any(a => a.DiscordUserId == discordUserId && a.Correct))
+                    ? (decimal)jumbleSessions
+                        .Where(s => s.Answers.Any(a => a.DiscordUserId == discordUserId && a.Correct))
+                        .Average(s => s.Answers.Count(a => a.DiscordUserId == discordUserId &&
+                                                           a.DateAnswered <= s.Answers.FirstOrDefault(ca =>
+                                                                   ca.DiscordUserId == discordUserId && ca.Correct)
+                                                               ?.DateAnswered))
+                    : 0
         };
     }
 

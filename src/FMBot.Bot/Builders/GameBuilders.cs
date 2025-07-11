@@ -567,6 +567,8 @@ public class GameBuilders
             return response;
         }
 
+        var dayStreakTask = this._gameService.GetConsecutiveDaysStreak(context.DiscordUser.Id, currentGame.JumbleType);
+
         await this._gameService.JumbleEndSession(currentGame);
         await this._gameService.CancelToken(context.DiscordChannel.Id);
 
@@ -587,11 +589,24 @@ public class GameBuilders
 
         if (currentGame.Answers is { Count: >= 1 })
         {
+            var dayCount = await dayStreakTask;
             var separateResponse = new EmbedBuilder();
             separateResponse.WithDescription(currentGame.JumbleType == JumbleType.Artist
                 ? $"**{userTitle}** gave up! It was `{currentGame.CorrectAnswer}`"
                 : $"**{userTitle}** gave up! It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
             separateResponse.WithColor(DiscordConstants.AppleMusicRed);
+            if (dayCount > 1)
+            {
+                var footer = new StringBuilder();
+                if (dayCount >= 10)
+                {
+                    footer.Append($"🔥");
+                }
+
+                footer.Append($"{dayCount} day streak");
+                separateResponse.WithFooter(footer.ToString());
+            }
+
             if (context.DiscordChannel is IMessageChannel msgChannel)
             {
                 _ = Task.Run(() => SendSeparateResponse(msgChannel, separateResponse, playAgainButton,
@@ -666,6 +681,9 @@ public class GameBuilders
 
                 if (answerIsRight)
                 {
+                    var dayStreakTask =
+                        this._gameService.GetConsecutiveDaysStreak(context.DiscordUser.Id, currentGame.JumbleType);
+
                     _ = Task.Run(() => commandContext.Message.AddReactionAsync(new Emoji("✅")));
 
                     _ = Task.Run(() => this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, true));
@@ -680,8 +698,25 @@ public class GameBuilders
                             ? $"**{userTitle}** got it! It was `{currentGame.CorrectAnswer}`"
                             : $"**{userTitle}** got it! It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
                     var timeTaken = DateTime.UtcNow - currentGame.DateStarted;
-                    separateResponse.WithFooter(
+
+                    var footer = new StringBuilder();
+                    footer.Append(
                         $"Answered in {timeTaken.TotalSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}s");
+
+                    var dayCount = await dayStreakTask;
+                    if (dayCount > 1)
+                    {
+                        footer.Append($" — ");
+                        if (dayCount >= 10)
+                        {
+                            footer.Append($"🔥");
+                        }
+
+                        footer.Append(
+                            $"{dayCount} day streak");
+                    }
+
+                    separateResponse.WithFooter(footer.ToString());
                     separateResponse.WithColor(DiscordConstants.SpotifyColorGreen);
                     var playAgainComponent = new ComponentBuilder().WithButton("Play again",
                         $"{InteractionConstants.Game.JumblePlayAgain}-{currentGame.JumbleType}",
