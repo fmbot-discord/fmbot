@@ -46,7 +46,7 @@ public class ImportBuilders
 
         if (context.ContextUser.UserType == UserType.User)
         {
-            response.Embed.WithDescription($"Only supporters can import and use their Spotify or Apple Music history.");
+            response.Embed.WithDescription($"Only supporters can import and access their Spotify or Apple Music history.");
 
             response.Components = new ComponentBuilder()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,

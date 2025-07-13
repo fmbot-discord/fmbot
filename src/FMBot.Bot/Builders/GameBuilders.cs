@@ -432,7 +432,7 @@ public class GameBuilders
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image == null)
             {
-                response.Embed.WithDescription("Sorry, something went wrong while getting album cover for your album.");
+                response.Embed.WithDescription("Sorry, something went wrong while getting the album cover for your album.");
                 response.CommandResponse = CommandResponse.Error;
                 response.ResponseType = ResponseType.Embed;
                 return response;
@@ -473,7 +473,7 @@ public class GameBuilders
             var image = await this._gameService.GetImageFromCache(currentGame.JumbleSessionId);
             if (image == null)
             {
-                response.Embed.WithDescription("Sorry, something went wrong while getting album cover for your album.");
+                response.Embed.WithDescription("Sorry, something went wrong while getting the album cover for your album.");
                 response.CommandResponse = CommandResponse.Error;
                 response.ResponseType = ResponseType.Embed;
                 return response;

@@ -104,7 +104,7 @@ public class StaticBuilders
                 "-# Unlock lifetime Last.fm data for deeper analysis. Track first listens, get expanded profiles, expanded commands, your full Discogs collection and more.");
 
             response.Embed.AddField("<:history:1131511469096312914> Import your history",
-                "-# Import and use your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
+                "-# Import and access your full Spotify and Apple Music history together with your Last.fm data for the most accurate playcounts, listening time, and insights.");
 
             response.Embed.AddField("<:discoveries:1145740579284713512> Go back in time",
                 "-# See exactly when you discovered and re-discovered artists, albums, and tracks in commands and through the exclusive Discoveries and Gaps commands.");
