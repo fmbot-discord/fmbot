@@ -360,7 +360,7 @@ public class UserSlashCommands : InteractionModuleBase
             }
             else if (loginResult.Status == UserService.LoginStatus.TooManyAccounts)
             {
-                var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount); // Pass AltCount here
+                var loginFailure = UserBuilder.LoginTooManyAccounts(loginResult.AltCount);
                 await FollowupAsync(null, [loginFailure.Embed.Build()], components: loginFailure.Components.Build(),
                     ephemeral: true);
 

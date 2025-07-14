@@ -545,7 +545,7 @@ public class GameService
     {
         var hints = new List<JumbleSessionHint>();
 
-        if (artist is { Popularity: not null })
+        if (artist is { Popularity: > 0 })
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.Popularity,
                 $"- They have a popularity of **{artist.Popularity}** out of 100"));
@@ -621,7 +621,7 @@ public class GameService
             hints.Add(new JumbleSessionHint(JumbleHintType.Type, $"- Album type is a **{album.Type}**"));
         }
 
-        if (album is { Popularity: not null })
+        if (album is { Popularity: > 0 })
         {
             hints.Add(new JumbleSessionHint(JumbleHintType.Popularity,
                 $"- {albumType} has a popularity of **{album.Popularity}** out of 100"));
@@ -710,7 +710,7 @@ public class GameService
 
     private static string JumbleWords(string input)
     {
-        var words = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        var words = input.Split([' '], StringSplitOptions.RemoveEmptyEntries);
 
         var jumbledWords = words.Select(JumbleWord);
 

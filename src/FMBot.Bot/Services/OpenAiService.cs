@@ -39,7 +39,7 @@ public class OpenAiService
         this._botSettings = botSettings.Value;
     }
 
-    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-4o-mini",
+    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-4.1-mini",
         string userMessage = null, double temperature = 1.00)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
@@ -176,7 +176,7 @@ public class OpenAiService
                 await SendRequest($"Is the username '{username}' offensive? Only reply with 'true' or 'false'.");
 
             var output = response.Choices.FirstOrDefault()?.ChoiceMessage?.Content;
-            return output != null && output.ToLower().Contains("true");
+            return output != null && output.Contains("true", StringComparison.OrdinalIgnoreCase);
         }
         catch (Exception e)
         {
@@ -210,11 +210,14 @@ public class OpenAiService
 
             var promptBuilder = new StringBuilder();
 
-            promptBuilder.AppendLine("Top 80 artists");
-            foreach (var topArtist in topArtists.Content.TopArtists.Take(80))
+            if (topArtists?.Content?.TopArtists != null)
             {
-                promptBuilder.AppendLine(
-                    $"{StringExtensions.TruncateLongString(topArtist.ArtistName, 28)}, {topArtist.UserPlaycount} plays");
+                promptBuilder.AppendLine("Top 80 artists");
+                foreach (var topArtist in topArtists.Content.TopArtists.Take(80))
+                {
+                    promptBuilder.AppendLine(
+                        $"{StringExtensions.TruncateLongString(topArtist.ArtistName, 28)}, {topArtist.UserPlaycount} plays");
+                }
             }
 
             if (userPlays.Count > 100)
@@ -269,7 +272,7 @@ public class OpenAiService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Feature: Error in OpenAI call");
+            Log.Error(e, "Recap: Error in OpenAI call");
             return null;
         }
     }

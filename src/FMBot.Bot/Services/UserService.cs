@@ -1375,6 +1375,7 @@ public class UserService
                     return (LoginStatus.TooManyAccounts, existingUserCount);
                 }
 
+                this._cache.Remove(TempUserCacheKey(contextUser.Id));
                 await SetLastFm(contextUser, userSettings, true);
                 return (LoginStatus.Success, 0);
             }
@@ -1842,6 +1843,7 @@ public class UserService
                 userToken.RefreshToken = jsonResponse.RefreshToken;
                 userToken.TokenExpiresAt = DateTime.UtcNow.AddSeconds(jsonResponse.ExpiresIn);
                 userToken.LastUpdated = DateTime.UtcNow;
+                userToken.BotType = BotTypeExtension.GetBotType(this._client.CurrentUser.Id);
 
                 db.Update(userToken);
 
