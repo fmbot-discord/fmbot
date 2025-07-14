@@ -1776,7 +1776,9 @@ public class UserService
     public async Task UpdateLinkedRole(ulong discordUserId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var userToken = await db.UserTokens.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+        var botType = BotTypeExtension.GetBotType(this._client.CurrentUser.Id);
+        var userToken =
+            await db.UserTokens.FirstOrDefaultAsync(f => f.BotType == botType && f.DiscordUserId == discordUserId);
 
         if (userToken == null)
         {
@@ -1843,7 +1845,6 @@ public class UserService
                 userToken.RefreshToken = jsonResponse.RefreshToken;
                 userToken.TokenExpiresAt = DateTime.UtcNow.AddSeconds(jsonResponse.ExpiresIn);
                 userToken.LastUpdated = DateTime.UtcNow;
-                userToken.BotType = BotTypeExtension.GetBotType(this._client.CurrentUser.Id);
 
                 db.Update(userToken);
 
