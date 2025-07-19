@@ -404,7 +404,9 @@ public class CommandHandler
             }
             else
             {
-                Log.Error(result?.ToString() ?? "Command error (null)", context.Message.Content);
+                Log.Error(
+                    "CommandHandler error: {discordUserName} / {discordUserId} | {guildName} / {guildId}  | {messageContent} | Error: {error}",
+                    context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, context.Message.Content, result.ToString());
             }
         }
     }
