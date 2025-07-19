@@ -127,7 +127,7 @@ public class TimerService : IDisposable
              ConfigData.Data.Shards.MainInstance == true))
         {
             Log.Information($"RecurringJob: Adding {nameof(AddUsersToUpdateQueue)}");
-            RecurringJob.AddOrUpdate(nameof(AddUsersToUpdateQueue), () => AddUsersToUpdateQueue(), "0 8,13 * * *");
+            RecurringJob.AddOrUpdate(nameof(AddUsersToUpdateQueue), () => AddUsersToUpdateQueue(), "0 6,14 * * *");
         }
         else
         {
