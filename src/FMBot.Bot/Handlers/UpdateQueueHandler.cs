@@ -31,16 +31,14 @@ public class UpdateQueueHandler : IDisposable
         Log.Debug("User enqueued. Queue size: {QueueSize}", _queue.Count);
     }
 
-    public async Task ProcessQueueAsync(CancellationToken cancellationToken)
+    public async Task ProcessQueueAsync()
     {
         var tasks = new List<Task>(MaxConcurrentTasks);
         try
         {
-            while (!cancellationToken.IsCancellationRequested)
-            {
                 if (_queue.TryDequeue(out var item))
                 {
-                    tasks.Add(ProcessItemAsync(item, cancellationToken));
+                    tasks.Add(ProcessItemAsync(item));
                     if (tasks.Count >= MaxConcurrentTasks)
                     {
                         await CompletionTaskAsync(tasks);
@@ -52,9 +50,8 @@ public class UpdateQueueHandler : IDisposable
                 }
                 else
                 {
-                    await Task.Delay(EmptyQueueDelayMs, cancellationToken);
+                    await Task.Delay(EmptyQueueDelayMs);
                 }
-            }
         }
         catch (OperationCanceledException)
         {
@@ -76,13 +73,13 @@ public class UpdateQueueHandler : IDisposable
         tasks.RemoveAll(t => t.IsCompleted);
     }
 
-    private async Task ProcessItemAsync(UpdateUserQueueItem item, CancellationToken cancellationToken)
+    private async Task ProcessItemAsync(UpdateUserQueueItem item)
     {
-        await _semaphore.WaitAsync(cancellationToken);
+        await _semaphore.WaitAsync();
         try
         {
             await _updateService.UpdateUser(item);
-            await Task.Delay(_delayBetweenOperations, cancellationToken);
+            await Task.Delay(_delayBetweenOperations);
         }
         catch (Exception ex)
         {

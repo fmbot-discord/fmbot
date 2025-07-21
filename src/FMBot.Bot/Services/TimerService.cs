@@ -48,7 +48,6 @@ public class TimerService : IDisposable
     private readonly UpdateQueueHandler _updateQueueHandler;
 
     public FeaturedLog CurrentFeatured;
-    private CancellationTokenSource _updateQueueCancellationToken;
 
     public TimerService(DiscordShardedClient client,
         UpdateService updateService,
@@ -409,23 +408,15 @@ public class TimerService : IDisposable
             }
         }
 
-        if (this._updateQueueCancellationToken != null)
-        {
-            await this._updateQueueCancellationToken.CancelAsync();
-            this._updateQueueCancellationToken.Dispose();
-            Log.Information("Cancelled previous update queue");
-        }
-
-        this._updateQueueCancellationToken = new CancellationTokenSource();
-        _ = StartProcessingUpdateQueue(this._updateQueueCancellationToken.Token);
+        _ = StartProcessingUpdateQueue();
 
         Log.Information("Found {usersToIndexCount} outdated users to index - added all to queue - end time {endTime}", indexCount, indexDelay);
         Log.Information("Found {usersToUpdateCount} outdated users to update - added all to queue", updateCount);
     }
 
-    public Task StartProcessingUpdateQueue(CancellationToken cancellationToken)
+    public Task StartProcessingUpdateQueue()
     {
-        return _updateQueueHandler.ProcessQueueAsync(cancellationToken);
+        return _updateQueueHandler.ProcessQueueAsync();
     }
 
     public async Task CheckForNewFeatured()
@@ -666,7 +657,6 @@ public class TimerService : IDisposable
 
     public void Dispose()
     {
-        this._updateQueueCancellationToken?.Dispose();
         this._updateQueueHandler?.Dispose();
         GC.SuppressFinalize(this);
     }
