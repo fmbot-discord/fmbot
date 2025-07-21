@@ -272,7 +272,9 @@ public class CommandHandler
                 }
                 else
                 {
-                    Log.Error(commandPrefixResult.ToString(), context.Message.Content);
+                    Log.Error(
+                        "CommandHandler error (.fm): {discordUserName} / {discordUserId} | {guildName} / {guildId}  | {messageContent} | Error: {error}",
+                        context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, context.Message.Content, commandPrefixResult.ToString());
                 }
 
                 return;
