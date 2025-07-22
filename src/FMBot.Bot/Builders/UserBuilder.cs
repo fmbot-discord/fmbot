@@ -1930,6 +1930,16 @@ public class UserBuilder
             return response;
         }
 
+        if (context.ContextUser.LastIndexed > DateTime.UtcNow.AddMinutes(-30))
+        {
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.Embed.WithDescription(
+                "You can't do full updates too often. These are only meant to be used when your Last.fm history has been adjusted.\n\n" +
+                $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{context.Prefix}outofsync` for help. Spotify sync issues can't be fixed inside of .fmbot.");
+            response.CommandResponse = CommandResponse.Cooldown;
+            return response;
+        }
+
         var indexAlreadyStarted = this._indexService.IndexStarted(context.ContextUser.UserId);
 
         if (!indexAlreadyStarted)
@@ -1937,16 +1947,6 @@ public class UserBuilder
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.Embed.WithDescription(
                 "An advanced update has recently already been started for you. Please wait before starting a new one.");
-            response.CommandResponse = CommandResponse.Cooldown;
-            return response;
-        }
-
-        if (context.ContextUser.LastIndexed > DateTime.UtcNow.AddMinutes(-30))
-        {
-            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-            response.Embed.WithDescription(
-                "You can't do full updates too often. These are only meant to be used when your Last.fm history has been adjusted.\n\n" +
-                $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{context.Prefix}outofsync` for help. Spotify sync issues can't be fixed inside of .fmbot.");
             response.CommandResponse = CommandResponse.Cooldown;
             return response;
         }

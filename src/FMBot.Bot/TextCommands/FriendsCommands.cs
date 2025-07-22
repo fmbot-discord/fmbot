@@ -60,7 +60,7 @@ public class FriendsCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
     [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
-    public async Task FriendsAsync()
+    public async Task FriendsAsync([Remainder]string unused = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
 
