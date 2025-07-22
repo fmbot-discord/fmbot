@@ -49,7 +49,7 @@ public class IndexCommands : BaseCommandModule
 
     [Command("refreshmembers", RunMode = RunMode.Async)]
     [Summary("Refreshes the cached member list that .fmbot has for your server.")]
-    [Alias("i", "index", "refresh", "cachemembers", "refreshserver", "serverset")]
+    [Alias("index", "refresh", "cachemembers", "refreshserver", "serverset")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task IndexGuildAsync()
