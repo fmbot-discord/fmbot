@@ -146,7 +146,7 @@ public class MusicDataFactory
                 }
 
                 if (redirectsEnabled &&
-                    artistNameBeforeCorrect != null &&
+                    !string.IsNullOrWhiteSpace(artistNameBeforeCorrect) &&
                     !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.OrdinalIgnoreCase))
                 {
                     await ArtistRepository.AddOrUpdateArtistAlias(artistToAdd.Id, artistNameBeforeCorrect, connection);
@@ -193,7 +193,7 @@ public class MusicDataFactory
             }
 
             if (redirectsEnabled &&
-                artistNameBeforeCorrect != null &&
+                !string.IsNullOrWhiteSpace(artistNameBeforeCorrect) &&
                 !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.OrdinalIgnoreCase))
             {
                 await ArtistRepository.AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
