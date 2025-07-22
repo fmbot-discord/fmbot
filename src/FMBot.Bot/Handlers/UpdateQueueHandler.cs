@@ -18,6 +18,7 @@ public class UpdateQueueHandler : IDisposable
     private readonly SemaphoreSlim _semaphore = new(MaxConcurrentTasks, MaxConcurrentTasks);
     private readonly UpdateService _updateService;
     private readonly TimeSpan _delayBetweenOperations;
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
 
     public UpdateQueueHandler(UpdateService updateService, TimeSpan delayBetweenOperations)
     {
@@ -33,12 +34,25 @@ public class UpdateQueueHandler : IDisposable
 
     public async Task ProcessQueueAsync()
     {
+        await ProcessQueueAsync(_cancellationTokenSource.Token);
+    }
+
+    public async Task ProcessQueueAsync(CancellationToken cancellationToken)
+    {
+        Log.Information("ProcessQueueAsync started - initial queue size: {QueueSize}", _queue.Count);
         var tasks = new List<Task>(MaxConcurrentTasks);
+        var processedCount = 0;
+
         try
         {
+            while (!cancellationToken.IsCancellationRequested)
+            {
                 if (_queue.TryDequeue(out var item))
                 {
-                    tasks.Add(ProcessItemAsync(item));
+                    Log.Debug("Dequeued user {UserId} for processing. Remaining in queue: {QueueSize}", item.UserId, _queue.Count);
+                    tasks.Add(ProcessItemAsync(item, cancellationToken));
+                    processedCount++;
+
                     if (tasks.Count >= MaxConcurrentTasks)
                     {
                         await CompletionTaskAsync(tasks);
@@ -50,8 +64,14 @@ public class UpdateQueueHandler : IDisposable
                 }
                 else
                 {
-                    await Task.Delay(EmptyQueueDelayMs);
+                    if (processedCount > 0)
+                    {
+                        Log.Debug("Queue empty after processing {ProcessedCount} items. Waiting for new items...", processedCount);
+                        processedCount = 0;
+                    }
+                    await Task.Delay(EmptyQueueDelayMs, cancellationToken);
                 }
+            }
         }
         catch (OperationCanceledException)
         {
@@ -63,7 +83,9 @@ public class UpdateQueueHandler : IDisposable
         }
         finally
         {
+            Log.Information("ProcessQueueAsync ending - waiting for {TaskCount} remaining tasks", tasks.Count);
             await Task.WhenAll(tasks);
+            Log.Information("ProcessQueueAsync completed");
         }
     }
 
@@ -73,13 +95,15 @@ public class UpdateQueueHandler : IDisposable
         tasks.RemoveAll(t => t.IsCompleted);
     }
 
-    private async Task ProcessItemAsync(UpdateUserQueueItem item)
+    private async Task ProcessItemAsync(UpdateUserQueueItem item, CancellationToken cancellationToken)
     {
-        await _semaphore.WaitAsync();
+        await _semaphore.WaitAsync(cancellationToken);
         try
         {
+            Log.Debug("Processing user {UserId}", item.UserId);
             await _updateService.UpdateUser(item);
-            await Task.Delay(_delayBetweenOperations);
+            Log.Debug("Successfully processed user {UserId}", item.UserId);
+            await Task.Delay(_delayBetweenOperations, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -95,7 +119,9 @@ public class UpdateQueueHandler : IDisposable
 
     public void Dispose()
     {
-        _semaphore.Dispose();
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
+        _semaphore?.Dispose();
         GC.SuppressFinalize(this);
     }
 }

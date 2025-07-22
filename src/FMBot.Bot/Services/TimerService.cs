@@ -47,6 +47,8 @@ public class TimerService : IDisposable
     private readonly EurovisionService _eurovisionService;
     private readonly UpdateQueueHandler _updateQueueHandler;
 
+    private Task _updateQueueProcessingTask;
+
     public FeaturedLog CurrentFeatured;
 
     public TimerService(DiscordShardedClient client,
@@ -408,7 +410,27 @@ public class TimerService : IDisposable
             }
         }
 
-        _ = StartProcessingUpdateQueue();
+        Log.Information("Starting update queue processing. Queue size: {queueSize}", this._updateQueueHandler.GetQueueSize());
+
+        // Check if there's already a processing task running
+        if (_updateQueueProcessingTask != null && !_updateQueueProcessingTask.IsCompleted)
+        {
+            Log.Warning("Update queue processing task is already running");
+        }
+        else
+        {
+            _updateQueueProcessingTask = Task.Run(async () =>
+            {
+                try
+                {
+                    await StartProcessingUpdateQueue();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Fatal error in update queue processing task");
+                }
+            });
+        }
 
         Log.Information("Found {usersToIndexCount} outdated users to index - added all to queue - end time {endTime}", indexCount, indexDelay);
         Log.Information("Found {usersToUpdateCount} outdated users to update - added all to queue", updateCount);
@@ -416,6 +438,7 @@ public class TimerService : IDisposable
 
     public Task StartProcessingUpdateQueue()
     {
+        Log.Information("StartProcessingUpdateQueue called - starting queue processing");
         return _updateQueueHandler.ProcessQueueAsync();
     }
 
