@@ -67,9 +67,7 @@ public class IndexCommands : BaseCommandModule
             Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
                 guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
 
-            var usersToFullyUpdate = await this._indexService.GetUsersToFullyUpdate(guildUsers);
             var reply = new StringBuilder();
-
             var registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
             await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);

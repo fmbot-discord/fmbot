@@ -725,30 +725,6 @@ public class IndexService
         return null;
     }
 
-    public async Task<IReadOnlyList<User>> GetUsersToFullyUpdate(IReadOnlyCollection<IGuildUser> discordGuildUsers)
-    {
-        var userIds = discordGuildUsers.Select(s => s.Id).ToList();
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.Users
-            .AsQueryable()
-            .Where(w => userIds.Contains(w.DiscordUserId) &&
-                        (w.LastIndexed == null || w.LastUpdated == null))
-            .ToListAsync();
-    }
-
-    public async Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> discordGuildUsers)
-    {
-        var userIds = discordGuildUsers.Select(s => s.Id).ToList();
-
-        await using var db = await this._contextFactory.CreateDbContextAsync();
-        return await db.Users
-            .AsQueryable()
-            .Where(w => userIds.Contains(w.DiscordUserId)
-                        && w.LastIndexed != null)
-            .CountAsync();
-    }
-
     public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastIndexed)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
