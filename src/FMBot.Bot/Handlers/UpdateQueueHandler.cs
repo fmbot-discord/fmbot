@@ -80,6 +80,7 @@ public class UpdateQueueHandler : IDisposable
         catch (Exception ex)
         {
             Log.Error(ex, "An error occurred while processing the queue");
+            throw; // Re-throw to ensure the error is visible in the calling task
         }
         finally
         {

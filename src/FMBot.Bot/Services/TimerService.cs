@@ -47,8 +47,6 @@ public class TimerService : IDisposable
     private readonly EurovisionService _eurovisionService;
     private readonly UpdateQueueHandler _updateQueueHandler;
 
-    private Task _updateQueueProcessingTask;
-
     public FeaturedLog CurrentFeatured;
 
     public TimerService(DiscordShardedClient client,
@@ -293,7 +291,7 @@ public class TimerService : IDisposable
 
         try
         {
-            Statistics.UpdateQueueSize.Set(this._updateQueueHandler.GetQueueSize());
+            Statistics.UpdateQueueSize.Set(_updateQueueHandler.GetQueueSize());
 
             var allShardsConnected = this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnected) &&
                                 this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnecting) &&
@@ -405,32 +403,25 @@ public class TimerService : IDisposable
                     GetAccurateTotalPlaycount = false
                 };
 
-                this._updateQueueHandler.EnqueueUser(updateUserQueueItem);
+                _updateQueueHandler.EnqueueUser(updateUserQueueItem);
                 updateCount++;
             }
         }
 
         Log.Information("Starting update queue processing. Queue size: {queueSize}", this._updateQueueHandler.GetQueueSize());
 
-        // Check if there's already a processing task running
-        if (_updateQueueProcessingTask != null && !_updateQueueProcessingTask.IsCompleted)
+        // Fire and forget - the queue will process until the application shuts down
+        _ = Task.Run(async () =>
         {
-            Log.Warning("Update queue processing task is already running");
-        }
-        else
-        {
-            _updateQueueProcessingTask = Task.Run(async () =>
+            try
             {
-                try
-                {
-                    await StartProcessingUpdateQueue();
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "Fatal error in update queue processing task");
-                }
-            });
-        }
+                await StartProcessingUpdateQueue();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Fatal error in update queue processing task");
+            }
+        });
 
         Log.Information("Found {usersToIndexCount} outdated users to index - added all to queue - end time {endTime}", indexCount, indexDelay);
         Log.Information("Found {usersToUpdateCount} outdated users to update - added all to queue", updateCount);
@@ -680,7 +671,7 @@ public class TimerService : IDisposable
 
     public void Dispose()
     {
-        this._updateQueueHandler?.Dispose();
+        // Don't dispose _updateQueueHandler - let it continue processing
         GC.SuppressFinalize(this);
     }
 }
