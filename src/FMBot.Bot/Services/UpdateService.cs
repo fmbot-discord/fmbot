@@ -65,9 +65,11 @@ public class UpdateService
         return (int)updatedUser.Content.NewRecentTracksAmount;
     }
 
-    public async Task<Response<RecentTrackList>> UpdateUserAndGetRecentTracks(User user, bool bypassIndexPending = false)
+    public async Task<Response<RecentTrackList>> UpdateUserAndGetRecentTracks(User user,
+        bool bypassIndexPending = false)
     {
-        if (this._cache.TryGetValue(IndexService.IndexConcurrencyCacheKey(user.UserId), out bool _) && !bypassIndexPending)
+        if (this._cache.TryGetValue(IndexService.IndexConcurrencyCacheKey(user.UserId), out bool _) &&
+            !bypassIndexPending)
         {
             return new Response<RecentTrackList>
             {
@@ -80,7 +82,8 @@ public class UpdateService
         return await this.UpdateUser(new UpdateUserQueueItem(user.UserId));
     }
 
-    public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeAuthorizedLastUpdated, DateTime timeUnauthorizedFilter)
+    public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeAuthorizedLastUpdated,
+        DateTime timeUnauthorizedFilter)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var lastUsed = DateTime.UtcNow.AddMonths(-3);
@@ -110,6 +113,7 @@ public class UpdateService
             {
                 return null;
             }
+
             if (user.LastUpdated > DateTime.UtcNow.AddHours(-48))
             {
                 Log.Debug("Update: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
@@ -120,7 +124,8 @@ public class UpdateService
         }
         else
         {
-            Log.Information("Update: Started on {userId} | {userNameLastFm} - User initiated", user.UserId, user.UserNameLastFM);
+            Log.Information("Update: Started on {userId} | {userNameLastFm} - User initiated", user.UserId,
+                user.UserNameLastFM);
         }
 
         string sessionKey = null;
@@ -136,6 +141,12 @@ public class UpdateService
         var pages = 4;
         var totalPlaycountCorrect = false;
         var now = DateTime.UtcNow;
+
+        if (user.LastScrobbleUpdate < DateTime.UtcNow.AddDays(-10))
+        {
+            pages = 10;
+        }
+
         if (dateFromFilter > now.AddHours(-22) && queueItem.GetAccurateTotalPlaycount)
         {
             var playsToGet = (int)((DateTime.UtcNow - dateFromFilter).TotalMinutes / 3);
@@ -144,6 +155,8 @@ public class UpdateService
             timeFrom = null;
             totalPlaycountCorrect = true;
         }
+
+
 
         var recentTracks = await this._dataSourceFactory.GetRecentTracksAsync(
             user.UserNameLastFM,
@@ -158,7 +171,9 @@ public class UpdateService
 
         if (!recentTracks.Success)
         {
-            Log.Information("Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}", user.UserId, user.UserNameLastFM, recentTracks.Error);
+            Log.Information(
+                "Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}",
+                user.UserId, user.UserNameLastFM, recentTracks.Error);
 
             if (recentTracks.Error != null)
             {
@@ -191,23 +206,27 @@ public class UpdateService
 
         try
         {
-            var playUpdate = await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection);
+            var playUpdate =
+                await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection);
 
             recentTracks.Content.NewRecentTracksAmount = playUpdate.NewPlays.Count;
             recentTracks.Content.RemovedRecentTracksAmount = playUpdate.RemovedPlays.Count;
 
             if (!playUpdate.NewPlays.Any())
             {
-                Log.Debug("Update: After local filter no new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                Log.Debug("Update: After local filter no new tracks for {userId} | {userNameLastFm}", user.UserId,
+                    user.UserNameLastFM);
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
 
                 if (!user.TotalPlaycount.HasValue)
                 {
-                    recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
+                    recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count,
+                        connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
                 }
                 else if (totalPlaycountCorrect)
                 {
-                    await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection, recentTracks.Content.TotalAmount);
+                    await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection,
+                        recentTracks.Content.TotalAmount);
                 }
                 else
                 {
@@ -229,7 +248,8 @@ public class UpdateService
 
             this._cache.Set(cacheKey, true, TimeSpan.FromSeconds(1));
 
-            recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
+            recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, playUpdate.NewPlays.Count,
+                connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
 
             var userArtists = await GetUserArtists(user.UserId, connection);
             var userAlbums = await GetUserAlbums(user.UserId, connection);
@@ -256,7 +276,8 @@ public class UpdateService
         }
         catch (Exception e)
         {
-            Log.Error(e, "Update: Error in update process for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Error(e, "Update: Error in update process for user {userId} | {userNameLastFm}", user.UserId,
+                user.UserNameLastFM);
         }
 
         if (queueItem.UpdateQueue)
@@ -297,7 +318,8 @@ public class UpdateService
         await this._smallIndexRepository.SmallIndexUser(user);
     }
 
-    private static async Task<IReadOnlyDictionary<string, UserArtist>> GetUserArtists(int userId, IDbConnection connection)
+    private static async Task<IReadOnlyDictionary<string, UserArtist>> GetUserArtists(int userId,
+        IDbConnection connection)
     {
         const string sql = "SELECT DISTINCT ON (LOWER(name)) user_id, name, playcount, user_artist_id " +
                            "FROM public.user_artists where user_id = @userId " +
@@ -333,8 +355,9 @@ public class UpdateService
 
             if (existingUserArtist != null)
             {
-                updateExistingArtists.Append($"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()} " +
-                                             $"WHERE user_artist_id = {existingUserArtist.UserArtistId}; ");
+                updateExistingArtists.Append(
+                    $"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()} " +
+                    $"WHERE user_artist_id = {existingUserArtist.UserArtistId}; ");
 
                 Log.Debug($"Updated artist {artistName} for {user.UserNameLastFM}");
             }
@@ -364,10 +387,10 @@ public class UpdateService
         }
 
         Log.Debug("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-
     }
 
-    private static async Task<IReadOnlyDictionary<string, List<UserAlbum>>> GetUserAlbums(int userId, IDbConnection connection)
+    private static async Task<IReadOnlyDictionary<string, List<UserAlbum>>> GetUserAlbums(int userId,
+        IDbConnection connection)
     {
         const string sql = "SELECT * FROM public.user_albums where user_id = @userId";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -412,8 +435,9 @@ public class UpdateService
 
             if (existingUserAlbum != null)
             {
-                updateExistingAlbums.Append($"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()} " +
-                                            $"WHERE user_album_id = {existingUserAlbum.UserAlbumId}; ");
+                updateExistingAlbums.Append(
+                    $"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()} " +
+                    $"WHERE user_album_id = {existingUserAlbum.UserAlbumId}; ");
 
                 Log.Debug($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
             }
@@ -448,7 +472,8 @@ public class UpdateService
         Log.Debug("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
     }
 
-    private static async Task<IReadOnlyDictionary<string, List<UserTrack>>> GetUserTracks(int userId, IDbConnection connection)
+    private static async Task<IReadOnlyDictionary<string, List<UserTrack>>> GetUserTracks(int userId,
+        IDbConnection connection)
     {
         const string sql = "SELECT * FROM public.user_tracks where user_id = @userId";
         DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -471,10 +496,10 @@ public class UpdateService
         var updateExistingTracks = new StringBuilder();
 
         foreach (var track in newScrobbles.GroupBy(x => new
-        {
-            ArtistName = x.ArtistName.ToLower(),
-            TrackName = x.TrackName.ToLower()
-        }))
+                 {
+                     ArtistName = x.ArtistName.ToLower(),
+                     TrackName = x.TrackName.ToLower()
+                 }))
         {
             var alias = await this._aliasService.GetAlias(track.Key.ArtistName.ToLower());
 
@@ -530,7 +555,9 @@ public class UpdateService
     {
         user.LastScrobbleUpdate = lastScrobble;
         await using var setIndexTime =
-            new NpgsqlCommand($"UPDATE public.users SET last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {user.UserId};", connection);
+            new NpgsqlCommand(
+                $"UPDATE public.users SET last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {user.UserId};",
+                connection);
         await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
     }
 
@@ -538,11 +565,13 @@ public class UpdateService
     {
         user.LastUpdated = updateTime;
         await using var setUpdateTime =
-            new NpgsqlCommand($"UPDATE public.users SET last_updated = '{updateTime:u}' WHERE user_id = {user.UserId};", connection);
+            new NpgsqlCommand($"UPDATE public.users SET last_updated = '{updateTime:u}' WHERE user_id = {user.UserId};",
+                connection);
         await setUpdateTime.ExecuteNonQueryAsync().ConfigureAwait(false);
     }
 
-    private async Task<long> SetOrUpdateUserPlaycount(User user, long playcountToAdd, NpgsqlConnection connection, long? correctPlaycount = null)
+    private async Task<long> SetOrUpdateUserPlaycount(User user, long playcountToAdd, NpgsqlConnection connection,
+        long? correctPlaycount = null)
     {
         if (!correctPlaycount.HasValue)
         {
@@ -556,7 +585,9 @@ public class UpdateService
 
                 if (recentTracks?.Content?.TotalAmount != null)
                 {
-                    await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
+                    await using var setPlaycount = new NpgsqlCommand(
+                        $"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};",
+                        connection);
                     await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
 
                     user.TotalPlaycount = recentTracks.Content.TotalAmount;
@@ -566,14 +597,19 @@ public class UpdateService
             }
 
             var updatedPlaycount = user.TotalPlaycount.Value + playcountToAdd;
-            await using var updatePlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {updatedPlaycount} WHERE user_id = {user.UserId};", connection);
+            await using var updatePlaycount =
+                new NpgsqlCommand(
+                    $"UPDATE public.users SET total_playcount = {updatedPlaycount} WHERE user_id = {user.UserId};",
+                    connection);
             await updatePlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
 
             return updatedPlaycount;
         }
 
         await using var updateCorrectPlaycount =
-            new NpgsqlCommand($"UPDATE public.users SET total_playcount = {correctPlaycount} WHERE user_id = {user.UserId};", connection);
+            new NpgsqlCommand(
+                $"UPDATE public.users SET total_playcount = {correctPlaycount} WHERE user_id = {user.UserId};",
+                connection);
         await updateCorrectPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
 
         return correctPlaycount.Value;
@@ -674,7 +710,8 @@ public class UpdateService
             return;
         }
 
-        Log.Debug("Corrected artist playcount for user {userId} | {lastFmUserName} for artist {artistName} from {oldPlaycount} to {newPlaycount}",
+        Log.Debug(
+            "Corrected artist playcount for user {userId} | {lastFmUserName} for artist {artistName} from {oldPlaycount} to {newPlaycount}",
             user.UserId, user.UserNameLastFM, userArtist.Name, userArtist.Playcount, correctPlaycount);
 
         userArtist.Playcount = (int)correctPlaycount;
@@ -719,8 +756,10 @@ public class UpdateService
             return;
         }
 
-        Log.Debug("Corrected album playcount for user {userId} | {lastFmUserName} for album {artistName} - {albumName} from {oldPlaycount} to {newPlaycount}",
-            user.UserId, user.UserNameLastFM, userAlbum.ArtistName, userAlbum.Name, userAlbum.Playcount, correctPlaycount);
+        Log.Debug(
+            "Corrected album playcount for user {userId} | {lastFmUserName} for album {artistName} - {albumName} from {oldPlaycount} to {newPlaycount}",
+            user.UserId, user.UserNameLastFM, userAlbum.ArtistName, userAlbum.Name, userAlbum.Playcount,
+            correctPlaycount);
 
         userAlbum.Playcount = (int)correctPlaycount;
 
@@ -764,8 +803,10 @@ public class UpdateService
             return;
         }
 
-        Log.Debug("Corrected track playcount for user {userId} | {lastFmUserName} for track {artistName} - {trackName} from {oldPlaycount} to {newPlaycount}",
-            user.UserId, user.UserNameLastFM, userTrack.ArtistName, userTrack.Name, userTrack.Playcount, correctPlaycount);
+        Log.Debug(
+            "Corrected track playcount for user {userId} | {lastFmUserName} for track {artistName} - {trackName} from {oldPlaycount} to {newPlaycount}",
+            user.UserId, user.UserNameLastFM, userTrack.ArtistName, userTrack.Name, userTrack.Playcount,
+            correctPlaycount);
 
         userTrack.Playcount = (int)correctPlaycount;
 
