@@ -1093,14 +1093,19 @@ public class PlayBuilder
         response.Embed.WithTitle(
             $"{mileStoneAmount.Format(context.NumberFormat)}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
 
-        if (mileStonePlay.Content.AlbumCoverUrl != null)
+        var dbAlbum =
+            await this._albumService.GetAlbumFromDatabase(mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumName);
+        var albumCoverUrl = dbAlbum != null
+            ? dbAlbum.SpotifyImageUrl ?? dbAlbum.LastfmImageUrl
+            : mileStonePlay.Content.AlbumCoverUrl;
+        if (albumCoverUrl != null)
         {
             var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
                 context.DiscordChannel,
-                mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumCoverUrl);
+                mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, albumCoverUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(mileStonePlay.Content.AlbumCoverUrl);
+                response.Embed.WithThumbnailUrl(albumCoverUrl);
             }
         }
 
