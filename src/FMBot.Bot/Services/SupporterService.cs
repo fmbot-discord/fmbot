@@ -286,7 +286,7 @@ public class SupporterService
                 .WithButton("Support server", style: ButtonStyle.Link, url: "https://discord.gg/fmbot");
 
             goodbyeEmbed.AddField("🏷️ Annual deal",
-                "Resubscribe and save 40% on .fmbot supporter with our new yearly option.");
+                "Resubscribe and save 50% on .fmbot supporter with our new yearly option.");
 
             await discordUser.SendMessageAsync(embed: goodbyeEmbed.Build(), components: buttons.Build());
         }

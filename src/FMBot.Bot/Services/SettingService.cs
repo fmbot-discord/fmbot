@@ -765,7 +765,7 @@ public class SettingService
                 {
                     var lfmUserName = options.First().ToLower();
 
-                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, [lfmUserName], true);
                     settingsModel.UserNameLastFm = lfmUserName;
                     settingsModel.DisplayName = lfmUserName;
                     settingsModel.SessionKeyLastFm = null;
