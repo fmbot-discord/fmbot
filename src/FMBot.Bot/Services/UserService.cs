@@ -1271,7 +1271,7 @@ public class UserService
         return (promo, description.ToString());
     }
 
-    public async Task SetLastFm(IUser discordUser, User newUserSettings, bool updateSessionKey = false)
+    private async Task AddOrUpdateUser(IUser discordUser, User newUserSettings)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
@@ -1315,10 +1315,7 @@ public class UserService
             user.UserNameLastFM = newUserSettings.UserNameLastFM;
             user.FmEmbedType = newUserSettings.FmEmbedType;
             user.Mode = newUserSettings.Mode;
-            if (updateSessionKey)
-            {
-                user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
-            }
+            user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
 
             db.Update(user);
 
@@ -1376,7 +1373,7 @@ public class UserService
                 }
 
                 this._cache.Remove(TempUserCacheKey(contextUser.Id));
-                await SetLastFm(contextUser, userSettings, true);
+                await AddOrUpdateUser(contextUser, userSettings);
                 return (LoginStatus.Success, 0);
             }
 
