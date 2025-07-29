@@ -13,6 +13,11 @@ internal class FlaviMusicBot : MusicBot
 
     public override bool ShouldIgnoreMessage(IUserMessage msg)
     {
+        if (msg.Components.Count == 0)
+        {
+            return true;
+        }
+
         var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
         if (container is not ContainerComponent containerComponent)
         {

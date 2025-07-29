@@ -6,11 +6,7 @@ namespace FMBot.Bot.Models.MusicBot;
 
 internal class EaraMusicBot : MusicBot
 {
-    public EaraMusicBot() : this("Eara")
-    {
-    }
-
-    protected EaraMusicBot(string name) : base(name, false)
+    public EaraMusicBot() : base("eara", false)
     {
     }
 
@@ -21,60 +17,79 @@ internal class EaraMusicBot : MusicBot
             return true;
         }
 
-        var component = msg.Components.First();
-        if (component.Type != ComponentType.Container)
+        var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
+        if (container is not ContainerComponent containerComponent)
         {
             return true;
         }
 
-        var container = (ContainerComponent)component;
-        if (container.Components.Count == 0)
+        var section = containerComponent.Components.FirstOrDefault(c => c.Type == ComponentType.Section);
+        if (section is not SectionComponent sectionComponent)
         {
             return true;
         }
 
-        var first = container.Components.First();
-        if (first.Type != ComponentType.Section)
+        var textComponents = sectionComponent.Components.Where(f => f.Type == ComponentType.TextDisplay);
+        foreach (var text in textComponents)
         {
-            return true;
+            if (text is TextDisplayComponent textComponent && textComponent.Content.Contains("—"))
+            {
+                return false;
+            }
         }
 
-        var section = (SectionComponent)first;
-
-        // Section components *should* only contain text displays
-        var text = (TextDisplayComponent)section.Components.First();
-
-        // The now-playing message contains an em-dash that separates title/artist
-        return !text.Content.Contains('—');
+        return true;
     }
 
+    /*
+     * Example:
+     * [I Remember](<https://open.spotify.com/track/69Y7bqe3lsESYEqCqJ4eBH>) — *deadmau5, Kaskade*
+-# Requested by <@125740103539621888>
+
+00:00<:emoji:1284320259922329725><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320202955161610>09:07
+     */
     public override string GetTrackQuery(IUserMessage msg)
     {
-        foreach (var component in msg.Components)
+        var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
+        if (container is not ContainerComponent containerComponent)
         {
-            if (component.Type != ComponentType.Container)
+            return string.Empty;
+        }
+
+        var section = containerComponent.Components.FirstOrDefault(c => c.Type == ComponentType.Section);
+        if (section is not SectionComponent sectionComponent)
+        {
+            return string.Empty;
+        }
+
+        var textComponents = sectionComponent.Components.Where(f => f.Type == ComponentType.TextDisplay);
+
+        foreach (var text in textComponents)
+        {
+            if (text is not TextDisplayComponent textComponent || !textComponent.Content.Contains("—"))
             {
                 continue;
             }
 
-            var container = (ContainerComponent)component;
+            var trackLine = textComponent.Content.Split('\n').First();
 
-            var section = (SectionComponent)container.Components.First();
+            if (trackLine.Contains("open.spotify.com"))
+            {
+                return trackLine;
+            }
 
-            var text = (TextDisplayComponent)section.Components.First();
 
-            // section is made up of 3 parts: track line, requester, and the progress bar...
-            var trackLine = text.Content.Split('\n').First();
-
-            // track and artist is delimited by an em-dash
             var trackParts = trackLine.Split(" — ", StringSplitOptions.TrimEntries);
             var track = trackParts[0];
             var artist = trackParts[1];
 
-            // the track title may be a hyperlink.
             if (track.StartsWith('['))
             {
                 track = track.Split('[', ']')[1];
+            }
+            if (artist.StartsWith('*'))
+            {
+                artist = artist.Split('*', '*')[1];
             }
 
             return $"{artist} - {track}";
