@@ -368,6 +368,10 @@ public class ImportSlashCommands : InteractionModuleBase
             if (selectedArtist != null && newArtist != null)
             {
                 await this._importService.RenameArtistImports(contextUser, selectedArtist, newArtist);
+                if (contextUser.DataSource != DataSource.LastFm)
+                {
+                    _ = this._indexService.RecalculateTopLists(contextUser);
+                }
             }
 
             var response = await this._importBuilders.PickArtist(
@@ -434,6 +438,10 @@ public class ImportSlashCommands : InteractionModuleBase
             if (artist != null)
             {
                 await this._importService.DeleteArtistImports(contextUser, artist);
+                if (contextUser.DataSource != DataSource.LastFm)
+                {
+                    _ = this._indexService.RecalculateTopLists(contextUser);
+                }
             }
 
             var response = await this._importBuilders.PickArtist(
@@ -526,6 +534,10 @@ public class ImportSlashCommands : InteractionModuleBase
             {
                 await this._importService.RenameAlbumImports(contextUser, selectedAlbum.Artist, selectedAlbum.Album,
                     newAlbum.Artist, newAlbum.Album);
+                if (contextUser.DataSource != DataSource.LastFm)
+                {
+                    _ = this._indexService.RecalculateTopLists(contextUser);
+                }
             }
 
             var response = await this._importBuilders.PickAlbum(
@@ -592,6 +604,10 @@ public class ImportSlashCommands : InteractionModuleBase
             if (album != null)
             {
                 await this._importService.DeleteAlbumImports(contextUser, album.Artist, album.Album);
+                if (contextUser.DataSource != DataSource.LastFm)
+                {
+                    _ = this._indexService.RecalculateTopLists(contextUser);
+                }
             }
 
             var response = await this._importBuilders.PickAlbum(
@@ -684,6 +700,10 @@ public class ImportSlashCommands : InteractionModuleBase
             {
                 await this._importService.RenameTrackImports(contextUser, selectedTrack.Artist, selectedTrack.Track,
                     newTrack.Artist, newTrack.Track);
+                if (contextUser.DataSource != DataSource.LastFm)
+                {
+                    _ = this._indexService.RecalculateTopLists(contextUser);
+                }
             }
 
             var response = await this._importBuilders.PickTrack(
@@ -750,6 +770,10 @@ public class ImportSlashCommands : InteractionModuleBase
             if (track != null)
             {
                 await this._importService.DeleteTrackImports(contextUser, track.Artist, track.Track);
+                if (contextUser.DataSource != DataSource.LastFm)
+                {
+                    _ = this._indexService.RecalculateTopLists(contextUser);
+                }
             }
 
             var response = await this._importBuilders.PickTrack(
