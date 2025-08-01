@@ -507,7 +507,7 @@ public class PlayService
         var description = new StringBuilder();
         if (streak.ArtistName != null && streak.ArtistPlaycount.HasValue)
         {
-            var artistDisplay = streak.ArtistName.Length > 80
+            var artistDisplay = HttpUtility.UrlEncode(streak.ArtistName).Length > 80
                 ? $"**{streak.ArtistName}**"
                 : $"**[{streak.ArtistName}]({LastfmUrlExtensions.GetArtistUrl(streak.ArtistName)})**";
 
@@ -518,7 +518,7 @@ public class PlayService
 
         if (streak.AlbumName != null && streak.AlbumPlaycount.HasValue)
         {
-            var albumDisplay = streak.AlbumName.Length + (streak.ArtistName?.Length ?? 20) > 100
+            var albumDisplay = HttpUtility.UrlEncode(streak.AlbumName).Length + HttpUtility.UrlEncode(streak.ArtistName ?? "").Length > 100
                 ? $"**{streak.AlbumName}**"
                 : $"**[{streak.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/{HttpUtility.UrlEncode(streak.AlbumName)})**";
 
@@ -529,7 +529,7 @@ public class PlayService
 
         if (streak.TrackName != null && streak.TrackPlaycount.HasValue)
         {
-            var trackDisplay = streak.TrackName.Length + (streak.ArtistName?.Length ?? 20) > 100
+            var trackDisplay = HttpUtility.UrlEncode(streak.TrackName).Length + HttpUtility.UrlEncode(streak.ArtistName ?? "").Length > 100
                 ? $"**{streak.TrackName}**"
                 : $"**[{streak.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/_/{HttpUtility.UrlEncode(streak.TrackName)})**";
 
