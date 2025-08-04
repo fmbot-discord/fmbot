@@ -301,7 +301,7 @@ public class SupporterService
         User user, string prfx,
         ulong? guildId = null)
     {
-        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 80);
+        var randomHintNumber = RandomNumberGenerator.GetInt32(1, 95);
         string message = null;
         var showUpgradeButton = false;
         var supporterSource = "updatepromo";
@@ -345,7 +345,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*🔥 Supporters get an improved GPT-4o powered `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others*";
+                        $"*🔥 Supporters get an improved `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-improvedjudge";
                     break;
@@ -357,7 +357,7 @@ public class SupporterService
                     {
                         SetGuildSupporterPromoCache(guildId);
                         message =
-                            $"*<:spotify:882221219334725662> Supporters can import and use their full Spotify history in the bot*";
+                            $"*<:spotify:882221219334725662> Supporters can import and access their full Spotify history in the bot*";
                         showUpgradeButton = true;
                         supporterSource = "updatepromo-spotifyimport";
                     }
@@ -371,7 +371,7 @@ public class SupporterService
                     {
                         SetGuildSupporterPromoCache(guildId);
                         message =
-                            $"*<:apple_music:1218182727149420544> Supporters can import and use their full Apple Music history in the bot*";
+                            $"*<:apple_music:1218182727149420544> Supporters can import and access their full Apple Music history in the bot*";
                         showUpgradeButton = true;
                         supporterSource = "updatepromo-applemusicimport";
                     }
@@ -418,7 +418,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*🎵 See your lifetime history in `{prfx}recent` and filter to artists with .fmbot supporter*";
+                        $"*🎵 View your lifetime history in `{prfx}recent` and filter to artists with .fmbot supporter*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-recent";
                     break;
@@ -427,7 +427,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*🎵 See your lifetime history day to day in `{prfx}overview` with .fmbot supporter*";
+                        $"*🎵 View your lifetime history day to day in `{prfx}overview` with .fmbot supporter*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-overview";
                     break;
@@ -466,6 +466,7 @@ public class SupporterService
                     break;
                 }
                 case 24:
+                case 25:
                 {
                     if (user.NumberFormat == null)
                     {
@@ -475,7 +476,8 @@ public class SupporterService
 
                     break;
                 }
-                case 25:
+                case 26:
+                case 27:
                 {
                     if (user.TimeZone == null)
                     {
@@ -544,42 +546,49 @@ public class SupporterService
 
                     break;
                 }
+                case 9:
+                {
+                    message =
+                        $"*🎁 You can gift someone supporter with the `/giftsupporter` command*";
+
+                    break;
+                }
             }
         }
 
         switch (randomHintNumber)
         {
-            case 20:
+            case 30:
             {
                 message =
                     $"*🌞 Tip: look up what's `.featured` in other commands. For example, `.wk featured`*";
                 break;
             }
-            case 21:
+            case 31:
             {
                 message =
                     $"*🌞 Tip: Reply to a command to use that artist, album or track as context for your next command*";
                 break;
             }
-            case 22:
+            case 32:
             {
                 message =
                     $"*🌞 Tip: Album commands support the `random` parameter. For example, `.cover random`*";
                 break;
             }
-            case 23:
+            case 33:
             {
                 message =
                     $"*🌞 Tip: Milestone commands support the `random` parameter. For example, `.milestone random`*";
                 break;
             }
-            case 24:
+            case 34:
             {
                 message =
-                    $"*🌞 Tip: All commands that support time periods also support timeframes like `december` or `2025`*";
+                    $"*🌞 Tip: All commands that support time periods also support timeframes like `july` or `2025`*";
                 break;
             }
-            case 25:
+            case 35:
             {
                 message =
                     $"*🌞 Tip: Delete an unwanted bot response yourself by opening the message options > Apps > 'Delete response'*";
