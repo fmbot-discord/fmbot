@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -31,6 +32,7 @@ public class InteractionHandler
     private readonly GuildSettingBuilder _guildSettingBuilder;
 
     private readonly IMemoryCache _cache;
+    private readonly InteractiveService _interactivity;
 
     public InteractionHandler(DiscordShardedClient client,
         InteractionService interactionService,
@@ -38,7 +40,8 @@ public class InteractionHandler
         UserService userService,
         GuildService guildService,
         IMemoryCache cache,
-        GuildSettingBuilder guildSettingBuilder)
+        GuildSettingBuilder guildSettingBuilder,
+        InteractiveService interactivity)
     {
         this._client = client;
         this._interactionService = interactionService;
@@ -47,6 +50,7 @@ public class InteractionHandler
         this._guildService = guildService;
         this._cache = cache;
         this._guildSettingBuilder = guildSettingBuilder;
+        this._interactivity = interactivity;
         this._client.SlashCommandExecuted += SlashCommandExecuted;
         this._client.AutocompleteExecuted += AutoCompleteExecuted;
         this._client.SelectMenuExecuted += SelectMenuExecuted;
@@ -216,6 +220,11 @@ public class InteractionHandler
         Statistics.DiscordEvents.WithLabels(nameof(ButtonExecuted)).Inc();
 
         var context = new ShardedInteractionContext(this._client, socketMessageComponent);
+
+        if (this._interactivity.IsManaged(context.Interaction))
+        {
+            return;
+        }
 
         var commandSearch = this._interactionService.SearchComponentCommand(socketMessageComponent);
 
