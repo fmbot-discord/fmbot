@@ -29,6 +29,28 @@ public static partial class StringExtensions
         return pattern.Replace(str, "");
     }
 
+    public static bool ContainsEmoji(this string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return false;
+        }
+
+        return input.EnumerateRunes()
+            .Select(rune => rune.Value)
+            .Any(value => value is >= 0x2600 and <= 0x26FF || // Miscellaneous Symbols
+                          value is >= 0x2700 and <= 0x27BF || // Dingbats
+                          value is >= 0x1F300 and <= 0x1F5FF || // Miscellaneous Symbols and Pictographs
+                          value is >= 0x1F600 and <= 0x1F64F || // Emoticons
+                          value is >= 0x1F680 and <= 0x1F6FF || // Transport and Map Symbols
+                          value is >= 0x1F1E6 and <= 0x1F1FF || // Regional Indicator Symbols (for flags)
+                          value is >= 0x1F900 and <= 0x1F9FF || // Supplemental Symbols and Pictographs
+                          value is >= 0x1FA70 and <= 0x1FAFF || // Symbols and Pictographs Extended-A
+                          value is >= 0x1FB00 and <= 0x1FBFF || // Symbols for Legacy Computing (some are now emoji)
+                          value == 0x200D || // Zero Width Joiner (used to combine emojis, e.g., 👨‍👩‍👧‍👦)
+                          value is >= 0xFE00 and <= 0xFE0F);
+    }
+
     public static bool ContainsUnicodeCharacter(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
