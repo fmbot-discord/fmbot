@@ -104,7 +104,7 @@ public class ChartBuilders
                 $"User hasn't listened to enough albums ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
                 $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
 
-            if (chartSettings.SkipWithoutImage)
+            if (chartSettings.SkipWithoutImage && chartSettings.FilteredArtist == null)
             {
                 reply += "\n\n" +
                          $"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.";
