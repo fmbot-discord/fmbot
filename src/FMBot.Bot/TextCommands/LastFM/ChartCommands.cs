@@ -104,7 +104,7 @@ public class ChartCommands : BaseCommandModule
             var aoty = messageContent.Contains("aoty") || messageContent.Contains("albumsoftheyear") || messageContent.Contains("albumoftheyear");
             var aotd = messageContent.Contains("aotd") || messageContent.Contains("albumsofthedecade") || messageContent.Contains("albumofthedecade");
 
-            chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, userSettings, aoty, aotd);
+            chartSettings = await this._chartService.SetSettings(chartSettings, otherSettings, userSettings, aoty, aotd);
 
             var response = await this._chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
@@ -166,7 +166,7 @@ public class ChartCommands : BaseCommandModule
 
             var chartSettings = new ChartSettings(this.Context.User) { ArtistChart = true };
 
-            chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, userSettings);
+            chartSettings = await this._chartService.SetSettings(chartSettings, otherSettings, userSettings);
 
             var response = await this._chartBuilders.ArtistChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);

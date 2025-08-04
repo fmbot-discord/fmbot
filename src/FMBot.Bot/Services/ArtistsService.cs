@@ -578,7 +578,23 @@ public class ArtistsService
             .ToListAsync();
     }
 
-    public async Task<List<UserAlbum>> GetTopAlbumsForArtist(int userId, string artistName)
+    public async Task<TopAlbumList> GetTopAlbumsForArtist(int userId, string artistName)
+    {
+        var userAlbums = await GetUserAlbumsForArtist(userId, artistName);
+        var topAlbums = userAlbums.Select(s => new TopAlbum
+        {
+            AlbumName = s.Name,
+            ArtistName = s.ArtistName,
+            UserPlaycount = s.Playcount
+        });
+
+        return new TopAlbumList
+        {
+            TopAlbums = topAlbums.ToList()
+        };
+    }
+
+    public async Task<List<UserAlbum>> GetUserAlbumsForArtist(int userId, string artistName)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.UserAlbums

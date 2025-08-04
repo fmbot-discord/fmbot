@@ -1252,7 +1252,7 @@ public class SettingService
         return CrownViewType.Playcount;
     }
 
-    private static bool Contains(string extraOptions, string[] values)
+    public static bool Contains(string extraOptions, string[] values)
     {
         if (string.IsNullOrWhiteSpace(extraOptions))
         {
@@ -1275,7 +1275,7 @@ public class SettingService
         return false;
     }
 
-    private static string ContainsAndRemove(string extraOptions, string[] values, bool alwaysReturnValue = false)
+    public static string ContainsAndRemove(string extraOptions, string[] values, bool alwaysReturnValue = false)
     {
         extraOptions = extraOptions.ToLower();
         var somethingFound = false;

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Discord;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
 
 using Color = System.Drawing.Color;
@@ -81,6 +82,8 @@ public class ChartSettings
 
     public bool ContainsNsfw { get; set; }
     public int? CensoredItems { get; set; }
+
+    public Artist FilteredArtist { get; set; }
 }
 
 public class ChartImage
@@ -113,6 +116,5 @@ public class ChartImage
 public enum TitleSetting
 {
     Titles = 1,
-    TitlesDisabled = 2,
-    ClassicTitles = 3
+    TitlesDisabled = 2
 }

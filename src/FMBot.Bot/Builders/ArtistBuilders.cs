@@ -582,7 +582,7 @@ public class ArtistBuilders
             }
 
             var topAlbums =
-                await this._artistsService.GetTopAlbumsForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
+                await this._artistsService.GetUserAlbumsForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
             if (topAlbums.Any())
             {
                 var topAlbumsDescription = new StringBuilder();
@@ -810,7 +810,7 @@ public class ArtistBuilders
         }
 
         var topAlbums =
-            await this._artistsService.GetTopAlbumsForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
+            await this._artistsService.GetUserAlbumsForArtist(userSettings.UserId, artistSearch.Artist.ArtistName);
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
 
         if (topAlbums.Count == 0 &&
@@ -819,7 +819,7 @@ public class ArtistBuilders
         {
             var user = await this._userService.GetUserForIdAsync(userSettings.UserId);
             await this._indexService.ModularUpdate(user, UpdateType.Albums);
-            topAlbums = await this._artistsService.GetTopAlbumsForArtist(userSettings.UserId,
+            topAlbums = await this._artistsService.GetUserAlbumsForArtist(userSettings.UserId,
                 artistSearch.Artist.ArtistName);
         }
 

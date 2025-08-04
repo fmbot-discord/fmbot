@@ -10,6 +10,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.SlashCommands;
 
@@ -21,21 +22,24 @@ public class ChartSlashCommands : InteractionModuleBase
     private readonly UserService _userService;
     private readonly ChartBuilders _chartBuilders;
     private readonly SettingService _settingService;
+    private readonly ArtistsService _artistsService;
 
     private InteractiveService Interactivity { get; }
 
-    public ChartSlashCommands(UserService userService, SettingService settingService, InteractiveService interactivity, ChartBuilders chartBuilders)
+    public ChartSlashCommands(UserService userService, SettingService settingService, InteractiveService interactivity, ChartBuilders chartBuilders, ArtistsService artistsService)
     {
         this._userService = userService;
         this._settingService = settingService;
         this.Interactivity = interactivity;
         this._chartBuilders = chartBuilders;
+        this._artistsService = artistsService;
     }
 
     [SlashCommand("albums", "Generates an album image chart")]
     [UsernameSetRequired]
     public async Task AlbumChartAsync(
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
+        [Summary("Artist", "Filter to a specific artist")][Autocomplete(typeof(ArtistAutoComplete))] string artist = null,
         [Summary("Released", "Filter to albums released in year")][Autocomplete(typeof(YearAutoComplete))] string year = null,
         [Summary("Decade", "Filter to albums released in decade")][Autocomplete(typeof(DecadeAutoComplete))] string decade = null,
         [Summary("Size", "Chart size")][Autocomplete(typeof(ChartSizeAutoComplete))] string size = "3x3",
@@ -52,9 +56,16 @@ public class ChartSlashCommands : InteractionModuleBase
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade) ? TimePeriod.AllTime : TimePeriod.Weekly,  timeZone: userSettings.TimeZone);
 
+        Artist filteredArtist = null;
+        if (!string.IsNullOrWhiteSpace(artist))
+        {
+            filteredArtist = await this._artistsService.GetArtistFromDatabase(artist);
+        }
+
         var chartSettings = new ChartSettings(this.Context.User)
         {
             ArtistChart = false,
+            FilteredArtist = filteredArtist,
             TitleSetting = titleSetting,
             SkipWithoutImage = skip || rainbow,
             SkipNsfw = sfwOnly,
@@ -67,7 +78,7 @@ public class ChartSlashCommands : InteractionModuleBase
             CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || sfwOnly || rainbow
         };
 
-        chartSettings = ChartService.GetDimensions(chartSettings, size);
+        chartSettings = ChartService.GetDimensions(chartSettings, size).newChartSettings;
 
         try
         {
@@ -112,7 +123,7 @@ public class ChartSlashCommands : InteractionModuleBase
             CustomOptionsEnabled = titleSetting != TitleSetting.Titles || skip || rainbow
         };
 
-        chartSettings = ChartService.GetDimensions(chartSettings, size);
+        chartSettings = ChartService.GetDimensions(chartSettings, size).newChartSettings;
 
         try
         {

@@ -7,12 +7,12 @@ using FMBot.Bot.Factories;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using FMBot.Domain.Types;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
@@ -23,27 +23,21 @@ public class ChartBuilders
     private readonly ChartService _chartService;
     private readonly IDataSourceFactory _dataSourceFactory;
     private readonly AlbumService _albumService;
-    private readonly UserService _userService;
     private readonly SupporterService _supporterService;
-    private readonly SpotifyService _spotifyService;
     private readonly ArtistsService _artistService;
     private readonly MusicDataFactory _musicDataFactory;
 
     public ChartBuilders(ChartService chartService,
         IDataSourceFactory dataSourceFactory,
         AlbumService albumService,
-        UserService userService,
         SupporterService supporterService,
-        SpotifyService spotifyService,
         ArtistsService artistService,
         MusicDataFactory musicDataFactory)
     {
         this._chartService = chartService;
         this._dataSourceFactory = dataSourceFactory;
         this._albumService = albumService;
-        this._userService = userService;
         this._supporterService = supporterService;
-        this._spotifyService = spotifyService;
         this._artistService = artistService;
         this._musicDataFactory = musicDataFactory;
     }
@@ -79,14 +73,33 @@ public class ChartBuilders
             extraAlbums = chartSettings.Height;
         }
 
-        var albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm,
-            chartSettings.TimeSettings,
-            chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue ? 1000 : 250,
-            useCache: true);
+        Response<TopAlbumList> albums = null;
 
-        if (albums.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
+        if (chartSettings.FilteredArtist != null)
         {
-            var count = albums.Content?.TopAlbums?.Count ?? 0;
+            var artistTopAlbums = await this._artistService.GetTopAlbumsForArtist(userSettings.UserId,
+                chartSettings.FilteredArtist.Name);
+            if (artistTopAlbums.TopAlbums.Count != 0)
+            {
+                albums = new Response<TopAlbumList>
+                {
+                    Content = artistTopAlbums,
+                    Success = true
+                };
+            }
+        }
+        else
+        {
+            albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm,
+                chartSettings.TimeSettings,
+                chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue ? 1000 : 250,
+                useCache: true);
+        }
+
+
+        if (albums?.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
+        {
+            var count = albums?.Content?.TopAlbums?.Count ?? 0;
             var reply =
                 $"User hasn't listened to enough albums ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
                 $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
