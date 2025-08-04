@@ -187,9 +187,9 @@ public class StaticCommands : BaseCommandModule
 
     [Command("getsupporter", RunMode = RunMode.Async)]
     [Summary("Get the best .fmbot experience with Supporter")]
-    [Alias("support", "patreon", "opencollective", "donations", "supporter", "donate")]
+    [Alias("support", "patreon", "opencollective", "donations", "supporter")]
     [CommandCategories(CommandCategory.Other)]
-    public async Task DonateAsync()
+    public async Task GetSupporter()
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

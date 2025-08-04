@@ -290,7 +290,7 @@ public class IndexService
             return new List<UserPlay>();
         }
 
-        if (expectedCount >= 1000 && recentPlays.Content.RecentTracks.Count < 200)
+        if (expectedCount >= 1000 && recentPlays.Content.RecentTracks.Count < 200 && user.DataSource == DataSource.LastFm)
         {
             Log.Warning("Index: {userId} / {discordUserId} / {UserNameLastFM} - Fetching AllPlays failed - {playCount} expected, {fetchedPlayCount} fetched",
                 user.UserId, user.DiscordUserId, user.UserNameLastFM, expectedCount, recentPlays.Content.RecentTracks.Count);
