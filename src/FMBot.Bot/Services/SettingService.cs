@@ -1285,7 +1285,7 @@ public class SettingService
             if (extraOptions.Contains(value.ToLower(), StringComparison.OrdinalIgnoreCase))
             {
                 extraOptions = $" {extraOptions} ";
-                extraOptions = extraOptions.Replace($" {value.ToLower()} ", "", StringComparison.OrdinalIgnoreCase);
+                extraOptions = extraOptions.Replace($" {value.ToLower()} ", " ", StringComparison.OrdinalIgnoreCase);
                 extraOptions = extraOptions.Trim();
                 somethingFound = true;
             }

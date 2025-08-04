@@ -279,7 +279,7 @@ public class ArtistCommands : BaseCommandModule
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var topListSettings = SettingService.SetTopListSettings(extraOptions);
+            var topListSettings = SettingService.SetTopListSettings(userSettings.NewSearchValue);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
 
             if (topListSettings.Discogs)
