@@ -575,13 +575,13 @@ public class ChartService
         }
     }
 
-    public async Task<ChartSettings> SetSettings(ChartSettings currentChartSettings, string[] extraOptions,
-        UserSettingsModel userSettings, bool aoty = false, bool aotd = false)
+    public async Task<ChartSettings> SetSettings(ChartSettings currentChartSettings, UserSettingsModel userSettings, bool aoty = false, bool aotd = false)
     {
         var chartSettings = currentChartSettings;
         chartSettings.CustomOptionsEnabled = false;
 
-        var optionsAsString = extraOptions.Length != 0 ? string.Join(" ", extraOptions) : "";
+        var optionsAsString = userSettings.NewSearchValue;
+        var splitOptions = optionsAsString.Split(' ');
         var cleanedOptions = optionsAsString;
 
         var noTitles = new[] { "notitles", "nt" };
@@ -621,7 +621,8 @@ public class ChartService
         chartSettings.Height = DefaultChartSize;
 
         var dimensionOptions = new List<string>();
-        foreach (var option in extraOptions.Where(w => !string.IsNullOrWhiteSpace(w) && w.Length is >= 3 and <= 5))
+        foreach (var option in splitOptions
+                     .Where(w => !string.IsNullOrWhiteSpace(w) && w.Length is >= 3 and <= 5))
         {
             var newDimensions = GetDimensions(chartSettings, option);
 
@@ -657,7 +658,7 @@ public class ChartService
             var aotdFound = false;
             var decadeOptions = new List<string>();
 
-            foreach (var option in extraOptions)
+            foreach (var option in splitOptions)
             {
                 var cleaned = option
                     .Replace("d:", "", StringComparison.OrdinalIgnoreCase)
@@ -698,7 +699,7 @@ public class ChartService
         }
 
         var processedFilters = new List<string>();
-        foreach (var option in extraOptions)
+        foreach (var option in splitOptions)
         {
             if (option.StartsWith("r:", StringComparison.OrdinalIgnoreCase) ||
                 option.StartsWith("released:", StringComparison.OrdinalIgnoreCase))

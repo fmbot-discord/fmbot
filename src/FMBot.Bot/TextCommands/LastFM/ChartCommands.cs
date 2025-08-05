@@ -61,7 +61,7 @@ public class ChartCommands : BaseCommandModule
     [Alias("c", "aoty", "albumsoftheyear", "albumoftheyear", "aotd", "albumsofthedecade", "albumofthedecade", "topster", "topsters")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Albums)]
-    public async Task ChartAsync(params string[] otherSettings)
+    public async Task ChartAsync([Remainder]string otherSettings)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -73,12 +73,7 @@ public class ChartCommands : BaseCommandModule
             return;
         }
 
-        var optionsAsString = "";
-        if (otherSettings != null && otherSettings.Any())
-        {
-            optionsAsString = string.Join(" ", otherSettings);
-        }
-        var userSettings = await this._settingService.GetUser(optionsAsString, user, this.Context);
+        var userSettings = await this._settingService.GetUser(otherSettings, user, this.Context);
 
         if (this.Context.Guild != null)
         {
@@ -104,7 +99,7 @@ public class ChartCommands : BaseCommandModule
             var aoty = messageContent.Contains("aoty") || messageContent.Contains("albumsoftheyear") || messageContent.Contains("albumoftheyear");
             var aotd = messageContent.Contains("aotd") || messageContent.Contains("albumsofthedecade") || messageContent.Contains("albumofthedecade");
 
-            chartSettings = await this._chartService.SetSettings(chartSettings, otherSettings, userSettings, aoty, aotd);
+            chartSettings = await this._chartService.SetSettings(chartSettings, userSettings, aoty, aotd);
 
             var response = await this._chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);
@@ -130,7 +125,7 @@ public class ChartCommands : BaseCommandModule
     [Alias("ac", "top")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Artists)]
-    public async Task ArtistChartAsync(params string[] otherSettings)
+    public async Task ArtistChartAsync([Remainder]string otherSettings)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -142,12 +137,7 @@ public class ChartCommands : BaseCommandModule
             return;
         }
 
-        var optionsAsString = "";
-        if (otherSettings != null && otherSettings.Any())
-        {
-            optionsAsString = string.Join(" ", otherSettings);
-        }
-        var userSettings = await this._settingService.GetUser(optionsAsString, user, this.Context);
+        var userSettings = await this._settingService.GetUser(otherSettings, user, this.Context);
 
         if (this.Context.Guild != null)
         {
@@ -166,7 +156,7 @@ public class ChartCommands : BaseCommandModule
 
             var chartSettings = new ChartSettings(this.Context.User) { ArtistChart = true };
 
-            chartSettings = await this._chartService.SetSettings(chartSettings, otherSettings, userSettings);
+            chartSettings = await this._chartService.SetSettings(chartSettings, userSettings);
 
             var response = await this._chartBuilders.ArtistChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
                 chartSettings);

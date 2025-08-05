@@ -992,7 +992,7 @@ public class SettingService
         var options = extraOptions.Split(' ');
         foreach (var option in options)
         {
-            foreach (var month in Months.Where(month => option.ToLower().Contains(month.Key)))
+            foreach (var month in Months.Where(month => option.ToLower().StartsWith(month.Key)))
             {
                 return month.Value;
             }
