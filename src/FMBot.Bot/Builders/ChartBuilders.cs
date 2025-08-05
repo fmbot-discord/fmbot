@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -75,7 +76,7 @@ public class ChartBuilders
 
         Response<TopAlbumList> albums = null;
 
-        if (chartSettings.FilteredArtist != null)
+        if (chartSettings.FilteredArtist != null && chartSettings.TimeSettings.TimePeriod == TimePeriod.AllTime)
         {
             var artistTopAlbums = await this._artistService.GetTopAlbumsForArtist(userSettings.UserId,
                 chartSettings.FilteredArtist.Name);
@@ -97,6 +98,14 @@ public class ChartBuilders
                 : 250;
             albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm,
                 chartSettings.TimeSettings, imagesToGet, useCache: true);
+
+            if (chartSettings.FilteredArtist != null)
+            {
+                albums.Content.TopAlbums = albums.Content.TopAlbums
+                    .Where(f => f.ArtistName.Equals(chartSettings.FilteredArtist.Name,
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
         }
 
 
@@ -221,7 +230,8 @@ public class ChartBuilders
 
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("**⚠️ Contains NSFW covers - Click to reveal**"));
+            response.ComponentsContainer.AddComponent(
+                new TextDisplayBuilder("**⚠️ Contains NSFW covers - Click to reveal**"));
         }
 
         response.FileName =
@@ -361,7 +371,8 @@ public class ChartBuilders
         }
         else
         {
-            footer.AppendLine($"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}");
+            footer.AppendLine(
+                $"-# Chart requested by {await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser)}");
         }
 
         footer.AppendLine("-# Image source: Spotify | Use 'skip' to skip artists without images");
@@ -387,7 +398,8 @@ public class ChartBuilders
 
         if (chartSettings.ContainsNsfw && !nsfwAllowed)
         {
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("**⚠️ Contains NSFW images - Click to reveal**"));
+            response.ComponentsContainer.AddComponent(
+                new TextDisplayBuilder("**⚠️ Contains NSFW images - Click to reveal**"));
         }
 
         response.FileName =
