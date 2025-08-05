@@ -61,7 +61,7 @@ public class ChartCommands : BaseCommandModule
     [Alias("c", "aoty", "albumsoftheyear", "albumoftheyear", "aotd", "albumsofthedecade", "albumofthedecade", "topster", "topsters")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Albums)]
-    public async Task ChartAsync([Remainder]string otherSettings)
+    public async Task ChartAsync([Remainder]string otherSettings = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -125,7 +125,7 @@ public class ChartCommands : BaseCommandModule
     [Alias("ac", "top")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Artists)]
-    public async Task ArtistChartAsync([Remainder]string otherSettings)
+    public async Task ArtistChartAsync([Remainder]string otherSettings = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var user = await this._userService.GetUserSettingsAsync(this.Context.User);

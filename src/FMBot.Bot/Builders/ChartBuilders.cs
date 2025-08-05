@@ -211,6 +211,7 @@ public class ChartBuilders
 
         var supporter =
             await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
+        supporter = "test123";
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
         if (supporter != null)
         {

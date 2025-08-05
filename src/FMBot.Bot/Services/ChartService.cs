@@ -581,7 +581,7 @@ public class ChartService
         chartSettings.CustomOptionsEnabled = false;
 
         var optionsAsString = userSettings.NewSearchValue;
-        var splitOptions = optionsAsString.Split(' ');
+        var splitOptions = optionsAsString?.Split(' ') ?? [];
         var cleanedOptions = optionsAsString;
 
         var noTitles = new[] { "notitles", "nt" };
@@ -847,7 +847,7 @@ public class ChartService
         if (!string.IsNullOrEmpty(randomSupporter))
         {
             embedDescription.AppendLine(
-                $"*This chart was brought to you by .fmbot supporter `{StringExtensions.Sanitize(randomSupporter)}`.*");
+                $"- *Brought to you by .fmbot supporter {StringExtensions.Sanitize(randomSupporter)}.*");
         }
 
         return embedDescription.ToString();
