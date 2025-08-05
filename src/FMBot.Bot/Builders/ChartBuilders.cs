@@ -212,12 +212,6 @@ public class ChartBuilders
         var supporter =
             await this._supporterService.GetRandomSupporter(context.DiscordGuild, context.ContextUser.UserType);
         ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, context.Prefix);
-        if (supporter != null)
-        {
-            response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
-                style: ButtonStyle.Secondary,
-                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"));
-        }
 
         var nsfwAllowed = context.DiscordGuild == null || ((SocketTextChannel)context.DiscordChannel).IsNsfw;
         var chart = await this._chartService.GenerateChartAsync(chartSettings);
@@ -269,6 +263,15 @@ public class ChartBuilders
             response.Spoiler = chartSettings.ContainsNsfw;
             response.ResponseType = ResponseType.Embed;
             response.Components = new ComponentBuilder().WithSelectMenu(context.SelectMenu);
+        }
+
+        if (supporter != null)
+        {
+            var actionRow = new ActionRowBuilder();
+            actionRow.WithButton(Constants.GetSupporterButton,
+                customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "chart-broughtby"),
+                style: ButtonStyle.Secondary);
+            response.ComponentsV2.AddComponent(actionRow);
         }
 
         return response;
