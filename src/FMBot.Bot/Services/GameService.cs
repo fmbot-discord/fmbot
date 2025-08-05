@@ -770,6 +770,7 @@ public class GameService
             .Replace("Å", "A")
             .Replace("?", "")
             .Replace("!", "")
+            .Replace("'", "")
             .Replace("’", "")
             .Replace("‘", "")
             .Replace("…", "...")

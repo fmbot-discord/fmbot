@@ -149,13 +149,10 @@ public static class InteractionContextExtensions
                     ephemeral: ephemeral, components: response.Components?.Build());
                 break;
             case ResponseType.ImageWithEmbed:
-                var imageEmbedFilename =
+                response.FileName =
                     StringExtensions.ReplaceInvalidChars(response.FileName);
-                await context.Interaction.RespondWithFileAsync(response.Stream,
-                    (response.Spoiler
-                        ? "SPOILER_"
-                        : "") +
-                    imageEmbedFilename,
+                await context.Interaction.RespondWithFileAsync(
+                    new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
                     null,
                     [response.Embed?.Build()],
                     ephemeral: ephemeral,
@@ -222,8 +219,8 @@ public static class InteractionContextExtensions
                 if (response.Stream is { Length: > 0 })
                 {
                     response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
-                    var componentImage = await context.Interaction.FollowupWithFileAsync(response.Stream,
-                        response.FileName,
+                    var componentImage = await context.Interaction.FollowupWithFileAsync(
+                        new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
                         components: response.ComponentsV2?.Build(),
                         ephemeral: ephemeral,
                         allowedMentions: AllowedMentions.None);
@@ -250,11 +247,8 @@ public static class InteractionContextExtensions
             case ResponseType.ImageWithEmbed:
                 var imageEmbedFilename =
                     StringExtensions.ReplaceInvalidChars(response.FileName);
-                var imageWithEmbed = await context.Interaction.FollowupWithFileAsync(response.Stream,
-                    (response.Spoiler
-                        ? "SPOILER_"
-                        : "") +
-                    imageEmbedFilename,
+                var imageWithEmbed = await context.Interaction.FollowupWithFileAsync(
+                    new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
                     null,
                     [response.Embed?.Build()],
                     ephemeral: ephemeral,
@@ -266,12 +260,9 @@ public static class InteractionContextExtensions
             case ResponseType.ImageOnly:
                 var imageName =
                     StringExtensions.ReplaceInvalidChars(response.FileName);
-                var image = await context.Interaction.FollowupWithFileAsync(response.Stream,
-                    (response.Spoiler
-                        ? "SPOILER_"
-                        : "") +
+                var image = await context.Interaction.FollowupWithFileAsync(
+                    new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
                     imageName,
-                    null,
                     ephemeral: ephemeral);
 
                 await response.Stream.DisposeAsync();

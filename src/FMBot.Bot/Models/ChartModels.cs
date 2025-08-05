@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using Discord;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -19,6 +20,7 @@ public class ChartSettings
         this.TitleSetting = TitleSetting.Titles;
         this.SkipWithoutImage = false;
         this.ContainsNsfw = false;
+        this.FileDescription = new StringBuilder();
     }
 
     public List<TopAlbum> Albums { get; set; }
@@ -82,6 +84,8 @@ public class ChartSettings
 
     public bool ContainsNsfw { get; set; }
     public int? CensoredItems { get; set; }
+
+    public StringBuilder FileDescription { get; set; }
 
     public Artist FilteredArtist { get; set; }
 }

@@ -108,7 +108,6 @@ public class ChartBuilders
             }
         }
 
-
         if (albums?.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
         {
             var count = albums?.Content?.TopAlbums?.Count ?? 0;
@@ -228,10 +227,12 @@ public class ChartBuilders
                 new TextDisplayBuilder("**⚠️ Contains NSFW covers - Click to reveal**"));
         }
 
+        response.FileDescription = chartSettings.FileDescription.ToString();
         response.FileName =
             $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
 
         response.ComponentsContainer.AddComponent(new MediaGalleryBuilder().AddItem($"attachment://{response.FileName}",
+            StringExtensions.TruncateLongString(response.FileDescription, 256),
             isSpoiler: chartSettings.ContainsNsfw));
 
         response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"**{embedTitle}**"));

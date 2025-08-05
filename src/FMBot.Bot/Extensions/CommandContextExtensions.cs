@@ -93,7 +93,7 @@ public static class CommandContextExtensions
                                 ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
                                 {
                                     new(response.Stream,
-                                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName)
+                                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.FileDescription)
                                 })
                                 : null;
                         });
@@ -114,7 +114,7 @@ public static class CommandContextExtensions
                                 ? new Optional<IEnumerable<FileAttachment>>(new List<FileAttachment>
                                 {
                                     new(response.Stream,
-                                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName)
+                                        response.Spoiler ? $"SPOILER_{response.FileName}" : response.FileName, response.FileDescription)
                                 })
                                 : null;
                         });
@@ -192,14 +192,12 @@ public static class CommandContextExtensions
                 responseMessage = paginator.Message;
                 break;
             case ResponseType.ImageWithEmbed:
-                var imageEmbedFilename = StringExtensions.ReplaceInvalidChars(response.FileName);
+                response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
                 var imageWithEmbed = await context.Channel.SendFileAsync(
-                    response.Stream,
-                    imageEmbedFilename,
+                    new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
                     null,
                     false,
                     response.Embed.Build(),
-                    isSpoiler: response.Spoiler,
                     components: response.Components?.Build());
 
                 await response.Stream.DisposeAsync();
@@ -208,11 +206,8 @@ public static class CommandContextExtensions
             case ResponseType.ImageOnly:
                 response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
                 var image = await context.Channel.SendFileAsync(
-                    response.Stream,
-                    response.FileName,
-                    isSpoiler: response.Spoiler,
+                    new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
                     components: response.Components?.Build());
-
                 await response.Stream.DisposeAsync();
                 responseMessage = image;
                 break;
@@ -221,9 +216,7 @@ public static class CommandContextExtensions
                 {
                     response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
                     var componentImage = await context.Channel.SendFileAsync(
-                        response.Stream,
-                        response.FileName,
-                        isSpoiler: response.Spoiler,
+                        new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
                         components: response.ComponentsV2?.Build(),
                         flags: MessageFlags.ComponentsV2,
                         allowedMentions: AllowedMentions.None);

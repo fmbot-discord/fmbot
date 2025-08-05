@@ -35,6 +35,8 @@ public class ResponseModel
 
     public Stream Stream { get; set; }
     public string FileName { get; set; }
+
+    public string FileDescription { get; set; } = null;
     public bool Spoiler { get; set; }
 
     public string Text { get; set; }

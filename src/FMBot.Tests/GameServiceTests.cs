@@ -13,6 +13,7 @@ public class GameServiceTests
         Description = "Two character typos in long name should be correct")]
     [TestCase("Yesterday...", "Yesterday…", true, Description = "Different types of dots should be equal")]
     [TestCase("Dazey and the Scouts", "Dazey & the Scouts", true, Description = "'and' and '&' should be equal")]
+    [TestCase("Where I’ve been isn’t where I’m going", "Where I've Been, Isn't Where I'm Going", true, Description = "'and' and '&' should be equal")]
     [TestCase("MUNA", "muna", true, Description = "Case should not matter")]
     [TestCase("Sufjan Stevens", "Suffjan Stevens", true, Description = "Common misspelling should be accepted")]
     [TestCase("Björk", "Bjork", true, Description = "Special characters should be normalized")]

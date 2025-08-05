@@ -184,6 +184,7 @@ public class ChartService
                     }
 
                     var index = chart.Albums.IndexOf(album);
+                    chart.FileDescription.Append($"#{index + 1} {album.AlbumName} by {album.ArtistName}, ");
                     AddImageToChart(chart,
                         chartImage,
                         index,
@@ -270,6 +271,7 @@ public class ChartService
                     }
 
                     var index = chart.Artists.IndexOf(artist);
+                    chart.FileDescription.Append($"#{index + 1} {artist.ArtistName}, ");
                     AddImageToChart(chart,
                         chartImage,
                         index,
