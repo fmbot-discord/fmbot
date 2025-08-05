@@ -52,15 +52,19 @@ public class ChartSlashCommands : InteractionModuleBase
     {
         _ = DeferAsync(privateResponse);
 
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
-        var timeSettings = SettingService.GetTimePeriod(timePeriod, !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade) ? TimePeriod.AllTime : TimePeriod.Weekly,  timeZone: userSettings.TimeZone);
-
         Artist filteredArtist = null;
         if (!string.IsNullOrWhiteSpace(artist))
         {
             filteredArtist = await this._artistsService.GetArtistFromDatabase(artist);
         }
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod,
+            !string.IsNullOrWhiteSpace(year) || !string.IsNullOrWhiteSpace(decade) || filteredArtist != null
+                ? TimePeriod.AllTime
+                : TimePeriod.Weekly,
+            timeZone: userSettings.TimeZone);
 
         var chartSettings = new ChartSettings(this.Context.User)
         {
