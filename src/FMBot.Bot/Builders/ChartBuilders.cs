@@ -90,10 +90,13 @@ public class ChartBuilders
         }
         else
         {
+            var imagesToGet = chartSettings.ReleaseYearFilter.HasValue ||
+                              chartSettings.ReleaseDecadeFilter.HasValue ||
+                              chartSettings.FilteredArtist != null
+                ? 1000
+                : 250;
             albums = await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm,
-                chartSettings.TimeSettings,
-                chartSettings.ReleaseYearFilter.HasValue || chartSettings.ReleaseDecadeFilter.HasValue ? 1000 : 250,
-                useCache: true);
+                chartSettings.TimeSettings, imagesToGet, useCache: true);
         }
 
 

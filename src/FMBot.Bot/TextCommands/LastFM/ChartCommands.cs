@@ -65,7 +65,7 @@ public class ChartCommands : BaseCommandModule
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var chartCount = await this._userService.GetCommandExecutedAmount(user.UserId, "chart", DateTime.UtcNow.AddSeconds(-45));
+        var chartCount = await this._userService.GetCommandExecutedAmount(user.UserId, "chart", DateTime.UtcNow.AddSeconds(-40));
         if (chartCount >= 4)
         {
             await ReplyAsync($"Please wait a minute before generating charts again.");

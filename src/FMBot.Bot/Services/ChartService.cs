@@ -754,18 +754,19 @@ public class ChartService
         var timeSettings = SettingService.GetTimePeriod(cleanedOptions,
             aoty || aotd ? TimePeriod.AllTime : TimePeriod.Weekly, timeZone: userSettings.TimeZone);
 
-        chartSettings.TimeSettings = timeSettings;
-        chartSettings.TimespanString = timeSettings.Description;
-        chartSettings.TimespanUrlString = timeSettings.UrlParameter;
-
         if (!string.IsNullOrWhiteSpace(timeSettings.NewSearchValue))
         {
             var artist = await this._artistsService.GetArtistFromDatabase(timeSettings.NewSearchValue);
             if (artist != null)
             {
                 chartSettings.FilteredArtist = artist;
+                timeSettings = SettingService.GetTimePeriod(cleanedOptions,TimePeriod.AllTime, timeZone: userSettings.TimeZone);
             }
         }
+
+        chartSettings.TimeSettings = timeSettings;
+        chartSettings.TimespanString = timeSettings.Description;
+        chartSettings.TimespanUrlString = timeSettings.UrlParameter;
 
         return chartSettings;
     }
