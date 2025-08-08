@@ -39,51 +39,64 @@ public class OpenAiService
         this._botSettings = botSettings.Value;
     }
 
-    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-4.1-mini",
-        string userMessage = null, double temperature = 1.00)
+    private async Task<OpenAiResponse> SendRequest(string prompt, string model = "gpt-5-mini",
+        string userMessage = null)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions");
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
         request.Headers.Add("Authorization", $"Bearer {this._botSettings.OpenAi.Key}");
 
-        var content = new OpenAiRequest
+        var inputMessages = new List<InputMessage>
         {
-            Model = model,
-            Temperature = temperature,
-            Messages =
-            [
-                new RequestMessage
-                {
-                    Role = "system",
-                    Content = prompt
-                }
-            ]
+            new()
+            {
+                Role = "developer",
+                Content = [new InputContent { Type = "input_text", Text = prompt }]
+            }
         };
 
         if (userMessage != null)
         {
-            content.Messages.Add(new RequestMessage
+            inputMessages.Add(new InputMessage
             {
                 Role = "user",
-                Content = userMessage
+                Content = [new InputContent { Type = "input_text", Text = userMessage }]
             });
         }
 
-        var requestContent = JsonSerializer.Serialize(content);
+        var content = new ResponsesRequest
+        {
+            Model = model,
+            Input = inputMessages,
+            Text = new TextConfig
+            {
+                Format = new TextFormat { Type = "text" },
+                Verbosity = "medium"
+            },
+            Reasoning = new ReasoningConfig
+            {
+                Effort = "minimal",
+                Summary = "auto"
+            }
+        };
 
-        request.Content = new StringContent(requestContent, null, "application/json");
+        request.Content = new StringContent(JsonSerializer.Serialize(content), null, "application/json");
         var response = await this._httpClient.SendAsync(request);
         Statistics.OpenAiCalls.Inc();
 
         var responseContent = await response.Content.ReadAsStringAsync();
+        var responsesModel = JsonSerializer.Deserialize<ResponsesResponse>(responseContent);
 
-        var responseModel = JsonSerializer.Deserialize<OpenAiResponse>(responseContent);
-        responseModel.Prompt = prompt;
-
-        return responseModel;
+        return new OpenAiResponse
+        {
+            Model = responsesModel.Model,
+            Usage = responsesModel.Usage,
+            Prompt = prompt,
+            Output = responsesModel.Output?.FirstOrDefault(o => o.Type == "message")?.Content?.FirstOrDefault()?.Text
+        };
     }
 
     public async Task<OpenAiResponse> GetJudgeResponse(List<TopArtist> artists, List<TopTrack> topTracks,
-        PromptType promptType,int amountThisWeek, bool supporter = false,  string language = "en-us")
+        PromptType promptType, int amountThisWeek, bool supporter = false, string language = "en-us")
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var prompt = await db.AiPrompts
@@ -111,9 +124,9 @@ public class OpenAiService
             music.AppendLine();
         }
 
-        var model = supporter ? amountThisWeek <= 2 ? prompt.UltraModel : prompt.PremiumModel : prompt.FreeModel;
+        var model = supporter ? (amountThisWeek <= 2 ? prompt.UltraModel : prompt.PremiumModel) : prompt.FreeModel;
 
-        return await SendRequest(prompt.Prompt, model, music.ToString(), 1.1);
+        return await SendRequest(prompt.Prompt, model, music.ToString());
     }
 
     public async Task<AiGeneration> StoreAiGeneration(ulong contextId, int userId, int? targetedUserId)
@@ -135,13 +148,13 @@ public class OpenAiService
         return generation;
     }
 
-    public async Task<AiGeneration> UpdateAiGeneration (ulong contextId, OpenAiResponse response)
+    public async Task<AiGeneration> UpdateAiGeneration(ulong contextId, OpenAiResponse response)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGeneration = await db.AiGenerations.FirstAsync(f => f.DiscordId == contextId);
 
         existingGeneration.Model = response.Model;
-        existingGeneration.Output = response.Choices?.FirstOrDefault()?.ChoiceMessage?.Content;
+        existingGeneration.Output = response.Output;
         existingGeneration.TotalTokens = response.Usage.TotalTokens;
         existingGeneration.Prompt = response.Prompt;
 
@@ -175,7 +188,7 @@ public class OpenAiService
             var response =
                 await SendRequest($"Is the username '{username}' offensive? Only reply with 'true' or 'false'.");
 
-            var output = response.Choices.FirstOrDefault()?.ChoiceMessage?.Content;
+            var output = response.Output;
             return output != null && output.Contains("true", StringComparison.OrdinalIgnoreCase);
         }
         catch (Exception e)
@@ -264,11 +277,9 @@ public class OpenAiService
 
             var response = await SendRequest(prompt.Prompt, userMessage: promptBuilder.ToString());
 
-            var output = response.Choices.FirstOrDefault()?.ChoiceMessage?.Content;
+            this._cache.Set(cacheKey, response.Output, TimeSpan.FromHours(2));
 
-            this._cache.Set(cacheKey, output, TimeSpan.FromHours(2));
-
-            return output;
+            return response.Output;
         }
         catch (Exception e)
         {

@@ -1367,7 +1367,7 @@ public class UserBuilder
             await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.NewCompliment, amountThisWeek,
                 supporter);
 
-        if (openAiResponse.Choices == null)
+        if (openAiResponse.Output == null)
         {
             response.Embed.WithDescription($"<:404:882220605783560222> OpenAI API error - please try again");
             return response;
@@ -1401,7 +1401,7 @@ public class UserBuilder
             await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.NewRoast, amountThisWeek,
                 supporter);
 
-        if (openAiResponse.Choices == null)
+        if (openAiResponse.Output == null)
         {
             response.Embed.WithDescription($"<:404:882220605783560222> OpenAI API error - please try again");
             return response;
