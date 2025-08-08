@@ -227,7 +227,7 @@ public class ChartBuilders
                 new TextDisplayBuilder("**⚠️ Contains NSFW covers - Click to reveal**"));
         }
 
-        response.FileDescription = chartSettings.FileDescription.ToString();
+        response.FileDescription = StringExtensions.TruncateLongString(chartSettings.FileDescription.ToString(), 1024);
         response.FileName =
             $"album-chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png";
 
