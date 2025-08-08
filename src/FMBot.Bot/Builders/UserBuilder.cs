@@ -1364,7 +1364,7 @@ public class UserBuilder
             userSettings.DifferentUser ? userSettings.UserId : null);
 
         var openAiResponse =
-            await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.NewCompliment, amountThisWeek,
+            await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.Compliment, amountThisWeek,
                 supporter);
 
         if (openAiResponse.Output == null)
@@ -1398,7 +1398,7 @@ public class UserBuilder
             userSettings.DifferentUser ? userSettings.UserId : null);
 
         var openAiResponse =
-            await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.NewRoast, amountThisWeek,
+            await this._openAiService.GetJudgeResponse(topArtists, topTracks, PromptType.Roast, amountThisWeek,
                 supporter);
 
         if (openAiResponse.Output == null)
