@@ -1215,7 +1215,7 @@ public class AlbumBuilders
         response.FileName =
             $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}")}.{extension}";
         response.Spoiler = safeForChannel == CensorService.CensorResult.Nsfw;
-        response.FileDescription = $"Album cover for {albumSearch.Album.AlbumName} by {albumSearch.Album.ArtistName}";
+        response.FileDescription = StringExtensions.TruncateLongString($"Album cover for {albumSearch.Album.AlbumName} by {albumSearch.Album.ArtistName}", 512);
 
         if (!gifResult)
         {
