@@ -245,7 +245,7 @@ public static class InteractionContextExtensions
                     ephemeral: ephemeral);
                 break;
             case ResponseType.ImageWithEmbed:
-                var imageEmbedFilename =
+                response.FileName =
                     StringExtensions.ReplaceInvalidChars(response.FileName);
                 var imageWithEmbed = await context.Interaction.FollowupWithFileAsync(
                     new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
@@ -258,11 +258,10 @@ public static class InteractionContextExtensions
                 responseId = imageWithEmbed.Id;
                 break;
             case ResponseType.ImageOnly:
-                var imageName =
+                response.FileName =
                     StringExtensions.ReplaceInvalidChars(response.FileName);
                 var image = await context.Interaction.FollowupWithFileAsync(
                     new FileAttachment(response.Stream, response.FileName, response.FileDescription, response.Spoiler),
-                    imageName,
                     ephemeral: ephemeral);
 
                 await response.Stream.DisposeAsync();
