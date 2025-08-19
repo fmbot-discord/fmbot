@@ -46,8 +46,8 @@ See our Docker builds on [Github Packages](https://github.com/fmbot-discord/fmbo
 
 Please see https://fm.bot/setup on how to setup a local development environment, and see the [CONTRIBUTING.md](CONTRIBUTING.md) for further info.
 
+Note that selfhosting .fmbot is not supported.
+
 <h3>Thanks</h3>
 
-Thanks to <a href="https://www.jetbrains.com/?from=fmbot">JetBrains</a> for providing a free license of ReSharper.
-
-And a special thanks to Last.fm and it's community, the Last.fm developer community, the .fmbot community, contributors and staff, all supporters and all others who have helped out.
+Thanks to Last.fm and it's community, the Last.fm developer community, the .fmbot community, contributors and staff, all supporters and all others who have helped out.

@@ -16,9 +16,9 @@ services:
     environment:
       - INSTANCE_NAME=prod-1
       - SHARDS_MAIN_INSTANCE=true
-      - SHARDS_TOTAL_SHARDS=512
+      - SHARDS_TOTAL_SHARDS=640
       - SHARDS_FIRST_SHARD=0
-      - SHARDS_LAST_SHARD=41
+      - SHARDS_LAST_SHARD=53
 
   prod-2:
     <<: *instance-defaults
@@ -27,9 +27,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-2
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=42
-      - SHARDS_LAST_SHARD=83
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=54
+      - SHARDS_LAST_SHARD=107
 
   prod-3:
     <<: *instance-defaults
@@ -38,9 +38,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-3
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=84
-      - SHARDS_LAST_SHARD=125
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=108
+      - SHARDS_LAST_SHARD=161
 
   prod-4:
     <<: *instance-defaults
@@ -49,9 +49,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-4
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=126
-      - SHARDS_LAST_SHARD=167
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=162
+      - SHARDS_LAST_SHARD=215
 
   prod-5:
     <<: *instance-defaults
@@ -60,9 +60,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-5
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=168
-      - SHARDS_LAST_SHARD=209
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=216
+      - SHARDS_LAST_SHARD=268
 
   prod-6:
     <<: *instance-defaults
@@ -71,9 +71,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-6
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=210
-      - SHARDS_LAST_SHARD=251
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=269
+      - SHARDS_LAST_SHARD=321
 
   prod-7:
     <<: *instance-defaults
@@ -82,9 +82,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-7
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=252
-      - SHARDS_LAST_SHARD=293
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=322
+      - SHARDS_LAST_SHARD=374
 
   prod-8:
     <<: *instance-defaults
@@ -93,9 +93,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-8
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=294
-      - SHARDS_LAST_SHARD=335
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=375
+      - SHARDS_LAST_SHARD=427
 
   prod-9:
     <<: *instance-defaults
@@ -104,9 +104,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-9
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=336
-      - SHARDS_LAST_SHARD=377
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=428
+      - SHARDS_LAST_SHARD=480
 
   prod-10:
     <<: *instance-defaults
@@ -115,9 +115,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-10
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=378
-      - SHARDS_LAST_SHARD=419
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=481
+      - SHARDS_LAST_SHARD=533
 
   prod-11:
     <<: *instance-defaults
@@ -126,9 +126,9 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-11
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=420
-      - SHARDS_LAST_SHARD=461
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=534
+      - SHARDS_LAST_SHARD=586
 
   prod-12:
     <<: *instance-defaults
@@ -137,6 +137,6 @@ services:
         condition: service_healthy
     environment:
       - INSTANCE_NAME=prod-12
-      - SHARDS_TOTAL_SHARDS=512
-      - SHARDS_FIRST_SHARD=462
-      - SHARDS_LAST_SHARD=511
+      - SHARDS_TOTAL_SHARDS=640
+      - SHARDS_FIRST_SHARD=587
+      - SHARDS_LAST_SHARD=639
