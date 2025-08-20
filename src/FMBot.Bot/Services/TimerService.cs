@@ -553,11 +553,11 @@ public class TimerService : IDisposable
         Log.Debug("ShardReconnectTimer: Running shard reconnect timer");
 
         var currentProcess = Process.GetCurrentProcess();
-        var startTime = DateTime.Now - currentProcess.StartTime;
+        var uptime = DateTime.Now - currentProcess.StartTime;
 
-        if (startTime.Minutes <= 15)
+        if (uptime.TotalMinutes <= 15)
         {
-            Log.Information($"Skipping {nameof(CheckIfShardsNeedReconnect)} because bot only just started");
+            Log.Information($"Skipping {nameof(CheckIfShardsNeedReconnect)} because bot only just started (uptime: {uptime.TotalMinutes:F1} minutes)");
             return;
         }
 
