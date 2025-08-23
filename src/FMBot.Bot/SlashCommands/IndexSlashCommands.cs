@@ -44,6 +44,19 @@ public class IndexSlashCommands : InteractionModuleBase
 
         try
         {
+            var embed = new EmbedBuilder();
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            if (guild.LastIndexed > DateTime.UtcNow.AddMinutes(-1))
+            {
+                embed.WithColor(DiscordConstants.InformationColorBlue);
+                embed.WithDescription("This server has already been updated in the last minute, please wait.");
+                await FollowupAsync(null, [embed.Build()]);
+                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                return;
+            }
+
+            await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
+
             var guildUsers = await this.Context.Guild.GetUsersAsync();
 
             Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
@@ -53,8 +66,6 @@ public class IndexSlashCommands : InteractionModuleBase
 
             var registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
-            await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
-
             reply.AppendLine($"✅ Cached memberlist for server has been updated.");
 
             reply.AppendLine();
@@ -62,7 +73,6 @@ public class IndexSlashCommands : InteractionModuleBase
 
             // TODO, show premium server role counts
 
-            var embed = new EmbedBuilder();
             embed.WithColor(DiscordConstants.InformationColorBlue);
             embed.WithDescription(reply.ToString());
 
@@ -72,6 +82,7 @@ public class IndexSlashCommands : InteractionModuleBase
             {
                 socketGuild.PurgeUserCache();
             }
+
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -119,7 +130,8 @@ public class IndexSlashCommands : InteractionModuleBase
             }
 
             var updatedResponse =
-                await this._userBuilder.UpdateOptions(new ContextModel(this.Context, contextUser), updateType.updateType);
+                await this._userBuilder.UpdateOptions(new ContextModel(this.Context, contextUser),
+                    updateType.updateType);
             await this.Context.Interaction.ModifyOriginalResponseAsync(e =>
             {
                 e.Embed = updatedResponse.Embed.Build();

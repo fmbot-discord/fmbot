@@ -56,12 +56,23 @@ public class IndexCommands : BaseCommandModule
     {
         var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
+        if (lastIndex > DateTime.UtcNow.AddMinutes(-1))
+        {
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+            this._embed.WithDescription("This server has already been updated in the last minute, please wait.");
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            return;
+        }
+
         this._embed.WithDescription(
             "<a:loading:821676038102056991> Updating memberlist, this can take a while on larger servers...");
         var indexMessage = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
         try
         {
+            await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
+
             var guildUsers = await this.Context.Guild.GetUsersAsync();
 
             Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
@@ -69,8 +80,6 @@ public class IndexCommands : BaseCommandModule
 
             var reply = new StringBuilder();
             var registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
-
-            await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
             reply.AppendLine($"✅ Cached memberlist for server has been updated.");
 
