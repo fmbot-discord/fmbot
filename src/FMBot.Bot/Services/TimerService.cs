@@ -181,11 +181,11 @@ public class TimerService : IDisposable
         Log.Information($"RecurringJob: Adding {nameof(PickNewFeatureds)}");
         RecurringJob.AddOrUpdate(nameof(PickNewFeatureds), () => PickNewFeatureds(), "0 12 * * *");
 
-        Log.Information($"RecurringJob: Adding {nameof(CheckForNewOcSupporters)}");
-        RecurringJob.AddOrUpdate(nameof(CheckForNewOcSupporters), () => CheckForNewOcSupporters(), "*/3 * * * *");
-
-        Log.Information($"RecurringJob: Adding {nameof(UpdateExistingOcSupporters)}");
-        RecurringJob.AddOrUpdate(nameof(UpdateExistingOcSupporters), () => UpdateExistingOcSupporters(), "0 * * * *");
+        // Log.Information($"RecurringJob: Adding {nameof(CheckForNewOcSupporters)}");
+        // RecurringJob.AddOrUpdate(nameof(CheckForNewOcSupporters), () => CheckForNewOcSupporters(), "*/3 * * * *");
+        //
+        // Log.Information($"RecurringJob: Adding {nameof(UpdateExistingOcSupporters)}");
+        // RecurringJob.AddOrUpdate(nameof(UpdateExistingOcSupporters), () => UpdateExistingOcSupporters(), "0 * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(CheckDiscordSupportersUserType)}");
         RecurringJob.AddOrUpdate(nameof(CheckDiscordSupportersUserType), () => CheckDiscordSupportersUserType(), "*/10 * * * *");
