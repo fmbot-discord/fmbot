@@ -7,6 +7,7 @@ namespace FMBot.Bot.Models.MusicBot;
 internal class FlaviMusicBot : MusicBot
 {
     private const string NowPlaying = "Now playing";
+
     public FlaviMusicBot() : base("FlaviBot")
     {
     }
@@ -16,6 +17,14 @@ internal class FlaviMusicBot : MusicBot
         if (msg.Components.Count == 0)
         {
             return true;
+        }
+
+        if (msg.InteractionMetadata is ApplicationCommandInteractionMetadata metaData)
+        {
+            if (metaData.Name.Equals("queue", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
         }
 
         var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
