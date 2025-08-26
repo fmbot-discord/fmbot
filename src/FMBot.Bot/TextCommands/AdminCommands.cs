@@ -1705,7 +1705,8 @@ public class AdminCommands : BaseCommandModule
         if (shard != null)
         {
             if (shard.ConnectionState == ConnectionState.Disconnected ||
-                shard.ConnectionState == ConnectionState.Disconnecting)
+                shard.ConnectionState == ConnectionState.Disconnecting ||
+                shard.ConnectionState == ConnectionState.Connecting)
             {
                 await this.Context.Channel.SendMessageAsync($"Connecting Shard #{shard.ShardId}");
                 await shard.StartAsync();

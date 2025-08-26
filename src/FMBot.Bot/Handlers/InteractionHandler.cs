@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
@@ -30,6 +31,7 @@ public class InteractionHandler
     private readonly UserService _userService;
     private readonly GuildService _guildService;
     private readonly GuildSettingBuilder _guildSettingBuilder;
+    private readonly CommandService _commands;
 
     private readonly IMemoryCache _cache;
     private readonly InteractiveService _interactivity;
@@ -41,7 +43,8 @@ public class InteractionHandler
         GuildService guildService,
         IMemoryCache cache,
         GuildSettingBuilder guildSettingBuilder,
-        InteractiveService interactivity)
+        InteractiveService interactivity,
+        CommandService commands)
     {
         this._client = client;
         this._interactionService = interactionService;
@@ -51,6 +54,7 @@ public class InteractionHandler
         this._cache = cache;
         this._guildSettingBuilder = guildSettingBuilder;
         this._interactivity = interactivity;
+        this._commands = commands;
         this._client.SlashCommandExecuted += SlashCommandExecuted;
         this._client.AutocompleteExecuted += AutoCompleteExecuted;
         this._client.SelectMenuExecuted += SelectMenuExecuted;
@@ -96,7 +100,8 @@ public class InteractionHandler
                 return;
             }
 
-            if (!await CommandEnabled(context, command))
+            var textCommand = this._commands.Search(command.Name);
+            if (!await CommandEnabled(context, command, textCommand))
             {
                 return;
             }
@@ -329,17 +334,20 @@ public class InteractionHandler
         return true;
     }
 
-    private static async Task<bool> CommandEnabled(ShardedInteractionContext context, ICommandInfo searchResult)
+    private static async Task<bool> CommandEnabled(ShardedInteractionContext context, ICommandInfo searchResult,
+        SearchResult textCommand)
     {
         if (context.Guild != null)
         {
+            var textCommandName = textCommand.IsSuccess && textCommand.Commands.Any() ? textCommand.Commands.First().Command.Name : searchResult.Name;
             var channelDisabled = DisabledChannelService.GetDisabledChannel(context.Channel.Id);
             if (channelDisabled)
             {
                 var toggledChannelCommands = ChannelToggledCommandService.GetToggledCommands(context.Channel?.Id);
                 if (toggledChannelCommands != null &&
                     toggledChannelCommands.Any() &&
-                    toggledChannelCommands.Any(searchResult.Name.Equals) &&
+                    (toggledChannelCommands.Any(searchResult.Name.Equals) ||
+                    toggledChannelCommands.Any(textCommandName.Equals)) &&
                     context.Channel != null)
                 {
                     return true;
@@ -364,7 +372,8 @@ public class InteractionHandler
 
             var disabledGuildCommands = GuildDisabledCommandService.GetToggledCommands(context.Guild?.Id);
             if (disabledGuildCommands != null &&
-                disabledGuildCommands.Any(searchResult.Name.Equals))
+                (disabledGuildCommands.Any(searchResult.Name.Equals) ||
+                disabledGuildCommands.Any(textCommandName.Equals)))
             {
                 await context.Interaction.RespondAsync(
                     "The command you're trying to execute has been disabled in this server.",
@@ -375,7 +384,8 @@ public class InteractionHandler
             var disabledChannelCommands = ChannelToggledCommandService.GetToggledCommands(context.Channel?.Id);
             if (disabledChannelCommands != null &&
                 disabledChannelCommands.Any() &&
-                disabledChannelCommands.Any(searchResult.Name.Equals) &&
+                (disabledChannelCommands.Any(searchResult.Name.Equals) ||
+                disabledChannelCommands.Any(textCommandName.Equals)) &&
                 context.Channel != null)
             {
                 await context.Interaction.RespondAsync(

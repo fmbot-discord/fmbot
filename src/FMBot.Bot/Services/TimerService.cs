@@ -293,9 +293,21 @@ public class TimerService : IDisposable
         {
             Statistics.UpdateQueueSize.Set(_updateQueueHandler.GetQueueSize());
 
-            var allShardsConnected = this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnected) &&
-                                this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Disconnecting) &&
-                                this._client.Shards.All(shard => shard.ConnectionState != ConnectionState.Connecting);
+            var allShardsConnected = this._client.Shards.All(shard => shard.ConnectionState == ConnectionState.Connected);
+
+            var currentProcess = Process.GetCurrentProcess();
+            var uptime = DateTime.Now - currentProcess.StartTime;
+            var currentMemoryUsage = currentProcess.WorkingSet64;
+
+            if (!allShardsConnected && uptime.TotalMinutes >= 12)
+            {
+                var problematicShards = this._client.Shards
+                    .Where(s => s.ConnectionState != ConnectionState.Connected)
+                    .Select(s => $"Shard {s.ShardId}: {s.ConnectionState}")
+                    .ToList();
+
+                Log.Warning("Not all shards connected: {problematicShards}", string.Join(", ", problematicShards));
+            }
 
             if (allShardsConnected)
             {
@@ -303,9 +315,6 @@ public class TimerService : IDisposable
                 await using var fileStream = File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
                 File.SetLastWriteTimeUtc(path, DateTime.UtcNow);
             }
-
-            var currentProcess = Process.GetCurrentProcess();
-            var currentMemoryUsage = currentProcess.WorkingSet64;
 
             if (!string.IsNullOrWhiteSpace(this._botSettings.ApiConfig?.InternalEndpoint))
             {
@@ -555,7 +564,7 @@ public class TimerService : IDisposable
         var currentProcess = Process.GetCurrentProcess();
         var uptime = DateTime.Now - currentProcess.StartTime;
 
-        if (uptime.TotalMinutes <= 15)
+        if (uptime.TotalMinutes <= 12)
         {
             Log.Information($"Skipping {nameof(CheckIfShardsNeedReconnect)} because bot only just started (uptime: {uptime.TotalMinutes:F1} minutes)");
             return;
@@ -568,7 +577,7 @@ public class TimerService : IDisposable
             var cacheKey = $"{shard.ShardId}-shard-disconnected";
             if (this._cache.TryGetValue(cacheKey, out int shardDisconnected))
             {
-                if (shardDisconnected > 7 && !this._cache.TryGetValue("shard-connecting", out _))
+                if (shardDisconnected >= 6 && !this._cache.TryGetValue("shard-connecting", out _))
                 {
                     this._cache.Set("shard-connecting", 1, TimeSpan.FromSeconds(15));
                     Log.Information("ShardReconnectTimer: Reconnecting shard #{shardId}", shard.ShardId);
