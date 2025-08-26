@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -22,9 +23,10 @@ public static class CommandContextExtensions
     public static void LogCommandUsed(this ICommandContext context,
         CommandResponse commandResponse = CommandResponse.Ok)
     {
+        var shardId = context.Guild != null ? ((DiscordShardedClient)context.Client).GetShardFor(context.Guild).ShardId : 0;
         Log.Information(
-            "CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
-            context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse,
+            "CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} #{shardId} | {commandResponse} | {messageContent}",
+            context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, shardId, commandResponse,
             context.Message.Content);
 
         PublicProperties.UsedCommandsResponses.TryAdd(context.Message.Id, commandResponse);
@@ -35,9 +37,10 @@ public static class CommandContextExtensions
     {
         var referenceId = GenerateRandomCode();
 
+        var shardId = context.Guild != null ? ((DiscordShardedClient)context.Client).GetShardFor(context.Guild).ShardId : 0;
         Log.Error(exception,
-            "CommandUsed: Error {referenceId} | {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",
-            referenceId, context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id,
+            "CommandUsed: Error {referenceId} | {discordUserName} / {discordUserId} | {guildName} / {guildId} #{shardId} | {commandResponse} ({message}) | {messageContent}",
+            referenceId, context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, shardId,
             CommandResponse.Error, message, context.Message.Content);
 
         if (sendReply)
