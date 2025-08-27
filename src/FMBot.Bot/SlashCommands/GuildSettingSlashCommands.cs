@@ -103,7 +103,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
     {
         try
         {
-            _ = DeferAsync();
+            await DeferAsync();
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -128,7 +128,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
     {
         try
         {
-            _ = DeferAsync();
+            await DeferAsync();
 
             if (!Enum.TryParse(inputs.First(), out GuildViewType viewType))
             {

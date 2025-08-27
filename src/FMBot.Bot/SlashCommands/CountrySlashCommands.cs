@@ -43,7 +43,7 @@ public class CountrySlashCommands : InteractionModuleBase
         [Autocomplete(typeof(CountryArtistAutoComplete))]
         string name = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -69,7 +69,7 @@ public class CountrySlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

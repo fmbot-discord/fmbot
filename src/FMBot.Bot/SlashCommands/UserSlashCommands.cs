@@ -1256,7 +1256,7 @@ public class UserSlashCommands : InteractionModuleBase
         [Summary("User", "The user of which you want to view their profile")]
         string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
         var userSettings =
@@ -1272,7 +1272,7 @@ public class UserSlashCommands : InteractionModuleBase
     [ComponentInteraction($"{InteractionConstants.User.Profile}-*-*")]
     public async Task ProfileAsync(string discordUser, string requesterDiscordUser)
     {
-        _ = DeferAsync();
+        await DeferAsync();
         await this.Context.DisableActionRows();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -1297,7 +1297,7 @@ public class UserSlashCommands : InteractionModuleBase
     {
         try
         {
-            _ = DeferAsync();
+            await DeferAsync();
             await this.Context.DisableActionRows();
 
             var discordUserId = ulong.Parse(discordUser);

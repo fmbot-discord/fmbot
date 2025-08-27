@@ -42,7 +42,7 @@ public class CrownSlashCommands : InteractionModuleBase
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -98,7 +98,7 @@ public class CrownSlashCommands : InteractionModuleBase
         [Summary("View", "View of crowns you want to see")] CrownViewType viewType = CrownViewType.Playcount,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -122,7 +122,7 @@ public class CrownSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task CrownSelectMenu(string[] inputs)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var options = inputs.First().Split("-");
 

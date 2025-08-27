@@ -45,7 +45,7 @@ public class GenreSlashCommands : InteractionModuleBase
         [Autocomplete(typeof(GenreArtistAutoComplete))] string search = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild?.Id);
@@ -68,7 +68,7 @@ public class GenreSlashCommands : InteractionModuleBase
     [ComponentInteraction($"{InteractionConstants.Genre.GenreGuild}~*~*~*~*")]
     public async Task GuildGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
         if (message == null)
@@ -106,7 +106,7 @@ public class GenreSlashCommands : InteractionModuleBase
     [ComponentInteraction($"{InteractionConstants.Genre.GenreUser}~*~*~*~*")]
     public async Task UserGenresAsync(string discordUser, string requesterDiscordUser, string genre, string originalSearch)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
         if (message == null)
@@ -149,7 +149,7 @@ public class GenreSlashCommands : InteractionModuleBase
         {
             var options = inputs.First().Split("~");
 
-            _ = DeferAsync();
+            await DeferAsync();
 
             var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
             if (message == null)
@@ -212,7 +212,7 @@ public class GenreSlashCommands : InteractionModuleBase
         [Autocomplete(typeof(GenreArtistAutoComplete))] string search = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 

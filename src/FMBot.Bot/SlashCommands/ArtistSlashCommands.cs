@@ -55,7 +55,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
         var userSettings = await this._settingService.GetUser(null, contextUser, this.Context.Guild, this.Context.User, true);
@@ -77,7 +77,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task ArtistInfoAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        _ = DeferAsync();
+        await DeferAsync();
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -112,7 +112,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -134,7 +134,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task ArtistOverviewAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        _ = DeferAsync();
+        await DeferAsync();
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -170,7 +170,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -214,7 +214,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [ComponentInteraction($"{InteractionConstants.Artist.Tracks}-*-*-*")]
     public async Task ArtistTracksAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        _ = DeferAsync();
+        await DeferAsync();
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -257,7 +257,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [ComponentInteraction($"{InteractionConstants.Artist.Albums}-*-*-*")]
     public async Task ArtistAlbumsAsync(string artistId, string discordUser, string requesterDiscordUser)
     {
-        _ = DeferAsync();
+        await DeferAsync();
         await this.Context.DisableInteractionButtons();
 
         var discordUserId = ulong.Parse(discordUser);
@@ -288,7 +288,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -327,7 +327,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Role-picker", "Display a rolepicker to filter with roles")] bool displayRoleFilter = false,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -385,7 +385,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [RequiresIndex]
     public async Task WhoKnowsAsync(string artistId)
     {
-        _ = DeferAsync();
+        await DeferAsync();
         await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -417,7 +417,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
@@ -449,7 +449,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false,
         [Summary("Redirects", "Toggle Last.fm artist name redirects (defaults to enabled)")] bool redirectsEnabled = true)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -502,7 +502,7 @@ public class ArtistSlashCommands : InteractionModuleBase
             return;
         }
 
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly, timeZone: userSettings.TimeZone);
 
@@ -534,7 +534,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")] bool privateResponse = false,
         [Summary("Size", "Amount of comparisons to show")] EmbedSize? embedSize = null)
     {
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -561,7 +561,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [GuildOnly]
     public async Task AffinityAsync([Summary("User", "The user to get the affinity for")] string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -591,7 +591,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

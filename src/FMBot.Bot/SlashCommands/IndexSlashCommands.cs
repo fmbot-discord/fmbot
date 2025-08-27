@@ -40,7 +40,7 @@ public class IndexSlashCommands : InteractionModuleBase
     [SlashCommand("refreshmembers", "Refreshes the cached member list that .fmbot has for your server")]
     public async Task RefreshMembersAsync()
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         try
         {

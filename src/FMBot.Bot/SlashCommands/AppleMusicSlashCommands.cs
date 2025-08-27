@@ -40,7 +40,7 @@ public class AppleMusicSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")]
         bool privateResponse = false)
     {
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 

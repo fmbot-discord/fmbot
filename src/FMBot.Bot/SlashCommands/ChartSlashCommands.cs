@@ -50,7 +50,7 @@ public class ChartSlashCommands : InteractionModuleBase
         [Summary("Rainbow", "Experimental rainbow setting")] bool rainbow = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
-        _ = DeferAsync(privateResponse);
+       await DeferAsync(privateResponse);
 
         Artist filteredArtist = null;
         if (!string.IsNullOrWhiteSpace(artist))
@@ -109,7 +109,7 @@ public class ChartSlashCommands : InteractionModuleBase
         [Summary("Rainbow", "Experimental rainbow setting")] bool rainbow = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
-        _ = DeferAsync(privateResponse);
+       await DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);

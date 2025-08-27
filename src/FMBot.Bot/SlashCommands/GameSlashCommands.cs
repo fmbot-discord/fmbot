@@ -90,7 +90,7 @@ public class GameSlashCommands : InteractionModuleBase
     {
         try
         {
-            _ = DeferAsync();
+            await DeferAsync();
             await this.Context.DisableInteractionButtons();
 
             var jumbleTypeEnum = (JumbleType)Enum.Parse(typeof(JumbleType), jumbleType);

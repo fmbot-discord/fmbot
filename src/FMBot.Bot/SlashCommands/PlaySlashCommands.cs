@@ -65,7 +65,7 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var context = new ContextModel(this.Context, contextUser);
@@ -132,7 +132,7 @@ public class PlaySlashCommands : InteractionModuleBase
             }
         }
 
-        _ = DeferAsync();
+        await DeferAsync();
 
         try
         {
@@ -184,7 +184,7 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("Artist", "Artist you want to filter on (Supporter only)")] [Autocomplete(typeof(ArtistAutoComplete))]
         string artistName = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -213,7 +213,7 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -299,7 +299,7 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("Amount", "Amount of days to show")]
         int amount = 4)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -338,7 +338,7 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -375,7 +375,7 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -409,7 +409,7 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -446,7 +446,7 @@ public class PlaySlashCommands : InteractionModuleBase
             return;
         }
 
-        _ = DeferAsync();
+        await DeferAsync();
         await this.Context.DisableInteractionButtons();
 
         var contextUser = await this._userService.GetUserWithDiscogs(requesterDiscordUserId);
@@ -486,7 +486,7 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -518,7 +518,7 @@ public class PlaySlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -548,7 +548,7 @@ public class PlaySlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task RecapAllTime(string userId)
     {
-        _ = DeferAsync();
+        await DeferAsync();
         _ = this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.RecapAlltime}-{userId}",
             addLoaderToSpecificButton: true);
 
@@ -617,7 +617,7 @@ public class PlaySlashCommands : InteractionModuleBase
                 return;
             }
 
-            _ = DeferAsync();
+            await DeferAsync();
 
             var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
             if (message == null)
@@ -677,7 +677,7 @@ public class PlaySlashCommands : InteractionModuleBase
             return;
         }
 
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var topListSettings = new TopListSettings(embedSize ?? EmbedSize.Default);
 

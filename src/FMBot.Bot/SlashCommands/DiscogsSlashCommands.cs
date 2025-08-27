@@ -178,7 +178,7 @@ public class DiscogsSlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Format", "Media format to include")] DiscogsFormat? format = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -203,7 +203,7 @@ public class DiscogsSlashCommands : InteractionModuleBase
     [ComponentInteraction($"{InteractionConstants.Discogs.Collection}-*-*")]
     public async Task CollectionAsync(string discordUser, string requesterDiscordUser)
     {
-        _ = DeferAsync();
+        await DeferAsync();
         await this.Context.DisableActionRows(specificButtonOnly:$"{InteractionConstants.Discogs.Collection}-{discordUser}-{requesterDiscordUser}");
 
         var discordUserId = ulong.Parse(discordUser);

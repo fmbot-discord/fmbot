@@ -55,7 +55,7 @@ public class TrackSlashCommands : InteractionModuleBase
         [Autocomplete(typeof(TrackAutoComplete))]
         string name = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -83,7 +83,7 @@ public class TrackSlashCommands : InteractionModuleBase
         [Summary("Role-picker", "Display a rolepicker to filter with roles")]
         bool displayRoleFilter = false)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -151,7 +151,7 @@ public class TrackSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")]
         bool privateResponse = false)
     {
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
@@ -186,7 +186,7 @@ public class TrackSlashCommands : InteractionModuleBase
         [Summary("Hide-private", "Hide or show private users")]
         bool hidePrivate = false)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -226,7 +226,7 @@ public class TrackSlashCommands : InteractionModuleBase
         [Summary("User", "The user to show (defaults to self)")]
         string user = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -256,7 +256,7 @@ public class TrackSlashCommands : InteractionModuleBase
         [Autocomplete(typeof(TrackAutoComplete))]
         string name = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -277,7 +277,7 @@ public class TrackSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task TrackPreviewAsync(string trackId)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         await this.Context.DisableInteractionButtons();
 
@@ -321,7 +321,7 @@ public class TrackSlashCommands : InteractionModuleBase
             return;
         }
 
-        _ = DeferAsync();
+        await DeferAsync();
 
         await this.Context.DisableInteractionButtons(specificButtonOnly: $"{InteractionConstants.TrackLyrics}-{trackId}");
 
@@ -409,7 +409,7 @@ public class TrackSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")]
         bool privateResponse = false)
     {
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -443,7 +443,7 @@ public class TrackSlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")]
         bool privateResponse = false)
     {
-        _ = DeferAsync(privateResponse);
+        await DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings =
@@ -480,7 +480,7 @@ public class TrackSlashCommands : InteractionModuleBase
             return;
         }
 
-        _ = DeferAsync();
+        await DeferAsync();
 
         try
         {
