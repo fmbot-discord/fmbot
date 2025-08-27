@@ -2384,7 +2384,7 @@ public class ArtistBuilders
 
         var artists = await this._artistsService.GetArtistsPopularity(topArtists.Content.TopArtists);
 
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "iceberg.png");
+        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot", "iceberg.png");
         Stream gifStream;
         var saveFile = false;
 

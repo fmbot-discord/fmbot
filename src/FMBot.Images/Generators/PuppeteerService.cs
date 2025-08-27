@@ -550,7 +550,7 @@ public class PuppeteerService
     private static void AddCountryListToMap(SKBitmap chartImage, List<GroupedCountries> lines)
     {
         var typeface =
-            SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sourcehansans-medium.otf"));
+            SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot",  "sourcehansans-medium.otf"));
 
         using var titleFont = new SKFont(typeface, 42);
         using var titlePaint = new SKPaint
@@ -717,7 +717,7 @@ public class PuppeteerService
         List<ArtistPopularity> artists)
     {
         var typeface =
-            SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sourcehansans-medium.otf"));
+            SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot", "sourcehansans-medium.otf"));
 
         using var bitmapCanvas = new SKCanvas(chartImage);
 
