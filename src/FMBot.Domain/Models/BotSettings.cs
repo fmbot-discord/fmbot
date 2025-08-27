@@ -87,6 +87,7 @@ public class ShardConfig
 {
     public bool? MainInstance { get; set; }
 
+    public int? MaxConcurrency { get; set; }
     public int? TotalShards { get; set; }
 
     public int? StartShard { get; set; }

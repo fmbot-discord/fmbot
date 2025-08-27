@@ -157,10 +157,7 @@ public class Startup
         services.AddHealthChecks();
         services.AddDbContextFactory<FMBotDbContext>(b =>
             b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
-        services.AddMemoryCache(options =>
-        {
-            options.TrackStatistics = true;
-        });
+        services.AddMemoryCache(options => { options.TrackStatistics = true; });
     }
 
     private static DiscordShardedClient ConfigureDiscordClient()
@@ -169,12 +166,21 @@ public class Startup
         {
             LogLevel = LogSeverity.Info,
             MessageCacheSize = 0,
+            AlwaysDownloadUsers = false,
+            AlwaysDownloadDefaultStickers = false,
+            AlwaysResolveStickers = false,
+            AuditLogCacheSize = 0,
             GatewayIntents = GatewayIntents.GuildMembers | GatewayIntents.MessageContent |
                              GatewayIntents.DirectMessages | GatewayIntents.GuildMessages | GatewayIntents.Guilds |
                              GatewayIntents.GuildVoiceStates,
             TotalShards = ConfigData.Data.Shards?.TotalShards != null ? ConfigData.Data.Shards.TotalShards : null,
             ConnectionTimeout = 60000
         };
+
+        if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.MaxConcurrency.HasValue)
+        {
+            config.IdentifyMaxConcurrency = ConfigData.Data.Shards.MaxConcurrency.Value;
+        }
 
         if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.StartShard.HasValue && ConfigData.Data.Shards.EndShard.HasValue)
         {
@@ -183,7 +189,8 @@ public class Startup
             var arrayLength = endShard - startShard + 1;
             var shards = Enumerable.Range(startShard, arrayLength).ToArray();
 
-            Log.Warning("Initializing Discord sharded client with {totalShards} total shards, starting at shard {startingShard} til {endingShard} - {shards}",
+            Log.Warning(
+                "Initializing Discord sharded client with {totalShards} total shards, starting at shard {startingShard} til {endingShard} - {shards}",
                 ConfigData.Data.Shards.TotalShards, startShard, endShard, shards);
 
             return new DiscordShardedClient(shards, config);
@@ -335,10 +342,7 @@ public class Startup
         services.AddHttpClient<UserService>();
         services.AddHttpClient<AppleMusicVideoService>();
 
-        services.AddHttpClient<SpotifyService>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(10);
-        });
+        services.AddHttpClient<SpotifyService>(client => { client.Timeout = TimeSpan.FromSeconds(10); });
 
         services.AddHttpClient<MusicBrainzService>(client =>
         {
@@ -358,10 +362,7 @@ public class Startup
 
     private static void ConfigureOpenCollectiveServices(IServiceCollection services)
     {
-        services.AddHttpClient("OpenCollective", client =>
-        {
-            client.BaseAddress = new Uri("https://api.opencollective.com/graphql/v2");
-        });
+        services.AddHttpClient("OpenCollective", client => { client.BaseAddress = new Uri("https://api.opencollective.com/graphql/v2"); });
 
         services.AddSingleton<GraphQLHttpClient>(sp =>
         {
@@ -408,6 +409,7 @@ public class Startup
             {
                 Log.Warning("No alt Apple Music auth header");
             }
+
             client.BaseAddress = new Uri("https://amp-api.music.apple.com/v1/catalog/us/");
         });
     }
