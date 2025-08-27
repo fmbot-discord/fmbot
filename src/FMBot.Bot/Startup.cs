@@ -177,9 +177,9 @@ public class Startup
             ConnectionTimeout = 60000
         };
 
-        if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.MaxConcurrency.HasValue)
+        if (ConfigData.Data.Shards != null && ConfigData.Data.Discord.MaxConcurrency.HasValue)
         {
-            config.IdentifyMaxConcurrency = ConfigData.Data.Shards.MaxConcurrency.Value;
+            config.IdentifyMaxConcurrency = ConfigData.Data.Discord.MaxConcurrency.Value;
         }
 
         if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.StartShard.HasValue && ConfigData.Data.Shards.EndShard.HasValue)

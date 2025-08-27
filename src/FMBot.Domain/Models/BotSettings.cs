@@ -38,6 +38,8 @@ public class DiscordConfig
     public ulong? BotUserId { get; set; }
     public ulong? ApplicationId { get; set; }
 
+    public int? MaxConcurrency { get; set; }
+
     public string ClientSecret { get; set; }
     public string InstallUri { get; set; }
 }
@@ -87,7 +89,6 @@ public class ShardConfig
 {
     public bool? MainInstance { get; set; }
 
-    public int? MaxConcurrency { get; set; }
     public int? TotalShards { get; set; }
 
     public int? StartShard { get; set; }
