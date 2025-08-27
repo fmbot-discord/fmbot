@@ -37,15 +37,7 @@ public class WebhookService
         this._openAiService = openAiService;
         this._httpClient = httpClient;
         this._botSettings = botSettings.Value;
-
-        this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "default-avatar.png");
-
-        if (!File.Exists(this._avatarImagePath))
-        {
-            Log.Information("Downloading avatar...");
-            var wc = new System.Net.WebClient();
-            wc.DownloadFile("https://fm.bot/img/bot/avatar.png", this._avatarImagePath);
-        }
+        this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot", "default-avatar.png");
     }
 
     public async Task<Webhook> CreateWebhook(ICommandContext context, int guildId)

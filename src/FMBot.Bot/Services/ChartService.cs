@@ -31,6 +31,7 @@ public class ChartService
     private readonly string _unknownImagePath;
     private readonly string _unknownArtistImagePath;
     private readonly string _censoredImagePath;
+    private readonly string _avatarImagePath;
 
     private readonly HttpClient _client;
 
@@ -40,12 +41,19 @@ public class ChartService
         this._client = httpClient;
         this._artistsService = artistsService;
 
-        this._fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sourcehansans-medium.otf");
-        this._workSansFontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf");
-        this._loadingErrorImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loading-error.png");
-        this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown.png");
-        this._unknownArtistImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown-artist.png");
-        this._censoredImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "censored.png");
+        var cachePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "bot");
+        if (!Directory.Exists(cachePath))
+        {
+            Directory.CreateDirectory(cachePath);
+        }
+
+        this._fontPath = Path.Combine(cachePath, "sourcehansans-medium.otf");
+        this._workSansFontPath = Path.Combine(cachePath, "worksans-regular.otf");
+        this._loadingErrorImagePath = Path.Combine(cachePath, "loading-error.png");
+        this._unknownImagePath = Path.Combine(cachePath, "unknown.png");
+        this._unknownArtistImagePath = Path.Combine(cachePath, "unknown-artist.png");
+        this._censoredImagePath = Path.Combine(cachePath, "censored.png");
+        this._avatarImagePath = Path.Combine(cachePath, "default-avatar.png");
     }
 
     public async Task DownloadChartFilesAsync()
@@ -63,29 +71,31 @@ public class ChartService
             { "https://fm.bot/img/bot/loading-error.png", this._loadingErrorImagePath },
             { "https://fm.bot/img/bot/unknown.png", this._unknownImagePath },
             { "https://fm.bot/img/bot/unknown-artist.png", this._unknownArtistImagePath },
-            { "https://fm.bot/img/bot/censored.png", this._censoredImagePath }
+            { "https://fm.bot/img/bot/censored.png", this._censoredImagePath },
+            { "https://fm.bot/img/bot/avatar.png", this._avatarImagePath }
         };
 
-        try
+        foreach (var file in files)
         {
-            foreach (var file in files)
-            {
-                await DownloadFileAsync(file.Key, file.Value);
-            }
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error while downloading chart files");
+            _ = Task.Run(() => DownloadFileAsync(file.Key, file.Value));
         }
     }
 
     private async Task DownloadFileAsync(string url, string filePath)
     {
-        using var response = await this._client.GetAsync(url);
-        response.EnsureSuccessStatusCode();
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        await using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-        await stream.CopyToAsync(fileStream);
+        try
+        {
+            using var response = await this._client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            await using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+            await stream.CopyToAsync(fileStream);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error while downloading chart files - {url} - {filePath}", url, filePath);
+            ;
+        }
     }
 
     public async Task<SKImage> GenerateChartAsync(ChartSettings chart)
