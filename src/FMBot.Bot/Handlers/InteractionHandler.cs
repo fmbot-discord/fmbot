@@ -19,6 +19,7 @@ using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Prometheus;
 using Serilog;
+
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace FMBot.Bot.Handlers;
@@ -225,12 +226,6 @@ public class InteractionHandler
         Statistics.DiscordEvents.WithLabels(nameof(ButtonExecuted)).Inc();
 
         var context = new ShardedInteractionContext(this._client, socketMessageComponent);
-
-        if (this._interactivity.IsManaged(context.Interaction))
-        {
-            return;
-        }
-
         var commandSearch = this._interactionService.SearchComponentCommand(socketMessageComponent);
 
         if (!commandSearch.IsSuccess)
@@ -252,7 +247,8 @@ public class InteractionHandler
         _ = Task.Run(() => this._userService.UpdateUserLastUsedAsync(context.User.Id));
     }
 
-    private async Task<bool> CheckAttributes(ShardedInteractionContext context, IReadOnlyCollection<Attribute> attributes)
+    private async Task<bool> CheckAttributes(ShardedInteractionContext context,
+        IReadOnlyCollection<Attribute> attributes)
     {
         if (attributes == null)
         {
@@ -268,6 +264,7 @@ public class InteractionHandler
                 return false;
             }
         }
+
         if (attributes.OfType<UsernameSetRequired>().Any())
         {
             var userIsRegistered = await this._userService.UserRegisteredAsync(context.User);
@@ -279,11 +276,13 @@ public class InteractionHandler
                 var userNickname = (context.User as SocketGuildUser)?.DisplayName;
                 embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
 
-                await context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true, components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
+                await context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true,
+                    components: GenericEmbedService.UsernameNotSetErrorComponents().Build());
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return false;
             }
         }
+
         if (attributes.OfType<UserSessionRequired>().Any())
         {
             var contextUser = await this._userService.GetUserAsync(context.User.Id);
@@ -293,11 +292,13 @@ public class InteractionHandler
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.LastFmColorRed);
                 embed.SessionRequiredResponse("/");
-                await context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true, components: GenericEmbedService.ReconnectComponents().Build());
+                await context.Interaction.RespondAsync(null, [embed.Build()], ephemeral: true,
+                    components: GenericEmbedService.ReconnectComponents().Build());
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return false;
             }
         }
+
         if (attributes.OfType<GuildOnly>().Any())
         {
             if (context.Guild == null)
@@ -307,19 +308,22 @@ public class InteractionHandler
                 return false;
             }
         }
+
         if (attributes.OfType<RequiresIndex>().Any() && context.Guild != null)
         {
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.Guild);
             if (lastIndex == null)
             {
                 var embed = new EmbedBuilder();
-                embed.WithDescription("To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
-                                      $"Please run `/refreshmembers` to create this.\n" +
-                                      $"Note that this can take some time on large servers.");
+                embed.WithDescription(
+                    "To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
+                    $"Please run `/refreshmembers` to create this.\n" +
+                    $"Note that this can take some time on large servers.");
                 await context.Interaction.RespondAsync(null, new[] { embed.Build() });
                 context.LogCommandUsed(CommandResponse.IndexRequired);
                 return false;
             }
+
             if (lastIndex < DateTime.UtcNow.AddDays(-180))
             {
                 var embed = new EmbedBuilder();
@@ -339,7 +343,9 @@ public class InteractionHandler
     {
         if (context.Guild != null)
         {
-            var textCommandName = textCommand.IsSuccess && textCommand.Commands.Any() ? textCommand.Commands.First().Command.Name : searchResult.Name;
+            var textCommandName = textCommand.IsSuccess && textCommand.Commands.Any()
+                ? textCommand.Commands.First().Command.Name
+                : searchResult.Name;
             var channelDisabled = DisabledChannelService.GetDisabledChannel(context.Channel.Id);
             if (channelDisabled)
             {
@@ -347,7 +353,7 @@ public class InteractionHandler
                 if (toggledChannelCommands != null &&
                     toggledChannelCommands.Any() &&
                     (toggledChannelCommands.Any(searchResult.Name.Equals) ||
-                    toggledChannelCommands.Any(textCommandName.Equals)) &&
+                     toggledChannelCommands.Any(textCommandName.Equals)) &&
                     context.Channel != null)
                 {
                     return true;
@@ -373,7 +379,7 @@ public class InteractionHandler
             var disabledGuildCommands = GuildDisabledCommandService.GetToggledCommands(context.Guild?.Id);
             if (disabledGuildCommands != null &&
                 (disabledGuildCommands.Any(searchResult.Name.Equals) ||
-                disabledGuildCommands.Any(textCommandName.Equals)))
+                 disabledGuildCommands.Any(textCommandName.Equals)))
             {
                 await context.Interaction.RespondAsync(
                     "The command you're trying to execute has been disabled in this server.",
@@ -385,7 +391,7 @@ public class InteractionHandler
             if (disabledChannelCommands != null &&
                 disabledChannelCommands.Any() &&
                 (disabledChannelCommands.Any(searchResult.Name.Equals) ||
-                disabledChannelCommands.Any(textCommandName.Equals)) &&
+                 disabledChannelCommands.Any(textCommandName.Equals)) &&
                 context.Channel != null)
             {
                 await context.Interaction.RespondAsync(
