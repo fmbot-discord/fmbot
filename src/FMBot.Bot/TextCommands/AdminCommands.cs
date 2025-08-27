@@ -1770,7 +1770,7 @@ public class AdminCommands : BaseCommandModule
 
 Not following these rules might lead to a mute, kick or ban. Staff members can ban, kick or mute you for any reason if they feel it is needed."),
                     new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
-                    new TextDisplayBuilder(@"## Links:
+                    new TextDisplayBuilder(@"## 🔗 Links:
 - Documentation: <https://fm.bot/>
 - Link to this server: <http://discord.gg/fmbot>
 - Bluesky: <https://bsky.app/profile/fm.bot>
