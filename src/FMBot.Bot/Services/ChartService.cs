@@ -66,26 +66,26 @@ public class ChartService
             { "https://fm.bot/img/bot/censored.png", this._censoredImagePath }
         };
 
-        try
+        foreach (var file in files)
         {
-            foreach (var file in files)
-            {
-                await DownloadFileAsync(file.Key, file.Value);
-            }
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error while downloading chart files");
+            _ = Task.Run(() => DownloadFileAsync(file.Key, file.Value));
         }
     }
 
     private async Task DownloadFileAsync(string url, string filePath)
     {
-        using var response = await this._client.GetAsync(url);
-        response.EnsureSuccessStatusCode();
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        await using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-        await stream.CopyToAsync(fileStream);
+        try
+        {
+            using var response = await this._client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            await using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+            await stream.CopyToAsync(fileStream);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error while downloading chart files - {url} - {filePath}", url, filePath);;
+        }
     }
 
     public async Task<SKImage> GenerateChartAsync(ChartSettings chart)
