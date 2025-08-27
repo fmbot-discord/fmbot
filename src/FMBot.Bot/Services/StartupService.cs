@@ -143,11 +143,11 @@ public class StartupService
                 Assembly.GetEntryAssembly(),
                 this._provider);
 
-        Log.Information("Downloading chart files");
-        await this._chartService.DownloadChartFilesAsync();
-
         Log.Information("Preparing cache folder");
         PrepareCacheFolder();
+
+        Log.Information("Downloading chart files");
+        await this._chartService.DownloadChartFilesAsync();
 
         var gateway = await this._client.GetBotGatewayAsync();
         Log.Information("ShardStarter: connects left {connectsLeft} - reset after {resetAfter}",
