@@ -153,13 +153,7 @@ public class StartupService
         Log.Information("ShardStarter: connects left {connectsLeft} - reset after {resetAfter}",
             gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter);
 
-        var maxConcurrency = gateway.SessionStartLimit.MaxConcurrency;
-        if (maxConcurrency > 4)
-        {
-            maxConcurrency = 4;
-        }
-
-        Log.Information("ShardStarter: max concurrency {maxConcurrency}, total shards {shardCount}", maxConcurrency,
+        Log.Information("ShardStarter: max concurrency {maxConcurrency}, total shards {shardCount}", gateway.SessionStartLimit.MaxConcurrency,
             this._client.Shards.Count);
 
         var connectTasks = new List<Task>();
@@ -172,7 +166,7 @@ public class StartupService
             connectTasks.Add(shard.StartAsync());
             connectingShards.Add(shard.ShardId);
 
-            if (connectTasks.Count >= maxConcurrency)
+            if (connectTasks.Count >= gateway.SessionStartLimit.MaxConcurrency)
             {
                 await Task.WhenAll(connectTasks);
 
