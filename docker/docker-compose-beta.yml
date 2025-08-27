@@ -30,3 +30,12 @@ services:
       - SHARDS_TOTAL_SHARDS=8
       - SHARDS_FIRST_SHARD=4
       - SHARDS_LAST_SHARD=7
+
+  autoheal:
+    image: willfarrell/autoheal
+    restart: always
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+      - AUTOHEAL_START_PERIOD=120
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

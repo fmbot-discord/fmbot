@@ -299,7 +299,7 @@ public class TimerService : IDisposable
             var uptime = DateTime.Now - currentProcess.StartTime;
             var currentMemoryUsage = currentProcess.WorkingSet64;
 
-            if (!allShardsConnected && uptime.TotalMinutes >= 12)
+            if (!allShardsConnected && uptime.TotalMinutes >= 1)
             {
                 var problematicShards = this._client.Shards
                     .Where(s => s.ConnectionState != ConnectionState.Connected)
@@ -564,7 +564,7 @@ public class TimerService : IDisposable
         var currentProcess = Process.GetCurrentProcess();
         var uptime = DateTime.Now - currentProcess.StartTime;
 
-        if (uptime.TotalMinutes <= 12)
+        if (uptime.TotalMinutes <= 4)
         {
             Log.Information($"Skipping {nameof(CheckIfShardsNeedReconnect)} because bot only just started (uptime: {uptime.TotalMinutes:F1} minutes)");
             return;

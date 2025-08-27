@@ -4,7 +4,7 @@ x-instance-defaults: &instance-defaults
   image: ghcr.io/fmbot-discord/fmbot:main
   restart: always
   network_mode: host
-  mem_limit: 32g
+  mem_limit: 38g
   volumes:
     - /fmbot/prod/:/app/configs/
     - /fmbot/cache/:/app/cache/
@@ -140,3 +140,12 @@ services:
       - SHARDS_TOTAL_SHARDS=640
       - SHARDS_FIRST_SHARD=587
       - SHARDS_LAST_SHARD=639
+
+  autoheal:
+    image: willfarrell/autoheal
+    restart: always
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+      - AUTOHEAL_START_PERIOD=120
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
