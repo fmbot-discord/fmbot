@@ -45,6 +45,7 @@ public class StartupService
     private readonly UserService _userService;
     private readonly TimerService _timerService;
     private readonly SupporterService _supporterService;
+    private readonly ChartService _chartService;
 
     public StartupService(
         IServiceProvider provider,
@@ -61,7 +62,8 @@ public class StartupService
         UserService userService,
         DisabledChannelService disabledChannelService,
         TimerService timerService,
-        SupporterService supporterService)
+        SupporterService supporterService,
+        ChartService chartService)
     {
         this._provider = provider;
         this._client = discord;
@@ -77,6 +79,7 @@ public class StartupService
         this._disabledChannelService = disabledChannelService;
         this._timerService = timerService;
         this._supporterService = supporterService;
+        this._chartService = chartService;
         this._botSettings = botSettings.Value;
     }
 
@@ -139,6 +142,9 @@ public class StartupService
             .AddModulesAsync(
                 Assembly.GetEntryAssembly(),
                 this._provider);
+
+        Log.Information("Downloading chart files");
+        await this._chartService.DownloadChartFilesAsync();
 
         Log.Information("Preparing cache folder");
         PrepareCacheFolder();

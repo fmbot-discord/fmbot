@@ -40,29 +40,22 @@ public class ChartService
         this._client = httpClient;
         this._artistsService = artistsService;
 
-        try
-        {
-            this._fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sourcehansans-medium.otf");
-            this._workSansFontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf");
-            this._loadingErrorImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loading-error.png");
-            this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown.png");
-            this._unknownArtistImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown-artist.png");
-            this._censoredImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "censored.png");
-
-            if (!File.Exists(this._fontPath))
-            {
-                Log.Information("Downloading chart files...");
-                DownloadChartFilesAsync().Wait();
-            }
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Something went wrong while downloading chart files");
-        }
+        this._fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "sourcehansans-medium.otf");
+        this._workSansFontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf");
+        this._loadingErrorImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loading-error.png");
+        this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown.png");
+        this._unknownArtistImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown-artist.png");
+        this._censoredImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "censored.png");
     }
 
-    private async Task DownloadChartFilesAsync()
+    public async Task DownloadChartFilesAsync()
     {
+        if (File.Exists(this._fontPath))
+        {
+            Log.Information("Chart files already exist, not downloading them again");
+            return;
+        }
+
         var files = new Dictionary<string, string>
         {
             { "https://fm.bot/fonts/sourcehansans-medium.otf", this._fontPath },
@@ -73,9 +66,16 @@ public class ChartService
             { "https://fm.bot/img/bot/censored.png", this._censoredImagePath }
         };
 
-        foreach (var file in files)
+        try
         {
-            await DownloadFileAsync(file.Key, file.Value);
+            foreach (var file in files)
+            {
+                await DownloadFileAsync(file.Key, file.Value);
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error while downloading chart files");
         }
     }
 
@@ -577,7 +577,8 @@ public class ChartService
         }
     }
 
-    public async Task<ChartSettings> SetSettings(ChartSettings currentChartSettings, UserSettingsModel userSettings, bool aoty = false, bool aotd = false)
+    public async Task<ChartSettings> SetSettings(ChartSettings currentChartSettings, UserSettingsModel userSettings,
+        bool aoty = false, bool aotd = false)
     {
         var chartSettings = currentChartSettings;
         chartSettings.CustomOptionsEnabled = false;
@@ -763,7 +764,8 @@ public class ChartService
             if (artist != null)
             {
                 chartSettings.FilteredArtist = artist;
-                timeSettings = SettingService.GetTimePeriod(cleanedOptions,TimePeriod.AllTime, timeZone: userSettings.TimeZone);
+                timeSettings = SettingService.GetTimePeriod(cleanedOptions, TimePeriod.AllTime,
+                    timeZone: userSettings.TimeZone);
             }
         }
 
