@@ -81,6 +81,44 @@ public class AlbumRepository
         });
     }
 
+    public static async Task<Album> SearchAlbum(string searchTerm, NpgsqlConnection connection)
+    {
+        const string sql = @"
+SELECT
+    *
+FROM
+    public.albums
+WHERE
+    to_tsvector('english', coalesce(name, '') || ' ' || coalesce(artist_name, '')) @@ websearch_to_tsquery('english', @searchTerm)
+ORDER BY
+    -- 1. TIERING: Prioritize albums with complete data
+    (CASE
+        WHEN spotify_id IS NOT NULL AND apple_music_id IS NOT NULL AND popularity IS NOT NULL THEN 0 -- Tier 1: Highest quality
+        WHEN spotify_id IS NOT NULL OR apple_music_id IS NOT NULL THEN 1 -- Tier 2: Good quality
+        ELSE 2 -- Tier 3: Everything else
+    END) ASC,
+
+    -- 2. SCORING: Apply a rebalanced weighted score within each tier
+    (
+        -- Holistic similarity on all text fields has the highest weight.
+        similarity(coalesce(name, '') || ' ' || coalesce(artist_name, ''), @searchTerm) * 1.5 +
+
+        -- Popularity bonus
+        coalesce(log(popularity + 1), 0) * 0.7 +
+
+        -- Direct album name similarity
+        similarity(name, @searchTerm) * 0.5
+    ) DESC,
+
+    -- 3. TIE-BREAKERS: Final sorting for records with identical scores
+    length(name) ASC,
+    release_date DESC NULLS LAST
+LIMIT 1;";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return await connection.QueryFirstOrDefaultAsync<Album>(sql, new { searchTerm });
+    }
+
     public static async Task GetAlbumCovers(List<TopAlbum> topAlbums,
         NpgsqlConnection connection)
     {

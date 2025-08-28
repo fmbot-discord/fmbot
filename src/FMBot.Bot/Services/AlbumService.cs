@@ -241,10 +241,9 @@ public class AlbumService
             return new AlbumSearch(albumInfo.Content, response);
         }
 
-        var result = await this._dataSourceFactory.SearchAlbumAsync(searchValue);
-        if (result.Success && result.Content != null)
+        var albumSearch = await this.SearchAlbumInDatabase(searchValue);
+        if (albumSearch != null)
         {
-            var album = result.Content;
 
             if (otherUserUsername != null)
             {
@@ -254,11 +253,11 @@ public class AlbumService
             Response<AlbumInfo> albumInfo;
             if (useCachedAlbums)
             {
-                albumInfo = await GetCachedAlbum(album.ArtistName, album.AlbumName, lastFmUserName, userId);
+                albumInfo = await GetCachedAlbum(albumSearch.ArtistName, albumSearch.Name, lastFmUserName, userId);
             }
             else
             {
-                albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(album.ArtistName, album.AlbumName,
+                albumInfo = await this._dataSourceFactory.GetAlbumInfoAsync(albumSearch.ArtistName, albumSearch.Name,
                     lastFmUserName);
             }
 
@@ -288,19 +287,19 @@ public class AlbumService
             return new AlbumSearch(albumInfo.Content, response);
         }
 
-        if (result.Success)
-        {
-            response.Embed.WithDescription($"Album could not be found, please check your search values and try again.");
-            response.Embed.WithFooter($"Search value: '{searchValue}'");
-            response.CommandResponse = CommandResponse.LastFmError;
-            response.ResponseType = ResponseType.Embed;
-            return new AlbumSearch(null, response);
-        }
-
-        response.Embed.WithDescription($"Last.fm returned an error: {result.Error}");
-        response.CommandResponse = CommandResponse.LastFmError;
+        response.Embed.WithDescription($"Album could not be found, please check your search values and try again.");
+        response.Embed.WithFooter($"Search value: '{searchValue}'");
+        response.CommandResponse = CommandResponse.NotFound;
         response.ResponseType = ResponseType.Embed;
         return new AlbumSearch(null, response);
+    }
+
+    private async Task<Album> SearchAlbumInDatabase(string searchQuery)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await AlbumRepository.SearchAlbum(searchQuery, connection);
     }
 
     private async Task<Response<AlbumInfo>> GetCachedAlbum(string artistName, string albumName, string lastFmUserName,

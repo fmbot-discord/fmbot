@@ -272,8 +272,8 @@ public class TrackService
             return new TrackSearch(trackInfo.Content, response);
         }
 
-        var result = await this._dataSourceFactory.SearchTrackAsync(searchValue);
-        if (result.Success && result.Content != null)
+        var trackSearch = await this.SearchTrackInDatabase(searchValue);
+        if (trackSearch != null)
         {
             if (otherUserUsername != null)
             {
@@ -283,20 +283,20 @@ public class TrackService
             Response<TrackInfo> trackInfo;
             if (useCachedTracks)
             {
-                trackInfo = await GetCachedTrack(result.Content.ArtistName, result.Content.TrackName, lastFmUserName,
+                trackInfo = await GetCachedTrack(trackSearch.ArtistName, trackSearch.Name, lastFmUserName,
                     userId);
             }
             else
             {
-                trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(result.Content.TrackName,
-                    result.Content.ArtistName,
+                trackInfo = await this._dataSourceFactory.GetTrackInfoAsync(trackSearch.Name,
+                    trackSearch.ArtistName,
                     lastFmUserName);
             }
 
             if (trackInfo?.Content == null || !trackInfo.Success)
             {
                 response.Embed.WithDescription(
-                    $"Last.fm did not return a result for **{result.Content.TrackName}** by **{result.Content.ArtistName}**.\n\n" +
+                    $"Last.fm did not return a result for **{trackSearch.Name}** by **{trackSearch.ArtistName}**.\n\n" +
                     $"This usually happens on recently released tracks. Please try again later.");
 
                 response.CommandResponse = CommandResponse.NotFound;
@@ -306,8 +306,8 @@ public class TrackService
 
             if (interactionId.HasValue)
             {
-                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, result.Content.ArtistName);
-                PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, result.Content.TrackName);
+                PublicProperties.UsedCommandsArtists.TryAdd(interactionId.Value, trackSearch.ArtistName);
+                PublicProperties.UsedCommandsTracks.TryAdd(interactionId.Value, trackSearch.Name);
                 if (!string.IsNullOrWhiteSpace(trackInfo.Content?.AlbumName))
                 {
                     PublicProperties.UsedCommandsAlbums.TryAdd(interactionId.Value, trackInfo.Content.AlbumName);
@@ -315,28 +315,28 @@ public class TrackService
 
                 response.ReferencedMusic = new ReferencedMusic
                 {
-                    Artist = result.Content.ArtistName,
+                    Artist = trackSearch.ArtistName,
                     Album = trackInfo.Content?.AlbumName,
-                    Track = result.Content.TrackName
+                    Track = trackSearch.Name
                 };
             }
 
             return new TrackSearch(trackInfo.Content, response);
         }
 
-        if (result.Success)
-        {
-            response.Embed.WithDescription($"Track could not be found, please check your search values and try again.");
-            response.Embed.WithFooter($"Search value: '{searchValue}'");
-            response.CommandResponse = CommandResponse.LastFmError;
-            response.ResponseType = ResponseType.Embed;
-            return new TrackSearch(null, response);
-        }
-
-        response.Embed.WithDescription($"Last.fm returned an error: {result.Error}");
-        response.CommandResponse = CommandResponse.LastFmError;
+        response.Embed.WithDescription($"Track could not be found, please check your search values and try again.");
+        response.Embed.WithFooter($"Search value: '{searchValue}'");
+        response.CommandResponse = CommandResponse.NotFound;
         response.ResponseType = ResponseType.Embed;
         return new TrackSearch(null, response);
+    }
+
+    private async Task<Track> SearchTrackInDatabase(string searchQuery)
+    {
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        return await TrackRepository.SearchTrack(searchQuery, connection);
     }
 
     public async Task<List<TopTrack>> GetUserAllTimeTopTracks(int userId, bool useCache = false)

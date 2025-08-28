@@ -37,7 +37,8 @@ public class TrackRepository
         return await copyHelper.SaveAllAsync(connection, tracks);
     }
 
-    public static async Task<Track> GetTrackForName(string artistName, string trackName, NpgsqlConnection connection, bool includeSyncedLyrics = false)
+    public static async Task<Track> GetTrackForName(string artistName, string trackName, NpgsqlConnection connection,
+        bool includeSyncedLyrics = false)
     {
         const string getTrackQuery = "SELECT * FROM public.tracks " +
                                      "WHERE UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
@@ -61,7 +62,7 @@ public class TrackRepository
     private static async Task<ICollection<TrackSyncedLyrics>> GetSyncedLyrics(int trackId, NpgsqlConnection connection)
     {
         const string getTrackSyncedLyricsQuery = "SELECT * FROM public.track_synced_lyrics " +
-                                          "WHERE track_id = @trackId";
+                                                 "WHERE track_id = @trackId";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return (await connection.QueryAsync<TrackSyncedLyrics>(getTrackSyncedLyricsQuery, new
@@ -107,5 +108,45 @@ public class TrackRepository
         {
             userId
         })).ToList();
+    }
+
+    public static async Task<Track> SearchTrack(string searchTerm, NpgsqlConnection connection)
+    {
+        const string sql = @"
+SELECT
+    *
+FROM
+    public.tracks
+WHERE
+    to_tsvector('english', coalesce(name, '') || ' ' || coalesce(artist_name, '') || ' ' || coalesce(album_name, '')) @@ websearch_to_tsquery('english', @searchTerm)
+ORDER BY
+    -- 1. TIERING: Prioritize tracks with complete data
+    (CASE
+        WHEN spotify_id IS NOT NULL AND apple_music_id IS NOT NULL AND popularity IS NOT NULL THEN 0 -- Tier 1: Highest quality
+        WHEN spotify_id IS NOT NULL OR apple_music_id IS NOT NULL THEN 1 -- Tier 2: Good quality
+        ELSE 2 -- Tier 3: Everything else
+    END) ASC,
+
+    -- 2. SCORING: Apply a weighted score within each tier
+    (
+        -- Holistic similarity on all text fields has the highest weight.
+        similarity(coalesce(name, '') || ' ' || coalesce(artist_name, '') || ' ' || coalesce(album_name, ''), @searchTerm) * 1.5 +
+
+        -- Popularity bonus
+        coalesce(log(popularity + 1), 0) * 0.7 +
+
+        -- Direct match on the track name
+        similarity(name, @searchTerm) * 0.5 +
+
+        -- Album name similarity
+        similarity(album_name, @searchTerm) * 0.2
+    ) DESC,
+
+    -- 3. TIE-BREAKERS: Final sorting for records with identical scores
+    length(name) ASC
+LIMIT 1;";
+
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
+        return await connection.QueryFirstOrDefaultAsync<Track>(sql, new { searchTerm });
     }
 }
