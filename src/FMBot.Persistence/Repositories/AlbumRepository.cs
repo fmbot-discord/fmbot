@@ -89,7 +89,7 @@ SELECT
 FROM
     public.albums
 WHERE
-    to_tsvector('english', coalesce(name, '') || ' ' || coalesce(artist_name, '')) @@ websearch_to_tsquery('english', @searchTerm)
+    to_tsvector('english', coalesce(name, '') || ' ' || coalesce(artist_name, '')) @@ plainto_tsquery('english', @searchTerm)
 ORDER BY
     -- 1. TIERING: Prioritize albums with complete data
     (CASE

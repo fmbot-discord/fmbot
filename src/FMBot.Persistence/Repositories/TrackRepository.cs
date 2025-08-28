@@ -118,7 +118,7 @@ SELECT
 FROM
     public.tracks
 WHERE
-    to_tsvector('english', coalesce(name, '') || ' ' || coalesce(artist_name, '') || ' ' || coalesce(album_name, '')) @@ websearch_to_tsquery('english', @searchTerm)
+    to_tsvector('english', coalesce(name, '') || ' ' || coalesce(artist_name, '') || ' ' || coalesce(album_name, '')) @@ plainto_tsquery('english', @searchTerm)
 ORDER BY
     -- 1. TIERING: Prioritize tracks with complete data
     (CASE
