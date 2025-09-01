@@ -594,6 +594,18 @@ public class SupporterService
                     $"*🌞 Tip: Delete an unwanted bot response yourself by opening the message options > Apps > 'Delete response'*";
                 break;
             }
+            case 36:
+            {
+                message =
+                    $"*🔢 Most commands, like all artist, album, and track commands without input, also update you before loading the results*";
+                break;
+            }
+            case 37:
+            {
+                message =
+                    $"*🔢 To make sure your data is always up to date, .fmbot also automatically runs an update for you every 48 hours*";
+                break;
+            }
         }
 
         return (message, showUpgradeButton, supporterSource);

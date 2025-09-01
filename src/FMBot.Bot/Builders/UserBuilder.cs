@@ -1874,24 +1874,6 @@ public class UserBuilder
                     $"and {update.Content.RemovedRecentTracksAmount} removed {StringExtensions.GetScrobblesString(update.Content.RemovedRecentTracksAmount)}.");
             }
 
-            if (update.Content.NewRecentTracksAmount < 25)
-            {
-                var random = new Random().Next(0, 8);
-                if (random == 1)
-                {
-                    updatedDescription.AppendLine();
-                    updatedDescription.AppendLine(
-                        "Note that .fmbot also updates you automatically once every 48 hours.");
-                }
-
-                if (random == 2)
-                {
-                    updatedDescription.AppendLine();
-                    updatedDescription.AppendLine(
-                        "Any commands that require you to be updated will also update you automatically.");
-                }
-            }
-
             if (updatePromo.message != null)
             {
                 updatedDescription.AppendLine();
