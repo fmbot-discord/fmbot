@@ -1461,6 +1461,15 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
+            var stripeSupporter = await this._supporterService.GetStripeSupporter(userSettings.DiscordUserId);
+            if (stripeSupporter != null)
+            {
+                await this._supporterService.CheckExpiredStripeSupporters(userSettings.DiscordUserId);
+                await ReplyAsync("Ran fast-tracked Stripe supporter expiry for " + stripeSupporter.PurchaserDiscordUserId);
+                this.Context.LogCommandUsed();
+                return;
+            }
+
             var hadImported = userSettings.DataSource != DataSource.LastFm;
 
             var existingSupporter = await this._supporterService.GetSupporter(discordUserId);
@@ -1468,6 +1477,14 @@ public class AdminCommands : BaseCommandModule
             {
                 await ReplyAsync("`Existing supporter not found`\n\n" + formatError);
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            if (existingSupporter.SubscriptionType != SubscriptionType.MonthlyOpenCollective &&
+                existingSupporter.SubscriptionType != SubscriptionType.YearlyOpenCollective)
+            {
+                await ReplyAsync("You can only use this command on Stripe subs or on OpenCollective monthly and yearly subs");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -1491,6 +1508,7 @@ public class AdminCommands : BaseCommandModule
                     Log.Error("Removing supporter role failed for {id}", discordUserId, e);
                 }
             }
+
 
             this._embed.WithTitle("Processed supporter expiry");
 

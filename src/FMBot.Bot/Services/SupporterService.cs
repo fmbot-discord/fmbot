@@ -606,6 +606,20 @@ public class SupporterService
                     $"*🔢 To make sure your data is always up to date, .fmbot also automatically runs an update for you every 48 hours*";
                 break;
             }
+            case 38:
+            {
+                var otherHintNumber = RandomNumberGenerator.GetInt32(1, 100);
+
+                switch (otherHintNumber)
+                {
+                    case 1:
+                        message =
+                            $"*<:airfryer:924432772087562280> A Dutch engineer named Fred van der Weij invented the first airfryer in 2006. It was initially made out of wood and named 'FritAir'*";
+                        break;
+                }
+
+                break;
+            }
         }
 
         return (message, showUpgradeButton, supporterSource);
@@ -1516,17 +1530,33 @@ public class SupporterService
         supporterAuditLogChannel.Dispose();
     }
 
-    public async Task CheckExpiredStripeSupporters()
+    public async Task CheckExpiredStripeSupporters(ulong? specificDiscordUserId = null)
     {
-        var expiredDate = DateTime.UtcNow.AddDays(-10);
-
         await using var db = await this._contextFactory.CreateDbContextAsync();
-        var possiblyExpiredSupporters = await db.StripeSupporters
-            .Where(w =>
-                w.DateEnding.HasValue &&
-                w.DateEnding < expiredDate &&
-                !w.EntitlementDeleted)
-            .ToListAsync();
+        List<StripeSupporter> possiblyExpiredSupporters;
+        if (specificDiscordUserId.HasValue)
+        {
+            var expiredDate = DateTime.UtcNow;
+
+            possiblyExpiredSupporters = await db.StripeSupporters
+                .Where(w =>
+                    w.DateEnding.HasValue &&
+                    w.DateEnding < expiredDate &&
+                    !w.EntitlementDeleted &&
+                    w.PurchaserDiscordUserId == specificDiscordUserId &&
+                    w.Type == StripeSupporterType.Supporter)
+                .ToListAsync();
+        }
+        else
+        {
+            var expiredDate = DateTime.UtcNow.AddDays(-10);
+            possiblyExpiredSupporters = await db.StripeSupporters
+                .Where(w =>
+                    w.DateEnding.HasValue &&
+                    w.DateEnding < expiredDate &&
+                    !w.EntitlementDeleted)
+                .ToListAsync();
+        }
 
         Log.Information("Checking expired Stripe supporters - {count} expired",
             possiblyExpiredSupporters.Count);
