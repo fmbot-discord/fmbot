@@ -48,14 +48,14 @@ public class StaticBuilders
         var embedDescription = new StringBuilder();
         embedDescription.AppendLine(".fmbot uses your Last.fm account for knowing what you listen to. ");
         embedDescription.AppendLine(
-            $"Unfortunately, Last.fm and Spotify sometimes have issues keeping up to date with your current song, which can cause `{context.Prefix}fm` and other commands to lag behind the song you're currently listening to.");
+            $"Last.fm and Spotify sometimes have issues keeping up with your current song, which can cause `{context.Prefix}fm` and other commands to lag behind the song you're currently listening to.");
         embedDescription.AppendLine();
         embedDescription.Append(
-            "First, **.fmbot is not affiliated with Last.fm**. Your music is tracked by Last.fm, and not by .fmbot. ");
+            "**.fmbot is not affiliated with Last.fm**. Your music is tracked by Last.fm, and not by .fmbot. ");
         embedDescription.AppendLine(
-            "This means that this is a Last.fm issue and **not an .fmbot issue**. __We can't fix it for you__, but we can give you some tips that worked for others.");
+            "This means that this is a Last.fm issue and **not an .fmbot issue**. __We can't fix it for you__, but we can give you tips that worked for others.");
         embedDescription.AppendLine();
-        embedDescription.AppendLine("Some things you can try that usually work:");
+        embedDescription.AppendLine("Things you can try:");
         embedDescription.AppendLine("- Restarting your Spotify application");
         embedDescription.AppendLine(
             "- Disconnecting and **reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)**");

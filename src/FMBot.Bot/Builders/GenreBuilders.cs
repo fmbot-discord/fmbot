@@ -410,7 +410,7 @@ public class GenreBuilders
 
             PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
 
-            if (genres.Any() && genres.Count > 0)
+            if (genres.Count != 0 && artist.ArtistGenres.Count != 0)
             {
                 var genreDescription = new StringBuilder();
                 selectMenu = new SelectMenuBuilder()
@@ -428,7 +428,8 @@ public class GenreBuilders
 
                     var optionId =
                         $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{artistGenre.Name}~{artist.Name}";
-                    selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId, isDefault: selected);
+                    selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId,
+                        isDefault: selected);
                 }
 
                 response.Embed.WithFooter($"Genre source: Spotify\n" +
@@ -475,7 +476,8 @@ public class GenreBuilders
 
                         var optionId =
                             $"{userSettings.DiscordUserId}~{context.ContextUser.DiscordUserId}~{selectCommandId}~{artistGenre.Name}~{genreOptions}";
-                        selectMenu.AddOption(artistGenre.Name.Transform(To.TitleCase), optionId, isDefault: selected);
+                        selectMenu.AddOption(StringExtensions.TruncateLongString(artistGenre.Name.Transform(To.TitleCase), 25), optionId,
+                            isDefault: selected);
                     }
 
                     response.Embed.WithFooter($"Genre source: Spotify\n" +
@@ -671,7 +673,7 @@ public class GenreBuilders
                     $"{userSettings.DisplayName}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
             }
 
-            pages = CreateGenrePageBuilder(userGenreArtistPages, response.EmbedAuthor, userGenre, "User view" ,context.NumberFormat);
+            pages = CreateGenrePageBuilder(userGenreArtistPages, response.EmbedAuthor, userGenre, "User view", context.NumberFormat);
 
             response.EmbedAuthor.WithName(
                 $"Top '{userGenre.GenreName.Transform(To.TitleCase)}' artists for {userTitle}");
@@ -864,7 +866,8 @@ public class GenreBuilders
             await this._indexService.GetOrAddUserToGuild(guildUsers, guild, discordGuildUser, context.ContextUser);
         await this._indexService.UpdateGuildUser(guildUsers, discordGuildUser, currentUser.UserId, guild);
 
-        var (filterStats, filteredUsersWithGenre) = WhoKnowsService.FilterWhoKnowsObjects(usersWithGenre, guildUsers, guild, context.ContextUser.UserId);
+        var (filterStats, filteredUsersWithGenre) =
+            WhoKnowsService.FilterWhoKnowsObjects(usersWithGenre, guildUsers, guild, context.ContextUser.UserId);
 
         var serverUsers =
             WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, context.ContextUser.UserId,

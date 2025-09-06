@@ -324,7 +324,8 @@ public class TrackService
             return new TrackSearch(trackInfo.Content, response);
         }
 
-        response.Embed.WithDescription($"Track could not be found, please check your search values and try again.");
+        response.Embed.WithDescription($"Track could not be found, please check your search values and try again.\n\n" +
+                                       $"You can also enter the exact value with the | separator. Example: `artist name | track name`");
         response.Embed.WithFooter($"Search value: '{searchValue}'");
         response.CommandResponse = CommandResponse.NotFound;
         response.ResponseType = ResponseType.Embed;

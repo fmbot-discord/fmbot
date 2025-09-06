@@ -64,4 +64,4 @@ ENV DOTNET_EnableDiagnostics=1
 
 ENTRYPOINT ["dotnet", "FMBot.Bot.dll"]
 
-HEALTHCHECK --interval=20s --timeout=20s --retries=12 --start-period=180s CMD test -n "$(find healthcheck -mmin -1)"
+HEALTHCHECK --interval=20s --timeout=20s --retries=18 --start-period=180s CMD test -n "$(find healthcheck -mmin -1)"

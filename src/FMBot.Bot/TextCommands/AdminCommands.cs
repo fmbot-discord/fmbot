@@ -1778,15 +1778,21 @@ public class AdminCommands : BaseCommandModule
                         "Get help with .fmbot, chat with other music enthusiasts and more."),
                     new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
                     new TextDisplayBuilder(@"## 📜 Server rules:
-1. Be friendly towards other members. No toxic, creepy or troll behaviour. No racism, homophobia, sexism, personal attacks, slurs, and anything else of that nature. Don't make fun of others for liking certain music, fandoms or other things.
-2. Respect the music tastes of others. Criticism is fine, shitting on entire genres for no reason and music elitism is not.
-3. Don't be spammy or annoying in general. This can include repeatedly interrupting others, immaturity, excessive lyricposting, sharing every song you listen to, and other behaviour that sucks the air out of the chat.
-4.  No advertising or DM ads.
-5. SFW content only, with the exception of spoilered album covers.
-6. English only.
-7. If a user is being problematic, use the <@&1083762942144688198> ping role. If the bot is down (i.e. not responding) use the <@&1083762904924434442> ping role. For anything else you must use <#856212952305893376> and after that ask in <#1006526334316576859>. Someone will get to you when they have time.
+1. **Be nice to each other.** Treat everyone with respect. No bigotry allowed, including but not limited to racism, sexism, homophobia, transphobia, ableism, and use of slurs (reclaimed or otherwise).
+2. **Remember that music taste is subjective.** Criticism is fine, music elitism is not. Respect the music taste of others.
+3. **Don't be spammy or annoying in general.** This can include repeatedly interrupting others, flooding the chat, immaturity, personal attacks, instigating or prolonging drama, and other behaviour that sucks the air out of the chat.
+4. **No self promotion or marketing.** Established community members may do it in moderation. DM ads are never allowed.
+5. **Safe for work content and chat only.** Keep it family friendly. An exception is made for spoilered album covers.
+6. **English only.** We can't moderate other languages.
+7. **Don't mention or DM other members without reason.** Mentions and DMs should be for a purpose, such as continuing conversations.
 
 Not following these rules might lead to a mute, kick or ban. Staff members can ban, kick or mute you for any reason if they feel it is needed."),
+                    new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
+                    new TextDisplayBuilder(@"Role pings:
+- Ping <@&1083762942144688198> for issues that require immediate staff attention, like someone disrupting the server or a raid
+- Ping <@&1083762904924434442> if the bot is down (not responding)
+
+For anything else, you must use <#856212952305893376> and after that ask in <#1006526334316576859>. Someone will get to you when they have time."),
                     new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
                     new TextDisplayBuilder(@"## 🔗 Links:
 - Documentation: <https://fm.bot/>
@@ -1839,7 +1845,7 @@ Not following these rules might lead to a mute, kick or ban. Staff members can b
                         "Found album artwork or an artist image that should be marked NSFW or censored entirely? Please report that here. \n\n" +
                         "Note that artwork is censored according to Discord guidelines and only as required by Discord. .fmbot is fundamentally opposed to artistic censorship."),
                     new TextDisplayBuilder("**Marked NSFW**\n" +
-                                           "Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology] and furry art in an erotic context"),
+                                           "Frontal nudity [genitalia, exposed anuses, and 'female presenting nipples,' which is not our terminology], furry art in an erotic context and people covered in blood and/or wounds"),
                     new TextDisplayBuilder(
                         "**Fully censored / NSFL**\n" +
                         "Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]"),

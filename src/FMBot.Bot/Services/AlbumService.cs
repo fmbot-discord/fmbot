@@ -287,7 +287,8 @@ public class AlbumService
             return new AlbumSearch(albumInfo.Content, response);
         }
 
-        response.Embed.WithDescription($"Album could not be found, please check your search values and try again.");
+        response.Embed.WithDescription($"Album could not be found, please check your search values and try again.\n\n" +
+                                       $"You can also enter the exact value with the | separator. Example: `artist name | album name`");
         response.Embed.WithFooter($"Search value: '{searchValue}'");
         response.CommandResponse = CommandResponse.NotFound;
         response.ResponseType = ResponseType.Embed;
