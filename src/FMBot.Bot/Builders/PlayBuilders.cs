@@ -1436,8 +1436,11 @@ public class PlayBuilder
                 }
             }
 
-            fields.Add(new EmbedFieldBuilder().WithName("Artist discoveries")
-                .WithValue(newArtistDescription.ToString()));
+            if (newArtistDescription.Length > 0)
+            {
+                fields.Add(new EmbedFieldBuilder().WithName("Artist discoveries")
+                    .WithValue(newArtistDescription.ToString()));
+            }
 
             var monthDescription = new StringBuilder();
             var monthGroups = allPlays
