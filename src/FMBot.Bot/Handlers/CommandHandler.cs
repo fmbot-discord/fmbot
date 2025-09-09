@@ -219,11 +219,6 @@ public class CommandHandler
 
         using (Statistics.TextCommandHandlerDuration.NewTimer())
         {
-            if (!await CommandEnabled(context, searchResult, prfx, update))
-            {
-                return;
-            }
-
             // If command possibly equals .fm
             if ((searchResult.Commands == null || searchResult.Commands.Count == 0) &&
                 msg.Content.StartsWith(this._botSettings.Bot.Prefix, StringComparison.OrdinalIgnoreCase))
@@ -281,6 +276,11 @@ public class CommandHandler
             }
 
             if (searchResult.Commands == null || !searchResult.Commands.Any())
+            {
+                return;
+            }
+
+            if (!await CommandEnabled(context, searchResult, prfx, update))
             {
                 return;
             }
