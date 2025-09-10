@@ -59,5 +59,7 @@ public class Guild
 
     public ICollection<Webhook> Webhooks { get; set; }
 
+    public ICollection<GuildShortcut> Shortcuts { get; set; }
+
     public ulong? WhoKnowsWhitelistRoleId { get; set; }
 }

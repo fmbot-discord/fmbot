@@ -46,6 +46,7 @@ public class TimerService : IDisposable
     private readonly BotListService _botListService;
     private readonly EurovisionService _eurovisionService;
     private readonly UpdateQueueHandler _updateQueueHandler;
+    private readonly ShortcutService _shortcutService;
 
     public FeaturedLog CurrentFeatured;
 
@@ -64,7 +65,7 @@ public class TimerService : IDisposable
         StatusHandler.StatusHandlerClient statusHandler,
         HttpClient httpClient,
         BotListService botListService,
-        EurovisionService eurovisionService)
+        EurovisionService eurovisionService, ShortcutService shortcutService)
     {
         this._client = client;
         this._userService = userService;
@@ -80,6 +81,7 @@ public class TimerService : IDisposable
         this._httpClient = httpClient;
         this._botListService = botListService;
         this._eurovisionService = eurovisionService;
+        this._shortcutService = shortcutService;
         this._updateService = updateService;
         this._botSettings = botSettings.Value;
 
@@ -94,6 +96,9 @@ public class TimerService : IDisposable
 
         Log.Information($"RecurringJob: Adding {nameof(UpdateStatus)}");
         RecurringJob.AddOrUpdate(nameof(UpdateStatus), () => UpdateStatus(), "* * * * *");
+
+        Log.Information($"RecurringJob: Adding {nameof(UpdateShortcuts)}");
+        RecurringJob.AddOrUpdate(nameof(UpdateShortcuts), () => UpdateShortcuts(), "* * * * *");
 
         Log.Information($"RecurringJob: Adding {nameof(UpdateHealthCheck)}");
         RecurringJob.AddOrUpdate(nameof(UpdateHealthCheck), () => UpdateHealthCheck(), "*/20 * * * * *");
@@ -526,6 +531,11 @@ public class TimerService : IDisposable
     {
         var usersToUpdate = await this._discogsService.GetOutdatedDiscogsUsers();
         await this._discogsService.UpdateDiscogsUsers(usersToUpdate);
+    }
+
+    public async Task UpdateShortcuts()
+    {
+        await this._shortcutService.LoadAllShortcuts();
     }
 
     public async Task PickNewFeatureds()

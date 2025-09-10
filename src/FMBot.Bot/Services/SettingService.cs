@@ -49,7 +49,7 @@ public class SettingService
         var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc), timeZoneInfo);
         var localMidnightInUtc = TimeZoneInfo.ConvertTimeToUtc(localTime.Date, timeZoneInfo);
 
-        var year = GetYear(options, false);
+        var year = GetYear(options, false, 1970);
         var month = GetMonth(options);
 
         if ((year != null || month != null) && !cachedOrAllTimeOnly)
@@ -948,7 +948,7 @@ public class SettingService
         return amount;
     }
 
-    public static int? GetYear(string extraOptions, bool cleanSetter = true)
+    public static int? GetYear(string extraOptions, bool cleanSetter = true, int minYear = 1900)
     {
         if (string.IsNullOrWhiteSpace(extraOptions))
         {
@@ -972,7 +972,7 @@ public class SettingService
 
             if (cleaned.Length == 4 && int.TryParse(cleaned, out var result))
             {
-                if (result >= 1900 && result <= DateTime.Today.AddDays(1).Year)
+                if (result >= minYear && result <= DateTime.Today.AddDays(1).Year)
                 {
                     return result;
                 }

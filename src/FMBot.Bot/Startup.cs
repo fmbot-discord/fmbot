@@ -289,6 +289,7 @@ public class Startup
             .AddSingleton<PlayService>()
             .AddSingleton<PuppeteerService>()
             .AddSingleton<SettingService>()
+            .AddSingleton<ShortcutService>()
             .AddSingleton<SupporterService>()
             .AddSingleton<TemplateService>()
             .AddSingleton<TimeService>()

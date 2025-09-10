@@ -16,6 +16,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<GuildBlockedUser> GuildBlockedUsers { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
+        public virtual DbSet<GuildShortcut> GuildShortcuts { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Supporter> Supporters { get; set; }
 
@@ -28,7 +29,6 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<BottedUser> BottedUsers { get; set; }
         public virtual DbSet<GlobalFilteredUser> GlobalFilteredUsers { get; set; }
-        public virtual DbSet<InactiveUsers> InactiveUsers { get; set; }
         public virtual DbSet<InactiveUserLog> InactiveUserLog { get; set; }
         public virtual DbSet<BottedUserReport> BottedUserReport { get; set; }
         public virtual DbSet<CensoredMusicReport> CensoredMusicReport { get; set; }
@@ -41,6 +41,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<UserStreak> UserStreaks { get; set; }
         public virtual DbSet<UserInteraction> UserInteractions { get; set; }
         public virtual DbSet<UserToken> UserTokens { get; set; }
+        public virtual DbSet<UserShortcut> UserShortcuts { get; set; }
         public virtual DbSet<AiGeneration> AiGenerations { get; set; }
 
         public virtual DbSet<Artist> Artists { get; set; }
@@ -200,19 +201,6 @@ namespace FMBot.Persistence.EntityFrameWork
 
             modelBuilder.Entity<BottedUserReport>(entity => { entity.HasKey(e => e.Id); });
 
-            modelBuilder.Entity<InactiveUsers>(entity =>
-            {
-                entity.HasKey(e => e.InactiveUserId);
-
-                entity.HasIndex(i => i.UserId);
-
-                entity
-                    .HasOne<User>()
-                    .WithMany()
-                    .HasForeignKey(p => p.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
             modelBuilder.Entity<UserArtist>(entity =>
             {
                 entity.HasKey(a => a.UserArtistId);
@@ -323,6 +311,26 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Streaks)
                     .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserShortcut>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.Shortcuts)
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<GuildShortcut>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasOne(u => u.Guild)
+                    .WithMany(a => a.Shortcuts)
+                    .HasForeignKey(f => f.GuildId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

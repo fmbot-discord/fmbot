@@ -84,4 +84,5 @@ public class User
     public ICollection<AiGeneration> AiGenerations { get; set; }
 
     public ICollection<UserInteraction> Interactions { get; set; }
+    public ICollection<UserShortcut> Shortcuts { get; set; }
 }

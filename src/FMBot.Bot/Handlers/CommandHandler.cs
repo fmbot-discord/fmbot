@@ -39,6 +39,7 @@ public class CommandHandler
     private readonly IMemoryCache _cache;
     private readonly IndexService _indexService;
     private readonly GameBuilders _gameBuilders;
+    private readonly ShortcutService _shortcutService;
 
     public CommandHandler(
         DiscordShardedClient discord,
@@ -52,7 +53,8 @@ public class CommandHandler
         InteractiveService interactiveService,
         IMemoryCache cache,
         IndexService indexService,
-        GameBuilders gameBuilders)
+        GameBuilders gameBuilders,
+        ShortcutService shortcutService)
     {
         this._discord = discord;
         this._commands = commands;
@@ -65,6 +67,7 @@ public class CommandHandler
         this._cache = cache;
         this._indexService = indexService;
         this._gameBuilders = gameBuilders;
+        this._shortcutService = shortcutService;
         this._botSettings = botSettings.Value;
         this._discord.MessageReceived += MessageReceived;
         this._discord.MessageUpdated += MessageUpdated;
@@ -199,9 +202,17 @@ public class CommandHandler
     private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos, string prfx,
         bool update = false)
     {
-        var searchResult = this._commands.Search(context, argPos);
+        var messageContent = msg.Content[argPos..];
+        var shortcutResult = _shortcutService.FindShortcut(context, messageContent);
 
-        // If no commands found and message does not start with prefix
+        if (shortcutResult.HasValue)
+        {
+            var (shortcut, remainingArgs) = shortcutResult.Value;
+            messageContent = $"{shortcut.Output} {remainingArgs}".Trim();
+        }
+
+        var searchResult = this._commands.Search(messageContent);
+
         if ((searchResult.Commands == null || searchResult.Commands.Count == 0) &&
             !msg.Content.StartsWith(prfx, StringComparison.OrdinalIgnoreCase))
         {
@@ -269,7 +280,8 @@ public class CommandHandler
                 {
                     Log.Error(
                         "CommandHandler error (.fm): {discordUserName} / {discordUserId} | {guildName} / {guildId}  | {messageContent} | Error: {error}",
-                        context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, context.Message.Content, commandPrefixResult.ToString());
+                        context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, context.Message.Content,
+                        commandPrefixResult.ToString());
                 }
 
                 return;
@@ -386,7 +398,7 @@ public class CommandHandler
                 return;
             }
 
-            var result = await this._commands.ExecuteAsync(context, argPos, this._provider);
+            var result = await this._commands.ExecuteAsync(context, messageContent, this._provider);
 
             if (result.IsSuccess)
             {
@@ -408,7 +420,8 @@ public class CommandHandler
             {
                 Log.Error(
                     "CommandHandler error: {discordUserName} / {discordUserId} | {guildName} / {guildId}  | {messageContent} | Error: {error}",
-                    context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, context.Message.Content, result.ToString());
+                    context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, context.Message.Content,
+                    result.ToString());
             }
         }
     }
