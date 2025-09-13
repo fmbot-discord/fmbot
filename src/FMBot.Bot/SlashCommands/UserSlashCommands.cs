@@ -1583,15 +1583,9 @@ public class UserSlashCommands : InteractionModuleBase
     {
         try
         {
-            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
-
-            // var response =
-            //     await this._userBuilder.cre(new ContextModel(this.Context, contextUser), id);;
-
-            // await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-            // this.Context.LogCommandUsed(response.CommandResponse);
-
-            // await this.Context.UpdateMessageEmbed(response, messageId);
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            await this.Context.Interaction.RespondWithModalAsync<CreateShortcutModal>(
+                $"{InteractionConstants.Shortcuts.CreateModal}-{message?.Id ?? 0}");
         }
         catch (Exception e)
         {
@@ -1599,20 +1593,32 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Shortcuts.Modify}")]
-    public async Task ModifyShortcut()
+    [ModalInteraction($"{InteractionConstants.Shortcuts.CreateModal}-*")]
+    public async Task CreateShortcutModal(string messageId, CreateShortcutModal modal)
     {
         try
         {
             var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
 
-            // var response =
-            //     await this._userBuilder.cre(new ContextModel(this.Context, contextUser), id);;
+            var response = await this._userBuilder.CreateShortcutAsync(
+                new ContextModel(this.Context, contextUser),
+                modal.Input,
+                modal.Output);
 
-            // await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
-            // this.Context.LogCommandUsed(response.CommandResponse);
-
-            // await this.Context.UpdateMessageEmbed(response, messageId);
+            if (response == null)
+            {
+                var parsedMessageId = ulong.Parse(messageId);
+                if (parsedMessageId != 0)
+                {
+                    var list = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                    await this.Context.UpdateMessageEmbed(list, messageId);
+                }
+            }
+            else
+            {
+                await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
         }
         catch (Exception e)
         {
@@ -1620,7 +1626,70 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Shortcuts.Manage}-*-*")]
+    [ComponentInteraction($"{InteractionConstants.Shortcuts.Modify}-*-*")]
+    public async Task ModifyShortcut(string shortcutId, string overviewMessageId)
+    {
+        try
+        {
+            var shortcut = await this._userBuilder.GetShortcut(int.Parse(shortcutId));
+            var mb = new ModalBuilder()
+                .WithTitle($"Modify shortcut")
+                .WithCustomId($"{InteractionConstants.Shortcuts.ModifyModal}-{shortcutId}-{overviewMessageId}")
+                .AddTextInput("Input (what you'll type)", "input", TextInputStyle.Short, value: shortcut.Input, minLength: 1, maxLength: 50)
+                .AddTextInput("Output (command to run)", "output", TextInputStyle.Paragraph, value: shortcut.Output, minLength: 1,
+                    maxLength: 200);
+
+            await this.Context.Interaction.RespondWithModalAsync(mb.Build());
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ModalInteraction($"{InteractionConstants.Shortcuts.ModifyModal}-*-*")]
+    public async Task ModifyShortcutModal(string shortcutId, string overviewMessageId, ModifyShortcutModal modal)
+    {
+        try
+        {
+            await DeferAsync(ephemeral: true);
+
+            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var id = int.Parse(shortcutId);
+
+            var response = await this._userBuilder.ModifyShortcutAsync(
+                new ContextModel(this.Context, contextUser),
+                id,
+                modal.Input,
+                modal.Output);
+
+            if (response == null)
+            {
+                var parsedOverviewMessageId = ulong.Parse(overviewMessageId);
+                if (parsedOverviewMessageId != 0)
+                {
+                    // Here is where the overview message should get updated
+                    var list = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                    await this.Context.UpdateMessageEmbed(list, overviewMessageId, defer: false);
+                }
+
+                var manage = await this._userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser), id,
+                    parsedOverviewMessageId);
+                await this.Context.Interaction.ModifyOriginalResponseAsync(m => m.Components = manage.ComponentsV2.Build());
+            }
+            else
+            {
+                await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Shortcuts.Manage}-*")]
     public async Task ManageShortcut(string shortcutId)
     {
         try
@@ -1634,6 +1703,43 @@ public class UserSlashCommands : InteractionModuleBase
 
             await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Shortcuts.Delete}-*-*")]
+    public async Task DeleteShortcut(string shortcutId, string overviewMessageId)
+    {
+        try
+        {
+            await DeferAsync(ephemeral: true);
+
+            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var id = int.Parse(shortcutId);
+
+            var response = await this._userBuilder.DeleteShortcutAsync(
+                new ContextModel(this.Context, contextUser),
+                id);
+
+            if (response == null)
+            {
+                var parsedOverviewMessageId = ulong.Parse(overviewMessageId);
+                if (parsedOverviewMessageId != 0)
+                {
+                    var list = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                    await this.Context.UpdateMessageEmbed(list, overviewMessageId, defer: false);
+                }
+
+                await this.Context.Interaction.DeleteOriginalResponseAsync();
+            }
+            else
+            {
+                await this.Context.SendFollowUpResponse(this.Interactivity, response, ephemeral: true);
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
         }
         catch (Exception e)
         {

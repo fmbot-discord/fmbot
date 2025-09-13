@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -497,7 +498,7 @@ public static class InteractionContextExtensions
     }
 
     public static async Task UpdateMessageEmbed(this IInteractionContext context, ResponseModel response,
-        string messageId, bool interactionEdit = false)
+        string messageId, bool interactionEdit = false, bool defer = true)
     {
         var parsedMessageId = ulong.Parse(messageId);
         var msg = await context.Channel.GetMessageAsync(parsedMessageId);
@@ -507,7 +508,7 @@ public static class InteractionContextExtensions
             return;
         }
 
-        await context.ModifyMessage(message, response);
+        await context.ModifyMessage(message, response, defer);
     }
 
     public static async Task ModifyComponents(this IInteractionContext context, IUserMessage message,

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
@@ -43,6 +44,8 @@ public class UserBuilder
     private readonly IndexService _indexService;
     private readonly ShortcutService _shortcutService;
 
+    private readonly CommandService _commands;
+
     public UserBuilder(UserService userService,
         GuildService guildService,
         TimerService timer,
@@ -58,7 +61,7 @@ public class UserBuilder
         AdminService adminService,
         UpdateService updateService,
         IndexService indexService,
-        ShortcutService shortcutService)
+        ShortcutService shortcutService, CommandService commands)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -75,6 +78,7 @@ public class UserBuilder
         this._updateService = updateService;
         this._indexService = indexService;
         this._shortcutService = shortcutService;
+        this._commands = commands;
         this._botSettings = botSettings.Value;
     }
 
@@ -2034,7 +2038,8 @@ public class UserBuilder
 
         var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
 
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder("## Your user shortcuts"));
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
+        response.ComponentsContainer.AddComponent(new TextDisplayBuilder("## <:shortcut:1416430054061117610> Your command shortcuts"));
 
         if (shortcuts.Count == 0)
         {
@@ -2050,7 +2055,8 @@ public class UserBuilder
                 {
                     Components =
                     [
-                        new TextDisplayBuilder($"**Input:** `{shortcut.Input}`\n**Output:** `{shortcut.Output}`")
+                        new TextDisplayBuilder(
+                            $"**Input:** `{StringExtensions.Sanitize(shortcut.Input)}`\n**Output:** `{StringExtensions.Sanitize(shortcut.Output)}`")
                     ],
                     Accessory = new ButtonBuilder("Edit", style: ButtonStyle.Secondary,
                         customId: $"{InteractionConstants.Shortcuts.Manage}-{shortcut.Id}")
@@ -2059,10 +2065,17 @@ public class UserBuilder
         }
 
         response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-        var actionRow = new ActionRowBuilder();
-        actionRow.AddComponent(
-            new ButtonBuilder("Create", style: ButtonStyle.Primary, customId: $"{InteractionConstants.Shortcuts.Create}"));
-        response.ComponentsContainer.AddComponent(actionRow);
+        response.ComponentsContainer.AddComponent(new SectionBuilder
+        {
+            Components =
+            [
+                new TextDisplayBuilder(
+                    $"-# {shortcuts.Count}/10 shortcut slots used\n" +
+                    $"-# Any change takes a minute to apply in all servers")
+            ],
+            Accessory = new ButtonBuilder("Create", style: ButtonStyle.Primary,
+                customId: $"{InteractionConstants.Shortcuts.Create}")
+        });
 
         return response;
     }
@@ -2074,8 +2087,7 @@ public class UserBuilder
             ResponseType = ResponseType.ComponentsV2
         };
 
-        var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
-        var shortcut = shortcuts.FirstOrDefault(f => f.Id == shortcutId);
+        var shortcut = await _shortcutService.GetUserShortcut(shortcutId);
 
         if (shortcut == null)
         {
@@ -2095,6 +2107,7 @@ public class UserBuilder
             return response;
         }
 
+        response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
         var description = new StringBuilder();
         description.AppendLine($"**Input:** `{shortcut.Input}`");
         description.AppendLine($"**Output:** `{shortcut.Output}`");
@@ -2107,6 +2120,150 @@ public class UserBuilder
         actionRow.AddComponent(new ButtonBuilder("Delete", style: ButtonStyle.Danger,
             customId: $"{InteractionConstants.Shortcuts.Delete}-{shortcut.Id}-{overviewMessageId}"));
         response.ComponentsContainer.AddComponent(actionRow);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> CreateShortcutAsync(ContextModel context, string input, string output)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        try
+        {
+            var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
+            if (shortcuts.Count >= 10)
+            {
+                response.Embed.WithDescription($"❌ You can't create more then 10 shortcuts");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.Cooldown;
+                return response;
+            }
+
+            if (shortcuts.Any(a => string.Equals(a.Input, input, StringComparison.OrdinalIgnoreCase)))
+            {
+                response.Embed.WithDescription($"❌ You already have a shortcut with this input");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.WrongInput;
+                return response;
+            }
+
+            var commandResults = this._commands.Search(output);
+            if (!commandResults.IsSuccess || commandResults.Commands.Count == 0)
+            {
+                response.Embed.WithDescription($"❌ No commands found for your output");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.WrongInput;
+                return response;
+            }
+
+            await _shortcutService.AddOrUpdateUserShortcut(context.ContextUser, 0, input, output);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            response.Embed.WithDescription($"❌ Error while trying to create shortcut");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.Error;
+        }
+
+        return response;
+    }
+
+    public async Task<ResponseModel> ModifyShortcutAsync(ContextModel context, int shortcutId, string input, string output)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        try
+        {
+            var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
+            var shortcut = shortcuts.FirstOrDefault(s => s.Id == shortcutId);
+
+            if (shortcut == null)
+            {
+                response.Embed.WithDescription("❌ Shortcut not found.");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.NotFound;
+                return response;
+            }
+
+            if (shortcuts.Any(a => a.Id != shortcut.Id &&
+                                   string.Equals(a.Input, input, StringComparison.OrdinalIgnoreCase)))
+            {
+                response.Embed.WithDescription($"❌ You already have a shortcut with this input");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.WrongInput;
+                return response;
+            }
+
+            var commandResults = this._commands.Search(output);
+            if (!commandResults.IsSuccess || commandResults.Commands.Count == 0)
+            {
+                response.Embed.WithDescription($"❌ No commands found for your output");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.WrongInput;
+                return response;
+            }
+
+            await _shortcutService.AddOrUpdateUserShortcut(context.ContextUser, shortcutId, input, output);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            response.Embed.WithDescription($"❌ Failed to modify shortcut: {ex.Message}");
+            response.Embed.WithColor(DiscordConstants.LastFmColorRed);
+            response.CommandResponse = CommandResponse.Error;
+        }
+
+        return response;
+    }
+
+    public async Task<UserShortcut> GetShortcut(int shortcutId)
+    {
+        return await this._shortcutService.GetUserShortcut(shortcutId);
+    }
+
+    public async Task<ResponseModel> DeleteShortcutAsync(ContextModel context, int shortcutId)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        try
+        {
+            var shortcut = await _shortcutService.GetUserShortcut(shortcutId);
+
+            if (shortcut == null)
+            {
+                response.Embed.WithDescription("❌ Shortcut not found.");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.NotFound;
+                return response;
+            }
+
+            if (context.ContextUser.UserId != shortcut.UserId)
+            {
+                response.Embed.WithDescription("❌ You can only delete your own shortcuts.");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.NoPermission;
+                return response;
+            }
+
+            await _shortcutService.RemoveUserShortcut(context.ContextUser, shortcut.Input);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            response.Embed.WithDescription($"❌ Failed to delete shortcut: {ex.Message}");
+            response.Embed.WithColor(DiscordConstants.LastFmColorRed);
+            response.CommandResponse = CommandResponse.Error;
+        }
 
         return response;
     }

@@ -92,3 +92,29 @@ public class AddDisabledGuildCommandModal : IModal
     [ModalTextInput("command", placeholder: "whoknows", minLength: 1, maxLength: 40)]
     public string Command { get; set; }
 }
+
+public class CreateShortcutModal : IModal
+{
+    public string Title => "Create new shortcut";
+
+    [InputLabel("Input (what you'll type)")]
+    [ModalTextInput("input", placeholder: "np", minLength: 1, maxLength: 50)]
+    public string Input { get; set; }
+
+    [InputLabel("Output (command to run)")]
+    [ModalTextInput("output", placeholder: "fm", minLength: 1, maxLength: 200)]
+    public string Output { get; set; }
+}
+
+public class ModifyShortcutModal : IModal
+{
+    public string Title => "Modify shortcut";
+
+    [InputLabel("Input (what you'll type)")]
+    [ModalTextInput("input", minLength: 1, maxLength: 50)]
+    public string Input { get; set; }
+
+    [InputLabel("Output (command to run)")]
+    [ModalTextInput("output",  minLength: 1, maxLength: 200)]
+    public string Output { get; set; }
+}

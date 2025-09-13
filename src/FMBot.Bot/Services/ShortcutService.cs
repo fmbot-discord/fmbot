@@ -77,8 +77,15 @@ namespace FMBot.Bot.Services
         {
             await using var db = await _contextFactory.CreateDbContextAsync();
             return await db.UserShortcuts
-                .Where(w => w.Id == user.UserId)
+                .Where(w => w.UserId == user.UserId)
                 .ToListAsync();
+        }
+
+        public async Task<UserShortcut> GetUserShortcut(int id)
+        {
+            await using var db = await _contextFactory.CreateDbContextAsync();
+            return await db.UserShortcuts
+                .FirstOrDefaultAsync(w => w.Id == id);
         }
 
         public async Task AddOrUpdateUserShortcut(User user, int id, string input, string output)
@@ -128,7 +135,7 @@ namespace FMBot.Bot.Services
         {
             await using var db = await _contextFactory.CreateDbContextAsync();
             return await db.GuildShortcuts
-                .Where(w => w.Id == guild.GuildId)
+                .Where(w => w.GuildId == guild.GuildId)
                 .ToListAsync();
         }
 
