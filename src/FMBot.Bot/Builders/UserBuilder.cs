@@ -2149,13 +2149,18 @@ public class UserBuilder
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
             }
+            if (input.Contains("shortcuts", StringComparison.OrdinalIgnoreCase))
+            {
+                response.Embed.WithDescription($"❌ You can't create a shortcut with this input");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.WrongInput;
+                return response;
+            }
 
             var commandResults = this._commands.Search(output);
-            if (!commandResults.IsSuccess ||
-                commandResults.Commands.Count == 0 ||
-                commandResults.Commands.Any(a => a.Command.Name.Contains("shortcut", StringComparison.OrdinalIgnoreCase)))
+            if (!commandResults.IsSuccess || commandResults.Commands.Count == 0)
             {
-                response.Embed.WithDescription($"❌ No valid commands found for your output");
+                response.Embed.WithDescription($"❌ No commands found for your output");
                 response.Embed.WithColor(DiscordConstants.WarningColorOrange);
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
@@ -2202,13 +2207,18 @@ public class UserBuilder
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
             }
+            if (input.Equals("shortcuts", StringComparison.OrdinalIgnoreCase))
+            {
+                response.Embed.WithDescription($"❌ You can't create a shortcut with this input");
+                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+                response.CommandResponse = CommandResponse.WrongInput;
+                return response;
+            }
 
             var commandResults = this._commands.Search(output);
-            if (!commandResults.IsSuccess ||
-                commandResults.Commands.Count == 0 ||
-                commandResults.Commands.Any(a => a.Command.Name.Contains("shortcut", StringComparison.OrdinalIgnoreCase)))
+            if (!commandResults.IsSuccess || commandResults.Commands.Count == 0)
             {
-                response.Embed.WithDescription($"❌ No valid commands found for your output");
+                response.Embed.WithDescription($"❌ No commands found for your output");
                 response.Embed.WithColor(DiscordConstants.WarningColorOrange);
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
