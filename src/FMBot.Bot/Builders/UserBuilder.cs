@@ -2204,9 +2204,11 @@ public class UserBuilder
             }
 
             var commandResults = this._commands.Search(output);
-            if (!commandResults.IsSuccess || commandResults.Commands.Count == 0)
+            if (!commandResults.IsSuccess ||
+                commandResults.Commands.Count == 0 ||
+                commandResults.Commands.Any(a => a.Command.Name.Contains("shortcut", StringComparison.OrdinalIgnoreCase)))
             {
-                response.Embed.WithDescription($"❌ No commands found for your output");
+                response.Embed.WithDescription($"❌ No valid commands found for your output");
                 response.Embed.WithColor(DiscordConstants.WarningColorOrange);
                 response.CommandResponse = CommandResponse.WrongInput;
                 return response;
