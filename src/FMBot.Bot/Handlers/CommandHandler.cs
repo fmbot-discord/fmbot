@@ -209,6 +209,7 @@ public class CommandHandler
         {
             var (shortcut, remainingArgs) = shortcutResult.Value;
             messageContent = $"{shortcut.Output} {remainingArgs}".Trim();
+            _ = Task.Run(() => this._shortcutService.AddEmoteReaction(context));
         }
 
         var searchResult = this._commands.Search(messageContent);

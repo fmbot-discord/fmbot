@@ -46,6 +46,7 @@ public class StartupService
     private readonly TimerService _timerService;
     private readonly SupporterService _supporterService;
     private readonly ChartService _chartService;
+    private readonly ShortcutService _shortcutService;
 
     public StartupService(
         IServiceProvider provider,
@@ -63,7 +64,8 @@ public class StartupService
         DisabledChannelService disabledChannelService,
         TimerService timerService,
         SupporterService supporterService,
-        ChartService chartService)
+        ChartService chartService,
+        ShortcutService shortcutService)
     {
         this._provider = provider;
         this._client = discord;
@@ -80,6 +82,7 @@ public class StartupService
         this._timerService = timerService;
         this._supporterService = supporterService;
         this._chartService = chartService;
+        this._shortcutService = shortcutService;
         this._botSettings = botSettings.Value;
     }
 
@@ -148,6 +151,9 @@ public class StartupService
 
         Log.Information("Downloading chart files");
         await this._chartService.DownloadChartFilesAsync();
+
+        Log.Information("Loading shortcuts");
+        await this._shortcutService.LoadAllShortcuts();
 
         var gateway = await this._client.GetBotGatewayAsync();
         Log.Information("ShardStarter: connects left {connectsLeft} - reset after {resetAfter}",

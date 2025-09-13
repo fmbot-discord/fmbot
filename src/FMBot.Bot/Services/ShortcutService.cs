@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
@@ -72,6 +73,14 @@ namespace FMBot.Bot.Services
             Log.Information($"Loaded shortcuts for {shortcutsByGuildId.Count} guilds into memory.");
         }
 
+        public async Task<List<UserShortcut>> GetUserShortcuts(User user)
+        {
+            await using var db = await _contextFactory.CreateDbContextAsync();
+            return await db.UserShortcuts
+                .Where(w => w.Id == user.UserId)
+                .ToListAsync();
+        }
+
         public async Task AddOrUpdateUserShortcut(User user, int id, string input, string output)
         {
             await using var db = await _contextFactory.CreateDbContextAsync();
@@ -113,6 +122,14 @@ namespace FMBot.Bot.Services
             }
 
             return false;
+        }
+
+        public async Task<List<GuildShortcut>> GetGuildShortcuts(Persistence.Domain.Models.Guild guild)
+        {
+            await using var db = await _contextFactory.CreateDbContextAsync();
+            return await db.GuildShortcuts
+                .Where(w => w.Id == guild.GuildId)
+                .ToListAsync();
         }
 
         public async Task AddOrUpdateGuildShortcut(Persistence.Domain.Models.Guild guild, int id, string input, string output)
@@ -229,6 +246,14 @@ namespace FMBot.Bot.Services
             }
 
             return null;
+        }
+
+        public async Task AddEmoteReaction(ShardedCommandContext context)
+        {
+            if (context.Message != null)
+            {
+                await context.Message.AddReactionAsync(Emote.Parse("<:shortcut:1416430054061117610>"));
+            }
         }
     }
 }

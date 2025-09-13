@@ -36,6 +36,7 @@ public class UserCommands : BaseCommandModule
     private readonly OpenAiService _openAiService;
     private readonly TimerService _timerService;
     private readonly TemplateBuilders _templateBuilders;
+    private readonly AdminService _adminService;
 
     private InteractiveService Interactivity { get; }
 
@@ -49,7 +50,8 @@ public class UserCommands : BaseCommandModule
         InteractiveService interactivity,
         OpenAiService openAiService,
         TimerService timerService,
-        TemplateBuilders templateBuilders) : base(botSettings)
+        TemplateBuilders templateBuilders,
+        AdminService adminService) : base(botSettings)
     {
         this._guildService = guildService;
         this._prefixService = prefixService;
@@ -60,6 +62,7 @@ public class UserCommands : BaseCommandModule
         this._openAiService = openAiService;
         this._timerService = timerService;
         this._templateBuilders = templateBuilders;
+        this._adminService = adminService;
     }
 
     [Command("settings", RunMode = RunMode.Async)]
@@ -163,7 +166,8 @@ public class UserCommands : BaseCommandModule
     [Alias("roast", "compliment")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [CommandCategories(CommandCategory.Other)]
-    [SupporterEnhanced("Supporters get an improved AI model with better output, a higher usage limit and the ability to use the command on others")]
+    [SupporterEnhanced(
+        "Supporters get an improved AI model with better output, a higher usage limit and the ability to use the command on others")]
     public async Task JudgeAsync([Remainder] string extraOptions = null)
     {
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
@@ -306,7 +310,8 @@ public class UserCommands : BaseCommandModule
              "This command will also show something special if the user is in your server")]
     [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar", "ftrd", "ftd", "feat", "pǝɹnʇɐǝɟ")]
     [CommandCategories(CommandCategory.Other)]
-    [SupporterEnhanced("Every first Sunday of the month is Supporter Sunday. The bot will then exclusively feature supporters as a thank-you for supporting the bot.")]
+    [SupporterEnhanced(
+        "Every first Sunday of the month is Supporter Sunday. The bot will then exclusively feature supporters as a thank-you for supporting the bot.")]
     public async Task FeaturedAsync([Remainder] string options = null)
     {
         try
@@ -649,5 +654,34 @@ public class UserCommands : BaseCommandModule
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+
+    [Command("shortcuts")]
+    public async Task ShortcutsAsync()
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        {
+            try
+            {
+                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+
+                var response = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, prfx, contextUser));
+
+
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync(Constants.FmbotStaffOnly);
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
     }
 }

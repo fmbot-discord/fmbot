@@ -41,6 +41,7 @@ public class UserBuilder
     private readonly AdminService _adminService;
     private readonly UpdateService _updateService;
     private readonly IndexService _indexService;
+    private readonly ShortcutService _shortcutService;
 
     public UserBuilder(UserService userService,
         GuildService guildService,
@@ -56,7 +57,8 @@ public class UserBuilder
         OpenAiService openAiService,
         AdminService adminService,
         UpdateService updateService,
-        IndexService indexService)
+        IndexService indexService,
+        ShortcutService shortcutService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -72,6 +74,7 @@ public class UserBuilder
         this._adminService = adminService;
         this._updateService = updateService;
         this._indexService = indexService;
+        this._shortcutService = shortcutService;
         this._botSettings = botSettings.Value;
     }
 
@@ -1994,6 +1997,93 @@ public class UserBuilder
             : null;
 
         await this._userService.UpdateLinkedRole(context.DiscordUser.Id);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> ListShortcutsAsync(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
+
+        response.ComponentsContainer.AddComponent(new TextDisplayBuilder("## Your user shortcuts"));
+
+        if (shortcuts.Count == 0)
+        {
+            response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+            response.ComponentsContainer.AddComponent(new SectionBuilder
+            {
+                Components =
+                [
+                    new TextDisplayBuilder("You haven't set up any shortcuts yet.")
+                ]
+            });
+        }
+        else
+        {
+            foreach (var shortcut in shortcuts)
+            {
+                response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+
+                response.ComponentsContainer.AddComponent(new SectionBuilder
+                {
+                    Components =
+                    [
+                        new TextDisplayBuilder($"**Input:** `{shortcut.Input}`\n**Output:** `{shortcut.Output}`")
+                    ],
+                    Accessory = new ButtonBuilder("Edit", style: ButtonStyle.Secondary,
+                        customId: $"manage-shortcut-{shortcut.Id}")
+                });
+            }
+        }
+
+        return response;
+    }
+
+    public async Task<ResponseModel> ManageShortcutAsync(ContextModel context, int shortcutId)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ComponentsV2
+        };
+
+        var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
+        var shortcut = shortcuts.FirstOrDefault(f => f.Id == shortcutId);
+        ;
+
+        if (shortcut == null)
+        {
+            response.ResponseType = ResponseType.Embed;
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.Embed.WithDescription("This shortcut doesn't exist.");
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+
+
+        // var container = new ComponentV2Builder()
+        //     .AddContainer(new HeaderBuilder($"Managing Shortcut: `{shortcut.Input}`"))
+        //     .AddContainer(new SectionBuilder
+        //     {
+        //         Components =
+        //         [
+        //             new TextDisplayBuilder($"This shortcut will be replaced by the following command:\n`{shortcut.Output}`")
+        //         ]
+        //     })
+        //     .AddContainer(new ActionGroupBuilder
+        //     {
+        //         Components =
+        //         [
+        //             new ButtonBuilder("Modify", style: ButtonStyle.Primary, customId: $"modify-shortcut-{encodedInput}"),
+        //             new ButtonBuilder("Delete", style: ButtonStyle.Danger, customId: $"delete-shortcut-{encodedInput}")
+        //         ]
+        //     });
 
         return response;
     }

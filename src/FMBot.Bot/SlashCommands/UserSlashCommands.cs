@@ -928,7 +928,7 @@ public class UserSlashCommands : InteractionModuleBase
         }
 
         await fetchedMessage.DeleteAsync(options: new RequestOptions
-            { AuditLogReason = "Deleted through message command " });
+            { AuditLogReason = "Deleted by user through message command" });
 
         await RespondAsync("Removed .fmbot response.", ephemeral: true);
         this.Context.LogCommandUsed();
