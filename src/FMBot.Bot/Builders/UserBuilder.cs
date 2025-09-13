@@ -2044,7 +2044,8 @@ public class UserBuilder
         if (shortcuts.Count == 0)
         {
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("You haven't set up any shortcuts yet."));
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("You haven't set up any shortcuts yet.\n\n" +
+                                                                             "Make sure you don't include the prefix (.) when creating shortcuts."));
         }
         else
         {
