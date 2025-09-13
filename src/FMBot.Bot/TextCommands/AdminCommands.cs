@@ -1785,6 +1785,7 @@ public class AdminCommands : BaseCommandModule
 5. **Safe for work content and chat only.** Keep it family friendly. An exception is made for spoilered album covers.
 6. **English only.** We can't moderate other languages.
 7. **Don't mention or DM other members without reason.** Mentions and DMs should be for a purpose, such as continuing conversations.
+8. **No political discussion**, except for when it directly relates to music. This includes social issues or discussions about religion.
 
 Not following these rules might lead to a mute, kick or ban. Staff members can ban, kick or mute you for any reason if they feel it is needed."),
                     new SeparatorBuilder { Spacing = SeparatorSpacingSize.Large },
