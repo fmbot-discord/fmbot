@@ -92,6 +92,17 @@ public static class InteractionConstants
         public const string ManageAltsDeleteAltConfirm = "managealts-deleteconfirmed";
     }
 
+    public static class Shortcuts
+    {
+        public const string ViewAll = "shortcuts-view";
+        public const string Manage = "shortcut-manage";
+        public const string Delete = "shortcut-delete";
+        public const string Modify = "shortcut-modify";
+        public const string ModifyModal = "shortcut-modifymodal";
+        public const string Create = "shortcut-create";
+        public const string CreateModal = "shortcut-createmodal";
+    }
+
     public static class Artist
     {
         public const string Info = "artist-info";

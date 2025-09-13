@@ -2001,6 +2001,30 @@ public class UserBuilder
         return response;
     }
 
+    public static ResponseModel ShortcutsSupporterRequired(ContextModel context)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        if (!SupporterService.IsSupporter(context.ContextUser.UserType))
+        {
+            response.Embed.WithDescription(
+                "Command shortcuts are only available for .fmbot supporters.");
+
+            response.Components = new ComponentBuilder()
+                .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
+                    customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(source: "user-shortcuts"));
+            response.Embed.WithColor(DiscordConstants.InformationColorBlue);
+            response.CommandResponse = CommandResponse.SupporterRequired;
+
+            return response;
+        }
+
+        return null;
+    }
+
     public async Task<ResponseModel> ListShortcutsAsync(ContextModel context)
     {
         var response = new ResponseModel
@@ -2015,20 +2039,13 @@ public class UserBuilder
         if (shortcuts.Count == 0)
         {
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-            response.ComponentsContainer.AddComponent(new SectionBuilder
-            {
-                Components =
-                [
-                    new TextDisplayBuilder("You haven't set up any shortcuts yet.")
-                ]
-            });
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("You haven't set up any shortcuts yet."));
         }
         else
         {
             foreach (var shortcut in shortcuts)
             {
                 response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-
                 response.ComponentsContainer.AddComponent(new SectionBuilder
                 {
                     Components =
@@ -2036,15 +2053,21 @@ public class UserBuilder
                         new TextDisplayBuilder($"**Input:** `{shortcut.Input}`\n**Output:** `{shortcut.Output}`")
                     ],
                     Accessory = new ButtonBuilder("Edit", style: ButtonStyle.Secondary,
-                        customId: $"manage-shortcut-{shortcut.Id}")
+                        customId: $"{InteractionConstants.Shortcuts.Manage}-{shortcut.Id}")
                 });
             }
         }
 
+        response.ComponentsContainer.AddComponent(new SeparatorBuilder());
+        var actionRow = new ActionRowBuilder();
+        actionRow.AddComponent(
+            new ButtonBuilder("Create", style: ButtonStyle.Primary, customId: $"{InteractionConstants.Shortcuts.Create}"));
+        response.ComponentsContainer.AddComponent(actionRow);
+
         return response;
     }
 
-    public async Task<ResponseModel> ManageShortcutAsync(ContextModel context, int shortcutId)
+    public async Task<ResponseModel> ManageShortcutAsync(ContextModel context, int shortcutId, ulong overviewMessageId)
     {
         var response = new ResponseModel
         {
@@ -2053,7 +2076,6 @@ public class UserBuilder
 
         var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
         var shortcut = shortcuts.FirstOrDefault(f => f.Id == shortcutId);
-        ;
 
         if (shortcut == null)
         {
@@ -2064,26 +2086,27 @@ public class UserBuilder
             return response;
         }
 
+        if (context.ContextUser.UserId != shortcut.UserId)
+        {
+            response.ResponseType = ResponseType.Embed;
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.Embed.WithDescription("This isn't your shortcut, you can only edit your own shortcuts.");
+            response.CommandResponse = CommandResponse.NoPermission;
+            return response;
+        }
+
+        var description = new StringBuilder();
+        description.AppendLine($"**Input:** `{shortcut.Input}`");
+        description.AppendLine($"**Output:** `{shortcut.Output}`");
+        response.ComponentsContainer.AddComponent(new TextDisplayBuilder(description.ToString()));
+
         response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-
-
-        // var container = new ComponentV2Builder()
-        //     .AddContainer(new HeaderBuilder($"Managing Shortcut: `{shortcut.Input}`"))
-        //     .AddContainer(new SectionBuilder
-        //     {
-        //         Components =
-        //         [
-        //             new TextDisplayBuilder($"This shortcut will be replaced by the following command:\n`{shortcut.Output}`")
-        //         ]
-        //     })
-        //     .AddContainer(new ActionGroupBuilder
-        //     {
-        //         Components =
-        //         [
-        //             new ButtonBuilder("Modify", style: ButtonStyle.Primary, customId: $"modify-shortcut-{encodedInput}"),
-        //             new ButtonBuilder("Delete", style: ButtonStyle.Danger, customId: $"delete-shortcut-{encodedInput}")
-        //         ]
-        //     });
+        var actionRow = new ActionRowBuilder();
+        actionRow.AddComponent(new ButtonBuilder("Modify", style: ButtonStyle.Secondary,
+            customId: $"{InteractionConstants.Shortcuts.Modify}-{shortcut.Id}-{overviewMessageId}"));
+        actionRow.AddComponent(new ButtonBuilder("Delete", style: ButtonStyle.Danger,
+            customId: $"{InteractionConstants.Shortcuts.Delete}-{shortcut.Id}-{overviewMessageId}"));
+        response.ComponentsContainer.AddComponent(actionRow);
 
         return response;
     }

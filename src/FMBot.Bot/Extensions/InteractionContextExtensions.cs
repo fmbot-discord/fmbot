@@ -148,6 +148,11 @@ public static class InteractionContextExtensions
                 await context.Interaction.RespondAsync(null, embeds,
                     ephemeral: ephemeral, components: response.Components?.Build());
                 break;
+            case ResponseType.ComponentsV2:
+                await context.Interaction.RespondAsync(ephemeral: ephemeral,
+                    components: response.ComponentsV2?.Build(),
+                    allowedMentions: AllowedMentions.None);
+                break;
             case ResponseType.ImageWithEmbed:
                 response.FileName =
                     StringExtensions.ReplaceInvalidChars(response.FileName);
@@ -231,7 +236,8 @@ public static class InteractionContextExtensions
                 else
                 {
                     var components = await context.Interaction.FollowupAsync(ephemeral: ephemeral,
-                        components: response.ComponentsV2?.Build());
+                        components: response.ComponentsV2?.Build(),
+                        allowedMentions: AllowedMentions.None);
                     responseId = components.Id;
                 }
 
@@ -330,7 +336,8 @@ public static class InteractionContextExtensions
     }
 
 
-    public static async Task DisableActionRows(this IInteractionContext context, bool interactionEdit = false, string specificButtonOnly = null)
+    public static async Task DisableActionRows(this IInteractionContext context, bool interactionEdit = false,
+        string specificButtonOnly = null)
     {
         var message = (context.Interaction as SocketMessageComponent)?.Message;
 

@@ -1577,4 +1577,67 @@ public class UserSlashCommands : InteractionModuleBase
             await this.Context.HandleCommandException(e);
         }
     }
+
+    [ComponentInteraction($"{InteractionConstants.Shortcuts.Create}")]
+    public async Task CreateShortcut()
+    {
+        try
+        {
+            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+
+            // var response =
+            //     await this._userBuilder.cre(new ContextModel(this.Context, contextUser), id);;
+
+            // await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            // this.Context.LogCommandUsed(response.CommandResponse);
+
+            // await this.Context.UpdateMessageEmbed(response, messageId);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Shortcuts.Modify}")]
+    public async Task ModifyShortcut()
+    {
+        try
+        {
+            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+
+            // var response =
+            //     await this._userBuilder.cre(new ContextModel(this.Context, contextUser), id);;
+
+            // await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            // this.Context.LogCommandUsed(response.CommandResponse);
+
+            // await this.Context.UpdateMessageEmbed(response, messageId);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
+
+    [ComponentInteraction($"{InteractionConstants.Shortcuts.Manage}-*-*")]
+    public async Task ManageShortcut(string shortcutId)
+    {
+        try
+        {
+            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var id = int.Parse(shortcutId);
+            var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+
+            var response =
+                await this._userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser), id, message?.Id ?? 0);
+
+            await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            await this.Context.HandleCommandException(e);
+        }
+    }
 }
