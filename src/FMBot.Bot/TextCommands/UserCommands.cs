@@ -658,6 +658,7 @@ public class UserCommands : BaseCommandModule
 
 
     [Command("shortcuts")]
+    [Alias("shortcut", "sc", "scs")]
     public async Task ShortcutsAsync()
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
