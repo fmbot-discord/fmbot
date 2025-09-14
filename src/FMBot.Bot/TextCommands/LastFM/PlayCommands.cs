@@ -72,7 +72,8 @@ public class PlayCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     [Alias("dd", "datediscovered", "datediscovery")]
-    [SupporterExclusive("To see when you've discovered this artist, album and track we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
+    [SupporterExclusive(
+        "To see when you've discovered this artist, album and track we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task DateDiscoveredAsync([Remainder] string options = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();
@@ -192,10 +193,11 @@ public class PlayCommands : BaseCommandModule
 
             _ = this.Context.Channel.TriggerTypingAsync();
             var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+            var configuredFmType = SettingService.GetEmbedType(userSettings.NewSearchValue, contextUser.FmEmbedType);
 
             var response =
                 await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, prfx, contextUser),
-                    userSettings);
+                    userSettings, configuredFmType.embedType);;
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -343,7 +345,8 @@ public class PlayCommands : BaseCommandModule
 
             if (loading)
             {
-                await Context.Message.RemoveReactionAsync(Emote.Parse(DiscordConstants.Loading), this._botSettings.Discord.ApplicationId.GetValueOrDefault());
+                await Context.Message.RemoveReactionAsync(Emote.Parse(DiscordConstants.Loading),
+                    this._botSettings.Discord.ApplicationId.GetValueOrDefault());
             }
 
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -460,7 +463,8 @@ public class PlayCommands : BaseCommandModule
     [UsernameSetRequired]
     [Alias("str", "combo", "cb")]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
-    [SupporterEnhanced("Streaks for non-supporters are limited to 25k plays, due to the bot not caching plays beyond this limit for free users")]
+    [SupporterEnhanced(
+        "Streaks for non-supporters are limited to 25k plays, due to the bot not caching plays beyond this limit for free users")]
     public async Task StreakAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();

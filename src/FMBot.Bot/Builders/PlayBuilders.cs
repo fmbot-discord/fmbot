@@ -183,7 +183,8 @@ public class PlayBuilder
 
     public async Task<ResponseModel> NowPlayingAsync(
         ContextModel context,
-        UserSettingsModel userSettings)
+        UserSettingsModel userSettings,
+        FmEmbedType fmEmbedType)
     {
         var response = new ResponseModel
         {
@@ -222,7 +223,7 @@ public class PlayBuilder
             return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
         }
 
-        var embedType = context.ContextUser.FmEmbedType;
+        var embedType = fmEmbedType;
 
         Guild guild = null;
         IDictionary<int, FullGuildUser> guildUsers = null;

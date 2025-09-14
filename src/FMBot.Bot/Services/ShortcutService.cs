@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
@@ -260,7 +261,7 @@ namespace FMBot.Bot.Services
         {
             if (context.Message != null)
             {
-                await context.Message.AddReactionAsync(Emote.Parse("<:shortcut:1416430054061117610>"));
+                await context.Message.AddReactionAsync(Emote.Parse(DiscordConstants.Shortcut));
             }
         }
     }

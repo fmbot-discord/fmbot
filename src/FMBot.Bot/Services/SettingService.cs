@@ -75,17 +75,21 @@ public class SettingService
                 settingsModel.BillboardTimeDescription = $"{year - 1}";
                 settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddYears(1).AddSeconds(-1);
             }
+
             if (!year.HasValue && month.HasValue)
             {
-                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { month.Value.ToString(), DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value) });
+                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue,
+                    new[] { month.Value.ToString(), DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value) });
                 settingsModel.Description = startUnspecified.ToString("MMMM");
                 settingsModel.AltDescription = $"month {startUnspecified.ToString("MMMM")}";
                 settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
                 settingsModel.BillboardTimeDescription = $"{startUnspecified.AddMonths(-1):MMMM}";
             }
+
             if (year.HasValue && month.HasValue)
             {
-                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { year.Value.ToString(), month.Value.ToString(), DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value) });
+                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue,
+                    new[] { year.Value.ToString(), month.Value.ToString(), DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value) });
 
                 settingsModel.Description = $"{startUnspecified:MMMM} {year}";
                 settingsModel.AltDescription = $"month {startUnspecified:MMMM} of {year}";
@@ -371,7 +375,9 @@ public class SettingService
 
         if (settingsModel.PlayDays.HasValue)
         {
-            var daysToGoBack = settingsModel.PlayDays.Value > 180 ? 180 : settingsModel.PlayDays.Value / (settingsModel.PlayDays.Value >= 90 ? 4 : 3);
+            var daysToGoBack = settingsModel.PlayDays.Value > 180
+                ? 180
+                : settingsModel.PlayDays.Value / (settingsModel.PlayDays.Value >= 90 ? 4 : 3);
 
             settingsModel.BillboardStartDateTime =
                 DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value + daysToGoBack));
@@ -473,6 +479,7 @@ public class SettingService
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, discogs);
             topListSettings.Discogs = true;
         }
+
         var timeListened = new[] { "tl", "timelistened" };
         if (Contains(extraOptions, timeListened))
         {
@@ -492,9 +499,11 @@ public class SettingService
                 if (int.TryParse(yearString, out var year) && year <= DateTime.UtcNow.Year && year >= 1900)
                 {
                     topListSettings.ReleaseYearFilter = year;
-                    topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, [$"r:{year}", $"released:{year}", option]);
+                    topListSettings.NewSearchValue =
+                        ContainsAndRemove(topListSettings.NewSearchValue, [$"r:{year}", $"released:{year}", option]);
                 }
             }
+
             if (option.StartsWith("d:", StringComparison.OrdinalIgnoreCase) ||
                 option.StartsWith("decade:", StringComparison.OrdinalIgnoreCase))
             {
@@ -536,6 +545,7 @@ public class SettingService
             newSearchValue = ContainsAndRemove(newSearchValue, image);
             userMode = ResponseMode.Image;
         }
+
         var embed = new[] { "embed", "text", "txt" };
         if (Contains(extraOptions, embed))
         {
@@ -548,7 +558,8 @@ public class SettingService
         return (userMode.Value, newSearchValue);
     }
 
-    public static WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions, UserType userType = UserType.User)
+    public static WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions,
+        UserType userType = UserType.User)
     {
         var whoKnowsSettings = currentWhoKnowsSettings;
 
@@ -784,9 +795,13 @@ public class SettingService
 
             if (otherUser != null)
             {
-                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "<@&", "<", "@", "!", ">", "<@&",
-                    otherUser.DiscordUserId.ToString(), $"<@!{otherUser.DiscordUserId}>", $"<@{otherUser.DiscordUserId}>", $"<@&{otherUser.DiscordUserId}>",
-                    otherUser.UserNameLastFM.ToLower() }, true);
+                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[]
+                {
+                    "<@&", "<", "@", "!", ">", "<@&",
+                    otherUser.DiscordUserId.ToString(), $"<@!{otherUser.DiscordUserId}>", $"<@{otherUser.DiscordUserId}>",
+                    $"<@&{otherUser.DiscordUserId}>",
+                    otherUser.UserNameLastFM.ToLower()
+                }, true);
 
                 if (discordGuild != null)
                 {
@@ -817,7 +832,8 @@ public class SettingService
 
                 if (foundLfmUser != null)
                 {
-                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName, $"lfm:{lfmUserName}" }, true);
+                    settingsModel.NewSearchValue =
+                        ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName, $"lfm:{lfmUserName}" }, true);
 
                     settingsModel.DisplayName = foundLfmUser.UserNameLastFM;
                     settingsModel.TimeZone = foundLfmUser.TimeZone ?? user.TimeZone;
@@ -1197,11 +1213,13 @@ public class SettingService
         {
             featuredView = FeaturedView.Global;
         }
+
         var friends = new[] { "friends", "f" };
         if (Contains(extraOptions, friends))
         {
             featuredView = FeaturedView.Friends;
         }
+
         var guild = new[] { "server", "guild", "s" };
         if (Contains(extraOptions, guild))
         {
@@ -1211,7 +1229,8 @@ public class SettingService
         return featuredView;
     }
 
-    public static GuildRankingSettings TimeSettingsToGuildRankingSettings(GuildRankingSettings guildRankingSettings, TimeSettingsModel timeSettings)
+    public static GuildRankingSettings TimeSettingsToGuildRankingSettings(GuildRankingSettings guildRankingSettings,
+        TimeSettingsModel timeSettings)
     {
         guildRankingSettings.ChartTimePeriod = timeSettings.TimePeriod;
         guildRankingSettings.TimeDescription = timeSettings.Description;
@@ -1220,8 +1239,10 @@ public class SettingService
         guildRankingSettings.BillboardTimeDescription = timeSettings.BillboardTimeDescription;
         guildRankingSettings.AmountOfDays = timeSettings.PlayDays.GetValueOrDefault();
         guildRankingSettings.AmountOfDaysWithBillboard = timeSettings.PlayDaysWithBillboard.GetValueOrDefault();
-        guildRankingSettings.StartDateTime = timeSettings.StartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildRankingSettings.AmountOfDays));
-        guildRankingSettings.BillboardStartDateTime = timeSettings.BillboardStartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildRankingSettings.AmountOfDaysWithBillboard));
+        guildRankingSettings.StartDateTime =
+            timeSettings.StartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildRankingSettings.AmountOfDays));
+        guildRankingSettings.BillboardStartDateTime =
+            timeSettings.BillboardStartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildRankingSettings.AmountOfDaysWithBillboard));
         guildRankingSettings.NewSearchValue = timeSettings.NewSearchValue;
 
         return guildRankingSettings;
@@ -1234,11 +1255,14 @@ public class SettingService
             return CrownViewType.Playcount;
         }
 
-        if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
+        if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") ||
+            extraOptions.Contains("plays"))
         {
             return CrownViewType.Playcount;
         }
-        if (extraOptions.Contains("r") || extraOptions.Contains("rc") || extraOptions.Contains("recent") || extraOptions.Contains("new") || extraOptions.Contains("latest"))
+
+        if (extraOptions.Contains("r") || extraOptions.Contains("rc") || extraOptions.Contains("recent") || extraOptions.Contains("new") ||
+            extraOptions.Contains("latest"))
         {
             return CrownViewType.Recent;
         }
@@ -1297,5 +1321,61 @@ public class SettingService
         }
 
         return null;
+    }
+
+    public static (FmEmbedType embedType, string newSearchValue) GetEmbedType(string extraOptions,
+        FmEmbedType defaultEmbedType = FmEmbedType.EmbedMini)
+    {
+        if (string.IsNullOrWhiteSpace(extraOptions))
+        {
+            return (defaultEmbedType, extraOptions);
+        }
+
+        var newSearchValue = extraOptions;
+
+        var embedMini = new[] { "embed", "embedmini", "mini" };
+        var embedFull = new[] { "embedfull", "full" };
+        var embedTiny = new[] { "embedtiny", "tiny" };
+        var textFull = new[] { "textfull", "txtfull" };
+        var textMini = new[] { "text", "textmini", "txtmini" };
+        var textOneLine = new[] { "textoneline", "oneline", "1line" };
+
+        if (Contains(extraOptions, embedTiny))
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, embedTiny);
+            return (FmEmbedType.EmbedTiny, newSearchValue);
+        }
+
+        if (Contains(extraOptions, embedFull))
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, embedFull);
+            return (FmEmbedType.EmbedFull, newSearchValue);
+        }
+
+        if (Contains(extraOptions, embedMini))
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, embedMini);
+            return (FmEmbedType.EmbedMini, newSearchValue);
+        }
+
+        if (Contains(extraOptions, textFull))
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, textFull);
+            return (FmEmbedType.TextFull, newSearchValue);
+        }
+
+        if (Contains(extraOptions, textOneLine))
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, textOneLine);
+            return (FmEmbedType.TextOneLine, newSearchValue);
+        }
+
+        if (Contains(extraOptions, textMini))
+        {
+            newSearchValue = ContainsAndRemove(newSearchValue, textMini);
+            return (FmEmbedType.TextMini, newSearchValue);
+        }
+
+        return (defaultEmbedType, extraOptions);
     }
 }

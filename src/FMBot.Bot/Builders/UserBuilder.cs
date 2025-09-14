@@ -2046,7 +2046,7 @@ public class UserBuilder
         response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         var name = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"## <:shortcut:1416430054061117610> {name}'s command shortcuts"));
+        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"## {DiscordConstants.Shortcut} {name}'s command shortcuts"));
         var prfx = context.Prefix == "/" ? "." : context.Prefix;
 
         if (shortcuts.Count == 0)
@@ -2273,7 +2273,7 @@ public class UserBuilder
         var inputCommands = this._commands.Search(input);
         if (inputCommands.IsSuccess && inputCommands.Commands.Any(a => a.Command.Name.Equals("shortcuts")))
         {
-            response.Embed.WithDescription($"❌ You can't use this input for a shortcut\n" +
+            response.Embed.WithDescription($"❌ You can't use this input for a shortcut\n\n" +
                                            $"`{input}`");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
@@ -2285,12 +2285,12 @@ public class UserBuilder
         {
             if (output.Contains('.'))
             {
-                response.Embed.WithDescription($"❌ No commands found for your output. Make sure you don't include the prefix (.).\n" +
+                response.Embed.WithDescription($"❌ No commands found for your output. Make sure you don't include the prefix (.).\n\n" +
                                                $"`{output}`");
             }
             else
             {
-                response.Embed.WithDescription($"❌ No commands found for your output\n" +
+                response.Embed.WithDescription($"❌ No commands found for your output\n\n" +
                                                $"`{output}`");
             }
 

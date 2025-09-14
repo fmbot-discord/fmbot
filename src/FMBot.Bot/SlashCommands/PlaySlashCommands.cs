@@ -100,7 +100,8 @@ public class PlaySlashCommands : InteractionModuleBase
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task NowPlayingAsync([Summary("user", "The user to show (defaults to self)")] string user = null)
+    public async Task NowPlayingAsync([Summary("user", "The user to show (defaults to self)")] string user = null,
+        [Summary("embed-type", "The embed type to use, can also be configured as a setting")]FmEmbedType? embedType = null )
     {
         var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel?.Id);
         if (existingFmCooldown.HasValue)
@@ -141,10 +142,7 @@ public class PlaySlashCommands : InteractionModuleBase
                 await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
             var response =
-                await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, contextUser), userSettings);
-
-            string[] emoteReactions = null;
-
+                await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, contextUser), userSettings, embedType ?? contextUser.FmEmbedType);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
