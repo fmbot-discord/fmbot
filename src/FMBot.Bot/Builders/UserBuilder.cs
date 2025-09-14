@@ -2253,7 +2253,7 @@ public class UserBuilder
         string output,
         int currentShortcutId = 0)
     {
-        if (existingShortcuts.Count >= 10)
+        if (existingShortcuts.Count >= 10 && currentShortcutId == 0)
         {
             response.Embed.WithDescription($"❌ You can't create more then 10 shortcuts");
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);

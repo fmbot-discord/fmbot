@@ -442,6 +442,15 @@ public class SupporterService
                     supporterSource = "updatepromo-lyrics";
                     break;
                 }
+                case 17:
+                {
+                    SetGuildSupporterPromoCache(guildId);
+                    message =
+                        $"*{DiscordConstants.Shortcut} Supporters can set up up to 10 text command shortcuts*";
+                    showUpgradeButton = true;
+                    supporterSource = "updatepromo-usershortcuts";
+                    break;
+                }
                 case 20:
                 {
                     message =
