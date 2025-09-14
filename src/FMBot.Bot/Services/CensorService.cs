@@ -14,6 +14,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
+using Web.InternalApi;
 
 namespace FMBot.Bot.Services;
 
@@ -23,12 +24,15 @@ public class CensorService
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
     private readonly DiscordShardedClient _client;
+    private readonly CensorHandler.CensorHandlerClient _censorHandler;
 
-    public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, DiscordShardedClient client)
+
+    public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, DiscordShardedClient client, CensorHandler.CensorHandlerClient censorHandler)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
         this._client = client;
+        this._censorHandler = censorHandler;
         this._botSettings = botSettings.Value;
     }
 
@@ -37,6 +41,18 @@ public class CensorService
         Safe = 1,
         Nsfw = 2,
         NotSafe = 3
+    }
+
+    public async Task<bool> ContainsBadWords(string content)
+    {
+        var request = new ContainsBadWordRequest
+        {
+            Text = content
+        };
+
+        var result = await this._censorHandler.ContainsBadWordAsync(request);
+
+        return result.HasBadWord;
     }
 
     public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embedToUpdate = null)

@@ -22,6 +22,7 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace FMBot.Bot.Builders;
 
@@ -43,6 +44,7 @@ public class UserBuilder
     private readonly UpdateService _updateService;
     private readonly IndexService _indexService;
     private readonly ShortcutService _shortcutService;
+    private readonly CensorService _censorService;
 
     private readonly CommandService _commands;
 
@@ -61,7 +63,9 @@ public class UserBuilder
         AdminService adminService,
         UpdateService updateService,
         IndexService indexService,
-        ShortcutService shortcutService, CommandService commands)
+        ShortcutService shortcutService,
+        CommandService commands,
+        CensorService censorService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -79,6 +83,7 @@ public class UserBuilder
         this._indexService = indexService;
         this._shortcutService = shortcutService;
         this._commands = commands;
+        this._censorService = censorService;
         this._botSettings = botSettings.Value;
     }
 
@@ -2138,7 +2143,7 @@ public class UserBuilder
         try
         {
             var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
-            var validatedInput = this.ValidateShortcut(response, shortcuts, input, output);
+            var validatedInput = await this.ValidateShortcut(response, context.ContextUser, shortcuts, input, output);
             if (!validatedInput.validated)
             {
                 return validatedInput.response;
@@ -2176,7 +2181,7 @@ public class UserBuilder
                 return response;
             }
 
-            var validatedInput = this.ValidateShortcut(response, shortcuts, input, output, shortcutId);
+            var validatedInput = await this.ValidateShortcut(response, context.ContextUser, shortcuts, input, output, shortcutId);
             if (!validatedInput.validated)
             {
                 return validatedInput.response;
@@ -2241,7 +2246,8 @@ public class UserBuilder
         return response;
     }
 
-    private (bool validated, ResponseModel response) ValidateShortcut(ResponseModel response,
+    private async Task<(bool validated, ResponseModel response)> ValidateShortcut(ResponseModel response,
+        User user,
         List<UserShortcut> existingShortcuts,
         string input,
         string output,
@@ -2290,6 +2296,38 @@ public class UserBuilder
 
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;
+            return (false, response);
+        }
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            response.Embed.WithDescription($"❌ You can't use this input for a shortcut");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.WrongInput;
+            return (false, response);
+        }
+
+        var badInput = await this._censorService.ContainsBadWords(input);
+        if (badInput)
+        {
+            Log.Information("User {userId} - {discordUserId} - {userNameLastFm} attempted offensive shortcut input - {input}", user.UserId,
+                user.DiscordUserId, user.UserNameLastFM, input);
+            response.Embed.WithDescription($"❌ Your input contains offensive words.\n\n" +
+                                           $"Please note that attempts to circumvent this filter or setting your input to other offensive content may result in action being taken on your account.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.Censored;
+            return (false, response);
+        }
+
+        var badOutput = await this._censorService.ContainsBadWords(output);
+        if (badOutput)
+        {
+            Log.Information("User {userId} - {discordUserId} - {userNameLastFm} attempted offensive shortcut output - {output}", user.UserId,
+                user.DiscordUserId, user.UserNameLastFM, output);
+            response.Embed.WithDescription($"❌ Your output contains offensive words.\n\n" +
+                                           $"Please note that attempts to circumvent this filter or setting your output to other offensive content may result in action being taken on your account.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.Censored;
             return (false, response);
         }
 

@@ -419,6 +419,7 @@ public class Startup
     {
         services.AddConfiguredGrpcClient<TimeEnrichment.TimeEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<StatusHandler.StatusHandlerClient>(this.Configuration);
+        services.AddConfiguredGrpcClient<CensorHandler.CensorHandlerClient>(this.Configuration);
         services.AddConfiguredGrpcClient<AlbumEnrichment.AlbumEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<ArtistEnrichment.ArtistEnrichmentClient>(this.Configuration);
         services.AddConfiguredGrpcClient<TrackEnrichment.TrackEnrichmentClient>(this.Configuration);

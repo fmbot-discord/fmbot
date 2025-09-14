@@ -23,6 +23,9 @@
     <None Update="Protos/album.proto">
       <GrpcServices>Server</GrpcServices>
     </None>
+    <None Update="Protos/censor.proto">
+      <GrpcServices>Server</GrpcServices>
+    </None>
     <None Update="Protos/status.proto">
       <GrpcServices>Server</GrpcServices>
     </None>
@@ -33,5 +36,6 @@
       <GrpcServices>Server</GrpcServices>
     </None>
   </ItemGroup>
+    
 
 </Project>

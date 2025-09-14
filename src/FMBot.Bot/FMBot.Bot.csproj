@@ -17,7 +17,6 @@
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
     <ItemGroup>
@@ -74,6 +73,7 @@
         <PackageReference Include="System.Reactive.Linq" Version="6.0.1"/>
         <Protobuf Include="..\Shared.Domain\Protos\time.proto" GrpcServices="Client" Link="Protos\time.proto"/>
         <Protobuf Include="..\Shared.Domain\Protos\status.proto" GrpcServices="Client" Link="Protos\status.proto"/>
+        <Protobuf Include="..\Shared.Domain\Protos\censor.proto" GrpcServices="Client" Link="Protos\censor.proto"/>
         <Protobuf Include="..\Shared.Domain\Protos\album.proto" GrpcServices="Client" Link="Protos\album.proto"/>
         <Protobuf Include="..\Shared.Domain\Protos\artist.proto" GrpcServices="Client" Link="Protos\artist.proto"/>
         <Protobuf Include="..\Shared.Domain\Protos\track.proto" GrpcServices="Client" Link="Protos\track.proto"/>

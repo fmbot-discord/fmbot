@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option csharp_namespace = "Web.InternalApi";
+
+package censor;
+
+service CensorHandler {
+  rpc ContainsBadWord (ContainsBadWordRequest) returns (ContainsBadWordReply);
+}
+
+message ContainsBadWordRequest {
+  string text = 1;
+}
+
+message ContainsBadWordReply {
+  bool hasBadWord = 1;
+}
