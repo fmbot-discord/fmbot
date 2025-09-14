@@ -202,9 +202,8 @@ public class LastfmApi : ILastfmApi
 
     private static string CreateMd5(string input)
     {
-        using var md5 = System.Security.Cryptography.MD5.Create();
         var inputBytes = Encoding.UTF8.GetBytes(input);
-        var hashBytes = md5.ComputeHash(inputBytes);
+        var hashBytes = System.Security.Cryptography.MD5.HashData(inputBytes);
 
         var sb = new StringBuilder();
         foreach (var t in hashBytes)
