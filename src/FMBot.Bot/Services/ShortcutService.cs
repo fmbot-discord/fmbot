@@ -51,7 +51,7 @@ namespace FMBot.Bot.Services
                 UserShortcuts.TryAdd(userShortcut.Key, userShortcut.Value);
             }
 
-            Log.Information($"Loaded shortcuts for {shortcutsByUserId.Count} users into memory.");
+            Log.Debug($"Loaded shortcuts for {shortcutsByUserId.Count} users into memory.");
         }
 
         private async Task LoadAllGuildShortcuts()
@@ -72,7 +72,7 @@ namespace FMBot.Bot.Services
                 GuildShortcuts.TryAdd(guildShortcut.Key, guildShortcut.Value);
             }
 
-            Log.Information($"Loaded shortcuts for {shortcutsByGuildId.Count} guilds into memory.");
+            Log.Debug($"Loaded shortcuts for {shortcutsByGuildId.Count} guilds into memory.");
         }
 
         public async Task<List<UserShortcut>> GetUserShortcuts(User user)

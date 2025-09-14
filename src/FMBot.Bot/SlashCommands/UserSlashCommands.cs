@@ -1609,7 +1609,7 @@ public class UserSlashCommands : InteractionModuleBase
             var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(new ContextModel(this.Context, contextUser));
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, true);
                 this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
                 return;
             }
@@ -1742,7 +1742,7 @@ public class UserSlashCommands : InteractionModuleBase
             var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(context);
             if (supporterRequiredResponse != null)
             {
-                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, true);
                 this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
                 return;
             }

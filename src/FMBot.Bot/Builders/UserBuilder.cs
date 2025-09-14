@@ -2052,8 +2052,17 @@ public class UserBuilder
         if (shortcuts.Count == 0)
         {
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
-            response.ComponentsContainer.AddComponent(new TextDisplayBuilder("You haven't set up any shortcuts yet.\n\n" +
-                                                                             $"Make sure you don't include the prefix ({prfx}) when creating shortcuts."));
+            var emptyState = new StringBuilder();
+            emptyState.AppendLine("You don't have any command shortcuts yet.");
+            emptyState.AppendLine();
+            emptyState.AppendLine("Some examples of what you can use as input and output:");
+            emptyState.AppendLine("- `today` > `chart today 2x2`");
+            emptyState.AppendLine("- `month` > `chart monthly 5x5`");
+            emptyState.AppendLine("- `gamble` > `milestone random`");
+            emptyState.AppendLine("- `gm` > `fm oneline`");
+            emptyState.AppendLine();
+            emptyState.AppendLine($"Make sure you don't include the `{prfx}` prefix  when creating shortcuts.");
+            response.ComponentsContainer.AddComponent(new TextDisplayBuilder(emptyState.ToString()));
         }
         else
         {
