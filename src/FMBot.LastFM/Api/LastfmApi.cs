@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Web;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Types;
@@ -21,7 +22,19 @@ namespace FMBot.LastFM.Api;
 
 public class LastfmApi : ILastfmApi
 {
-    private const string apiUrl = "http://ws.audioscrobbler.com/2.0/";
+    private const string ApiUrl = "https://ws.audioscrobbler.com/2.0/";
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters =
+        {
+            new TagsConverter(),
+            new TrackConverter(),
+            new LongToStringConverter(),
+            new GuidConverter(),
+            new BooleanConverter()
+        }
+    };
 
     private readonly HttpClient _client;
 
@@ -79,7 +92,7 @@ public class LastfmApi : ILastfmApi
             Statistics.LastfmApiCalls.WithLabels(call).Inc();
         }
 
-        var url = QueryHelpers.AddQueryString(apiUrl, parameters);
+        var url = QueryHelpers.AddQueryString(ApiUrl, parameters);
 
         var request = new HttpRequestMessage
         {
@@ -101,32 +114,16 @@ public class LastfmApi : ILastfmApi
         }
 
         var response = new Response<T>();
-
-        var jsonSerializerOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            Converters =
-            {
-                new TagsConverter(),
-                new TrackConverter(),
-                new LongToStringConverter(),
-                new GuidConverter(),
-                new BooleanConverter()
-            }
-        };
-
-        var stream = await httpResponse.Content.ReadAsStreamAsync();
-        using var streamReader = new StreamReader(stream);
-        var requestBody = await streamReader.ReadToEndAsync();
+        var requestBody = await httpResponse.Content.ReadAsStringAsync();
 
         try
         {
             // Check for error response first since last.fm returns 200 ok even if something isn't found
-            var errorResponse = CheckForError(response, requestBody, jsonSerializerOptions);
+            var errorResponse = CheckForError(response, requestBody, JsonOptions);
 
             if (errorResponse.Message == null)
             {
-                var deserializeObject = JsonSerializer.Deserialize<T>(requestBody, jsonSerializerOptions);
+                var deserializeObject = JsonSerializer.Deserialize<T>(requestBody, JsonOptions);
                 response.Content = deserializeObject;
                 response.Success = true;
             }

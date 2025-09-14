@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
@@ -540,7 +541,7 @@ public class LastFmRepository : ILastfmRepository
     {
         var queryParams = new Dictionary<string, string>
         {
-            { "artist", artistName },
+            { "artist",  HttpUtility.UrlEncode(artistName) },
             { "username", username },
             { "autocorrect", redirectsEnabled ? "1" : "0" }
         };

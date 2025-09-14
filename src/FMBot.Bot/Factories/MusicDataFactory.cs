@@ -145,12 +145,12 @@ public class MusicDataFactory
                     }).ToList();
                 }
 
-                // if (redirectsEnabled &&
-                //     !string.IsNullOrWhiteSpace(artistNameBeforeCorrect) &&
-                //     !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.OrdinalIgnoreCase))
-                // {
-                //     await ArtistRepository.AddOrUpdateArtistAlias(artistToAdd.Id, artistNameBeforeCorrect, connection);
-                // }
+                if (redirectsEnabled &&
+                    !string.IsNullOrWhiteSpace(artistNameBeforeCorrect) &&
+                    !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.OrdinalIgnoreCase))
+                {
+                    await ArtistRepository.AddOrUpdateArtistAlias(artistToAdd.Id, artistNameBeforeCorrect, connection);
+                }
 
                 if (amArtist != null)
                 {
@@ -192,12 +192,12 @@ public class MusicDataFactory
                 updateAppleMusic = this._appleMusicService.GetAppleMusicArtist(artistInfo.ArtistName);
             }
 
-            // if (redirectsEnabled &&
-            //     !string.IsNullOrWhiteSpace(artistNameBeforeCorrect) &&
-            //     !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.OrdinalIgnoreCase))
-            // {
-            //     await ArtistRepository.AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
-            // }
+            if (redirectsEnabled &&
+                !string.IsNullOrWhiteSpace(artistNameBeforeCorrect) &&
+                !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.OrdinalIgnoreCase))
+            {
+                await ArtistRepository.AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
+            }
 
             if (artistInfo.Description != null && dbArtist.LastFmDescription != artistInfo.Description)
             {
