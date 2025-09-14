@@ -198,8 +198,9 @@ public static class InteractionContextExtensions
                 await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
                 _ = interactiveService.DelayedDeleteMessageAsync(
                     await context.Interaction.FollowupAsync(
-                        $"Could not add automatic emoji reactions. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."),
-                    TimeSpan.FromSeconds(60));
+                        $"Could not add automatic emoji reactions.\n" +
+                        $"-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."),
+                    TimeSpan.FromSeconds(30));
             }
         }
     }
@@ -304,8 +305,9 @@ public static class InteractionContextExtensions
                 await context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
                 _ = interactiveService.DelayedDeleteMessageAsync(
                     await context.Interaction.FollowupAsync(
-                        $"Could not add automatic emoji reactions. Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."),
-                    TimeSpan.FromSeconds(60));
+                        $"Could not add automatic emoji reactions.\n" +
+                        $"-# Make sure the emojis still exist, the bot is the same server as where the emojis come from and the bot has permission to `Add Reactions`."),
+                    TimeSpan.FromSeconds(30));
             }
         }
 
