@@ -112,8 +112,8 @@ public class ChartBuilders
         {
             var count = albums?.Content?.TopAlbums?.Count ?? 0;
             var reply =
-                $"User hasn't listened to enough albums ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
-                $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
+                $"Not enough scrobbled albums ({count} of required {chartSettings.ImagesNeeded}) in {chartSettings.TimeSettings.Description} time period.\n\n" +
+                $"Try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
 
             if (chartSettings.SkipWithoutImage && chartSettings.FilteredArtist == null)
             {
