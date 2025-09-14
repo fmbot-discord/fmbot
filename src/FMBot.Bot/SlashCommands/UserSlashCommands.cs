@@ -193,6 +193,23 @@ public class UserSlashCommands : InteractionModuleBase
                         await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
                         break;
                     }
+                    case UserSetting.CommandShortcuts:
+                    {
+                        var supporterRequired =
+                            UserBuilder.ShortcutsSupporterRequired(new ContextModel(this.Context, contextUser));
+
+                        if (supporterRequired != null)
+                        {
+                            await this.Context.SendResponse(this.Interactivity, supporterRequired, ephemeral: true);
+                            this.Context.LogCommandUsed(supporterRequired.CommandResponse);
+                            return;
+                        }
+
+                        response = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+
+                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        break;
+                    }
                     case UserSetting.UserReactions:
                     {
                         var supporterRequired =
@@ -1578,11 +1595,30 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-    [ComponentInteraction($"{InteractionConstants.Shortcuts.Create}")]
-    public async Task CreateShortcut()
+    [ComponentInteraction($"{InteractionConstants.Shortcuts.Create}-*")]
+    public async Task CreateShortcut(string discordUserId)
     {
         try
         {
+            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(new ContextModel(this.Context, contextUser));
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
+            }
+
+            var parsedDiscordUserId = ulong.Parse(discordUserId);
+            if (parsedDiscordUserId != this.Context.User.Id)
+            {
+                var embed = new EmbedBuilder();
+                embed.WithColor(DiscordConstants.WarningColorOrange);
+                embed.WithDescription("Please run the command yourself if you want to create shortcuts.");
+                await this.Context.Interaction.RespondAsync(embed: embed.Build(), ephemeral: true);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            }
+
             var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
             await this.Context.Interaction.RespondWithModalAsync<CreateShortcutModal>(
                 $"{InteractionConstants.Shortcuts.CreateModal}-{message?.Id ?? 0}");
@@ -1668,7 +1704,6 @@ public class UserSlashCommands : InteractionModuleBase
                 var parsedOverviewMessageId = ulong.Parse(overviewMessageId);
                 if (parsedOverviewMessageId != 0)
                 {
-                    // Here is where the overview message should get updated
                     var list = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
                     await this.Context.UpdateMessageEmbed(list, overviewMessageId, defer: false);
                 }
@@ -1697,9 +1732,18 @@ public class UserSlashCommands : InteractionModuleBase
             var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
             var id = int.Parse(shortcutId);
             var message = (this.Context.Interaction as SocketMessageComponent)?.Message;
+            var context = new ContextModel(this.Context, contextUser);
+
+            var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(context);
+            if (supporterRequiredResponse != null)
+            {
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
+            }
 
             var response =
-                await this._userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser), id, message?.Id ?? 0);
+                await this._userBuilder.ManageShortcutAsync(context, id, message?.Id ?? 0);
 
             await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
             this.Context.LogCommandUsed(response.CommandResponse);

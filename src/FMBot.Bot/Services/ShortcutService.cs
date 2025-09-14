@@ -40,6 +40,7 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
 
             var shortcutsByUserId = allShortcuts
+                .Where(w => SupporterService.IsSupporter(w.User.UserType))
                 .GroupBy(u => u.User.DiscordUserId)
                 .ToDictionary(g => g.Key, g => g.Select(s => new Shortcut { Input = s.Input, Output = s.Output }).ToList());
 

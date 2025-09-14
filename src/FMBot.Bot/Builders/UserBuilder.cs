@@ -2039,13 +2039,16 @@ public class UserBuilder
         var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
 
         response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder("## <:shortcut:1416430054061117610> Your command shortcuts"));
+
+        var name = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
+        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"## <:shortcut:1416430054061117610> {name}'s command shortcuts"));
+        var prfx = context.Prefix == "/" ? "." : context.Prefix;
 
         if (shortcuts.Count == 0)
         {
             response.ComponentsContainer.AddComponent(new SeparatorBuilder());
             response.ComponentsContainer.AddComponent(new TextDisplayBuilder("You haven't set up any shortcuts yet.\n\n" +
-                                                                             "Make sure you don't include the prefix (.) when creating shortcuts."));
+                                                                             $"Make sure you don't include the prefix ({prfx}) when creating shortcuts."));
         }
         else
         {
@@ -2072,10 +2075,10 @@ public class UserBuilder
             [
                 new TextDisplayBuilder(
                     $"-# {shortcuts.Count}/10 shortcut slots used\n" +
-                    $"-# Any change takes a minute to apply in all servers")
+                    $"-# Any change takes a minute to apply in other servers")
             ],
             Accessory = new ButtonBuilder("Create", style: ButtonStyle.Primary,
-                customId: $"{InteractionConstants.Shortcuts.Create}")
+                customId: $"{InteractionConstants.Shortcuts.Create}-{context.DiscordUser.Id}")
         });
 
         return response;
@@ -2135,36 +2138,10 @@ public class UserBuilder
         try
         {
             var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
-            if (shortcuts.Count >= 10)
+            var validatedInput = this.ValidateShortcut(response, shortcuts, input, output);
+            if (!validatedInput.validated)
             {
-                response.Embed.WithDescription($"❌ You can't create more then 10 shortcuts");
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.Cooldown;
-                return response;
-            }
-
-            if (shortcuts.Any(a => string.Equals(a.Input, input, StringComparison.OrdinalIgnoreCase)))
-            {
-                response.Embed.WithDescription($"❌ You already have a shortcut with this input");
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
-            }
-            if (input.Contains("shortcuts", StringComparison.OrdinalIgnoreCase))
-            {
-                response.Embed.WithDescription($"❌ You can't create a shortcut with this input");
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
-            }
-
-            var commandResults = this._commands.Search(output);
-            if (!commandResults.IsSuccess || commandResults.Commands.Count == 0)
-            {
-                response.Embed.WithDescription($"❌ No commands found for your output");
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
+                return validatedInput.response;
             }
 
             await _shortcutService.AddOrUpdateUserShortcut(context.ContextUser, 0, input, output);
@@ -2191,7 +2168,6 @@ public class UserBuilder
         {
             var shortcuts = await _shortcutService.GetUserShortcuts(context.ContextUser);
             var shortcut = shortcuts.FirstOrDefault(s => s.Id == shortcutId);
-
             if (shortcut == null)
             {
                 response.Embed.WithDescription("❌ Shortcut not found.");
@@ -2200,29 +2176,11 @@ public class UserBuilder
                 return response;
             }
 
-            if (shortcuts.Any(a => a.Id != shortcut.Id &&
-                                   string.Equals(a.Input, input, StringComparison.OrdinalIgnoreCase)))
+            var validatedInput = this.ValidateShortcut(response, shortcuts, input, output, shortcutId);
+            if (!validatedInput.validated)
             {
-                response.Embed.WithDescription($"❌ You already have a shortcut with this input");
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
-            }
-            if (input.Equals("shortcuts", StringComparison.OrdinalIgnoreCase))
-            {
-                response.Embed.WithDescription($"❌ You can't create a shortcut with this input");
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
-            }
-
-            var commandResults = this._commands.Search(output);
-            if (!commandResults.IsSuccess || commandResults.Commands.Count == 0)
-            {
-                response.Embed.WithDescription($"❌ No commands found for your output");
-                response.Embed.WithColor(DiscordConstants.WarningColorOrange);
-                response.CommandResponse = CommandResponse.WrongInput;
-                return response;
+                return validatedInput.response;
+                ;
             }
 
             await _shortcutService.AddOrUpdateUserShortcut(context.ContextUser, shortcutId, input, output);
@@ -2281,5 +2239,60 @@ public class UserBuilder
         }
 
         return response;
+    }
+
+    private (bool validated, ResponseModel response) ValidateShortcut(ResponseModel response,
+        List<UserShortcut> existingShortcuts,
+        string input,
+        string output,
+        int currentShortcutId = 0)
+    {
+        if (existingShortcuts.Count >= 10)
+        {
+            response.Embed.WithDescription($"❌ You can't create more then 10 shortcuts");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.Cooldown;
+            return (false, response);
+        }
+
+        if (existingShortcuts.Any(a => a.Id != currentShortcutId &&
+                                       string.Equals(a.Input, input, StringComparison.OrdinalIgnoreCase)))
+        {
+            response.Embed.WithDescription($"❌ You already have a shortcut with this input");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.WrongInput;
+            return (false, response);
+        }
+
+        var inputCommands = this._commands.Search(input);
+        if (inputCommands.IsSuccess && inputCommands.Commands.Any(a => a.Command.Name.Equals("shortcuts")))
+        {
+            response.Embed.WithDescription($"❌ You can't use this input for a shortcut\n" +
+                                           $"`{input}`");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.WrongInput;
+            return (false, response);
+        }
+
+        var outputCommands = this._commands.Search(output);
+        if (!outputCommands.IsSuccess || outputCommands.Commands.Count == 0)
+        {
+            if (output.Contains('.'))
+            {
+                response.Embed.WithDescription($"❌ No commands found for your output. Make sure you don't include the prefix (.).\n" +
+                                               $"`{output}`");
+            }
+            else
+            {
+                response.Embed.WithDescription($"❌ No commands found for your output\n" +
+                                               $"`{output}`");
+            }
+
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.WrongInput;
+            return (false, response);
+        }
+
+        return (true, null);
     }
 }

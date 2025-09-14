@@ -661,28 +661,28 @@ public class UserCommands : BaseCommandModule
     [Alias("shortcut", "sc", "scs")]
     public async Task ShortcutsAsync()
     {
-        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+        try
         {
-            try
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
+            var context = new ContextModel(this.Context, prfx, contextUser);
+
+            var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(context);
+            if (supporterRequiredResponse != null)
             {
-                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-                var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
-
-                var response = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, prfx, contextUser));
-
-
-                await this.Context.SendResponse(this.Interactivity, response);
-                this.Context.LogCommandUsed(response.CommandResponse);
+                await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse);
+                this.Context.LogCommandUsed(supporterRequiredResponse.CommandResponse);
+                return;
             }
-            catch (Exception e)
-            {
-                await this.Context.HandleCommandException(e);
-            }
+
+            var response = await this._userBuilder.ListShortcutsAsync(context);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
-        else
+        catch (Exception e)
         {
-            await ReplyAsync(Constants.FmbotStaffOnly);
-            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            await this.Context.HandleCommandException(e);
         }
     }
 }

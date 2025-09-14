@@ -14,8 +14,10 @@ public enum UserSetting
     OutOfSync = 6,
     [Option("Spotify & Apple Music imports ⭐", "Add and manage your Spotify & Apple Music imports")]
     SpotifyImport = 10,
+    [Option("Command shortcuts ⭐", "Configure your text command shortcuts")]
+    CommandShortcuts = 11,
     [Option("User reactions ⭐", "Set personal automated emoji reactions")]
-    UserReactions = 11,
+    UserReactions = 12,
     [Option("Localization", "Set your timezone and number formatting")]
     Localization = 15,
     [Option("Music bot scrobbling", "Toggle automatically scrobbling other music bots")]
