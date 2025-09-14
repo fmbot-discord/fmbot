@@ -205,9 +205,14 @@ public class UserSlashCommands : InteractionModuleBase
                             return;
                         }
 
-                        response = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                        var serverEmbed = new EmbedBuilder()
+                            .WithColor(DiscordConstants.InformationColorBlue)
+                            .WithDescription("Check your DMs to continue with configuring your command shortcuts.");
 
-                        await this.Context.SendResponse(this.Interactivity, response, ephemeral: true);
+                        await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
+
+                        response = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                        await this.Context.User.SendMessageAsync("", components: response.ComponentsV2.Build());
                         break;
                     }
                     case UserSetting.UserReactions:

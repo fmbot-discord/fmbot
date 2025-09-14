@@ -2062,7 +2062,7 @@ public class UserBuilder
                         new TextDisplayBuilder(
                             $"**Input:** `{StringExtensions.Sanitize(shortcut.Input)}`\n**Output:** `{StringExtensions.Sanitize(shortcut.Output)}`")
                     ],
-                    Accessory = new ButtonBuilder("Edit", style: ButtonStyle.Secondary,
+                    Accessory = new ButtonBuilder(emote: new Emoji("📝"), style: ButtonStyle.Secondary,
                         customId: $"{InteractionConstants.Shortcuts.Manage}-{shortcut.Id}")
                 });
             }
@@ -2075,7 +2075,7 @@ public class UserBuilder
             [
                 new TextDisplayBuilder(
                     $"-# {shortcuts.Count}/10 shortcut slots used\n" +
-                    $"-# Any change takes a minute to apply in other servers")
+                    $"-# Any change takes a minute to apply in all servers")
             ],
             Accessory = new ButtonBuilder("Create", style: ButtonStyle.Primary,
                 customId: $"{InteractionConstants.Shortcuts.Create}-{context.DiscordUser.Id}")
