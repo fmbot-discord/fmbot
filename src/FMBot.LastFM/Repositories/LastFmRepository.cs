@@ -541,7 +541,7 @@ public class LastFmRepository : ILastfmRepository
     {
         var queryParams = new Dictionary<string, string>
         {
-            { "artist",  HttpUtility.UrlEncode(artistName) },
+            { "artist",  artistName },
             { "username", username },
             { "autocorrect", redirectsEnabled ? "1" : "0" }
         };
