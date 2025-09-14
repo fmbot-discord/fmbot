@@ -2059,7 +2059,6 @@ public class UserBuilder
         {
             foreach (var shortcut in shortcuts)
             {
-                response.ComponentsContainer.AddComponent(new SeparatorBuilder());
                 response.ComponentsContainer.AddComponent(new SectionBuilder
                 {
                     Components =
