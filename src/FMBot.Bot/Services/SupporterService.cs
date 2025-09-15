@@ -721,7 +721,8 @@ public class SupporterService
         await using var db = await this._contextFactory.CreateDbContextAsync();
 
         return await db.StripeSupporters
-            .FirstOrDefaultAsync(f => f.PurchaserDiscordUserId == discordUserId);
+            .FirstOrDefaultAsync(f => f.PurchaserDiscordUserId == discordUserId && f.Type == StripeSupporterType.Supporter ||
+                                      f.GiftReceiverDiscordUserId == discordUserId && !f.EntitlementDeleted);
     }
 
     public async Task<StripeSupporter> GetStripeSupporterByRecipient(ulong discordUserId)
