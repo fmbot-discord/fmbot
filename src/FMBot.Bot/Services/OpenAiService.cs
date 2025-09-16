@@ -177,7 +177,7 @@ public class OpenAiService
         var amountThisWeek =
             await db.AiGenerations.CountAsync(c => c.UserId == user.UserId && c.DateGenerated >= filterWeek);
 
-        var maxDailyUses = SupporterService.IsSupporter(user.UserType) ? 25 : 4;
+        var maxDailyUses = SupporterService.IsSupporter(user.UserType) ? 25 : 6;
         return (maxDailyUses - generatedToday, generatedToday >= maxDailyUses / 2, amountThisWeek);
     }
 
