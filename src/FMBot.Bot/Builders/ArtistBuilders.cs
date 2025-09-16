@@ -477,10 +477,10 @@ public class ArtistBuilders
         response.EmbedAuthor.WithUrl(artistSearch.Artist.ArtistUrl);
         response.Embed.WithAuthor(response.EmbedAuthor);
 
-        if (context.ContextUser.TotalPlaycount.HasValue && artistSearch.Artist.UserPlaycount is >= 10)
+        if (user.TotalPlaycount.HasValue && artistSearch.Artist.UserPlaycount is >= 10)
         {
             footer.AppendLine(
-                $"{(decimal)artistSearch.Artist.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all {determiner.ToLower()} scrobbles are on this artist");
+                $"{(decimal)artistSearch.Artist.UserPlaycount.Value / user.TotalPlaycount.Value:P} of all {determiner.ToLower()} scrobbles are on this artist");
         }
 
         var description = new StringBuilder();
