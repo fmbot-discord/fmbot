@@ -179,7 +179,7 @@ public class PlaySlashCommands : InteractionModuleBase
     public async Task RecentAsync(
         [Summary("User", "The user to show (defaults to self)")]
         string user = null,
-        [Summary("Artist", "Artist you want to filter on (Supporter only)")] [Autocomplete(typeof(ArtistAutoComplete))]
+        [Summary("Artist", "Artist you want to filter on")] [Autocomplete(typeof(ArtistAutoComplete))]
         string artistName = null)
     {
         await DeferAsync();

@@ -101,7 +101,7 @@ public class IndexSlashCommands : InteractionModuleBase
         UpdateType updateTypeInput = UpdateType.RecentPlays)
     {
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
-        var updateType = SettingService.GetUpdateType(Enum.GetName(updateTypeInput));
+        var updateType = SettingService.GetUpdateType(Enum.GetName(updateTypeInput), SupporterService.IsSupporter(contextUser.UserType));
 
         if (updateTypeInput == UpdateType.RecentPlays || updateType.updateType.HasFlag(UpdateType.RecentPlays))
         {

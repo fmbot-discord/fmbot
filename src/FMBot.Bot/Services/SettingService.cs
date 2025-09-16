@@ -641,7 +641,7 @@ public class SettingService
         return (true, extraOptions);
     }
 
-    public static (UpdateType updateType, bool optionPicked, string description) GetUpdateType(string extraOptions)
+    public static (UpdateType updateType, bool optionPicked, string description) GetUpdateType(string extraOptions, bool isSupporter)
     {
         var updateType = new UpdateType();
         var optionPicked = false;
@@ -661,7 +661,14 @@ public class SettingService
             {
                 updateType |= UpdateType.AllPlays;
                 optionPicked = true;
-                description.AppendLine("- All scrobbles");
+                if (isSupporter)
+                {
+                    description.AppendLine("- All scrobbles");
+                }
+                else
+                {
+                    description.AppendLine($"- Last {Constants.NonSupporterMaxSavedPlays} scrobbles");
+                }
             }
 
             var artists = new[] { "artists", "artist", "a" };

@@ -280,7 +280,7 @@ public class IndexService
         Log.Information("Index: {userId} / {discordUserId} / {UserNameLastFM} - Getting plays",
             user.UserId, user.DiscordUserId, user.UserNameLastFM);
 
-        var pages = UserHasHigherIndexLimit(user) ? 1000 : 25;
+        var pages = UserHasHigherIndexLimit(user) ? 1000 : Constants.NonSupporterMaxSavedPlayPages;
 
         var recentPlays = await this._dataSourceFactory.GetRecentTracksAsync(user.UserNameLastFM, 1000,
             sessionKey: user.SessionKeyLastFm, amountOfPages: pages, errorRetries: 5);

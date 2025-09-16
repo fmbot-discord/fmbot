@@ -121,12 +121,13 @@ public class IndexCommands : BaseCommandModule
     [Examples("update", "update full")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
+    [SupporterEnhanced("Supporters get their lifetime data cached in the bot, so all the commands that rely on this have the most complete data")]
     [Alias("u")]
     public async Task UpdateAsync([Remainder] string options = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        var updateType = SettingService.GetUpdateType(options);
+        var updateType = SettingService.GetUpdateType(options, SupporterService.IsSupporter(contextUser.UserType));
 
         if (!updateType.optionPicked)
         {

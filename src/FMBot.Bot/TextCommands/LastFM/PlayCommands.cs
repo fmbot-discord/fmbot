@@ -220,12 +220,12 @@ public class PlayCommands : BaseCommandModule
 
     [Command("recent", RunMode = RunMode.Async)]
     [Summary("Shows you or someone else's recent tracks")]
-    [Options(Constants.UserMentionExample)]
+    [Options(Constants.UserMentionExample, "Artist name")]
     [Examples("recent", "r", "recent @user", "recent lfm:fm-bot")]
     [Alias("recenttracks", "recents", "r", "rc")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    [SupporterEnhanced("Supporters can view their lifetime history and filter to specific artists")]
+    [SupporterEnhanced("Supporters can view their lifetime history")]
     public async Task RecentAsync([Remainder] string extraOptions = null)
     {
         _ = this.Context.Channel.TriggerTypingAsync();

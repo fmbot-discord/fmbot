@@ -475,21 +475,24 @@ public class PlayBuilder
             return GenericEmbedService.RecentScrobbleCallFailedResponse(recentTracks, userSettings.UserNameLastFm);
         }
 
-        var limit = SupporterService.IsSupporter(userSettings.UserType) ? int.MaxValue : 240;
+        var playsToAdd = SupporterService.IsSupporter(userSettings.UserType)
+            ? int.MaxValue
+            : !string.IsNullOrWhiteSpace(artistToFilter)
+                ? Constants.NonSupporterMaxSavedPlays
+                : 480;
         recentTracks.Content =
-            await this._playService.AddUserPlaysToRecentTracks(userSettings.UserId, recentTracks.Content, limit);
+            await this._playService.AddUserPlaysToRecentTracks(userSettings.UserId, recentTracks.Content, playsToAdd);
 
-        if (!SupporterService.IsSupporter(userSettings.UserType))
-        {
-            recentTracks.Content.RecentTracks = recentTracks.Content.RecentTracks.Take(239).ToList();
-        }
-
-        if (SupporterService.IsSupporter(userSettings.UserType) && !string.IsNullOrWhiteSpace(artistToFilter))
+        if (!string.IsNullOrWhiteSpace(artistToFilter))
         {
             recentTracks.Content.RecentTracks = recentTracks.Content.RecentTracks
                 .Where(w => artistToFilter.Equals(w.ArtistName, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
+        if (!SupporterService.IsSupporter(userSettings.UserType))
+        {
+            recentTracks.Content.RecentTracks = recentTracks.Content.RecentTracks.Take(479).ToList();
+        }
 
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
@@ -548,11 +551,11 @@ public class PlayBuilder
                 footer.AppendLine();
                 if (!SupporterService.IsSupporter(userSettings.UserType))
                 {
-                    footer.Append($"Sorry, artist filtering is only available for supporters");
+                    footer.Append($"Filtering cached plays to artist '{artistToFilter}'");
                 }
                 else
                 {
-                    footer.Append($"Filtering plays to artist '{artistToFilter}'");
+                    footer.Append($"Filtering all plays to artist '{artistToFilter}'");
                 }
             }
 
@@ -571,21 +574,29 @@ public class PlayBuilder
             pageCounter++;
         }
 
-        if (!pages.Any())
+        if (pages.Count == 0)
         {
-            pages.Add(new PageBuilder()
-                .WithDescription("No recent tracks found.")
-                .WithAuthor(response.EmbedAuthor));
+            var emptyPage = new PageBuilder()
+                .WithAuthor(response.EmbedAuthor);
+
+            if (!string.IsNullOrWhiteSpace(artistToFilter))
+            {
+                emptyPage.WithDescription(SupporterService.IsSupporter(userSettings.UserType)
+                    ? "No recent tracks found for this artist."
+                    : $"No recent tracks found for this artist. Get [.fmbot supporter]({Constants.GetSupporterOverviewLink}) to search through your lifetime history and more.");
+                emptyPage.WithFooter($"Filtering plays to artist '{artistToFilter}'");
+            }
+            else
+            {
+                emptyPage.WithDescription("No recent tracks found.");
+            }
+
+            pages.Add(emptyPage);
         }
 
-        if (SupporterService.IsSupporter(userSettings.UserType))
-        {
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages);
-        }
-        else
-        {
-            response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
-        }
+        response.StaticPaginator = SupporterService.IsSupporter(userSettings.UserType)
+            ? StringService.BuildStaticPaginator(pages)
+            : StringService.BuildSimpleStaticPaginator(pages);
 
         response.ResponseType = ResponseType.Paginator;
         return response;

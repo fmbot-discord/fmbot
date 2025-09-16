@@ -172,8 +172,8 @@ public class SupporterService
         thankYouMessage.AppendLine("📈 **Expanded commands with more statistics**");
         thankYouMessage.AppendLine("- `.profile` — Expanded profile with more insights and a yearly overview");
         thankYouMessage.AppendLine("- `.recap` — Extra pages with discoveries and listening time");
-        thankYouMessage.AppendLine("- `.recent` — See your lifetime listening history and filter to specific artists");
         thankYouMessage.AppendLine("- `.overview` — See your lifetime listening history day to day");
+        thankYouMessage.AppendLine("- `.recent` — See your lifetime listening history");
         thankYouMessage.AppendLine("- `.artisttracks` — See all tracks, even those outside of your top 6000");
         thankYouMessage.AppendLine("- `.artistalbums` — See all albums, even those outside of your top 5000");
         thankYouMessage.AppendLine();

@@ -1371,7 +1371,6 @@ public class AdminCommands : BaseCommandModule
             }
 
             var supporter = await this._supporterService.GetSupporter(discordUserId);
-
             var discordUser = await this.Context.Client.GetUserAsync(discordUserId);
 
             if (discordUser == null)
