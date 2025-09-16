@@ -1767,9 +1767,10 @@ public class UserService
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var counter = 0;
 
-        var filterDate = DateTime.UtcNow.AddMonths(-24);
+        var before = DateTime.UtcNow.AddMonths(-12);
+        var after = DateTime.UtcNow.AddMonths(-24);
         var inactiveUsers = await db.Users
-            .Where(w => w.LastUsed != null && w.LastUsed < filterDate)
+            .Where(w => w.LastUsed != null && w.LastUsed > after && w.LastUsed < before)
             .OrderBy(o => o.UserNameLastFM)
             .ToListAsync();
 

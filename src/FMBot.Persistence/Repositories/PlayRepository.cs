@@ -156,7 +156,7 @@ public static class PlayRepository
             FROM public.user_plays
             WHERE user_id = @userId
             ORDER BY time_played DESC
-            LIMIT 800
+            LIMIT 1000
         )
         DELETE FROM public.user_plays
         WHERE user_id = @userId
