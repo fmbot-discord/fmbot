@@ -56,8 +56,8 @@ public static class Constants
 
     public const int StreakSaveThreshold = 25;
 
-    public const int NonSupporterMaxSavedPlays = 25000;
-    public const int NonSupporterMaxSavedPlayPages = 25;
+    public const int NonSupporterMaxSavedPlays = 15000;
+    public const int NonSupporterMaxSavedPlayPages = 15;
 
     public const string GetPremiumServer = "This feature is not quite ready yet. Stay tuned!";
 

@@ -132,7 +132,7 @@ public static class PlayRepository
             @"DELETE FROM public.user_plays
         WHERE user_id = @userId
         AND (play_source = 0 OR play_source IS NULL)
-        AND time_played <= CURRENT_DATE - INTERVAL '14 months'
+        AND time_played <= CURRENT_DATE - INTERVAL '12 months'
         AND user_play_id NOT IN (
             SELECT user_play_id
             FROM (
@@ -146,6 +146,25 @@ public static class PlayRepository
 
         deletePlays.Parameters.AddWithValue("userId", userId);
         await deletePlays.ExecuteNonQueryAsync();
+    }
+
+    public static async Task PruneUserPlaysToRecentOnly(int userId, NpgsqlConnection connection)
+    {
+        await using var deleteCommand = new NpgsqlCommand(
+            @"WITH recent_plays AS (
+            SELECT user_play_id
+            FROM public.user_plays
+            WHERE user_id = @userId
+            ORDER BY time_played DESC
+            LIMIT 800
+        )
+        DELETE FROM public.user_plays
+        WHERE user_id = @userId
+        AND user_play_id NOT IN (SELECT user_play_id FROM recent_plays);",
+            connection);
+
+        deleteCommand.Parameters.AddWithValue("userId", userId);
+        await deleteCommand.ExecuteNonQueryAsync();
     }
 
     private static async Task RemoveSpecificPlays(IEnumerable<UserPlay> playsToRemove, NpgsqlConnection connection)
@@ -368,10 +387,10 @@ public static class PlayRepository
         }
 
         await using var renameArtistImports = new NpgsqlCommand("UPDATE public.user_plays " +
-                                                        "SET artist_name = @newArtistName " +
-                                                        "WHERE user_id = @userId " +
-                                                        "AND play_source != 0 " +
-                                                        "AND LOWER(artist_name) = LOWER(@oldArtistName)", connection);
+                                                                "SET artist_name = @newArtistName " +
+                                                                "WHERE user_id = @userId " +
+                                                                "AND play_source != 0 " +
+                                                                "AND LOWER(artist_name) = LOWER(@oldArtistName)", connection);
 
         renameArtistImports.Parameters.AddWithValue("userId", userId);
         renameArtistImports.Parameters.AddWithValue("oldArtistName", oldArtistName);
@@ -388,9 +407,9 @@ public static class PlayRepository
         }
 
         await using var deleteArtistImports = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                        "WHERE user_id = @userId " +
-                                                        "AND play_source != 0 " +
-                                                        "AND LOWER(artist_name) = LOWER(@artistName)", connection);
+                                                                "WHERE user_id = @userId " +
+                                                                "AND play_source != 0 " +
+                                                                "AND LOWER(artist_name) = LOWER(@artistName)", connection);
 
         deleteArtistImports.Parameters.AddWithValue("userId", userId);
         deleteArtistImports.Parameters.AddWithValue("artistName", artistName);
@@ -398,7 +417,8 @@ public static class PlayRepository
         await deleteArtistImports.ExecuteNonQueryAsync();
     }
 
-    public static async Task RenameAlbumImports(int userId, NpgsqlConnection connection, string artistName, string oldAlbumName, string newArtistName, string newAlbumName)
+    public static async Task RenameAlbumImports(int userId, NpgsqlConnection connection, string artistName, string oldAlbumName,
+        string newArtistName, string newAlbumName)
     {
         if (string.IsNullOrEmpty(artistName) || string.IsNullOrEmpty(oldAlbumName) ||
             string.IsNullOrEmpty(newArtistName) || string.IsNullOrEmpty(newAlbumName))
@@ -407,12 +427,12 @@ public static class PlayRepository
         }
 
         await using var renameAlbumImports = new NpgsqlCommand("UPDATE public.user_plays " +
-                                                        "SET artist_name = @newArtistName, " +
-                                                        "album_name = @newAlbumName " +
-                                                        "WHERE user_id = @userId " +
-                                                        "AND play_source != 0 " +
-                                                        "AND LOWER(artist_name) = LOWER(@artistName) " +
-                                                        "AND LOWER(album_name) = LOWER(@oldAlbumName)", connection);
+                                                               "SET artist_name = @newArtistName, " +
+                                                               "album_name = @newAlbumName " +
+                                                               "WHERE user_id = @userId " +
+                                                               "AND play_source != 0 " +
+                                                               "AND LOWER(artist_name) = LOWER(@artistName) " +
+                                                               "AND LOWER(album_name) = LOWER(@oldAlbumName)", connection);
 
         renameAlbumImports.Parameters.AddWithValue("userId", userId);
         renameAlbumImports.Parameters.AddWithValue("artistName", artistName);
@@ -431,10 +451,10 @@ public static class PlayRepository
         }
 
         await using var deleteAlbumImports = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                        "WHERE user_id = @userId " +
-                                                        "AND play_source != 0 " +
-                                                        "AND LOWER(artist_name) = LOWER(@artistName) " +
-                                                        "AND LOWER(album_name) = LOWER(@albumName)", connection);
+                                                               "WHERE user_id = @userId " +
+                                                               "AND play_source != 0 " +
+                                                               "AND LOWER(artist_name) = LOWER(@artistName) " +
+                                                               "AND LOWER(album_name) = LOWER(@albumName)", connection);
 
         deleteAlbumImports.Parameters.AddWithValue("userId", userId);
         deleteAlbumImports.Parameters.AddWithValue("artistName", artistName);
@@ -443,7 +463,8 @@ public static class PlayRepository
         await deleteAlbumImports.ExecuteNonQueryAsync();
     }
 
-    public static async Task RenameTrackImports(int userId, NpgsqlConnection connection, string artistName, string oldTrackName, string newArtistName, string newTrackName)
+    public static async Task RenameTrackImports(int userId, NpgsqlConnection connection, string artistName, string oldTrackName,
+        string newArtistName, string newTrackName)
     {
         if (string.IsNullOrEmpty(artistName) || string.IsNullOrEmpty(oldTrackName) ||
             string.IsNullOrEmpty(newArtistName) || string.IsNullOrEmpty(newTrackName))
@@ -452,12 +473,12 @@ public static class PlayRepository
         }
 
         await using var renameTrackImports = new NpgsqlCommand("UPDATE public.user_plays " +
-                                                        "SET artist_name = @newArtistName, " +
-                                                        "track_name = @newTrackName " +
-                                                        "WHERE user_id = @userId " +
-                                                        "AND play_source != 0 " +
-                                                        "AND LOWER(artist_name) = LOWER(@artistName) " +
-                                                        "AND LOWER(track_name) = LOWER(@oldTrackName)", connection);
+                                                               "SET artist_name = @newArtistName, " +
+                                                               "track_name = @newTrackName " +
+                                                               "WHERE user_id = @userId " +
+                                                               "AND play_source != 0 " +
+                                                               "AND LOWER(artist_name) = LOWER(@artistName) " +
+                                                               "AND LOWER(track_name) = LOWER(@oldTrackName)", connection);
 
         renameTrackImports.Parameters.AddWithValue("userId", userId);
         renameTrackImports.Parameters.AddWithValue("artistName", artistName);
@@ -476,10 +497,10 @@ public static class PlayRepository
         }
 
         await using var deleteTrackImports = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                        "WHERE user_id = @userId " +
-                                                        "AND play_source != 0 " +
-                                                        "AND LOWER(artist_name) = LOWER(@artistName) " +
-                                                        "AND LOWER(track_name) = LOWER(@trackName)", connection);
+                                                               "WHERE user_id = @userId " +
+                                                               "AND play_source != 0 " +
+                                                               "AND LOWER(artist_name) = LOWER(@artistName) " +
+                                                               "AND LOWER(track_name) = LOWER(@trackName)", connection);
 
         deleteTrackImports.Parameters.AddWithValue("userId", userId);
         deleteTrackImports.Parameters.AddWithValue("artistName", artistName);

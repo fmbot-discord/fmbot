@@ -1256,14 +1256,14 @@ public class UserService
             }
 
             if (user.UserType == UserType.User &&
-                (stats.PlayCount >= 24900 ||
+                (stats.PlayCount >= Constants.NonSupporterMaxSavedPlays - 100 ||
                  stats.TrackCount >= 5900 ||
                  stats.AlbumCount >= 4900 ||
                  stats.ArtistCount >= 3900))
             {
                 description.AppendLine();
                 description.AppendLine(
-                    $"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterDiscordLink}).");
+                    $"Want your full Last.fm history to be stored in the bot? [{Constants.GetSupporterButton}]({Constants.GetSupporterOverviewLink}).");
                 promo = true;
             }
         }
@@ -1758,6 +1758,36 @@ public class UserService
         }
 
         await connection.CloseAsync();
+
+        return counter;
+    }
+
+    public async Task<int> PrunePlaysForInactiveUsers()
+    {
+        await using var db = await this._contextFactory.CreateDbContextAsync();
+        var counter = 0;
+
+        var filterDate = DateTime.UtcNow.AddMonths(-24);
+        var inactiveUsers = await db.Users
+            .Where(w => w.LastUsed != null && w.LastUsed < filterDate)
+            .ToListAsync();
+
+        Log.Information("PrunePlaysForInactiveUsers: Found {count} inactive users", inactiveUsers.Count);
+
+        await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+        await connection.OpenAsync();
+
+        foreach (var inactiveUser in inactiveUsers)
+        {
+            Log.Information("PrunePlaysForInactiveUsers: #{counter} - Pruning for {userId} - {discordUserId} - {userNameLastFm}", counter,
+                inactiveUser.UserId, inactiveUser.DiscordUserId, inactiveUser.UserNameLastFM);
+            await PlayRepository.PruneUserPlaysToRecentOnly(inactiveUser.UserId, connection);
+            counter++;
+        }
+
+        await connection.CloseAsync();
+
+        Log.Information("PrunePlaysForInactiveUsers: Pruned {count} inactive users", inactiveUsers.Count);
 
         return counter;
     }

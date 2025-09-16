@@ -235,6 +235,30 @@ public class OwnerCommands : BaseCommandModule
         }
     }
 
+    [Command("pruneplaysoldusers")]
+    [Summary("Removes plays outside of last 1000 for inactive users")]
+    public async Task PrunePlaysForInactiveUsers()
+    {
+        if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+        {
+            try
+            {
+                await ReplyAsync($"Starting play pruner for inactive users.");
+                var usersPruned = await this._userService.PrunePlaysForInactiveUsers();
+                await ReplyAsync($"Pruned plays for {usersPruned} inactive users");
+            }
+            catch (Exception e)
+            {
+                await this.Context.HandleCommandException(e);
+            }
+        }
+        else
+        {
+            await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can start the prune process.");
+            this.Context.LogCommandUsed(CommandResponse.NoPermission);
+        }
+    }
+
     [Command("togglespecialguild", RunMode = RunMode.Async)]
     [Summary("Makes the server a special server")]
     [GuildOnly]
