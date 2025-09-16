@@ -2011,14 +2011,16 @@ public class UserBuilder
 
         if (!SupporterService.IsSupporter(context.ContextUser.UserType))
         {
+            var prfx = context.Prefix == "/" ? "." : context.Prefix;
             var promoText = new StringBuilder();
-            promoText.AppendLine("Become an .fmbot supporter and create shortcuts to easily access your favorite commands together with whatever option you configure.");
+            promoText.AppendLine(
+                "Become an .fmbot supporter and create shortcuts to easily access your favorite commands together with whatever option you configure.");
             promoText.AppendLine();
             promoText.AppendLine("Some examples of what you can use as input and output:");
-            promoText.AppendLine("- `today` > `chart today 2x2`");
-            promoText.AppendLine("- `bestie` > `fm @356268235697553409`");
-            promoText.AppendLine("- `gamble` > `milestone random`");
-            promoText.AppendLine("- `gm` > `fm oneline`");
+            promoText.AppendLine($"- `{prfx}today` > `chart today 2x2`");
+            promoText.AppendLine($"- `{prfx}bestie` > `fm @356268235697553409`");
+            promoText.AppendLine($"- `{prfx}gamble` > `milestone random`");
+            promoText.AppendLine($"- `{prfx}gm` > `fm oneline`");
 
             response.Embed.WithDescription(promoText.ToString());
 
@@ -2331,7 +2333,8 @@ public class UserBuilder
         var badOutput = await this._censorService.ContainsBadWords(output);
         if (badOutput)
         {
-            Log.Information("User {userId} - {discordUserId} - {userNameLastFm} attempted offensive shortcut output - {output}", user.UserId,
+            Log.Information("User {userId} - {discordUserId} - {userNameLastFm} attempted offensive shortcut output - {output}",
+                user.UserId,
                 user.DiscordUserId, user.UserNameLastFM, output);
             response.Embed.WithDescription($"❌ Your output contains offensive words.\n\n" +
                                            $"Please note that attempts to circumvent this filter or setting your output to other offensive content may result in action being taken on your account.");
