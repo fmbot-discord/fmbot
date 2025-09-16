@@ -1215,8 +1215,7 @@ public class UserBuilder
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         UserType userType,
-        (int amount, bool show, int amountThisWeek) usesLeftToday,
-        bool differentUserButNotAllowed)
+        (int amount, bool show, int amountThisWeek) usesLeftToday)
     {
         var response = new ResponseModel
         {
@@ -1257,7 +1256,7 @@ public class UserBuilder
                 description.Append(
                     $"You've ran out of command uses for today, unfortunately the service we use for this is not free. ");
                 description.AppendLine(
-                    $"[Become a supporter]({Constants.GetSupporterDiscordLink}) to raise your daily limit, get access to better responses and the possibility to use the command on others.");
+                    $"[Become a supporter]({Constants.GetSupporterOverviewLink}) to raise your daily limit and to get access to better responses.");
 
                 response.Components = new ComponentBuilder()
                     .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
@@ -1280,13 +1279,6 @@ public class UserBuilder
             {
                 description.AppendLine($"You've ran out of command uses for today.");
             }
-        }
-
-        if (differentUserButNotAllowed)
-        {
-            description.AppendLine();
-            description.AppendLine(
-                $"*Sorry, only [.fmbot supporters]({Constants.GetSupporterDiscordLink}) can use this command on others.*");
         }
 
         if (!timeSettings.DefaultPicked)
@@ -1503,8 +1495,8 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
-        response.Embed.WithDescription($"Only supporters can set their own automatic emoji reactions.\n\n" +
-                                       $"[Get supporter here]({Constants.GetSupporterDiscordLink}), or alternatively use the `{prfx}serverreactions` command to set server-wide automatic emoji reactions.");
+        response.Embed.WithDescription($"Only .fmbot supporters can set their own personal automatic emoji reactions.\n\n" +
+                                       $"Get .fmbot supporter or use `{prfx}serverreactions` as a server-wide alternative.");
 
         response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
             style: ButtonStyle.Primary,
@@ -2019,8 +2011,16 @@ public class UserBuilder
 
         if (!SupporterService.IsSupporter(context.ContextUser.UserType))
         {
-            response.Embed.WithDescription(
-                "Command shortcuts are only available for .fmbot supporters.");
+            var promoText = new StringBuilder();
+            promoText.AppendLine("Become an .fmbot supporter and create shortcuts to easily access your favorite commands together with whatever option you configure.");
+            promoText.AppendLine();
+            promoText.AppendLine("Some examples of what you can use as input and output:");
+            promoText.AppendLine("- `today` > `chart today 2x2`");
+            promoText.AppendLine("- `bestie` > `fm @356268235697553409`");
+            promoText.AppendLine("- `gamble` > `milestone random`");
+            promoText.AppendLine("- `gm` > `fm oneline`");
+
+            response.Embed.WithDescription(promoText.ToString());
 
             response.Components = new ComponentBuilder()
                 .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
@@ -2057,7 +2057,7 @@ public class UserBuilder
             emptyState.AppendLine();
             emptyState.AppendLine("Some examples of what you can use as input and output:");
             emptyState.AppendLine("- `today` > `chart today 2x2`");
-            emptyState.AppendLine("- `month` > `chart monthly 5x5`");
+            emptyState.AppendLine("- `bestie` > `fm @356268235697553409`");
             emptyState.AppendLine("- `gamble` > `milestone random`");
             emptyState.AppendLine("- `gm` > `fm oneline`");
             emptyState.AppendLine();
@@ -2088,7 +2088,7 @@ public class UserBuilder
             Components =
             [
                 new TextDisplayBuilder(
-                    $"-# {shortcuts.Count}/10 shortcut slots used\n" +
+                    $"-# ⭐ Supporter perk - {shortcuts.Count}/10 shortcut slots used\n" +
                     $"-# Any change takes a minute to apply in all servers")
             ],
             Accessory = new ButtonBuilder("Create", style: ButtonStyle.Primary,

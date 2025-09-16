@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -65,7 +66,8 @@ public class GuildCommands : BaseCommandModule
         try
         {
             var guildPermissions = await GuildService.GetGuildPermissionsAsync(this.Context);
-            var response = await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, prfx, contextUser), guildPermissions);
+            var response =
+                await this._guildSettingBuilder.GetGuildSettings(new ContextModel(this.Context, prfx, contextUser), guildPermissions);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -91,7 +93,8 @@ public class GuildCommands : BaseCommandModule
 
         try
         {
-            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser), guild, GuildViewType.Overview);
+            var response = await this._guildBuilders.MemberOverviewAsync(new ContextModel(this.Context, prfx, contextUser), guild,
+                GuildViewType.Overview);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -136,7 +139,8 @@ public class GuildCommands : BaseCommandModule
     [Command("serverreactions", RunMode = RunMode.Async)]
     [Summary("Sets the automatic emoji reactions for the `fm` and `featured` command.\n\n" +
              "Use this command without any emojis to disable.")]
-    [Examples("serverreactions :PagChomp: :PensiveBlob:", "serverreactions 😀 😯 🥵", "serverreactions 😀 😯 :PensiveBlob:", "serverreactions")]
+    [Examples("serverreactions :PagChomp: :PensiveBlob:", "serverreactions 😀 😯 🥵", "serverreactions 😀 😯 :PensiveBlob:",
+        "serverreactions")]
     [Alias("serversetreactions", "serveremojis", "serverreacts")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
@@ -202,8 +206,17 @@ public class GuildCommands : BaseCommandModule
 
         await this._guildService.SetGuildReactionsAsync(this.Context.Guild, emoteArray);
 
-        this._embed.WithTitle("Automatic emoji reactions set");
-        this._embed.WithDescription("Please check if all reactions have been applied to this message correctly.");
+
+        this._embed.WithTitle("Automatic server emoji reactions set");
+        var description = new StringBuilder();
+        description.AppendLine("Please check if all reactions have been applied to this message correctly.");
+        var user = await this._userService.GetUserAsync(this.Context.User.Id);
+        if (user != null)
+        {
+            description.AppendLine();
+            description.AppendLine("Use `.userreactions` to set your own personal emoji reactions.");
+        }
+        this._embed.WithDescription(description.ToString());
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var message = await ReplyAsync(embed: this._embed.Build());
@@ -289,7 +302,8 @@ public class GuildCommands : BaseCommandModule
     [RequiresIndex]
     [Command("togglecommand", RunMode = RunMode.Async)]
     [Summary("Enables or disables a command in a channel")]
-    [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands", "channelmode", "channelfmmode")]
+    [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands", "channelmode",
+        "channelfmmode")]
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task ToggleChannelCommand(string _ = null)
     {
@@ -351,7 +365,8 @@ public class GuildCommands : BaseCommandModule
         this._embed.AddField("Previous .fm cooldown",
             existingFmCooldown.HasValue ? $"{existingFmCooldown.Value} seconds" : "No cooldown");
 
-        var newFmCooldown = await this._guildService.SetChannelCooldownAsync(this.Context.Channel, guild.GuildId, newCooldown, this.Context.Guild.Id);
+        var newFmCooldown =
+            await this._guildService.SetChannelCooldownAsync(this.Context.Channel, guild.GuildId, newCooldown, this.Context.Guild.Id);
 
         this._embed.AddField("New .fm cooldown",
             newFmCooldown.HasValue ? $"{newFmCooldown.Value} seconds" : "No cooldown");

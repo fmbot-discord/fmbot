@@ -964,7 +964,7 @@ public class UserSlashCommands : InteractionModuleBase
     public async Task JudgeAsync(
         [Summary("Time-period", "Time period")] [Autocomplete(typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [Summary("User", "The user to judge (Supporter-only option)")]
+        [Summary("User", "The user to judge")]
         string user = null)
     {
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
@@ -973,20 +973,11 @@ public class UserSlashCommands : InteractionModuleBase
         var userSettings =
             await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var differentUserButNotAllowed = false;
-        if (userSettings.DifferentUser && contextUser.UserType == UserType.User)
-        {
-            userSettings =
-                await this._settingService.GetUser("", contextUser, this.Context.Guild, this.Context.User, true);
-
-            differentUserButNotAllowed = true;
-        }
-
         var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(contextUser);
 
         var response =
             UserBuilder.JudgeAsync(new ContextModel(this.Context, contextUser), userSettings, timeSettings,
-                contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
+                contextUser.UserType, commandUsesLeft);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

@@ -182,7 +182,7 @@ public class SupporterService
         thankYouMessage.AppendLine("- `.lyrics` — View lyrics for a track");
         thankYouMessage.AppendLine(
             $"- `.featured` — Chance to get featured on Supporter Sunday (next in {FeaturedService.GetDaysUntilNextSupporterSunday()} {StringExtensions.GetDaysString(FeaturedService.GetDaysUntilNextSupporterSunday())})");
-        thankYouMessage.AppendLine("- `.judge` — Better output and ability to use the command on others");
+        thankYouMessage.AppendLine("- `.judge` — Higher usage limit and better quality output");
         thankYouMessage.AppendLine("- `.jumble` / `.j` — Play unlimited Jumble games");
         thankYouMessage.AppendLine("- `.pixel` / `.px` — Play unlimited Pixel Jumble games");
         thankYouMessage.AppendLine();
@@ -346,7 +346,7 @@ public class SupporterService
                 {
                     SetGuildSupporterPromoCache(guildId);
                     message =
-                        $"*🔥 Supporters get an improved `{prfx}judge` command. They also get higher usage limits and the ability to use the command on others*";
+                        $"*🔥 Supporters get an improved `{prfx}judge` command with sharper outputs, and higher usage limits*";
                     showUpgradeButton = true;
                     supporterSource = "updatepromo-improvedjudge";
                     break;

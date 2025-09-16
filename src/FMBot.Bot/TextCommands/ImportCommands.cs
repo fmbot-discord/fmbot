@@ -40,7 +40,7 @@ public class ImportCommands : BaseCommandModule
     [Alias("import spotify", "import apple", "import applemusic", "spotifyimport", "spotifyimport")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Importing)]
-    [SupporterExclusive("Only supporters can import and use their Spotify or Apple Music history")]
+    [SupporterExclusive("Only supporters can import and access their Spotify or Apple Music history")]
     public async Task ImportSpotifyAsync([Remainder] string _ = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -79,7 +79,7 @@ public class ImportCommands : BaseCommandModule
     [Alias("modifyimport", "importsmodify", "modifyimports", "import modify")]
     [CommandCategories(CommandCategory.UserSettings)]
     [UsernameSetRequired]
-    [SupporterExclusive("Only supporters can import and use their Spotify or Apple Music history")]
+    [SupporterExclusive("Only supporters can import and access their Spotify or Apple Music history")]
     public async Task ModifyImportAsync([Remainder] string confirmation = null)
     {
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);

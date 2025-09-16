@@ -166,28 +166,20 @@ public class UserCommands : BaseCommandModule
     [Alias("roast", "compliment")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [CommandCategories(CommandCategory.Other)]
-    [SupporterEnhanced(
-        "Supporters get an improved AI model with better output, a higher usage limit and the ability to use the command on others")]
+    [SupporterEnhanced("Supporters get an improved AI model with better output and a higher usage limit")]
     public async Task JudgeAsync([Remainder] string extraOptions = null)
     {
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.Quarterly);
 
-        var differentUserButNotAllowed = false;
         var userSettings = await this._settingService.GetUser(timeSettings.NewSearchValue, contextUser, this.Context);
-
-        if (userSettings.DifferentUser && contextUser.UserType == UserType.User)
-        {
-            userSettings = await this._settingService.GetUser("", contextUser, this.Context, true);
-            differentUserButNotAllowed = true;
-        }
 
         var commandUsesLeft = await this._openAiService.GetJudgeUsesLeft(contextUser);
 
         var response =
             UserBuilder.JudgeAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings,
-                contextUser.UserType, commandUsesLeft, differentUserButNotAllowed);
+                contextUser.UserType, commandUsesLeft);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -271,6 +263,7 @@ public class UserCommands : BaseCommandModule
             "This will apply these emotes to all your `fm` and `featured` commands, regardless of server. " +
             "Please check if all reactions have been applied to this message correctly.");
         this._embed.WithColor(DiscordConstants.InformationColorBlue);
+        this._embed.WithFooter("⭐ Supporter perk");
 
         var message = await ReplyAsync(embed: this._embed.Build());
         this.Context.LogCommandUsed();
