@@ -252,7 +252,7 @@ public class AlbumCommands : BaseCommandModule
             NewSearchValue = albumValues
         };
 
-        var settings = SettingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
+        var settings = SettingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType, true);
 
         try
         {

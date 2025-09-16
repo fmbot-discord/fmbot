@@ -383,7 +383,7 @@ public class TrackCommands : BaseCommandModule
             AdminView = false,
             NewSearchValue = trackValues
         };
-        var settings = SettingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
+        var settings = SettingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType, true);
 
         try
         {

@@ -559,7 +559,7 @@ public class SettingService
     }
 
     public static WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions,
-        UserType userType = UserType.User)
+        UserType userType = UserType.User, bool globalWhoKnows = false)
     {
         var whoKnowsSettings = currentWhoKnowsSettings;
 
@@ -573,11 +573,14 @@ public class SettingService
         whoKnowsSettings.ResponseMode = mode.mode;
         whoKnowsSettings.NewSearchValue = mode.newSearchValue;
 
-        var hidePrivateUsers = new[] { "hp", "hideprivate", "hideprivateusers" };
-        if (Contains(extraOptions, hidePrivateUsers))
+        if (globalWhoKnows)
         {
-            whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, hidePrivateUsers);
-            whoKnowsSettings.HidePrivateUsers = true;
+            var hidePrivateUsers = new[] { "hp", "hideprivate", "hideprivateusers" };
+            if (Contains(extraOptions, hidePrivateUsers))
+            {
+                whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, hidePrivateUsers);
+                whoKnowsSettings.HidePrivateUsers = true;
+            }
         }
 
         var adminView = new[] { "av", "adminview" };

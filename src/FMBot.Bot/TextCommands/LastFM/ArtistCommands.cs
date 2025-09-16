@@ -486,7 +486,7 @@ public class ArtistCommands : BaseCommandModule
             };
 
             var settings =
-                SettingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
+                SettingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType, true);
 
             var response = await this._artistBuilders
                 .GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), settings);
