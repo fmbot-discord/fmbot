@@ -154,13 +154,14 @@ public static class PlayRepository
             @"WITH recent_plays AS (
             SELECT user_play_id
             FROM public.user_plays
-            WHERE user_id = @userId
+            WHERE user_id = @userId AND play_source = 0
             ORDER BY time_played DESC
             LIMIT 1000
         )
         DELETE FROM public.user_plays
         WHERE user_id = @userId
-        AND user_play_id NOT IN (SELECT user_play_id FROM recent_plays);",
+        AND user_play_id NOT IN (SELECT user_play_id FROM recent_plays)
+        AND play_source = 0;",
             connection);
 
         deleteCommand.Parameters.AddWithValue("userId", userId);

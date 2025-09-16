@@ -1770,6 +1770,7 @@ public class UserService
         var before = DateTime.UtcNow.AddMonths(-12);
         var after = DateTime.UtcNow.AddMonths(-24);
         var inactiveUsers = await db.Users
+            .Where(w => w.UserType == UserType.User)
             .Where(w => w.LastUsed != null && w.LastUsed > after && w.LastUsed < before)
             .OrderBy(o => o.UserNameLastFM)
             .ToListAsync();
