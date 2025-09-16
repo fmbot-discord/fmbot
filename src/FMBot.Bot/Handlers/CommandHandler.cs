@@ -203,13 +203,13 @@ public class CommandHandler
         bool update = false)
     {
         var messageContent = msg.Content[argPos..];
-        var shortcutResult = _shortcutService.FindShortcut(context, messageContent);
+        var shortcutResult = ShortcutService.FindShortcut(context, messageContent);
 
         if (shortcutResult.HasValue)
         {
             var (shortcut, remainingArgs) = shortcutResult.Value;
             messageContent = $"{shortcut.Output} {remainingArgs}".Trim();
-            _ = Task.Run(() => this._shortcutService.AddEmoteReaction(context));
+            _ = Task.Run(() => ShortcutService.AddShortcutReaction(context));
         }
 
         var searchResult = this._commands.Search(messageContent);

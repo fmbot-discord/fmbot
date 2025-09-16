@@ -185,7 +185,7 @@ namespace FMBot.Bot.Services
             return false;
         }
 
-        public async Task UpdateShortcutsForUser(User user)
+        private async Task UpdateShortcutsForUser(User user)
         {
             await using var db = await _contextFactory.CreateDbContextAsync();
             var userShortcuts = await db.UserShortcuts
@@ -194,21 +194,20 @@ namespace FMBot.Bot.Services
                 .Select(s => new Shortcut { Input = s.Input, Output = s.Output })
                 .ToListAsync();
 
-            if (userShortcuts.Any())
+            if (userShortcuts.Count != 0)
             {
                 UserShortcuts[user.DiscordUserId] = userShortcuts;
-                Log.Information("Updated shortcuts for user {UserId} in memory.", user.UserId);
             }
             else
             {
                 if (UserShortcuts.TryRemove(user.DiscordUserId, out _))
                 {
-                    Log.Information("Removed user {UserId} from shortcut cache as they have no shortcuts.", user.UserId);
+                    Log.Debug("Removed user {UserId} from shortcut cache as they have no shortcuts.", user.UserId);
                 }
             }
         }
 
-        public async Task UpdateShortcutsForGuild(Persistence.Domain.Models.Guild guild)
+        private async Task UpdateShortcutsForGuild(Persistence.Domain.Models.Guild guild)
         {
             await using var db = await _contextFactory.CreateDbContextAsync();
             var guildShortcuts = await db.GuildShortcuts
@@ -217,21 +216,20 @@ namespace FMBot.Bot.Services
                 .Select(s => new Shortcut { Input = s.Input, Output = s.Output })
                 .ToListAsync();
 
-            if (guildShortcuts.Any())
+            if (guildShortcuts.Count != 0)
             {
                 GuildShortcuts[guild.DiscordGuildId] = guildShortcuts;
-                Log.Information("Updated shortcuts for guild {GuildId} in memory.", guild.GuildId);
             }
             else
             {
                 if (GuildShortcuts.TryRemove(guild.DiscordGuildId, out _))
                 {
-                    Log.Information("Removed guild {GuildId} from shortcut cache as it has no shortcuts.", guild.GuildId);
+                    Log.Debug("Removed guild {GuildId} from shortcut cache as it has no shortcuts.", guild.GuildId);
                 }
             }
         }
 
-        public (Shortcut shortcut, string remainingArgs)? FindShortcut(ICommandContext context, string messageContent)
+        public static (Shortcut shortcut, string remainingArgs)? FindShortcut(ICommandContext context, string messageContent)
         {
             var userShortcuts = UserShortcuts.TryGetValue(context.User.Id, out var uShorts) ? uShorts : Enumerable.Empty<Shortcut>();
             var guildShortcuts = context.Guild != null && GuildShortcuts.TryGetValue(context.Guild.Id, out var gShorts)
@@ -257,7 +255,7 @@ namespace FMBot.Bot.Services
             return null;
         }
 
-        public async Task AddEmoteReaction(ShardedCommandContext context)
+        public static async Task AddShortcutReaction(ShardedCommandContext context)
         {
             if (context.Message != null)
             {

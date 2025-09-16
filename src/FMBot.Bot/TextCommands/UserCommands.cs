@@ -647,6 +647,7 @@ public class UserCommands : BaseCommandModule
 
     [Command("linkedroles")]
     [Alias("linkedrole", "updatelinkedroles", "updatelinkedrole")]
+    [UsernameSetRequired]
     public async Task UpdateLinkedRoles([Remainder] string trackValues = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -662,6 +663,7 @@ public class UserCommands : BaseCommandModule
     [Summary("Allows you to set text command shortcuts. Input is converted to your output while parameters are preserved. Shortcuts still need to use the normal text command prefix.")]
     [SupporterExclusive("Shortcuts are a feature exclusive to Supporters. Shortcuts are stored in-memory across all bot instances to ensure command handling remains fast, so there is limited availability.")]
     [Examples("yo` > `fm textoneline", "progress` > `chart 5x5 2025 skip")]
+    [UsernameSetRequired]
     public async Task ShortcutsAsync()
     {
         try
