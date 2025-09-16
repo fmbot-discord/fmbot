@@ -1770,6 +1770,7 @@ public class UserService
         var filterDate = DateTime.UtcNow.AddMonths(-24);
         var inactiveUsers = await db.Users
             .Where(w => w.LastUsed != null && w.LastUsed < filterDate)
+            .OrderBy(o => o.UserNameLastFM)
             .ToListAsync();
 
         Log.Information("PrunePlaysForInactiveUsers: Found {count} inactive users", inactiveUsers.Count);
