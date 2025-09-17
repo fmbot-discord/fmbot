@@ -129,20 +129,32 @@ public static class PlayRepository
     public static async Task RemoveOldPlays(int userId, NpgsqlConnection connection)
     {
         await using var deletePlays = new NpgsqlCommand(
-            @"DELETE FROM public.user_plays
+            @"
+    WITH plays_to_keep AS (
+        SELECT user_play_id
+        FROM public.user_plays
         WHERE user_id = @userId
-        AND (play_source = 0 OR play_source IS NULL)
-        AND time_played <= CURRENT_DATE - INTERVAL '12 months'
-        AND user_play_id NOT IN (
-            SELECT user_play_id
-            FROM (
-                SELECT user_play_id
-                FROM public.user_plays
-                WHERE user_id = @userId
-                ORDER BY time_played DESC
-                LIMIT 500
-            ) recent_plays
-        )", connection);
+        ORDER BY time_played DESC
+        LIMIT 500
+    ),
+    recent_plays AS (
+        SELECT user_play_id
+        FROM public.user_plays
+        WHERE user_id = @userId
+        ORDER BY time_played DESC
+        LIMIT 17500
+    )
+    DELETE FROM public.user_plays p
+    WHERE
+        p.user_id = @userId
+        AND (p.play_source = 0 OR p.play_source IS NULL)
+        -- Never delete the last 500 plays
+        AND p.user_play_id NOT IN (SELECT user_play_id FROM plays_to_keep)
+        -- Delete if older than 12 months OR outside last 17.5k
+        AND (
+            p.time_played < CURRENT_DATE - INTERVAL '12 months'
+            OR p.user_play_id NOT IN (SELECT user_play_id FROM recent_plays)
+        );", connection);
 
         deletePlays.Parameters.AddWithValue("userId", userId);
         await deletePlays.ExecuteNonQueryAsync();
@@ -172,16 +184,20 @@ public static class PlayRepository
     {
         foreach (var playToRemove in playsToRemove)
         {
-            await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
-                                                            "WHERE user_id = @userId AND time_played = @timePlayed " +
-                                                            "AND play_source != 1 AND play_source != 2", connection);
+            await using var deletePlays = new NpgsqlCommand(
+                "DELETE FROM public.user_plays " +
+                "WHERE user_play_id = @id AND user_id = @userId " +
+                "AND play_source != 1 AND play_source != 2",
+                connection
+            );
 
+            deletePlays.Parameters.AddWithValue("id", playToRemove.UserPlayId);
             deletePlays.Parameters.AddWithValue("userId", playToRemove.UserId);
-            deletePlays.Parameters.AddWithValue("timePlayed", playToRemove.TimePlayed);
 
             await deletePlays.ExecuteNonQueryAsync();
         }
     }
+
 
     public static async Task<ulong> InsertTimeSeriesPlays(IEnumerable<UserPlay> plays, NpgsqlConnection connection)
     {
