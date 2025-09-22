@@ -53,8 +53,9 @@ public class PlayDataSourceRepository : IPlayDataSourceRepository
         await connection.OpenAsync();
 
         var fromTimeStamp = from.HasValue ? DateTimeOffset.FromUnixTimeSeconds(from.Value).UtcDateTime : new DateTime(2000, 1, 1);
+        var untilTimeStamp = until.HasValue ? DateTimeOffset.FromUnixTimeSeconds(until.Value).UtcDateTime : (DateTime?)null;
 
-        return await PlayRepository.GetUserPlayCount(user.UserId, connection, user.DataSource, start: fromTimeStamp);
+        return await PlayRepository.GetUserPlayCount(user.UserId, connection, user.DataSource, start: fromTimeStamp, end: untilTimeStamp);
     }
 
     public async Task<long?> GetStoredPlayCountBeforeDateAsync(User user, DateTime until)
