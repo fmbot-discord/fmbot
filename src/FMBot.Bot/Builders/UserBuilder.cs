@@ -2296,7 +2296,7 @@ public class UserBuilder
         {
             if (output.Contains('.'))
             {
-                response.Embed.WithDescription($"❌ No commands found for your output. Make sure you don't include the prefix (.).\n\n" +
+                response.Embed.WithDescription($"❌ No commands found for your output. Make sure you don't include the `.` prefix.\n\n" +
                                                $"`{output}`");
             }
             else

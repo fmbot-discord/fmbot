@@ -56,12 +56,12 @@ public class SettingService
         {
             var startUnspecified = new DateTime(
                 year.GetValueOrDefault(DateTime.UtcNow.Year),
-                month.GetValueOrDefault(1),
+                month?.monthNumber ?? 1,
                 1);
 
             settingsModel.StartDateTime = TimeZoneInfo.ConvertTimeToUtc(startUnspecified.Date, timeZoneInfo);
 
-            if (month.HasValue && month.Value > localTime.Month && !year.HasValue)
+            if (month.HasValue && month.Value.monthNumber > localTime.Month && !year.HasValue)
             {
                 settingsModel.StartDateTime = settingsModel.StartDateTime.Value.AddYears(-1);
                 year = settingsModel.StartDateTime.Value.Year;
@@ -69,7 +69,7 @@ public class SettingService
 
             if (year.HasValue && !month.HasValue)
             {
-                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { year.Value.ToString() });
+                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, [year.Value.ToString()]);
                 settingsModel.Description = $"{year}";
                 settingsModel.AltDescription = $"year {year}";
                 settingsModel.BillboardTimeDescription = $"{year - 1}";
@@ -79,7 +79,8 @@ public class SettingService
             if (!year.HasValue && month.HasValue)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue,
-                    new[] { month.Value.ToString(), DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value) });
+                    [month.Value.monthName, DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value.monthNumber)]);
+
                 settingsModel.Description = startUnspecified.ToString("MMMM");
                 settingsModel.AltDescription = $"month {startUnspecified.ToString("MMMM")}";
                 settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
@@ -89,7 +90,7 @@ public class SettingService
             if (year.HasValue && month.HasValue)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue,
-                    new[] { year.Value.ToString(), month.Value.ToString(), DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value) });
+                    [year.Value.ToString(), month.Value.monthName, DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value.monthNumber)]);;
 
                 settingsModel.Description = $"{startUnspecified:MMMM} {year}";
                 settingsModel.AltDescription = $"month {startUnspecified:MMMM} of {year}";
@@ -1008,7 +1009,7 @@ public class SettingService
         return null;
     }
 
-    public static int? GetMonth(string extraOptions)
+    public static (string monthName, int monthNumber)? GetMonth(string extraOptions)
     {
         if (string.IsNullOrWhiteSpace(extraOptions))
         {
@@ -1020,7 +1021,7 @@ public class SettingService
         {
             foreach (var month in Months.Where(month => option.ToLower().StartsWith(month.Key)))
             {
-                return month.Value;
+                return (month.Key, month.Value);
             }
         }
 
