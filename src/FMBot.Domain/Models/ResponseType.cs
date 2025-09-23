@@ -10,5 +10,6 @@ public enum ResponseType
     ImageWithEmbed = 4,
     ImageOnly = 5,
     SupporterRequired = 6,
-    ComponentsV2 = 7
+    ComponentsV2 = 7,
+    ComponentPaginator = 8
 }

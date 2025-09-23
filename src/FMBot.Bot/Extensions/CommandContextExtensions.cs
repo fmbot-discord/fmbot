@@ -188,11 +188,11 @@ public static class CommandContextExtensions
                 responseMessage = embed;
                 break;
             case ResponseType.Paginator:
-                var paginator = await interactiveService.SendPaginatorAsync(
+                var staticPaginator = await interactiveService.SendPaginatorAsync(
                     response.StaticPaginator.Build(),
                     context.Channel,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-                responseMessage = paginator.Message;
+                responseMessage = staticPaginator.Message;
                 break;
             case ResponseType.ImageWithEmbed:
                 response.FileName = StringExtensions.ReplaceInvalidChars(response.FileName);
@@ -234,6 +234,13 @@ public static class CommandContextExtensions
                     responseMessage = components;
                 }
 
+                break;
+            case ResponseType.ComponentPaginator:
+                var componentPaginator = await interactiveService.SendPaginatorAsync(
+                    response.ComponentPaginator.Build(),
+                    context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                responseMessage = componentPaginator.Message;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();

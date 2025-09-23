@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -910,18 +911,29 @@ public class PlayBuilder
 
         var dayPages = dailyOverview.Days.OrderByDescending(o => o.Date).Chunk(amount).ToList();
 
-        response.EmbedAuthor.WithName(
-            $"Daily overview for {StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}");
-        response.EmbedAuthor.WithUrl(
-            $"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS");
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(dayPages.Count)
+            .WithActionOnCancellation(ActionOnStop.DeleteMessage)
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
 
-        var pageCounter = 1;
-        var pages = new List<PageBuilder>();
-        foreach (var days in dayPages)
+        response.ResponseType = ResponseType.ComponentPaginator;
+        response.ComponentPaginator = paginator;
+
+        return response;
+
+        IPage GeneratePage(IComponentPaginator p)
         {
+            var page = dayPages.ElementAtOrDefault(p.CurrentPageIndex);
+            if (page is null)
+            {
+                // return new PageBuilder().WithDescription("No plays found for this page.");
+            }
+
+            var container = new ContainerBuilder();
             var plays = new List<UserPlay>();
 
-            foreach (var day in days.OrderByDescending(o => o.Date))
+            foreach (var day in page.OrderByDescending(o => o.Date))
             {
                 var genreString = new StringBuilder();
                 if (day.TopGenres != null && day.TopGenres.Any())
@@ -948,56 +960,54 @@ public class PlayBuilder
                 fieldContent.AppendLine(day.TopAlbum);
                 fieldContent.Append(day.TopTrack);
 
-                response.Embed.AddField(
-                    $"<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D> - " +
-                    $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} - " +
-                    $"{day.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(day.Playcount)}",
-                    fieldContent.ToString()
-                );
+                var content = new StringBuilder();
+                content.AppendLine($"<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D> - " +
+                                   $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} - " +
+                                   $"{day.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(day.Playcount)}");
+                content.AppendLine(fieldContent.ToString());
+                container.Components.Add(new TextDisplayBuilder(content.ToString()));
 
                 plays.AddRange(day.Plays);
             }
 
-            var pageFooter = new StringBuilder();
-
-            pageFooter.Append(amount == 1 ? $"Day" : $"Page");
-            pageFooter.Append($" {pageCounter}/{dayPages.Count}");
+            var footer = new StringBuilder();
+            footer.Append(amount == 1 ? $"Day" : $"Page");
+            footer.Append($" {p.CurrentPageIndex + 1}/{p.PageCount}");
 
             if (amount == 7)
             {
-                pageFooter.Append($" - 🫡");
+                footer.Append($" - 🫡");
             }
 
-            pageFooter.AppendLine();
-            pageFooter.AppendLine(
+            footer.AppendLine();
+            footer.AppendLine(
                 $"Top genres, artist, album and track per {amount.Format(context.NumberFormat)} days");
-            pageFooter.AppendLine(
-                $"{PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(days), 1).Format(context.NumberFormat)} per day");
+            footer.AppendLine(
+                $"{PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(page), 1).Format(context.NumberFormat)} per day");
 
-            if (days.Count() < amount)
+            if (page.Count() < amount)
             {
-                pageFooter.AppendLine($"{amount - days.Count()} days not shown because of no plays.");
+                footer.AppendLine($"{amount - page.Count()} days not shown because of no plays.");
             }
 
-            pages.Add(new PageBuilder()
-                .WithFields(response.Embed.Fields)
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(pageFooter.ToString()));
-            pageCounter++;
-            response.Embed.Fields = new();
-        }
+            var components = new ComponentBuilderV2()
+                .WithContainer(container)
+                .WithContainer(new ContainerBuilder()
+                    .WithActionRow(new ActionRowBuilder()
+                        .AddPreviousButton(p, style: ButtonStyle.Secondary)
+                        .AddNextButton(p, style: ButtonStyle.Secondary)
+                        .AddStopButton(p))
+                    .WithSeparator()
+                    .WithTextDisplay(footer.ToString())
+                    .WithAccentColor(Color.Blue));
 
-        if (SupporterService.IsSupporter(userSettings.UserType))
-        {
-            response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+            return new PageBuilder()
+                .WithTitle(
+                    $"Daily overview for {StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}")
+                .WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS")
+                .WithComponents(components.Build())
+                .Build();
         }
-        else
-        {
-            response.StaticPaginator = StringService.BuildSimpleStaticPaginator(pages);
-        }
-
-        response.ResponseType = ResponseType.Paginator;
-        return response;
     }
 
     public async Task<ResponseModel> PaceAsync(ContextModel context,

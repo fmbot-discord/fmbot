@@ -48,6 +48,8 @@ public class ResponseModel
     public string[] EmoteReactions { get; set; }
 
     public StaticPaginatorBuilder StaticPaginator { get; set; }
+    
+    public ComponentPaginatorBuilder ComponentPaginator { get; set; }
 
     public CommandResponse CommandResponse { get; set; }
 
