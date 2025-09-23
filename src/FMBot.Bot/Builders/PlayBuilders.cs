@@ -438,7 +438,8 @@ public class PlayBuilder
     public async Task<ResponseModel> RecentAsync(
         ContextModel context,
         UserSettingsModel userSettings,
-        string artistToFilter = null)
+        string artistToFilter = null,
+        bool showImages = false)
     {
         var response = new ResponseModel
         {
@@ -495,55 +496,71 @@ public class PlayBuilder
             recentTracks.Content.RecentTracks = recentTracks.Content.RecentTracks.Take(479).ToList();
         }
 
-        var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        var embedTitle = !userSettings.DifferentUser
-            ? $"{requesterUserTitle}"
-            : $"{userSettings.DisplayName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
-
-        response.EmbedAuthor.WithName($"Latest tracks for {embedTitle}");
-
-        if (!context.SlashCommand)
-        {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
-        }
-
-        response.EmbedAuthor.WithUrl(recentTracks.Content.UserRecentTracksUrl);
-        response.Embed.WithAuthor(response.EmbedAuthor);
-
-        var firstTrack = recentTracks.Content.RecentTracks.ElementAtOrDefault(0);
-        string thumbnailUrl = null;
-        if (firstTrack?.AlbumCoverUrl != null)
-        {
-            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild,
-                context.DiscordChannel,
-                firstTrack.AlbumName, firstTrack.ArtistName, firstTrack.AlbumCoverUrl);
-            if (safeForChannel == CensorService.CensorResult.Safe)
-            {
-                thumbnailUrl = firstTrack.AlbumCoverUrl;
-            }
-        }
-
-        var pages = new List<PageBuilder>();
-
         var trackPages = recentTracks.Content.RecentTracks
             .ToList()
-            .ChunkBy(6);
-        var pageCounter = 1;
+            .ChunkBy(6)
+            .ToList();
 
-        foreach (var trackPage in trackPages)
+        if (trackPages.Count == 0)
         {
-            var trackPageString = new StringBuilder();
-            foreach (var track in trackPage)
+            response.ResponseType = ResponseType.Text;
+            response.Text = "No recent tracks found.";
+            if (!string.IsNullOrWhiteSpace(artistToFilter))
             {
-                trackPageString.AppendLine(StringService
-                    .TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled));
+                response.Text = SupporterService.IsSupporter(userSettings.UserType)
+                    ? "No recent tracks found for this artist."
+                    : $"No recent tracks found for this artist. Get [.fmbot supporter]({Constants.GetSupporterOverviewLink}) to search through your lifetime history and more.";
             }
 
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var paginator = new ComponentPaginatorBuilder()
+            .WithPageFactory(GeneratePage)
+            .WithPageCount(trackPages.Count)
+            .WithActionOnTimeout(ActionOnStop.DisableInput);
+
+        response.ResponseType = ResponseType.ComponentPaginator;
+        response.ComponentPaginator = paginator;
+
+        return response;
+
+        IPage GeneratePage(IComponentPaginator p)
+        {
+            var pageIndex = p.CurrentPageIndex;
+            var trackPage = trackPages.ElementAtOrDefault(pageIndex);
+
+            var container = new ContainerBuilder();
+
+            container.WithTextDisplay(
+                userSettings.DisplayName.ContainsEmoji()
+                    ? $"### Latest tracks for {StringExtensions.Sanitize(userSettings.DisplayName)} {userSettings.UserType.UserTypeToIcon()}"
+                    : $"### Latest tracks for [{StringExtensions.Sanitize(userSettings.DisplayName)}]({recentTracks.Content.UserRecentTracksUrl}) {userSettings.UserType.UserTypeToIcon()}");
+
+            foreach (var track in trackPage)
+            {
+                container.WithSeparator();
+
+                if (track.AlbumCoverUrl != null && showImages)
+                {
+                    container.WithSection([
+                            new TextDisplayBuilder(StringService
+                                .TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled))
+                        ],
+                        new ThumbnailBuilder(track.AlbumCoverUrl));
+                }
+                else
+                {
+                    container.WithTextDisplay(StringService
+                        .TrackToLinkedStringWithTimestamp(track, context.ContextUser.RymEnabled));
+                }
+            }
+
+            container.WithSeparator();
             var footer = new StringBuilder();
-
             ImportService.AddImportDescription(footer, [trackPage.Last().PlaySource ?? PlaySource.LastFm]);
-
-            footer.Append($"Page {pageCounter}/{trackPages.Count.Format(context.NumberFormat)}");
+            footer.Append($"-# {pageIndex + 1}/{trackPages.Count.Format(context.NumberFormat)}");
             footer.Append(
                 $" - {userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount.Format(context.NumberFormat)} scrobbles");
 
@@ -552,56 +569,27 @@ public class PlayBuilder
                 footer.AppendLine();
                 if (!SupporterService.IsSupporter(userSettings.UserType))
                 {
-                    footer.Append($"Filtering cached plays to artist '{artistToFilter}'");
+                    footer.Append($"-# Filtering cached plays to artist **[{artistToFilter}]({LastfmUrlExtensions.GetArtistUrl(artistToFilter)})**");
                 }
                 else
                 {
-                    footer.Append($"Filtering all plays to artist '{artistToFilter}'");
+                    footer.Append($"-# Filtering all plays to artist **[{artistToFilter}]({LastfmUrlExtensions.GetArtistUrl(artistToFilter)})**");
                 }
             }
 
-            var page = new PageBuilder()
-                .WithDescription(StringExtensions.TruncateLongString(trackPageString.ToString(), 4095))
-                .WithAuthor(response.EmbedAuthor)
-                .WithFooter(footer.ToString());
+            container.WithTextDisplay(footer.ToString());
+            container.WithActionRow(StringService.GetPaginationActionRow(p));
 
-            if (pageCounter == 1 && thumbnailUrl != null)
-            {
-                page.WithThumbnailUrl(thumbnailUrl);
-            }
+            var components = new ComponentBuilderV2()
+                .WithContainer(container);
 
-            pages.Add(page);
+            var pageBuilder = new PageBuilder()
+                .WithComponents(components.Build());
 
-            pageCounter++;
+            return pageBuilder.Build();
         }
-
-        if (pages.Count == 0)
-        {
-            var emptyPage = new PageBuilder()
-                .WithAuthor(response.EmbedAuthor);
-
-            if (!string.IsNullOrWhiteSpace(artistToFilter))
-            {
-                emptyPage.WithDescription(SupporterService.IsSupporter(userSettings.UserType)
-                    ? "No recent tracks found for this artist."
-                    : $"No recent tracks found for this artist. Get [.fmbot supporter]({Constants.GetSupporterOverviewLink}) to search through your lifetime history and more.");
-                emptyPage.WithFooter($"Filtering plays to artist '{artistToFilter}'");
-            }
-            else
-            {
-                emptyPage.WithDescription("No recent tracks found.");
-            }
-
-            pages.Add(emptyPage);
-        }
-
-        response.StaticPaginator = SupporterService.IsSupporter(userSettings.UserType)
-            ? StringService.BuildStaticPaginator(pages)
-            : StringService.BuildSimpleStaticPaginator(pages);
-
-        response.ResponseType = ResponseType.Paginator;
-        return response;
     }
+
 
     public async Task<ResponseModel> PlaysAsync(
         ContextModel context,

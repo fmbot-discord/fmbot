@@ -62,7 +62,7 @@ public static class StringService
 
         if (!track.TimePlayed.HasValue || track.NowPlaying)
         {
-            description.Append("🎶 • ");
+            description.Append("<a:now_scrobbling:1374003167838081136>   ");
         }
         else
         {
