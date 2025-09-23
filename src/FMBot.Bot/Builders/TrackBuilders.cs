@@ -1374,7 +1374,7 @@ public class TrackBuilders
             if (rnd == 1 && !topListSettings.Billboard && context.SelectMenu == null)
             {
                 footer.AppendLine();
-                footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
+                footer.Append("View as billboard by adding 'billboard' or 'bb'");
             }
 
             pages.Add(new PageBuilder()
