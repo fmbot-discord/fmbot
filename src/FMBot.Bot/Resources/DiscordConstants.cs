@@ -31,7 +31,7 @@ public static class DiscordConstants
     public const string PagesPrevious = "<:pages_previous:883825508507336704>";
     public const string PagesNext = "<:pages_next:883825508087922739>";
     public const string PagesLast = "<:pages_last:883825508482183258>";
-    public const string PagesGoTo = "<:pages_goto:1138849626234036264>\"";
+    public const string PagesGoTo = "<:pages_goto:1138849626234036264>";
 
 
     public const int PaginationTimeoutInSeconds = 120;
