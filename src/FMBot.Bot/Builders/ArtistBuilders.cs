@@ -504,7 +504,11 @@ public class ArtistBuilders
             {
                 this._supporterService.SetGuildSupporterPromoCache(context.DiscordGuild?.Id);
                 description.Append(
-                    $"*[Supporters]({Constants.GetSupporterDiscordLink}) can see artist discovery dates.*");
+                    $"[Supporters]({Constants.GetSupporterDiscordLink}) can see artist discovery dates");
+                if (artistSearch.Artist.UserPlaycount > 0)
+                {
+                    description.Append(" — ");
+                }
             }
         }
 
