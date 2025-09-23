@@ -914,7 +914,6 @@ public class PlayBuilder
         var paginator = new ComponentPaginatorBuilder()
             .WithPageFactory(GeneratePage)
             .WithPageCount(dayPages.Count)
-            .WithActionOnCancellation(ActionOnStop.DeleteMessage)
             .WithActionOnTimeout(ActionOnStop.DisableInput);
 
         response.ResponseType = ResponseType.ComponentPaginator;
@@ -931,6 +930,11 @@ public class PlayBuilder
             }
 
             var container = new ContainerBuilder();
+
+            container.WithTextDisplay(
+                $"### Daily overview for [{StringExtensions.Sanitize(userSettings.DisplayName)}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS)");
+            container.WithSeparator();
+
             var plays = new List<UserPlay>();
 
             foreach (var day in page.OrderByDescending(o => o.Date))
@@ -961,16 +965,18 @@ public class PlayBuilder
                 fieldContent.Append(day.TopTrack);
 
                 var content = new StringBuilder();
-                content.AppendLine($"<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D> - " +
-                                   $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} - " +
-                                   $"{day.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(day.Playcount)}");
+                content.AppendLine($"**<t:{TimeZoneInfo.ConvertTimeToUtc(day.Date, timeZone).ToUnixEpochDate()}:D> — " +
+                                   $"{StringExtensions.GetListeningTimeString(day.ListeningTime)} — " +
+                                   $"{day.Playcount.Format(context.NumberFormat)} {StringExtensions.GetPlaysString(day.Playcount)}**");
                 content.AppendLine(fieldContent.ToString());
                 container.Components.Add(new TextDisplayBuilder(content.ToString()));
+                container.Components.Add(new SeparatorBuilder());
 
                 plays.AddRange(day.Plays);
             }
 
             var footer = new StringBuilder();
+            footer.Append("-# ");
             footer.Append(amount == 1 ? $"Day" : $"Page");
             footer.Append($" {p.CurrentPageIndex + 1}/{p.PageCount}");
 
@@ -979,32 +985,29 @@ public class PlayBuilder
                 footer.Append($" - 🫡");
             }
 
-            footer.AppendLine();
             footer.AppendLine(
-                $"Top genres, artist, album and track per {amount.Format(context.NumberFormat)} days");
+                $" - Top genres, artist, album and track");
             footer.AppendLine(
-                $"{PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(page), 1).Format(context.NumberFormat)} per day");
+                $"-# {PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(page), 1).Format(context.NumberFormat)} per day");
 
             if (page.Count() < amount)
             {
                 footer.AppendLine($"{amount - page.Count()} days not shown because of no plays.");
             }
 
+            container
+                .WithTextDisplay(footer.ToString())
+                .WithActionRow(new ActionRowBuilder()
+                    .AddFirstButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesFirst))
+                    .AddPreviousButton(p, style: ButtonStyle.Secondary,
+                        emote: Emote.Parse(DiscordConstants.PagesPrevious))
+                    .AddNextButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesNext))
+                    .AddLastButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesLast)));
+
             var components = new ComponentBuilderV2()
-                .WithContainer(container)
-                .WithContainer(new ContainerBuilder()
-                    .WithActionRow(new ActionRowBuilder()
-                        .AddPreviousButton(p, style: ButtonStyle.Secondary)
-                        .AddNextButton(p, style: ButtonStyle.Secondary)
-                        .AddStopButton(p))
-                    .WithSeparator()
-                    .WithTextDisplay(footer.ToString())
-                    .WithAccentColor(Color.Blue));
+                .WithContainer(container);
 
             return new PageBuilder()
-                .WithTitle(
-                    $"Daily overview for {StringExtensions.Sanitize(userSettings.DisplayName)}{userSettings.UserType.UserTypeToIcon()}")
-                .WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS")
                 .WithComponents(components.Build())
                 .Build();
         }
@@ -1116,7 +1119,8 @@ public class PlayBuilder
             $"{mileStoneAmount.Format(context.NumberFormat)}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
 
         var dbAlbum =
-            await this._albumService.GetAlbumFromDatabase(mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumName);
+            await this._albumService.GetAlbumFromDatabase(mileStonePlay.Content.ArtistName,
+                mileStonePlay.Content.AlbumName);
         var albumCoverUrl = dbAlbum != null
             ? dbAlbum.SpotifyImageUrl ?? dbAlbum.LastfmImageUrl
             : mileStonePlay.Content.AlbumCoverUrl;

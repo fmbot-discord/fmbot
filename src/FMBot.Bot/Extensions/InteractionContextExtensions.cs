@@ -171,6 +171,13 @@ public static class InteractionContextExtensions
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     ephemeral: ephemeral);
                 break;
+            case ResponseType.ComponentPaginator:
+                _ = interactiveService.SendPaginatorAsync(
+                    response.ComponentPaginator.Build(),
+                    (SocketInteraction)context.Interaction,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    ephemeral: ephemeral);
+                break;
             case ResponseType.SupporterRequired:
                 await context.Interaction.RespondWithPremiumRequiredAsync();
                 break;
@@ -247,6 +254,14 @@ public static class InteractionContextExtensions
             case ResponseType.Paginator:
                 _ = interactiveService.SendPaginatorAsync(
                     response.StaticPaginator.Build(),
+                    (SocketInteraction)context.Interaction,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    InteractionResponseType.DeferredChannelMessageWithSource,
+                    ephemeral: ephemeral);
+                break;
+            case ResponseType.ComponentPaginator:
+                _ = interactiveService.SendPaginatorAsync(
+                    response.ComponentPaginator.Build(),
                     (SocketInteraction)context.Interaction,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
                     InteractionResponseType.DeferredChannelMessageWithSource,

@@ -129,10 +129,10 @@ public static class CommandContextExtensions
 
                     break;
                 case ResponseType.Paginator:
-                    var existingMessage =
+                    var existingMsgPaginator =
                         await context.Channel.GetMessageAsync(
                             PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
-                    if (existingMessage.Attachments != null && existingMessage.Attachments.Any())
+                    if (existingMsgPaginator.Attachments != null && existingMsgPaginator.Attachments.Any())
                     {
                         await context.Channel.ModifyMessageAsync(
                             PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
@@ -141,7 +141,23 @@ public static class CommandContextExtensions
 
                     await interactiveService.SendPaginatorAsync(
                         response.StaticPaginator.Build(),
-                        (IUserMessage)existingMessage,
+                        (IUserMessage)existingMsgPaginator,
+                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                    break;
+                case ResponseType.ComponentPaginator:
+                    var existingMsgComponentPaginator =
+                        await context.Channel.GetMessageAsync(
+                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id]);
+                    if (existingMsgComponentPaginator.Attachments != null && existingMsgComponentPaginator.Attachments.Any())
+                    {
+                        await context.Channel.ModifyMessageAsync(
+                            PublicProperties.UsedCommandsResponseMessageId[context.Message.Id],
+                            msg => { msg.Attachments = null; });
+                    }
+
+                    await interactiveService.SendPaginatorAsync(
+                        response.ComponentPaginator.Build(),
+                        (IUserMessage)existingMsgComponentPaginator,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                     break;
                 default:

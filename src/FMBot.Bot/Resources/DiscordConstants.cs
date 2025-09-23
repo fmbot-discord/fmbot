@@ -21,11 +21,17 @@ public static class DiscordConstants
 
     public static readonly IDictionary<IEmote, PaginatorAction> PaginationEmotes = new Dictionary<IEmote, PaginatorAction>
     {
-        { Emote.Parse("<:pages_first:883825508633182208>"), PaginatorAction.SkipToStart},
-        { Emote.Parse("<:pages_previous:883825508507336704>"), PaginatorAction.Backward},
-        { Emote.Parse("<:pages_next:883825508087922739>"), PaginatorAction.Forward},
-        { Emote.Parse("<:pages_last:883825508482183258>"), PaginatorAction.SkipToEnd}
+        { Emote.Parse(PagesFirst), PaginatorAction.SkipToStart},
+        { Emote.Parse(PagesPrevious), PaginatorAction.Backward},
+        { Emote.Parse(PagesNext), PaginatorAction.Forward},
+        { Emote.Parse(PagesLast), PaginatorAction.SkipToEnd}
     };
+
+    public const string PagesFirst = "<:pages_first:883825508633182208>";
+    public const string PagesPrevious = "<:pages_previous:883825508507336704>";
+    public const string PagesNext = "<:pages_next:883825508087922739>";
+    public const string PagesLast = "<:pages_last:883825508482183258>";
+
 
     public const int PaginationTimeoutInSeconds = 120;
 
