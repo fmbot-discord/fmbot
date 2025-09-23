@@ -111,17 +111,28 @@ public class ChartBuilders
         if (albums?.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
         {
             var count = albums?.Content?.TopAlbums?.Count ?? 0;
-            var reply =
-                $"Not enough scrobbled albums ({count} of required {chartSettings.ImagesNeeded}) in {chartSettings.TimeSettings.Description} time period.\n\n" +
-                $"Try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
+            var reply = new StringBuilder();
+            if (chartSettings.FilteredArtist != null)
+            {
+                reply.AppendLine(
+                    $"Not enough scrobbled albums ({count} of required {chartSettings.ImagesNeeded}) from **[{chartSettings.FilteredArtist.Name}]({LastfmUrlExtensions.GetArtistUrl(chartSettings.FilteredArtist.Name)})** in {chartSettings.TimeSettings.Description} time period.");
+                reply.AppendLine();
+                reply.AppendLine($"Try a smaller chart, bigger time period ({Constants.CompactTimePeriodList}) or remove the artist filter.");}
+            else
+            {
+                reply.AppendLine(
+                    $"Not enough scrobbled albums ({count} of required {chartSettings.ImagesNeeded}) in {chartSettings.TimeSettings.Description} time period.");
+                reply.AppendLine();
+                reply.AppendLine($"Try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).");
+            }
 
             if (chartSettings.SkipWithoutImage && chartSettings.FilteredArtist == null)
             {
-                reply += "\n\n" +
-                         $"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.";
+                reply.AppendLine();
+                reply.AppendLine($"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.");
             }
 
-            response.Embed.Description = reply;
+            response.Embed.Description = reply.ToString();
             response.ResponseType = ResponseType.Embed;
             response.Embed.WithColor(DiscordConstants.WarningColorOrange);
             response.CommandResponse = CommandResponse.WrongInput;

@@ -122,7 +122,7 @@ public class ChartCommands : BaseCommandModule
         "Size: WidthxHeight - `2x2`, `3x3`, `4x5` up to `10x10`",
         Constants.UserMentionExample)]
     [Examples("ac", "ac q 8x8 nt s", "artistchart 8x8 quarterly notitles skip", "ac 10x10 alltime notitles skip", "ac @user 7x7 yearly")]
-    [Alias("ac", "top")]
+    [Alias("ac", "top", "c artist", "c artists", "chart artist", "chart artists")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Artists)]
     public async Task ArtistChartAsync([Remainder]string otherSettings = null)
