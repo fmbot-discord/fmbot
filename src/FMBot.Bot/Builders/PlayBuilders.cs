@@ -929,7 +929,10 @@ public class PlayBuilder
             var container = new ContainerBuilder();
 
             container.WithTextDisplay(
-                $"### Daily overview for [{StringExtensions.Sanitize(userSettings.DisplayName)}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS)");
+                userSettings.DisplayName.ContainsEmoji()
+                    ? $"### Daily overview for {StringExtensions.Sanitize(userSettings.DisplayName)} {userSettings.UserType.UserTypeToIcon()}"
+                    : $"### Daily overview for [{StringExtensions.Sanitize(userSettings.DisplayName)}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS) {userSettings.UserType.UserTypeToIcon()}");
+
             container.WithSeparator();
 
             foreach (var day in page.OrderByDescending(o => o.Date))
@@ -972,8 +975,7 @@ public class PlayBuilder
 
             var footer = new StringBuilder();
             footer.Append("-# ");
-            footer.Append(amount == 1 ? $"Day" : $"Page");
-            footer.Append($" {p.CurrentPageIndex + 1}/{p.PageCount}");
+            footer.Append($"{p.CurrentPageIndex + 1}/{p.PageCount}");
 
             if (amount == 7)
             {
@@ -985,7 +987,7 @@ public class PlayBuilder
             footer.AppendLine(
                 $"-# {PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - " +
                 $"{plays.Count.Format(context.NumberFormat)} total plays - " +
-                $"avg {Math.Round(PlayService.GetAvgPerDayCount(page), 1).Format(context.NumberFormat)} per day");
+                $"{Math.Round(PlayService.GetAvgPerDayCount(page), 1).Format(context.NumberFormat)} avg");
 
             if (page.Count() < amount)
             {
