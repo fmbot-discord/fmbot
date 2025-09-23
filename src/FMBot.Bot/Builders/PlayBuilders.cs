@@ -924,18 +924,13 @@ public class PlayBuilder
         IPage GeneratePage(IComponentPaginator p)
         {
             var page = dayPages.ElementAtOrDefault(p.CurrentPageIndex);
-            if (page is null)
-            {
-                // return new PageBuilder().WithDescription("No plays found for this page.");
-            }
+            var plays = new List<UserPlay>();
 
             var container = new ContainerBuilder();
 
             container.WithTextDisplay(
                 $"### Daily overview for [{StringExtensions.Sanitize(userSettings.DisplayName)}]({LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library?date_preset=LAST_7_DAYS)");
             container.WithSeparator();
-
-            var plays = new List<UserPlay>();
 
             foreach (var day in page.OrderByDescending(o => o.Date))
             {
@@ -988,7 +983,9 @@ public class PlayBuilder
             footer.AppendLine(
                 $" - Top genres, artist, album and track");
             footer.AppendLine(
-                $"-# {PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - {plays.Count.Format(context.NumberFormat)} total plays - avg {Math.Round(PlayService.GetAvgPerDayCount(page), 1).Format(context.NumberFormat)} per day");
+                $"-# {PlayService.GetUniqueCount(plays).Format(context.NumberFormat)} unique tracks - " +
+                $"{plays.Count.Format(context.NumberFormat)} total plays - " +
+                $"avg {Math.Round(PlayService.GetAvgPerDayCount(page), 1).Format(context.NumberFormat)} per day");
 
             if (page.Count() < amount)
             {
@@ -997,12 +994,7 @@ public class PlayBuilder
 
             container
                 .WithTextDisplay(footer.ToString())
-                .WithActionRow(new ActionRowBuilder()
-                    .AddFirstButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesFirst))
-                    .AddPreviousButton(p, style: ButtonStyle.Secondary,
-                        emote: Emote.Parse(DiscordConstants.PagesPrevious))
-                    .AddNextButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesNext))
-                    .AddLastButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesLast)));
+                .WithActionRow(StringService.GetPaginationActionRow(p));
 
             var components = new ComponentBuilderV2()
                 .WithContainer(container);

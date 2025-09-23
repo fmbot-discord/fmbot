@@ -512,4 +512,15 @@ public static class StringService
 
         return longString.ToString();
     }
+
+    public static ActionRowBuilder GetPaginationActionRow(IComponentPaginator p)
+    {
+        return new ActionRowBuilder()
+            .AddFirstButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesFirst))
+            .AddPreviousButton(p, style: ButtonStyle.Secondary,
+                emote: Emote.Parse(DiscordConstants.PagesPrevious))
+            .AddNextButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesNext))
+            .AddLastButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesLast))
+            .AddJumpButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesGoTo));
+    }
 }
