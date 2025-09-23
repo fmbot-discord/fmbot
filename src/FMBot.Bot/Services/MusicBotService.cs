@@ -60,7 +60,9 @@ public class MusicBotService
             {
                 return;
             }
-            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Found 'now playing' message from {musicBot.Name}"));
+
+            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
+                $"Found 'now playing' message from {musicBot.Name}"));
             var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
 
             if (usersInChannel == null || usersInChannel.Count == 0)
@@ -69,11 +71,15 @@ public class MusicBotService
             }
 
             var trackDescription = musicBot.GetTrackQuery(msg);
-            var trackResult = await this._trackService.GetTrackFromLink(trackDescription, musicBot.PossiblyIncludesLinks, musicBot.SkipUploaderName, musicBot.TrackNameFirst);
+            var trackResult = await this._trackService.GetTrackFromLink(trackDescription, musicBot.PossiblyIncludesLinks,
+                musicBot.SkipUploaderName, musicBot.TrackNameFirst);
             if (trackResult == null)
             {
-                Log.Information("BotScrobbling({botName}): Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", musicBot.Name, usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
-                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped {musicBot.Name} scrobble because no found track for `{msg.Embeds.First().Description}`"));
+                Log.Information(
+                    "BotScrobbling({botName}): Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}",
+                    musicBot.Name, usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
+                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
+                    $"Skipped {musicBot.Name} scrobble because no found track for `{msg.Embeds.First().Description}`"));
                 return;
             }
 
@@ -96,7 +102,8 @@ public class MusicBotService
         componentBuilder.WithContainer(container);
 
         var description = new StringBuilder();
-        description.Append($"<a:now_scrobbling:1374003167838081136> Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");
+        description.Append(
+            $"<a:now_scrobbling:1374003167838081136> Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");
         container.AddComponent(new TextDisplayBuilder(description.ToString()));
 
         var footer = new StringBuilder();
@@ -104,6 +111,7 @@ public class MusicBotService
         {
             footer.Append($"Length {StringExtensions.GetTrackLength(trackResult.DurationMs.GetValueOrDefault())} — ");
         }
+
         footer.Append($"{musicBot.Name}");
 
         container.AddComponent(new SectionBuilder
@@ -117,7 +125,8 @@ public class MusicBotService
         });
 
         var scrobbleMessage =
-            await context.Channel.SendMessageAsync(components: componentBuilder.Build(), flags: MessageFlags.SuppressNotification | MessageFlags.ComponentsV2);
+            await context.Channel.SendMessageAsync(components: componentBuilder.Build(), allowedMentions: AllowedMentions.None,
+                flags: MessageFlags.SuppressNotification | MessageFlags.ComponentsV2);
 
         var referencedMusic = new ReferencedMusic
         {
@@ -129,8 +138,10 @@ public class MusicBotService
         PublicProperties.UsedCommandsReferencedMusic.TryAdd(scrobbleMessage.Id, referencedMusic);
         PublicProperties.UsedCommandsReferencedMusic.TryAdd(botMessageId, referencedMusic);
 
-        Log.Information("BotScrobbling: Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild?.Name, context.Guild?.Id);
-        this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Scrobbled `{trackResult.TrackName}` by `{trackResult.ArtistName}`"));
+        Log.Information("BotScrobbling: Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}",
+            trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild?.Name, context.Guild?.Id);
+        this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
+            $"Scrobbled `{trackResult.TrackName}` by `{trackResult.ArtistName}`"));
 
         var messageDelayMs = (int)(trackResult.DurationMs - 3000 ?? 120000);
         await Task.Delay(messageDelayMs);
@@ -179,8 +190,8 @@ public class MusicBotService
             await this._dataSourceFactory.ScrobbleAsync(user.SessionKeyLastFm, result.ArtistName, result.TrackName, result.AlbumName);
             Statistics.LastfmScrobbles.WithLabels(musicBot.Name).Inc();
         }
-
     }
+
     private async Task<List<User>> GetUsersInVoice(ICommandContext context, ulong botId)
     {
         try
@@ -198,8 +209,10 @@ public class MusicBotService
 
                 if (guildUser is null)
                 {
-                    Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found guild user", context.Guild.Name, context.Guild.Id);
-                    this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because no found guild user"));
+                    Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found guild user", context.Guild.Name,
+                        context.Guild.Id);
+                    this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
+                        $"Skipped scrobble because no found guild user"));
                     return null;
                 }
             }
@@ -212,15 +225,19 @@ public class MusicBotService
 
             if (voiceChannel == null)
             {
-                Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channels", context.Guild.Name, context.Guild.Id);
-                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because no found voice channel"));
+                Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channels", context.Guild.Name,
+                    context.Guild.Id);
+                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
+                    $"Skipped scrobble because no found voice channel"));
                 return null;
             }
 
             if (voiceChannel.ConnectedUsers?.Any() == null)
             {
-                Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no connected users in voice channel", context.Guild.Name, context.Guild.Id, botId);
-                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because no connected users in voice channel"));
+                Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no connected users in voice channel",
+                    context.Guild.Name, context.Guild.Id, botId);
+                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
+                    $"Skipped scrobble because no connected users in voice channel"));
                 return null;
             }
 
@@ -237,8 +254,11 @@ public class MusicBotService
                             w.SessionKeyLastFm != null)
                 .ToListAsync();
 
-            Log.Debug("BotScrobbling: Found voice channel {channelName} / {channelId} in {guildName} / {guildId} with {listenerCount} .fmbot listeners", voiceChannel.Name, voiceChannel.Id, context.Guild.Name, context.Guild.Id, users.Count);
-            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Found vc `{voiceChannel.Name}` with `{users.Count}` fmbot listeners"));
+            Log.Debug(
+                "BotScrobbling: Found voice channel {channelName} / {channelId} in {guildName} / {guildId} with {listenerCount} .fmbot listeners",
+                voiceChannel.Name, voiceChannel.Id, context.Guild.Name, context.Guild.Id, users.Count);
+            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,
+                $"Found vc `{voiceChannel.Name}` with `{users.Count}` fmbot listeners"));
 
             return users;
         }

@@ -589,6 +589,7 @@ public class PlayBuilder
                 .WithContainer(container);
 
             var pageBuilder = new PageBuilder()
+                .WithAllowedMentions(AllowedMentions.None)
                 .WithComponents(components.Build());
 
             return pageBuilder.Build();
@@ -996,6 +997,7 @@ public class PlayBuilder
 
             return new PageBuilder()
                 .WithComponents(components.Build())
+                .WithAllowedMentions(AllowedMentions.None)
                 .Build();
         }
     }
