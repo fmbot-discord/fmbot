@@ -513,6 +513,13 @@ public static class StringService
         return longString.ToString();
     }
 
+    public static ActionRowBuilder GetSimplePaginationActionRow(IComponentPaginator p)
+    {
+        return new ActionRowBuilder()
+            .AddPreviousButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesPrevious))
+            .AddNextButton(p, style: ButtonStyle.Secondary, emote: Emote.Parse(DiscordConstants.PagesNext));
+    }
+
     public static ActionRowBuilder GetPaginationActionRow(IComponentPaginator p)
     {
         return new ActionRowBuilder()

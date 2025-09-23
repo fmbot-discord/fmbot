@@ -569,16 +569,21 @@ public class PlayBuilder
                 footer.AppendLine();
                 if (!SupporterService.IsSupporter(userSettings.UserType))
                 {
-                    footer.Append($"-# Filtering cached plays to artist **[{artistToFilter}]({LastfmUrlExtensions.GetArtistUrl(artistToFilter)})**");
+                    footer.Append(
+                        $"-# Filtering cached plays to artist **[{artistToFilter}]({LastfmUrlExtensions.GetArtistUrl(artistToFilter)})**");
                 }
                 else
                 {
-                    footer.Append($"-# Filtering all plays to artist **[{artistToFilter}]({LastfmUrlExtensions.GetArtistUrl(artistToFilter)})**");
+                    footer.Append(
+                        $"-# Filtering all plays to artist **[{artistToFilter}]({LastfmUrlExtensions.GetArtistUrl(artistToFilter)})**");
                 }
             }
 
             container.WithTextDisplay(footer.ToString());
-            container.WithActionRow(StringService.GetPaginationActionRow(p));
+
+            container.WithActionRow(SupporterService.IsSupporter(userSettings.UserType)
+                ? StringService.GetPaginationActionRow(p)
+                : StringService.GetSimplePaginationActionRow(p));
 
             var components = new ComponentBuilderV2()
                 .WithContainer(container);
