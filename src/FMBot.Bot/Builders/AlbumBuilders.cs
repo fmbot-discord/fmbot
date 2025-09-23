@@ -1279,7 +1279,7 @@ public class AlbumBuilders
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
-        var amount = topListSettings.ReleaseYearFilter.HasValue ? 1000 : 200;
+        var amount = topListSettings.ReleaseYearFilter.HasValue ? 1000 : topListSettings.ListAmount;
         var albums =
             await this._dataSourceFactory.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount,
                 useCache: true);

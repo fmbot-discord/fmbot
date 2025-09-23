@@ -467,6 +467,7 @@ public class SettingService
         {
             topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraLarge);
             topListSettings.EmbedSize = EmbedSize.Large;
+            topListSettings.ListAmount = 1000;
         }
         else if (Contains(extraOptions, extraSmall))
         {

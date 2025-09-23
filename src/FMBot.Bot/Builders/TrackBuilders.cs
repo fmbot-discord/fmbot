@@ -1230,7 +1230,7 @@ public class TrackBuilders
         response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} tracks for {userTitle}");
         response.EmbedAuthor.WithUrl(userUrl);
 
-        var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200,
+        var topTracks = await this._dataSourceFactory.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, topListSettings.ListAmount,
             calculateTimeListened: topListSettings.Type == TopListType.TimeListened);
 
         if (!topTracks.Success)

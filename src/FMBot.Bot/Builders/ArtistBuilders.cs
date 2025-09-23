@@ -1045,7 +1045,7 @@ public class ArtistBuilders
         response.EmbedAuthor.WithUrl(userUrl);
 
         var artists = await this._dataSourceFactory.GetTopArtistsAsync(userSettings.UserNameLastFm,
-            timeSettings, 200, 1, true);
+            timeSettings, topListSettings.ListAmount, 1, true);
 
         if (!artists.Success || artists.Content == null)
         {

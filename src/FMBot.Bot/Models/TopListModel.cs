@@ -7,11 +7,17 @@ public class TopListSettings
     public TopListSettings()
     {
         EmbedSize = EmbedSize.Default;
+        ListAmount = 400;
     }
 
     public TopListSettings(EmbedSize embedSize)
     {
         this.EmbedSize = embedSize;
+        ListAmount = 400;
+        if (embedSize == EmbedSize.Large)
+        {
+            ListAmount = 1000;
+        }
     }
 
     public TopListSettings(EmbedSize embedSize, bool billboard, bool discogs = false, int? year = null, int? decade = null)
@@ -21,9 +27,15 @@ public class TopListSettings
         this.Discogs = discogs;
         this.ReleaseYearFilter = year;
         this.ReleaseDecadeFilter = decade;
+        ListAmount = 400;
+        if (embedSize == EmbedSize.Large)
+        {
+            ListAmount = 1000;
+        }
     }
 
     public EmbedSize EmbedSize { get; set; }
+    public int ListAmount { get; set; }
     public bool Billboard { get; set; }
     public bool Discogs { get; set; }
     public string NewSearchValue { get; set; }
