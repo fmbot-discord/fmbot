@@ -1070,6 +1070,9 @@ public class SettingService
                 .Replace(")", "")
                 .Replace("*", "")
                 .Replace("`", "")
+                .Replace(",", "")
+                .Replace(".", "")
+                .Replace(" ", "")
                 .Split(' ');
 
             foreach (var option in options)
@@ -1131,6 +1134,9 @@ public class SettingService
                 .Replace(")", "")
                 .Replace("*", "")
                 .Replace("`", "")
+                .Replace(",", "")
+                .Replace(".", "")
+                .Replace(" ", "")
                 .Split(' ');
 
             foreach (var option in options)
