@@ -270,14 +270,13 @@ public static class StringService
 
         if (customOptionId != null && optionEmote != null)
         {
-            builder.AddOption(customOptionId, optionEmote, null, ButtonStyle.Primary);
+            builder.AddOption(customOptionId, optionEmote, null, ButtonStyle.Secondary);
         }
 
         if (customOptionId == null && pages.Count >= 25)
         {
-            builder.AddOption(
-                new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"),
-                    PaginatorAction.Jump));
+            builder.AddOption(Emote.Parse(DiscordConstants.PagesGoTo),
+                PaginatorAction.Jump, ButtonStyle.Secondary);
         }
 
         if (selectMenuBuilder != null)
@@ -307,14 +306,13 @@ public static class StringService
 
         if (customOptionId != null && optionEmote != null)
         {
-            builder.AddOption(customOptionId, optionEmote, null, ButtonStyle.Primary);
+            builder.AddOption(customOptionId, optionEmote, null, ButtonStyle.Secondary);
         }
 
         if (pages.Count >= 10 && customOptionId == null)
         {
-            builder.AddOption(
-                new KeyValuePair<IEmote, PaginatorAction>(Emote.Parse("<:pages_goto:1138849626234036264>"),
-                    PaginatorAction.Jump));
+            builder.AddOption(Emote.Parse(DiscordConstants.PagesGoTo),
+                PaginatorAction.Jump, ButtonStyle.Secondary);
         }
 
         if (selectMenuBuilder != null)
@@ -332,10 +330,10 @@ public static class StringService
             .WithFooter(PaginatorFooter.None)
             .WithActionOnTimeout(ActionOnStop.DeleteInput);
 
-        builder.WithOptions(new Dictionary<IEmote, PaginatorAction>
+        builder.WithOptions(new List<PaginatorButton>
         {
-            { Emote.Parse("<:pages_previous:883825508507336704>"), PaginatorAction.Backward },
-            { Emote.Parse("<:pages_next:883825508087922739>"), PaginatorAction.Forward },
+            new(Emote.Parse(DiscordConstants.PagesPrevious), PaginatorAction.Backward, ButtonStyle.Secondary),
+            new(Emote.Parse(DiscordConstants.PagesNext), PaginatorAction.Forward, ButtonStyle.Secondary),
         });
 
         return builder;

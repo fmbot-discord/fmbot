@@ -19,13 +19,13 @@ public static class DiscordConstants
 
     public static Color AppleMusicRed = new(249, 87, 107);
 
-    public static readonly IDictionary<IEmote, PaginatorAction> PaginationEmotes = new Dictionary<IEmote, PaginatorAction>
-    {
-        { Emote.Parse(PagesFirst), PaginatorAction.SkipToStart},
-        { Emote.Parse(PagesPrevious), PaginatorAction.Backward},
-        { Emote.Parse(PagesNext), PaginatorAction.Forward},
-        { Emote.Parse(PagesLast), PaginatorAction.SkipToEnd}
-    };
+    public static readonly List<PaginatorButton> PaginationEmotes =
+    [
+        new(Emote.Parse(PagesFirst), PaginatorAction.SkipToStart, ButtonStyle.Secondary),
+        new(Emote.Parse(PagesPrevious), PaginatorAction.Backward, ButtonStyle.Secondary),
+        new(Emote.Parse(PagesNext), PaginatorAction.Forward, ButtonStyle.Secondary),
+        new(Emote.Parse(PagesLast), PaginatorAction.SkipToEnd, ButtonStyle.Secondary)
+    ];
 
     public const string PagesFirst = "<:pages_first:883825508633182208>";
     public const string PagesPrevious = "<:pages_previous:883825508507336704>";
