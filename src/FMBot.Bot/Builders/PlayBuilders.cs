@@ -535,8 +535,8 @@ public class PlayBuilder
 
             container.WithTextDisplay(
                 userSettings.DisplayName.ContainsEmoji()
-                    ? $"### Latest tracks for {StringExtensions.Sanitize(userSettings.DisplayName)} {userSettings.UserType.UserTypeToIcon()}"
-                    : $"### Latest tracks for [{StringExtensions.Sanitize(userSettings.DisplayName)}]({recentTracks.Content.UserRecentTracksUrl}) {userSettings.UserType.UserTypeToIcon()}");
+                    ? $"### Recent tracks for {StringExtensions.Sanitize(userSettings.DisplayName)} {userSettings.UserType.UserTypeToIcon()}"
+                    : $"### Recent tracks for [{StringExtensions.Sanitize(userSettings.DisplayName)}]({recentTracks.Content.UserRecentTracksUrl}) {userSettings.UserType.UserTypeToIcon()}");
 
             foreach (var track in trackPage)
             {

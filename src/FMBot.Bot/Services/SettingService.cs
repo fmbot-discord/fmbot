@@ -1010,7 +1010,7 @@ public class SettingService
         return null;
     }
 
-    public static (string monthName, int monthNumber)? GetMonth(string extraOptions)
+    private static (string monthName, int monthNumber)? GetMonth(string extraOptions)
     {
         if (string.IsNullOrWhiteSpace(extraOptions))
         {
@@ -1020,7 +1020,7 @@ public class SettingService
         var options = extraOptions.Split(' ');
         foreach (var option in options)
         {
-            foreach (var month in Months.Where(month => option.ToLower().StartsWith(month.Key)))
+            foreach (var month in Months.Where(month => option.ToLower().Equals(month.Key)))
             {
                 return (month.Key, month.Value);
             }
