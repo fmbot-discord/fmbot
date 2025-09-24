@@ -48,12 +48,14 @@ public class SpotifySlashCommands : InteractionModuleBase
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        await DeferAsync();
 
         try
         {
             string reply;
             string querystring;
 
+            RecentTrack currentTrack = null;
             if (searchValue != null)
             {
                 reply = $"Results for *`{StringExtensions.Sanitize(searchValue)}`*\n";
@@ -74,12 +76,12 @@ public class SpotifySlashCommands : InteractionModuleBase
                 {
                     var errorResponse = GenericEmbedService.RecentScrobbleCallFailedResponse(recentScrobbles, contextUser.UserNameLastFM);
 
-                    await this.Context.SendResponse(this.Interactivity, errorResponse);
+                    await this.Context.SendFollowUpResponse(this.Interactivity, errorResponse);
                     this.Context.LogCommandUsed(errorResponse.CommandResponse);
                     return;
                 }
 
-                var currentTrack = recentScrobbles.Content.RecentTracks[0];
+                currentTrack = recentScrobbles.Content.RecentTracks[0];
 
                 switch (type)
                 {
@@ -137,7 +139,16 @@ public class SpotifySlashCommands : InteractionModuleBase
                     }
                     break;
                 case SpotifySearch.Track:
-                    var track = item.Tracks.Items?.FirstOrDefault();
+                    FullTrack track;
+                    if (currentTrack?.ArtistName != null)
+                    {
+                        track = item.Tracks.Items?.FirstOrDefault(f => f.Artists.Any(a => string.Equals(a.Name, currentTrack.ArtistName, StringComparison.OrdinalIgnoreCase)));;
+                    }
+                    else
+                    {
+                        track = item.Tracks.Items?.FirstOrDefault();
+                    }
+
                     if (track != null)
                     {
                         reply += $"https://open.spotify.com/track/{track.Id}";
@@ -150,12 +161,12 @@ public class SpotifySlashCommands : InteractionModuleBase
 
             if (result)
             {
-                await RespondAsync(reply, allowedMentions: AllowedMentions.None, ephemeral: privateResponse);
+                await FollowupAsync(reply, allowedMentions: AllowedMentions.None, ephemeral: privateResponse);
                 this.Context.LogCommandUsed();
             }
             else
             {
-                await RespondAsync($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None, ephemeral: true);
+                await FollowupAsync($"Sorry, Spotify returned no results for *`{StringExtensions.Sanitize(querystring)}`*.", allowedMentions: AllowedMentions.None, ephemeral: true);
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
             }
         }
