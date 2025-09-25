@@ -1428,7 +1428,7 @@ public class UserBuilder
 
         var description = new StringBuilder();
         description.AppendLine("**Are you sure you want to delete all your data from .fmbot?**");
-        description.AppendLine("This will remove the following data:");
+        description.AppendLine("This will remove the following:");
 
         description.AppendLine("- .fmbot settings and data");
 
@@ -1452,12 +1452,13 @@ public class UserBuilder
 
         if (context.ContextUser.UserType != UserType.User)
         {
-            description.AppendLine($"- `{context.ContextUser.UserType}` account status");
+            description.AppendLine($"- **{context.ContextUser.UserType}** account status");
             if (context.ContextUser.UserType == UserType.Supporter)
             {
+                description.AppendLine();
                 description.AppendLine(
-                    "-# *If you have supporter purchased through Discord or Stripe and plan to create a new .fmbot account with the same Discord account, your status will re-apply in a few minutes. Supporter purchased through Discord can't be moved to different Discord accounts." +
-                    "If you are a supporter purchased though OpenCollective, please open a help thread on [our server](https://discord.gg/fmbot) for account transfers.*");
+                    "If you have supporter purchased through Discord or Stripe and plan to create a new .fmbot account with the same Discord account, your supporter will re-apply in a few minutes. " +
+                    "Use `/getsupporter` before removing your account to manage your subscription.");
             }
             else
             {
@@ -1470,14 +1471,12 @@ public class UserBuilder
         description.AppendLine($"Changed Last.fm username? Run `{context.Prefix}login`");
         description.AppendLine($"Data not matching Last.fm profile? Run `{context.Prefix}update full`");
         description.AppendLine();
+        description.AppendLine("Note: This will not delete any data from Last.fm, just from .fmbot.");
 
         response.Components = new ComponentBuilder().WithButton("Delete my .fmbot account",
             $"{InteractionConstants.RemoveFmbotAccount}-{context.DiscordUser.Id}", ButtonStyle.Danger);
 
         response.Embed.WithDescription(description.ToString());
-
-        response.Embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
-
         response.Embed.WithColor(DiscordConstants.WarningColorOrange);
 
         return response;
@@ -1495,8 +1494,9 @@ public class UserBuilder
             ResponseType = ResponseType.Embed
         };
 
-        response.Embed.WithDescription($"Only .fmbot supporters can set their own personal automatic emoji reactions.\n\n" +
-                                       $"Get .fmbot supporter or use `{prfx}serverreactions` as a server-wide alternative.");
+        response.Embed.WithDescription(
+            $"Only .fmbot supporters can set their own personal automatic emoji reactions.\n\n" +
+            $"Get .fmbot supporter or use `{prfx}serverreactions` as a server-wide alternative.");
 
         response.Components = new ComponentBuilder().WithButton(Constants.GetSupporterButton,
             style: ButtonStyle.Primary,
@@ -2048,7 +2048,8 @@ public class UserBuilder
         response.ComponentsContainer.WithAccentColor(DiscordConstants.InformationColorBlue);
 
         var name = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
-        response.ComponentsContainer.AddComponent(new TextDisplayBuilder($"## {DiscordConstants.Shortcut} {name}'s command shortcuts"));
+        response.ComponentsContainer.AddComponent(
+            new TextDisplayBuilder($"## {DiscordConstants.Shortcut} {name}'s command shortcuts"));
         var prfx = context.Prefix == "/" ? "." : context.Prefix;
 
         if (shortcuts.Count == 0)
@@ -2173,7 +2174,8 @@ public class UserBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ModifyShortcutAsync(ContextModel context, int shortcutId, string input, string output)
+    public async Task<ResponseModel> ModifyShortcutAsync(ContextModel context, int shortcutId, string input,
+        string output)
     {
         var response = new ResponseModel
         {
@@ -2192,7 +2194,8 @@ public class UserBuilder
                 return response;
             }
 
-            var validatedInput = await this.ValidateShortcut(response, context.ContextUser, shortcuts, input, output, shortcutId);
+            var validatedInput =
+                await this.ValidateShortcut(response, context.ContextUser, shortcuts, input, output, shortcutId);
             if (!validatedInput.validated)
             {
                 return validatedInput.response;
@@ -2296,8 +2299,9 @@ public class UserBuilder
         {
             if (output.Contains('.'))
             {
-                response.Embed.WithDescription($"❌ No commands found for your output. Make sure you don't include the `.` prefix.\n\n" +
-                                               $"`{output}`");
+                response.Embed.WithDescription(
+                    $"❌ No commands found for your output. Make sure you don't include the `.` prefix.\n\n" +
+                    $"`{output}`");
             }
             else
             {
@@ -2321,7 +2325,9 @@ public class UserBuilder
         var badInput = await this._censorService.ContainsBadWords(input);
         if (badInput)
         {
-            Log.Information("User {userId} - {discordUserId} - {userNameLastFm} attempted offensive shortcut input - {input}", user.UserId,
+            Log.Information(
+                "User {userId} - {discordUserId} - {userNameLastFm} attempted offensive shortcut input - {input}",
+                user.UserId,
                 user.DiscordUserId, user.UserNameLastFM, input);
             response.Embed.WithDescription($"❌ Your input contains offensive words.\n\n" +
                                            $"Please note that attempts to circumvent this filter or setting your input to other offensive content may result in action being taken on your account.");
@@ -2333,7 +2339,8 @@ public class UserBuilder
         var badOutput = await this._censorService.ContainsBadWords(output);
         if (badOutput)
         {
-            Log.Information("User {userId} - {discordUserId} - {userNameLastFm} attempted offensive shortcut output - {output}",
+            Log.Information(
+                "User {userId} - {discordUserId} - {userNameLastFm} attempted offensive shortcut output - {output}",
                 user.UserId,
                 user.DiscordUserId, user.UserNameLastFM, output);
             response.Embed.WithDescription($"❌ Your output contains offensive words.\n\n" +
