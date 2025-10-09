@@ -15,10 +15,12 @@ using FMBot.Bot.Builders;
 using Fergun.Interactive;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class ImportSlashCommands : InteractionModuleBase
+public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly ImportService _importService;

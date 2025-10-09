@@ -14,10 +14,12 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class AlbumSlashCommands : InteractionModuleBase
+public class AlbumSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly AlbumBuilders _albumBuilders;

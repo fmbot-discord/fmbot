@@ -10,11 +10,12 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
 [Group("server", "Server billboard commands")]
-public class ServerSlashCommands : InteractionModuleBase
+public class ServerSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly ArtistBuilders _artistBuilders;

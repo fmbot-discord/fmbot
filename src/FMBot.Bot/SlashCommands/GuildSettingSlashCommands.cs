@@ -20,10 +20,13 @@ using FMBot.Bot.Services.WhoKnows;
 using Microsoft.Extensions.Options;
 using FMBot.Domain.Enums;
 using Discord;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.Commands;
+using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class GuildSettingSlashCommands : InteractionModuleBase
+public class GuildSettingSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
 
@@ -32,7 +35,7 @@ public class GuildSettingSlashCommands : InteractionModuleBase
     private readonly GuildService _guildService;
     private readonly GuildBuilders _guildBuilders;
 
-    private readonly CommandService _commands;
+    private readonly CommandService<> _commands;
 
     private readonly ChannelToggledCommandService _channelToggledCommandService;
     private readonly DisabledChannelService _disabledChannelService;

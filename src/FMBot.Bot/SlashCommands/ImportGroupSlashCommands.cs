@@ -16,11 +16,12 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using Fergun.Interactive;
 using FMBot.Domain.Extensions;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
 [Group("import", "Manage your data imports")]
-public class ImportGroupSlashCommands : InteractionModuleBase
+public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly IDataSourceFactory _dataSourceFactory;

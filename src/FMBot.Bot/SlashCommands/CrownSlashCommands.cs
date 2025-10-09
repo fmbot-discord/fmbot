@@ -12,10 +12,12 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class CrownSlashCommands : InteractionModuleBase
+public class CrownSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly CrownBuilders _crownBuilders;
     private readonly UserService _userService;

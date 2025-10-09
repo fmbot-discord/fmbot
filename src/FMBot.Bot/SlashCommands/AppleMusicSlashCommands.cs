@@ -11,10 +11,11 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class AppleMusicSlashCommands : InteractionModuleBase
+public class AppleMusicSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly AppleMusicService _appleMusicService;
     private readonly UserService _userService;

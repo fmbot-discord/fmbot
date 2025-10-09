@@ -2,10 +2,6 @@ using System;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.Interactions;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Configurations;
@@ -31,20 +27,22 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Events;
 using Serilog.Exceptions;
-using RunMode = Discord.Commands.RunMode;
 using Hangfire;
 using FMBot.Domain.Interfaces;
 using FMBot.Bot.Factories;
 using FMBot.Persistence.Interfaces;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using FMBot.Bot.Extensions;
 using Web.InternalApi;
-using Discord.Rest;
 using FMBot.AppleMusic;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
-using Microsoft.VisualBasic;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Rest;
+using GatewayIntents = Discord.GatewayIntents;
 
 namespace FMBot.Bot;
 
@@ -78,9 +76,6 @@ public class Startup
         var services = new ServiceCollection();
         ConfigureServices(services);
 
-        // temp fix https://github.com/discord-net/Discord.Net/releases/tag/3.15.0
-        services.AddSingleton<IRestClientProvider>(x => x.GetRequiredService<DiscordShardedClient>());
-
         var provider = services.BuildServiceProvider();
         InitializeRequiredServices(provider);
 
@@ -107,9 +102,10 @@ public class Startup
             .Enrich.WithExceptionDetails()
             .Enrich.WithEnvironmentVariable("INSTANCE_NAME")
             .Enrich.WithMachineName()
-            .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value)
-                ? this.Configuration.GetSection("Environment").Value
-                : "unknown")
+            .Enrich.WithProperty("Environment",
+                !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value)
+                    ? this.Configuration.GetSection("Environment").Value
+                    : "unknown")
             .Enrich.WithProperty("BotUserId", botUserId)
             .WriteTo.Console(consoleLevel)
             .WriteTo.Seq(this.Configuration.GetSection("Logging:SeqServerUrl")?.Value,
@@ -160,29 +156,20 @@ public class Startup
         services.AddMemoryCache(options => { options.TrackStatistics = true; });
     }
 
-    private static DiscordShardedClient ConfigureDiscordClient()
+    private static ShardedGatewayClient ConfigureDiscordClient()
     {
-        var config = new DiscordSocketConfig
-        {
-            LogLevel = LogSeverity.Info,
-            MessageCacheSize = 0,
-            AlwaysDownloadUsers = false,
-            AlwaysDownloadDefaultStickers = false,
-            AlwaysResolveStickers = false,
-            AuditLogCacheSize = 0,
-            GatewayIntents = GatewayIntents.GuildMembers | GatewayIntents.MessageContent |
-                             GatewayIntents.DirectMessages | GatewayIntents.GuildMessages | GatewayIntents.Guilds |
-                             GatewayIntents.GuildVoiceStates,
-            TotalShards = ConfigData.Data.Shards?.TotalShards != null ? ConfigData.Data.Shards.TotalShards : null,
-            ConnectionTimeout = 60000
-        };
+        const NetCord.Gateway.GatewayIntents intents = NetCord.Gateway.GatewayIntents.GuildUsers | NetCord.Gateway.GatewayIntents.MessageContent |
+                                                       NetCord.Gateway.GatewayIntents.DirectMessages | NetCord.Gateway.GatewayIntents.GuildMessages |
+                                                       NetCord.Gateway.GatewayIntents.Guilds |
+                                                       NetCord.Gateway.GatewayIntents.GuildVoiceStates;
 
         if (ConfigData.Data.Shards != null && ConfigData.Data.Discord.MaxConcurrency.HasValue)
         {
-            config.IdentifyMaxConcurrency = ConfigData.Data.Discord.MaxConcurrency.Value;
+            // TODO override max concurrency here when NetCord supports it
         }
 
-        if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.StartShard.HasValue && ConfigData.Data.Shards.EndShard.HasValue)
+        if (ConfigData.Data.Shards != null && ConfigData.Data.Shards.StartShard.HasValue &&
+            ConfigData.Data.Shards.EndShard.HasValue)
         {
             var startShard = ConfigData.Data.Shards.StartShard.Value;
             var endShard = ConfigData.Data.Shards.EndShard.Value;
@@ -193,22 +180,25 @@ public class Startup
                 "Initializing Discord sharded client with {totalShards} total shards, starting at shard {startingShard} til {endingShard} - {shards}",
                 ConfigData.Data.Shards.TotalShards, startShard, endShard, shards);
 
-            return new DiscordShardedClient(shards, config);
+            // TODO override shard IDs here when NetCord supports it
+            return new ShardedGatewayClient(new BotToken(ConfigData.Data.Discord.Token), new ShardedGatewayClientConfiguration
+            {
+                ShardCount = ConfigData.Data.Shards.TotalShards,
+                IntentsFactory = _ => intents
+            });
         }
 
         Log.Warning("Initializing normal Discord sharded client");
-        return new DiscordShardedClient(config);
+        return new ShardedGatewayClient(new BotToken(ConfigData.Data.Discord.Token), new ShardedGatewayClientConfiguration
+        {
+            IntentsFactory = _ => intents
+        });
     }
 
-    private void RegisterCoreServices(IServiceCollection services, DiscordShardedClient discordClient)
+    private void RegisterCoreServices(IServiceCollection services, ShardedGatewayClient discordClient)
     {
         services
             .AddSingleton(discordClient)
-            .AddSingleton(new CommandService(new CommandServiceConfig
-            {
-                LogLevel = LogSeverity.Info,
-                DefaultRunMode = RunMode.Async,
-            }))
             .AddSingleton<InteractionService>()
             .AddSingleton<StartupService>()
             .AddSingleton<Random>()
@@ -363,9 +353,10 @@ public class Startup
 
     private static void ConfigureOpenCollectiveServices(IServiceCollection services)
     {
-        services.AddHttpClient("OpenCollective", client => { client.BaseAddress = new Uri("https://api.opencollective.com/graphql/v2"); });
+        services.AddHttpClient("OpenCollective",
+            client => { client.BaseAddress = new Uri("https://api.opencollective.com/graphql/v2"); });
 
-        services.AddSingleton<GraphQLHttpClient>(sp =>
+        services.AddSingleton(sp =>
         {
             var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
             var httpClient = httpClientFactory.CreateClient("OpenCollective");

@@ -12,10 +12,11 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class DiscogsSlashCommands : InteractionModuleBase
+public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly DiscogsBuilder _discogsBuilder;

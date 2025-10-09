@@ -17,11 +17,13 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 using Serilog;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class TemplateSlashCommands : InteractionModuleBase
+public class TemplateSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly GuildService _guildService;

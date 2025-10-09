@@ -15,10 +15,12 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class ArtistSlashCommands : InteractionModuleBase
+public class ArtistSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly ArtistBuilders _artistBuilders;

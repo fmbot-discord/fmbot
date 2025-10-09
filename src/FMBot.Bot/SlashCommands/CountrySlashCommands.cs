@@ -11,10 +11,11 @@ using FMBot.Bot.Services.Guild;
 using Fergun.Interactive;
 using Discord;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class CountrySlashCommands : InteractionModuleBase
+public class CountrySlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly GuildService _guildService;

@@ -7,8 +7,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Discord;
-using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Handlers;
 using FMBot.Bot.Services.Guild;
@@ -21,6 +19,8 @@ using Google.Protobuf.WellKnownTypes;
 using Hangfire;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Gateway;
 using Serilog;
 using Web.InternalApi;
 
@@ -34,7 +34,7 @@ public class TimerService : IDisposable
     private readonly UpdateService _updateService;
     private readonly IndexService _indexService;
     private readonly GuildService _guildService;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly WebhookService _webhookService;
     private readonly BotSettings _botSettings;
     private readonly FeaturedService _featuredService;
@@ -50,7 +50,7 @@ public class TimerService : IDisposable
 
     public FeaturedLog CurrentFeatured;
 
-    public TimerService(DiscordShardedClient client,
+    public TimerService(ShardedGatewayClient client,
         UpdateService updateService,
         UserService userService,
         IndexService indexService,
@@ -226,16 +226,31 @@ public class TimerService : IDisposable
             if (string.IsNullOrEmpty(this._botSettings.Bot.Status) &&
                 !string.IsNullOrWhiteSpace(this._botSettings.ApiConfig?.InternalEndpoint))
             {
+                string status;
                 if (!PublicProperties.IssuesAtLastFm)
                 {
                     var overview = await this._statusHandler.GetOverviewAsync(new Empty());
-                    await this._client.SetCustomStatusAsync(
-                        $"{this._botSettings.Bot.Prefix}fm — fm.bot — {overview.TotalGuilds} servers");
+
+                    status = $"{this._botSettings.Bot.Prefix}fm — fm.bot — {overview.TotalGuilds} servers";
                 }
                 else
                 {
-                    await this._client.SetCustomStatusAsync(
-                        $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
+                    status = $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus";
+                }
+
+                var newPresence = new PresenceProperties(UserStatusType.DoNotDisturb)
+                {
+                    Activities =
+                    [
+                        new UserActivityProperties(status, UserActivityType.Custom)
+                    ]
+                };
+
+                var count = this._client.Count;
+                for (var i = 0; i < count; i++)
+                {
+                    var client = this._client[i];
+                    await client.UpdatePresenceAsync(newPresence);
                 }
             }
         }

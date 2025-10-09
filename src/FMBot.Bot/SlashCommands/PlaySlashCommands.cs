@@ -19,11 +19,12 @@ using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
 using SummaryAttribute = Discord.Interactions.SummaryAttribute;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class PlaySlashCommands : InteractionModuleBase
+public class PlaySlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly SettingService _settingService;

@@ -11,13 +11,14 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
 [Group("top", "Top lists - Artist/Albums/Tracks/Genres/Countries")]
 [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
 [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-public class TopSlashCommands : InteractionModuleBase
+public class TopSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly ArtistBuilders _artistBuilders;

@@ -7,9 +7,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Discord;
-using Discord.Commands;
-using Discord.Interactions;
-using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
@@ -21,6 +18,9 @@ using Hangfire.MemoryStorage;
 using IF.Lastfm.Core.Api;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using NetCord.Gateway;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.Commands;
 using Prometheus;
 using Serilog;
 
@@ -30,17 +30,16 @@ namespace FMBot.Bot.Services;
 
 public class StartupService
 {
-    private readonly CommandService _commands;
-    private readonly InteractionService _interactions;
+    private readonly CommandService<CommandContext> _textCommands;
+    private readonly ApplicationCommandService<ApplicationCommandContext> _appCommands;
     private readonly GuildDisabledCommandService _guildDisabledCommands;
     private readonly ChannelToggledCommandService _channelToggledCommands;
     private readonly DisabledChannelService _disabledChannelService;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient  _client;
     private readonly IPrefixService _prefixService;
     private readonly IServiceProvider _provider;
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly BotSettings _botSettings;
-    private readonly InteractionService _interactionService;
     private readonly GuildService _guildService;
     private readonly UserService _userService;
     private readonly TimerService _timerService;
@@ -50,32 +49,28 @@ public class StartupService
 
     public StartupService(
         IServiceProvider provider,
-        DiscordShardedClient discord,
-        CommandService commands,
+        ShardedGatewayClient discord,
         IPrefixService prefixService,
         GuildDisabledCommandService guildDisabledCommands,
         ChannelToggledCommandService channelToggledCommands,
         IDbContextFactory<FMBotDbContext> contextFactory,
         IOptions<BotSettings> botSettings,
-        InteractionService interactionService,
-        InteractionService interactions,
         GuildService guildService,
         UserService userService,
         DisabledChannelService disabledChannelService,
         TimerService timerService,
         SupporterService supporterService,
         ChartService chartService,
-        ShortcutService shortcutService)
+        ShortcutService shortcutService,
+        CommandService<CommandContext> textCommands,
+        ApplicationCommandService<ApplicationCommandContext> appCommands)
     {
         this._provider = provider;
         this._client = discord;
-        this._commands = commands;
         this._prefixService = prefixService;
         this._guildDisabledCommands = guildDisabledCommands;
         this._channelToggledCommands = channelToggledCommands;
         this._contextFactory = contextFactory;
-        this._interactionService = interactionService;
-        this._interactions = interactions;
         this._guildService = guildService;
         this._userService = userService;
         this._disabledChannelService = disabledChannelService;
@@ -83,6 +78,8 @@ public class StartupService
         this._supporterService = supporterService;
         this._chartService = chartService;
         this._shortcutService = shortcutService;
+        this._textCommands = textCommands;
+        this._appCommands = appCommands;
         this._botSettings = botSettings.Value;
     }
 
@@ -123,28 +120,22 @@ public class StartupService
         await this._disabledChannelService.LoadAllDisabledChannels();
 
         Log.Information("Logging into Discord");
-        await this._client.LoginAsync(TokenType.Bot, discordToken);
+        await this._client.StartAsync();
 
         Log.Information("Setting Discord user status");
-        await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
 
         if (!string.IsNullOrEmpty(this._botSettings.Bot.Status))
         {
             Log.Information($"Setting custom status to '{this._botSettings.Bot.Status}'");
             await this._client.SetGameAsync(this._botSettings.Bot.Status);
+
         }
 
-        Log.Information("Loading command modules");
-        await this._commands
-            .AddModulesAsync(
-                Assembly.GetEntryAssembly(),
-                this._provider);
-
         Log.Information("Loading interaction modules");
-        await this._interactions
-            .AddModulesAsync(
-                Assembly.GetEntryAssembly(),
-                this._provider);
+        this._appCommands.AddModules(typeof(Program).Assembly);
+
+        Log.Information("Loading command modules");
+        this._textCommands.AddModules(typeof(Program).Assembly);
 
         Log.Information("Preparing cache folder");
         PrepareCacheFolder();
@@ -298,7 +289,8 @@ public class StartupService
         Log.Information("Starting slash command registration");
 
         Log.Information("Registering slash commands globally");
-        await this._interactionService.RegisterCommandsGloballyAsync();
+
+        await this._appCommands.RegisterCommandsAsync(client.Rest, client.Id);
     }
 
     private static void PrepareCacheFolder()

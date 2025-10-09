@@ -10,11 +10,12 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
 using SpotifyAPI.Web;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class SpotifySlashCommands : InteractionModuleBase
+public class SpotifySlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly SpotifyService _spotifyService;
     private readonly UserService _userService;

@@ -12,10 +12,12 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Discord.WebSocket;
 using FMBot.Bot.Models.Modals;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class PremiumSettingSlashCommands : InteractionModuleBase
+public class PremiumSettingSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly GuildService _guildService;
@@ -38,7 +40,7 @@ public class PremiumSettingSlashCommands : InteractionModuleBase
     [ServerStaffOnly]
     public async Task SetGuildAllowedRoles(string[] inputs)
     {
-        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context))) 
+        if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context)))
         {
             await GuildSettingBuilder.UserNotAllowedResponse(this.Context);
             this.Context.LogCommandUsed(CommandResponse.NoPermission);

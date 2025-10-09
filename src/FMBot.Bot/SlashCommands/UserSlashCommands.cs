@@ -27,11 +27,13 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class UserSlashCommands : InteractionModuleBase
+public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly IDataSourceFactory _dataSourceFactory;

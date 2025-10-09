@@ -16,10 +16,11 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class IndexSlashCommands : InteractionModuleBase
+public class IndexSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private InteractiveService Interactivity { get; }
     private readonly GuildService _guildService;

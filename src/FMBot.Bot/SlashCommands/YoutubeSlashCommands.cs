@@ -10,10 +10,11 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Interfaces;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class YoutubeSlashCommands : InteractionModuleBase
+public class YoutubeSlashCommands: ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly YoutubeBuilders _youtubeBuilders;

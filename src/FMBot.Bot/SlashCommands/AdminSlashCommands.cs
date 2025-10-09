@@ -19,11 +19,13 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 using Serilog;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class AdminSlashCommands : InteractionModuleBase
+public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly AdminService _adminService;
     private readonly CensorService _censorService;

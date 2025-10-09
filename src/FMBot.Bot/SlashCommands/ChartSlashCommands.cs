@@ -11,13 +11,14 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
 
 [Group("chart", "Generate charts with album covers or artist images")]
 [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
 [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-public class ChartSlashCommands : InteractionModuleBase
+public class ChartSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly ChartBuilders _chartBuilders;

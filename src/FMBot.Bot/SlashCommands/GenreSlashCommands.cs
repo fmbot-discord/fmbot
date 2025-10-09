@@ -14,11 +14,13 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 
 
 namespace FMBot.Bot.SlashCommands;
 
-public class GenreSlashCommands : InteractionModuleBase
+public class GenreSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly GuildService _guildService;

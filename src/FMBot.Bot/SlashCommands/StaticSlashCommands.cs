@@ -11,11 +11,13 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 using Shared.Domain.Enums;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class StaticSlashCommands : InteractionModuleBase
+public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly UserService _userService;
     private readonly StaticBuilders _staticBuilders;

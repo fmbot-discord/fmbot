@@ -13,10 +13,12 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services.ComponentInteractions;
 
 namespace FMBot.Bot.SlashCommands;
 
-public class GameSlashCommands : InteractionModuleBase
+public class GameSlashCommands : ApplicationCommandModule<ApplicationCommandContext>
 {
     private readonly GameBuilders _gameBuilders;
     private readonly UserService _userService;
