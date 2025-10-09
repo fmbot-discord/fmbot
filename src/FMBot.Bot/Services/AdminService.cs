@@ -1,20 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Discord;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Linq;
+using Discord;
+using Discord.WebSocket;
 using FMBot.Domain.Enums;
 using Serilog;
 using Microsoft.Extensions.Options;
-using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
+using NetCord.Gateway;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
@@ -24,9 +25,9 @@ public class AdminService
     private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
 
-    public AdminService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, IMemoryCache cache, DiscordShardedClient client)
+    public AdminService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, IMemoryCache cache, ShardedGatewayClient client)
     {
         this._contextFactory = contextFactory;
         this._cache = cache;
@@ -34,7 +35,7 @@ public class AdminService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType minUserType)
+    public async Task<bool> HasCommandAccessAsync(NetCord.User discordUser, UserType minUserType)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var contextUser = await db.Users
