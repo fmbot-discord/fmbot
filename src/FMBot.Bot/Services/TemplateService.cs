@@ -18,7 +18,7 @@ namespace FMBot.Bot.Services;
 
 public partial class TemplateService
 {
-    public static async Task<List<string>> GetFooterAsync(FmFooterOption footerOptions, TemplateContext context)
+    public async Task<List<string>> GetFooterAsync(FmFooterOption footerOptions, TemplateContext context)
     {
         var options = new ConcurrentBag<(VariableResult Result, int Order)>();
         var relevantOptions = TemplateOptions.Options
@@ -28,46 +28,35 @@ public partial class TemplateService
         var sqlOptions = relevantOptions.OfType<SqlTemplateOption>().ToList();
         var complexOptions = relevantOptions.OfType<ComplexTemplateOption>().ToList();
 
-        var allTasks = new List<Task>();
-
-        allTasks.AddRange(complexOptions.Select(o =>
-            Task.Run(async () => await ProcessComplexOptionAsync(o, context, options))));
-
-        var sqlTask = Task.Run(async () =>
+        await using var batch = new NpgsqlBatch(context.Connection);
+        foreach (var option in sqlOptions)
         {
-            await using var batch = new NpgsqlBatch(context.Connection);
+            batch.BatchCommands.Add(option.CreateBatchCommand(context));
+        }
+
+        if (batch.BatchCommands.Count > 0)
+        {
+            await using var reader = await batch.ExecuteReaderAsync();
+
             foreach (var option in sqlOptions)
             {
-                batch.BatchCommands.Add(option.CreateBatchCommand(context));
+                await ProcessSqlOptionAsync(option, context, reader, options);
             }
+        }
 
-            if (batch.BatchCommands.Count > 0)
-            {
-                await using var reader = await batch.ExecuteReaderAsync();
-                foreach (var option in sqlOptions)
-                {
-                    await ProcessSqlOptionAsync(option, context, reader, options);
-                }
-            }
-        });
-        allTasks.Add(sqlTask);
+        var complexTasks = complexOptions.Select(o => ProcessComplexOptionAsync(o, context, options));
+        await Task.WhenAll(complexTasks);
 
         if (context.DbTrack?.SpotifyId != null)
         {
-            var eurovisionTask = Task.Run(async () =>
+            var eurovisionEntry =
+                await context.EurovisionService.GetEurovisionEntryForSpotifyId(context.DbTrack.SpotifyId);
+            if (eurovisionEntry != null)
             {
-                var eurovisionEntry =
-                    await context.EurovisionService.GetEurovisionEntryForSpotifyId(context.DbTrack.SpotifyId);
-                if (eurovisionEntry != null)
-                {
-                    var description = context.EurovisionService.GetEurovisionDescription(eurovisionEntry);
-                    options.Add((new VariableResult(description.oneline), 500));
-                }
-            });
-            allTasks.Add(eurovisionTask);
+                var description = context.EurovisionService.GetEurovisionDescription(eurovisionEntry);
+                options.Add((new VariableResult(description.oneline), 500));
+            }
         }
-
-        await Task.WhenAll(allTasks);
 
         return options.Where(w => context.Genres != w.Result.Content).OrderBy(o => o.Order)
             .Select(o => o.Result.Content).ToList();
