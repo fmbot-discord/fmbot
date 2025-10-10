@@ -255,13 +255,18 @@ public class UpdateService
 
             var userArtists = libraryItemsList
                 .Where(i => i.Type == 1)
+                .GroupBy(artist => artist.Name.ToLower())
                 .ToDictionary(
-                    d => d.Name.ToLower(),
-                    d => new UserArtist
+                    group => group.Key,
+                    group =>
                     {
-                        UserArtistId = d.Id,
-                        Name = d.Name,
-                        Playcount = d.Playcount
+                        var correctArtist = group.OrderByDescending(item => item.Playcount).First();
+                        return new UserArtist
+                        {
+                            UserArtistId = correctArtist.Id,
+                            Name = correctArtist.Name,
+                            Playcount = correctArtist.Playcount
+                        };
                     }
                 );
 
@@ -269,28 +274,42 @@ public class UpdateService
                 .Where(i => i.Type == 2)
                 .GroupBy(g => g.ArtistName.ToLower())
                 .ToDictionary(
-                    d => d.Key,
-                    d => d.Select(item => new UserAlbum
-                    {
-                        UserAlbumId = item.Id,
-                        ArtistName = item.ArtistName,
-                        Name = item.Name,
-                        Playcount = item.Playcount
-                    }).ToList()
+                    artistGroup => artistGroup.Key,
+                    artistGroup => artistGroup
+                        .GroupBy(album => album.Name.ToLower())
+                        .Select(albumGroup =>
+                        {
+                            var correctAlbum = albumGroup.OrderByDescending(a => a.Playcount).First();
+                            return new UserAlbum
+                            {
+                                UserAlbumId = correctAlbum.Id,
+                                ArtistName = correctAlbum.ArtistName,
+                                Name = correctAlbum.Name,
+                                Playcount = correctAlbum.Playcount
+                            };
+                        })
+                        .ToList()
                 );
 
             var userTracks = libraryItemsList
                 .Where(i => i.Type == 3)
                 .GroupBy(g => g.ArtistName.ToLower())
                 .ToDictionary(
-                    d => d.Key,
-                    d => d.Select(item => new UserTrack
-                    {
-                        UserTrackId = item.Id,
-                        ArtistName = item.ArtistName,
-                        Name = item.Name,
-                        Playcount = item.Playcount
-                    }).ToList()
+                    artistGroup => artistGroup.Key,
+                    artistGroup => artistGroup
+                        .GroupBy(track => track.Name.ToLower())
+                        .Select(trackGroup =>
+                        {
+                            var correctTrack = trackGroup.OrderByDescending(t => t.Playcount).First();
+                            return new UserTrack
+                            {
+                                UserTrackId = correctTrack.Id,
+                                ArtistName = correctTrack.ArtistName,
+                                Name = correctTrack.Name,
+                                Playcount = correctTrack.Playcount
+                            };
+                        })
+                        .ToList()
                 );
 
             await UpdateArtistsForUser(user, playUpdate.NewPlays, connection, userArtists);
@@ -377,22 +396,6 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
         return await connection.QueryAsync<UserLibraryItem>(sql, new { userId });
     }
 
-    private static async Task<IReadOnlyDictionary<string, UserArtist>> GetUserArtists(int userId,
-        IDbConnection connection)
-    {
-        const string sql = "SELECT DISTINCT ON (LOWER(name)) user_id, name, playcount, user_artist_id " +
-                           "FROM public.user_artists where user_id = @userId " +
-                           "ORDER BY LOWER(name), playcount DESC";
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        var result = await connection.QueryAsync<UserArtist>(sql, new
-        {
-            userId
-        });
-
-        return result.ToDictionary(d => d.Name.ToLower(), d => d);
-    }
-
     private async Task UpdateArtistsForUser(User user,
         IEnumerable<UserPlay> newScrobbles,
         NpgsqlConnection connection,
@@ -418,7 +421,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                     $"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()} " +
                     $"WHERE user_artist_id = {existingUserArtist.UserArtistId}; ");
 
-                Log.Information($"Updated artist {artistName} for {user.UserNameLastFM}");
+                Log.Debug($"Updated artist {artistName} for {user.UserNameLastFM}");
             }
             else
             {
@@ -431,7 +434,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 addUserArtist.Parameters.AddWithValue("artistName", artistName);
                 addUserArtist.Parameters.AddWithValue("artistPlaycount", artist.Count());
 
-                Log.Information($"Added artist {artistName} for {user.UserNameLastFM}");
+                Log.Debug($"Added artist {artistName} for {user.UserNameLastFM}");
 
                 await addUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
@@ -445,23 +448,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             await updateUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        Log.Information("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-    }
-
-    private static async Task<IReadOnlyDictionary<string, List<UserAlbum>>> GetUserAlbums(int userId,
-        IDbConnection connection)
-    {
-        const string sql = "SELECT * FROM public.user_albums where user_id = @userId";
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        var result = await connection.QueryAsync<UserAlbum>(sql, new
-        {
-            userId
-        });
-
-        return result
-            .GroupBy(g => g.ArtistName.ToLower())
-            .ToDictionary(d => d.Key, d => d.ToList());
+        Log.Debug("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
     }
 
     private async Task UpdateAlbumsForUser(User user,
@@ -498,7 +485,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                     $"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()} " +
                     $"WHERE user_album_id = {existingUserAlbum.UserAlbumId}; ");
 
-                Log.Information($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
+                Log.Debug($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
             }
             else
             {
@@ -514,7 +501,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 addUserAlbum.Parameters.AddWithValue("artistName", artistName);
                 addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
 
-                Log.Information($"Added album {album.Key.ArtistName} - {capitalizedAlbumName} for {user.UserNameLastFM}");
+                Log.Debug($"Added album {album.Key.ArtistName} - {capitalizedAlbumName} for {user.UserNameLastFM}");
 
                 await addUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
@@ -528,23 +515,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             await updateUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        Log.Information("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-    }
-
-    private static async Task<IReadOnlyDictionary<string, List<UserTrack>>> GetUserTracks(int userId,
-        IDbConnection connection)
-    {
-        const string sql = "SELECT * FROM public.user_tracks where user_id = @userId";
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        var result = await connection.QueryAsync<UserTrack>(sql, new
-        {
-            userId
-        });
-
-        return result
-            .GroupBy(g => g.ArtistName.ToLower())
-            .ToDictionary(d => d.Key, d => d.ToList());
+        Log.Debug("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
     }
 
     private async Task UpdateTracksForUser(User user,
@@ -579,7 +550,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                     $"UPDATE public.user_tracks SET playcount = {existingUserTrack.Playcount + track.Count()} " +
                     $"WHERE user_track_id = {existingUserTrack.UserTrackId}; ");
 
-                Log.Information($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
+                Log.Debug($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
             }
             else
             {
@@ -595,7 +566,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 addUserTrack.Parameters.AddWithValue("artistName", artistName);
                 addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
 
-                Log.Information($"Added track {track.Key.ArtistName} - {capitalizedTrackName} for {user.UserNameLastFM}");
+                Log.Debug($"Added track {track.Key.ArtistName} - {capitalizedTrackName} for {user.UserNameLastFM}");
 
                 await addUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
