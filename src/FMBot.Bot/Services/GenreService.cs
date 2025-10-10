@@ -48,7 +48,7 @@ public class GenreService
 
         foreach (var artist in artistGenres.GroupBy(g => g.ArtistName))
         {
-            var genres = artist.Select(s => s.Genre).ToList();
+            var genres = artist.Select(s => s.Genre).GroupBy(g => g).Select(s => s.Key).ToList();
             this._cache.Set(CacheKeyForArtistGenres(artist.Key), genres, cacheTime);
         }
         foreach (var genre in artistGenres.GroupBy(g => g.Genre))

@@ -107,10 +107,11 @@ public class UserService
 
         if (user != null)
         {
-            var lastFmCacheKey = UserLastFmCacheKey(user.UserNameLastFM);
+            var cacheTime = TimeSpan.FromSeconds(5);
 
-            this._cache.Set(lastFmCacheKey, user, TimeSpan.FromSeconds(5));
-            this._cache.Set(discordUserIdCacheKey, user, TimeSpan.FromSeconds(5));
+            this._cache.Set(UserInternalIdCacheKey(user.UserId), user, cacheTime);
+            this._cache.Set(UserLastFmCacheKey(user.UserNameLastFM), user, cacheTime);
+            this._cache.Set(discordUserIdCacheKey, user, cacheTime);
 
             if (!PublicProperties.RegisteredUsers.ContainsKey(user.DiscordUserId))
             {
@@ -123,8 +124,14 @@ public class UserService
 
     public void RemoveUserFromCache(User user)
     {
+        this._cache.Remove(UserInternalIdCacheKey(user.UserId));
         this._cache.Remove(UserDiscordIdCacheKey(user.DiscordUserId));
         this._cache.Remove(UserLastFmCacheKey(user.UserNameLastFM));
+    }
+
+    public static string UserInternalIdCacheKey(int userId)
+    {
+        return $"user-i{userId}";
     }
 
     public static string UserDiscordIdCacheKey(ulong discordUserId)
@@ -159,6 +166,12 @@ public class UserService
 
     public async Task<User> GetUserForIdAsync(int userId)
     {
+        var userIdCacheKey = UserInternalIdCacheKey(userId);
+        if (this._cache.TryGetValue(userIdCacheKey, out User user))
+        {
+            return user;
+        }
+
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Users
             .AsNoTracking()
@@ -1050,7 +1063,7 @@ public class UserService
             NumberFormat = contextModel.NumberFormat
         };
 
-        var footer = await this._templateService.GetFooterAsync(footerOptions, footerContext);
+        var footer = await TemplateService.GetFooterAsync(footerOptions, footerContext);
         return CreateFooter(footer, footerContext.Genres, useSmallMarkdown);
     }
 

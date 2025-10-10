@@ -18,7 +18,7 @@ namespace FMBot.Bot.Services;
 
 public partial class TemplateService
 {
-    public async Task<List<string>> GetFooterAsync(FmFooterOption footerOptions, TemplateContext context)
+    public static async Task<List<string>> GetFooterAsync(FmFooterOption footerOptions, TemplateContext context)
     {
         var options = new ConcurrentBag<(VariableResult Result, int Order)>();
         var relevantOptions = TemplateOptions.Options
@@ -28,35 +28,46 @@ public partial class TemplateService
         var sqlOptions = relevantOptions.OfType<SqlTemplateOption>().ToList();
         var complexOptions = relevantOptions.OfType<ComplexTemplateOption>().ToList();
 
-        await using var batch = new NpgsqlBatch(context.Connection);
-        foreach (var option in sqlOptions)
-        {
-            batch.BatchCommands.Add(option.CreateBatchCommand(context));
-        }
+        var allTasks = new List<Task>();
 
-        if (batch.BatchCommands.Count > 0)
-        {
-            await using var reader = await batch.ExecuteReaderAsync();
+        allTasks.AddRange(complexOptions.Select(o =>
+            Task.Run(async () => await ProcessComplexOptionAsync(o, context, options))));
 
+        var sqlTask = Task.Run(async () =>
+        {
+            await using var batch = new NpgsqlBatch(context.Connection);
             foreach (var option in sqlOptions)
             {
-                await ProcessSqlOptionAsync(option, context, reader, options);
+                batch.BatchCommands.Add(option.CreateBatchCommand(context));
             }
-        }
 
-        var complexTasks = complexOptions.Select(o => ProcessComplexOptionAsync(o, context, options));
-        await Task.WhenAll(complexTasks);
+            if (batch.BatchCommands.Count > 0)
+            {
+                await using var reader = await batch.ExecuteReaderAsync();
+                foreach (var option in sqlOptions)
+                {
+                    await ProcessSqlOptionAsync(option, context, reader, options);
+                }
+            }
+        });
+        allTasks.Add(sqlTask);
 
         if (context.DbTrack?.SpotifyId != null)
         {
-            var eurovisionEntry =
-                await context.EurovisionService.GetEurovisionEntryForSpotifyId(context.DbTrack.SpotifyId);
-            if (eurovisionEntry != null)
+            var eurovisionTask = Task.Run(async () =>
             {
-                var description = context.EurovisionService.GetEurovisionDescription(eurovisionEntry);
-                options.Add((new VariableResult(description.oneline), 500));
-            }
+                var eurovisionEntry =
+                    await context.EurovisionService.GetEurovisionEntryForSpotifyId(context.DbTrack.SpotifyId);
+                if (eurovisionEntry != null)
+                {
+                    var description = context.EurovisionService.GetEurovisionDescription(eurovisionEntry);
+                    options.Add((new VariableResult(description.oneline), 500));
+                }
+            });
+            allTasks.Add(eurovisionTask);
         }
+
+        await Task.WhenAll(allTasks);
 
         return options.Where(w => context.Genres != w.Result.Content).OrderBy(o => o.Order)
             .Select(o => o.Result.Content).ToList();
@@ -202,9 +213,11 @@ public partial class TemplateService
         return new TemplateResult(embed, embedOptions);
     }
 
-    private static async Task<(List<(string Key, string Value)> variableResults, Dictionary<string, VariableResult> variableMap)> ReplaceVariablesAsync(
-        List<(string Key, string Line)> lines,
-        TemplateContext context)
+    private static async
+        Task<(List<(string Key, string Value)> variableResults, Dictionary<string, VariableResult> variableMap)>
+        ReplaceVariablesAsync(
+            List<(string Key, string Line)> lines,
+            TemplateContext context)
     {
         var variableResults = new List<(string Key, string Value)>();
         var sqlOptions = new List<SqlTemplateOption>();

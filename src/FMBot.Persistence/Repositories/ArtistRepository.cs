@@ -70,8 +70,9 @@ public class ArtistRepository
 
     private static async Task<ICollection<ArtistGenre>> GetArtistGenres(int artistId, NpgsqlConnection connection)
     {
-        const string getArtistGenreQuery = "SELECT * FROM public.artist_genres " +
-                                           "WHERE artist_id = @artistId";
+        const string getArtistGenreQuery = "SELECT DISTINCT ON (name) id, artist_id, name FROM public.artist_genres " +
+                                           "WHERE artist_id = @artistId " +
+                                           "ORDER BY name";
 
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         return (await connection.QueryAsync<ArtistGenre>(getArtistGenreQuery, new
@@ -145,12 +146,12 @@ public class ArtistRepository
         const string insertQuery = @"INSERT INTO public.artist_genres(artist_id, name) " +
                                    "VALUES (@artistId, @name)";
 
-        foreach (var genreName in genreNames)
+        foreach (var genreName in genreNames.GroupBy(g => g))
         {
             await connection.ExecuteAsync(insertQuery, new
             {
                 artistId,
-                name = genreName
+                name = genreName.Key
             });
         }
     }

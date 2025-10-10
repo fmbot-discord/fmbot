@@ -621,7 +621,6 @@ public class UserCommands : BaseCommandModule
             return;
         }
 
-
         if (this.Context.Guild != null)
         {
             var serverEmbed = new EmbedBuilder()
