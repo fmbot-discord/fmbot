@@ -359,7 +359,7 @@ public class UpdateService
     public record UserLibraryItem
     {
         public int Type { get; init; }
-        public int Id { get; init; }
+        public long Id { get; init; }
         public string ArtistName { get; init; }
         public string Name { get; init; }
         public int Playcount { get; init; }
@@ -418,7 +418,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                     $"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()} " +
                     $"WHERE user_artist_id = {existingUserArtist.UserArtistId}; ");
 
-                Log.Debug($"Updated artist {artistName} for {user.UserNameLastFM}");
+                Log.Information($"Updated artist {artistName} for {user.UserNameLastFM}");
             }
             else
             {
@@ -431,7 +431,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 addUserArtist.Parameters.AddWithValue("artistName", artistName);
                 addUserArtist.Parameters.AddWithValue("artistPlaycount", artist.Count());
 
-                Log.Debug($"Added artist {artistName} for {user.UserNameLastFM}");
+                Log.Information($"Added artist {artistName} for {user.UserNameLastFM}");
 
                 await addUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
@@ -445,7 +445,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             await updateUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        Log.Debug("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+        Log.Information("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
     }
 
     private static async Task<IReadOnlyDictionary<string, List<UserAlbum>>> GetUserAlbums(int userId,
@@ -498,7 +498,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                     $"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()} " +
                     $"WHERE user_album_id = {existingUserAlbum.UserAlbumId}; ");
 
-                Log.Debug($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
+                Log.Information($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
             }
             else
             {
@@ -514,7 +514,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 addUserAlbum.Parameters.AddWithValue("artistName", artistName);
                 addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
 
-                Log.Debug($"Added album {album.Key.ArtistName} - {capitalizedAlbumName} for {user.UserNameLastFM}");
+                Log.Information($"Added album {album.Key.ArtistName} - {capitalizedAlbumName} for {user.UserNameLastFM}");
 
                 await addUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
@@ -528,7 +528,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
             await updateUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        Log.Debug("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+        Log.Information("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
     }
 
     private static async Task<IReadOnlyDictionary<string, List<UserTrack>>> GetUserTracks(int userId,
@@ -579,7 +579,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                     $"UPDATE public.user_tracks SET playcount = {existingUserTrack.Playcount + track.Count()} " +
                     $"WHERE user_track_id = {existingUserTrack.UserTrackId}; ");
 
-                Log.Debug($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
+                Log.Information($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
             }
             else
             {
@@ -595,7 +595,7 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
                 addUserTrack.Parameters.AddWithValue("artistName", artistName);
                 addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
 
-                Log.Debug($"Added track {track.Key.ArtistName} - {capitalizedTrackName} for {user.UserNameLastFM}");
+                Log.Information($"Added track {track.Key.ArtistName} - {capitalizedTrackName} for {user.UserNameLastFM}");
 
                 await addUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
