@@ -18,7 +18,7 @@ namespace FMBot.Bot.Services;
 
 public partial class TemplateService
 {
-    public async Task<List<string>> GetFooterAsync(FmFooterOption footerOptions, TemplateContext context)
+    public static async Task<List<string>> GetFooterAsync(FmFooterOption footerOptions, TemplateContext context)
     {
         var options = new ConcurrentBag<(VariableResult Result, int Order)>();
         var relevantOptions = TemplateOptions.Options
