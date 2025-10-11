@@ -255,13 +255,18 @@ public class UpdateService
 
             var userArtists = libraryItemsList
                 .Where(i => i.Type == 1)
+                .GroupBy(artist => artist.Name.ToLower())
                 .ToDictionary(
-                    d => d.Name.ToLower(),
-                    d => new UserArtist
+                    group => group.Key,
+                    group =>
                     {
-                        UserArtistId = d.Id,
-                        Name = d.Name,
-                        Playcount = d.Playcount
+                        var correctArtist = group.OrderByDescending(item => item.Playcount).First();
+                        return new UserArtist
+                        {
+                            UserArtistId = correctArtist.Id,
+                            Name = correctArtist.Name,
+                            Playcount = correctArtist.Playcount
+                        };
                     }
                 );
 
@@ -269,28 +274,42 @@ public class UpdateService
                 .Where(i => i.Type == 2)
                 .GroupBy(g => g.ArtistName.ToLower())
                 .ToDictionary(
-                    d => d.Key,
-                    d => d.Select(item => new UserAlbum
-                    {
-                        UserAlbumId = item.Id,
-                        ArtistName = item.ArtistName,
-                        Name = item.Name,
-                        Playcount = item.Playcount
-                    }).ToList()
+                    artistGroup => artistGroup.Key,
+                    artistGroup => artistGroup
+                        .GroupBy(album => album.Name.ToLower())
+                        .Select(albumGroup =>
+                        {
+                            var correctAlbum = albumGroup.OrderByDescending(a => a.Playcount).First();
+                            return new UserAlbum
+                            {
+                                UserAlbumId = correctAlbum.Id,
+                                ArtistName = correctAlbum.ArtistName,
+                                Name = correctAlbum.Name,
+                                Playcount = correctAlbum.Playcount
+                            };
+                        })
+                        .ToList()
                 );
 
             var userTracks = libraryItemsList
                 .Where(i => i.Type == 3)
                 .GroupBy(g => g.ArtistName.ToLower())
                 .ToDictionary(
-                    d => d.Key,
-                    d => d.Select(item => new UserTrack
-                    {
-                        UserTrackId = item.Id,
-                        ArtistName = item.ArtistName,
-                        Name = item.Name,
-                        Playcount = item.Playcount
-                    }).ToList()
+                    artistGroup => artistGroup.Key,
+                    artistGroup => artistGroup
+                        .GroupBy(track => track.Name.ToLower())
+                        .Select(trackGroup =>
+                        {
+                            var correctTrack = trackGroup.OrderByDescending(t => t.Playcount).First();
+                            return new UserTrack
+                            {
+                                UserTrackId = correctTrack.Id,
+                                ArtistName = correctTrack.ArtistName,
+                                Name = correctTrack.Name,
+                                Playcount = correctTrack.Playcount
+                            };
+                        })
+                        .ToList()
                 );
 
             await UpdateArtistsForUser(user, playUpdate.NewPlays, connection, userArtists);
@@ -359,7 +378,7 @@ public class UpdateService
     public record UserLibraryItem
     {
         public int Type { get; init; }
-        public int Id { get; init; }
+        public long Id { get; init; }
         public string ArtistName { get; init; }
         public string Name { get; init; }
         public int Playcount { get; init; }
@@ -375,22 +394,6 @@ UNION ALL
 SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.user_tracks WHERE user_id = @userId;";
 
         return await connection.QueryAsync<UserLibraryItem>(sql, new { userId });
-    }
-
-    private static async Task<IReadOnlyDictionary<string, UserArtist>> GetUserArtists(int userId,
-        IDbConnection connection)
-    {
-        const string sql = "SELECT DISTINCT ON (LOWER(name)) user_id, name, playcount, user_artist_id " +
-                           "FROM public.user_artists where user_id = @userId " +
-                           "ORDER BY LOWER(name), playcount DESC";
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        var result = await connection.QueryAsync<UserArtist>(sql, new
-        {
-            userId
-        });
-
-        return result.ToDictionary(d => d.Name.ToLower(), d => d);
     }
 
     private async Task UpdateArtistsForUser(User user,
@@ -446,22 +449,6 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
         }
 
         Log.Debug("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-    }
-
-    private static async Task<IReadOnlyDictionary<string, List<UserAlbum>>> GetUserAlbums(int userId,
-        IDbConnection connection)
-    {
-        const string sql = "SELECT * FROM public.user_albums where user_id = @userId";
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        var result = await connection.QueryAsync<UserAlbum>(sql, new
-        {
-            userId
-        });
-
-        return result
-            .GroupBy(g => g.ArtistName.ToLower())
-            .ToDictionary(d => d.Key, d => d.ToList());
     }
 
     private async Task UpdateAlbumsForUser(User user,
@@ -529,22 +516,6 @@ SELECT 3 AS Type, user_track_id AS Id, artist_name, name, playcount FROM public.
         }
 
         Log.Debug("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-    }
-
-    private static async Task<IReadOnlyDictionary<string, List<UserTrack>>> GetUserTracks(int userId,
-        IDbConnection connection)
-    {
-        const string sql = "SELECT * FROM public.user_tracks where user_id = @userId";
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        var result = await connection.QueryAsync<UserTrack>(sql, new
-        {
-            userId
-        });
-
-        return result
-            .GroupBy(g => g.ArtistName.ToLower())
-            .ToDictionary(d => d.Key, d => d.ToList());
     }
 
     private async Task UpdateTracksForUser(User user,
