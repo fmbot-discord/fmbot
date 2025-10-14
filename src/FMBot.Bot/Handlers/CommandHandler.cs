@@ -1,10 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -16,8 +12,12 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Google.Protobuf;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Services.Commands;
 using Prometheus;
 using Serilog;
 
@@ -27,9 +27,9 @@ namespace FMBot.Bot.Handlers;
 
 public class CommandHandler
 {
-    private readonly CommandService _commands;
+    private readonly CommandService<> _commands;
     private readonly UserService _userService;
-    private readonly DiscordShardedClient _discord;
+    private readonly ShardedGatewayClient _discord;
     private readonly MusicBotService _musicBotService;
     private readonly GuildService _guildService;
     private readonly IPrefixService _prefixService;
@@ -42,7 +42,7 @@ public class CommandHandler
     private readonly ShortcutService _shortcutService;
 
     public CommandHandler(
-        DiscordShardedClient discord,
+        ShardedGatewayClient discord,
         CommandService commands,
         IServiceProvider provider,
         IPrefixService prefixService,
@@ -69,27 +69,22 @@ public class CommandHandler
         this._gameBuilders = gameBuilders;
         this._shortcutService = shortcutService;
         this._botSettings = botSettings.Value;
-        this._discord.MessageReceived += MessageReceived;
-        this._discord.MessageUpdated += MessageUpdated;
+        this._discord.MessageCreate += MessageReceived;
+        this._discord.MessageUpdate += MessageUpdated;
     }
 
-    private async Task MessageReceived(SocketMessage s)
+    private async Task MessageReceived(GatewayClient client, Message msg)
     {
         Statistics.DiscordEvents.WithLabels(nameof(MessageReceived)).Inc();
 
-        if (s is not SocketUserMessage msg)
-        {
-            return;
-        }
+        // if (this._discord?.CurrentUser != null && msg.Author?.Id == this._discord.CurrentUser?.Id)
+        // {
+        //     return;
+        // }
 
-        if (this._discord?.CurrentUser != null && msg.Author?.Id == this._discord.CurrentUser?.Id)
-        {
-            return;
-        }
+        var context = new CommandContext(msg, client);
 
-        var context = new ShardedCommandContext(this._discord, msg);
-
-        if (msg.Author != null && msg.Author.IsBot && msg.Flags != MessageFlags.Loading)
+        if (msg.Author.IsBot && msg.Flags != MessageFlags.Loading)
         {
             if (string.IsNullOrWhiteSpace(msg.Author.Username))
             {
@@ -118,7 +113,7 @@ public class CommandHandler
         }
     }
 
-    private async Task TryScrobbling(SocketUserMessage msg, ICommandContext context)
+    private async Task TryScrobbling(Message msg, ICommandContext context)
     {
         foreach (var musicBot in MusicBot.SupportedBots)
         {
@@ -366,7 +361,7 @@ public class CommandHandler
                 var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.Guild);
                 if (lastIndex == null)
                 {
-                    var embed = new EmbedBuilder();
+                    var embed = new EmbedProperties();
                     embed.WithDescription(
                         "To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
                         $"Please run `{prfx}refreshmembers` to create this.\n" +
@@ -385,7 +380,7 @@ public class CommandHandler
             var commandName = searchResult.Commands[0].Command.Name;
             if (msg.Content.EndsWith(" help", StringComparison.OrdinalIgnoreCase) && commandName != "help")
             {
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
                 var userName = (context.Message.Author as SocketGuildUser)?.DisplayName ??
                                context.User.GlobalName ?? context.User.Username;
 

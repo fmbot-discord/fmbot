@@ -1,7 +1,8 @@
 using System;
 using System.Linq;
-using Discord;
+
 using Discord.WebSocket;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -12,7 +13,7 @@ internal class MakiMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Embeds.Count != 1)
         {
@@ -31,7 +32,7 @@ internal class MakiMusicBot : MusicBot
     /**
         Example: Love Reigns — Mall Grab
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         return msg.Embeds.First().Description.Replace("**", "");
     }

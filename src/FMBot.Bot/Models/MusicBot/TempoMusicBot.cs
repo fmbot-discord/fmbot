@@ -1,7 +1,8 @@
 using System;
 using System.Linq;
-using Discord;
+
 using Discord.WebSocket;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -12,7 +13,7 @@ internal class TempoMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Embeds.Count != 1)
         {
@@ -25,7 +26,7 @@ internal class TempoMusicBot : MusicBot
     /**
      * Example: Playing: Liverpool Street In The Rain by Mall Grab
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         var title = msg.Embeds.First().Title;
         var songByArtist = title[title.IndexOf(StartedPlaying, StringComparison.OrdinalIgnoreCase)..];

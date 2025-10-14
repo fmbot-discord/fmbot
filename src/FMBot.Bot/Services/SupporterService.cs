@@ -4,7 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Webhook;
 using Discord.WebSocket;
 using FMBot.Bot.Resources;
@@ -18,6 +18,8 @@ using FMBot.Subscriptions.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Rest;
 using Serilog;
 using Shared.Domain.Enums;
 using Shared.Domain.Models;
@@ -57,7 +59,7 @@ public class SupporterService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<string> GetRandomSupporter(IGuild guild, UserType userUserType)
+    public async Task<string> GetRandomSupporter(NetCord.Gateway.Guild guild, UserType userUserType)
     {
         if (guild == null)
         {
@@ -127,10 +129,10 @@ public class SupporterService
         return true;
     }
 
-    public static async Task SendSupporterWelcomeMessage(IUser discordUser, bool hasDiscogs, Supporter supporter,
+    public static async Task SendSupporterWelcomeMessage(NetCord.User discordUser, bool hasDiscogs, Supporter supporter,
         bool reactivation = false, bool isGifted = false, StripeSupporter stripeSupporter = null)
     {
-        var thankYouEmbed = new EmbedBuilder();
+        var thankYouEmbed = new EmbedProperties();
         thankYouEmbed.WithColor(DiscordConstants.InformationColorBlue);
 
         var thankYouMessage = new StringBuilder();
@@ -219,7 +221,7 @@ public class SupporterService
 
         if (reactivation)
         {
-            var reactivateEmbed = new EmbedBuilder();
+            var reactivateEmbed = new EmbedProperties();
             reactivateEmbed.WithDescription(
                 "Welcome back. Please use the `/import manage` command to re-activate the import service if you've used it previously.");
             reactivateEmbed.WithColor(DiscordConstants.InformationColorBlue);
@@ -231,11 +233,11 @@ public class SupporterService
         }
     }
 
-    public static async Task SendGiftPurchaserThankYouMessage(IUser purchaserUser, StripeSupporter stripeSupporter)
+    public static async Task SendGiftPurchaserThankYouMessage(NetCord.User purchaserUser, StripeSupporter stripeSupporter)
     {
         try
         {
-            var thankYouEmbed = new EmbedBuilder();
+            var thankYouEmbed = new EmbedProperties();
             thankYouEmbed.WithColor(DiscordConstants.SuccessColorGreen);
             thankYouEmbed.WithAuthor("🎁 Thank you for gifting .fmbot supporter!");
 
@@ -263,11 +265,11 @@ public class SupporterService
         }
     }
 
-    public static async Task SendSupporterGoodbyeMessage(IUser discordUser, bool hadImported = false)
+    public static async Task SendSupporterGoodbyeMessage(NetCord.User discordUser, bool hadImported = false)
     {
         try
         {
-            var goodbyeEmbed = new EmbedBuilder();
+            var goodbyeEmbed = new EmbedProperties();
             goodbyeEmbed.WithColor(DiscordConstants.InformationColorBlue);
 
             goodbyeEmbed.AddField("⭐ .fmbot supporter expired",
@@ -809,7 +811,7 @@ public class SupporterService
         {
             var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
 
             embed.WithTitle("Supporter expiry processed");
             embed.WithDescription($"Name: `{supporter.Name}`\n" +
@@ -849,7 +851,7 @@ public class SupporterService
                 continue;
             }
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
 
             var existingSupporter = existingSupporters.FirstOrDefault(f => f.OpenCollectiveId == newSupporter.Id);
             if (existingSupporter is { Expired: true })
@@ -971,7 +973,7 @@ public class SupporterService
 
                         reActivateDescription.AppendLine($"Notes: `{existingSupporter.Notes}`");
 
-                        var reactivateEmbed = new EmbedBuilder();
+                        var reactivateEmbed = new EmbedProperties();
                         reactivateEmbed.WithTitle("Re-activated supporter");
                         reactivateEmbed.WithDescription(reActivateDescription.ToString());
 
@@ -997,7 +999,7 @@ public class SupporterService
                     db.Update(existingSupporter);
                     await db.SaveChangesAsync();
 
-                    var embed = new EmbedBuilder();
+                    var embed = new EmbedProperties();
                     embed.WithTitle("Updated supporter");
                     embed.WithDescription(updatedDescription.ToString());
 
@@ -1019,7 +1021,7 @@ public class SupporterService
                         continue;
                     }
 
-                    var embed = new EmbedBuilder();
+                    var embed = new EmbedProperties();
 
                     embed.WithTitle("Monthly supporter expired");
                     embed.WithDescription(OpenCollectiveSupporterToEmbedDescription(existingSupporter));
@@ -1048,7 +1050,7 @@ public class SupporterService
                         continue;
                     }
 
-                    var embed = new EmbedBuilder();
+                    var embed = new EmbedProperties();
 
                     embed.WithTitle("Yearly supporter expired");
                     embed.WithDescription(OpenCollectiveSupporterToEmbedDescription(existingSupporter));

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using Discord.WebSocket;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
@@ -55,7 +55,7 @@ public class CensorService
         return result.HasBadWord;
     }
 
-    public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embedToUpdate = null)
+    public async Task<CensorResult> IsSafeForChannel(NetCord.Gateway.Guild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embedToUpdate = null)
     {
         var result = await AlbumResult(albumName, artistName);
         if (result == CensorResult.NotSafe)
@@ -73,7 +73,7 @@ public class CensorService
         return result;
     }
 
-    public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string artistName, EmbedBuilder embedToUpdate = null)
+    public async Task<CensorResult> IsSafeForChannel(NetCord.Gateway.Guild guild, IChannel channel, string artistName, EmbedBuilder embedToUpdate = null)
     {
         var result = await ArtistResult(artistName);
         if (result == CensorResult.NotSafe)
@@ -383,7 +383,7 @@ public class CensorService
                 return;
             }
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
             var type = report.IsArtist ? "Artist" : "Album";
             embed.WithTitle($"New censor report - {type}");
             embed.AddField("Artist", $"`{report.ArtistName}`");

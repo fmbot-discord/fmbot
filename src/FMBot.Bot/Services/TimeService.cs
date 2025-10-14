@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
@@ -166,7 +166,7 @@ public class TimeService
         return TimeSpan.FromSeconds(timeListenedSeconds);
     }
 
-    public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(IGuild discordGuild, List<UserPlay> userPlays, IDictionary<int, FullGuildUser> guildUsers)
+    public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(NetCord.Gateway.Guild discordGuild, List<UserPlay> userPlays, IDictionary<int, FullGuildUser> guildUsers)
     {
         var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 

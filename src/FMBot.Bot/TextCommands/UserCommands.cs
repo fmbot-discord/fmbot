@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
 using Discord.WebSocket;
-using Fergun.Interactive;
 using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -72,7 +71,7 @@ public class UserCommands : BaseCommandModule
     [Alias("userconfig", "usersettings", "usersetting", "setting")]
     public async Task UserSettingsAsync([Remainder] string searchValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -98,7 +97,7 @@ public class UserCommands : BaseCommandModule
     [SupporterEnhanced("Get more insights and an overview of all your years")]
     public async Task StatsAsync([Remainder] string userOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

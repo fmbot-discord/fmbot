@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
 using FMBot.Bot.Models;
 using FMBot.Domain;
@@ -724,8 +724,8 @@ public class SettingService
     public async Task<UserSettingsModel> GetUser(
         string extraOptions,
         User user,
-        IGuild discordGuild,
-        IUser discordUser,
+        NetCord.Gateway.Guild discordGuild,
+        NetCord.User discordUser,
         bool firstOptionIsLfmUsername = false,
         bool allowNonFmbot = false)
     {
@@ -879,7 +879,7 @@ public class SettingService
     }
 
     public async Task<UserSettingsModel> GetOriginalContextUser(
-        ulong discordUserId, ulong requesterUserId, IGuild discordGuild, IUser contextDiscordUser)
+        ulong discordUserId, ulong requesterUserId, NetCord.Gateway.Guild discordGuild, NetCord.User contextDiscordUser)
     {
         IGuildUser guildUser = null;
         if (discordGuild != null)

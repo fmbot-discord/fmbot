@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Discord;
+
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using System.Text;
@@ -16,7 +16,6 @@ using FMBot.Domain.Interfaces;
 using Serilog;
 using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
-using Fergun.Interactive;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -590,7 +589,7 @@ public class GameBuilders
         if (currentGame.Answers is { Count: >= 1 })
         {
             var dayCount = await dayStreakTask;
-            var separateResponse = new EmbedBuilder();
+            var separateResponse = new EmbedProperties();
             separateResponse.WithDescription(currentGame.JumbleType == JumbleType.Artist
                 ? $"**{userTitle}** gave up! It was `{currentGame.CorrectAnswer}`"
                 : $"**{userTitle}** gave up! It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");
@@ -692,7 +691,7 @@ public class GameBuilders
 
                     var userTitle = await UserService.GetNameAsync(context.DiscordGuild, context.DiscordUser);
 
-                    var separateResponse = new EmbedBuilder();
+                    var separateResponse = new EmbedProperties();
                     separateResponse.WithDescription(
                         currentGame.JumbleType == JumbleType.Artist
                             ? $"**{userTitle}** got it! It was `{currentGame.CorrectAnswer}`"
@@ -837,7 +836,7 @@ public class GameBuilders
 
         if (currentGame.Answers is { Count: >= 1 })
         {
-            var separateResponse = new EmbedBuilder();
+            var separateResponse = new EmbedProperties();
             separateResponse.WithDescription(currentGame.JumbleType == JumbleType.Artist
                 ? $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}`"
                 : $"Nobody guessed it right. It was `{currentGame.CorrectAnswer}` by {currentGame.ArtistName}");

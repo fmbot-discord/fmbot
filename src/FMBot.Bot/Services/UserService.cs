@@ -8,9 +8,8 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using Discord.Commands;
-using Discord.Interactions;
 using Discord.Rest;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
@@ -29,9 +28,14 @@ using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Gateway;
+using NetCord.Services.Commands;
 using Npgsql;
 using Serilog;
 using Shared.Domain.Models;
+using Swan.Parsers;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Services;
 
@@ -49,7 +53,7 @@ public class UserService
     private readonly FriendsService _friendsService;
     private readonly AdminService _adminService;
     private readonly TemplateService _templateService;
-    private readonly DiscordShardedClient _client;
+    private readonly ShardedGatewayClient _client;
     private readonly HttpClient _httpClient;
     private readonly EurovisionService _eurovisionService;
 
@@ -65,7 +69,7 @@ public class UserService
         FriendsService friendsService,
         AdminService adminService,
         TemplateService templateService,
-        DiscordShardedClient client,
+        ShardedGatewayClient client,
         HttpClient httpClient,
         EurovisionService eurovisionService)
     {
@@ -86,7 +90,7 @@ public class UserService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<User> GetUserSettingsAsync(IUser discordUser)
+    public async Task<User> GetUserSettingsAsync(NetCord.User discordUser)
     {
         return await GetUserAsync(discordUser.Id);
     }
@@ -144,7 +148,7 @@ public class UserService
         return $"user-{userNameLastFm.ToLower()}";
     }
 
-    public async Task<User> GetUserOrTempUser(IUser discordUser)
+    public async Task<User> GetUserOrTempUser(NetCord.User discordUser)
     {
         if (this._cache.TryGetValue(TempUserCacheKey(discordUser.Id), out string lastFmUserName))
         {
@@ -189,7 +193,7 @@ public class UserService
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
     }
 
-    public async Task<bool> UserRegisteredAsync(IUser discordUser)
+    public async Task<bool> UserRegisteredAsync(NetCord.User discordUser)
     {
         var user = await GetUserAsync(discordUser.Id);
 
@@ -237,7 +241,7 @@ public class UserService
         return blockedUsernamesHashSet;
     }
 
-    public async Task<IUser> GetUserFromDiscord(ulong discordUserId)
+    public async Task<NetCord.User> GetUserFromDiscord(ulong discordUserId)
     {
         var user = this._client.GetUser(discordUserId);
 
@@ -249,14 +253,14 @@ public class UserService
         return user;
     }
 
-    public async Task<bool> UserHasSessionAsync(IUser discordUser)
+    public async Task<bool> UserHasSessionAsync(NetCord.User discordUser)
     {
         var user = await GetUserSettingsAsync(discordUser);
 
         return !string.IsNullOrEmpty(user?.SessionKeyLastFm);
     }
 
-    public async Task<bool> UserIsSupporter(IUser discordUser)
+    public async Task<bool> UserIsSupporter(NetCord.User discordUser)
     {
         var user = await GetUserSettingsAsync(discordUser);
 
@@ -934,7 +938,7 @@ public class UserService
         RemoveUserFromCache(user);
     }
 
-    public async Task<User> GetUserWithFriendsAsync(IUser discordUser)
+    public async Task<User> GetUserWithFriendsAsync(NetCord.User discordUser)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         return await db.Users
@@ -980,7 +984,7 @@ public class UserService
             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
     }
 
-    public static async Task<string> GetNameAsync(IGuild guild, IUser user)
+    public static async Task<string> GetNameAsync(NetCord.Gateway.Guild guild, NetCord.User user)
     {
         if (guild == null)
         {
@@ -992,14 +996,14 @@ public class UserService
         return guildUser?.DisplayName ?? user.GlobalName ?? user.Username;
     }
 
-    public async Task<UserType> GetRankAsync(IUser discordUser)
+    public async Task<UserType> GetRankAsync(NetCord.User discordUser)
     {
         var user = await GetUserSettingsAsync(discordUser);
 
         return user?.UserType ?? UserType.User;
     }
 
-    public async Task<string> GetUserTitleAsync(ICommandContext context)
+    public async Task<string> GetUserTitleAsync(CommandContext context)
     {
         var name = await GetNameAsync(context.Guild, context.User);
         var userType = await GetRankAsync(context.User);
@@ -1011,7 +1015,7 @@ public class UserService
         return title;
     }
 
-    public async Task<string> GetUserTitleAsync(IGuild guild, IUser user)
+    public async Task<string> GetUserTitleAsync(NetCord.Gateway.Guild guild, NetCord.User user)
     {
         var name = await GetNameAsync(guild, user);
         var userType = await GetRankAsync(user);
@@ -1284,7 +1288,7 @@ public class UserService
         return (promo, description.ToString());
     }
 
-    private async Task AddOrUpdateUser(IUser discordUser, User newUserSettings)
+    private async Task AddOrUpdateUser(NetCord.User discordUser, User newUserSettings)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var user = await db.Users
@@ -1345,7 +1349,7 @@ public class UserService
         TimedOut
     }
 
-    public async Task<(LoginStatus Status, int AltCount)> GetAndStoreAuthSession(IUser contextUser, string token)
+    public async Task<(LoginStatus Status, int AltCount)> GetAndStoreAuthSession(NetCord.User contextUser, string token)
     {
         Log.Information("LastfmAuth: Login session starting for {user} | {discordUserId}", contextUser.Username,
             contextUser.Id);

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
+
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
@@ -71,8 +71,8 @@ public sealed class ComplexTemplateOption : TemplateOption
 public class TemplateContext
 {
     public UserSettingsModel UserSettings { get; set; }
-    public IUser DiscordContextUser { get; set; }
-    public IGuild DiscordContextGuild { get; set; }
+    public NetCord.User DiscordContextUser { get; set; }
+    public NetCord.Gateway.Guild DiscordContextGuild { get; set; }
 
     public NpgsqlConnection Connection { get; set; }
 

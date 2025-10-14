@@ -1,7 +1,6 @@
 using System.Text.Json.Serialization;
 using System;
 using CsvHelper.Configuration.Attributes;
-using Discord.Interactions;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Enums;
 

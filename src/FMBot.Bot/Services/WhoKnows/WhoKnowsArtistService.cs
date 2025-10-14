@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -34,7 +34,7 @@ public class WhoKnowsArtistService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(IGuild discordGuild,
+    public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, string artistName)
     {
         const string sql = "BEGIN; " +
@@ -94,7 +94,7 @@ public class WhoKnowsArtistService
         return whoKnowsArtistList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(IGuild discordGuild, string artistName)
+    public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(NetCord.Gateway.Guild discordGuild, string artistName)
     {
         const string sql = "SELECT * " +
                            "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
@@ -154,7 +154,7 @@ public class WhoKnowsArtistService
         return whoKnowsArtistList;
     }
 
-    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForArtists(IGuild discordGuild,
+    public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForArtists(NetCord.Gateway.Guild discordGuild,
         IDictionary<int, FullGuildUser> guildUsers, int guildId, int userId, string artistName)
     {
         const string sql = "SELECT * " +

@@ -4,8 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Discord;
-using Fergun.Interactive;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -13,6 +12,8 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Builders;
 
@@ -120,11 +121,10 @@ public class DiscogsBuilder
         {
             await dm.ModifyAsync(m =>
             {
-                m.Embed = new EmbedBuilder()
+                m.Embed = new EmbedProperties()
                     .WithDescription($"❌ Login failed.. link timed out.\n\n" +
                                         $"Re-run the `{context.Prefix}discogs` command to try again.")
-                    .WithColor(DiscordConstants.WarningColorOrange)
-                    .Build();
+                    .WithColor(DiscordConstants.WarningColorOrange);
             });
             response.CommandResponse = CommandResponse.Cooldown;
             return response;

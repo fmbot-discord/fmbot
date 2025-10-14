@@ -1,9 +1,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -86,7 +85,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         if (user == null)
         {
@@ -172,7 +171,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         if (user == null)
         {
@@ -237,7 +236,7 @@ public class UserGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), searchValue: searchValue);
 

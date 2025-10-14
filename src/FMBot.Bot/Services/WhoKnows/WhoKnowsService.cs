@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Enums;
@@ -25,7 +25,7 @@ public class WhoKnowsService
     }
 
     public static async Task<IList<WhoKnowsObjectWithUser>> AddOrReplaceUserToIndexList(
-        IList<WhoKnowsObjectWithUser> users, User contextUser, string name, IGuild discordGuild = null,
+        IList<WhoKnowsObjectWithUser> users, User contextUser, string name, NetCord.Gateway.Guild discordGuild = null,
         long? playcount = null)
     {
         if (!playcount.HasValue)

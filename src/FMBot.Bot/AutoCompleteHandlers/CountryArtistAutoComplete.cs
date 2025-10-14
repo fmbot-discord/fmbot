@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.AutoCompleteHandlers;
 
-public class CountryArtistAutoComplete : AutocompleteHandler
+public class CountryArtistAutoComplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     private readonly ArtistsService _artistsService;
     private readonly CountryService _countryService;
@@ -20,8 +21,9 @@ public class CountryArtistAutoComplete : AutocompleteHandler
         this._countryService = countryService;
     }
 
-    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context,
-        IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    public async ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>> GetChoicesAsync(
+        ApplicationCommandInteractionDataOption option,
+        AutocompleteInteractionContext context)
     {
         var recentlyPlayedArtists = await this._artistsService.GetLatestArtists(context.User.Id);
         var recentTopArtists = (await this._artistsService.GetRecentTopArtists(context.User.Id))
@@ -29,16 +31,15 @@ public class CountryArtistAutoComplete : AutocompleteHandler
 
         var results = new List<string>();
 
-        if (autocompleteInteraction?.Data?.Current?.Value == null ||
-            string.IsNullOrWhiteSpace(autocompleteInteraction?.Data?.Current?.Value.ToString()))
+        if (string.IsNullOrWhiteSpace(option.Value))
         {
             if (recentlyPlayedArtists == null || !recentlyPlayedArtists.Any() ||
                 recentTopArtists == null || !recentTopArtists.Any())
             {
                 results.Add("Start typing to search through countries or artists...");
 
-                return await Task.FromResult(
-                    AutocompletionResult.FromSuccess(results.Select(s => new AutocompleteResult(s, s))));
+                return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
+                    new ApplicationCommandOptionChoiceProperties(s, s)));
             }
 
             var recentlyPlayedCountries = (await this._countryService.GetTopCountriesForTopArtistsString(recentlyPlayedArtists)).Select(this._countryService.CountryCodeToCountryName);
@@ -59,11 +60,8 @@ public class CountryArtistAutoComplete : AutocompleteHandler
         }
         else
         {
-            var searchValue = autocompleteInteraction.Data.Current.Value.ToString();
-            results = new List<string>
-            {
-                searchValue
-            };
+            var searchValue = option.Value;
+            results = [searchValue];
 
             var countryResults = this._countryService.SearchThroughCountries(searchValue);
 
@@ -129,7 +127,7 @@ public class CountryArtistAutoComplete : AutocompleteHandler
                 .Select(s => s.Name));
         }
 
-        return await Task.FromResult(
-            AutocompletionResult.FromSuccess(results.Select(s => new AutocompleteResult(s, s))));
+        return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
+            new ApplicationCommandOptionChoiceProperties(s, s)));
     }
 }

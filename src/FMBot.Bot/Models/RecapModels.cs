@@ -1,5 +1,4 @@
-﻿using Discord.Interactions;
-
+﻿
 namespace FMBot.Bot.Models;
 
 

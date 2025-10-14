@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AngleSharp.Css;
-using Discord;
-using Discord.Interactions;
+
 using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -236,7 +234,7 @@ public class TemplateSlashCommands : ApplicationCommandModule<ApplicationCommand
     [UsernameSetRequired]
     public async Task SetOption(string[] inputs)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         if (Enum.TryParse(inputs.FirstOrDefault(), out EmbedOption embedOption))

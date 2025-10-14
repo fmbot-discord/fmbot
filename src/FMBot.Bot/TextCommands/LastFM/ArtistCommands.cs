@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Text;
 using System.Threading.Tasks;
 using Discord.Commands;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -74,7 +73,7 @@ public class ArtistCommands : BaseCommandModule
     [SupporterEnhanced("Supporters can see the date they first discovered an artist")]
     public async Task ArtistAsync([Remainder] string artistValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -108,7 +107,7 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists)]
     public async Task ArtistOverviewAsync([Remainder] string artistValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
@@ -144,7 +143,7 @@ public class ArtistCommands : BaseCommandModule
     [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artisttracks command always contains all their tracks")]
     public async Task ArtistTracksAsync([Remainder] string artistValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
@@ -175,7 +174,7 @@ public class ArtistCommands : BaseCommandModule
     [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artistalbums command always contains all their albums")]
     public async Task ArtistAlbumsAsync([Remainder] string artistValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
@@ -206,7 +205,7 @@ public class ArtistCommands : BaseCommandModule
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -233,7 +232,7 @@ public class ArtistCommands : BaseCommandModule
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -271,7 +270,7 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists)]
     public async Task TopArtistsAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -323,7 +322,7 @@ public class ArtistCommands : BaseCommandModule
     [SupporterExclusive("To see what music you've recently discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task ArtistDiscoveriesAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -372,7 +371,7 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists)]
     public async Task TasteAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -417,7 +416,7 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows)]
     public async Task WhoKnowsAsync([Remainder] string artistValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
@@ -469,7 +468,7 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows)]
     public async Task GlobalWhoKnowsAsync([Remainder] string artistValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
@@ -520,7 +519,7 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
     public async Task FriendWhoKnowsAsync([Remainder] string artistValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
@@ -572,7 +571,7 @@ public class ArtistCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var guildListSettings = new GuildRankingSettings
         {
@@ -621,7 +620,7 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists)]
     public async Task AffinityAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -690,7 +689,7 @@ public class ArtistCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Artists)]
     public async Task IcebergAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         try
@@ -724,7 +723,7 @@ public class ArtistCommands : BaseCommandModule
     [SupporterExclusive("To see which artists you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task ArtistGapsAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

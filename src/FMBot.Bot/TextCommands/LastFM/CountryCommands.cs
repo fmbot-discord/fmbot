@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Discord.Commands;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -50,7 +49,7 @@ public class CountryCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Genres)]
     public async Task TopCountriesAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -80,7 +79,7 @@ public class CountryCommands : BaseCommandModule
     [Alias("cc", "worldmap", "artistmap")]
     public async Task CountryChartAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -115,7 +114,7 @@ public class CountryCommands : BaseCommandModule
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         try
         {

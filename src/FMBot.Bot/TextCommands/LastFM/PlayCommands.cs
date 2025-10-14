@@ -2,10 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
 using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -76,7 +75,7 @@ public class PlayCommands : BaseCommandModule
         "To see when you've discovered this artist, album and track we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
     public async Task DateDiscoveredAsync([Remainder] string options = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -191,7 +190,7 @@ public class PlayCommands : BaseCommandModule
                 }
             }
 
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
             var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
             var configuredFmType = SettingService.GetEmbedType(userSettings.NewSearchValue, contextUser.FmEmbedType);
 
@@ -228,7 +227,7 @@ public class PlayCommands : BaseCommandModule
     [SupporterEnhanced("Supporters can view their lifetime history")]
     public async Task RecentAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
@@ -258,7 +257,7 @@ public class PlayCommands : BaseCommandModule
     [SupporterEnhanced("See your lifetime history day to day as a supporter")]
     public async Task OverviewAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
@@ -287,7 +286,7 @@ public class PlayCommands : BaseCommandModule
     [SupporterEnhanced("Get an extra page with artist discoveries and a monthly overview")]
     public async Task YearAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -316,7 +315,7 @@ public class PlayCommands : BaseCommandModule
     [Alias("rcp", "wrapped")]
     public async Task RecapAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -369,7 +368,7 @@ public class PlayCommands : BaseCommandModule
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
         var userInfo = await this._dataSourceFactory.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
@@ -404,7 +403,7 @@ public class PlayCommands : BaseCommandModule
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         try
         {
@@ -445,7 +444,7 @@ public class PlayCommands : BaseCommandModule
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
         var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime,
@@ -468,7 +467,7 @@ public class PlayCommands : BaseCommandModule
         "Streaks for non-supporters are limited to 25k plays, due to the bot not caching plays beyond this limit for free users")]
     public async Task StreakAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -502,7 +501,7 @@ public class PlayCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
     public async Task StreakHistoryAsync([Remainder] string extraOptions = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -535,7 +534,7 @@ public class PlayCommands : BaseCommandModule
     {
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
@@ -566,7 +565,7 @@ public class PlayCommands : BaseCommandModule
     {
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);

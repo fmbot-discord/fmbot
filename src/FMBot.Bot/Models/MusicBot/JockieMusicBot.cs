@@ -1,7 +1,8 @@
 using System;
 using System.Linq;
-using Discord;
+
 using Discord.WebSocket;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -12,7 +13,7 @@ internal class JockieMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Embeds.Count != 1)
         {
@@ -38,7 +39,7 @@ internal class JockieMusicBot : MusicBot
      * Example: :spotify: ​ Started playing Giants by Lights
      * Or extended (m!set text announce extended on/off)
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         var description = msg.Embeds.First().Description;
         if (description != null &&

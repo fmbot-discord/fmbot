@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
 using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -192,7 +191,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> SetPrefix(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetPrefix(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -242,7 +241,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> SetFmbotActivityThreshold(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetFmbotActivityThreshold(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -289,7 +288,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> SetCrownActivityThreshold(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetCrownActivityThreshold(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -341,7 +340,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> SetCrownMinPlaycount(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetCrownMinPlaycount(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -631,7 +630,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> GuildMode(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> GuildMode(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -713,7 +712,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ToggleGuildCommand(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> ToggleGuildCommand(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -760,7 +759,7 @@ public class GuildSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId, ulong? selectedCategoryId = null, IUser lastModifier = null)
+    public async Task<ResponseModel> ToggleChannelCommand(ContextModel context, ulong selectedChannelId, ulong? selectedCategoryId = null, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {

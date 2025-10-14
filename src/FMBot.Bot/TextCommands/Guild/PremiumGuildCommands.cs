@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Discord.Commands;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;

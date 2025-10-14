@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services.Guild;
@@ -13,13 +12,16 @@ using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.FileSystemGlobbing.Internal;
+using NetCord;
+using NetCord.Services;
+using NetCord.Services.ApplicationCommands;
 using Serilog;
 
 namespace FMBot.Bot.Extensions;
 
 public static class InteractionContextExtensions
 {
-    public static void LogCommandUsed(this IInteractionContext context,
+    public static void LogCommandUsed(this ApplicationCommandContext context,
         CommandResponse commandResponse = CommandResponse.Ok)
     {
         string commandName = null;
@@ -61,7 +63,7 @@ public static class InteractionContextExtensions
         PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, commandResponse);
     }
 
-    public static async Task HandleCommandException(this IInteractionContext context, Exception exception,
+    public static async Task HandleCommandException(this ApplicationCommandContext context, Exception exception,
         string message = null, bool sendReply = true, bool deferFirst = false)
     {
         var referenceId = CommandContextExtensions.GenerateRandomCode();
@@ -130,7 +132,7 @@ public static class InteractionContextExtensions
         PublicProperties.UsedCommandsResponses.TryAdd(context.Interaction.Id, CommandResponse.LastFmError);
     }
 
-    public static async Task SendResponse(this IInteractionContext context, InteractiveService interactiveService,
+    public static async Task SendResponse(this ApplicationCommandContext context, InteractiveService interactiveService,
         ResponseModel response, bool ephemeral = false, ResponseModel extraResponse = null)
     {
         var embeds = new[] { response.Embed.Build() };
@@ -329,7 +331,7 @@ public static class InteractionContextExtensions
         return responseId;
     }
 
-    public static async Task UpdateInteractionEmbed(this IInteractionContext context, ResponseModel response,
+    public static async Task UpdateInteractionEmbed(this ApplicationCommandContext context, ResponseModel response,
         InteractiveService interactiveService = null, bool defer = true)
     {
         var message = (context.Interaction as SocketMessageComponent)?.Message;

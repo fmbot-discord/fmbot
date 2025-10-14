@@ -1,9 +1,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -60,7 +59,7 @@ public class SpotifyCommands : BaseCommandModule
 
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             if (searchValue != null && searchValue.StartsWith("play ", StringComparison.OrdinalIgnoreCase))
             {
@@ -166,7 +165,7 @@ public class SpotifyCommands : BaseCommandModule
 
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
             {
@@ -254,7 +253,7 @@ public class SpotifyCommands : BaseCommandModule
 
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
             {

@@ -11,7 +11,6 @@ using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
-using Fergun.Interactive;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -48,7 +47,7 @@ public class AppleMusicCommands : BaseCommandModule
 
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             if (searchValue != null && searchValue.StartsWith("play ", StringComparison.OrdinalIgnoreCase))
             {

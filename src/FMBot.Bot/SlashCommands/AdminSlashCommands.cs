@@ -2,9 +2,8 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
-using Discord.Interactions;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -62,7 +61,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [ComponentInteraction(InteractionConstants.ModerationCommands.CensorTypes)]
     public async Task SetCensoredArtist(string censoredId, string[] inputs)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
 
         var id = int.Parse(censoredId);
         var censoredMusic = await this._censorService.GetForId(id);
@@ -121,7 +120,7 @@ public class AdminSlashCommands : ApplicationCommandModule<ApplicationCommandCon
     [ComponentInteraction(InteractionConstants.ModerationCommands.ArtistAlias)]
     public async Task SetArtistAliasOptions(string censoredId, string[] inputs)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
 
         var id = int.Parse(censoredId);
         var artistAlias = await this._aliasService.GetArtistAliasForId(id);

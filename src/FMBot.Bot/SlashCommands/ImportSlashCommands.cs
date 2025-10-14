@@ -1,9 +1,8 @@
-﻿using Discord;
+﻿
 using System.Text;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
-using Discord.Interactions;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
@@ -12,7 +11,6 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
-using Fergun.Interactive;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
@@ -60,7 +58,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             description.AppendLine($"Import mode set to **{name}**");
             description.AppendLine();
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
             embed.WithDescription(description +
                                   $"{DiscordConstants.Loading} Your stored top artist/albums/tracks are being recalculated, please wait for this to complete...");
             embed.WithColor(DiscordConstants.WarningColorOrange);
@@ -96,7 +94,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
         await this._importService.RemoveImportedSpotifyPlays(contextUser);
 
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithDescription($"All your imported Spotify history has been removed from .fmbot.");
         embed.WithColor(DiscordConstants.SuccessColorGreen);
 
@@ -112,7 +110,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
 
         await this._importService.RemoveImportedAppleMusicPlays(contextUser);
 
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithDescription($"All your imported Apple Music history has been removed from .fmbot.");
         embed.WithColor(DiscordConstants.SuccessColorGreen);
 
@@ -232,7 +230,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
             await DeferAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -255,7 +253,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
             await DeferAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -281,7 +279,7 @@ public class ImportSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     {
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
             await DeferAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 

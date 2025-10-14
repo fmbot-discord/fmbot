@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Discord;
-using Discord.WebSocket;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -39,12 +38,12 @@ public abstract class MusicBot
         this.TrackNameFirst = trackNameFirst;
     }
 
-    public bool IsAuthor(SocketUser user)
+    public bool IsAuthor(NetCord.User user)
     {
         return user?.Username?.StartsWith(this.Name, StringComparison.OrdinalIgnoreCase) ?? false;
     }
 
-    public abstract bool ShouldIgnoreMessage(IUserMessage msg);
+    public abstract bool ShouldIgnoreMessage(Message msg);
 
-    public abstract string GetTrackQuery(IUserMessage msg);
+    public abstract string GetTrackQuery(Message msg);
 }

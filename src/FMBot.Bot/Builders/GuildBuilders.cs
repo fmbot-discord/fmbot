@@ -4,14 +4,12 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using System.Threading.Tasks;
 using FMBot.Bot.Services.Guild;
-using Fergun.Interactive;
 using System.Collections.Generic;
 using FMBot.Bot.Services.WhoKnows;
 using System.Linq;
 using FMBot.Bot.Extensions;
 using System.Text;
-using Discord;
-using Discord.Interactions;
+
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Extensions;

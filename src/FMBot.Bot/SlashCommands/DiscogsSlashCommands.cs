@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
+
 using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -151,7 +149,7 @@ public class DiscogsSlashCommands : ApplicationCommandModule<ApplicationCommandC
             return;
         }
 
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithDescription("Fetching login link...");
         embed.WithColor(DiscordConstants.InformationColorBlue);
         await RespondAsync(embed: embed.Build());

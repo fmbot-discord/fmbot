@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Discord;
+
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Models.TemplateOptions;
 using FMBot.Domain.Enums;
@@ -123,7 +123,7 @@ public partial class TemplateService
 
     private static async Task<TemplateResult> TemplateToEmbed(Template template, TemplateContext context)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         var script = template.Content.Replace("$$fm-template", "").TrimStart();
         var lines = script.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 

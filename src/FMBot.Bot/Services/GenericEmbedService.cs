@@ -1,8 +1,6 @@
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -11,13 +9,17 @@ using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 using FMBot.Domain.Types;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 using Serilog;
+using ICommandContext = NetCord.Discord.Commands.ICommandContext;
 
 namespace FMBot.Bot.Services;
 
 public static class GenericEmbedService
 {
-    public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx, string name)
+    public static void UsernameNotSetErrorResponse(this EmbedProperties embed, string prfx, string name)
     {
         var loginCommand = PublicProperties.SlashCommands.ContainsKey("login")
             ? $"</login:{PublicProperties.SlashCommands["login"]}>"
@@ -46,14 +48,14 @@ public static class GenericEmbedService
                 customId: InteractionConstants.User.Login);
     }
 
-    public static void RateLimitedResponse(this EmbedBuilder embed)
+    public static void RateLimitedResponse(this EmbedProperties embed)
     {
         embed.WithDescription(
             $"Sorry, you're being ratelimited. Please cool down and wait a minute before using commands again.");
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    public static void UserBlockedResponse(this EmbedBuilder embed, string prfx)
+    public static void UserBlockedResponse(this EmbedProperties embed, string prfx)
     {
         embed.WithDescription("You're banned from using .fmbot.");
         embed.WithThumbnailUrl("https://i.imgur.com/wNmcoR5.jpg");
@@ -61,7 +63,7 @@ public static class GenericEmbedService
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    public static void SessionRequiredResponse(this EmbedBuilder embed, string prfx)
+    public static void SessionRequiredResponse(this EmbedProperties embed, string prfx)
     {
         embed.WithDescription(
             "While you have set your username, you haven't connected .fmbot to your Last.fm account yet, which is required for the command you're trying to use.\n" +
@@ -70,7 +72,7 @@ public static class GenericEmbedService
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
 
-    private static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, string userName)
+    private static void NoScrobblesFoundErrorResponse(this EmbedProperties embed, string userName)
     {
         var description = new StringBuilder();
         description.AppendLine(
@@ -96,8 +98,8 @@ public static class GenericEmbedService
             .WithButton("Track Spotify", style: ButtonStyle.Link, url: "https://www.last.fm/settings/applications");
     }
 
-    public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message,
-        string commandContent, IUser contextUser = null, string expectedResultType = null)
+    public static void ErrorResponse(this EmbedProperties embed, ResponseStatus? responseStatus, string message,
+        string commandContent, NetCord.User contextUser = null, string expectedResultType = null)
     {
         embed.WithTitle("Problem while contacting Last.fm");
 
@@ -178,9 +180,9 @@ public static class GenericEmbedService
     }
 
     public static async Task<bool> RecentScrobbleCallFailedReply(Response<RecentTrackList> recentScrobbles,
-        string lastFmUserName, ICommandContext context)
+        string lastFmUserName, CommandContext context)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         if (!recentScrobbles.Success || recentScrobbles.Content == null)
         {
             embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context.Message.Content, context.User);
@@ -201,10 +203,10 @@ public static class GenericEmbedService
         return false;
     }
 
-    public static EmbedBuilder RecentScrobbleCallFailedBuilder(Response<RecentTrackList> recentScrobbles,
+    public static EmbedProperties RecentScrobbleCallFailedBuilder(Response<RecentTrackList> recentScrobbles,
         string lastFmUserName)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         if (recentScrobbles.Content?.RecentTracks == null || !recentScrobbles.Success)
         {
             embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, null);
@@ -246,8 +248,8 @@ public static class GenericEmbedService
         return null;
     }
 
-    public static (EmbedBuilder embedBuilder, bool showPurchaseButtons) HelpResponse(EmbedBuilder embed,
-        CommandInfo commandInfo, string prfx, string userName)
+    public static (EmbedProperties EmbedProperties, bool showPurchaseButtons) HelpResponse(EmbedProperties embed,
+        CommandInfo<> commandInfo, string prfx, string userName)
     {
         embed.WithColor(DiscordConstants.InformationColorBlue);
         embed.WithTitle($"Information about '{prfx}{commandInfo.Name}' for {userName}");
@@ -327,5 +329,23 @@ public static class GenericEmbedService
             .WithButton(Constants.GetSupporterButton, style: ButtonStyle.Primary,
                 customId: InteractionConstants.SupporterLinks.GeneratePurchaseButtons(
                     source: $"help-{commandInfo.Name}"));
+    }
+
+    public static void AddField(this EmbedProperties embed, string name, string value, bool inline = false)
+    {
+        embed.AddFields(new EmbedFieldProperties
+        {
+            Name = name,
+            Value = value,
+            Inline = inline
+        });
+    }
+
+    public static void WithFooter(this EmbedProperties embed, string value)
+    {
+        embed.WithFooter(new EmbedFooterProperties
+        {
+            Text = value
+        });
     }
 }

@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using Fergun.Interactive;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Handlers;
@@ -158,10 +157,10 @@ public class Startup
 
     private static ShardedGatewayClient ConfigureDiscordClient()
     {
-        const NetCord.Gateway.GatewayIntents intents = NetCord.Gateway.GatewayIntents.GuildUsers | NetCord.Gateway.GatewayIntents.MessageContent |
-                                                       NetCord.Gateway.GatewayIntents.DirectMessages | NetCord.Gateway.GatewayIntents.GuildMessages |
-                                                       NetCord.Gateway.GatewayIntents.Guilds |
-                                                       NetCord.Gateway.GatewayIntents.GuildVoiceStates;
+        const NetCord.Gateway.GatewayIntents intents = GatewayIntents.GuildUsers | GatewayIntents.MessageContent |
+                                                       GatewayIntents.DirectMessages | GatewayIntents.GuildMessages |
+                                                       GatewayIntents.Guilds |
+                                                       GatewayIntents.GuildVoiceStates;
 
         if (ConfigData.Data.Shards != null && ConfigData.Data.Discord.MaxConcurrency.HasValue)
         {

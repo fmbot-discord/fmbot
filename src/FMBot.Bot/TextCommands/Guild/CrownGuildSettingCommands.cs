@@ -1,10 +1,9 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
 using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -115,7 +114,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         if (user == null)
         {
@@ -206,7 +205,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         if (user == null)
         {
@@ -292,7 +291,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var response = await this._guildSettingBuilder.BlockedUsersAsync(new ContextModel(this.Context, prfx), true, searchValue);
 
@@ -309,7 +308,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     public async Task ToggleCrownsAsync([Remainder] string unused = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         if (!await this._guildSettingBuilder.UserIsAllowed(new ContextModel(this.Context, prfx)))
         {
@@ -332,7 +331,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
     public async Task KillCrownAsync([Remainder] string killCrownValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -417,7 +416,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
     public async Task KillAllCrownsAsync([Remainder] string confirmation = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -449,7 +448,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
         if (guildCrowns == null || !guildCrowns.Any())
@@ -483,7 +482,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
     public async Task KillAllSeededCrownsAsync([Remainder] string confirmation = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -515,7 +514,7 @@ public class CrownGuildSettingCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
         if (guildCrowns == null || !guildCrowns.Any())

@@ -10,8 +10,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
-using Fergun.Interactive;
-using Discord;
+
 using System.Threading;
 using FMBot.Domain;
 
@@ -61,7 +60,7 @@ public class GameCommands : BaseCommandModule
             var context = new ContextModel(this.Context, prfx, contextUser);
             if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) || options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
+                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
                 var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
 
@@ -147,7 +146,7 @@ public class GameCommands : BaseCommandModule
     [SupporterEnhanced("Supporters can play unlimited Pixel Jumble games without a daily limit")]
     public async Task PixelAsync([Remainder] string options = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -157,7 +156,7 @@ public class GameCommands : BaseCommandModule
             var context = new ContextModel(this.Context, prfx, contextUser);
             if (options != null && (options.Contains("stats", StringComparison.OrdinalIgnoreCase) || options.Contains("statistics", StringComparison.OrdinalIgnoreCase)))
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
+                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
                 var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
 

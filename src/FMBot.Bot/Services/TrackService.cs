@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -76,7 +76,7 @@ public class TrackService
         this._userService = userService;
     }
 
-    public async Task<TrackSearch> SearchTrack(ResponseModel response, IUser discordUser, string trackValues,
+    public async Task<TrackSearch> SearchTrack(ResponseModel response, NetCord.User discordUser, string trackValues,
         string lastFmUserName, string sessionKey = null, string otherUserUsername = null, bool useCachedTracks = false,
         int? userId = null, ulong? interactionId = null, IUserMessage referencedMessage = null)
     {

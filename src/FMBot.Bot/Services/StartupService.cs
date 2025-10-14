@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Discord;
+
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
@@ -122,15 +122,6 @@ public class StartupService
         Log.Information("Logging into Discord");
         await this._client.StartAsync();
 
-        Log.Information("Setting Discord user status");
-
-        if (!string.IsNullOrEmpty(this._botSettings.Bot.Status))
-        {
-            Log.Information($"Setting custom status to '{this._botSettings.Bot.Status}'");
-            await this._client.SetGameAsync(this._botSettings.Bot.Status);
-
-        }
-
         Log.Information("Loading interaction modules");
         this._appCommands.AddModules(typeof(Program).Assembly);
 
@@ -146,7 +137,7 @@ public class StartupService
         Log.Information("Loading shortcuts");
         await this._shortcutService.LoadAllShortcuts();
 
-        var gateway = await this._client.GetBotGatewayAsync();
+        var gateway = await this._client.Rest.GetGatewayBotAsync();
         Log.Information("ShardStarter: connects left {connectsLeft} - reset after {resetAfter}",
             gateway.SessionStartLimit.Remaining, gateway.SessionStartLimit.ResetAfter);
 
@@ -156,42 +147,44 @@ public class StartupService
             maxConcurrency = 8;
         }
 
-        Log.Information("ShardStarter: max concurrency {maxConcurrency}, total shards {shardCount}", maxConcurrency,
-            this._client.Shards.Count);
+        // Log.Information("ShardStarter: max concurrency {maxConcurrency}, total shards {shardCount}", maxConcurrency,
+        //     this._client.Shards.Count);
+        //
+        // var connectTasks = new List<Task>();
+        // var connectingShards = new List<int>();
+        //
+        // foreach (var shard in this._client.Shards)
+        // {
+        //     Log.Information("ShardConnectionStart: shard #{shardId}", shard.ShardId);
+        //
+        //     connectTasks.Add(shard.StartAsync());
+        //     connectingShards.Add(shard.ShardId);
+        //
+        //     if (connectTasks.Count >= maxConcurrency)
+        //     {
+        //         await Task.WhenAll(connectTasks);
+        //
+        //         while (this._client.Shards
+        //                .Where(w => connectingShards.Contains(w.ShardId))
+        //                .Any(a => a.ConnectionState != ConnectionState.Connected))
+        //         {
+        //             await Task.Delay(100);
+        //         }
+        //
+        //         Log.Information("ShardStarter: All shards in group concurrently connected");
+        //         await Task.Delay(3000);
+        //
+        //         connectTasks = new();
+        //     }
+        // }
+        //
+        // Log.Information("ShardStarter: All connects started, waiting until all are connected");
+        // while (this._client.Shards.Any(a => a.ConnectionState != ConnectionState.Connected))
+        // {
+        //     await Task.Delay(100);
+        // }
 
-        var connectTasks = new List<Task>();
-        var connectingShards = new List<int>();
-
-        foreach (var shard in this._client.Shards)
-        {
-            Log.Information("ShardConnectionStart: shard #{shardId}", shard.ShardId);
-
-            connectTasks.Add(shard.StartAsync());
-            connectingShards.Add(shard.ShardId);
-
-            if (connectTasks.Count >= maxConcurrency)
-            {
-                await Task.WhenAll(connectTasks);
-
-                while (this._client.Shards
-                       .Where(w => connectingShards.Contains(w.ShardId))
-                       .Any(a => a.ConnectionState != ConnectionState.Connected))
-                {
-                    await Task.Delay(100);
-                }
-
-                Log.Information("ShardStarter: All shards in group concurrently connected");
-                await Task.Delay(3000);
-
-                connectTasks = new();
-            }
-        }
-
-        Log.Information("ShardStarter: All connects started, waiting until all are connected");
-        while (this._client.Shards.Any(a => a.ConnectionState != ConnectionState.Connected))
-        {
-            await Task.Delay(100);
-        }
+        await this._client.StartAsync();
 
         Log.Information("ShardStarter: Done");
 
@@ -205,7 +198,8 @@ public class StartupService
 
         this.StartMetricsPusher();
 
-        var startDelay = (this._client.Shards.Count * 1) + 10;
+        // TODO configure based on shard count
+        var startDelay = 10;
 
         if (ConfigData.Data.Shards == null || ConfigData.Data.Shards.MainInstance == true)
         {
@@ -289,8 +283,7 @@ public class StartupService
         Log.Information("Starting slash command registration");
 
         Log.Information("Registering slash commands globally");
-
-        await this._appCommands.RegisterCommandsAsync(client.Rest, client.Id);
+        await this._appCommands.RegisterCommandsAsync(this._client.Rest, ConfigData.Data.Discord.ApplicationId.GetValueOrDefault());
     }
 
     private static void PrepareCacheFolder()
@@ -304,7 +297,7 @@ public class StartupService
 
     public async Task CacheSlashCommandIds()
     {
-        var commands = await this._client.Rest.GetGlobalApplicationCommands();
+        var commands = await this._client.Rest.GetGlobalApplicationCommandsAsync(ConfigData.Data.Discord.ApplicationId.GetValueOrDefault());
         Log.Information("Found {slashCommandCount} registered slash commands", commands.Count);
 
         foreach (var cmd in commands)

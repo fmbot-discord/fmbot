@@ -7,7 +7,7 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Linq;
-using Discord;
+
 using Discord.WebSocket;
 using FMBot.Domain.Enums;
 using Serilog;
@@ -385,7 +385,7 @@ public class AdminService
                 return;
             }
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
             embed.WithTitle($"New gwk botted user report");
 
             var components = new ComponentBuilder()
@@ -436,7 +436,7 @@ public class AdminService
         await db.SaveChangesAsync();
     }
 
-    public async Task<bool?> ToggleSpecialGuildAsync(IGuild guild)
+    public async Task<bool?> ToggleSpecialGuildAsync(NetCord.Gateway.Guild guild)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingGuild = await db.Guilds

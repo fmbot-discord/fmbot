@@ -4,26 +4,26 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
-using Fergun.Interactive;
+
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
+using NetCord.Gateway;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 using Serilog;
 
 namespace FMBot.Bot.Extensions;
 
 public static class CommandContextExtensions
 {
-    public static void LogCommandUsed(this ICommandContext context,
+    public static void LogCommandUsed(this CommandContext context,
         CommandResponse commandResponse = CommandResponse.Ok)
     {
-        var shardId = context.Guild != null ? ((DiscordShardedClient)context.Client).GetShardFor(context.Guild).ShardId : 0;
+        var shardId = context.Guild != null ? ((ShardedGatewayClient)context.Client).GetShardFor(context.Guild).ShardId : 0;
         Log.Information(
             "CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} #{shardId} | {commandResponse} | {messageContent}",
             context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, shardId, commandResponse,
@@ -32,12 +32,11 @@ public static class CommandContextExtensions
         PublicProperties.UsedCommandsResponses.TryAdd(context.Message.Id, commandResponse);
     }
 
-    public static async Task HandleCommandException(this ICommandContext context, Exception exception,
+    public static async Task HandleCommandException(this CommandContext context, Exception exception,
         string message = null, bool sendReply = true)
     {
         var referenceId = GenerateRandomCode();
-
-        var shardId = context.Guild != null ? ((DiscordShardedClient)context.Client).GetShardFor(context.Guild).ShardId : 0;
+        var shardId = context.Client.Shard?.Id ?? 0;
         Log.Error(exception,
             "CommandUsed: Error {referenceId} | {discordUserName} / {discordUserId} | {guildName} / {guildId} #{shardId} | {commandResponse} ({message}) | {messageContent}",
             referenceId, context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, shardId,
@@ -47,23 +46,29 @@ public static class CommandContextExtensions
         {
             if (exception?.Message != null && exception.Message.Contains("error 50013"))
             {
-                await context.Channel.SendMessageAsync(
-                    "Sorry, something went wrong because the bot is missing permissions. Make sure the bot has `Embed links` and `Attach Files`.\n" +
-                    "Please adjust .fmbot permissions or ask server staff to do this for you.\n" +
-                    $"*Reference id: `{referenceId}`*", allowedMentions: AllowedMentions.None);
+                await context.Channel.SendMessageAsync(new MessageProperties
+                {
+                    Content = "Sorry, something went wrong because the bot is missing permissions. Make sure the bot has `Embed links` and `Attach Files`.\n" +
+                              "Please adjust .fmbot permissions or ask server staff to do this for you.\n" +
+                              $"*Reference id: `{referenceId}`*",
+                    AllowedMentions = AllowedMentionsProperties.None
+                });
             }
             else
             {
-                await context.Channel.SendMessageAsync("Sorry, something went wrong. Please try again later.\n" +
-                                                       $"*Reference id: `{referenceId}`*",
-                    allowedMentions: AllowedMentions.None);
+                await context.Channel.SendMessageAsync(new MessageProperties
+                {
+                    Content = "Sorry, something went wrong. Please try again later.\n" +
+                              $"*Reference id: `{referenceId}`*",
+                    AllowedMentions = AllowedMentionsProperties.None
+                });
             }
         }
 
         PublicProperties.UsedCommandsErrorReferences.TryAdd(context.Message.Id, referenceId);
     }
 
-    public static async Task<IUserMessage> SendResponse(this ICommandContext context,
+    public static async Task<IUserMessage> SendResponse(this CommandContext context,
         InteractiveService interactiveService, ResponseModel response)
     {
         IUserMessage responseMessage = null;

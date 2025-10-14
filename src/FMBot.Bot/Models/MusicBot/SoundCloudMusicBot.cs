@@ -1,6 +1,7 @@
 using System.Linq;
-using Discord;
+
 using Discord.WebSocket;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -10,7 +11,7 @@ internal class SoundCloudMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         // Bot sends only single embed per request
         if (msg.Embeds.Count != 1)
@@ -30,7 +31,7 @@ internal class SoundCloudMusicBot : MusicBot
         return false;
     }
 
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         return msg.Embeds.First().Description;
     }

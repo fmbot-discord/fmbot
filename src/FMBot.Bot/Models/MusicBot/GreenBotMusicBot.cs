@@ -1,8 +1,9 @@
 using System;
 using System.Linq;
-using Discord;
+
 using Discord.WebSocket;
-using System.Text.RegularExpressions; 
+using System.Text.RegularExpressions;
+using NetCord.Gateway;
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -13,7 +14,7 @@ internal class GreenBotMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         var embed = msg.Embeds.FirstOrDefault();
         if (embed == null)
@@ -25,7 +26,7 @@ internal class GreenBotMusicBot : MusicBot
         return !authorName.Contains(NowPlayingStatus);
     }
 
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         var embed = msg.Embeds.FirstOrDefault();
         if (embed == null)
@@ -38,7 +39,7 @@ internal class GreenBotMusicBot : MusicBot
 
         if (matches.Count < 2)
         {
-            return string.Empty; 
+            return string.Empty;
         }
 
         var songName = matches[0].Groups[1].Value.Trim();

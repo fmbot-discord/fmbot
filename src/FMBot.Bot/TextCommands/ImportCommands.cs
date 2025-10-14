@@ -1,8 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -105,7 +104,7 @@ public class ImportCommands : BaseCommandModule
         }
         else
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         }
 
         try

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
-using Discord;
+using NetCord.Gateway;
+
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -11,7 +12,7 @@ internal partial class BleedMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Embeds.Count != 1)
         {
@@ -25,7 +26,7 @@ internal partial class BleedMusicBot : MusicBot
      * Example: Now playing [`Dive (Official Video)`](https://www.youtube.com/watch?v=jetLHzTiTHc) by **Mall Grab**
      * Example output: Dive (Official Video) - Mall Grab
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         var description = msg.Embeds.First().Description;
         var embedTrack = description.Replace(StartedPlaying, "", StringComparison.OrdinalIgnoreCase);

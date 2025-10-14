@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -129,7 +129,7 @@ public class OwnerCommands : BaseCommandModule
             {
                 var drives = DriveInfo.GetDrives();
 
-                var builder = new EmbedBuilder();
+                var builder = new EmbedProperties();
                 builder.WithDescription("Server Drive Info");
 
                 foreach (var drive in drives.Where(w => w.IsReady && w.TotalSize > 10000))

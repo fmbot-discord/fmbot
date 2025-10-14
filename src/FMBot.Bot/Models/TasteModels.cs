@@ -1,4 +1,4 @@
-using Discord;
+
 using FMBot.Domain.Enums;
 using FMBot.Domain.Models;
 

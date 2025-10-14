@@ -4,7 +4,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -58,7 +57,7 @@ public class GuildCommands : BaseCommandModule
     [Alias("ss", "config", "serversettings", "fmbotconfig", "serverconfig")]
     public async Task GuildSettingsAsync([Remainder] string searchValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -85,7 +84,7 @@ public class GuildCommands : BaseCommandModule
     [Alias("mb", "users", "memberoverview", "mo")]
     public async Task MemberOverviewAsync([Remainder] string searchValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -127,7 +126,7 @@ public class GuildCommands : BaseCommandModule
     [CommandCategories(CommandCategory.ServerSettings)]
     public async Task SetServerModeAsync([Remainder] string unused = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var response = await this._guildSettingBuilder.GuildMode(new ContextModel(this.Context, prfx));
@@ -346,7 +345,7 @@ public class GuildCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 

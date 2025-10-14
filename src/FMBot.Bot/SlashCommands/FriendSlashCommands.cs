@@ -1,8 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
-using Fergun.Interactive;
+
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -59,7 +57,7 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task AddFriendAsync([Summary("User", "The user to add")] IUser user)
+    public async Task AddFriendAsync([Summary("User", "The user to add")] NetCord.User user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -80,7 +78,7 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task AddFriendUserCommandAsync(IUser user)
+    public async Task AddFriendUserCommandAsync(NetCord.User user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -101,7 +99,7 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task RemoveFriendAsync([Summary("User", "The user to remove")] IUser user)
+    public async Task RemoveFriendAsync([Summary("User", "The user to remove")] NetCord.User user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -122,7 +120,7 @@ public class FriendSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [UsernameSetRequired]
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task RemoveFriendUserCommandAsync(IUser user)
+    public async Task RemoveFriendUserCommandAsync(NetCord.User user)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 

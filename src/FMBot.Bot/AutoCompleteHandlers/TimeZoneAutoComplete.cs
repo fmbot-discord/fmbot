@@ -4,14 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.AutoCompleteHandlers;
 
-public class TimeZoneAutoComplete : AutocompleteHandler
+public class TimeZoneAutoComplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     private readonly Dictionary<string, string> _allTimeZones;
     private readonly List<CountryTimezoneInfo> _storedTimeZones;
@@ -29,23 +30,23 @@ public class TimeZoneAutoComplete : AutocompleteHandler
         });
     }
 
-    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context,
-        IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    public async ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>> GetChoicesAsync(
+        ApplicationCommandInteractionDataOption option,
+        AutocompleteInteractionContext context)
     {
         var results = new Dictionary<string, string>();
 
-        if (autocompleteInteraction?.Data?.Current?.Value == null ||
-            string.IsNullOrWhiteSpace(autocompleteInteraction?.Data?.Current?.Value.ToString()))
+        if (string.IsNullOrWhiteSpace(option.Value))
         {
             results.ReplaceOrAddToDictionary(new Dictionary<string, string>()
             {
                 { "null", "Start typing to search for more timezones" }
             });
 
-            if (autocompleteInteraction?.UserLocale != null)
+            if (context?.User?.Locale != null && context.Guild?.PreferredLocale != null)
             {
-                var userLocale = autocompleteInteraction.UserLocale[Math.Max(0, autocompleteInteraction.UserLocale.Length - 2)..];
-                var guildLocale = autocompleteInteraction.GuildLocale[Math.Max(0, autocompleteInteraction.UserLocale.Length - 2)..];
+                var userLocale = context.User.Locale[Math.Max(0, context.User.Locale.Length - 2)..];
+                var guildLocale = context.Guild.PreferredLocale[Math.Max(0, context.Guild.PreferredLocale.Length - 2)..];
 
                 var foundCountries =
                     this._storedTimeZones
@@ -64,7 +65,7 @@ public class TimeZoneAutoComplete : AutocompleteHandler
         }
         else
         {
-            var searchValue = autocompleteInteraction.Data.Current.Value.ToString();
+            var searchValue = option.Value;
 
             results.ReplaceOrAddToDictionary(this._allTimeZones
                 .Where(w => w.Value.StartsWith(searchValue, StringComparison.OrdinalIgnoreCase))
@@ -77,7 +78,7 @@ public class TimeZoneAutoComplete : AutocompleteHandler
                 .ToDictionary(d => d.Key, d => d.Value));
         }
 
-        return await Task.FromResult(
-            AutocompletionResult.FromSuccess(results.Select(s => new AutocompleteResult(s.Value, s.Key))));
+        return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
+            new ApplicationCommandOptionChoiceProperties(s.Value, s.Key)));
     }
 }

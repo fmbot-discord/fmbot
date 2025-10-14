@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -67,7 +67,7 @@ public class ArtistsService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<ArtistSearch> SearchArtist(ResponseModel response, IUser discordUser, string artistValues,
+    public async Task<ArtistSearch> SearchArtist(ResponseModel response, NetCord.User discordUser, string artistValues,
         string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
         bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true, ulong? interactionId = null,
         IUserMessage referencedMessage = null)

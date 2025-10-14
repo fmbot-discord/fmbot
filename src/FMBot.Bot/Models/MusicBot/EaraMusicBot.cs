@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
-using Discord;
+using NetCord;
+using NetCord.Gateway;
+
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -10,7 +12,7 @@ internal class EaraMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Components.Count == 0)
         {
@@ -48,7 +50,7 @@ internal class EaraMusicBot : MusicBot
 
 00:00<:emoji:1284320259922329725><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320227009761360><:emoji:1284320202955161610>09:07
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
         if (container is not ContainerComponent containerComponent)

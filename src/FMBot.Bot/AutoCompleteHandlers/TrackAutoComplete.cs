@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
+using NetCord;
+using NetCord.Rest;
+using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.AutoCompleteHandlers;
 
-public class TrackAutoComplete : AutocompleteHandler
+public class TrackAutoComplete : IAutocompleteProvider<AutocompleteInteractionContext>
 {
     private readonly TrackService _trackService;
 
@@ -18,24 +19,24 @@ public class TrackAutoComplete : AutocompleteHandler
         this._trackService = trackService;
     }
 
-    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context,
-        IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+    public async ValueTask<IEnumerable<ApplicationCommandOptionChoiceProperties>> GetChoicesAsync(
+        ApplicationCommandInteractionDataOption option,
+        AutocompleteInteractionContext context)
     {
         var recentlyPlayedTracks = await this._trackService.GetLatestTracks(context.User.Id);
         var recentTopTracks = await this._trackService.GetRecentTopTracksAutoComplete(context.User.Id);
 
         var results = new List<string>();
 
-        if (autocompleteInteraction?.Data?.Current?.Value == null ||
-            string.IsNullOrWhiteSpace(autocompleteInteraction?.Data?.Current?.Value.ToString()))
+        if (string.IsNullOrWhiteSpace(option.Value))
         {
             if (recentlyPlayedTracks == null || !recentlyPlayedTracks.Any() ||
                 recentTopTracks == null || !recentTopTracks.Any())
             {
                 results.Add("Start typing to search through tracks...");
 
-                return await Task.FromResult(
-                    AutocompletionResult.FromSuccess(results.Select(s => new AutocompleteResult(s, s))));
+                return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
+                    new ApplicationCommandOptionChoiceProperties(s, s)));
             }
 
             results
@@ -48,7 +49,7 @@ public class TrackAutoComplete : AutocompleteHandler
         {
             try
             {
-                var searchValue = autocompleteInteraction.Data.Current.Value.ToString();
+                var searchValue = option.Value;
                 results = [searchValue];
 
                 var trackResults =
@@ -104,7 +105,7 @@ public class TrackAutoComplete : AutocompleteHandler
             }
         }
 
-        return await Task.FromResult(
-            AutocompletionResult.FromSuccess(results.Select(s => new AutocompleteResult(s, s))));
+        return new List<ApplicationCommandOptionChoiceProperties>(results.Select(s =>
+            new ApplicationCommandOptionChoiceProperties(s, s)));
     }
 }

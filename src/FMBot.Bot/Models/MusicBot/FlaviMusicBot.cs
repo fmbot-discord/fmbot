@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
-using Discord;
+using NetCord;
+using NetCord.Gateway;
+
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -12,7 +14,7 @@ internal class FlaviMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Components.Count == 0)
         {
@@ -53,7 +55,7 @@ internal class FlaviMusicBot : MusicBot
      * ### **[Michael Jackson - Billie Jean](https://open.spotify.com/track/7J1uxwnxfQLu4APicE5Rnj)** - `04:54`
      *
      */
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         var container = msg.Components.FirstOrDefault(c => c.Type == ComponentType.Container);
         if (container is not ContainerComponent containerComponent)

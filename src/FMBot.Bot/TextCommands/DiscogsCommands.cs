@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
@@ -10,7 +10,6 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
-using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using static System.Text.RegularExpressions.Regex;
@@ -95,7 +94,7 @@ public class DiscogsCommands : BaseCommandModule
     [Alias("coll", "vinyl", "discogscollection")]
     public async Task CollectionAsync([Remainder] string searchValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);
@@ -122,7 +121,7 @@ public class DiscogsCommands : BaseCommandModule
     //[Alias("wh", "whohasvinyl")]
     public async Task WhoHasAsync([Remainder] string searchValues = null)
     {
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(searchValues, contextUser, this.Context);

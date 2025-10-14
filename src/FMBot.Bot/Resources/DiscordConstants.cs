@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using Discord;
 using Fergun.Interactive.Pagination;
+using NetCord;
 
 namespace FMBot.Bot.Resources;
 

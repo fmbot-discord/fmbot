@@ -1,10 +1,8 @@
-using Discord;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
-using Discord.Interactions;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
@@ -14,8 +12,9 @@ using FMBot.Domain.Models;
 using FMBot.Domain.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
-using Fergun.Interactive;
 using FMBot.Domain.Extensions;
+using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;
@@ -56,42 +55,47 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
     private const string SpotifyFileDescription = "Spotify history package (.zip) or history files (.json) ";
 
-    [SlashCommand("spotify", "⭐ Import your Spotify history into .fmbot")]
+[SlashCommand("spotify", "⭐ Import your Spotify history into .fmbot", Contexts =
+[
+    InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+    InteractionContextType.Guild
+], IntegrationTypes =
+[
+    ApplicationIntegrationType.GuildInstall,
+    ApplicationIntegrationType.UserInstall
+]),]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task SpotifyAsync(
-        [Summary("file-1", SpotifyFileDescription)]
-        IAttachment attachment1 = null,
-        [Summary("file-2", SpotifyFileDescription)]
-        IAttachment attachment2 = null,
-        [Summary("file-3", SpotifyFileDescription)]
-        IAttachment attachment3 = null,
-        [Summary("file-4", SpotifyFileDescription)]
-        IAttachment attachment4 = null,
-        [Summary("file-5", SpotifyFileDescription)]
-        IAttachment attachment5 = null,
-        [Summary("file-6", SpotifyFileDescription)]
-        IAttachment attachment6 = null,
-        [Summary("file-7", SpotifyFileDescription)]
-        IAttachment attachment7 = null,
-        [Summary("file-8", SpotifyFileDescription)]
-        IAttachment attachment8 = null,
-        [Summary("file-9", SpotifyFileDescription)]
-        IAttachment attachment9 = null,
-        [Summary("file-10", SpotifyFileDescription)]
-        IAttachment attachment10 = null,
-        [Summary("file-11", SpotifyFileDescription)]
-        IAttachment attachment11 = null,
-        [Summary("file-12", SpotifyFileDescription)]
-        IAttachment attachment12 = null,
-        [Summary("file-13", SpotifyFileDescription)]
-        IAttachment attachment13 = null,
-        [Summary("file-14", SpotifyFileDescription)]
-        IAttachment attachment14 = null,
-        [Summary("file-15", SpotifyFileDescription)]
-        IAttachment attachment15 = null)
+        [SlashCommandParameter(Name = "file-1", Description = SpotifyFileDescription)]
+        Attachment attachment1 = null,
+        [SlashCommandParameter(Name = "file-2", Description = SpotifyFileDescription)]
+        Attachment attachment2 = null,
+        [SlashCommandParameter(Name = "file-3", Description = SpotifyFileDescription)]
+        Attachment attachment3 = null,
+        [SlashCommandParameter(Name = "file-4", Description = SpotifyFileDescription)]
+        Attachment attachment4 = null,
+        [SlashCommandParameter(Name = "file-5", Description = SpotifyFileDescription)]
+        Attachment attachment5 = null,
+        [SlashCommandParameter(Name = "file-6", Description = SpotifyFileDescription)]
+        Attachment attachment6 = null,
+        [SlashCommandParameter(Name = "file-7", Description = SpotifyFileDescription)]
+        Attachment attachment7 = null,
+        [SlashCommandParameter(Name = "file-8", Description = SpotifyFileDescription)]
+        Attachment attachment8 = null,
+        [SlashCommandParameter(Name = "file-9", Description = SpotifyFileDescription)]
+        Attachment attachment9 = null,
+        [SlashCommandParameter(Name = "file-10", Description = SpotifyFileDescription)]
+        Attachment attachment10 = null,
+        [SlashCommandParameter(Name = "file-11", Description = SpotifyFileDescription)]
+        Attachment attachment11 = null,
+        [SlashCommandParameter(Name = "file-12", Description = SpotifyFileDescription)]
+        Attachment attachment12 = null,
+        [SlashCommandParameter(Name = "file-13", Description = SpotifyFileDescription)]
+        Attachment attachment13 = null,
+        [SlashCommandParameter(Name = "file-14", Description = SpotifyFileDescription)]
+        Attachment attachment14 = null,
+        [SlashCommandParameter(Name = "file-15", Description = SpotifyFileDescription)]
+        Attachment attachment15 = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var numberFormat = contextUser.NumberFormat ?? NumberFormat.NoSeparator;
@@ -112,7 +116,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
             return;
         }
 
-        var attachments = new List<IAttachment>
+        var attachments = new List<Attachment>
         {
             attachment1, attachment2, attachment3, attachment4, attachment5, attachment6,
             attachment7, attachment8, attachment9, attachment10, attachment11, attachment12,
@@ -123,7 +127,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         attachments = attachments.Where(w => w != null).ToList();
 
         var description = new StringBuilder();
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
         if (noAttachments)
@@ -311,8 +315,9 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task AppleMusicAsync(
-        [Summary("file", "'Apple Media Services information.zip' or 'Apple Music Play Activity.csv' file")]
-        IAttachment attachment = null)
+        [SlashCommandParameter(Name = "file",
+            Description = "'Apple Media Services information.zip' or 'Apple Music Play Activity.csv' file")]
+        Attachment attachment = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var numberFormat = contextUser.NumberFormat ?? NumberFormat.NoSeparator;
@@ -334,7 +339,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         }
 
         var description = new StringBuilder();
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
         if (attachment == null)
@@ -601,7 +606,7 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
 
         if (this.Context.Guild != null)
         {
-            var serverEmbed = new EmbedBuilder()
+            var serverEmbed = new EmbedProperties()
                 .WithColor(DiscordConstants.InformationColorBlue)
                 .WithDescription("Check your DMs to continue with modifying your .fmbot imports.");
 
@@ -609,13 +614,14 @@ public class ImportGroupSlashCommands : ApplicationCommandModule<ApplicationComm
         }
         else if (this.Context.Channel != null)
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         }
 
         try
         {
             var response =
-                await this._importBuilders.ImportModify(new ContextModel(this.Context, contextUser), contextUser.UserId);
+                await this._importBuilders.ImportModify(new ContextModel(this.Context, contextUser),
+                    contextUser.UserId);
             await this.Context.User.SendMessageAsync("", false, response.Embed.Build(),
                 components: response.Components.Build());
             this.Context.LogCommandUsed(response.CommandResponse);

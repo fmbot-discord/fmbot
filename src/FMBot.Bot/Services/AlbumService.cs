@@ -4,7 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
 using FMBot.Bot.Interfaces;
@@ -66,7 +66,7 @@ public class AlbumService
         this._botSettings = botSettings.Value;
     }
 
-    public async Task<AlbumSearch> SearchAlbum(ResponseModel response, IUser discordUser, string albumValues,
+    public async Task<AlbumSearch> SearchAlbum(ResponseModel response, NetCord.User discordUser, string albumValues,
         string lastFmUserName, string sessionKey = null,
         string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null,
         IUserMessage referencedMessage = null, bool redirectsEnabled = true)

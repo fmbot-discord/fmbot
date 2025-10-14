@@ -1,4 +1,4 @@
-using Discord;
+
 using FMBot.Bot.Models.MusicBot;
 using Moq;
 using System.Threading.Tasks;

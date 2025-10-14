@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -20,7 +20,7 @@ public class PremiumSettingBuilder
         this._guildService = guildService;
     }
 
-    public async Task<ResponseModel> AllowedRoles(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> AllowedRoles(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -86,7 +86,7 @@ public class PremiumSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> BlockedRoles(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> BlockedRoles(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -143,7 +143,7 @@ public class PremiumSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> BotManagementRoles(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> BotManagementRoles(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {
@@ -205,7 +205,7 @@ public class PremiumSettingBuilder
         return response;
     }
 
-    public async Task<ResponseModel> SetGuildActivityThreshold(ContextModel context, IUser lastModifier = null)
+    public async Task<ResponseModel> SetGuildActivityThreshold(ContextModel context, NetCord.User lastModifier = null)
     {
         var response = new ResponseModel
         {

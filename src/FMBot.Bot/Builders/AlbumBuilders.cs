@@ -6,8 +6,6 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Discord;
-using Fergun.Interactive;
 using FMBot.AppleMusic;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;

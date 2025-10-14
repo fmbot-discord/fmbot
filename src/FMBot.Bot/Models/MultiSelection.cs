@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Discord;
-using Fergun.Interactive;
+
 using Fergun.Interactive.Selection;
 
 namespace FMBot.Bot.Models;

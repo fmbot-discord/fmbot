@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using System.IO;
-using Discord;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
+using NetCord.Rest;
 
 namespace FMBot.Bot.Models;
 
@@ -12,24 +12,24 @@ public class ResponseModel
     public ResponseModel()
     {
         this.CommandResponse = CommandResponse.Ok;
-        this.Embed = new EmbedBuilder()
+        this.Embed = new EmbedProperties()
             .WithColor(DiscordConstants.LastFmColorRed);
-        this.EmbedAuthor = new EmbedAuthorBuilder();
-        this.EmbedFooter = new EmbedFooterBuilder();
+        this.EmbedAuthor = new EmbedAuthorProperties();
+        this.EmbedFooter = new EmbedFooterProperties();
         this.Spoiler = false;
         this.ReferencedMusic = null;
-        this.ComponentsV2 = new ComponentBuilderV2();
-        this.ComponentsContainer = new ContainerBuilder();
+        this.ComponentsV2 = new ComponentProperties();
+        this.ComponentsContainer = new ContainerProperties();
         this.ComponentsV2.WithContainer(this.ComponentsContainer);
     }
 
-    public EmbedAuthorBuilder EmbedAuthor { get; set; }
-    public EmbedBuilder Embed { get; set; }
-    public EmbedFooterBuilder EmbedFooter { get; set; }
+    public EmbedAuthorProperties EmbedAuthor { get; set; }
+    public EmbedProperties Embed { get; set; }
+    public EmbedFooterProperties EmbedFooter { get; set; }
     public ComponentBuilder Components { get; set; }
 
     public ComponentBuilderV2 ComponentsV2 { get; set; }
-    public ContainerBuilder ComponentsContainer { get; set; }
+    public ComponentContainerProperties ComponentsContainer { get; set; }
 
     public ResponseType ResponseType { get; set; }
 
@@ -48,7 +48,7 @@ public class ResponseModel
     public string[] EmoteReactions { get; set; }
 
     public StaticPaginatorBuilder StaticPaginator { get; set; }
-    
+
     public ComponentPaginatorBuilder ComponentPaginator { get; set; }
 
     public CommandResponse CommandResponse { get; set; }

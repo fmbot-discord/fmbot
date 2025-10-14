@@ -1,6 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Webhook;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
@@ -93,7 +93,7 @@ public class UserEventHandler
             {
                 var supporterAuditLogChannel = new DiscordWebhookClient(this._botSettings.Bot.SupporterAuditLogWebhookUrl);
 
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
 
                 embed.WithTitle("User without .fmbot account joined");
                 embed.WithDescription($"<@{socketGuildUser.Id}> - `{socketGuildUser.Username}` - **{socketGuildUser.DisplayName}**");

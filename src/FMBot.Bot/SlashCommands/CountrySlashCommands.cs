@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using System;
-using Discord.Interactions;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
@@ -8,8 +7,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using Fergun.Interactive;
-using Discord;
+
 using FMBot.Domain.Models;
 using NetCord.Services.ApplicationCommands;
 

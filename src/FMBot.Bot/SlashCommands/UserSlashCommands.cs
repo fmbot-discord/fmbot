@@ -3,11 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
-using Fergun.Interactive;
-using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
@@ -25,10 +20,13 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
+using Google.Protobuf;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
+using GuildUser = FMBot.Persistence.Domain.Models.GuildUser;
 using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.SlashCommands;
@@ -53,14 +51,12 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
     private readonly BotSettings _botSettings;
 
-    private InteractiveService Interactivity { get; }
 
     public UserSlashCommands(UserService userService,
         IDataSourceFactory dataSourceFactory,
         IOptions<BotSettings> botSettings,
         GuildService guildService,
         IndexService indexService,
-        InteractiveService interactivity,
         FriendsService friendsService,
         UserBuilder userBuilder,
         SettingService settingService,
@@ -77,7 +73,6 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         this._dataSourceFactory = dataSourceFactory;
         this._guildService = guildService;
         this._indexService = indexService;
-        this.Interactivity = interactivity;
         this._friendsService = friendsService;
         this._userBuilder = userBuilder;
         this._settingService = settingService;
@@ -92,11 +87,16 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         this._botSettings = botSettings.Value;
     }
 
-    [SlashCommand("settings", "Your user settings in .fmbot")]
+    [SlashCommand("settings", "Your user settings in .fmbot", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task UserSettingsAsync()
     {
         try
@@ -213,7 +213,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
                         await this.Context.Interaction.RespondAsync("", embed: serverEmbed.Build(), ephemeral: true);
 
-                        response = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context, contextUser));
+                        response = await this._userBuilder.ListShortcutsAsync(new ContextModel(this.Context,
+                            contextUser));
                         await this.Context.User.SendMessageAsync("", components: response.ComponentsV2.Build());
                         break;
                     }
@@ -287,10 +288,15 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("login", "Gives you a link to connect your Last.fm account to .fmbot")]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+    [SlashCommand("login", "Gives you a link to connect your Last.fm account to .fmbot", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     public async Task LoginAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -404,11 +410,16 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("privacy", "Changes your visibility to other .fmbot users in Global WhoKnows")]
+    [SlashCommand("privacy", "Changes your visibility to other .fmbot users in Global WhoKnows", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task PrivacyAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -423,7 +434,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task SetPrivacy(string[] inputs)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         if (Enum.TryParse(inputs.FirstOrDefault(), out PrivacyLevel privacyLevel))
@@ -521,11 +532,16 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("fmmode", "Changes your '/fm' layout")]
+    [SlashCommand("fmmode", "Changes your '/fm' layout", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FmModeSlashAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -561,7 +577,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task SetEmbedType(string[] inputs)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         if (Enum.TryParse(inputs.FirstOrDefault(), out FmEmbedType embedType))
@@ -582,7 +598,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [UsernameSetRequired]
     public async Task SetFooterOptions(string[] inputs)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         var maxOptions = userSettings.UserType == UserType.User
@@ -616,7 +632,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [ComponentInteraction(InteractionConstants.FmCommand.FmSettingFooterSupporter)]
     public async Task SetSupporterFooterOptions(string[] inputs)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         if (userSettings.UserType == UserType.User)
@@ -650,7 +666,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         await SaveFooterOptions(userSettings, embed);
     }
 
-    private async Task SaveFooterOptions(User userSettings, EmbedBuilder embed)
+    private async Task SaveFooterOptions(User userSettings, EmbedProperties embed)
     {
         userSettings = await this._userService.SetFooterOptions(userSettings, userSettings.FmFooterOptions);
 
@@ -716,7 +732,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             var reply = new StringBuilder();
             reply.Append($"Your default `WhoKnows` and Top list mode has been set to **{newUserSettings.Mode}**.");
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
             embed.WithColor(DiscordConstants.InformationColorBlue);
             embed.WithDescription(reply.ToString());
 
@@ -725,11 +741,16 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("localization", "Configure your timezone and number format in .fmbot")]
+    [SlashCommand("localization", "Configure your timezone and number format in .fmbot", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task SetLocalization(
         [Summary("Timezone", "Timezone you want to set")] [Autocomplete(typeof(TimeZoneAutoComplete))]
         string timezone = null,
@@ -745,7 +766,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             EmbedBuilder numberFormatEmbed = null;
             if (timezone != null)
             {
-                timezoneEmbed = new EmbedBuilder();
+                timezoneEmbed = new EmbedProperties();
 
                 var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
 
@@ -770,7 +791,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             if (numberFormat.HasValue)
             {
-                numberFormatEmbed = new EmbedBuilder();
+                numberFormatEmbed = new EmbedProperties();
 
                 var setValue = await this._userService.SetNumberFormat(userSettings.UserId, numberFormat.Value);
 
@@ -808,11 +829,16 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("remove", "Deletes your .fmbot account")]
+    [SlashCommand("remove", "Deletes your .fmbot account", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task RemoveAsync()
     {
         var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
@@ -905,7 +931,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             await this._userService.DeleteUser(userSettings.UserId);
 
-            var followUpEmbed = new EmbedBuilder();
+            var followUpEmbed = new EmbedProperties();
             followUpEmbed.WithTitle("Removal successful");
             followUpEmbed.WithDescription(
                 "Your settings, friends and any other data have been successfully deleted from .fmbot.");
@@ -958,16 +984,20 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         this.Context.LogCommandUsed();
     }
 
-    [SlashCommand("judge", "Judges your music taste using AI")]
+    [SlashCommand("judge", "Judges your music taste using AI", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task JudgeAsync(
         [Summary("Time-period", "Time period")] [Autocomplete(typeof(DateTimeAutoComplete))]
         string timePeriod = null,
-        [Summary("User", "The user to judge")]
-        string user = null)
+        [Summary("User", "The user to judge")] string user = null)
     {
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
         var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.Quarterly);
@@ -1054,7 +1084,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
 
             if (topArtists == null || !topArtists.Any() || topTracks == null || !topTracks.Any())
             {
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
                 embed.WithColor(DiscordConstants.LastFmColorRed);
                 embed.WithDescription(
                     $"Sorry, you or the user you're searching for don't have any top artists or top tracks in the selected time period.");
@@ -1085,11 +1115,16 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)")]
+    [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FeaturedAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -1126,10 +1161,15 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         }
     }
 
-    [SlashCommand("botscrobbling", "Shows info about music bot scrobbling and allows you to change your settings")]
+    [SlashCommand("botscrobbling", "Shows info about music bot scrobbling and allows you to change your settings",
+        Contexts =
+        [
+            InteractionContextType.Guild
+        ], IntegrationTypes =
+        [
+            ApplicationIntegrationType.GuildInstall
+        ])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.GuildInstall)]
     public async Task BotScrobblingAsync()
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -1167,7 +1207,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             reply.AppendLine("✅ Enabled music bot scrobbling for your account.");
         }
 
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithDescription(reply.ToString());
         embed.WithColor(DiscordConstants.SuccessColorGreen);
 
@@ -1192,7 +1232,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             reply.AppendLine("❌ Disabled music bot scrobbling for your account.");
         }
 
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithDescription(reply.ToString());
         embed.WithColor(DiscordConstants.LastFmColorRed);
 
@@ -1200,11 +1240,16 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         this.Context.LogCommandUsed();
     }
 
-    [SlashCommand("featuredlog", "Shows you or someone else's featured history")]
+    [SlashCommand("featuredlog", "Shows you or someone else's featured history", Contexts =
+    [
+        InteractionContextType.BotDMChannel, InteractionContextType.DMChannel,
+        InteractionContextType.Guild
+    ], IntegrationTypes =
+    [
+        ApplicationIntegrationType.GuildInstall,
+        ApplicationIntegrationType.UserInstall
+    ])]
     [UsernameSetRequired]
-    [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
-        InteractionContextType.Guild)]
-    [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
     public async Task FeaturedLogAsync(
         [Summary("View", "Type of log you want to view")]
         FeaturedView view = FeaturedView.User,
@@ -1366,7 +1411,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                 return;
             }
 
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
             embed.WithColor(DiscordConstants.WarningColorOrange);
 
             var targetUserDiscord = await this._userService.GetUserFromDiscord(targetUser.DiscordUserId);
@@ -1455,7 +1500,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             transferData = "false";
         }
 
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithColor(DiscordConstants.WarningColorOrange);
         var description = new StringBuilder();
         description.AppendLine("⚠️ Are you sure you want to delete this .fmbot alt account? This cannot be reversed.");
@@ -1546,7 +1591,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
     [ComponentInteraction($"update-linkedroles")]
     public async Task UpdateLinkedRoles()
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var hasLinked = await this._userService.HasLinkedRole(Context.User.Id);
@@ -1599,7 +1644,8 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
         try
         {
             var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
-            var supporterRequiredResponse = UserBuilder.ShortcutsSupporterRequired(new ContextModel(this.Context, contextUser));
+            var supporterRequiredResponse =
+                UserBuilder.ShortcutsSupporterRequired(new ContextModel(this.Context, contextUser));
             if (supporterRequiredResponse != null)
             {
                 await this.Context.SendResponse(this.Interactivity, supporterRequiredResponse, true);
@@ -1610,7 +1656,7 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             var parsedDiscordUserId = ulong.Parse(discordUserId);
             if (parsedDiscordUserId != this.Context.User.Id)
             {
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
                 embed.WithColor(DiscordConstants.WarningColorOrange);
                 embed.WithDescription("Please run the command yourself if you want to create shortcuts.");
                 await this.Context.Interaction.RespondAsync(embed: embed.Build(), ephemeral: true);
@@ -1669,8 +1715,10 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
             var mb = new ModalBuilder()
                 .WithTitle($"Modify shortcut")
                 .WithCustomId($"{InteractionConstants.Shortcuts.ModifyModal}-{shortcutId}-{overviewMessageId}")
-                .AddTextInput("Input (what you'll type)", "input", TextInputStyle.Short, value: shortcut.Input, minLength: 1, maxLength: 50)
-                .AddTextInput("Output (command to run)", "output", TextInputStyle.Paragraph, value: shortcut.Output, minLength: 1,
+                .AddTextInput("Input (what you'll type)", "input", TextInputStyle.Short, value: shortcut.Input,
+                    minLength: 1, maxLength: 50)
+                .AddTextInput("Output (command to run)", "output", TextInputStyle.Paragraph, value: shortcut.Output,
+                    minLength: 1,
                     maxLength: 200);
 
             await this.Context.Interaction.RespondWithModalAsync(mb.Build());
@@ -1706,9 +1754,11 @@ public class UserSlashCommands : ApplicationCommandModule<ApplicationCommandCont
                     await this.Context.UpdateMessageEmbed(list, overviewMessageId, defer: false);
                 }
 
-                var manage = await this._userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser), id,
+                var manage = await this._userBuilder.ManageShortcutAsync(new ContextModel(this.Context, contextUser),
+                    id,
                     parsedOverviewMessageId);
-                await this.Context.Interaction.ModifyOriginalResponseAsync(m => m.Components = manage.ComponentsV2.Build());
+                await this.Context.Interaction.ModifyOriginalResponseAsync(m =>
+                    m.Components = manage.ComponentsV2.Build());
             }
             else
             {

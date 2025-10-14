@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -377,7 +377,7 @@ public class IndexService
         };
     }
 
-    public async Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
+    public async Task<int> StoreGuildUsers(NetCord.Gateway.Guild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
     {
         var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 

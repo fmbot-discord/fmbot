@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
 using Discord.Webhook;
 using Discord.WebSocket;
@@ -124,7 +124,7 @@ public class WebhookService
 
     public async Task SendFeaturedWebhooks(FeaturedLog featured)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithThumbnailUrl(featured.ImageUrl);
         embed.AddField("Featured:", featured.Description);
 
@@ -145,7 +145,7 @@ public class WebhookService
 
     public async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
     {
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithImageUrl(featured.ImageUrl);
         embed.AddField("Featured:", featured.Description);
 
@@ -179,7 +179,7 @@ public class WebhookService
 
     public async Task PostFeatured(FeaturedLog featuredLog, DiscordShardedClient client)
     {
-        var builder = new EmbedBuilder();
+        var builder = new EmbedProperties();
         if (featuredLog.FullSizeImage == null)
         {
             builder.WithThumbnailUrl(featuredLog.ImageUrl);

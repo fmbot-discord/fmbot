@@ -5,10 +5,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -30,13 +26,14 @@ using Hangfire;
 using Hangfire.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
 using Serilog;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
+using NetCord.Services.Commands;
+using NetCord;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Admin settings")]
-[Summary(".fmbot Admins Only")]
 [ExcludeFromHelp]
 public class AdminCommands : BaseCommandModule
 {
@@ -115,7 +112,7 @@ public class AdminCommands : BaseCommandModule
     //[Command("debug")]
     //[Summary("Returns user data")]
     //[Alias("dbcheck")]
-    //public async Task DebugAsync(IUser user = null)
+    //public async Task DebugAsync(NetCord.User user = null)
     //{
     //    var chosenUser = user ?? this.Context.Message.Author;
     //    var userSettings = await this._userService.GetFullUserAsync(chosenUser.Id);
@@ -277,7 +274,7 @@ public class AdminCommands : BaseCommandModule
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             if (!ulong.TryParse(reason, out var id))
             {
@@ -306,7 +303,7 @@ public class AdminCommands : BaseCommandModule
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             if (!ulong.TryParse(guildId, out var id))
             {
@@ -526,7 +523,7 @@ public class AdminCommands : BaseCommandModule
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             var client = this.Context.Client as DiscordShardedClient;
             if (client == null)
@@ -573,7 +570,7 @@ public class AdminCommands : BaseCommandModule
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             var oldUsers = await this._indexService.GetUnusedUsers();
             await ReplyAsync(
@@ -604,7 +601,7 @@ public class AdminCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -637,7 +634,7 @@ public class AdminCommands : BaseCommandModule
             return;
         }
 
-        _ = this.Context.Channel.TriggerTypingAsync();
+        _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -938,7 +935,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var targetedUser = await this._settingService.GetUser(user, contextUser, this.Context);
@@ -1266,7 +1263,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
             var userSettings = await this._userService.GetUserWithDiscogs(discordUserId);
 
             if (userSettings == null)
@@ -1359,7 +1356,7 @@ public class AdminCommands : BaseCommandModule
                 return;
             }
 
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             var userSettings = await this._userService.GetUserWithDiscogs(discordUserId);
 
@@ -1613,7 +1610,7 @@ public class AdminCommands : BaseCommandModule
         {
             try
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
+                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
                 await this._featuredService.CustomFeatured(this._timer.CurrentFeatured, desc, url);
 
@@ -1660,7 +1657,7 @@ public class AdminCommands : BaseCommandModule
         {
             try
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
+                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
                 await this._webhookService.ChangeToNewAvatar(this._client, url);
 
@@ -1847,7 +1844,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                         "**Fully censored / NSFL**\n" +
                         "Hate speech [imagery or text promoting prejudice against a group], gore [detailed, realistic, or semi realistic depictions of viscera or extreme bodily harm, not blood alone] and pornographic content [depictions of sex]"),
                     new SeparatorBuilder(),
-                    new ActionRowBuilder()
+                    new ActionRowProperties()
                         .WithButton("Report artist image", style: ButtonStyle.Secondary,
                             customId: InteractionConstants.ModerationCommands.ReportArtist)
                         .WithButton("Report album cover", style: ButtonStyle.Secondary,
@@ -2014,7 +2011,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         {
             try
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
+                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
                 var feature = this._timer.CurrentFeatured;
 
@@ -2137,7 +2134,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         {
             try
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
+                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
                 var activeSupporters = await this._supporterService.GetAllVisibleSupporters();
                 var guildMembers = await this.Context.Guild.GetUsersAsync();
 
@@ -2647,7 +2644,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     .WithButton("Get .fmbot supporter",
                         customId: $"{InteractionConstants.SupporterLinks.GetPurchaseButtons}-true-false-true-testlink");
 
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
                 embed.WithDescription("Start the new purchase flow below");
                 embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -2673,7 +2670,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         try
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -2902,7 +2899,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
 
                 var oldUserDescription = new StringBuilder();
                 oldUserDescription.AppendLine($"`{oldUser.DiscordUserId}` - <@{oldUser.DiscordUserId}>");
@@ -3007,7 +3004,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
 
                 var stripeDescription = new StringBuilder();
                 stripeDescription.AppendLine($"Customer ID: `{stripeSupporter.StripeCustomerId}`");
@@ -3095,7 +3092,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
                     return;
                 }
 
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
 
                 var userDescription = new StringBuilder();
                 userDescription.AppendLine($"`{user.DiscordUserId}` - <@{user.DiscordUserId}>");
@@ -3137,7 +3134,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
             embed.WithDescription(
                 "It looks like you asked for help with a Last.fm issue, and not an .fmbot issue.\n\n" +
                 ".fmbot is not affiliated with Last.fm, the bot and the website are two different things.\n\n" +
@@ -3174,7 +3171,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
+                _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
                 var response = new ResponseModel
                 {

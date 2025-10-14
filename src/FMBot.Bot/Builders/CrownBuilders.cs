@@ -11,12 +11,11 @@ using System.Linq;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
-using Fergun.Interactive;
 using System.Collections.Generic;
-using Discord;
+
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
-using Discord.Interactions;
+
 using FMBot.Bot.Factories;
 using FMBot.Domain;
 using FMBot.Domain.Enums;

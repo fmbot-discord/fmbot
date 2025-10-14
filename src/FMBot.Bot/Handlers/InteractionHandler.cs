@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
-using Discord.Interactions;
 using Discord.WebSocket;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -314,7 +312,7 @@ public class InteractionHandler
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.Guild);
             if (lastIndex == null)
             {
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
                 embed.WithDescription(
                     "To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
                     $"Please run `/refreshmembers` to create this.\n" +
@@ -326,7 +324,7 @@ public class InteractionHandler
 
             if (lastIndex < DateTime.UtcNow.AddDays(-180))
             {
-                var embed = new EmbedBuilder();
+                var embed = new EmbedProperties();
                 embed.WithDescription("Server member cache is out of date, it was last updated over 180 days ago.\n" +
                                       $"Please run `/refreshmembers` to update the cached memberlist");
                 await context.Interaction.RespondAsync(null, new[] { embed.Build() });

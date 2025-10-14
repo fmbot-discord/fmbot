@@ -1,9 +1,8 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
-using Discord.Interactions;
-using Fergun.Interactive;
+
+
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -125,7 +124,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         var components = new ComponentBuilder().WithButton($"Complete purchase", style: ButtonStyle.Link, url: link,
             emote: Emoji.Parse("⭐"));
 
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithColor(DiscordConstants.InformationColorBlue);
         var description = new StringBuilder();
         description.AppendLine($"**Click the unique link below to purchase supporter!**");
@@ -160,7 +159,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var existingSupporter = await this._supporterService.GetSupporter(contextUser.DiscordUserId);
 
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithColor(DiscordConstants.InformationColorBlue);
         var manageDescription = new StringBuilder();
 
@@ -252,7 +251,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         var stripeSupporter = await this._supporterService.GetStripeSupporter(this.Context.User.Id);
         var stripeManageLink = await this._supporterService.GetSupporterManageLink(stripeSupporter);
 
-        var embed = new EmbedBuilder();
+        var embed = new EmbedProperties();
         embed.WithDescription($"**Click the unique link below to manage your supporter.**");
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
@@ -267,7 +266,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task GiftSupporterAsync([Summary("User", "The user you want to gift supporter")] IUser user)
+    public async Task GiftSupporterAsync([Summary("User", "The user you want to gift supporter")] NetCord.User user)
     {
         await Context.Interaction.DeferAsync(ephemeral: true);
 
@@ -283,7 +282,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
     [CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel,
         InteractionContextType.Guild)]
     [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-    public async Task GiftSupporterUserCommand(IUser targetUser)
+    public async Task GiftSupporterUserCommand(NetCord.User targetUser)
     {
         await Context.Interaction.DeferAsync(ephemeral: true);
 

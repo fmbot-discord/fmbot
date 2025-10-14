@@ -1,5 +1,7 @@
 using System.Linq;
-using Discord;
+using NetCord;
+using NetCord.Gateway;
+
 
 namespace FMBot.Bot.Models.MusicBot;
 
@@ -13,7 +15,7 @@ internal class BettyMusicBot : MusicBot
     {
     }
 
-    public override bool ShouldIgnoreMessage(IUserMessage msg)
+    public override bool ShouldIgnoreMessage(Message msg)
     {
         if (msg.Components.Count == 0)
         {
@@ -36,7 +38,7 @@ internal class BettyMusicBot : MusicBot
         return true;
     }
 
-    public override string GetTrackQuery(IUserMessage msg)
+    public override string GetTrackQuery(Message msg)
     {
         foreach (var component in msg.Components)
         {

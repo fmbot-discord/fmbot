@@ -1,6 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;

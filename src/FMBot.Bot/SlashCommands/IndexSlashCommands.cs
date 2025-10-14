@@ -1,14 +1,12 @@
 using System.Threading.Tasks;
 using System;
-using Discord.Interactions;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
 using Serilog;
 using System.Text;
-using Discord;
+
 using Discord.WebSocket;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Models;
@@ -45,7 +43,7 @@ public class IndexSlashCommands : ApplicationCommandModule<ApplicationCommandCon
 
         try
         {
-            var embed = new EmbedBuilder();
+            var embed = new EmbedProperties();
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
             if (guild.LastIndexed > DateTime.UtcNow.AddMinutes(-1))
             {

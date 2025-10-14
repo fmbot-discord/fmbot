@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
-using Discord;
+
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using SkiaSharp;
@@ -11,7 +11,7 @@ namespace FMBot.Bot.Models;
 
 public class ChartSettings
 {
-    public ChartSettings(IUser discordUser)
+    public ChartSettings(NetCord.User discordUser)
     {
         this.DiscordUser = discordUser;
 
@@ -63,7 +63,7 @@ public class ChartSettings
 
     public TimeSettingsModel TimeSettings { get; set; }
 
-    public IUser DiscordUser { get; set; }
+    public NetCord.User DiscordUser { get; set; }
 
     public string TimespanString { get; set; }
 

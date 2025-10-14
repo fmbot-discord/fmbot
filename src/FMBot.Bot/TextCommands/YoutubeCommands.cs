@@ -1,8 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using Discord;
+
 using Discord.Commands;
-using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -52,7 +51,7 @@ public class YoutubeCommands : BaseCommandModule
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            _ = this.Context.Channel.TriggerTypingAsync();
+            _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
             if (this.Context.Message.ReferencedMessage != null && string.IsNullOrWhiteSpace(searchValue))
             {

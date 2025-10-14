@@ -7,7 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
+
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
