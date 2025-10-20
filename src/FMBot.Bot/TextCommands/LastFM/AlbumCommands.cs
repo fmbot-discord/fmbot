@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Discord.Commands;
+using CsvHelper.Configuration.Attributes;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -9,16 +9,14 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
-using FMBot.Bot.Services.ThirdParty;
-using FMBot.Bot.Services.WhoKnows;
-using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 using Constants = FMBot.Domain.Constants;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
-[Name("Albums")]
+[ModuleName("Albums")]
 public class AlbumCommands : BaseCommandModule
 {
     private readonly GuildService _guildService;
@@ -52,18 +50,17 @@ public class AlbumCommands : BaseCommandModule
         this._playBuilders = playBuilder;
     }
 
-    [Command("album", RunMode = RunMode.Async)]
+    [Command("album", "ab")]
     [Summary("Shows album you're currently listening to or searching for.")]
     [Examples(
         "ab",
         "album",
         "album Ventura Anderson .Paak",
         "ab Boy Harsher | Yr Body Is Nothing")]
-    [Alias("ab")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums)]
     [SupporterEnhanced("Supporters can see the date they first discovered an album")]
-    public async Task AlbumAsync([Remainder] string albumValues = null)
+    public async Task AlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         try
         {
@@ -84,7 +81,7 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("albumplays", RunMode = RunMode.Async)]
+    [Command("albumplays", "abp", "albumplay", "abplays", "albump", "album plays")]
     [Summary("Shows playcount for current album or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
     [Examples(
@@ -95,10 +92,9 @@ public class AlbumCommands : BaseCommandModule
         "albumplays The Slow Rush",
         "abp The Beatles | Yesterday",
         "abp The Beatles | Yesterday @user")]
-    [Alias("abp", "albumplay", "abplays", "albump", "album plays")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums)]
-    public async Task AlbumPlaysAsync([Remainder] string albumValues = null)
+    public async Task AlbumPlaysAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -113,16 +109,15 @@ public class AlbumCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("cover", RunMode = RunMode.Async)]
+    [Command("cover", "abc", "abco", "co", "albumcover", "album cover")]
     [Summary("Cover for current album or the one you're searching for.")]
     [Examples(
         "co",
         "cover",
         "cover la priest inji")]
-    [Alias("abc", "abco", "co", "albumcover", "album cover")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Charts)]
-    public async Task AlbumCoverAsync([Remainder] string albumValues = null)
+    public async Task AlbumCoverAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -145,18 +140,17 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("topalbums", RunMode = RunMode.Async)]
+    [Command("topalbums", "abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist", "talbum")]
     [Summary("Shows your or someone else's top albums over a certain time period.")]
     [Options(Constants.CompactTimePeriodList,
         "Albums released in year: `r:2023`, `released:2023`",
         "Albums released in decade: `d:80s`, `decade:1990`",
         Constants.UserMentionExample, Constants.BillboardExample, Constants.EmbedSizeExample)]
     [Examples("tab", "topalbums", "tab a lfm:fm-bot", "topalbums weekly @user", "tab bb xl")]
-    [Alias("abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist", "talbum")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Albums)]
-    public async Task TopAlbumsAsync([Remainder] string extraOptions = null)
+    public async Task TopAlbumsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -189,16 +183,15 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknowsalbum", RunMode = RunMode.Async)]
+    [Command("whoknowsalbum", "wa", "wka", "wkab", "wab", "wkab","wkal", "wk album", "whoknows album", "wkalbum")]
     [Summary("Shows what other users listen to an album in your server")]
-    [Alias("wa", "wka", "wkab", "wab", "wkab","wkal", "wk album", "whoknows album", "wkalbum")]
     [Examples("wa", "whoknowsalbum", "whoknowsalbum the beatles abbey road",
         "whoknowsalbum Metallica & Lou Reed | Lulu")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows)]
-    public async Task WhoKnowsAlbumAsync([Remainder] string albumValues = null)
+    public async Task WhoKnowsAlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -229,14 +222,13 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("globalwhoknowsalbum", RunMode = RunMode.Async)]
+    [Command("globalwhoknowsalbum", "gwa", "gwka", "gwab", "gwkab", "globalwka", "globalwkalbum", "globalwhoknows album")]
     [Summary("Shows what other users listen to the an album on .fmbot")]
     [Examples("gwa", "globalwhoknowsalbum", "globalwhoknowsalbum the beatles abbey road",
         "globalwhoknowsalbum Metallica & Lou Reed | Lulu")]
-    [Alias("gwa", "gwka", "gwab", "gwkab", "globalwka", "globalwkalbum", "globalwhoknows album")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows)]
-    public async Task GlobalWhoKnowsAlbumAsync([Remainder] string albumValues = null)
+    public async Task GlobalWhoKnowsAlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
@@ -277,15 +269,14 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknowsalbum", RunMode = RunMode.Async)]
+    [Command("friendwhoknowsalbum", "fwa", "fwka", "fwkab", "fwab", "friendwhoknows album", "friends whoknows album", "friend whoknows album")]
     [Summary("Who of your friends listen to an album")]
     [Examples("fwa", "fwka COMA", "friendwhoknows", "friendwhoknowsalbum the beatles abbey road",
         "friendwhoknowsalbum Metallica & Lou Reed | Lulu")]
-    [Alias("fwa", "fwka", "fwkab", "fwab", "friendwhoknows album", "friends whoknows album", "friend whoknows album")]
     [UsernameSetRequired]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows, CommandCategory.Friends)]
-    public async Task FriendWhoKnowsAlbumAsync([Remainder] string albumValues = null)
+    public async Task FriendWhoKnowsAlbumAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -325,16 +316,15 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("albumtracks", RunMode = RunMode.Async)]
+    [Command("albumtracks", "abt", "abtracks", "albumt")]
     [Summary("Shows track playcounts for a specific album")]
     [Examples("abt", "albumtracks", "albumtracks de jeugd van tegenwoordig machine",
         "albumtracks This Old Dog plays", "albumtracks U2 | The Joshua Tree")]
-    [Alias("abt", "abtracks", "albumt")]
     [Options("Order by plays: `plays`")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Albums)]
-    public async Task AlbumTracksAsync([Remainder] string albumValues = null)
+    public async Task AlbumTracksAsync([CommandParameter(Remainder = true)] string albumValues = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -358,17 +348,16 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("serveralbums", RunMode = RunMode.Async)]
+    [Command("serveralbums", "sab", "stab", "servertopalbums", "serveralbum", "server albums")]
     [Summary("Top albums for your server, optionally for a specific artist.")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`",
         "Artist name")]
     [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly",
         "serveralbums the beatles monthly")]
-    [Alias("sab", "stab", "servertopalbums", "serveralbum", "server albums")]
     [RequiresIndex]
     [GuildOnly]
     [CommandCategories(CommandCategory.Albums)]
-    public async Task GuildAlbumsAsync([Remainder] string guildAlbumsOptions = null)
+    public async Task GuildAlbumsAsync([CommandParameter(Remainder = true)] string guildAlbumsOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -413,16 +402,15 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    [Command("albumgaps", RunMode = RunMode.Async)]
+    [Command("albumgaps", "agaps", "agap", "abgaps", "abgap", "albumgap")]
     [Summary("Shows the albums you've returned to after a gap in listening.")]
     [Options(Constants.UserMentionExample, Constants.EmbedSizeExample)]
     [Examples("agaps", "albumgaps", "albumgaps @user")]
-    [Alias("agaps", "agap", "abgaps", "abgap", "albumgap")]
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Albums)]
     [SupporterExclusive("To see which albums you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
-    public async Task AlbumGapsAsync([Remainder] string extraOptions = null)
+    public async Task AlbumGapsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 

@@ -19,6 +19,9 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Factories;
 using FMBot.Domain;
 using FMBot.Domain.Enums;
+using NetCord;
+using NetCord.Rest;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Builders;
 
@@ -97,7 +100,7 @@ public class CrownBuilders
         var guildUsers = await this._guildService.GetGuildUsers(context.DiscordGuild.Id);
 
         response.Components = new ComponentBuilder()
-            .WithButton("WhoKnows", $"{InteractionConstants.Artist.WhoKnows}-{cachedArtist.Id}", style: ButtonStyle.Secondary, emote: new Emoji("📋"));
+            .WithButton("WhoKnows", $"{InteractionConstants.Artist.WhoKnows}-{cachedArtist.Id}", style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("📋"));
 
         if (!artistCrowns.Any(a => a.Active))
         {
@@ -202,9 +205,8 @@ public class CrownBuilders
             ? $"{crownType} for {userSettings.UserNameLastFm}, requested by {userTitle}"
             : $"{crownType} for {userTitle}";
 
-        var viewType = new SelectMenuBuilder()
+        var viewType =  new StringMenuProperties(InteractionConstants.User.CrownSelectMenu)
             .WithPlaceholder("Select crown view")
-            .WithCustomId(InteractionConstants.User.CrownSelectMenu)
             .WithMinValues(1)
             .WithMaxValues(1);
 
@@ -215,7 +217,7 @@ public class CrownBuilders
 
             var active = option == crownViewType;
 
-            viewType.AddOption(new SelectMenuOptionBuilder(name, value, null, isDefault: active));
+            viewType.AddOption(new StringMenuSelectOptionProperties(name, value, null, isDefault: active));
         }
 
         if (!userCrowns.Any())
@@ -233,7 +235,7 @@ public class CrownBuilders
 
             response.ResponseType = ResponseType.Embed;
             response.CommandResponse = CommandResponse.NotFound;
-            response.Components = new ComponentBuilder().WithSelectMenu(viewType);
+            response.Components = new componen().WithSelectMenu(viewType);
             return response;
         }
 

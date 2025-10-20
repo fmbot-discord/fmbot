@@ -18,6 +18,8 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Flags;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 using Serilog;

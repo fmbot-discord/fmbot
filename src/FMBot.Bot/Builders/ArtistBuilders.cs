@@ -135,7 +135,7 @@ public class ArtistBuilders
 
         if (fullArtist.SpotifyImageUrl != null)
         {
-            response.Embed.WithThumbnailUrl(fullArtist.SpotifyImageUrl);
+            response.Embed.WithThumbnail(fullArtist.SpotifyImageUrl);
             footer.AppendLine("Image source: Spotify");
         }
 
@@ -365,7 +365,7 @@ public class ArtistBuilders
         response.Components = new ComponentBuilder()
             .WithButton("Overview",
                 $"{InteractionConstants.Artist.Overview}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: new Emoji("\ud83d\udcca"));
+                style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("\ud83d\udcca"));
 
         if (context.ContextUser.RymEnabled == true && fullArtist.ArtistLinks != null &&
             fullArtist.ArtistLinks.Any(a => a.Type == LinkType.RateYourMusic))
@@ -615,11 +615,11 @@ public class ArtistBuilders
 
         components.WithButton("All top tracks",
             $"{InteractionConstants.Artist.Tracks}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-            style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: Emoji.Parse("🎶"));
+            style: ButtonStyle.Secondary, disabled: !artistTracksButton, emote: EmojiProperties.Standard("🎶"));
 
         components.WithButton("All top albums",
             $"{InteractionConstants.Artist.Albums}-{fullArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-            style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: Emoji.Parse("💽"));
+            style: ButtonStyle.Secondary, disabled: !artistAlbumsButton, emote: EmojiProperties.Standard("💽"));
 
         response.Components = components;
 
@@ -768,7 +768,7 @@ public class ArtistBuilders
 
         var optionId =
             $"{InteractionConstants.Artist.Overview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
-        var optionEmote = new Emoji("\ud83d\udcca");
+        var optionEmote = EmojiProperties.Standard("\ud83d\udcca");
 
         if (pages.Count == 1)
         {
@@ -899,7 +899,7 @@ public class ArtistBuilders
 
         var optionId =
             $"{InteractionConstants.Artist.Overview}-{dbArtist.Id}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}";
-        var optionEmote = new Emoji("\ud83d\udcca");
+        var optionEmote = EmojiProperties.Standard("\ud83d\udcca");
 
         if (pages.Count == 1)
         {
@@ -1571,7 +1571,7 @@ public class ArtistBuilders
             var stolen = crownModel?.Stolen == true;
             response.Components = new ComponentBuilder()
                 .WithButton("Crown history", $"{InteractionConstants.Artist.Crown}-{cachedArtist.Id}-{stolen}",
-                    style: ButtonStyle.Secondary, emote: new Emoji("👑"));
+                    style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("👑"));
         }
 
         if (mode == ResponseMode.Image)
@@ -1670,7 +1670,7 @@ public class ArtistBuilders
 
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
-            response.Embed.WithThumbnailUrl(imgUrl);
+            response.Embed.WithThumbnail(imgUrl);
         }
 
         if (displayRoleSelector)
@@ -1851,7 +1851,7 @@ public class ArtistBuilders
 
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
-            response.Embed.WithThumbnailUrl(imgUrl);
+            response.Embed.WithThumbnail(imgUrl);
         }
 
         return response;
@@ -1978,7 +1978,7 @@ public class ArtistBuilders
 
         if (imgUrl != null && safeForChannel == CensorService.CensorResult.Safe)
         {
-            response.Embed.WithThumbnailUrl(imgUrl);
+            response.Embed.WithThumbnail(imgUrl);
         }
 
         return response;

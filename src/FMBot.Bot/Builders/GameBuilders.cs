@@ -683,7 +683,7 @@ public class GameBuilders
                     var dayStreakTask =
                         this._gameService.GetConsecutiveDaysStreak(context.DiscordUser.Id, currentGame.JumbleType);
 
-                    _ = Task.Run(() => commandContext.Message.AddReactionAsync(new Emoji("✅")));
+                    _ = Task.Run(() => commandContext.Message.AddReactionAsync(EmojiProperties.Standard("✅")));
 
                     _ = Task.Run(() => this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, true));
 
@@ -785,11 +785,11 @@ public class GameBuilders
                     if (levenshteinDistance == 1 ||
                         levenshteinDistance == 2 && commandContext.Message.Content.Length > 4)
                     {
-                        await commandContext.Message.AddReactionAsync(new Emoji("🤏"));
+                        await commandContext.Message.AddReactionAsync(EmojiProperties.Standard("🤏"));
                     }
                     else
                     {
-                        await commandContext.Message.AddReactionAsync(new Emoji("❌"));
+                        await commandContext.Message.AddReactionAsync(EmojiProperties.Standard("❌"));
                     }
 
                     await this._gameService.JumbleAddAnswer(currentGame, commandContext.User.Id, false);

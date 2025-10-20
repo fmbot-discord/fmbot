@@ -138,7 +138,7 @@ public class AdminCommands : BaseCommandModule
     [Command("serverdebug")]
     [Summary("Returns server data")]
     [Alias("guilddebug", "debugserver", "debugguild")]
-    public async Task DebugGuildAsync([Remainder] string guildId = null)
+    public async Task DebugGuildAsync([CommandParameter(Remainder = true)] string guildId = null)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -239,7 +239,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("issues")]
     [Summary("Toggles issue mode")]
-    public async Task IssuesAsync([Remainder] string reason = null)
+    public async Task IssuesAsync([CommandParameter(Remainder = true)] string reason = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -270,7 +270,7 @@ public class AdminCommands : BaseCommandModule
     [Command("leaveserver")]
     [Summary("Makes the bot leave a server")]
     [Alias("leaveguild")]
-    public async Task LeaveGuild([Remainder] string reason = null)
+    public async Task LeaveGuild([CommandParameter(Remainder = true)] string reason = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
@@ -299,7 +299,7 @@ public class AdminCommands : BaseCommandModule
     [Command("banguild")]
     [Summary("Bans a guild and makes the bot leave the server")]
     [Alias("banserver")]
-    public async Task BanGuild([Remainder] string guildId = null)
+    public async Task BanGuild([CommandParameter(Remainder = true)] string guildId = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
@@ -349,7 +349,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("updategwfilter")]
     [Summary("Updates gwk quality filter")]
-    public async Task UpdateGlobalWhoKnowsFilter([Remainder] string _ = null)
+    public async Task UpdateGlobalWhoKnowsFilter([CommandParameter(Remainder = true)] string _ = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -377,7 +377,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("debuglogs")]
     [Summary("View user command logs")]
-    public async Task DebugLogs([Remainder] string user = null)
+    public async Task DebugLogs([CommandParameter(Remainder = true)] string user = null)
     {
         try
         {
@@ -589,10 +589,10 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("opencollectivesupporters", RunMode = RunMode.Async)]
+    [Command("opencollectivesupporters")]
     [Summary("Displays all .fmbot supporters.")]
     [Alias("ocsupporters")]
-    public async Task OpenCollectiveSupportersAsync([Remainder] string extraOptions = null)
+    public async Task OpenCollectiveSupportersAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -622,7 +622,7 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("discordsupporters", RunMode = RunMode.Async)]
+    [Command("discordsupporters")]
     [Summary("Displays all .fmbot supporters.")]
     [Alias("dsupporters", "dsupp", "discsupp")]
     public async Task DiscordSupportersAsync()
@@ -656,7 +656,7 @@ public class AdminCommands : BaseCommandModule
     [Summary("Manage album censoring")]
     [Examples("addcensoredalbum Death Grips No Love Deep Web")]
     [Alias("addcensoredalbum", "addnsfwalbum", "checkalbum")]
-    public async Task AddAlbumAsync([Remainder] string albumValues)
+    public async Task AddAlbumAsync([CommandParameter(Remainder = true)] string albumValues)
     {
         try
         {
@@ -757,7 +757,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("managealias")]
     [Summary("Manage artist alias")]
-    public async Task ManageArtistAlias([Remainder] string alias)
+    public async Task ManageArtistAlias([CommandParameter(Remainder = true)] string alias)
     {
         try
         {
@@ -826,7 +826,7 @@ public class AdminCommands : BaseCommandModule
     [Summary("Manage artist censoring")]
     [Examples("addcensoredartist Last Days of Humanity")]
     [Alias("addcensoredartist", "addnsfwartist", "addfeaturedban", "checkartist")]
-    public async Task AddArtistAsync([Remainder] string artist)
+    public async Task AddArtistAsync([CommandParameter(Remainder = true)] string artist)
     {
         try
         {
@@ -1676,7 +1676,7 @@ public class AdminCommands : BaseCommandModule
         }
     }
 
-    [Command("reconnectshard", RunMode = RunMode.Async)]
+    [Command("reconnectshard")]
     [Summary("Reconnects a shard")]
     [GuildOnly]
     [ExcludeFromHelp]
@@ -1741,7 +1741,7 @@ public class AdminCommands : BaseCommandModule
 
     [Command("postembed"), Summary("Posts one of the reporting embeds")]
     [Examples("postembed \"gwkreporter\"")]
-    public async Task PostAdminEmbed([Remainder] string type = null)
+    public async Task PostAdminEmbed([CommandParameter(Remainder = true)] string type = null)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -2005,7 +2005,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Command("resetfeatured")]
     [Summary("Restarts the featured timer.")]
     [Alias("restarttimer", "timerstart", "timerrestart")]
-    public async Task RestartTimerAsync([Remainder] int? id = null)
+    public async Task RestartTimerAsync([CommandParameter(Remainder = true)] int? id = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -2197,7 +2197,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
     [Command("updatediscordsupporter")]
     [Summary("Updates single discord supporter")]
-    public async Task UpdateSingleDiscordSupporters([Remainder] string user)
+    public async Task UpdateSingleDiscordSupporters([CommandParameter(Remainder = true)] string user)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -2229,7 +2229,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
     [Command("updatemultidiscordsupporters")]
     [Summary("Updates multiple discord supporter")]
-    public async Task UpdateMultipleDiscordSupporters([Remainder] string user)
+    public async Task UpdateMultipleDiscordSupporters([CommandParameter(Remainder = true)] string user)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -2297,7 +2297,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Command("runtimer")]
     [Summary("Run a timer manually (only works if it exists)")]
     [Alias("triggerjob", "runjob")]
-    public async Task RunTimerAsync([Remainder] string job = null)
+    public async Task RunTimerAsync([CommandParameter(Remainder = true)] string job = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -2348,7 +2348,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Command("removetimer")]
     [Summary("Remove a timer manually (only works if it exists)")]
     [Alias("removejob", "deletejob")]
-    public async Task RemoveJobAsync([Remainder] string job = null)
+    public async Task RemoveJobAsync([CommandParameter(Remainder = true)] string job = null)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {
@@ -2565,7 +2565,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
     [Command("runfullupdate")]
     [Summary("Runs a full update for someone else")]
-    public async Task RunFullUpdate([Remainder] string user = null)
+    public async Task RunFullUpdate([CommandParameter(Remainder = true)] string user = null)
     {
         try
         {
@@ -2600,7 +2600,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
 
     [Command("runtoplistupdate")]
     [Summary("Runs a toplist update for someone else")]
-    public async Task RunTopListUpdate([Remainder] string user = null)
+    public async Task RunTopListUpdate([CommandParameter(Remainder = true)] string user = null)
     {
         try
         {
@@ -2634,7 +2634,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     }
 
     [Command("supporterlink")]
-    public async Task GetSupporterTestLink([Remainder] string user = null)
+    public async Task GetSupporterTestLink([CommandParameter(Remainder = true)] string user = null)
     {
         try
         {
@@ -2666,7 +2666,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     [Command("importdebug")]
     [Summary("Debug your import playcount")]
     [Options("Artist name")]
-    public async Task ImportDebug([Remainder] string user = null)
+    public async Task ImportDebug([CommandParameter(Remainder = true)] string user = null)
     {
         try
         {
@@ -3165,7 +3165,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     }
 
     [Command("banshortlisteners")]
-    public async Task BanShortListeners([Remainder] string trackValues = null)
+    public async Task BanShortListeners([CommandParameter(Remainder = true)] string trackValues = null)
     {
         try
         {
@@ -3266,7 +3266,7 @@ For anything else, you must use <#856212952305893376> and after that ask in <#10
     }
 
     [Command("postpendingreports")]
-    public async Task PostPendingReports([Remainder] string trackValues = null)
+    public async Task PostPendingReports([CommandParameter(Remainder = true)] string trackValues = null)
     {
         if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
         {

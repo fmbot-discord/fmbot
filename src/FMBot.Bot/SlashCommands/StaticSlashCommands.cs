@@ -10,6 +10,8 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 using Shared.Domain.Enums;
@@ -122,7 +124,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
             contextUser.UserNameLastFM, type, pricing, existingStripeSupporter, source);
 
         var components = new ComponentBuilder().WithButton($"Complete purchase", style: ButtonStyle.Link, url: link,
-            emote: Emoji.Parse("⭐"));
+            emote: EmojiProperties.Standard("⭐"));
 
         var embed = new EmbedProperties();
         embed.WithColor(DiscordConstants.InformationColorBlue);
@@ -256,7 +258,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
         embed.WithColor(DiscordConstants.InformationColorBlue);
 
         var components = new ComponentBuilder()
-            .WithButton("Manage subscription", style: ButtonStyle.Link, url: stripeManageLink, emote: Emoji.Parse("⭐"));
+            .WithButton("Manage subscription", style: ButtonStyle.Link, url: stripeManageLink, emote: EmojiProperties.Standard("⭐"));
 
         await RespondAsync(embed: embed.Build(), ephemeral: true, components: components.Build());
         this.Context.LogCommandUsed();
@@ -363,7 +365,7 @@ public class StaticSlashCommands : ApplicationCommandModule<ApplicationCommandCo
                 .WithColor(DiscordConstants.InformationColorBlue);
 
             var components = new ComponentBuilder()
-                .WithButton("Complete purchase", style: ButtonStyle.Link, url: checkoutLink, emote: Emoji.Parse("🎁"));
+                .WithButton("Complete purchase", style: ButtonStyle.Link, url: checkoutLink, emote: EmojiProperties.Standard("🎁"));
 
             await Context.Interaction.FollowupAsync(embed: embed.Build(), components: components.Build(),
                 ephemeral: true);

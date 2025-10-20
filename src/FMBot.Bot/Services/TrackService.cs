@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
 using Npgsql;
 using Serilog;
 
@@ -78,7 +79,7 @@ public class TrackService
 
     public async Task<TrackSearch> SearchTrack(ResponseModel response, NetCord.User discordUser, string trackValues,
         string lastFmUserName, string sessionKey = null, string otherUserUsername = null, bool useCachedTracks = false,
-        int? userId = null, ulong? interactionId = null, IUserMessage referencedMessage = null)
+        int? userId = null, ulong? interactionId = null, RestMessage referencedMessage = null)
     {
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(trackValues))

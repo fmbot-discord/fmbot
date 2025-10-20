@@ -12,6 +12,8 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Rest;
 using Npgsql;
 using Serilog;
 using Web.InternalApi;
@@ -55,7 +57,7 @@ public class CensorService
         return result.HasBadWord;
     }
 
-    public async Task<CensorResult> IsSafeForChannel(NetCord.Gateway.Guild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embedToUpdate = null)
+    public async Task<CensorResult> IsSafeForChannel(NetCord.Gateway.Guild guild, NetCord.Channel channel, string albumName, string artistName, string url, EmbedProperties embedToUpdate = null)
     {
         var result = await AlbumResult(albumName, artistName);
         if (result == CensorResult.NotSafe)
@@ -65,7 +67,7 @@ public class CensorService
             return result;
         }
 
-        if (result == CensorResult.Nsfw && (guild == null || ((SocketTextChannel)channel).IsNsfw))
+        if (result == CensorResult.Nsfw && (guild == null || ((TextGuildChannel)channel).Nsfw))
         {
             return CensorResult.Safe;
         }
@@ -73,7 +75,7 @@ public class CensorService
         return result;
     }
 
-    public async Task<CensorResult> IsSafeForChannel(NetCord.Gateway.Guild guild, IChannel channel, string artistName, EmbedBuilder embedToUpdate = null)
+    public async Task<CensorResult> IsSafeForChannel(NetCord.Gateway.Guild guild, NetCord.Channel channel, string artistName, EmbedProperties embedToUpdate = null)
     {
         var result = await ArtistResult(artistName);
         if (result == CensorResult.NotSafe)
@@ -82,7 +84,7 @@ public class CensorService
             return result;
         }
 
-        if (result == CensorResult.Nsfw && (guild == null || ((SocketTextChannel)channel).IsNsfw))
+        if (result == CensorResult.Nsfw && (guild == null || ((TextGuildChannel)channel).Nsfw))
         {
             return CensorResult.Safe;
         }
@@ -388,7 +390,7 @@ public class CensorService
             embed.WithTitle($"New censor report - {type}");
             embed.AddField("Artist", $"`{report.ArtistName}`");
 
-            var components = new ComponentBuilder()
+            var components = new ActionRowProperties()
                 .WithButton("NSFW", $"censor-report-mark-nsfw-{report.Id}", style: ButtonStyle.Success)
                 .WithButton("Censor", $"censor-report-mark-censored-{report.Id}", style: ButtonStyle.Success)
                 .WithButton("Deny", $"censor-report-deny-{report.Id}", style: ButtonStyle.Danger);
@@ -398,18 +400,18 @@ public class CensorService
                 embed.AddField("Album", $"`{report.AlbumName}`");
                 if (report.Album?.LastfmImageUrl != null)
                 {
-                    components.WithButton("Last.fm image", url: report.Album.LastfmImageUrl, row: 1, style: ButtonStyle.Link);
+                    components.WithButton("Last.fm image", url: report.Album.LastfmImageUrl, row: 1);
                 }
                 if (report.Album?.SpotifyImageUrl != null)
                 {
-                    components.WithButton("Spotify image", url: report.Album.SpotifyImageUrl, row: 1, style: ButtonStyle.Link);
+                    components.WithButton("Spotify image", url: report.Album.SpotifyImageUrl, row: 1);
                 }
             }
             else
             {
                 if (report.Artist?.SpotifyImageUrl != null)
                 {
-                    components.WithButton("Spotify image", url: report.Artist.SpotifyImageUrl, row: 1, style: ButtonStyle.Link);
+                    components.WithButton("Spotify image", url: report.Artist.SpotifyImageUrl, row: 1);
                 }
             }
 
@@ -426,7 +428,7 @@ public class CensorService
                 "Reports might contain images that are not nice to see. \n" +
                 "Feel free to skip handling these if you don't feel comfortable doing so.");
 
-            await channel.SendMessageAsync(embed: embed.Build(), components: components.Build());
+            await channel.SendMessageAsync(embed: embed, components: components);
         }
         catch (Exception e)
         {

@@ -287,7 +287,7 @@ public class StaticBuilders
 
         // if (!string.IsNullOrEmpty(pricing.LifetimePriceId))
         // {
-        //     actionRow.WithButton("Lifetime", $"gift-supporter-purchase-lifetime-{recipient.DiscordUserId}", ButtonStyle.Success, new Emoji("⭐"));
+        //     actionRow.WithButton("Lifetime", $"gift-supporter-purchase-lifetime-{recipient.DiscordUserId}", ButtonStyle.Success, EmojiProperties.Standard("⭐"));
         // }
 
         components.AddRow(actionRow);

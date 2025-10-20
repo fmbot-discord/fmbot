@@ -16,11 +16,12 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
-[Name("Artists")]
+[ModuleName("Artists")]
 public class ArtistCommands : BaseCommandModule
 {
     private readonly ArtistBuilders _artistBuilders;
@@ -60,7 +61,7 @@ public class ArtistCommands : BaseCommandModule
         this._playBuilders = playBuilders;
     }
 
-    [Command("artist", RunMode = RunMode.Async)]
+    [Command("artist")]
     [Summary("Artist you're currently listening to or searching for.")]
     [Examples(
         "a",
@@ -71,7 +72,7 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     [SupporterEnhanced("Supporters can see the date they first discovered an artist")]
-    public async Task ArtistAsync([Remainder] string artistValues = null)
+    public async Task ArtistAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -95,7 +96,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("artistoverview", RunMode = RunMode.Async)]
+    [Command("artistoverview")]
     [Summary("Artist you're currently listening to or searching for.")]
     [Examples(
         "ao",
@@ -105,7 +106,7 @@ public class ArtistCommands : BaseCommandModule
     [Alias("ao", "artist overview", "artistsoverview", "artists overview")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
-    public async Task ArtistOverviewAsync([Remainder] string artistValues = null)
+    public async Task ArtistOverviewAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -130,7 +131,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("artisttracks", RunMode = RunMode.Async)]
+    [Command("artisttracks")]
     [Summary("Top tracks for an artist")]
     [Examples(
         "at",
@@ -141,7 +142,7 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artisttracks command always contains all their tracks")]
-    public async Task ArtistTracksAsync([Remainder] string artistValues = null)
+    public async Task ArtistTracksAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -161,7 +162,7 @@ public class ArtistCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("artistalbums", RunMode = RunMode.Async)]
+    [Command("artistalbums")]
     [Summary("Top albums for an artist.")]
     [Examples(
         "aa",
@@ -172,7 +173,7 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     [SupporterEnhanced("Supporters have their complete Last.fm history cached in the bot, so the artistalbums command always contains all their albums")]
-    public async Task ArtistAlbumsAsync([Remainder] string artistValues = null)
+    public async Task ArtistAlbumsAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -189,7 +190,7 @@ public class ArtistCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("artistplays", RunMode = RunMode.Async)]
+    [Command("artistplays")]
     [Summary("Shows playcount for current artist or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
     [Examples(
@@ -201,7 +202,7 @@ public class ArtistCommands : BaseCommandModule
     [Alias("ap", "artist plays")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
-    public async Task ArtistPlaysAsync([Remainder] string artistValues = null)
+    public async Task ArtistPlaysAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -219,14 +220,14 @@ public class ArtistCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("artistpace", RunMode = RunMode.Async)]
+    [Command("artistpace")]
     [Summary("Shows estimated date you reach a certain amount of plays on an artist")]
     [Options("weekly/monthly", "Optional goal amount: For example `500` or `2k`", Constants.UserMentionExample)]
     [Examples("apc", "apc 1k q", "apc 400 h @user", "artistpace", "artistpace weekly @user 2500")]
     [UsernameSetRequired]
     [Alias("apc", "apace", "artistpc")]
     [CommandCategories(CommandCategory.Artists)]
-    public async Task ArtistPaceAsync([Remainder] string extraOptions = null)
+    public async Task ArtistPaceAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         try
         {
@@ -259,7 +260,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("topartists", RunMode = RunMode.Async)]
+    [Command("topartists")]
     [Summary("Shows your or someone else's top artists over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
         Constants.BillboardExample, Constants.EmbedSizeExample)]
@@ -268,7 +269,7 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]
-    public async Task TopArtistsAsync([Remainder] string extraOptions = null)
+    public async Task TopArtistsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -311,7 +312,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("discoveries", RunMode = RunMode.Async)]
+    [Command("discoveries")]
     [Summary("Artists you've recently discovered")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample, Constants.EmbedSizeExample)]
     [Examples("d", "discovered", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]
@@ -320,7 +321,7 @@ public class ArtistCommands : BaseCommandModule
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]
     [SupporterExclusive("To see what music you've recently discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
-    public async Task ArtistDiscoveriesAsync([Remainder] string extraOptions = null)
+    public async Task ArtistDiscoveriesAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -361,7 +362,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("taste", RunMode = RunMode.Async)]
+    [Command("taste")]
     [Summary("Compares your top artists, genres and countries to those from another user.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`",
         Constants.EmbedSizeExample)]
@@ -369,7 +370,7 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [Alias("t")]
     [CommandCategories(CommandCategory.Artists)]
-    public async Task TasteAsync([Remainder] string extraOptions = null)
+    public async Task TasteAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -406,7 +407,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknows", RunMode = RunMode.Async)]
+    [Command("whoknows")]
     [Summary("Shows what other users listen to an artist in your server")]
     [Examples("w", "wk COMA", "whoknows", "whoknows DJ Seinfeld")]
     [Alias("w", "wk", "whoknows artist", "thosewhoknow")]
@@ -414,7 +415,7 @@ public class ArtistCommands : BaseCommandModule
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows)]
-    public async Task WhoKnowsAsync([Remainder] string artistValues = null)
+    public async Task WhoKnowsAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -460,13 +461,13 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("globalwhoknows", RunMode = RunMode.Async)]
+    [Command("globalwhoknows")]
     [Summary("Shows what other users listen to an artist in .fmbot")]
     [Examples("gw", "gwk COMA", "globalwhoknows", "globalwhoknows DJ Seinfeld")]
     [Alias("gw", "gwk", "globalwk", "globalwhoknows artist")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows)]
-    public async Task GlobalWhoKnowsAsync([Remainder] string artistValues = null)
+    public async Task GlobalWhoKnowsAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -509,7 +510,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknows", RunMode = RunMode.Async)]
+    [Command("friendwhoknows")]
     [Summary("Who of your friends know an artist")]
     [Examples("fw", "fwk COMA", "friendwhoknows", "friendwhoknows DJ Seinfeld")]
     [Alias("fw", "fwk", "friendwhoknows artist", "friend whoknows", "friends whoknows", "friend whoknows artist",
@@ -517,7 +518,7 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
-    public async Task FriendWhoKnowsAsync([Remainder] string artistValues = null)
+    public async Task FriendWhoKnowsAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -558,7 +559,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("serverartists", RunMode = RunMode.Async)]
+    [Command("serverartists")]
     [Summary("Top artists for your server")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
     [Examples("sa", "sa a p", "serverartists", "serverartists alltime", "serverartists listeners weekly")]
@@ -566,7 +567,7 @@ public class ArtistCommands : BaseCommandModule
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists)]
-    public async Task GuildArtistsAsync([Remainder] string extraOptions = null)
+    public async Task GuildArtistsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -611,14 +612,14 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("affinity", RunMode = RunMode.Async)]
+    [Command("affinity")]
     [Summary("Shows users from this server with similar top artists.")]
     [Alias("n", "aff", "neighbors", "soulmates", "neighbours")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists)]
-    public async Task AffinityAsync([Remainder] string extraOptions = null)
+    public async Task AffinityAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -680,14 +681,14 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("iceberg", RunMode = RunMode.Async)]
+    [Command("iceberg")]
     [Summary("Shows your iceberg, based on artists popularity.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("iceberg", "iceberg 2024", "iceberg alltime")]
     [Alias("ice", "icebergify", "berg")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
-    public async Task IcebergAsync([Remainder] string extraOptions = null)
+    public async Task IcebergAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -712,7 +713,7 @@ public class ArtistCommands : BaseCommandModule
         }
     }
 
-    [Command("artistgaps", RunMode = RunMode.Async)]
+    [Command("artistgaps")]
     [Summary("Shows the artists you've returned to after a gap in listening.")]
     [Options(Constants.UserMentionExample, Constants.EmbedSizeExample)]
     [Examples("gaps", "artistgaps", "artistgaps quarterly @user", "gaps yearly")]
@@ -721,7 +722,7 @@ public class ArtistCommands : BaseCommandModule
     [SupportsPagination]
     [CommandCategories(CommandCategory.Artists)]
     [SupporterExclusive("To see which artists you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
-    public async Task ArtistGapsAsync([Remainder] string extraOptions = null)
+    public async Task ArtistGapsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 

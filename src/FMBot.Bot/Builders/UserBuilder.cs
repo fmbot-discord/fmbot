@@ -20,7 +20,10 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Services.Commands;
 using Serilog;
+using User = FMBot.Persistence.Domain.Models.User;
 
 namespace FMBot.Bot.Builders;
 
@@ -44,7 +47,7 @@ public class UserBuilder
     private readonly ShortcutService _shortcutService;
     private readonly CensorService _censorService;
 
-    private readonly CommandService _commands;
+    private readonly CommandService<> _commands;
 
     public UserBuilder(UserService userService,
         GuildService guildService,
@@ -146,7 +149,7 @@ public class UserBuilder
 
         if (this._timer.CurrentFeatured.FullSizeImage == null)
         {
-            response.Embed.WithThumbnailUrl(this._timer.CurrentFeatured.ImageUrl);
+            response.Embed.WithThumbnail(this._timer.CurrentFeatured.ImageUrl);
         }
         else
         {
@@ -305,7 +308,7 @@ public class UserBuilder
 
         response.Components = new ComponentBuilder()
             .WithButton("Settings", style: ButtonStyle.Secondary, customId: InteractionConstants.User.Settings,
-                emote: new Emoji("⚙️"))
+                emote: EmojiProperties.Standard("⚙️"))
             .WithButton("Add .fmbot", style: ButtonStyle.Link,
                 url: "https://discord.com/oauth2/authorize?client_id=356268235697553409");
 
@@ -1006,7 +1009,7 @@ public class UserBuilder
 
         actionRow.WithButton("History",
             $"{InteractionConstants.User.History}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-            style: ButtonStyle.Secondary, emote: new Emoji("📖"));
+            style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("📖"));
 
         if (discogs)
         {
@@ -1199,7 +1202,7 @@ public class UserBuilder
         actionRow
             .WithButton("Profile",
                 $"{InteractionConstants.User.Profile}-{user.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: new Emoji("ℹ"))
+                style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("ℹ"))
             .WithButton("Last.fm", style: ButtonStyle.Link,
                 url: LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm),
                 emote: Emote.Parse("<:lastfm:882227627287515166>"));
@@ -1293,10 +1296,10 @@ public class UserBuilder
         if (hasUsesLeft)
         {
             response.Components = new ComponentBuilder()
-                .WithButton("Compliment", emote: new Emoji("🙂"), style: ButtonStyle.Primary,
+                .WithButton("Compliment", emote: EmojiProperties.Standard("🙂"), style: ButtonStyle.Primary,
                     customId:
                     $"{InteractionConstants.Judge}~{timeSettings.Description}~compliment~{userSettings.DiscordUserId}~{context.DiscordUser.Id}")
-                .WithButton("Roast", emote: new Emoji("🔥"), style: ButtonStyle.Primary,
+                .WithButton("Roast", emote: EmojiProperties.Standard("🔥"), style: ButtonStyle.Primary,
                     customId:
                     $"{InteractionConstants.Judge}~{timeSettings.Description}~roast~{userSettings.DiscordUserId}~{context.DiscordUser.Id}");
         }
@@ -2077,7 +2080,7 @@ public class UserBuilder
                         new TextDisplayBuilder(
                             $"**Input:** `{StringExtensions.Sanitize(shortcut.Input)}`\n**Output:** `{StringExtensions.Sanitize(shortcut.Output)}`")
                     ],
-                    Accessory = new ButtonBuilder(emote: new Emoji("📝"), style: ButtonStyle.Secondary,
+                    Accessory = new ButtonBuilder(emote: EmojiProperties.Standard("📝"), style: ButtonStyle.Secondary,
                         customId: $"{InteractionConstants.Shortcuts.Manage}-{shortcut.Id}")
                 });
             }

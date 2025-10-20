@@ -23,7 +23,7 @@ public static class CommandContextExtensions
     public static void LogCommandUsed(this CommandContext context,
         CommandResponse commandResponse = CommandResponse.Ok)
     {
-        var shardId = context.Guild != null ? ((ShardedGatewayClient)context.Client).GetShardFor(context.Guild).ShardId : 0;
+        var shardId = context.Client.Shard?.Id ?? 0;
         Log.Information(
             "CommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} #{shardId} | {commandResponse} | {messageContent}",
             context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, shardId, commandResponse,

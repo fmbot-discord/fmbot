@@ -2,8 +2,6 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -15,10 +13,12 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Genius")]
+[ModuleName("Genius")]
 public class GeniusCommands : BaseCommandModule
 {
     private readonly GeniusService _geniusService;
@@ -47,7 +47,7 @@ public class GeniusCommands : BaseCommandModule
     [Alias("gen")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    public async Task GeniusAsync([Remainder] string searchValue = null)
+    public async Task GeniusAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -129,7 +129,7 @@ public class GeniusCommands : BaseCommandModule
                 {
                     response.Embed.WithTitle(firstResult.TitleWithFeatured);
                     response.Embed.WithUrl(firstResult.Url);
-                    response.Embed.WithThumbnailUrl(firstResult.SongArtImageThumbnailUrl);
+                    response.Embed.WithThumbnail(firstResult.SongArtImageThumbnailUrl);
 
                     response.Embed.WithDescription($"By **[{firstResult.PrimaryArtist.Name}]({firstResult.PrimaryArtist.Url})**");
 
@@ -141,7 +141,7 @@ public class GeniusCommands : BaseCommandModule
                 }
 
                 response.Embed.WithTitle($"Genius results for {querystring}");
-                response.Embed.WithThumbnailUrl(firstResult.SongArtImageThumbnailUrl);
+                response.Embed.WithThumbnail(firstResult.SongArtImageThumbnailUrl);
 
                 var embedDescription = new StringBuilder();
 

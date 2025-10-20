@@ -1,15 +1,14 @@
-using Discord.Commands;
 using FMBot.Domain;
+using NetCord.Services.Commands;
 using Shared.Domain.Enums;
 
 namespace FMBot.Bot.Extensions;
 
 public static class BotTypeExtension
 {
-    public static BotType GetBotType(this ICommandContext context)
+    public static BotType GetBotType(this CommandContext context)
     {
-        var socketCommandContext = (SocketCommandContext)context;
-        var botId = socketCommandContext.Client.CurrentUser.Id;
+        var botId = context.Client.Id;
 
         return botId switch
         {

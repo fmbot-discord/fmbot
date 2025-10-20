@@ -404,7 +404,7 @@ public class GenreBuilders
                 await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel, artist.Name);
             if (artist.SpotifyImageUrl != null && safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                response.Embed.WithThumbnail(artist.SpotifyImageUrl);
             }
 
             PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
@@ -494,7 +494,7 @@ public class GenreBuilders
                         artist.Name);
                 if (artist.SpotifyImageUrl != null && safeForChannel == CensorService.CensorResult.Safe)
                 {
-                    response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                    response.Embed.WithThumbnail(artist.SpotifyImageUrl);
                 }
 
                 PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);

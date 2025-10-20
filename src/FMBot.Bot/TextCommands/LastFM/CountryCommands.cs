@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -10,10 +9,11 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
-[Name("Countries")]
+[ModuleName("Countries")]
 public class CountryCommands : BaseCommandModule
 {
     private readonly IPrefixService _prefixService;
@@ -39,7 +39,7 @@ public class CountryCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("topcountries", RunMode = RunMode.Async)]
+    [Command("topcountries")]
     [Summary("Shows a list of your or someone else's top artist countries over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("tc", "topcountries", "tc a lfm:fm-bot", "topcountries weekly @user")]
@@ -47,7 +47,7 @@ public class CountryCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Genres)]
-    public async Task TopCountriesAsync([Remainder] string extraOptions = null)
+    public async Task TopCountriesAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -74,10 +74,10 @@ public class CountryCommands : BaseCommandModule
         }
     }
 
-    [Command("countrychart", RunMode = RunMode.Async)]
+    [Command("countrychart")]
     [Summary("Generates a map of the location from your top artists.")]
     [Alias("cc", "worldmap", "artistmap")]
-    public async Task CountryChartAsync([Remainder] string extraOptions = null)
+    public async Task CountryChartAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -104,12 +104,12 @@ public class CountryCommands : BaseCommandModule
         }
     }
 
-    [Command("country", RunMode = RunMode.Async)]
+    [Command("country")]
     [Summary("Shows country information for an artist, or top artists for a specific country")]
     [Alias("countries", "from")]
     [UsernameSetRequired]
     [SupportsPagination]
-    public async Task CountryInfoAsync([Remainder] string countryOptions = null)
+    public async Task CountryInfoAsync([CommandParameter(Remainder = true)] string countryOptions = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);

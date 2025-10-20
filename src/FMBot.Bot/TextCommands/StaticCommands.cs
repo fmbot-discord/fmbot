@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-
-using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Configurations;
@@ -22,6 +20,8 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Options;
+using NetCord;
+using NetCord.Services.Commands;
 using Serilog;
 using Web.InternalApi;
 using Enum = System.Enum;
@@ -29,10 +29,10 @@ using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Static commands")]
+[ModuleName("Static commands")]
 public class StaticCommands : BaseCommandModule
 {
-    private readonly CommandService _service;
+    private readonly CommandService<> _service;
     private readonly FriendsService _friendService;
     private readonly GuildService _guildService;
     private readonly IPrefixService _prefixService;
@@ -75,7 +75,7 @@ public class StaticCommands : BaseCommandModule
         this._client = client;
     }
 
-    [Command("invite", RunMode = RunMode.Async)]
+    [Command("invite")]
     [Summary("Info for inviting the bot to a server")]
     [Alias("server", "info")]
     [CommandCategories(CommandCategory.Other)]
@@ -144,7 +144,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("source", RunMode = RunMode.Async)]
+    [Command("source")]
     [Summary("Shows links to the source code of .fmbot")]
     [Alias("github", "gitlab", "opensource", "sourcecode", "code")]
     [CommandCategories(CommandCategory.Other)]
@@ -169,11 +169,11 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("outofsync", RunMode = RunMode.Async)]
+    [Command("outofsync")]
     [Summary("Info for what to do when now playing track is lagging behind")]
     [Alias("broken", "sync", "fix", "lagging", "stuck")]
     [CommandCategories(CommandCategory.Other)]
-    public async Task OutOfSyncAsync([Remainder] string options = null)
+    public async Task OutOfSyncAsync([CommandParameter(Remainder = true)] string options = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -184,7 +184,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("getsupporter", RunMode = RunMode.Async)]
+    [Command("getsupporter")]
     [Summary("Get the best .fmbot experience with Supporter")]
     [Alias("support", "patreon", "opencollective", "donations", "supporter")]
     [CommandCategories(CommandCategory.Other)]
@@ -200,7 +200,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("status", RunMode = RunMode.Async)]
+    [Command("status")]
     [Summary("Displays bot stats.")]
     [CommandCategories(CommandCategory.Other)]
     public async Task StatusAsync()
@@ -288,7 +288,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("shards", RunMode = RunMode.Async)]
+    [Command("shards")]
     [Summary("Displays bot sharding info.")]
     [ExcludeFromHelp]
     public async Task ShardsAsync()
@@ -374,7 +374,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("debugbotscrobbling", RunMode = RunMode.Async)]
+    [Command("debugbotscrobbling")]
     [Alias("debugbotscrobble", "debugbotscrobbles", "botscrobbledebug", "botscrobblingdebug")]
     [Summary("Debugging for bot scrobbling")]
     [ExcludeFromHelp]
@@ -421,7 +421,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("shard", RunMode = RunMode.Async)]
+    [Command("shard")]
     [Summary("Displays shard info for a specific guild")]
     [GuildOnly]
     [ExcludeFromHelp]
@@ -472,10 +472,10 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("help", RunMode = RunMode.Async)]
+    [Command("help")]
     [Summary("Quick help summary to get started.")]
     [CommandCategories(CommandCategory.Other)]
-    public async Task HelpAsync([Remainder] string extraValues = null)
+    public async Task HelpAsync([CommandParameter(Remainder = true)] string extraValues = null)
     {
         var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         if (!string.IsNullOrWhiteSpace(extraValues))
@@ -779,7 +779,7 @@ public class StaticCommands : BaseCommandModule
         return $"**`{prefix}{commandInfo.Name}`{firstAlias}**\n";
     }
 
-    [Command("supporters", RunMode = RunMode.Async)]
+    [Command("supporters")]
     [Summary("Displays all .fmbot supporters.")]
     [Alias("donators", "donors", "backers")]
     [CommandCategories(CommandCategory.Other)]
@@ -794,7 +794,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("countdown", RunMode = RunMode.Async)]
+    [Command("countdown")]
     [Summary("Counts down. Doesn't work that well above 3 seconds.")]
     [ExcludeFromHelp]
     public async Task CountdownAsync(int countdown = 3)
@@ -856,10 +856,10 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("givemefish", RunMode = RunMode.Async)]
+    [Command("givemefish")]
     [Summary("Fish fish. Blub blub.")]
     [ExcludeFromHelp]
-    public async Task FishAsync([Remainder] string extraValues = null)
+    public async Task FishAsync([CommandParameter(Remainder = true)] string extraValues = null)
     {
         var reply = new StringBuilder();
 
@@ -958,7 +958,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("fullhelp", RunMode = RunMode.Async)]
+    [Command("fullhelp")]
     [Summary("Displays all available commands.")]
     public async Task FullHelpAsync()
     {
@@ -1011,7 +1011,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("settinghelp", RunMode = RunMode.Async)]
+    [Command("settinghelp")]
     [Summary("Displays a list of all server settings.")]
     [Alias("serverhelp", "serversettings", "settings", "help server")]
     [CommandCategories(CommandCategory.Other)]
@@ -1061,7 +1061,7 @@ public class StaticCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("staffhelp", RunMode = RunMode.Async)]
+    [Command("staffhelp")]
     [Summary("Displays this list.")]
     [ExcludeFromHelp]
     public async Task StaffHelpAsync()

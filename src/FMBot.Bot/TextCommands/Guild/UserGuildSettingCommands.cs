@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -14,10 +12,11 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.Guild;
 
-[Name("Server member settings")]
+[ModuleName("Server member settings")]
 [ServerStaffOnly]
 public class UserGuildSettingCommands : BaseCommandModule
 {
@@ -45,13 +44,13 @@ public class UserGuildSettingCommands : BaseCommandModule
         this._adminService = adminService;
     }
 
-    [Command("fmbotactivitythreshold", RunMode = RunMode.Async)]
+    [Command("fmbotactivitythreshold")]
     [Summary("Sets amount of days to filter out users for inactivity. Inactivity is counted by the last date that someone has used .fmbot")]
     [Alias("setfmbotactivitythreshold", "setfmbotthreshold", "setfmbothreshold")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
-    public async Task SetWhoKnowsThresholdAsync([Remainder] string _ = null)
+    public async Task SetWhoKnowsThresholdAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         try
         {
@@ -67,14 +66,14 @@ public class UserGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("block", RunMode = RunMode.Async)]
+    [Command("block")]
     [Summary("Block a user from appearing in server-wide commands and charts")]
     [Options(Constants.UserMentionExample)]
     [Alias("blockuser", "blockmember")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
-    public async Task GuildBlockUserAsync([Remainder] string user = null)
+    public async Task GuildBlockUserAsync([CommandParameter(Remainder = true)] string user = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
@@ -153,14 +152,14 @@ public class UserGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("unblock", RunMode = RunMode.Async)]
+    [Command("unblock")]
     [Summary("Remove block from a user from appearing in server-wide commands")]
     [Options(Constants.UserMentionExample)]
     [Alias("unblockuser", "removeblock", "removeban", "crownunblock", "crownunban")]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
-    public async Task GuildUnBlockUserAsync([Remainder] string user = null)
+    public async Task GuildUnBlockUserAsync([CommandParameter(Remainder = true)] string user = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
@@ -218,14 +217,14 @@ public class UserGuildSettingCommands : BaseCommandModule
         }
     }
 
-    [Command("blockedusers", RunMode = RunMode.Async)]
+    [Command("blockedusers")]
     [Summary("View all users that are blocked from appearing in server-wide commands")]
     [Alias("blocked", "banned", "bannedusers", "blockedmembers", "bannedmembers")]
     [GuildOnly]
     [RequiresIndex]
     [SupportsPagination]
     [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
-    public async Task BlockedUsersAsync([Remainder] string searchValue = null)
+    public async Task BlockedUsersAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 

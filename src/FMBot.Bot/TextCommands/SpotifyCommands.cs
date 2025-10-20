@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -15,11 +13,12 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 using SpotifyAPI.Web;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Spotify")]
+[ModuleName("Spotify")]
 public class SpotifyCommands : BaseCommandModule
 {
     private readonly IDataSourceFactory _dataSourceFactory;
@@ -52,7 +51,7 @@ public class SpotifyCommands : BaseCommandModule
     [Alias("sp", "s", "spotifyfind", "spotifysearch", "alexa play", "hey siri", "hey google", "ok google")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    public async Task SpotifyAsync([Remainder] string searchValue = null)
+    public async Task SpotifyAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -158,7 +157,7 @@ public class SpotifyCommands : BaseCommandModule
     [Alias("spab")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    public async Task SpotifyAlbumAsync([Remainder] string searchValue = null)
+    public async Task SpotifyAlbumAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -246,7 +245,7 @@ public class SpotifyCommands : BaseCommandModule
     [Alias("spa")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    public async Task SpotifyArtistAsync([Remainder] string searchValue = null)
+    public async Task SpotifyArtistAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

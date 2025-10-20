@@ -1,20 +1,21 @@
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using System.Threading.Tasks;
 using System;
+using CsvHelper.Configuration.Attributes;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("AppleMusic")]
+[ModuleName("AppleMusic")]
 public class AppleMusicCommands : BaseCommandModule
 {
     private readonly IDataSourceFactory _dataSourceFactory;
@@ -35,12 +36,11 @@ public class AppleMusicCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("applemusic")]
+    [Command("applemusic", "am", "apple")]
     [Summary("Shares a link to an Apple Music track based on what a user is listening to or searching for")]
-    [Alias("am", "apple")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    public async Task AppleMusicAsync([Remainder] string searchValue = null)
+    public async Task AppleMusicAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

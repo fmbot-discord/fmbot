@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Tasks;
-
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -13,10 +11,11 @@ using FMBot.Domain;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Youtube")]
+[ModuleName("Youtube")]
 public class YoutubeCommands : BaseCommandModule
 {
     private readonly UserService _userService;
@@ -44,7 +43,7 @@ public class YoutubeCommands : BaseCommandModule
     [Alias("yt", "y", "youtubesearch", "ytsearch", "yts")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ThirdParty)]
-    public async Task YoutubeAsync([Remainder] string searchValue = null)
+    public async Task YoutubeAsync([CommandParameter(Remainder = true)] string searchValue = null)
     {
         try
         {

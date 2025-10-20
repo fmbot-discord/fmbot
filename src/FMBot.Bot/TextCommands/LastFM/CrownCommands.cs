@@ -1,26 +1,21 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
-[Name("Crowns")]
+[ModuleName("Crowns")]
 public class CrownCommands : BaseCommandModule
 {
     private readonly AdminService _adminService;
@@ -62,7 +57,7 @@ public class CrownCommands : BaseCommandModule
         this._guildBuilders = guildBuilders;
     }
 
-    [Command("crowns", RunMode = RunMode.Async)]
+    [Command("crowns")]
     [Summary("Shows you your crowns for this server.")]
     [Alias("cws", "topcrowns", "topcws", "tcws")]
     [UsernameSetRequired]
@@ -70,7 +65,7 @@ public class CrownCommands : BaseCommandModule
     [SupportsPagination]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns)]
-    public async Task UserCrownsAsync([Remainder] string extraOptions = null)
+    public async Task UserCrownsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
@@ -93,14 +88,14 @@ public class CrownCommands : BaseCommandModule
         }
     }
 
-    [Command("crown", RunMode = RunMode.Async)]
+    [Command("crown")]
     [Summary("Shows crown history for the artist you're currently listening to or searching for")]
     [Alias("cw")]
     [UsernameSetRequired]
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns)]
-    public async Task CrownAsync([Remainder] string artistValues = null)
+    public async Task CrownAsync([CommandParameter(Remainder = true)] string artistValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -121,7 +116,7 @@ public class CrownCommands : BaseCommandModule
         }
     }
 
-    [Command("crownleaderboard", RunMode = RunMode.Async)]
+    [Command("crownleaderboard")]
     [Summary("Shows users with the most crowns in your server")]
     [Alias("cwlb", "crownlb", "cwleaderboard", "crown leaderboard")]
     [UsernameSetRequired]

@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -13,10 +12,11 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Friends")]
+[ModuleName("Friends")]
 public class FriendsCommands : BaseCommandModule
 {
     private readonly FriendsService _friendsService;
@@ -53,13 +53,13 @@ public class FriendsCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("friends", RunMode = RunMode.Async)]
+    [Command("friends")]
     [Summary("Displays your friends and what they're listening to.")]
     [Alias("recentfriends", "friendsrecent", "f")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
     [SupporterEnhanced($"Supporters can add up to 18 friends (up from 12)")]
-    public async Task FriendsAsync([Remainder]string unused = null)
+    public async Task FriendsAsync([CommandParameter(Remainder = true)]string unused = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -79,7 +79,7 @@ public class FriendsCommands : BaseCommandModule
         }
     }
 
-    [Command("friended", RunMode = RunMode.Async)]
+    [Command("friended")]
     [Summary("Displays people who have added you as a friend.")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Friends)]
@@ -101,7 +101,7 @@ public class FriendsCommands : BaseCommandModule
         }
     }
 
-    [Command("addfriends", RunMode = RunMode.Async)]
+    [Command("addfriends")]
     [Summary("Adds users to your friend list")]
     [Options(Constants.UserMentionExample)]
     [Examples("addfriends fm-bot @user", "addfriends 356268235697553409")]
@@ -137,7 +137,7 @@ public class FriendsCommands : BaseCommandModule
         }
     }
 
-    [Command("removefriends", RunMode = RunMode.Async)]
+    [Command("removefriends")]
     [Summary("Removes users from your friend list")]
     [Options(Constants.UserMentionExample)]
     [Examples("removefriends fm-bot @user", "removefriend 356268235697553409")]
@@ -169,7 +169,7 @@ public class FriendsCommands : BaseCommandModule
         }
     }
 
-    [Command("removeallfriends", RunMode = RunMode.Async)]
+    [Command("removeallfriends")]
     [Summary("Remove all your friends")]
     [Alias("friendsremoveall", "friends remove all")]
     [UsernameSetRequired]

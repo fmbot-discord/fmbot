@@ -122,7 +122,7 @@ public class CountryBuilders
 
                 if (artist.SpotifyImageUrl != null)
                 {
-                    response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                    response.Embed.WithThumbnail(artist.SpotifyImageUrl);
                 }
 
                 PublicProperties.UsedCommandsArtists.TryAdd(context.InteractionId, artist.Name);
@@ -176,7 +176,7 @@ public class CountryBuilders
 
                     if (artist.SpotifyImageUrl != null)
                     {
-                        response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                        response.Embed.WithThumbnail(artist.SpotifyImageUrl);
                     }
 
                     foundCountry = this._countryService.GetValidCountry(artist.CountryCode);

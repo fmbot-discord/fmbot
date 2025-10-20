@@ -3,12 +3,13 @@ using Discord.WebSocket;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using NetCord;
 
 namespace FMBot.Bot.Extensions;
 
 public static class ChannelExtensions
 {
-    public static Dictionary<SocketGuildChannel, int> GetCategoryChannelPositions(this SocketCategoryChannel category)
+    public static Dictionary<TextGuildChannel, int> GetCategoryChannelPositions(this SocketCategoryChannel category)
         => category.Channels
             .OrderBy(ChannelGroup).ThenBy(c => c.Position).ThenBy(c => c.Id)
             .Select((channel, index) => (Channel: channel, Index: index))

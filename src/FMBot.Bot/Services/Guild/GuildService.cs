@@ -839,7 +839,7 @@ public class GuildService
         return existingChannel;
     }
 
-    public async Task DisableChannelCommandsAsync(IChannel discordChannel, int guildId, List<string> commands,
+    public async Task DisableChannelCommandsAsync(NetCord.Channel discordChannel, int guildId, List<string> commands,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -891,7 +891,7 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task SetChannelEmbedType(IChannel discordChannel, int guildId, FmEmbedType? embedType,
+    public async Task SetChannelEmbedType(NetCord.Channel discordChannel, int guildId, FmEmbedType? embedType,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -927,7 +927,7 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task<string[]> EnableChannelCommandsAsync(IChannel discordChannel, List<string> commands,
+    public async Task<string[]> EnableChannelCommandsAsync(NetCord.Channel discordChannel, List<string> commands,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -947,7 +947,7 @@ public class GuildService
         return existingChannel.DisabledCommands;
     }
 
-    public async Task<string[]> ClearDisabledChannelCommandsAsync(IChannel discordChannel, ulong discordGuildId)
+    public async Task<string[]> ClearDisabledChannelCommandsAsync(NetCord.Channel discordChannel, ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -966,7 +966,7 @@ public class GuildService
         return existingChannel.DisabledCommands;
     }
 
-    public async Task DisableChannelAsync(IChannel discordChannel, int guildId, ulong discordGuildId)
+    public async Task DisableChannelAsync(NetCord.Channel discordChannel, int guildId, ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -1001,7 +1001,7 @@ public class GuildService
         await db.SaveChangesAsync();
     }
 
-    public async Task EnableChannelAsync(IChannel discordChannel, ulong discordGuildId)
+    public async Task EnableChannelAsync(NetCord.Channel discordChannel, ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
         var existingChannel = await db.Channels
@@ -1038,7 +1038,7 @@ public class GuildService
         return existingChannel?.FmCooldown;
     }
 
-    public async Task<int?> SetChannelCooldownAsync(IChannel discordChannel, int guildId, int? cooldown,
+    public async Task<int?> SetChannelCooldownAsync(NetCord.Channel discordChannel, int guildId, int? cooldown,
         ulong discordGuildId)
     {
         await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -1182,7 +1182,7 @@ public class GuildService
 
         if (partyingFace)
         {
-            var emote = new Emoji("🥳");
+            var emote = EmojiProperties.Standard("🥳");
             await message.AddReactionAsync(emote);
         }
     }

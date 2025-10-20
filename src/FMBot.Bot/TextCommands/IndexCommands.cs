@@ -1,9 +1,6 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
-
-using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -14,11 +11,12 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 using Serilog;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Indexing")]
+[ModuleName("Indexing")]
 public class IndexCommands : BaseCommandModule
 {
     private readonly GuildService _guildService;
@@ -46,7 +44,7 @@ public class IndexCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("refreshmembers", RunMode = RunMode.Async)]
+    [Command("refreshmembers")]
     [Summary("Refreshes the cached member list that .fmbot has for your server.")]
     [Alias("index", "refresh", "cachemembers", "refreshserver", "serverset", "refresh members")]
     [GuildOnly]
@@ -113,7 +111,7 @@ public class IndexCommands : BaseCommandModule
         }
     }
 
-    [Command("update", RunMode = RunMode.Async)]
+    [Command("update")]
     [Summary("Updates a users cached playcounts based on their recent plays\n\n" +
              "You can also update parts of your cached playcounts by using one of the options")]
     [Options("Full", "Plays", "Artists", "Albums", "Tracks")]
@@ -122,7 +120,7 @@ public class IndexCommands : BaseCommandModule
     [CommandCategories(CommandCategory.UserSettings)]
     [SupporterEnhanced("Supporters get their lifetime data cached in the bot, so all the commands that rely on this have the most complete data")]
     [Alias("u")]
-    public async Task UpdateAsync([Remainder] string options = null)
+    public async Task UpdateAsync([CommandParameter(Remainder = true)] string options = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

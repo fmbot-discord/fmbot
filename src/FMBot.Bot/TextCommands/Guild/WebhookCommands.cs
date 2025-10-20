@@ -1,7 +1,5 @@
 using System.Linq;
 using System.Threading.Tasks;
-
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -10,10 +8,11 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.Guild;
 
-[Name("Webhooks")]
+[ModuleName("Webhooks")]
 [ServerStaffOnly]
 public class WebhookCommands : BaseCommandModule
 {
@@ -35,7 +34,7 @@ public class WebhookCommands : BaseCommandModule
         this._prefixService = prefixService;
     }
 
-    [Command("addwebhook", RunMode = RunMode.Async)]
+    [Command("addwebhook")]
     [Summary("Adds featured webhook to a channel. This will automatically post all .fmbot features to this channel.\n\n" +
              "To remove, simply delete the webhook from your server and .fmbot will automatically delete it next time it tries to post a feature.")]
     [Alias("addfeaturedwebhook")]
@@ -84,7 +83,7 @@ public class WebhookCommands : BaseCommandModule
         this.Context.LogCommandUsed();
     }
 
-    [Command("testwebhook", RunMode = RunMode.Async)]
+    [Command("testwebhook")]
     [Summary("Test the .fmbot webhook in your channel")]
     [Alias("testfeatured", "testfeaturedwebhook")]
     [GuildOnly]

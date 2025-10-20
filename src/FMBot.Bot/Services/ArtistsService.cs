@@ -22,6 +22,7 @@ using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
 using Npgsql;
 using Serilog;
 using Web.InternalApi;
@@ -70,7 +71,7 @@ public class ArtistsService
     public async Task<ArtistSearch> SearchArtist(ResponseModel response, NetCord.User discordUser, string artistValues,
         string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
         bool useCachedArtists = false, int? userId = null, bool redirectsEnabled = true, ulong? interactionId = null,
-        IUserMessage referencedMessage = null)
+        RestMessage referencedMessage = null)
     {
         if (referencedMessage != null && string.IsNullOrWhiteSpace(artistValues))
         {

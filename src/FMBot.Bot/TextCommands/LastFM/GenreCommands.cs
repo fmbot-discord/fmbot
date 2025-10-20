@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -55,7 +54,7 @@ public class GenreCommands : BaseCommandModule
         this._genreBuilders = genreBuilders;
     }
 
-    [Command("topgenres", RunMode = RunMode.Async)]
+    [Command("topgenres")]
     [Summary("Shows a list of your or someone else's top genres over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("tg", "topgenres", "tg a lfm:fm-bot", "topgenres weekly @user")]
@@ -63,7 +62,7 @@ public class GenreCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Genres)]
-    public async Task TopGenresAsync([Remainder] string extraOptions = null)
+    public async Task TopGenresAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -90,7 +89,7 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("genre", RunMode = RunMode.Async)]
+    [Command("genre")]
     [Summary("Shows genre information for an artist, or top artist for a specific genre")]
     [Examples("genre", "genres hip hop, electronic", "g", "genre Indie Soul", "genre The Beatles")]
     [Alias("genreinfo", "genres", "gi", "g")]
@@ -98,7 +97,7 @@ public class GenreCommands : BaseCommandModule
     [SupportsPagination]
     [CommandCategories(CommandCategory.Genres)]
     [GuildOnly]
-    public async Task GenreInfoAsync([Remainder] string genreOptions = null)
+    public async Task GenreInfoAsync([CommandParameter(Remainder = true)] string genreOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -122,7 +121,7 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknowsgenre", RunMode = RunMode.Async)]
+    [Command("whoknowsgenre")]
     [Summary("Shows what other users listen to a genre in your server")]
     [Examples("wg", "wkg hip hop", "whoknowsgenre", "whoknowsgenre techno")]
     [Alias("wg", "wkg", "whoknows genre")]
@@ -130,7 +129,7 @@ public class GenreCommands : BaseCommandModule
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Genres, CommandCategory.WhoKnows)]
-    public async Task WhoKnowsGenreAsync([Remainder] string genreValues = null)
+    public async Task WhoKnowsGenreAsync([CommandParameter(Remainder = true)] string genreValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -159,7 +158,7 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("servergenres", RunMode = RunMode.Async)]
+    [Command("servergenres")]
     [Summary("Top genres for your server")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
     [Examples("sg", "sg a p", "servergenres", "servergenres alltime", "servergenres listeners weekly")]
@@ -167,7 +166,7 @@ public class GenreCommands : BaseCommandModule
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Genres)]
-    public async Task GuildGenresAsync([Remainder] string extraOptions = null)
+    public async Task GuildGenresAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -203,14 +202,14 @@ public class GenreCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknowgenre", RunMode = RunMode.Async)]
+    [Command("friendwhoknowgenre")]
     [Summary("Who of your friends listen to a genre")]
     [Examples("fwg", "fwg pop", "friendwhoknowgenre", "friendwhoknowgenre pov: indie")]
     [Alias("fwg", "fwkg", "friendwhoknows genre", "friendwhoknowsgenre", "friend whoknowsgenre", "friends whoknow genre", "friend whoknows genre", "friends whoknows genre")]
     [UsernameSetRequired]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
-    public async Task FriendWhoKnowsAsync([Remainder] string genreValues = null)
+    public async Task FriendWhoKnowsAsync([CommandParameter(Remainder = true)] string genreValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 

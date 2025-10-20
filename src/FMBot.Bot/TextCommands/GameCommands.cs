@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using System;
 using System.Collections.Generic;
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -13,10 +12,12 @@ using Microsoft.Extensions.Options;
 
 using System.Threading;
 using FMBot.Domain;
+using NetCord;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Games")]
+[ModuleName("Games")]
 public class GameCommands : BaseCommandModule
 {
     private readonly UserService _userService;
@@ -43,14 +44,14 @@ public class GameCommands : BaseCommandModule
         this._settingService = settingService;
     }
 
-    [Command("jumble", RunMode = RunMode.Async)]
+    [Command("jumble")]
     [Summary("Play the Jumble game.")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Games)]
     [Alias("j", "jmbl", "jum", "jumbmle")]
     [Options("stats")]
     [SupporterEnhanced("Supporters can play unlimited Jumble games without a daily limit")]
-    public async Task JumbleAsync([Remainder] string options = null)
+    public async Task JumbleAsync([CommandParameter(Remainder = true)] string options = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -75,7 +76,7 @@ public class GameCommands : BaseCommandModule
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
-                _ = Task.Run(() => this.Context.Message.AddReactionAsync(new Emoji("❌")));
+                _ = Task.Run(() => this.Context.Message.AddReactionAsync(EmojiProperties.Standard("❌")));
                 this.Context.LogCommandUsed(response.CommandResponse);
                 return;
             }
@@ -137,14 +138,14 @@ public class GameCommands : BaseCommandModule
         });
     }
 
-    [Command("pixel", RunMode = RunMode.Async)]
+    [Command("pixel")]
     [Summary("Play the pixel jumble game with albums.")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Games)]
     [Alias("px", "pixelation", "aj", "abj", "popidle", "pixeljumble", "pxj")]
     [Options("stats")]
     [SupporterEnhanced("Supporters can play unlimited Pixel Jumble games without a daily limit")]
-    public async Task PixelAsync([Remainder] string options = null)
+    public async Task PixelAsync([CommandParameter(Remainder = true)] string options = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -171,7 +172,7 @@ public class GameCommands : BaseCommandModule
 
             if (response.CommandResponse == CommandResponse.Cooldown)
             {
-                _ = Task.Run(() => this.Context.Message.AddReactionAsync(new Emoji("❌")));
+                _ = Task.Run(() => this.Context.Message.AddReactionAsync(EmojiProperties.Standard("❌")));
                 this.Context.LogCommandUsed(response.CommandResponse);
                 return;
             }

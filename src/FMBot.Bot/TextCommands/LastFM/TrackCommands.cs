@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord.Commands;
+using CsvHelper.Configuration.Attributes;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -20,11 +20,12 @@ using FMBot.Domain.Models;
 using FMBot.Domain.Types;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
-[Name("Tracks")]
+[ModuleName("Tracks")]
 public class TrackCommands : BaseCommandModule
 {
     private readonly GuildService _guildService;
@@ -71,7 +72,7 @@ public class TrackCommands : BaseCommandModule
         this._countryService = countryService;
     }
 
-    [Command("track", RunMode = RunMode.Async)]
+    [Command("track")]
     [Summary("Track you're currently listening to or searching for.")]
     [Examples(
         "tr",
@@ -82,7 +83,7 @@ public class TrackCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     [SupporterEnhanced("Supporters can see the date they first discovered a track")]
-    public async Task TrackAsync([Remainder] string trackValues = null)
+    public async Task TrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         try
         {
@@ -103,7 +104,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("trackplays", RunMode = RunMode.Async)]
+    [Command("trackplays")]
     [Summary("Shows playcount for current track or the one you're searching for.\n\n" +
              "You can also mention another user to see their playcount.")]
     [Examples(
@@ -115,7 +116,7 @@ public class TrackCommands : BaseCommandModule
     [Alias("tp", "trackplay", "tplays", "trackp", "track plays")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task TrackPlaysAsync([Remainder] string trackValues = null)
+    public async Task TrackPlaysAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -130,7 +131,7 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("trackdetails", RunMode = RunMode.Async)]
+    [Command("trackdetails")]
     [Summary("Shows metadata for current track or the one you're searching for.")]
     [Examples(
         "tp",
@@ -139,7 +140,7 @@ public class TrackCommands : BaseCommandModule
     [Alias("td", "trackdata", "trackmetadata", "tds")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task TrackDetailsAsync([Remainder] string trackValues = null)
+    public async Task TrackDetailsAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -153,13 +154,13 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("love", RunMode = RunMode.Async)]
+    [Command("love")]
     [Summary("Loves a track on Last.fm")]
     [Examples("love", "l", "love Tame Impala Borderline")]
     [Alias("l", "heart", "favorite", "affection", "appreciation", "lust", "fuckyeah", "fukk", "unfuck")]
     [UserSessionRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task LoveAsync([Remainder] string trackValues = null)
+    public async Task LoveAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -173,13 +174,13 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("unlove", RunMode = RunMode.Async)]
+    [Command("unlove")]
     [Summary("Removes the track you're currently listening to or searching for from your last.fm loved tracks.")]
     [Examples("unlove", "ul", "unlove Lou Reed Brandenburg Gate")]
     [Alias("ul", "unheart", "hate", "fuck")]
     [UserSessionRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task UnLoveAsync([Remainder] string trackValues = null)
+    public async Task UnLoveAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -193,14 +194,14 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("loved", RunMode = RunMode.Async)]
+    [Command("loved")]
     [Summary("Shows your Last.fm loved tracks.")]
     [Examples("loved", "lt", "lovedtracks lfm:fm-bot", "lovedtracks @user")]
     [Alias("lovedtracks", "lt", "unfucked")]
     [UserSessionRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task LovedAsync([Remainder] string extraOptions = null)
+    public async Task LovedAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -222,14 +223,14 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("scrobble", RunMode = RunMode.Async)]
+    [Command("scrobble")]
     [Summary("Scrobbles a track on Last.fm.")]
     [Examples("scrobble", "sb the less i know the better", "scrobble Loona Heart Attack",
         "scrobble Mac DeMarco | Chamber of Reflection")]
     [UserSessionRequired]
     [Alias("sb")]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task ScrobbleAsync([Remainder] string trackValues = null)
+    public async Task ScrobbleAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         var contextUser = await this._userService.GetUserWithDiscogs(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -243,7 +244,7 @@ public class TrackCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("toptracks", RunMode = RunMode.Async)]
+    [Command("toptracks")]
     [Summary("Shows your or someone else's top tracks over a certain time period.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
         Constants.BillboardExample, Constants.EmbedSizeExample)]
@@ -252,7 +253,7 @@ public class TrackCommands : BaseCommandModule
     [UsernameSetRequired]
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task TopTracksAsync([Remainder] string extraOptions = null)
+    public async Task TopTracksAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -280,14 +281,14 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("receipt", RunMode = RunMode.Async)]
+    [Command("receipt")]
     [Summary("Shows your track receipt. Based on Receiptify.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("receipt", "receipt 2022", "rcpt week")]
     [Alias("rcpt", "receiptify", "reciept")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task ReceiptAsync([Remainder] string extraOptions = null)
+    public async Task ReceiptAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -320,7 +321,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("whoknowstrack", RunMode = RunMode.Async)]
+    [Command("whoknowstrack")]
     [Summary("Shows what other users listen to a track in your server")]
     [Examples("wt", "whoknowstrack", "whoknowstrack Hothouse Flowers Don't Go",
         "whoknowstrack Natasha Bedingfield | Unwritten")]
@@ -329,7 +330,7 @@ public class TrackCommands : BaseCommandModule
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows)]
-    public async Task WhoKnowsTrackAsync([Remainder] string trackValues = null)
+    public async Task WhoKnowsTrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -360,14 +361,14 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("globalwhoknowstrack", RunMode = RunMode.Async)]
+    [Command("globalwhoknowstrack")]
     [Summary("Shows what other users listen to a track in .fmbot")]
     [Examples("gwt", "globalwhoknowstrack", "globalwhoknowstrack Hothouse Flowers Don't Go",
         "globalwhoknowstrack Natasha Bedingfield | Unwritten")]
     [Alias("gwt", "gwkt", "gwtr", "gwktr", "globalwkt", "globalwktrack", "globalwhoknows track")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows)]
-    public async Task GlobalWhoKnowsTrackAsync([Remainder] string trackValues = null)
+    public async Task GlobalWhoKnowsTrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -408,7 +409,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("friendwhoknowstrack", RunMode = RunMode.Async)]
+    [Command("friendwhoknowstrack")]
     [Summary("Shows who of your friends listen to an track in .fmbot")]
     [Examples("fwt", "fwkt The Beatles Yesterday", "friendwhoknowstrack",
         "friendwhoknowstrack Hothouse Flowers Don't Go", "friendwhoknowstrack Mall Grab | Sunflower")]
@@ -417,7 +418,7 @@ public class TrackCommands : BaseCommandModule
     [UsernameSetRequired]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows, CommandCategory.Friends)]
-    public async Task FriendWhoKnowsTrackAsync([Remainder] string trackValues = null)
+    public async Task FriendWhoKnowsTrackAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -456,7 +457,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("servertracks", RunMode = RunMode.Async)]
+    [Command("servertracks")]
     [Summary("Top tracks for your server, optionally for an artist")]
     [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`",
         "Artist name")]
@@ -466,7 +467,7 @@ public class TrackCommands : BaseCommandModule
     [GuildOnly]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task GuildTracksAsync([Remainder] string guildTracksOptions = null)
+    public async Task GuildTracksAsync([CommandParameter(Remainder = true)] string guildTracksOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -507,9 +508,9 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("eurovision", RunMode = RunMode.Async)]
+    [Command("eurovision")]
     [Alias("ev", "esc", "eurovisie", "eurovisionsongcontest", "songcontest")]
-    public async Task EurovisionAsync([Remainder] string extraOptions = null)
+    public async Task EurovisionAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -553,7 +554,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("trackgaps", RunMode = RunMode.Async)]
+    [Command("trackgaps")]
     [Summary("Shows the tracks you've returned to after a gap in listening.")]
     [Options(Constants.UserMentionExample, Constants.EmbedSizeExample)]
     [Examples("tgaps", "trackgaps", "trackgaps @user")]
@@ -563,7 +564,7 @@ public class TrackCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks)]
     [SupporterExclusive(
         "To see which tracks you've re-discovered we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
-    public async Task TrackGapsAsync([Remainder] string extraOptions = null)
+    public async Task TrackGapsAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -600,7 +601,7 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    [Command("lyrics", RunMode = RunMode.Async)]
+    [Command("lyrics")]
     [Summary("Lyrics for a track you're currently listening to or searching for")]
     [Examples(
         "lyrics",
@@ -612,7 +613,7 @@ public class TrackCommands : BaseCommandModule
     [SupportsPagination]
     [CommandCategories(CommandCategory.Tracks)]
     [SupporterExclusive("Viewing track lyrics in .fmbot is only available for .fmbot supporters")]
-    public async Task LyricsAsync([Remainder] string trackValues = null)
+    public async Task LyricsAsync([CommandParameter(Remainder = true)] string trackValues = null)
     {
         try
         {

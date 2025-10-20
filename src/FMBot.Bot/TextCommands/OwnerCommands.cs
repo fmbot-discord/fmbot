@@ -5,9 +5,6 @@ using System.Linq;
 using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
-
-using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
@@ -16,10 +13,12 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("Owner commands")]
+[ModuleName("Owner commands")]
 [Summary(".fmbot Owners Only")]
 [ExcludeFromHelp]
 public class OwnerCommands : BaseCommandModule
@@ -44,7 +43,7 @@ public class OwnerCommands : BaseCommandModule
 
     [Command("say"), Summary("Says something")]
     [UsernameSetRequired]
-    public async Task SayAsync([Remainder] string say)
+    public async Task SayAsync([CommandParameter(Remainder = true)] string say)
     {
         if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
         {
@@ -259,7 +258,7 @@ public class OwnerCommands : BaseCommandModule
         }
     }
 
-    [Command("togglespecialguild", RunMode = RunMode.Async)]
+    [Command("togglespecialguild")]
     [Summary("Makes the server a special server")]
     [GuildOnly]
     public async Task ToggleSpecialGuildAsync()
@@ -286,7 +285,7 @@ public class OwnerCommands : BaseCommandModule
         }
     }
 
-    [Command("memorydiag", RunMode = RunMode.Async)]
+    [Command("memorydiag")]
     [Summary("Displays detailed memory diagnostics.")]
     public async Task MemoryDiagnosticsAsync()
     {

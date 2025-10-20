@@ -4,10 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -18,9 +15,10 @@ using FMBot.Domain.Enums;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
-using FMBot.Domain.Types;
 using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
+using PuppeteerSharp;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
@@ -196,7 +194,7 @@ public class PlayBuilder
             sessionKey = context.ContextUser.SessionKeyLastFm;
         }
 
-        Response<RecentTrackList> recentTracks;
+        Domain.Types.Response<RecentTrackList> recentTracks;
 
         if (!userSettings.DifferentUser)
         {
@@ -393,7 +391,7 @@ public class PlayBuilder
 
                 if (embedType != FmEmbedType.EmbedTiny)
                 {
-                    response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+                    response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl().ToString());
                     response.Embed.WithAuthor(response.EmbedAuthor);
                     response.Embed.WithUrl(recentTracks.Content.UserUrl);
                 }
@@ -412,7 +410,7 @@ public class PlayBuilder
                             currentTrack.AlbumName, currentTrack.ArtistName, albumCoverUrl);
                         if (safeForChannel == CensorService.CensorResult.Safe)
                         {
-                            response.Embed.WithThumbnailUrl(albumCoverUrl);
+                            response.Embed.WithThumbnail(albumCoverUrl);
                         }
                     }
                 }
@@ -450,7 +448,7 @@ public class PlayBuilder
             sessionKey = context.ContextUser.SessionKeyLastFm;
         }
 
-        Response<RecentTrackList> recentTracks;
+        Domain.Types.Response<RecentTrackList> recentTracks;
         if (!userSettings.DifferentUser)
         {
             if (context.ContextUser.LastIndexed == null)
@@ -698,7 +696,7 @@ public class PlayBuilder
 
         if (!userSettings.DifferentUser)
         {
-            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl()?.ToString());
         }
 
         response.EmbedAuthor.WithUrl($"{LastfmUrlExtensions.GetUserUrl(userSettings.UserNameLastFm)}/library");
@@ -824,14 +822,14 @@ public class PlayBuilder
             if (editMode)
             {
                 response.Components = new ComponentBuilder()
-                    .WithButton(emote: new Emoji("🗑️"), customId: InteractionConstants.DeleteStreak);
+                    .WithButton(emote: EmojiProperties.Standard("🗑️"), customId: InteractionConstants.DeleteStreak);
             }
 
             return response;
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages,
-            editMode ? InteractionConstants.DeleteStreak : null, editMode ? new Emoji("🗑️") : null);
+            editMode ? InteractionConstants.DeleteStreak : null, editMode ? EmojiProperties.Standard("🗑️") : null);
 
         return response;
     }
@@ -1118,7 +1116,7 @@ public class PlayBuilder
                 mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, albumCoverUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(albumCoverUrl);
+                response.Embed.WithThumbnail(albumCoverUrl);
             }
         }
 
@@ -1149,7 +1147,7 @@ public class PlayBuilder
         {
             response.Components = new ComponentBuilder().WithButton("Reroll",
                 $"{InteractionConstants.RandomMilestone}-{userSettings.DiscordUserId}-{context.ContextUser.DiscordUserId}",
-                style: ButtonStyle.Secondary, emote: new Emoji("🎲"));
+                style: ButtonStyle.Secondary, emote: EmojiProperties.Standard("🎲"));
         }
 
         response.Embed.WithDescription(reply.ToString());

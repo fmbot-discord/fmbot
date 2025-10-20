@@ -3,10 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Discord.Commands;
-using Discord.WebSocket;
-using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -21,10 +17,11 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
 
-[Name("User settings")]
+[ModuleName("User settings")]
 public class UserCommands : BaseCommandModule
 {
     private readonly GuildService _guildService;
@@ -64,12 +61,12 @@ public class UserCommands : BaseCommandModule
         this._adminService = adminService;
     }
 
-    [Command("settings", RunMode = RunMode.Async)]
+    [Command("settings")]
     [Summary("Your user settings in .fmbot")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
     [Alias("userconfig", "usersettings", "usersetting", "setting")]
-    public async Task UserSettingsAsync([Remainder] string searchValues = null)
+    public async Task UserSettingsAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -89,13 +86,13 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("profile", RunMode = RunMode.Async)]
+    [Command("profile")]
     [Summary("Displays user stats related to Last.fm and .fmbot")]
     [UsernameSetRequired]
     [Alias("stats", "user")]
     [CommandCategories(CommandCategory.Other)]
     [SupporterEnhanced("Get more insights and an overview of all your years")]
-    public async Task StatsAsync([Remainder] string userOptions = null)
+    public async Task StatsAsync([CommandParameter(Remainder = true)] string userOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -118,12 +115,12 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("link", RunMode = RunMode.Async)]
+    [Command("link")]
     [Summary("Links a users Last.fm profile")]
     [Alias("lastfm", "lfm")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
-    public async Task LinkAsync([Remainder] string userOptions = null)
+    public async Task LinkAsync([CommandParameter(Remainder = true)] string userOptions = null)
     {
         var user = await this._userService.GetUserAsync(this.Context.User.Id);
 
@@ -159,14 +156,14 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("judge", RunMode = RunMode.Async)]
+    [Command("judge")]
     [Summary("Judges your music taste using AI")]
     [UsernameSetRequired]
     [Alias("roast", "compliment")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [CommandCategories(CommandCategory.Other)]
     [SupporterEnhanced("Supporters get an improved AI model with better output and a higher usage limit")]
-    public async Task JudgeAsync([Remainder] string extraOptions = null)
+    public async Task JudgeAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -184,7 +181,7 @@ public class UserCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("userreactions", RunMode = RunMode.Async)]
+    [Command("userreactions")]
     [Summary("Sets the automatic emoji reactions for the `fm` and `featured` command.\n\n" +
              "Use this command without any emojis to disable.")]
     [Examples("userreactions :PagChomp: :PensiveBlob:", "userreactions 😀 😯 🥵", "userreactions 😀 😯 :PensiveBlob:",
@@ -192,7 +189,7 @@ public class UserCommands : BaseCommandModule
     [Alias("usersetreactions", "useremojis", "userreacts")]
     [UsernameSetRequired]
     [SupporterExclusive("Supporters can set their own emote reactions used globally")]
-    public async Task SetUserReactionsAsync([Remainder] string emojis = null)
+    public async Task SetUserReactionsAsync([CommandParameter(Remainder = true)] string emojis = null)
     {
         var user = await this._userService.GetUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -297,14 +294,14 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("featured", RunMode = RunMode.Async)]
+    [Command("featured")]
     [Summary("Displays the currently picked feature and the user.\n\n" +
              "This command will also show something special if the user is in your server")]
     [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar", "ftrd", "ftd", "feat", "pǝɹnʇɐǝɟ")]
     [CommandCategories(CommandCategory.Other)]
     [SupporterEnhanced(
         "Every first Sunday of the month is Supporter Sunday. The bot will then exclusively feature supporters as a thank-you for supporting the bot.")]
-    public async Task FeaturedAsync([Remainder] string options = null)
+    public async Task FeaturedAsync([CommandParameter(Remainder = true)] string options = null)
     {
         try
         {
@@ -358,13 +355,13 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("featuredlog", RunMode = RunMode.Async)]
+    [Command("featuredlog")]
     [Summary("Shows featured history")]
     [Alias("featuredhistory", "recentfeatured", "rf", "recentlyfeatured", "fl", "flog", "ɓolpǝɹnʇɐǝɟ")]
     [Options("global/server/friends/self")]
     [CommandCategories(CommandCategory.Other)]
     [UsernameSetRequired]
-    public async Task FeaturedLogAsync([Remainder] string options = null)
+    public async Task FeaturedLogAsync([CommandParameter(Remainder = true)] string options = null)
     {
         try
         {
@@ -392,13 +389,13 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("rateyourmusic", RunMode = RunMode.Async)]
+    [Command("rateyourmusic")]
     [Summary(
         "Enables or disables the rateyourmusic links. This changes all album links in .fmbot to RYM links instead of Last.fm links.")]
     [Alias("rym")]
     [CommandCategories(CommandCategory.UserSettings)]
     [UsernameSetRequired]
-    public async Task RateYourMusicAsync([Remainder] string options = null)
+    public async Task RateYourMusicAsync([CommandParameter(Remainder = true)] string options = null)
     {
         try
         {
@@ -431,12 +428,12 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("botscrobbling", RunMode = RunMode.Async)]
+    [Command("botscrobbling")]
     [Summary("Enables or disables the bot scrobbling. For more info, use the command.")]
     [Alias("botscrobble", "bottrack", "bottracking")]
     [CommandCategories(CommandCategory.UserSettings)]
     [UsernameSetRequired]
-    public async Task BotTrackingAsync([Remainder] string option = null)
+    public async Task BotTrackingAsync([CommandParameter(Remainder = true)] string option = null)
     {
         try
         {
@@ -455,7 +452,7 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("fmmode", RunMode = RunMode.Async)]
+    [Command("fmmode")]
     [Summary("Sends you a dm so you can configure your `fm` command.\n\n" +
              "Servers can override your mode with `{{prfx}}servermode`.")]
     [Examples("mode")]
@@ -489,7 +486,7 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("responsemode", RunMode = RunMode.Async)]
+    [Command("responsemode")]
     [Summary("Change how your whoknows and top list commands look.")]
     [Examples("responsemode")]
     [UsernameSetRequired]
@@ -506,7 +503,7 @@ public class UserCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("mode", RunMode = RunMode.Async)]
+    [Command("mode")]
     [UsernameSetRequired]
     [ExcludeFromHelp]
     [Alias("md")]
@@ -521,7 +518,7 @@ public class UserCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("privacy", RunMode = RunMode.Async)]
+    [Command("privacy")]
     [Summary("Changes your visibility to other .fmbot users.\n\n" +
              "The default privacy setting is 'Server'.")]
     [Options("**Global**: You are visible in the global WhoKnows with your Last.fm username",
@@ -529,7 +526,7 @@ public class UserCommands : BaseCommandModule
     [Examples("privacy")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.UserSettings)]
-    public async Task PrivacyAsync([Remainder] string _ = null)
+    public async Task PrivacyAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -540,7 +537,7 @@ public class UserCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("templates", RunMode = RunMode.Async)]
+    [Command("templates")]
     [Summary("Configure your fm templates.")]
     [Examples("templates")]
     [UsernameSetRequired]
@@ -589,11 +586,11 @@ public class UserCommands : BaseCommandModule
         }
     }
 
-    [Command("login", RunMode = RunMode.Async)]
+    [Command("login")]
     [Summary("Starts the login process for connecting a Last.fm account to .fmbot.")]
     [Alias("set", "setusername", "fm set", "connect")]
     [CommandCategories(CommandCategory.UserSettings)]
-    public async Task LoginAsync([Remainder] string _ = null)
+    public async Task LoginAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserAsync(this.Context.User.Id);
@@ -604,11 +601,11 @@ public class UserCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("remove", RunMode = RunMode.Async)]
+    [Command("remove")]
     [Summary("Deletes your .fmbot account")]
     [Alias("delete", "removedata", "deletedata", "logout")]
     [CommandCategories(CommandCategory.UserSettings)]
-    public async Task RemoveAsync([Remainder] string confirmation = null)
+    public async Task RemoveAsync([CommandParameter(Remainder = true)] string confirmation = null)
     {
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -639,7 +636,7 @@ public class UserCommands : BaseCommandModule
     [Command("linkedroles")]
     [Alias("linkedrole", "updatelinkedroles", "updatelinkedrole")]
     [UsernameSetRequired]
-    public async Task UpdateLinkedRoles([Remainder] string trackValues = null)
+    public async Task UpdateLinkedRoles([CommandParameter(Remainder = true)] string trackValues = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var response = this._userBuilder.ManageLinkedRoles(new ContextModel(this.Context, prfx));
@@ -657,7 +654,7 @@ public class UserCommands : BaseCommandModule
         "Shortcuts are a feature exclusive to Supporters. Shortcuts are stored in-memory across all bot instances to ensure command handling remains fast, so there is limited availability.")]
     [Examples("yo` > `fm textoneline", "progress` > `chart 5x5 2025 skip")]
     [UsernameSetRequired]
-    public async Task ShortcutsAsync([Remainder] string _ = null)
+    public async Task ShortcutsAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         try
         {

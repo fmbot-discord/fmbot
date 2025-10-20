@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
-[Name("Charts")]
+[ModuleName("Charts")]
 public class ChartCommands : BaseCommandModule
 {
     private readonly GuildService _guildService;
@@ -45,7 +45,7 @@ public class ChartCommands : BaseCommandModule
         this.Interactivity = interactivity;
     }
 
-    [Command("chart", RunMode = RunMode.Async)]
+    [Command("chart")]
     [Summary("Generates an album image chart.")]
     [Options(
         Constants.CompactTimePeriodList,
@@ -60,7 +60,7 @@ public class ChartCommands : BaseCommandModule
     [Alias("c", "aoty", "albumsoftheyear", "albumoftheyear", "aotd", "albumsofthedecade", "albumofthedecade", "topster", "topsters")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Albums)]
-    public async Task ChartAsync([Remainder]string otherSettings = null)
+    public async Task ChartAsync([CommandParameter(Remainder = true)]string otherSettings = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -112,7 +112,7 @@ public class ChartCommands : BaseCommandModule
         }
     }
 
-    [Command("artistchart", RunMode = RunMode.Async)]
+    [Command("artistchart")]
     [Summary("Generates an artist image chart.")]
     [Options(
         Constants.CompactTimePeriodList,
@@ -124,7 +124,7 @@ public class ChartCommands : BaseCommandModule
     [Alias("ac", "top", "c artist", "c artists", "chart artist", "chart artists")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Charts, CommandCategory.Artists)]
-    public async Task ArtistChartAsync([Remainder]string otherSettings = null)
+    public async Task ArtistChartAsync([CommandParameter(Remainder = true)]string otherSettings = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var user = await this._userService.GetUserSettingsAsync(this.Context.User);

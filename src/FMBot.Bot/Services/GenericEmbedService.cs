@@ -58,7 +58,7 @@ public static class GenericEmbedService
     public static void UserBlockedResponse(this EmbedProperties embed, string prfx)
     {
         embed.WithDescription("You're banned from using .fmbot.");
-        embed.WithThumbnailUrl("https://i.imgur.com/wNmcoR5.jpg");
+        Embed.WithThumbnail("https://i.imgur.com/wNmcoR5.jpg");
 
         embed.WithColor(DiscordConstants.WarningColorOrange);
     }
@@ -347,5 +347,40 @@ public static class GenericEmbedService
         {
             Text = value
         });
+    }
+
+    public static void WithAuthor(this EmbedProperties embed, string value)
+    {
+        embed.WithAuthor(new EmbedAuthorProperties()
+        {
+            Name = value
+        });
+    }
+
+    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label, string customId,
+        ButtonStyle style, EmojiProperties emote = null)
+    {
+        actionRow.Add(emote == null
+            ? new ButtonProperties(customId, label, style)
+            : new ButtonProperties(customId, label, emote, style));
+
+        actionRow.Add(new ButtonProperties(customId, label, style));
+        return actionRow;
+    }
+
+    public static ActionRowProperties WithButton(this ActionRowProperties actionRow, string label, string url,
+        EmojiProperties emote = null, int row = 1)
+    {
+        actionRow.Add(emote == null
+            ? new LinkButtonProperties(url, label)
+            : new LinkButtonProperties(url, label, emote));
+
+        return actionRow;
+    }
+
+    public static StringMenuProperties AddOption(this StringMenuProperties menu, StringMenuSelectOptionProperties properties)
+    {
+        menu.Add(properties);
+        return menu;
     }
 }

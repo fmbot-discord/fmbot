@@ -24,6 +24,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord.Rest;
 using Npgsql;
 using Serilog;
 using Web.InternalApi;
@@ -69,7 +70,7 @@ public class AlbumService
     public async Task<AlbumSearch> SearchAlbum(ResponseModel response, NetCord.User discordUser, string albumValues,
         string lastFmUserName, string sessionKey = null,
         string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null, ulong? interactionId = null,
-        IUserMessage referencedMessage = null, bool redirectsEnabled = true)
+        RestMessage referencedMessage = null, bool redirectsEnabled = true)
     {
         string searchValue;
         if (referencedMessage != null && string.IsNullOrWhiteSpace(albumValues))

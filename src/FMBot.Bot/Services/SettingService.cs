@@ -16,6 +16,7 @@ using FMBot.Persistence.EntityFrameWork;
 using Google.Protobuf.WellKnownTypes;
 using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.Services;
 
@@ -715,7 +716,7 @@ public class SettingService
     public async Task<UserSettingsModel> GetUser(
         string extraOptions,
         User user,
-        ICommandContext context,
+        CommandContext context,
         bool firstOptionIsLfmUsername = false)
     {
         return await GetUser(extraOptions, user, context.Guild, context.User, firstOptionIsLfmUsername);

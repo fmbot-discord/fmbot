@@ -11,6 +11,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using Google.Protobuf.Reflection;
 using Microsoft.AspNetCore.WebUtilities;
+using NetCord;
 
 namespace FMBot.Bot.Services;
 
@@ -229,7 +230,7 @@ public static class StringService
         response.Embed.WithAuthor(page.Author);
         response.Embed.WithDescription(page.Description);
         response.Embed.WithUrl(page.Url);
-        response.Embed.WithThumbnailUrl(page.ThumbnailUrl);
+        response.Embed.WithThumbnail(page.ThumbnailUrl);
         response.Embed.WithFooter(page.Footer);
         response.Embed.Color = null;
 
@@ -251,7 +252,7 @@ public static class StringService
     }
 
     public static StaticPaginatorBuilder BuildStaticPaginator(IList<PageBuilder> pages, string customOptionId = null,
-        IEmote optionEmote = null, SelectMenuBuilder selectMenuBuilder = null)
+        EmojiProperties optionEmote = null, SelectMenuBuilder selectMenuBuilder = null)
     {
         var builder = new StaticPaginatorBuilder()
             .WithPages(pages)

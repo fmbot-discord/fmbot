@@ -125,7 +125,7 @@ public class WebhookService
     public async Task SendFeaturedWebhooks(FeaturedLog featured)
     {
         var embed = new EmbedProperties();
-        embed.WithThumbnailUrl(featured.ImageUrl);
+        Embed.WithThumbnail(featured.ImageUrl);
         embed.AddField("Featured:", featured.Description);
 
         await using var db = await this._contextFactory.CreateDbContextAsync();

@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Discord.Commands;
+using CsvHelper.Configuration.Attributes;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -11,11 +11,12 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.Guild;
 
 [ExcludeFromHelp]
-[Name("Premium server settings")]
+[ModuleName("Premium server settings")]
 public class PremiumGuildCommands : BaseCommandModule
 {
     private readonly AdminService _adminService;
@@ -45,13 +46,13 @@ public class PremiumGuildCommands : BaseCommandModule
         this._premiumSettingBuilder = premiumSettingBuilder;
     }
 
-    [Command("allowedroles", RunMode = RunMode.Async)]
+    [Command("allowedroles")]
     [Summary("Sets roles that are allowed to be in server-wide charts")]
     [Alias("wkwhitelist", "wkroles", "whoknowswhitelist", "whoknowsroles")]
     [GuildOnly]
     [ExcludeFromHelp]
     [RequiresIndex]
-    public async Task SetAllowedRoles([Remainder] string unused = null)
+    public async Task SetAllowedRoles([CommandParameter(Remainder = true)] string unused = null)
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
@@ -75,13 +76,13 @@ public class PremiumGuildCommands : BaseCommandModule
         }
     }
 
-    [Command("blockedroles", RunMode = RunMode.Async)]
+    [Command("blockedroles")]
     [Summary("Sets roles that are blocked from server-wide charts")]
     [Alias("wkwblacklist", "wkblocklist", "whoknowsblaccklist", "whoknowsblocklist")]
     [GuildOnly]
     [ExcludeFromHelp]
     [RequiresIndex]
-    public async Task SetBlockedRoles([Remainder] string unused = null)
+    public async Task SetBlockedRoles([CommandParameter(Remainder = true)] string unused = null)
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
@@ -105,13 +106,13 @@ public class PremiumGuildCommands : BaseCommandModule
         }
     }
 
-    [Command("botmanagementroles", RunMode = RunMode.Async)]
+    [Command("botmanagementroles")]
     [Summary("Sets roles that are allowed to manage .fmbot in this server")]
     [Alias("managementroles", "staffroles", "adminroles", "modroles", "botroles", "botmangementroles")]
     [GuildOnly]
     [ExcludeFromHelp]
     [RequiresIndex]
-    public async Task SetBotManagementRoles([Remainder] string unused = null)
+    public async Task SetBotManagementRoles([CommandParameter(Remainder = true)] string unused = null)
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
@@ -135,13 +136,12 @@ public class PremiumGuildCommands : BaseCommandModule
         }
     }
 
-    [Command("botmanagementroles", RunMode = RunMode.Async)]
+    [Command("botmanagementroles", "managementroles", "staffroles", "adminroles", "modroles", "botroles", "botmangementroles")]
     [Summary("Sets roles that are allowed to manage .fmbot in this server")]
-    [Alias("managementroles", "staffroles", "adminroles", "modroles", "botroles", "botmangementroles")]
     [GuildOnly]
     [ExcludeFromHelp]
     [RequiresIndex]
-    public async Task SetUserActivityThreshold([Remainder] string unused = null)
+    public async Task SetUserActivityThreshold([CommandParameter(Remainder = true)] string unused = null)
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {
@@ -165,13 +165,13 @@ public class PremiumGuildCommands : BaseCommandModule
         }
     }
 
-    [Command("serveractivitythreshold", RunMode = RunMode.Async)]
+    [Command("serveractivitythreshold")]
     [Summary("Sets roles that are allowed to manage .fmbot in this server")]
     [Alias("activitythreshold", "guildactivitythreshold", "activitytreshold")]
     [GuildOnly]
     [ExcludeFromHelp]
     [RequiresIndex]
-    public async Task SetGuildActivityThreshold([Remainder] string unused = null)
+    public async Task SetGuildActivityThreshold([CommandParameter(Remainder = true)] string unused = null)
     {
         if (!PublicProperties.PremiumServers.ContainsKey(this.Context.Guild.Id))
         {

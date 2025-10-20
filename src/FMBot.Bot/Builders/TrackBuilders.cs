@@ -307,7 +307,7 @@ public class TrackBuilders
                 "Lyrics",
                 $"{InteractionConstants.TrackLyrics}-{dbTrack.Id}",
                 style: ButtonStyle.Secondary,
-                emote: Emoji.Parse("🎤"));
+                emote: EmojiProperties.Standard("🎤"));
         }
 
         //if (track.Tags != null && track.Tags.Any())
@@ -733,7 +733,7 @@ public class TrackBuilders
                 track.Track.AlbumName, track.Track.ArtistName, track.Track.AlbumUrl);
             if (safeForChannel == CensorService.CensorResult.Safe)
             {
-                response.Embed.WithThumbnailUrl(albumCoverUrl);
+                response.Embed.WithThumbnail(albumCoverUrl);
             }
             else
             {

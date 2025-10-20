@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-
-using Discord.WebSocket;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services.Guild;
@@ -45,8 +43,8 @@ public static class InteractionContextExtensions
             }
         }
 
-        if (context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
-            !context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+        if (context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.UserInstall) &&
+            !context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
         {
             Log.Information(
                 "SlashCommandUsed: {discordUserName} / {discordUserId} | UserApp | {commandResponse} | {messageContent}",
@@ -195,7 +193,7 @@ public static class InteractionContextExtensions
         if (response.EmoteReactions != null && response.EmoteReactions.Length != 0 &&
             response.EmoteReactions.FirstOrDefault()?.Length > 0 &&
             response.CommandResponse == CommandResponse.Ok &&
-            context.Interaction.IntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
+            context.Interaction.AuthorizingIntegrationOwners.ContainsKey(ApplicationIntegrationType.GuildInstall))
         {
             try
             {

@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Tasks;
-
-using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -11,6 +9,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands;
 
@@ -40,7 +39,7 @@ public class ImportCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Importing)]
     [SupporterExclusive("Only supporters can import and access their Spotify or Apple Music history")]
-    public async Task ImportSpotifyAsync([Remainder] string _ = null)
+    public async Task ImportSpotifyAsync([CommandParameter(Remainder = true)] string _ = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -73,13 +72,13 @@ public class ImportCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("importmodify", RunMode = RunMode.Async)]
+    [Command("importmodify")]
     [Summary("Allows you to modify your .fmbot imports")]
     [Alias("modifyimport", "importsmodify", "modifyimports", "import modify")]
     [CommandCategories(CommandCategory.UserSettings)]
     [UsernameSetRequired]
     [SupporterExclusive("Only supporters can import and access their Spotify or Apple Music history")]
-    public async Task ModifyImportAsync([Remainder] string confirmation = null)
+    public async Task ModifyImportAsync([CommandParameter(Remainder = true)] string confirmation = null)
     {
         var contextUser = await this._userService.GetFullUserAsync(this.Context.User.Id);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

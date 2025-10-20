@@ -2,8 +2,6 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -15,10 +13,11 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 
 namespace FMBot.Bot.TextCommands.Guild;
 
-[Name("Server settings")]
+[ModuleName("Server settings")]
 [ServerStaffOnly]
 public class GuildCommands : BaseCommandModule
 {
@@ -51,11 +50,11 @@ public class GuildCommands : BaseCommandModule
         this._guildBuilders = guildBuilders;
     }
 
-    [Command("configuration", RunMode = RunMode.Async)]
+    [Command("configuration")]
     [Summary("Shows server configuration for .fmbot")]
     [CommandCategories(CommandCategory.ServerSettings)]
     [Alias("ss", "config", "serversettings", "fmbotconfig", "serverconfig")]
-    public async Task GuildSettingsAsync([Remainder] string searchValues = null)
+    public async Task GuildSettingsAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -77,12 +76,12 @@ public class GuildCommands : BaseCommandModule
         }
     }
 
-    [Command("members", RunMode = RunMode.Async)]
+    [Command("members")]
     [Summary("view members in your server that have an .fmbot account")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.ServerSettings)]
     [Alias("mb", "users", "memberoverview", "mo")]
-    public async Task MemberOverviewAsync([Remainder] string searchValues = null)
+    public async Task MemberOverviewAsync([CommandParameter(Remainder = true)] string searchValues = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -104,7 +103,7 @@ public class GuildCommands : BaseCommandModule
         }
     }
 
-    [Command("keepdata", RunMode = RunMode.Async)]
+    [Command("keepdata")]
     [Summary("Allows you to keep your server data when removing the bot from your server")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
@@ -117,14 +116,14 @@ public class GuildCommands : BaseCommandModule
             "If you still wish to remove all server data from the bot you can kick the bot after the time period is over.");
     }
 
-    [Command("servermode", RunMode = RunMode.Async)]
+    [Command("servermode")]
     [Summary("Sets the forced .fm mode for the server.\n\n" +
              "To view current settings, use `{{prfx}}servermode info`")]
     [Options("Modes: embedtiny/embedmini/embedfull/textmini/textfull")]
     [Alias("guildmode")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task SetServerModeAsync([Remainder] string unused = null)
+    public async Task SetServerModeAsync([CommandParameter(Remainder = true)] string unused = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -135,7 +134,7 @@ public class GuildCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("serverreactions", RunMode = RunMode.Async)]
+    [Command("serverreactions")]
     [Summary("Sets the automatic emoji reactions for the `fm` and `featured` command.\n\n" +
              "Use this command without any emojis to disable.")]
     [Examples("serverreactions :PagChomp: :PensiveBlob:", "serverreactions 😀 😯 🥵", "serverreactions 😀 😯 :PensiveBlob:",
@@ -143,7 +142,7 @@ public class GuildCommands : BaseCommandModule
     [Alias("serversetreactions", "serveremojis", "serverreacts")]
     [GuildOnly]
     [CommandCategories(CommandCategory.ServerSettings)]
-    public async Task SetGuildReactionsAsync([Remainder] string emojis = null)
+    public async Task SetGuildReactionsAsync([CommandParameter(Remainder = true)] string emojis = null)
     {
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
@@ -251,7 +250,7 @@ public class GuildCommands : BaseCommandModule
         }
     }
 
-    [Command("prefix", RunMode = RunMode.Async)]
+    [Command("prefix")]
     [Summary("Changes the `.fm` prefix for your server.\n\n" +
              "For example, with the prefix `!` commands will be used as `!chart` and `!whoknows`\n\n" +
              "To restore the default prefix, use this command without an option")]
@@ -275,7 +274,7 @@ public class GuildCommands : BaseCommandModule
         }
     }
 
-    [Command("toggleservercommand", RunMode = RunMode.Async)]
+    [Command("toggleservercommand")]
     [Summary("Enables or disables a command server-wide")]
     [Alias("toggleservercommands", "toggleserver", "servertoggle")]
     [GuildOnly]
@@ -299,7 +298,7 @@ public class GuildCommands : BaseCommandModule
 
     [GuildOnly]
     [RequiresIndex]
-    [Command("togglecommand", RunMode = RunMode.Async)]
+    [Command("togglecommand")]
     [Summary("Enables or disables a command in a channel")]
     [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands", "channelmode",
         "channelfmmode")]
@@ -327,7 +326,7 @@ public class GuildCommands : BaseCommandModule
         }
     }
 
-    [Command("cooldown", RunMode = RunMode.Async)]
+    [Command("cooldown")]
     [Summary("Sets a cooldown for the `fm` command in a channel.\n\n" +
              "To pick a channel, simply use this command in the channel you want the cooldown in.")]
     [Options("Cooldown in seconds (Min 2 seconds - Max 1200 seconds)")]

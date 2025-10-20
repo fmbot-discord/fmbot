@@ -2,9 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
-using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -18,12 +15,13 @@ using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
 using MetaBrainz.MusicBrainz.Interfaces;
 using Microsoft.Extensions.Options;
+using NetCord.Services.Commands;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.TextCommands.LastFM;
 
-[Name("Plays")]
+[ModuleName("Plays")]
 public class PlayCommands : BaseCommandModule
 {
     private readonly GuildService _guildService;
@@ -66,14 +64,14 @@ public class PlayCommands : BaseCommandModule
         this._recapBuilders = recapBuilders;
     }
 
-    [Command("discoverydate", RunMode = RunMode.Async)]
+    [Command("discoverydate")]
     [Summary("Shows the date you discovered the artist, album, and track")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     [Alias("dd", "datediscovered", "datediscovery")]
     [SupporterExclusive(
         "To see when you've discovered this artist, album and track we need to store your lifetime Last.fm history. Your lifetime history and more are only available for supporters")]
-    public async Task DateDiscoveredAsync([Remainder] string options = null)
+    public async Task DateDiscoveredAsync([CommandParameter(Remainder = true)] string options = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -104,13 +102,13 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("fm", RunMode = RunMode.Async)]
+    [Command("fm")]
     [Summary("Shows you or someone else's current track")]
     [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "hm", "jm", "km",
         "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "nowplaying", "ɯɟ")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
-    public async Task NowPlayingAsync([Remainder] string options = null)
+    public async Task NowPlayingAsync([CommandParameter(Remainder = true)] string options = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -217,7 +215,7 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("recent", RunMode = RunMode.Async)]
+    [Command("recent")]
     [Summary("Shows you or someone else's recent tracks")]
     [Options(Constants.UserMentionExample, "Artist name")]
     [Examples("recent", "r", "recent @user", "recent lfm:fm-bot")]
@@ -225,7 +223,7 @@ public class PlayCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     [SupporterEnhanced("Supporters can view their lifetime history")]
-    public async Task RecentAsync([Remainder] string extraOptions = null)
+    public async Task RecentAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -247,7 +245,7 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("overview", RunMode = RunMode.Async)]
+    [Command("overview")]
     [Summary("Shows a daily overview")]
     [Options("Amount of days to show (max 8)")]
     [Examples("o", "overview", "overview 7")]
@@ -255,7 +253,7 @@ public class PlayCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     [SupporterEnhanced("See your lifetime history day to day as a supporter")]
-    public async Task OverviewAsync([Remainder] string extraOptions = null)
+    public async Task OverviewAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -278,13 +276,13 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("year", RunMode = RunMode.Async)]
+    [Command("year")]
     [Summary("Shows an overview of your year")]
     [Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     [SupporterEnhanced("Get an extra page with artist discoveries and a monthly overview")]
-    public async Task YearAsync([Remainder] string extraOptions = null)
+    public async Task YearAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -308,12 +306,12 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("recap", RunMode = RunMode.Async)]
+    [Command("recap")]
     [Summary("A recap to easily view multiple .fmbot commands into one")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     [Alias("rcp", "wrapped")]
-    public async Task RecapAsync([Remainder] string extraOptions = null)
+    public async Task RecapAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -356,7 +354,7 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("pace", RunMode = RunMode.Async)]
+    [Command("pace")]
     [Summary("Shows estimated date you reach a scrobble goal based on average scrobbles per day")]
     [Options(Constants.CompactTimePeriodList, "Optional goal amount: For example `10000` or `10k`",
         Constants.UserMentionExample)]
@@ -364,7 +362,7 @@ public class PlayCommands : BaseCommandModule
     [UsernameSetRequired]
     [Alias("pc")]
     [CommandCategories(CommandCategory.Other)]
-    public async Task PaceAsync([Remainder] string extraOptions = null)
+    public async Task PaceAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -392,14 +390,14 @@ public class PlayCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("milestone", RunMode = RunMode.Async)]
+    [Command("milestone")]
     [Summary("Shows a milestone scrobble")]
     [Options("Optional milestone amount: For example `10000` or `10k`", Constants.UserMentionExample)]
     [Examples("ms", "ms 10k", "milestone 500 @user", "milestone", "milestone @user 250k")]
     [UsernameSetRequired]
     [Alias("m", "ms")]
     [CommandCategories(CommandCategory.Other)]
-    public async Task MilestoneAsync([Remainder] string extraOptions = null)
+    public async Task MilestoneAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -432,7 +430,7 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("plays", RunMode = RunMode.Async)]
+    [Command("plays")]
     [Summary("Shows your total scrobble count for a specific time period")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("p", "plays", "plays @frikandel", "plays monthly")]
@@ -440,7 +438,7 @@ public class PlayCommands : BaseCommandModule
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Other)]
     [SupporterEnhanced($"For non-supporters, the maximum amount of cached plays is limited to their last 15000 scrobbles, meaning this is also the limit for streaks")]
-    public async Task PlaysAsync([Remainder] string extraOptions = null)
+    public async Task PlaysAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -458,14 +456,14 @@ public class PlayCommands : BaseCommandModule
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
-    [Command("streak", RunMode = RunMode.Async)]
+    [Command("streak")]
     [Summary("Shows you or someone else's streak")]
     [UsernameSetRequired]
     [Alias("str", "combo", "cb")]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
     [SupporterEnhanced(
         "Streaks for non-supporters are limited to 25k plays, due to the bot not caching plays beyond this limit for free users")]
-    public async Task StreakAsync([Remainder] string extraOptions = null)
+    public async Task StreakAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -494,12 +492,12 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("streaks", RunMode = RunMode.Async)]
+    [Command("streaks")]
     [Summary("Shows you your past streaks")]
     [UsernameSetRequired]
     [Alias("strs", "combos", "cbs", "streakhistory", "combohistory", "combolist", "streaklist")]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
-    public async Task StreakHistoryAsync([Remainder] string extraOptions = null)
+    public async Task StreakHistoryAsync([CommandParameter(Remainder = true)] string extraOptions = null)
     {
         _ = this.Context.Channel?.TriggerTypingStateAsync()!;
 
@@ -522,7 +520,7 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("playleaderboard", RunMode = RunMode.Async)]
+    [Command("playleaderboard")]
     [Summary("Shows users with the most plays in your server")]
     [Alias("sblb", "scrobblelb", "scrobbleleaderboard", "scrobble leaderboard")]
     [UsernameSetRequired]
@@ -530,7 +528,7 @@ public class PlayCommands : BaseCommandModule
     [SupportsPagination]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns)]
-    public async Task PlayLeaderboardAsync([Remainder] string options = null)
+    public async Task PlayLeaderboardAsync([CommandParameter(Remainder = true)] string options = null)
     {
         try
         {
@@ -553,7 +551,7 @@ public class PlayCommands : BaseCommandModule
         }
     }
 
-    [Command("timeleaderboard", RunMode = RunMode.Async)]
+    [Command("timeleaderboard")]
     [Summary("Shows users with the most playtime in your server")]
     [Alias("playtimeleaderboard", "listeningtimeleaderboard", "ptlb", "ltlb", "tlb", "sleepscrobblers")]
     [UsernameSetRequired]
@@ -561,7 +559,7 @@ public class PlayCommands : BaseCommandModule
     [SupportsPagination]
     [RequiresIndex]
     [CommandCategories(CommandCategory.Crowns)]
-    public async Task TimeLeaderboardAsync([Remainder] string options = null)
+    public async Task TimeLeaderboardAsync([CommandParameter(Remainder = true)] string options = null)
     {
         try
         {
