@@ -301,12 +301,12 @@ public class UserBuilder
 
         description.AppendLine();
         description.AppendLine(
-            $"Use the button below to start configuring your settings and to customize your .fmbot experience.");
+            $"Use the button below to start configuring your settings, to customize your .fmbot experience and to import your history.");
         description.AppendLine();
         description.AppendLine($"Please note that .fmbot is not affiliated with Last.fm.");
 
         response.Components = new ComponentBuilder()
-            .WithButton("Settings", style: ButtonStyle.Secondary, customId: InteractionConstants.User.Settings,
+            .WithButton("Settings, customization and importing", style: ButtonStyle.Secondary, customId: InteractionConstants.User.Settings,
                 emote: new Emoji("⚙️"))
             .WithButton("Add .fmbot", style: ButtonStyle.Link,
                 url: "https://discord.com/oauth2/authorize?client_id=356268235697553409");

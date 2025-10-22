@@ -42,12 +42,6 @@ See our Docker builds on [Github Packages](https://github.com/fmbot-discord/fmbo
 | main   | production    | .fmbot#8173          | [https://discord.com/api/oa...](https://discord.com/api/oauth2/authorize?client_id=356268235697553409&permissions=275415092288&scope=applications.commands%20bot)
 | dev    | beta/develop  | .fmbot develop#7613  | Closed for invites
 
-<h3>Contributing </h3>
-
-Please see https://fm.bot/setup on how to setup a local development environment, and see the [CONTRIBUTING.md](CONTRIBUTING.md) for further info.
-
-Note that selfhosting .fmbot is not supported.
-
 <h3>Thanks</h3>
 
 Thanks to Last.fm and it's community, the Last.fm developer community, the .fmbot community, contributors and staff, all supporters and all others who have helped out.
