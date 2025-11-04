@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
 using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;

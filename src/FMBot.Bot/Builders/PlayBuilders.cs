@@ -4,6 +4,8 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -18,8 +20,8 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.Persistence.Domain.Models;
 using NetCord;
-using PuppeteerSharp;
 using SkiaSharp;
+using IPage = PuppeteerSharp.IPage;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using User = FMBot.Persistence.Domain.Models.User;
 

@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;

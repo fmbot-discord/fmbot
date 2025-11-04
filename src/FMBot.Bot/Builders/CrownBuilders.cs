@@ -12,7 +12,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Extensions;
 using FMBot.Domain.Interfaces;
 using System.Collections.Generic;
-
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 

@@ -1,11 +1,12 @@
 using System;
 using System.Threading.Tasks;
-
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using NetCord;
 using NetCord.Services.ApplicationCommands;
 
 namespace FMBot.Bot.SlashCommands;

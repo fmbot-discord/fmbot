@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
@@ -17,8 +18,10 @@ using FMBot.Domain;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord;
 using NetCord.Services.ApplicationCommands;
-using SummaryAttribute = Discord.Interactions.SummaryAttribute;
+using NetCord.Services.ComponentInteractions;
+using SummaryAttribute = NetCord.Discord.Interactions.SummaryAttribute;
 
 namespace FMBot.Bot.SlashCommands;
 

@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
@@ -13,6 +14,8 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Builders;
 using FMBot.Domain.Attributes;
 using FMBot.Domain.Models;
+using NetCord;
+using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 

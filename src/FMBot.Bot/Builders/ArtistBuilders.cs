@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using Fergun.Interactive;
 using FMBot.AppleMusic;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Factories;
@@ -24,6 +25,7 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using NetCord;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 

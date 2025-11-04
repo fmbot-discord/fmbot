@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
@@ -13,6 +13,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Enums;
 using FMBot.Domain.Interfaces;
 using FMBot.Domain.Models;
+using NetCord;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 

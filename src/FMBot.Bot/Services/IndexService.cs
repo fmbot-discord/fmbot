@@ -464,7 +464,7 @@ public class IndexService
     public async Task<GuildUser> GetOrAddUserToGuild(
         IDictionary<int, FullGuildUser> guildUsers,
         Persistence.Domain.Models.Guild guild,
-        IGuildUser discordGuildUser,
+        NetCord.GuildUser discordGuildUser,
         User user)
     {
         try
@@ -540,7 +540,7 @@ public class IndexService
         Log.Information("Added user {guildUserName} | {userId} to guild {guildName}", guildUserToAdd.UserName, guildUserToAdd.UserId, guildUserToAdd.GuildId);
     }
 
-    public async Task UpdateGuildUser(IDictionary<int, FullGuildUser> fullGuildUsers, IGuildUser discordGuildUser,
+    public async Task UpdateGuildUser(IDictionary<int, FullGuildUser> fullGuildUsers, NetCord.GuildUser discordGuildUser,
         int userId, Persistence.Domain.Models.Guild guild)
     {
         try

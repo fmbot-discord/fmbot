@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-
+using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -223,7 +223,7 @@ public static class StringService
     }
 
     public static void SinglePageToEmbedResponseWithButton(this ResponseModel response, PageBuilder page,
-        string customOptionId = null, IEmote optionEmote = null, string optionDescription = null,
+        string customOptionId = null, EmojiProperties optionEmote = null, string optionDescription = null,
         SelectMenuBuilder selectMenu = null)
     {
         response.Embed.WithTitle(page.Title);

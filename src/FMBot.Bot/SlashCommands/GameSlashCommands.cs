@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -11,6 +12,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using NetCord;
 using NetCord.Services.ApplicationCommands;
 using NetCord.Services.ComponentInteractions;
 

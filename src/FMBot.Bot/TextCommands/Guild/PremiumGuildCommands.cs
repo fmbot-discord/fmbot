@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CsvHelper.Configuration.Attributes;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
